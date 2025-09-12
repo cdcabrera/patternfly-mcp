@@ -1,4 +1,4 @@
-import { DocsRootDir, AccessibilityDir, DesignGuidelinesDir } from './const.js';
+import { AccessibilityDir, DesignGuidelinesDir } from './constants.js';
 
 export const ComponentsDir = 'components';
 

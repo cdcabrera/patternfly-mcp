@@ -1,0 +1,3131 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/charts/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "pass",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/charts/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/chatbot/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "pass",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/chatbot/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/component-groups/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "pass",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/component-groups/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/components/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "pass",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/components/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/guidelines/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "pass",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/guidelines/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/resources/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "fail",
+  "reason": "Missing or unreadable: ENOENT: no such file or directory, stat '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/resources/README.md'",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/resources/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/setup/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "pass",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/setup/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/troubleshooting/README.md',
+  description: 'Local file target'
+} 1`] = `
+Object {
+  "kind": "file",
+  "outcome": "fail",
+  "reason": "Missing or unreadable: ENOENT: no such file or directory, stat '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/troubleshooting/README.md'",
+  "snippet": null,
+  "status": null,
+  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/troubleshooting/README.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/about-modal/about-modal.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/about-modal/about-modal.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/accordion/accordion.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/accordion/accordion.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/action-list/action-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/action-list/action-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/alert/alert.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/alert/alert.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/application-launcher/application-launcher.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/application-launcher/application-launcher.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/avatar/avatar.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/avatar/avatar.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/back-to-top/back-to-top.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/back-to-top/back-to-top.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/backdrop/backdrop.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/backdrop/backdrop.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/background-image/background-image.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/background-image/background-image.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/badge/badge.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/badge/badge.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/banner/banner.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/banner/banner.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/brand/brand.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/brand/brand.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/breadcrumb/breadcrumb.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/breadcrumb/breadcrumb.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/button/button.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/button/button.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/calendar-month/calendar-month.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/calendar-month/calendar-month.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/card/card.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/card/card.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/checkbox/checkbox.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/checkbox/checkbox.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/chip-deprecated/chip-deprecated.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/chip-deprecated/chip-deprecated.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/clipboard-copy/clipboard-copy.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/clipboard-copy/clipboard-copy.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/code-block/code-block.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/code-block/code-block.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/code-editor/code-editor.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/code-editor/code-editor.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/content/content.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/content/content.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/data-list/data-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/data-list/data-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/date-picker/date-picker.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/date-picker/date-picker.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/date-time-picker/date-time-picker.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/date-time-picker/date-time-picker.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/description-list/description-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/description-list/description-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/divider/divider.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/divider/divider.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/drag-and-drop/drag-and-drop.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/drag-and-drop/drag-and-drop.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/drawer/drawer.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/drawer/drawer.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/dropdown/dropdown.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/dropdown/dropdown.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/dual-list-selector/dual-list-selector.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/dual-list-selector/dual-list-selector.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/empty-state/empty-state.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/empty-state/empty-state.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/expandable-section/expandable-section.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/expandable-section/expandable-section.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/file-upload/file-upload.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/file-upload/file-upload.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/form/form.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/form/form.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/form-control/form-control.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/form-control/form-control.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/form-select/form-select.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/form-select/form-select.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/helper-text/helper-text.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/helper-text/helper-text.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/hint/hint.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/hint/hint.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/icon/icon.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/icon/icon.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/inline-edit/inline-edit.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/inline-edit/inline-edit.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/input-group/input-group.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/input-group/input-group.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/jump-links/jump-links.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/jump-links/jump-links.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/label/label.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/label/label.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/list/list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/list/list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/login-page/login-page.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/login-page/login-page.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/masthead/masthead.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/masthead/masthead.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/menu/menu.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/menu/menu.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/menu-toggle/menu-toggle.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/menu-toggle/menu-toggle.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/modal/modal.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/modal/modal.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/navigation/navigation.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/navigation/navigation.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/notification-badge/notification-badge.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/notification-badge/notification-badge.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/notification-drawer/notification-drawer.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/notification-drawer/notification-drawer.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/number-input/number-input.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/number-input/number-input.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/overflow-menu/overflow-menu.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/overflow-menu/overflow-menu.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/page/page.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/page/page.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/pagination/pagination.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/pagination/pagination.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/panel/panel.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/panel/panel.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/popover/popover.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/popover/popover.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/progress/progress.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/progress/progress.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/progress-stepper/progress-stepper.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/progress-stepper/progress-stepper.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/radio/radio.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/radio/radio.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/search-input/search-input.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/search-input/search-input.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/select/select.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/select/select.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/sidebar/sidebar.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/sidebar/sidebar.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/simple-list/simple-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/simple-list/simple-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/skeleton/skeleton.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/skeleton/skeleton.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/skip-to-content/skip-to-content.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/skip-to-content/skip-to-content.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/slider/slider.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/slider/slider.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/spinner/spinner.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/spinner/spinner.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/switch/switch.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/switch/switch.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/table/table.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/table/table.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tabs/tabs.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tabs/tabs.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/text-area/text-area.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/text-area/text-area.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/text-input/text-input.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/text-input/text-input.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/text-input-group/text-input-group.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/text-input-group/text-input-group.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tile-deprecated/tile-deprecated.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tile-deprecated/tile-deprecated.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/time-picker/time-picker.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/time-picker/time-picker.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/timestamp/timestamp.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/timestamp/timestamp.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/title/title.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/title/title.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/toggle-group/toggle-group.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/toggle-group/toggle-group.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/toolbar/toolbar.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/toolbar/toolbar.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tooltip/tooltip.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tooltip/tooltip.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tree-view/tree-view.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/tree-view/tree-view.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/truncate/truncate.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/truncate/truncate.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/wizard/wizard.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/wizard/wizard.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/ChartBoxPlot/examples/ChartBoxPlot.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/ChartBoxPlot/examples/ChartBoxPlot.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/area-chart/area-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Area chart
+section: charts
+---
+An **area c",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/area-chart/area-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/bar-chart/bar-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Bar chart
+section: charts
+---
+A **bar char",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/bar-chart/bar-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/bullet-chart/bullet-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Bullet chart
+section: charts
+---
+A **bulle",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/bullet-chart/bullet-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/donut-chart/donut-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Donut chart
+section: charts
+---
+A **donut ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/donut-chart/donut-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/donut-utilization-chart/donut-utilization-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Donut utilization chart
+section: charts
+--",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/donut-utilization-chart/donut-utilization-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/legend-chart/legend-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Legends
+section: charts
+---
+
+A **legend ch",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/legend-chart/legend-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/line-chart/line-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Line chart
+section: charts
+---
+A **line ch",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/line-chart/line-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/pie-chart/pie-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Pie chart
+section: charts
+---
+A **pie char",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/pie-chart/pie-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/scatter-chart/scatter-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Scatter chart
+section: charts
+---
+ A **sca",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/scatter-chart/scatter-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/sparkline-chart/sparkline-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Sparkline chart
+section: charts
+---
+
+A **s",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/sparkline-chart/sparkline-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/stacked-chart/stacked-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Stack chart
+section: charts
+---
+A **stacke",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/stacked-chart/stacked-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/threshold-chart/threshold-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Threshold chart
+section: charts
+---
+A **th",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/threshold-chart/threshold-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/tooltip-chart/tooltip-chart.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Tooltips
+section: charts
+---
+
+A **tooltip ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/tooltip-chart/tooltip-chart.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: About modal
+section: components
+related: [",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/accordion/accordion.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Accordion
+section: components
+---
+
+import ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/accordion/accordion.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/action-list/action-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Action list
+section: components
+---
+
+impor",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/action-list/action-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/alert/alert.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Alert
+section: components
+related: ['Alert",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/alert/alert.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/application-launcher/application-launcher.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Application launcher
+section: components
+s",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/application-launcher/application-launcher.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/avatar/avatar.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Avatar
+section: components
+---
+
+import '..",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/avatar/avatar.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/back-to-top/back-to-top.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Back to top
+section: components
+---
+
+## El",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/back-to-top/back-to-top.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/backdrop/backdrop.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Backdrop
+section: components
+---
+
+## Acces",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/backdrop/backdrop.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/background-image/background-image.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Background image
+section: components
+---
+
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/background-image/background-image.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/badge/badge.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Badge
+section: components
+---
+
+## Usage
+
+B",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/badge/badge.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/banner/banner.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Banner
+section: components
+---
+
+## Usage
+
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/banner/banner.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/brand/brand.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Brand
+section: components
+---
+
+## Accessib",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/brand/brand.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/breadcrumb/breadcrumb.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Breadcrumb
+section: components
+---
+
+import",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/breadcrumb/breadcrumb.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Button
+section: components
+---
+
+import '..",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/calendar-month/calendar-month.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Calendar month
+section: components
+subsect",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/calendar-month/calendar-month.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/card/card.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Card
+section: components
+---
+import '../co",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/card/card.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/checkbox/checkbox.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Checkbox
+section: components
+subsection: f",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/checkbox/checkbox.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/chip-deprecated/chip-deprecated.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/chip-deprecated/chip-deprecated.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/clipboard-copy/clipboard-copy.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Clipboard copy
+section: components
+---
+
+im",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/clipboard-copy/clipboard-copy.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/code-block/code-block.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Code block
+section: components
+---
+
+import",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/code-block/code-block.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/code-editor/code-editor.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Code editor
+section: components
+---
+
+impor",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/code-editor/code-editor.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/content/content.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Content
+section: components
+---
+
+## Usage
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/content/content.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/data-list/data-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Data list
+section: components
+related: ['T",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/data-list/data-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/date-picker/date-picker.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Date picker
+section: components
+subsection",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/date-picker/date-picker.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/date-time-picker/date-time-picker.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/date-time-picker/date-time-picker.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/description-list/description-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Description list
+section: components
+---
+
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/description-list/description-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/divider/divider.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Divider
+section: components
+---
+
+## Usage
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/divider/divider.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/drag-and-drop/drag-and-drop.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/drag-and-drop/drag-and-drop.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/drawer/drawer.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Drawer
+section: components
+---
+
+import '..",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/drawer/drawer.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/dropdown/dropdown.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Dropdown
+section: components
+subsection: m",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/dropdown/dropdown.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/dual-list-selector/dual-list-selector.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Dual list selector
+section: components
+---",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/dual-list-selector/dual-list-selector.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/empty-state/empty-state.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Empty state
+section: components
+---
+
+impor",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/empty-state/empty-state.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/expandable-section/expandable-section.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Expandable section
+section: components
+---",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/expandable-section/expandable-section.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/file-upload/file-upload.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Simple file upload
+section: components
+sub",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/file-upload/file-upload.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/form/form.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/form/form.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/form-control/form-control.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Form control
+section: components
+subsectio",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/form-control/form-control.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/form-select/form-select.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Form select
+section: components
+subsection",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/form-select/form-select.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/helper-text/helper-text.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Helper text 
+section: components
+---
+
+## U",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/helper-text/helper-text.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/hint/hint.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Hint
+section: components
+---
+import '../co",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/hint/hint.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/icon/icon.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/icon/icon.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/inline-edit/inline-edit.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Inline edit
+section: components
+---
+
+impor",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/inline-edit/inline-edit.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/input-group/input-group.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Input group
+section: components
+---
+
+impor",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/input-group/input-group.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/jump-links/jump-links.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/jump-links/jump-links.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/label/label.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Label
+section: components
+---
+
+import '../",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/label/label.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/list/list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: List
+section: components
+---
+
+import '../c",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/list/list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/login-page/login-page.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Login page
+section: components
+---
+
+import",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/login-page/login-page.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/masthead/masthead.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Masthead
+section: components
+---
+
+## Eleme",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/masthead/masthead.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/menu/menu.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Menu
+section: components
+subsection: menus",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/menu/menu.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/menu-toggle/menu-toggle.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Menu toggle
+section: components
+subsection",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/menu-toggle/menu-toggle.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/modal/modal.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Modal
+section: components
+related: ['Butto",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/modal/modal.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/navigation/navigation.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Navigation
+section: components
+related: ['",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/navigation/navigation.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/notification-badge/notification-badge.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Notification badge
+section: components
+rel",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/notification-badge/notification-badge.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/notification-drawer/notification-drawer.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Notification drawer
+section: components
+re",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/notification-drawer/notification-drawer.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/number-input/number-input.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/number-input/number-input.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/overflow-menu/overflow-menu.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Overflow menu
+section: components
+---
+
+imp",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/overflow-menu/overflow-menu.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/page/page.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Page
+section: components
+---
+
+import '../c",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/page/page.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/pagination/pagination.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Pagination
+section: components
+---
+
+import",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/pagination/pagination.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/panel/panel.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Panel
+section: components
+---
+
+import '../",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/panel/panel.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/popover/popover.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Popover
+section: components
+related: [
+ 'B",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/popover/popover.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/progress/progress.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Progress
+section: components
+---
+
+import '",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/progress/progress.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/progress-stepper/progress-stepper.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Progress stepper
+section: components
+---
+
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/progress-stepper/progress-stepper.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/radio/radio.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Radio
+section: components
+subsection: form",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/radio/radio.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/search-input/search-input.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Search input
+section: components
+---
+
+impo",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/search-input/search-input.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/select/select.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Select
+section: components
+subsection: men",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/select/select.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/sidebar/sidebar.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Sidebar
+section: components
+---
+
+## Usage
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/sidebar/sidebar.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/simple-list/simple-list.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Simple list
+section: components
+---
+
+impor",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/simple-list/simple-list.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/skeleton/skeleton.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Skeleton
+section: components
+---
+
+## Usage",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/skeleton/skeleton.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/skip-to-content/skip-to-content.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Skip to content
+section: components
+---
+
+#",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/skip-to-content/skip-to-content.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/slider/slider.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Slider
+section: components
+---
+
+import '..",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/slider/slider.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/spinner/spinner.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Spinner
+section: components
+---
+
+## Usage
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/spinner/spinner.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/switch/switch.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Switch
+section: components
+---
+
+import '..",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/switch/switch.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/table/table.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Table
+section: components
+---
+
+import '../",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/table/table.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tabs/tabs.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Tabs
+section: components
+---
+
+import '../c",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tabs/tabs.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/text-area/text-area.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Text area
+section: components
+subsection: ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/text-area/text-area.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/text-input/text-input.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Text input
+section: components
+subsection:",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/text-input/text-input.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/text-input-group/text-input-group.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Text input group
+section: components
+---
+
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/text-input-group/text-input-group.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tile-deprecated/tile-deprecated.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tile-deprecated/tile-deprecated.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/time-picker/time-picker.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/time-picker/time-picker.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/timestamp/timestamp.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Timestamp
+section: components
+---
+
+import ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/timestamp/timestamp.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/title/title.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Title
+section: components
+---
+
+",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/title/title.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/toggle-group/toggle-group.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Toggle group
+section: components
+---
+
+impo",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/toggle-group/toggle-group.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/toolbar/toolbar.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Toolbar
+section: components
+related: ['Ove",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/toolbar/toolbar.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tooltip/tooltip.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Tooltip
+section: components
+---
+
+import '.",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tooltip/tooltip.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tree-view/tree-view.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Tree view
+section: components
+---
+
+import ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/tree-view/tree-view.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/truncate/truncate.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Truncate 
+section: components
+---
+
+import ",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/truncate/truncate.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/wizard/wizard.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Wizard
+section: components
+---
+
+import '..",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/wizard/wizard.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/bullseye.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/bullseye.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/flex.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/flex.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/gallery.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/gallery.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/grid.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/grid.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/level.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/level.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/split.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/split.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/stack.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "fail",
+  "reason": "GET non-2xx",
+  "snippet": "404: Not Found",
+  "status": 404,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/layout/stack.md",
+}
+`;
+
+exports[`PatternFly docs references validates {
+  file: 'https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/packages/react-charts/src/victory/components/ChartTheme/examples/ChartTheme.md',
+  description: 'HTTP(S) target'
+} 1`] = `
+Object {
+  "kind": "http",
+  "outcome": "pass",
+  "snippet": "---
+id: Colors for charts
+section: charts
+hideDark",
+  "status": 200,
+  "target": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/packages/react-charts/src/victory/components/ChartTheme/examples/ChartTheme.md",
+}
+`;

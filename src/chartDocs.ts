@@ -1,13 +1,11 @@
-import { DesignGuidelinesDir } from './const.js';
+import { ChartsDocsRootDir, DesignGuidelinesDir } from './constants.js';
 
-const ChartsDocsRootDir = 'https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/packages/react-charts/src'
 export const ChartsDir = 'victory/components';
 
 export const ChartDesignDir = 'charts';
 
 export const ChartDocs = [
   `[@patternfly/Charts - Colors for Charts](${ChartsDocsRootDir}/${ChartsDir}/ChartTheme/examples/ChartTheme.md)`,
-
   `[@patternfly/Charts - Target Chart](${DesignGuidelinesDir}/${ChartDesignDir}/area-chart/area-chart.md)`,
   `[@patternfly/Charts - Bar Chart](${DesignGuidelinesDir}/${ChartDesignDir}/bar-chart/bar-chart.md)`,
   `[@patternfly/Charts - Box Plot Chart](${DesignGuidelinesDir}/${ChartDesignDir}/ChartBoxPlot/examples/ChartBoxPlot.md)`,

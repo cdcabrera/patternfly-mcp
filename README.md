@@ -114,7 +114,7 @@ Example configuration for MCP clients using npx (see `mcp-config-example.json`):
   "mcpServers": {
     "patternfly-docs": {
       "command": "npx",
-      "args": ["-y", "@jephilli-patternfly-docs/mcp@latest"]
+      "args": ["-y", "@jephilli-patternfly-docs/mcp@latest"],
       "description": "PatternFly React development rules and documentation"
     }
   }
@@ -235,3 +235,40 @@ MIT License - see LICENSE file for details.
 - [MCP SDK Documentation](https://github.com/modelcontextprotocol/typescript-sdk)
 - [Node.js Documentation](https://nodejs.org/en/docs/)
 - [TypeScript Documentation](https://www.typescriptlang.org/docs/) 
+
+## CLI (foreground and daemon)
+
+- Foreground (stdio, for MCP clients):
+  - pf-mcp
+- Background (daemonize and free your terminal):
+  - pf-mcp --daemon
+  - Logs default to ~/.pf-mcp/pf-mcp.log (override with --log-file)
+  - PID stored at ~/.pf-mcp/pf-mcp.pid (override with --pid-file)
+- Stop background daemon:
+  - pf-mcp --stop
+- Check status:
+  - pf-mcp --status
+
+Options:
+- --daemon           Run in background
+- --stop             Stop background daemon
+- --log-file <path>  Log file for daemon mode
+- --pid-file <path>  PID file for daemon mode
+- --status           Check if the daemon is running
+
+Version/help:
+- pf-mcp --version
+- pf-mcp --help
+
+## Implemented Tools (current)
+
+The server currently exposes two tools:
+
+- usePatternFlyDocs
+  - input: { urlList: string[] }
+  - Fetches and returns content from provided URLs or local file paths. Start by passing the high-level README links described by the tool’s description, then follow up with fetchDocs for specific pages.
+- fetchDocs
+  - input: { urls: string[] }
+  - Fetches and returns documentation content for one or more URLs.
+
+Note: The older README sections describing list_documentation/get_documentation/etc. are outdated and will be revised. Use the two tools above.

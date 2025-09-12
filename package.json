@@ -5,7 +5,11 @@
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "patternfly-mcp": "dist/index.js"
+    "pf-mcp": "dist/index.js"
+  },
+  "exports": {
+    ".": { "default": "./dist/index.js" },
+    "./server": { "types": "./dist/server.d.ts", "default": "./dist/server.js" }
   },
   "files": [
     "dist/**/*",
@@ -17,10 +21,16 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
+    "stop": "node dist/index.js --stop",
+    "status": "node dist/index.js --status",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",
     "prepare": "npm run build",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:links": "jest --runTestsByPath tests/docsLinks.test.ts",
+    "update-snapshots": "jest -u"
   },
   "keywords": [
     "mcp",
@@ -34,11 +44,18 @@
   "author": "Jeff Phillips",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^5.4.5"
+    "@types/yargs": "^17.0.32",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "tsx": "^4.19.0"
   },
   "engines": {
     "node": ">=18.0.0"
