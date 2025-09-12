@@ -1,8 +1,9 @@
 /* eslint-disable no-console */
 import { stat } from 'fs/promises';
+import { relative } from 'path';
 
 // Increase per-test timeout to accommodate network requests
-(globalThis as any).jest?.setTimeout(60000);
+;(globalThis as any).jest?.setTimeout(60000);
 
 export type CheckOutcome = 'pass' | 'fail' | 'unknown';
 
@@ -17,6 +18,20 @@ export type CheckResult = {
 
 const USER_AGENT = 'pf-mcp-link-check/1.0 (+https://github.com/cdcabrera/patternfly-mcp)';
 const TIMEOUT_MS = 20_000;
+
+// Repo-root aware redaction helpers to keep snapshots shareable across machines
+const repoRoot = process.cwd();
+const toRepoRelative = (p: string): string => {
+  if (!p || p.startsWith('http://') || p.startsWith('https://')) return p;
+  const rel = relative(repoRoot, p);
+  return rel || p;
+};
+const scrubPathFromReason = (reason?: string | null): string | null => {
+  if (!reason) return reason ?? null;
+  let r = reason.split(repoRoot).join('');
+  r = r.replaceAll('///', '/').replaceAll('//', '/');
+  return r;
+};
 
 export const extractTarget = (s: string): string => {
   const m = s.match(/\]\(([^)]+)\)/);
@@ -63,17 +78,17 @@ export const checkHttp = async (url: string): Promise<CheckResult> => {
     if (!text || text.trim().length === 0) return { target: url, kind: 'http', outcome: 'fail', status: getRes.status, reason: 'Empty body', snippet };
     return { target: url, kind: 'http', outcome: 'pass', status: getRes.status, snippet };
   } catch (e: any) {
-    return { target: url, kind: 'http', outcome: 'unknown', status: null, reason: `Error: ${e?.message || String(e)}`, snippet: null };
+    return { target: url, kind: 'http', outcome: 'unknown', status: null, reason: scrubPathFromReason(`Error: ${e?.message || String(e)}`), snippet: null };
   }
 };
 
 export const checkFile = async (fp: string): Promise<CheckResult> => {
   try {
     const s = await stat(fp);
-    if (!s.isFile()) return { target: fp, kind: 'file', outcome: 'fail', reason: 'Not a file', status: null, snippet: null };
-    if (s.size <= 0) return { target: fp, kind: 'file', outcome: 'fail', reason: 'Empty file', status: null, snippet: null };
-    return { target: fp, kind: 'file', outcome: 'pass', status: null, snippet: null };
+    if (!s.isFile()) return { target: toRepoRelative(fp), kind: 'file', outcome: 'fail', reason: 'Not a file', status: null, snippet: null };
+    if (s.size <= 0) return { target: toRepoRelative(fp), kind: 'file', outcome: 'fail', reason: 'Empty file', status: null, snippet: null };
+    return { target: toRepoRelative(fp), kind: 'file', outcome: 'pass', status: null, snippet: null };
   } catch (e: any) {
-    return { target: fp, kind: 'file', outcome: 'fail', status: null, reason: `Missing or unreadable: ${e?.message || String(e)}`, snippet: null };
+    return { target: toRepoRelative(fp), kind: 'file', outcome: 'fail', status: null, reason: scrubPathFromReason(`Missing or unreadable: ${e?.message || String(e)}`), snippet: null };
   }
 };

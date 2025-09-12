@@ -9,7 +9,7 @@ Object {
   "outcome": "pass",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/charts/README.md",
+  "target": "documentation/charts/README.md",
 }
 `;
 
@@ -22,7 +22,7 @@ Object {
   "outcome": "pass",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/chatbot/README.md",
+  "target": "documentation/chatbot/README.md",
 }
 `;
 
@@ -35,7 +35,7 @@ Object {
   "outcome": "pass",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/component-groups/README.md",
+  "target": "documentation/component-groups/README.md",
 }
 `;
 
@@ -48,7 +48,7 @@ Object {
   "outcome": "pass",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/components/README.md",
+  "target": "documentation/components/README.md",
 }
 `;
 
@@ -61,7 +61,7 @@ Object {
   "outcome": "pass",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/guidelines/README.md",
+  "target": "documentation/guidelines/README.md",
 }
 `;
 
@@ -72,10 +72,10 @@ exports[`PatternFly docs references validates {
 Object {
   "kind": "file",
   "outcome": "fail",
-  "reason": "Missing or unreadable: ENOENT: no such file or directory, stat '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/resources/README.md'",
+  "reason": "Missing or unreadable: ENOENT: no such file or directory, stat '/documentation/resources/README.md'",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/resources/README.md",
+  "target": "documentation/resources/README.md",
 }
 `;
 
@@ -88,7 +88,7 @@ Object {
   "outcome": "pass",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/setup/README.md",
+  "target": "documentation/setup/README.md",
 }
 `;
 
@@ -99,10 +99,10 @@ exports[`PatternFly docs references validates {
 Object {
   "kind": "file",
   "outcome": "fail",
-  "reason": "Missing or unreadable: ENOENT: no such file or directory, stat '/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/troubleshooting/README.md'",
+  "reason": "Missing or unreadable: ENOENT: no such file or directory, stat '/documentation/troubleshooting/README.md'",
   "snippet": null,
   "status": null,
-  "target": "/Users/code/Documents/git-work/forked/patternfly-mcp/documentation/troubleshooting/README.md",
+  "target": "documentation/troubleshooting/README.md",
 }
 `;
 
