@@ -1,6 +1,6 @@
 {
-  "name": "@jephilli-patternfly-docs/mcp",
-  "version": "1.1.0",
+  "name": "@cdcabrera/patternfly-mcp",
+  "version": "1.2.0",
   "description": "PatternFly documentation MCP server built with Node.js and TypeScript",
   "main": "dist/index.js",
   "type": "module",
@@ -45,11 +45,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jeff-phillips-18/patternfly-mcp.git"
+    "url": "git+https://github.com/cdcabrera/patternfly-mcp.git"
   },
   "types": "./dist/index.d.ts",
   "bugs": {
-    "url": "https://github.com/jeff-phillips-18/patternfly-mcp/issues"
+    "url": "https://github.com/cdcabrera/patternfly-mcp/issues"
   },
-  "homepage": "https://github.com/jeff-phillips-18/patternfly-mcp#readme"
+  "homepage": "https://github.com/cdcabrera/patternfly-mcp#readme"
 }
