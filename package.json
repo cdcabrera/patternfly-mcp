@@ -30,7 +30,8 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:links": "jest --runTestsByPath tests/docsLinks.test.ts",
-    "update-snapshots": "jest -u"
+    "update-snapshots": "jest -u",
+    "report:link-failures": "tsx scripts/generateLinkFailuresReport.ts"
   },
   "keywords": [
     "mcp",

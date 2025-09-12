@@ -1,5 +1,8 @@
 import { extractTarget, checkHttp, checkFile, type CheckResult } from '../jest.setupTests';
-import { ComponentDocs, LayoutDocs, ChartDocs, LocalReadmes, allDocTargets } from '../src/constants';
+import { LocalReadmes, allDocTargets } from '../src/constants';
+import { ComponentDocs } from '../src/componentDocs';
+import { LayoutDocs } from '../src/layoutDocs';
+import { ChartDocs } from '../src/chartDocs';
 
 const buildTargets = (): { file: string; description: string }[] => {
   const listItems = [...ComponentDocs, ...LayoutDocs, ...ChartDocs];

@@ -7,10 +7,6 @@ export const AccessibilityDir = `${DocsRootDir}/accessibility`;
 
 export const ChartsDocsRootDir = 'https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/packages/react-charts/src';
 
-// Re-export doc arrays so consumers can import from a single module
-export { ComponentDocs } from './componentDocs.js';
-export { LayoutDocs } from './layoutDocs.js';
-export { ChartDocs } from './chartDocs.js';
 
 // Absolute paths to local README files used by the tool description and tests
 const docsRoot = join(process.cwd(), 'documentation');
