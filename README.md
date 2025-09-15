@@ -39,13 +39,13 @@ npm run build
 After publishing to npm, you can use this server directly with npx:
 
 ```bash
-npx @jephilli-patternfly-docs/mcp
+npx @cdcabrera/pf-mcp
 ```
 
 Or if installing locally in a project:
 ```bash
-npm install @jephilli-patternfly-docs/mcp
-npx @jephilli-patternfly-docs/mcp
+npm install @cdcabrera/pf-mcp
+npx @cdcabrera/pf-mcp
 ```
 
 ## Development
@@ -114,7 +114,7 @@ Example configuration for MCP clients using npx (see `mcp-config-example.json`):
   "mcpServers": {
     "patternfly-docs": {
       "command": "npx",
-      "args": ["-y", "@jephilli-patternfly-docs/mcp@latest"]
+      "args": ["-y", "@cdcabrera/pf-mcp@latest"]
       "description": "PatternFly React development rules and documentation"
     }
   }
@@ -214,7 +214,7 @@ npm publish
 
 After publishing, users can run your MCP server with:
 ```bash
-npx @jephilli-patternfly-docs/mcp
+npx @cdcabrera/pf-mcp
 ```
 
 ## Contributing
