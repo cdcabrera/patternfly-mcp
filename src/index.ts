@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import { ComponentDocs } from './ComponentDocs.js';
 import { LayoutDocs } from './LayoutDocs.js';
 import { ChartDocs } from './ChartDocs.js';
+import packageJson from '../package.json' with { type: 'json' };
 
 class PatternflyMcpServer {
   private server: Server;
@@ -21,8 +22,8 @@ class PatternflyMcpServer {
   constructor() {
     this.server = new Server(
       {
-        name: '@jephilli-patternfly-docs/mcp',
-        version: '1.0.0',
+        name: packageJson.name,
+        version: packageJson.version,
       },
       {
         capabilities: {
@@ -126,7 +127,7 @@ class PatternflyMcpServer {
             name: 'usePatternFlyDocs',
             description:
               `You must use this tool to answer any questions related to PatternFly components or documentation.
-               
+
               The description of the tool contains links to .md files or local file paths that the user has made available.
 
               ${ComponentDocs.join('\n')}
@@ -140,7 +141,7 @@ class PatternflyMcpServer {
               [@patternfly/react-resources](${join(this.docsPath, 'resources', 'README.md')})
               [@patternfly/react-setup](${join(this.docsPath, 'setup', 'README.md')})
               [@patternfly/react-troubleshooting](${join(this.docsPath, 'troubleshooting', 'README.md')})
-              
+
               1. Pick the most suitable URL from the above list, and use that as the "urlList" argument for this tool's execution, to get the docs content. If it's just one, let it be an array with one URL.
               2. Analyze the URLs listed in the .md file
               3. Then fetch specific documentation pages relevant to the user's question with the subsequent tool call.`,
