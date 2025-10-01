@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`fetchDocs using local HTTP fixture (offline) fetches local fixture doc and matches normalized snapshot 1`] = `
+{
+  "firstHeader": "# Documentation from http://127.0.0.1:<PORT>/readme",
+  "headerCount": 1,
+  "length": 201,
+  "preview": "# Documentation from http://127.0.0.1:<PORT>/readme
+
+# Example Fixture
+
+This is a local offline fixture used by the MCP external URLs test.
+It includes the token PatternFly to satisfy test assertions.
+",
+  "separatorCount": 0,
+}
+`;

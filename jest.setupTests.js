@@ -20,7 +20,9 @@ function countOccurrences(haystack, needle) {
 }
 
 function normalizeContentResponse(text) {
-  const redacted = redactAbsolutePaths(String(text));
+  let redacted = redactAbsolutePaths(String(text));
+  // Optional: redact ephemeral localhost port for stable snapshots
+  redacted = redacted.replace(/(Documentation from http:\/\/127\.0\.0\.1:)\d+/g, '$1<PORT>');
   const headerMatches = redacted.match(/^# Documentation from .*$/gm) || [];
   const firstHeader = headerMatches[0] || '';
   return {
