@@ -6,7 +6,7 @@
 const { startServer } = require('./utils/stdioClient.js');
 
 describe('--docs-host mode', () => {
-  test('reads llms-files and includes expected tokens', async () => {
+  it('reads llms-files and includes expected tokens', async () => {
     const client = await startServer({ args: ['--docs-host'] });
     try {
       const req = {

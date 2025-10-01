@@ -6,7 +6,7 @@
 const { startServer } = require('./utils/stdioClient.js');
 
 describe('tools/list', () => {
-  test('exposes expected tools and stable shape', async () => {
+  it('exposes expected tools and stable shape', async () => {
     const client = await startServer();
     try {
       const resp = await client.send({ method: 'tools/list' });

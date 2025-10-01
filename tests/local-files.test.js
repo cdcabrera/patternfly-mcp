@@ -6,7 +6,7 @@
 const { startServer } = require('./utils/stdioClient.js');
 
 describe('usePatternFlyDocs (local files)', () => {
-  test('concatenates headers and separator with two local files', async () => {
+  it('concatenates headers and separator with two local files', async () => {
     const client = await startServer();
     try {
       const req = {
