@@ -1,7 +1,7 @@
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/tests/**/*.test.(js|cjs)'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setupTests.cjs'],
+  testMatch: ['<rootDir>/tests/**/*.test.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setupTests.js'],
   testTimeout: 30000,
   verbose: true,
 };

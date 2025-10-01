@@ -3,7 +3,7 @@
  Requires: npm run build prior to running Jest.
 */
 
-const { startServer } = require('./utils/stdioClient.cjs');
+const { startServer } = require('./utils/stdioClient.js');
 
 describe('usePatternFlyDocs (local files)', () => {
   test('concatenates headers and separator with two local files', async () => {

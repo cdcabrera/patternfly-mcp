@@ -17,6 +17,8 @@
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
+    "test:integration": "jest",
+    "test:integration-dev": "jest --watchAll",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",
     "prepare": "npm run build",

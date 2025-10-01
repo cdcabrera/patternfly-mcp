@@ -4,7 +4,7 @@
  Enable with: E2E_INCLUDE_EXTERNAL=1 or provide TEST_EXTERNAL_URL
 */
 
-const { startServer } = require('./utils/stdioClient.cjs');
+const { startServer } = require('./utils/stdioClient.js');
 
 const includeExternal = process.env.E2E_INCLUDE_EXTERNAL === '1' || !!process.env.TEST_EXTERNAL_URL;
 

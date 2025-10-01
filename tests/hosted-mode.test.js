@@ -3,7 +3,7 @@
  Requires: npm run build prior to running Jest.
 */
 
-const { startServer } = require('./utils/stdioClient.cjs');
+const { startServer } = require('./utils/stdioClient.js');
 
 describe('--docs-host mode', () => {
   test('reads llms-files and includes expected tokens', async () => {

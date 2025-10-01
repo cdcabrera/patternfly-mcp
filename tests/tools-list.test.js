@@ -3,7 +3,7 @@
  Requires: npm run build prior to running Jest.
 */
 
-const { startServer } = require('./utils/stdioClient.cjs');
+const { startServer } = require('./utils/stdioClient.js');
 
 describe('tools/list', () => {
   test('exposes expected tools and stable shape', async () => {
