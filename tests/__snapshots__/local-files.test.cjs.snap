@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`usePatternFlyDocs (local files) concatenates headers and separator with two local files 1`] = `
+{
+  "firstHeader": "# Documentation from documentation/guidelines/README.md",
+  "headerCount": 2,
+  "length": 4362,
+  "preview": "# Documentation from documentation/guidelines/README.md
+
+# PatternFly Guidelines
+
+Core development rules for AI coders building PatternFly React applications.
+
+## Related Files
+
+- [**Component Rules**](./component-architecture.md) - Component structure requirements
+- [**Styling Rules**](./styling-st",
+  "separatorCount": 1,
+}
+`;

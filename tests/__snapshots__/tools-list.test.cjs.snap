@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`tools/list exposes expected tools and stable shape 1`] = `
+{
+  "toolNames": [
+    "clearCache",
+    "fetchDocs",
+    "usePatternFlyDocs",
+  ],
+}
+`;

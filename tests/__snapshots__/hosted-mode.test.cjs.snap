@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`--docs-host mode reads llms-files and includes expected tokens 1`] = `
+{
+  "firstHeader": "# Documentation from <PROJECT_ROOT>/llms-files/react-core/6.0.0/llms.txt",
+  "headerCount": 1,
+  "length": 52929,
+  "preview": "# Documentation from <PROJECT_ROOT>/llms-files/react-core/6.0.0/llms.txt
+
+# @patternfly/react-core 6.0.0
+
+## Components
+[@patternfly/AboutModal - Design Guidelines](https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-",
+  "separatorCount": 0,
+}
+`;
