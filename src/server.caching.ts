@@ -9,15 +9,17 @@ import { generateHash, isPromise } from './server.helpers';
  * - `Promises`: Allows for promises and promise-like functions
  * - `Errors`: It's on the consumer to catch function errors and await or process a Promise resolve/reject/catch.
  *
- * @param {Function} func - A function or promise/promise-like function to memoize
- * @param {object} [options] - Configuration options
- * @param {boolean} [options.cacheErrors] - Memoize errors, or don't (default: true)
- * @param {number} [options.cacheLimit] - Number of entries to cache before overwriting previous entries (default: 1)
- * @param {Function} [options.debug] - Debug callback function (default: Function.prototype)
- * @param {number} [options.expire] - Expandable milliseconds until cache expires
- * @returns {Function} Memoized function
+ * @template TArgs - Array of argument types for the function
+ * @template TReturn - Return type of the function
+ * @param func - A function or promise/promise-like function to memoize
+ * @param options - Configuration options
+ * @param options.cacheErrors - Memoize errors, or don't (default: true)
+ * @param options.cacheLimit - Number of entries to cache before overwriting previous entries (default: 1)
+ * @param options.debug - Debug callback function (default: noop)
+ * @param options.expire - Expandable milliseconds until cache expires
+ * @returns Memoized version of the function
  */
-const memo = <TArgs extends any[], TReturn>(
+const memo = <TArgs extends unknown[], TReturn>(
   func: (...args: TArgs) => TReturn,
   {
     cacheErrors = true,

@@ -19,8 +19,9 @@ export default [
       'no-unused-vars': 0,
       'no-undef': 0,
       'import/no-unresolved': 0,
+      'jsdoc/require-param-type': 0,
       'jsdoc/require-returns': 0,
-      'jsdoc/require-param-type': 0
+      'jsdoc/require-returns-type': 0
     }
   },
 

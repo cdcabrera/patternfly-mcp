@@ -147,6 +147,8 @@ export interface PluginContext {
     /**
      * Memoization utility for caching function results
      *
+     * @template TArgs - Array of argument types for the function
+     * @template TReturn - Return type of the function
      * @param func - Function to memoize
      * @param options - Memoization options (cache limit, TTL, etc.)
      * @returns Memoized version of the function
@@ -159,7 +161,7 @@ export interface PluginContext {
      * );
      * ```
      */
-    memo: <TArgs extends any[], TReturn>(
+    memo: <TArgs extends unknown[], TReturn>(
       func: (...args: TArgs) => TReturn,
       options?: MemoOptions
     ) => (...args: TArgs) => TReturn;
