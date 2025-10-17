@@ -19,10 +19,12 @@ interface CliOptions {
   config?: string;
 
   /**
-   * Comma-separated list of plugin package names to load
-   * Example: "@patternfly/mcp-tool-search,@org/my-plugin"
+   * Plugin package names or paths to load
+   * Can be:
+   * - Single comma-separated string: "@patternfly/tool,./local"
+   * - Array from multiple flags: ["@patternfly/tool", "./local"]
    */
-  plugins?: string;
+  plugins?: string | string[];
 
   /**
    * Array of validated plugin names (invalid ones filtered out)
@@ -235,20 +237,32 @@ const validateConfigPath = (configPath: string): void => {
  * Invalid plugins are logged as warnings but don't stop execution.
  * Supports both npm packages and local file paths.
  *
- * @param plugins - Comma-separated plugin names or paths
+ * @param plugins - Plugin names/paths as string (comma-separated) or array
  * @param options - Options for validation behavior
  * @param options.verbose - Enable verbose logging
  * @returns Array of valid plugin names/paths
  */
 const validatePlugins = (
-  plugins: string,
+  plugins: string | string[],
   { verbose = false }: { verbose?: boolean } = {}
 ): string[] => {
-  if (!plugins) {
+  if (!plugins || (Array.isArray(plugins) && plugins.length === 0)) {
     return [];
   }
 
-  const pluginList = plugins.split(',').map(p => p.trim()).filter(Boolean);
+  // Normalize to array: handle both comma-separated string and array input
+  let pluginList: string[];
+
+  if (Array.isArray(plugins)) {
+    // Array input: each element might still contain commas, so split them too
+    pluginList = plugins
+      .flatMap(p => p.split(','))
+      .map(p => p.trim())
+      .filter(Boolean);
+  } else {
+    // String input: split by comma
+    pluginList = plugins.split(',').map(p => p.trim()).filter(Boolean);
+  }
 
   if (pluginList.length === 0) {
     console.warn('⚠️  Plugin list is empty');
@@ -314,6 +328,9 @@ const validatePlugins = (
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   const program = new Command();
 
+  // Custom plugin collector to handle multiple --plugins flags
+  const collectPlugins = (value: string, previous: string[] = []): string[] => [...previous, value];
+
   program
     .name(packageJson.name)
     .description(packageJson.description || 'PatternFly MCP Server')
@@ -327,8 +344,10 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
       'Path to JSON configuration file for server and plugin settings'
     )
     .option(
-      '-p, --plugins <packages>',
-      'Comma-separated list of plugin package names to load (e.g., "@patternfly/mcp-tool-search,@org/my-plugin")'
+      '-p, --plugins <package>',
+      'Plugin package name or path to load. Can be used multiple times or with comma-separated values. ' +
+      'Examples: --plugins "@patternfly/tool" --plugins "./local" OR --plugins "@patternfly/tool,./local"',
+      collectPlugins
     )
     .option(
       '-v, --verbose',

@@ -56,7 +56,7 @@ describe('parseCliOptions', () => {
       expected: {
         docsHost: undefined,
         config: undefined,
-        plugins: '@patternfly/mcp-tool-search',
+        plugins: ['@patternfly/mcp-tool-search'],
         validatedPlugins: ['@patternfly/mcp-tool-search'],
         verbose: undefined
       }
@@ -67,7 +67,7 @@ describe('parseCliOptions', () => {
       expected: {
         docsHost: undefined,
         config: undefined,
-        plugins: '@patternfly/mcp-tool-search,@org/my-plugin',
+        plugins: ['@patternfly/mcp-tool-search,@org/my-plugin'],
         validatedPlugins: ['@patternfly/mcp-tool-search', '@org/my-plugin'],
         verbose: undefined
       }
@@ -88,7 +88,7 @@ describe('parseCliOptions', () => {
       expected: {
         docsHost: true,
         config: undefined,
-        plugins: '@patternfly/tool',
+        plugins: ['@patternfly/tool'],
         validatedPlugins: ['@patternfly/tool'],
         verbose: true
       }
@@ -113,11 +113,53 @@ describe('parseCliOptions', () => {
     const args = ['node', 'script.js', '--plugins', '@valid/plugin,invalid plugin,@another/valid'];
     const result = parseCliOptions(args);
 
-    expect(result.plugins).toBe('@valid/plugin,invalid plugin,@another/valid');
+    expect(result.plugins).toEqual(['@valid/plugin,invalid plugin,@another/valid']);
     expect(result.validatedPlugins).toEqual(['@valid/plugin', '@another/valid']);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Invalid plugin format, skipping: invalid plugin')
     );
+  });
+
+  it('should support multiple --plugins flags', () => {
+    const args = ['node', 'script.js', '--plugins', '@patternfly/tool', '--plugins', './local-plugin'];
+    const result = parseCliOptions(args);
+
+    expect(result.plugins).toEqual(['@patternfly/tool', './local-plugin']);
+    expect(result.validatedPlugins).toEqual(['@patternfly/tool', './local-plugin']);
+  });
+
+  it('should support mixing multiple flags and comma-separated values', () => {
+    const args = [
+      'node',
+      'script.js',
+      '--plugins',
+      '@patternfly/tool-1,@patternfly/tool-2',
+      '--plugins',
+      './local-plugin',
+      '--plugins',
+      '@org/another'
+    ];
+    const result = parseCliOptions(args);
+
+    expect(result.plugins).toEqual([
+      '@patternfly/tool-1,@patternfly/tool-2',
+      './local-plugin',
+      '@org/another'
+    ]);
+    expect(result.validatedPlugins).toEqual([
+      '@patternfly/tool-1',
+      '@patternfly/tool-2',
+      './local-plugin',
+      '@org/another'
+    ]);
+  });
+
+  it('should support short -p flag multiple times', () => {
+    const args = ['node', 'script.js', '-p', '@patternfly/tool', '-p', './local'];
+    const result = parseCliOptions(args);
+
+    expect(result.plugins).toEqual(['@patternfly/tool', './local']);
+    expect(result.validatedPlugins).toEqual(['@patternfly/tool', './local']);
   });
 });
 
@@ -316,6 +358,35 @@ describe('validatePlugins', () => {
 
     expect(result).toEqual(['@patternfly/tool']);
     expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('npm package'));
+  });
+
+  it('should handle array input (multiple --plugins flags)', () => {
+    const result = validatePlugins(['@patternfly/tool', './local-plugin']);
+
+    expect(result).toEqual(['@patternfly/tool', './local-plugin']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should handle array input with comma-separated values in elements', () => {
+    const result = validatePlugins(['@patternfly/tool-1,@patternfly/tool-2', './local']);
+
+    expect(result).toEqual(['@patternfly/tool-1', '@patternfly/tool-2', './local']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should filter invalid plugins from array input', () => {
+    const result = validatePlugins(['@valid/plugin', 'invalid plugin', './local']);
+
+    expect(result).toEqual(['@valid/plugin', './local']);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid plugin format, skipping: invalid plugin')
+    );
+  });
+
+  it('should return empty array for empty array input', () => {
+    const result = validatePlugins([]);
+
+    expect(result).toEqual([]);
   });
 });
 
