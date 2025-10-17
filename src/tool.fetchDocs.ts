@@ -1,9 +1,17 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
+import type { ToolCallbackArgs, ToolCallbackResponse } from './types';
 import { processDocsFunction } from './server.getResources';
 import { OPTIONS } from './options';
 import { memo } from './server.caching';
+
+/**
+ * Tool-specific argument interface
+ */
+interface FetchDocsArgs extends ToolCallbackArgs {
+  urlList: string[];
+}
 
 /**
  * fetchDocs tool function (tuple pattern)
@@ -13,8 +21,8 @@ import { memo } from './server.caching';
 const fetchDocsTool = (options = OPTIONS): McpTool => {
   const memoProcess = memo(processDocsFunction, options.toolMemoOptions.fetchDocs);
 
-  const callback = async (args: any = {}) => {
-    const { urlList } = args;
+  const callback = async (args: ToolCallbackArgs): Promise<ToolCallbackResponse> => {
+    const { urlList } = args as FetchDocsArgs;
 
     if (!urlList || !Array.isArray(urlList)) {
       throw new McpError(

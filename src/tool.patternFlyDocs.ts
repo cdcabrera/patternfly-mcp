@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
+import type { ToolCallbackArgs, ToolCallbackResponse } from './types';
 import { COMPONENT_DOCS } from './docs.component';
 import { LAYOUT_DOCS } from './docs.layout';
 import { CHART_DOCS } from './docs.chart';
@@ -11,6 +12,13 @@ import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 
 /**
+ * Tool-specific argument interface
+ */
+interface UsePatternFlyDocsArgs extends ToolCallbackArgs {
+  urlList: string[];
+}
+
+/**
  * usePatternFlyDocs tool function (tuple pattern)
  *
  * @param options
@@ -18,8 +26,8 @@ import { memo } from './server.caching';
 const usePatternFlyDocsTool = (options = OPTIONS): McpTool => {
   const memoProcess = memo(processDocsFunction, options.toolMemoOptions.usePatternFlyDocs);
 
-  const callback = async (args: any = {}) => {
-    const { urlList } = args;
+  const callback = async (args: ToolCallbackArgs): Promise<ToolCallbackResponse> => {
+    const { urlList } = args as UsePatternFlyDocsArgs;
 
     if (!urlList || !Array.isArray(urlList)) {
       throw new McpError(

@@ -1,11 +1,33 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import type { ZodRawShape } from 'zod';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { OPTIONS } from './options';
+import type { ToolCallback } from './types';
 
-type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
+/**
+ * MCP tool definition tuple
+ *
+ * Format: [name, schema, callback]
+ * - name: Tool identifier (string)
+ * - schema: Tool description and Zod input schema
+ * - callback: Async function handling tool execution
+ */
+type McpTool = [
+  string,
+  {
+    description: string;
+    inputSchema: ZodRawShape;
+  },
+  ToolCallback
+];
 
+/**
+ * Tool creator function
+ *
+ * Returns a tuple defining an MCP tool
+ */
 type McpToolCreator = () => McpTool;
 
 /**

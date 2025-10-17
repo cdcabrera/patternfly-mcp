@@ -25,6 +25,59 @@ export type { McpTool, McpToolCreator } from './server';
 export type { CliOptions } from './options';
 
 // =============================================================================
+// Tool Callback Types
+// =============================================================================
+
+/**
+ * Arguments passed to MCP tool callbacks
+ *
+ * Each tool defines its own argument structure based on its inputSchema.
+ * This is a generic interface that tools can extend or narrow.
+ */
+export interface ToolCallbackArgs {
+  [key: string]: unknown;
+}
+
+/**
+ * Text content item for tool responses
+ */
+export interface TextContent {
+  type: 'text';
+  text: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Image content item for tool responses
+ */
+export interface ImageContent {
+  type: 'image';
+  data: string;
+  mimeType: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Standard MCP tool response format
+ *
+ * Tools must return an object with a content array containing text/image items.
+ * Matches the MCP SDK's expected response structure.
+ */
+export interface ToolCallbackResponse {
+  content: Array<TextContent | ImageContent>;
+  isError?: boolean;
+  [key: string]: unknown;
+}
+
+/**
+ * Type-safe tool callback function signature
+ *
+ * @param args - Arguments object (validated by Zod schema)
+ * @returns Promise resolving to standard response format
+ */
+export type ToolCallback = (args: ToolCallbackArgs) => Promise<ToolCallbackResponse>;
+
+// =============================================================================
 // Memoization Types
 // =============================================================================
 
@@ -236,7 +289,7 @@ export interface PluginContext {
  *
  *   return () => {
  *     // Tool registration logic here
- *     const callback = async (args: any) => {
+ *     const callback = async (args: ToolCallbackArgs) => {
  *       const { query } = args;
  *
  *       // Use context utilities

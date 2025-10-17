@@ -36,7 +36,7 @@ const memo = <TArgs extends any[], TReturn>(
   const updatedExpire = Number.parseInt(String(expire), 10) || undefined;
 
   const ized = function () {
-    const cache: any[] = [];
+    const cache: unknown[] = [];
     let timeout: NodeJS.Timeout | undefined;
 
     return (...args: TArgs): TReturn => {
@@ -71,7 +71,7 @@ const memo = <TArgs extends any[], TReturn>(
         if (isFuncPromise) {
           const promiseResolve = Promise
             .resolve(func.call(null, ...args))
-            .catch((error: any) => {
+            .catch((error: unknown) => {
               const promiseKeyIndex = cache.indexOf(key);
 
               if (isCacheErrors === false && promiseKeyIndex >= 0) {
@@ -86,11 +86,11 @@ const memo = <TArgs extends any[], TReturn>(
           try {
             cache.unshift(key, func.call(null, ...args));
           } catch (error) {
-            const errorFunc = () => {
+            const errorFunc = (() => {
               throw error;
-            };
+            }) as TReturn & { isError: boolean };
 
-            (errorFunc as any).isError = true;
+            errorFunc.isError = true;
             cache.unshift(key, errorFunc);
           }
         }
@@ -105,7 +105,10 @@ const memo = <TArgs extends any[], TReturn>(
       const updatedKeyIndex = cache.indexOf(key);
       const cachedValue = cache[updatedKeyIndex + 1];
 
-      if (cachedValue?.isError === true) {
+      // Type guard for error function
+      const isErrorValue = (value: unknown): value is TReturn & { isError: boolean; (): never } => typeof value === 'function' && (value as { isError?: boolean }).isError === true;
+
+      if (isErrorValue(cachedValue)) {
         if (isCacheErrors === false) {
           cache.splice(updatedKeyIndex, 2);
         }
@@ -125,7 +128,7 @@ const memo = <TArgs extends any[], TReturn>(
         cache: [...cache]
       });
 
-      return cachedValue;
+      return cachedValue as TReturn;
     };
   };
 
