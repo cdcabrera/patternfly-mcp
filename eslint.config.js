@@ -5,7 +5,8 @@ export default [
   // Ignore patterns, config toolkit ignores gitignored files by default
   {
     ignores: [
-      '*.d.ts'
+      '*.d.ts',
+      '**/__fixtures__/**'
     ]
   },
 

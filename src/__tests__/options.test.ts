@@ -162,7 +162,7 @@ describe('parseCliOptions', () => {
 });
 
 describe('validateConfigPath', () => {
-  const testDir = join(process.cwd(), '.test-configs');
+  const testDir = join(__dirname, '__fixtures__', 'configs');
   const validConfig = join(testDir, 'valid.json');
   const invalidJsonConfig = join(testDir, 'invalid.json');
   const nonJsonConfig = join(testDir, 'config.txt');
