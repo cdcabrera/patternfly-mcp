@@ -137,8 +137,8 @@ exports[`options should return specific properties 1`] = `
   },
   "URL_REGEX": /\\^\\(https\\?:\\)\\\\/\\\\//i,
   "freezeOptions": [Function],
+  "normalizePlugins": [Function],
   "parseCliOptions": [Function],
   "validateConfigPath": [Function],
-  "validatePlugins": [Function],
 }
 `;

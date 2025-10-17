@@ -232,17 +232,17 @@ const validateConfigPath = (configPath: string): void => {
 };
 
 /**
- * Validate plugin names and return valid ones
+ * Normalize plugin list from CLI input
  *
- * Invalid plugins are logged as warnings but don't stop execution.
- * Supports both npm packages and local file paths.
+ * Performs minimal validation (non-empty strings only).
+ * Actual resolution happens lazily when loading plugins.
  *
  * @param plugins - Plugin names/paths as string (comma-separated) or array
- * @param options - Options for validation behavior
+ * @param options - Options for normalization behavior
  * @param options.verbose - Enable verbose logging
- * @returns Array of valid plugin names/paths
+ * @returns Array of normalized plugin names/paths (whitespace trimmed, empty filtered)
  */
-const validatePlugins = (
+const normalizePlugins = (
   plugins: string | string[],
   { verbose = false }: { verbose?: boolean } = {}
 ): string[] => {
@@ -270,53 +270,27 @@ const validatePlugins = (
     return [];
   }
 
-  const validPlugins: string[] = [];
+  // Basic validation: just ensure non-empty strings
+  const normalized = pluginList.filter(plugin => {
+    if (typeof plugin !== 'string' || plugin.length === 0) {
+      console.warn(`⚠️  Skipping invalid plugin entry: ${plugin}`);
 
-  // Validate each plugin name/path format
-  for (const plugin of pluginList) {
-    let isValid = false;
-    let pluginType = '';
-
-    // Check for local file path (relative or absolute)
-    // Supports: ./path, ../path, /absolute/path, ~/path (Unix), C:\path (Windows)
-    if (
-      plugin.startsWith('./') ||
-      plugin.startsWith('../') ||
-      plugin.startsWith('/') ||
-      plugin.startsWith('~/') ||
-      /^[a-z]:\\/i.test(plugin) // Windows absolute paths (C:\, D:\, etc.)
-    ) {
-      isValid = true;
-      pluginType = 'local path';
-    } else if (/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/i.test(plugin)) {
-      // Check for npm package name format
-      // Allows: @scope/name, name, name-with-dashes, @scope/name-with-dashes
-      isValid = true;
-      pluginType = 'npm package';
+      return false;
     }
 
-    if (!isValid) {
-      console.error(`❌ Invalid plugin format, skipping: ${plugin}`);
+    return true;
+  });
 
-      if (verbose) {
-        console.error('   Valid formats:');
-        console.error('     - npm package: @scope/package-name or package-name');
-        console.error('     - local path: ./path/to/plugin, ../path/to/plugin, or /absolute/path');
-      }
-    } else {
-      validPlugins.push(plugin);
-
-      if (verbose) {
-        console.info(`✓ Valid plugin (${pluginType}): ${plugin}`);
-      }
-    }
+  if (verbose && normalized.length > 0) {
+    console.info(`✓ Normalized ${normalized.length} plugin(s):`);
+    normalized.forEach(p => console.info(`  - ${p}`));
   }
 
-  if (validPlugins.length === 0) {
+  if (normalized.length === 0) {
     console.warn('⚠️  No valid plugins found in the provided list');
   }
 
-  return validPlugins;
+  return normalized;
 };
 
 /**
@@ -376,18 +350,18 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     validateConfigPath(options.config);
   }
 
-  // Validate plugins (filters invalid, returns valid list)
-  let validatedPlugins: string[] = [];
+  // Normalize plugins (light validation, actual resolution happens on load)
+  let normalizedPlugins: string[] = [];
 
   if (options.plugins) {
-    validatedPlugins = validatePlugins(options.plugins, { verbose: options.verbose });
+    normalizedPlugins = normalizePlugins(options.plugins, { verbose: options.verbose });
   }
 
   return {
     docsHost: options.docsHost,
     config: options.config,
-    plugins: options.plugins, // Keep original string for now
-    validatedPlugins, // Add validated array for Part 3
+    plugins: options.plugins, // Keep original for reference
+    validatedPlugins: normalizedPlugins, // Normalized list for Part 3
     verbose: options.verbose
   };
 };
@@ -409,7 +383,7 @@ export {
   parseCliOptions,
   freezeOptions,
   validateConfigPath,
-  validatePlugins,
+  normalizePlugins,
   OPTIONS,
   PF_EXTERNAL,
   PF_EXTERNAL_CHARTS,
