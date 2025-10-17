@@ -30,4 +30,12 @@ if (process.env.NODE_ENV !== 'local') {
   });
 }
 
+// =============================================================================
+// Exports
+// =============================================================================
+
+// Main entry point
 export { main };
+
+// Export all public types for plugin authors and consumers
+export type * from './types';

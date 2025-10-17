@@ -9,6 +9,15 @@
     "pf-mcp": "dist/index.js",
     "pfmcp": "dist/index.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts"
+    }
+  },
   "files": [
     "dist/**/*",
     "documentation/**/*",
