@@ -195,6 +195,14 @@ export interface PluginContext {
      * ```
      */
     readFile: (filePath: string) => Promise<string>;
+
+    /**
+     * Resolve a local path depending on docs host flag
+     *
+     * @param relativeOrAbsolute - Relative or absolute path
+     * @returns Resolved absolute path
+     */
+    resolveLocalPath: (relativeOrAbsolute: string) => string;
   };
 
   /**
@@ -232,6 +240,16 @@ export interface PluginContext {
      * ```
      */
     pluginOptions?: Record<string, any>;
+  };
+
+  /**
+   * Logging utilities
+   */
+  logger: {
+    info: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+    debug: (...args: unknown[]) => void;
   };
 
   /**

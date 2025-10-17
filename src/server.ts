@@ -5,6 +5,8 @@ import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { OPTIONS } from './options';
 import type { ToolCallback } from './types';
+import { loadPlugin } from './plugin-loader';
+import { buildPluginContext } from './plugin-context';
 
 /**
  * MCP tool definition tuple
@@ -36,13 +38,15 @@ type McpToolCreator = () => McpTool;
  * @param options
  * @param settings
  * @param settings.tools
+ * @param settings.serverConfig
  */
 const runServer = async (options = OPTIONS, {
   tools = [
     usePatternFlyDocsTool,
     fetchDocsTool
-  ]
-}: { tools?: McpToolCreator[] } = {}): Promise<void> => {
+  ],
+  serverConfig = {}
+}: { tools?: McpToolCreator[]; serverConfig?: Record<string, unknown> } = {}): Promise<void> => {
   try {
     const server = new McpServer(
       {
@@ -56,12 +60,41 @@ const runServer = async (options = OPTIONS, {
       }
     );
 
+    // Register core tools
     tools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator();
 
       console.info(`Registered tool: ${name}`);
       server.registerTool(name, schema, callback);
     });
+
+    // Load and register plugins
+    const pluginsToLoad = options.validatedPlugins || [];
+
+    if (pluginsToLoad.length > 0) {
+      console.info(`Loading ${pluginsToLoad.length} plugin(s)...`);
+
+      // Build plugin context
+      const pluginContext = buildPluginContext(serverConfig, options);
+
+      // Load each plugin
+      for (const pluginPath of pluginsToLoad) {
+        const toolCreator = await loadPlugin(
+          pluginPath,
+          pluginContext,
+          options.verbose ? { verbose: true } : {}
+        );
+
+        if (toolCreator) {
+          // Register plugin tool
+          const [name, schema, callback] = toolCreator();
+
+          console.info(`Registered plugin tool: ${name}`);
+          server.registerTool(name, schema, callback);
+        }
+        // If null, error already logged by loadPlugin
+      }
+    }
 
     process.on('SIGINT', async () => {
       await server?.close();

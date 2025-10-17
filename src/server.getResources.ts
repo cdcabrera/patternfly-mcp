@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile as fsReadFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { OPTIONS } from './options';
 import { memo } from './server.caching';
@@ -8,7 +8,7 @@ import { memo } from './server.caching';
  *
  * @param filePath
  */
-const readLocalFileFunction = async (filePath: string) => await readFile(filePath, 'utf-8');
+const readLocalFileFunction = async (filePath: string): Promise<string> => await fsReadFile(filePath, 'utf-8');
 
 /**
  * Memoized version of readLocalFileFunction
@@ -110,4 +110,21 @@ const processDocsFunction = async (
   return parts.join(options.separator);
 };
 
-export { readLocalFileFunction, fetchUrlFunction, resolveLocalPathFunction, processDocsFunction };
+/**
+ * Memoized fetch URL function for plugins
+ */
+const fetchUrl: (url: string) => Promise<string> = fetchUrlFunction.memo;
+
+/**
+ * Memoized read file function for plugins
+ */
+const readFile: (filePath: string) => Promise<string> = readLocalFileFunction.memo;
+
+export {
+  readLocalFileFunction,
+  fetchUrlFunction,
+  resolveLocalPathFunction,
+  processDocsFunction,
+  fetchUrl,
+  readFile
+};
