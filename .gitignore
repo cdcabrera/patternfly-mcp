@@ -62,6 +62,4 @@ coverage/
 .archive
 .agent
 
-# Test fixtures
-__fixtures__/
 
