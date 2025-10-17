@@ -12,21 +12,33 @@ describe('options', () => {
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
+  let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
+  let consoleInfoSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation();
+  });
 
   afterEach(() => {
     process.argv = originalArgv;
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleInfoSpy.mockRestore();
   });
 
   it.each([
     {
       description: 'with --docs-host flag',
       args: ['node', 'script.js', '--docs-host'],
-      expected: { docsHost: true, config: undefined, plugins: undefined, verbose: undefined }
+      expected: { docsHost: true, config: undefined, plugins: undefined, validatedPlugins: [], verbose: undefined }
     },
     {
       description: 'without any flags',
       args: ['node', 'script.js'],
-      expected: { docsHost: undefined, config: undefined, plugins: undefined, verbose: undefined }
+      expected: { docsHost: undefined, config: undefined, plugins: undefined, validatedPlugins: [], verbose: undefined }
     },
     {
       description: 'with --config flag',
@@ -41,27 +53,45 @@ describe('parseCliOptions', () => {
     {
       description: 'with --plugins flag',
       args: ['node', 'script.js', '--plugins', '@patternfly/mcp-tool-search'],
-      expected: { docsHost: undefined, config: undefined, plugins: '@patternfly/mcp-tool-search', verbose: undefined }
+      expected: {
+        docsHost: undefined,
+        config: undefined,
+        plugins: '@patternfly/mcp-tool-search',
+        validatedPlugins: ['@patternfly/mcp-tool-search'],
+        verbose: undefined
+      }
     },
     {
       description: 'with short -p plugins flag',
       args: ['node', 'script.js', '-p', '@patternfly/mcp-tool-search,@org/my-plugin'],
-      expected: { docsHost: undefined, config: undefined, plugins: '@patternfly/mcp-tool-search,@org/my-plugin', verbose: undefined }
+      expected: {
+        docsHost: undefined,
+        config: undefined,
+        plugins: '@patternfly/mcp-tool-search,@org/my-plugin',
+        validatedPlugins: ['@patternfly/mcp-tool-search', '@org/my-plugin'],
+        verbose: undefined
+      }
     },
     {
       description: 'with --verbose flag',
       args: ['node', 'script.js', '--verbose'],
-      expected: { docsHost: undefined, config: undefined, plugins: undefined, verbose: true }
+      expected: { docsHost: undefined, config: undefined, plugins: undefined, validatedPlugins: [], verbose: true }
     },
     {
       description: 'with short -v verbose flag',
       args: ['node', 'script.js', '-v'],
-      expected: { docsHost: undefined, config: undefined, plugins: undefined, verbose: true }
+      expected: { docsHost: undefined, config: undefined, plugins: undefined, validatedPlugins: [], verbose: true }
     },
     {
       description: 'with multiple flags',
       args: ['node', 'script.js', '--docs-host', '--verbose', '--plugins', '@patternfly/tool'],
-      expected: { docsHost: true, config: undefined, plugins: '@patternfly/tool', verbose: true }
+      expected: {
+        docsHost: true,
+        config: undefined,
+        plugins: '@patternfly/tool',
+        validatedPlugins: ['@patternfly/tool'],
+        verbose: true
+      }
     }
   ])('should parse CLI arguments: $description', ({ args, expected, shouldThrow }) => {
     if (shouldThrow) {
@@ -77,6 +107,17 @@ describe('parseCliOptions', () => {
     const args = ['node', 'script.js', '--unknown-option'];
 
     expect(() => parseCliOptions(args)).toThrow();
+  });
+
+  it('should filter invalid plugins and continue', () => {
+    const args = ['node', 'script.js', '--plugins', '@valid/plugin,invalid plugin,@another/valid'];
+    const result = parseCliOptions(args);
+
+    expect(result.plugins).toBe('@valid/plugin,invalid plugin,@another/valid');
+    expect(result.validatedPlugins).toEqual(['@valid/plugin', '@another/valid']);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid plugin name format, skipping: invalid plugin')
+    );
   });
 });
 
@@ -127,36 +168,98 @@ describe('validateConfigPath', () => {
 });
 
 describe('validatePlugins', () => {
-  it('should pass for valid single plugin', () => {
-    expect(() => validatePlugins('@patternfly/mcp-tool-search')).not.toThrow();
+  // Suppress console output during tests
+  let consoleErrorSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
+  let consoleInfoSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation();
   });
 
-  it('should pass for valid multiple plugins', () => {
-    expect(() => validatePlugins('@patternfly/tool-1,@org/tool-2,simple-plugin')).not.toThrow();
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleInfoSpy.mockRestore();
   });
 
-  it('should pass for plugin with dashes and dots', () => {
-    expect(() => validatePlugins('@scope/plugin-name.test')).not.toThrow();
+  it('should return valid plugins for valid single plugin', () => {
+    const result = validatePlugins('@patternfly/mcp-tool-search');
+
+    expect(result).toEqual(['@patternfly/mcp-tool-search']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw for invalid plugin name (spaces)', () => {
-    expect(() => validatePlugins('invalid plugin')).toThrow('Invalid plugin name format');
+  it('should return valid plugins for valid multiple plugins', () => {
+    const result = validatePlugins('@patternfly/tool-1,@org/tool-2,simple-plugin');
+
+    expect(result).toEqual(['@patternfly/tool-1', '@org/tool-2', 'simple-plugin']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw for invalid plugin name (special chars)', () => {
-    expect(() => validatePlugins('@scope/plugin$name')).toThrow('Invalid plugin name format');
+  it('should return valid plugins for plugin with dashes and dots', () => {
+    const result = validatePlugins('@scope/plugin-name.test');
+
+    expect(result).toEqual(['@scope/plugin-name.test']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('should throw for empty plugin list', () => {
-    expect(() => validatePlugins('   ,  ,  ')).toThrow('Plugin list is empty');
+  it('should skip invalid plugin name (spaces) and log error', () => {
+    const result = validatePlugins('invalid plugin');
+
+    expect(result).toEqual([]);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid plugin name format, skipping: invalid plugin')
+    );
   });
 
-  it('should not throw for empty string', () => {
-    expect(() => validatePlugins('')).not.toThrow();
+  it('should skip invalid plugin name (special chars) and log error', () => {
+    const result = validatePlugins('@scope/plugin$name');
+
+    expect(result).toEqual([]);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid plugin name format, skipping: @scope/plugin$name')
+    );
   });
 
-  it('should throw for one invalid in a list', () => {
-    expect(() => validatePlugins('@valid/plugin,invalid plugin,@another/valid')).toThrow('Invalid plugin name format');
+  it('should return empty array for empty plugin list and warn', () => {
+    const result = validatePlugins('   ,  ,  ');
+
+    expect(result).toEqual([]);
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Plugin list is empty'));
+  });
+
+  it('should return empty array for empty string', () => {
+    const result = validatePlugins('');
+
+    expect(result).toEqual([]);
+  });
+
+  it('should filter out invalid and return valid plugins', () => {
+    const result = validatePlugins('@valid/plugin,invalid plugin,@another/valid');
+
+    expect(result).toEqual(['@valid/plugin', '@another/valid']);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid plugin name format, skipping: invalid plugin')
+    );
+  });
+
+  it('should show verbose output when enabled', () => {
+    const result = validatePlugins('@valid/plugin', { verbose: true });
+
+    expect(result).toEqual(['@valid/plugin']);
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Valid plugin name: @valid/plugin'));
+  });
+
+  it('should show detailed error in verbose mode', () => {
+    const result = validatePlugins('invalid$plugin', { verbose: true });
+
+    expect(result).toEqual([]);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid plugin name format'));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Valid format:'));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Allowed:'));
   });
 });
 

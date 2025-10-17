@@ -25,6 +25,12 @@ interface CliOptions {
   plugins?: string;
 
   /**
+   * Array of validated plugin names (invalid ones filtered out)
+   * This is populated by validatePlugins() during parsing
+   */
+  validatedPlugins?: string[];
+
+  /**
    * Enable verbose logging for debugging
    */
   verbose?: boolean;
@@ -224,21 +230,32 @@ const validateConfigPath = (configPath: string): void => {
 };
 
 /**
- * Validate plugin names if provided
+ * Validate plugin names and return valid ones
+ *
+ * Invalid plugins are logged as warnings but don't stop execution.
  *
  * @param plugins - Comma-separated plugin names
- * @throws Error if plugin names are invalid
+ * @param options - Options for validation behavior
+ * @param options.verbose - Enable verbose logging
+ * @returns Array of valid plugin names
  */
-const validatePlugins = (plugins: string): void => {
+const validatePlugins = (
+  plugins: string,
+  { verbose = false }: { verbose?: boolean } = {}
+): string[] => {
   if (!plugins) {
-    return;
+    return [];
   }
 
   const pluginList = plugins.split(',').map(p => p.trim()).filter(Boolean);
 
   if (pluginList.length === 0) {
-    throw new Error('Plugin list is empty');
+    console.warn('⚠️  Plugin list is empty');
+
+    return [];
   }
+
+  const validPlugins: string[] = [];
 
   // Validate each plugin name format
   for (const plugin of pluginList) {
@@ -247,9 +264,26 @@ const validatePlugins = (plugins: string): void => {
     const isValid = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/i.test(plugin);
 
     if (!isValid) {
-      throw new Error(`Invalid plugin name format: ${plugin}`);
+      console.error(`❌ Invalid plugin name format, skipping: ${plugin}`);
+
+      if (verbose) {
+        console.error('   Valid format: @scope/package-name or package-name');
+        console.error('   Allowed: letters, numbers, dashes, dots, underscores');
+      }
+    } else {
+      validPlugins.push(plugin);
+
+      if (verbose) {
+        console.info(`✓ Valid plugin name: ${plugin}`);
+      }
     }
   }
+
+  if (validPlugins.length === 0) {
+    console.warn('⚠️  No valid plugins found in the provided list');
+  }
+
+  return validPlugins;
 };
 
 /**
@@ -299,19 +333,23 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
 
   const options = program.opts();
 
-  // Validate options
+  // Validate config file (throws on error - config must be valid)
   if (options.config) {
     validateConfigPath(options.config);
   }
 
+  // Validate plugins (filters invalid, returns valid list)
+  let validatedPlugins: string[] = [];
+
   if (options.plugins) {
-    validatePlugins(options.plugins);
+    validatedPlugins = validatePlugins(options.plugins, { verbose: options.verbose });
   }
 
   return {
     docsHost: options.docsHost,
     config: options.config,
-    plugins: options.plugins,
+    plugins: options.plugins, // Keep original string for now
+    validatedPlugins, // Add validated array for Part 3
     verbose: options.verbose
   };
 };
