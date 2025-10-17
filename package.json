@@ -53,12 +53,13 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.19.1",
+    "commander": "^14.0.1",
     "zod": "3.25.76"
   },
   "devDependencies": {
     "@cdcabrera/eslint-config-toolkit": "^0.2.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.18.11",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "eslint": "^9.37.0",

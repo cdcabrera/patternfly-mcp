@@ -1,12 +1,33 @@
-import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { Command } from 'commander';
 import packageJson from '../package.json';
 
 /**
  * CLI options that users can set via command line arguments
  */
 interface CliOptions {
+
+  /**
+   * Use llms.txt files from local llms-files directory instead of live documentation
+   */
   docsHost?: boolean;
-  // Future CLI options can be added here
+
+  /**
+   * Path to JSON configuration file for server and plugin settings
+   */
+  config?: string;
+
+  /**
+   * Comma-separated list of plugin package names to load
+   * Example: "@patternfly/mcp-tool-search,@org/my-plugin"
+   */
+  plugins?: string;
+
+  /**
+   * Enable verbose logging for debugging
+   */
+  verbose?: boolean;
 }
 
 /**
@@ -168,12 +189,132 @@ const OPTIONS: GlobalOptions = {
 };
 
 /**
- * Parse CLI arguments and return CLI options
+ * Validate config file path if provided
+ *
+ * @param configPath - Path to config file
+ * @throws Error if config file doesn't exist or isn't JSON
  */
-const parseCliOptions = (): CliOptions => ({
-  docsHost: process.argv.includes('--docs-host')
-  // Future CLI options can be added here
-});
+const validateConfigPath = (configPath: string): void => {
+  if (!configPath) {
+    return;
+  }
+
+  try {
+    const resolvedPath = resolve(configPath);
+
+    if (!existsSync(resolvedPath)) {
+      throw new Error(`Config file not found: ${resolvedPath}`);
+    }
+
+    if (!resolvedPath.endsWith('.json')) {
+      throw new Error(`Config file must be a JSON file: ${resolvedPath}`);
+    }
+
+    // Try to parse to ensure it's valid JSON
+    const content = readFileSync(resolvedPath, 'utf-8');
+
+    JSON.parse(content);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Invalid config file: ${error.message}`);
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Validate plugin names if provided
+ *
+ * @param plugins - Comma-separated plugin names
+ * @throws Error if plugin names are invalid
+ */
+const validatePlugins = (plugins: string): void => {
+  if (!plugins) {
+    return;
+  }
+
+  const pluginList = plugins.split(',').map(p => p.trim()).filter(Boolean);
+
+  if (pluginList.length === 0) {
+    throw new Error('Plugin list is empty');
+  }
+
+  // Validate each plugin name format
+  for (const plugin of pluginList) {
+    // Check for valid npm package name format
+    // Allows: @scope/name, name, name-with-dashes, @scope/name-with-dashes
+    const isValid = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/i.test(plugin);
+
+    if (!isValid) {
+      throw new Error(`Invalid plugin name format: ${plugin}`);
+    }
+  }
+};
+
+/**
+ * Parse CLI arguments using Commander and return CLI options
+ *
+ * @param argv - Process arguments (defaults to process.argv)
+ * @returns Parsed CLI options
+ */
+const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
+  const program = new Command();
+
+  program
+    .name(packageJson.name)
+    .description(packageJson.description || 'PatternFly MCP Server')
+    .version(packageJson.version)
+    .option(
+      '--docs-host',
+      'Use llms.txt files from local llms-files directory instead of live documentation'
+    )
+    .option(
+      '-c, --config <path>',
+      'Path to JSON configuration file for server and plugin settings'
+    )
+    .option(
+      '-p, --plugins <packages>',
+      'Comma-separated list of plugin package names to load (e.g., "@patternfly/mcp-tool-search,@org/my-plugin")'
+    )
+    .option(
+      '-v, --verbose',
+      'Enable verbose logging for debugging'
+    )
+    .allowUnknownOption(false)
+    .showHelpAfterError(true)
+    .exitOverride(); // Throw errors instead of calling process.exit() - better for testing
+
+  // Parse arguments
+  try {
+    program.parse(argv);
+  } catch (error) {
+    // Re-throw Commander errors as regular errors for better test handling
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+
+    throw error;
+  }
+
+  const options = program.opts();
+
+  // Validate options
+  if (options.config) {
+    validateConfigPath(options.config);
+  }
+
+  if (options.plugins) {
+    validatePlugins(options.plugins);
+  }
+
+  return {
+    docsHost: options.docsHost,
+    config: options.config,
+    plugins: options.plugins,
+    verbose: options.verbose
+  };
+};
 
 /**
  * Make global options immutable after combining CLI options with app defaults.
@@ -191,6 +332,8 @@ const freezeOptions = (cliOptions: CliOptions) => {
 export {
   parseCliOptions,
   freezeOptions,
+  validateConfigPath,
+  validatePlugins,
   OPTIONS,
   PF_EXTERNAL,
   PF_EXTERNAL_CHARTS,
