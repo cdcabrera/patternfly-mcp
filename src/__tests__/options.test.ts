@@ -116,7 +116,7 @@ describe('parseCliOptions', () => {
     expect(result.plugins).toBe('@valid/plugin,invalid plugin,@another/valid');
     expect(result.validatedPlugins).toEqual(['@valid/plugin', '@another/valid']);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid plugin name format, skipping: invalid plugin')
+      expect.stringContaining('Invalid plugin format, skipping: invalid plugin')
     );
   });
 });
@@ -211,7 +211,7 @@ describe('validatePlugins', () => {
 
     expect(result).toEqual([]);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid plugin name format, skipping: invalid plugin')
+      expect.stringContaining('Invalid plugin format, skipping: invalid plugin')
     );
   });
 
@@ -220,7 +220,7 @@ describe('validatePlugins', () => {
 
     expect(result).toEqual([]);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid plugin name format, skipping: @scope/plugin$name')
+      expect.stringContaining('Invalid plugin format, skipping: @scope/plugin$name')
     );
   });
 
@@ -242,7 +242,7 @@ describe('validatePlugins', () => {
 
     expect(result).toEqual(['@valid/plugin', '@another/valid']);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid plugin name format, skipping: invalid plugin')
+      expect.stringContaining('Invalid plugin format, skipping: invalid plugin')
     );
   });
 
@@ -250,16 +250,72 @@ describe('validatePlugins', () => {
     const result = validatePlugins('@valid/plugin', { verbose: true });
 
     expect(result).toEqual(['@valid/plugin']);
-    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Valid plugin name: @valid/plugin'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('Valid plugin'));
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('@valid/plugin'));
   });
 
   it('should show detailed error in verbose mode', () => {
     const result = validatePlugins('invalid$plugin', { verbose: true });
 
     expect(result).toEqual([]);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid plugin name format'));
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Valid format:'));
-    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Allowed:'));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Invalid plugin format'));
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Valid formats:'));
+  });
+
+  it('should accept relative local paths (./)', () => {
+    const result = validatePlugins('./my-plugin.js');
+
+    expect(result).toEqual(['./my-plugin.js']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should accept relative local paths (../)', () => {
+    const result = validatePlugins('../plugins/custom-tool');
+
+    expect(result).toEqual(['../plugins/custom-tool']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should accept absolute Unix paths', () => {
+    const result = validatePlugins('/absolute/path/to/plugin');
+
+    expect(result).toEqual(['/absolute/path/to/plugin']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should accept home directory paths', () => {
+    const result = validatePlugins('~/plugins/my-tool');
+
+    expect(result).toEqual(['~/plugins/my-tool']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should accept Windows absolute paths', () => {
+    const result = validatePlugins('C:\\Users\\dev\\plugins\\tool.js');
+
+    expect(result).toEqual(['C:\\Users\\dev\\plugins\\tool.js']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should accept mixed npm and local plugins', () => {
+    const result = validatePlugins('@patternfly/tool,./local-plugin,@org/another,../other-plugin');
+
+    expect(result).toEqual(['@patternfly/tool', './local-plugin', '@org/another', '../other-plugin']);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it('should show plugin type in verbose mode for local path', () => {
+    const result = validatePlugins('./my-plugin', { verbose: true });
+
+    expect(result).toEqual(['./my-plugin']);
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('local path'));
+  });
+
+  it('should show plugin type in verbose mode for npm package', () => {
+    const result = validatePlugins('@patternfly/tool', { verbose: true });
+
+    expect(result).toEqual(['@patternfly/tool']);
+    expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('npm package'));
   });
 });
 

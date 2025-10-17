@@ -233,11 +233,12 @@ const validateConfigPath = (configPath: string): void => {
  * Validate plugin names and return valid ones
  *
  * Invalid plugins are logged as warnings but don't stop execution.
+ * Supports both npm packages and local file paths.
  *
- * @param plugins - Comma-separated plugin names
+ * @param plugins - Comma-separated plugin names or paths
  * @param options - Options for validation behavior
  * @param options.verbose - Enable verbose logging
- * @returns Array of valid plugin names
+ * @returns Array of valid plugin names/paths
  */
 const validatePlugins = (
   plugins: string,
@@ -257,24 +258,42 @@ const validatePlugins = (
 
   const validPlugins: string[] = [];
 
-  // Validate each plugin name format
+  // Validate each plugin name/path format
   for (const plugin of pluginList) {
-    // Check for valid npm package name format
-    // Allows: @scope/name, name, name-with-dashes, @scope/name-with-dashes
-    const isValid = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/i.test(plugin);
+    let isValid = false;
+    let pluginType = '';
+
+    // Check for local file path (relative or absolute)
+    // Supports: ./path, ../path, /absolute/path, ~/path (Unix), C:\path (Windows)
+    if (
+      plugin.startsWith('./') ||
+      plugin.startsWith('../') ||
+      plugin.startsWith('/') ||
+      plugin.startsWith('~/') ||
+      /^[a-z]:\\/i.test(plugin) // Windows absolute paths (C:\, D:\, etc.)
+    ) {
+      isValid = true;
+      pluginType = 'local path';
+    } else if (/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/i.test(plugin)) {
+      // Check for npm package name format
+      // Allows: @scope/name, name, name-with-dashes, @scope/name-with-dashes
+      isValid = true;
+      pluginType = 'npm package';
+    }
 
     if (!isValid) {
-      console.error(`❌ Invalid plugin name format, skipping: ${plugin}`);
+      console.error(`❌ Invalid plugin format, skipping: ${plugin}`);
 
       if (verbose) {
-        console.error('   Valid format: @scope/package-name or package-name');
-        console.error('   Allowed: letters, numbers, dashes, dots, underscores');
+        console.error('   Valid formats:');
+        console.error('     - npm package: @scope/package-name or package-name');
+        console.error('     - local path: ./path/to/plugin, ../path/to/plugin, or /absolute/path');
       }
     } else {
       validPlugins.push(plugin);
 
       if (verbose) {
-        console.info(`✓ Valid plugin name: ${plugin}`);
+        console.info(`✓ Valid plugin (${pluginType}): ${plugin}`);
       }
     }
   }
