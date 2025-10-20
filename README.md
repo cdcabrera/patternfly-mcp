@@ -17,7 +17,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 ## Prerequisites
 
-- Node.js 18.0.0 or higher
+- Node.js 20.0.0 or higher
 - npm (or another Node package manager)
 
 ## Installation
@@ -45,14 +45,14 @@ npm run start:dev
 ### Use via npx (after publishing)
 
 ```bash
-npx @jephilli-patternfly-docs/mcp
+npx @cdcabrera/pf-mcp
 ```
 
 Or install locally in a project and run:
 
 ```bash
-npm install @jephilli-patternfly-docs/mcp
-npx @jephilli-patternfly-docs/mcp
+npm install @cdcabrera/pf-mcp
+npx @cdcabrera/pf-mcp
 ```
 
 ## Scripts
@@ -111,7 +111,7 @@ If you run the server with --docs-host, local paths you pass in urlList are reso
 Example:
 
 ```bash
-npx @jephilli-patternfly-docs/mcp --docs-host
+npx @cdcabrera/pf-mcp --docs-host
 ```
 
 Then, passing a local path such as react-core/6.0.0/llms.txt in urlList will load from llms-files/react-core/6.0.0/llms.txt.
@@ -127,7 +127,7 @@ Most MCP clients use a JSON configuration that tells the client how to start thi
   "mcpServers": {
     "patternfly-docs": {
       "command": "npx",
-      "args": ["-y", "@jephilli-patternfly-docs/mcp@latest"],
+      "args": ["-y", "@cdcabrera/pf-mcp@latest"],
       "description": "PatternFly React development rules and documentation"
     }
   }
@@ -141,7 +141,7 @@ Most MCP clients use a JSON configuration that tells the client how to start thi
   "mcpServers": {
     "patternfly-docs": {
       "command": "npx",
-      "args": ["-y", "@jephilli-patternfly-docs/mcp@latest", "--docs-host"],
+      "args": ["-y", "@cdcabrera/pf-mcp@latest", "--docs-host"],
       "description": "PatternFly docs (docs-host mode)"
     }
   }
@@ -247,7 +247,7 @@ npm publish
 
 After publishing, users can run your MCP server with:
 ```bash
-npx @jephilli-patternfly-docs/mcp
+npx @cdcabrera/pf-mcp
 ```
 
 ## Contributing
