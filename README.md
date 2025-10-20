@@ -10,7 +10,8 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 - TypeScript implementation with ES modules
 - PatternFly documentation access (design guidelines, accessibility, charts, and local docs)
-- Two tools for fetching index content and specific pages
+- Two built-in tools for fetching index content and specific pages
+- **Plugin system** for extending functionality with custom tools
 - Simple memoization for fast repeat fetches
 - Robust error handling with MCP error codes
 - Works over stdio; easy to run from MCP clients
@@ -103,6 +104,213 @@ Parameters:
 Response (tools/call):
 - content[0].type = "text"
 - content[0].text = concatenated documentation content (one or more sources)
+
+## 🔌 Plugins
+
+PatternFly MCP Server supports plugins for extending functionality with custom tools. Plugins can be loaded from npm packages or local files.
+
+### Using Plugins
+
+#### Via CLI (Multiple Flags)
+
+Load multiple plugins using the `--plugins` flag:
+
+```bash
+npx @jephilli-patternfly-docs/mcp \
+  --plugins "@patternfly/mcp-tool-component-search" \
+  --plugins "@patternfly/mcp-tool-design-tokens"
+```
+
+Or with local files:
+
+```bash
+npx @jephilli-patternfly-docs/mcp \
+  --plugins "./my-custom-plugin.js" \
+  --plugins "@patternfly/mcp-tool-component-search"
+```
+
+#### Via CLI (Comma-Separated)
+
+You can also use comma-separated values:
+
+```bash
+npx @jephilli-patternfly-docs/mcp \
+  --plugins "@patternfly/mcp-tool-search,@patternfly/mcp-tool-tokens"
+```
+
+#### Via Config File
+
+For more complex configurations, use a server config file:
+
+```bash
+npx @jephilli-patternfly-docs/mcp --config server-config.json
+```
+
+Example `server-config.json`:
+
+```json
+{
+  "server": {
+    "name": "patternfly-mcp-server",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "package": "@patternfly/mcp-tool-component-search",
+      "enabled": true,
+      "options": {
+        "cacheLimit": 50,
+        "includeDeprecated": false
+      }
+    },
+    {
+      "package": "./plugins/my-custom-plugin.js",
+      "enabled": true,
+      "options": {
+        "apiEndpoint": "https://api.example.com"
+      }
+    }
+  ]
+}
+```
+
+See [`server-config-example.json`](./server-config-example.json) for a complete example.
+
+### Creating Plugins
+
+#### Quick Start
+
+Use the plugin template to get started:
+
+```bash
+# Copy the template
+cp -r examples/plugin-template my-plugin
+cd my-plugin
+
+# Install dependencies
+npm install
+
+# Implement your tool
+# Edit src/index.ts
+```
+
+#### Plugin Structure
+
+All plugins follow a factory pattern:
+
+```typescript
+import type { PluginFactory } from '@jephilli-patternfly-docs/mcp/types';
+
+const myPlugin: PluginFactory = (context) => {
+  // Plugin initialization (runs once on load)
+  const { utils, config, logger, types } = context;
+  
+  return () => {
+    // Tool registration (returns tuple)
+    const callback = async (args) => {
+      // Your tool logic here
+      return {
+        content: [{
+          type: 'text',
+          text: 'Result'
+        }]
+      };
+    };
+    
+    return [
+      'myTool',
+      {
+        description: 'My custom tool',
+        inputSchema: { /* Zod schema */ }
+      },
+      callback
+    ];
+  };
+};
+
+export default myPlugin;
+```
+
+#### Documentation
+
+- **[Plugin Authoring Guide](./.agent/plugins/04-authoring-guide.md)** - Complete step-by-step guide
+- **[API Reference](./.agent/plugins/05-api-reference.md)** - Detailed API documentation
+- **[Plugin Template](./examples/plugin-template/)** - Copy-paste starting point
+
+### Official Plugins (Planned)
+
+We plan to publish official plugins for common use cases:
+
+- `@patternfly/mcp-tool-component-search` - Search PatternFly components by keyword
+- `@patternfly/mcp-tool-design-tokens` - Look up design token values and usage
+- `@patternfly/mcp-tool-accessibility-checker` - Check for common accessibility patterns
+- More coming soon!
+
+### Plugin Development
+
+#### Local Development
+
+```bash
+# In your plugin directory
+npm link
+
+# In the patternfly-mcp directory
+npm link your-plugin-name
+
+# Run server with your plugin
+npm run build
+node dist/index.js --plugins "your-plugin-name" --verbose
+```
+
+#### Testing
+
+```bash
+# Run tests
+npm test
+
+# Watch mode
+npm run test:watch
+```
+
+#### Publishing
+
+```bash
+# Build and test
+npm run build
+npm test
+
+# Publish to npm
+npm publish --access public
+```
+
+### Plugin API
+
+Plugins receive a sandboxed context with safe, stable utilities:
+
+#### context.utils
+
+- `memo(func, options)` - Memoization utility for caching
+- `fetchUrl(url)` - Fetch remote content (pre-memoized)
+- `readFile(path)` - Read local files (pre-memoized)
+- `resolveLocalPath(path)` - Resolve file paths
+
+#### context.config
+
+- `serverName` - Server name
+- `serverVersion` - Server version
+- `separator` - Content separator
+- `pluginOptions` - Plugin-specific options from config file
+
+#### context.logger
+
+- `info()`, `warn()`, `error()`, `debug()` - Console logging
+
+#### context.types
+
+- `McpError` - MCP SDK error class
+- `ErrorCode` - MCP SDK error codes enum
+
+See the [API Reference](./.agent/plugins/05-api-reference.md) for complete details.
 
 ## Docs-host mode (local llms.txt mode)
 

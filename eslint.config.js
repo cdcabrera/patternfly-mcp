@@ -6,7 +6,8 @@ export default [
   {
     ignores: [
       '*.d.ts',
-      '**/__fixtures__/**'
+      '**/__fixtures__/**',
+      'examples/**'
     ]
   },
 

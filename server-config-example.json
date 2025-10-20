@@ -1,0 +1,61 @@
+{
+  "$schema": "./server-config.schema.json",
+  "server": {
+    "name": "patternfly-mcp-server",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "package": "@patternfly/mcp-tool-component-search",
+      "enabled": true,
+      "options": {
+        "cacheLimit": 50,
+        "includeDeprecated": false
+      }
+    },
+    {
+      "package": "@patternfly/mcp-tool-design-tokens",
+      "enabled": true,
+      "options": {
+        "version": "6.0.0",
+        "format": "css"
+      }
+    },
+    {
+      "package": "./plugins/my-custom-plugin.js",
+      "enabled": true,
+      "options": {
+        "apiEndpoint": "https://api.example.com",
+        "timeout": 5000
+      }
+    },
+    {
+      "package": "@patternfly/mcp-tool-example",
+      "enabled": false,
+      "options": {}
+    }
+  ],
+  "cache": {
+    "resourceMemoOptions": {
+      "fetchUrl": {
+        "cacheLimit": 100,
+        "expire": 180000
+      },
+      "readFile": {
+        "cacheLimit": 50,
+        "expire": 120000
+      }
+    },
+    "toolMemoOptions": {
+      "usePatternFlyDocs": {
+        "cacheLimit": 10,
+        "expire": 60000
+      },
+      "fetchDocs": {
+        "cacheLimit": 15,
+        "expire": 60000
+      }
+    }
+  }
+}
+
