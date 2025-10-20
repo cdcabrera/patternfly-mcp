@@ -1,0 +1,143 @@
+# Dependabot configuration for PatternFly MCP Server
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # NPM dependencies - main project
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    
+    # Limit open PRs to avoid overwhelming maintainers
+    open-pull-requests-limit: 10
+    
+    # Group updates for easier management
+    groups:
+      # Group all PatternFly MCP plugin updates together
+      # Naming convention: @patternfly/mcp-tool-*
+      patternfly-mcp-plugins:
+        patterns:
+          - "@patternfly/mcp-tool-*"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Group development dependencies (non-breaking changes)
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Group production dependencies (non-breaking changes)
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+        # Exclude plugins from this group (they have their own)
+        exclude-patterns:
+          - "@patternfly/mcp-tool-*"
+      
+      # Group all patch updates for MCP SDK and related packages
+      mcp-sdk:
+        patterns:
+          - "@modelcontextprotocol/*"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Group TypeScript and related tooling
+      typescript-ecosystem:
+        patterns:
+          - "typescript"
+          - "@types/*"
+          - "ts-jest"
+          - "tsx"
+          - "typescript-eslint"
+          - "@typescript-eslint/*"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Group testing dependencies
+      testing:
+        patterns:
+          - "jest"
+          - "@jest/*"
+          - "@types/jest"
+          - "ts-jest"
+        update-types:
+          - "minor"
+          - "patch"
+      
+      # Group linting dependencies
+      linting:
+        patterns:
+          - "eslint"
+          - "@stylistic/*"
+          - "@cdcabrera/*"
+        update-types:
+          - "minor"
+          - "patch"
+    
+    # Labels for PRs
+    labels:
+      - "dependencies"
+      - "automated"
+    
+    # Commit message prefix
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(dev-deps)"
+      include: "scope"
+    
+    # Ignore major version updates for stable packages
+    # (review these manually to avoid breaking changes)
+    ignore:
+      # Let's manually review major Node.js updates
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      
+      # Let's manually review major TypeScript updates
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+    
+    # Reviewers (uncomment and customize for your team)
+    # reviewers:
+    #   - "patternfly-team"
+    
+    # Assignees (uncomment and customize for your team)
+    # assignees:
+    #   - "maintainer-username"
+    
+    # Allow Dependabot to rebase PRs
+    rebase-strategy: "auto"
+    
+    # Increase version requirements (vs. widening ranges)
+    versioning-strategy: "increase"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    
+    open-pull-requests-limit: 5
+    
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    
+    commit-message:
+      prefix: "chore(ci)"
+
