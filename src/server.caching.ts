@@ -48,6 +48,9 @@ const memo = <TArgs extends any[], TReturn>(
         timeout = setTimeout(() => {
           cache.length = 0;
         }, updatedExpire);
+
+        // Allow the process to exit
+        timeout.unref();
       }
 
       // Zero cacheLimit, reset and bypass memoization
