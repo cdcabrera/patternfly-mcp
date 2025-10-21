@@ -9,7 +9,60 @@ type GlobalOptions = DefaultSession;
 /**
  * Options parsed from CLI arguments
  */
-type CliOptions = { docsHost: boolean; logging: LoggingOptions };
+type CliOptions = {
+  docsHost: boolean;
+  logging: LoggingOptions;
+  http: boolean;
+  port: number;
+  host: string;
+  allowedOrigins: string[];
+  allowedHosts: string[];
+};
+
+/**
+ * Get argument value from process.argv
+ *
+ * @param flag - CLI flag to search for
+ * @param defaultValue - Default arg value
+ */
+const getArgValue = (flag: string, defaultValue?: unknown) => {
+  const index = process.argv.indexOf(flag);
+
+  if (index === -1) {
+    return defaultValue;
+  }
+
+  const value = process.argv[index + 1];
+
+  if (!value || value.startsWith('--')) {
+    return defaultValue;
+  }
+
+  if (typeof defaultValue === 'number') {
+    const num = parseInt(value, 10);
+
+    if (isNaN(num)) {
+      return defaultValue;
+    }
+
+    return num;
+  }
+
+  return value;
+};
+
+/**
+ * Validate CLI options
+ *
+ * @param options - Parsed CLI options
+ */
+const validateCliOptions = (options: CliOptions) => {
+  const isValidPort = (typeof options.port === 'number') && (options.port > 0 && options.port <= 65536);
+
+  if (!isValidPort) {
+    throw new Error(`Invalid port: ${options.port}. Must be between 1 and 65535.`);
+  }
+};
 
 /**
  * Parses CLI options and return config options for the application.
@@ -20,13 +73,25 @@ type CliOptions = { docsHost: boolean; logging: LoggingOptions };
  * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
  * - `--log-stderr`: Enables terminal logging of channel events
  * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
+ * - `--http`: Indicates if the `--http` option is enabled.
+ * - `--port`: The port number specified via `--port`, or defaults to `3000` if not provided.
+ * - `--host`: The host name specified via `--host`, or defaults to `'127.0.0.1'` if not provided.
+ * - `--allowedOrigins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
+ * - `--allowedHosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
  *
  * @param argv - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
+ *
+ * @throws {Error} If the provided CLI options fail validation.
  */
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   const docsHost = argv.includes('--docs-host');
   const levelIndex = argv.indexOf('--log-level');
+  const http = argv.includes('--http');
+  const port = getArgValue('--port', 3030) as number;
+  const host = getArgValue('--host', '127.0.0.1') as string;
+  const allowedOrigins = (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim());
+  const allowedHosts = (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim());
 
   const logging: LoggingOptions = {
     ...DEFAULT_OPTIONS.logging,
@@ -44,11 +109,17 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     }
   }
 
-  return { docsHost, logging };
+  const options: CliOptions = { docsHost, logging, http, port, host, allowedOrigins, allowedHosts };
+
+  validateCliOptions(options);
+
+  return options;
 };
 
 export {
   parseCliOptions,
+  getArgValue,
+  validateCliOptions,
   type CliOptions,
   type LoggingOptions,
   type DefaultOptions,
