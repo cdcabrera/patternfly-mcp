@@ -208,12 +208,12 @@ export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<H
                 } else {
                   // Handle regular JSON response
                   const parsed = JSON.parse(data);
-                  
+
                   // Extract session ID from response if available
                   if (parsed.result?.sessionId && typeof parsed.result.sessionId === 'string') {
                     sessionId = parsed.result.sessionId;
                   }
-                  
+
                   const entry = pendingRequests.get(id);
 
                   if (entry) {
@@ -268,6 +268,7 @@ export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<H
         if (response.result?.sessionId && typeof response.result.sessionId === 'string') {
           sessionId = response.result.sessionId;
         }
+
         return response;
       },
 
@@ -381,7 +382,7 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
               } else {
                 // Handle regular JSON response
                 const parsed = JSON.parse(data);
-                
+
                 // Extract session ID from response if available
                 if (parsed.result?.sessionId && typeof parsed.result.sessionId === 'string') {
                   sessionId = parsed.result.sessionId;
@@ -419,12 +420,12 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
           }
         }
       });
-      
+
       // Extract session ID from response if available
       if (response.result?.sessionId && typeof response.result.sessionId === 'string') {
         sessionId = response.result.sessionId;
       }
-      
+
       return response;
     },
 
