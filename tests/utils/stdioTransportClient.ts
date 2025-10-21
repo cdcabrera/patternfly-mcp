@@ -168,7 +168,7 @@ export const startServer = async ({
           return {
             jsonrpc: '2.0',
             id: null,
-            result: result as any
+            result
           };
         }
 
@@ -181,12 +181,12 @@ export const startServer = async ({
           return {
             jsonrpc: '2.0',
             id: null,
-            result: result as any
+            result
           };
         }
 
-        // For other requests, use the client's request method
-        // Note: The SDK's request method expects a properly formatted request
+        // Note: The SDK's request method expects a properly formatted request.
+        // For other requests, use the client's request method with generic ResultSchema
         const result = await mcpClient.request({
           method: request.method,
           params: request.params
@@ -195,7 +195,7 @@ export const startServer = async ({
         return {
           jsonrpc: '2.0',
           id: null,
-          result: result as any
+          result
         };
       } catch (error) {
         // If request fails, return error response
@@ -217,6 +217,6 @@ export const startServer = async ({
     stderrLogs: () => stderrLogs.slice(),
     protocolLogs: () => protocolLogs.slice(),
     stop,
-    close: stop
+    close: stop // Alias for stop, align with the http transport client
   };
 };
