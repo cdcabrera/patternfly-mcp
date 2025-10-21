@@ -1,13 +1,5 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`External URLs should fetch a document 1`] = `
-[
-  "# Example Fixture",
-  "This is a local offline fixture used by the MCP external URLs test.",
-  "It includes the token PatternFly to satisfy test assertions.",
-]
-`;
-
 exports[`Hosted mode, --docs-host should read llms-files and includes expected tokens 1`] = `
 [
   "# @patternfly/react-core 6.0.0",
@@ -284,20 +276,7 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 ",
   "[INFO]:	Registered tool: componentSchemas
 ",
-  "[INFO]:	PatternFly MCP server running on stdio
-",
-]
-`;
-
-exports[`Logging should allow setting logging options, verbose 1`] = `
-[
-  "[INFO]:	Registered tool: usePatternFlyDocs
-",
-  "[INFO]:	Registered tool: fetchDocs
-",
-  "[INFO]:	Registered tool: componentSchemas
-",
-  "[INFO]:	PatternFly MCP server running on stdio
+  "[INFO]:	@patternfly/patternfly-mcp server running on stdio transport
 ",
 ]
 `;
@@ -309,7 +288,7 @@ exports[`Logging should allow setting logging options, with mcp protocol 1`] = `
   {
     "method": "notifications/message",
     "params": {
-      "data": "PatternFly MCP server running on stdio",
+      "data": "@patternfly/patternfly-mcp server running on stdio transport",
       "level": "info",
       "logger": "@patternfly/patternfly-mcp",
     },
@@ -423,6 +402,22 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 - [Alert](https://www.patternfly.org/components/alert)
 - [ApplicationLauncher](https://www.patternfly.org/components/application-launcher)
 "
+`;
+
+exports[`PatternFly MCP, STDIO should concatenate headers and separator with two remote files 1`] = `
+"# Documentation from http://127.0.0.1:5010/0
+
+# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
+
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration"
 `;
 
 exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`] = `
