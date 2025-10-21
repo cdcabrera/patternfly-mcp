@@ -5,6 +5,7 @@ import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
+import { startHttpTransport } from './server.http';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -79,12 +80,16 @@ const runServer = async (options = getOptions(), {
       process.on('SIGINT', async () => stopServer());
     }
 
-    transport = new StdioServerTransport();
+    if (options.http) {
+      await startHttpTransport(server, options);
+    } else {
+      const transport = new StdioServerTransport();
 
-    await server.connect(transport);
+      await server.connect(transport);
+    }
 
     running = true;
-    console.log('PatternFly MCP server running on stdio');
+    console.log(`PatternFly MCP server running on ${Boolean(options.http) && 'http' || 'stdio'}`);
   } catch (error) {
     console.error('Error creating MCP server:', error);
     throw error;
