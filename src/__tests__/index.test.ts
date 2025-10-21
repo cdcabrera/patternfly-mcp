@@ -1,4 +1,4 @@
-import { main, start, type CliOptions } from '../index';
+import { main, start, type PfMcpOptions } from '../index';
 import { parseCliOptions, type GlobalOptions } from '../options';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { setOptions } from '../options.context';
@@ -40,14 +40,19 @@ describe('main', () => {
 
       return Object.freeze({ ...DEFAULT_OPTIONS, ...options }) as unknown as GlobalOptions;
     });
+    const mockServerInstance = {
+      stop: jest.fn().mockResolvedValue(undefined),
+      isRunning: jest.fn().mockReturnValue(true)
+    };
+
     mockRunServer.mockImplementation(async () => {
       callOrder.push('run');
 
-      return {
-        stop: jest.fn().mockResolvedValue(undefined),
-        isRunning: jest.fn().mockReturnValue(true)
-      };
+      return mockServerInstance;
     });
+
+    // Also mock runServer.memo since index.ts uses runServer.memo
+    (mockRunServer as any).memo = mockRunServer;
   });
 
   afterEach(() => {
@@ -145,9 +150,9 @@ describe('main', () => {
 });
 
 describe('type exports', () => {
-  it('should export CliOptions type', () => {
+  it('should export PfMcpOptions type', () => {
     // TypeScript compilation will fail if the type is unavailable
-    const options: Partial<CliOptions> = { docsHost: true };
+    const options: Partial<PfMcpOptions> = { docsHost: true };
 
     expect(options).toBeDefined();
   });
