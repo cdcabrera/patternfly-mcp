@@ -1,15 +1,15 @@
 import { createServer } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { startHttpTransport } from '../server.http';
 
 // Mock dependencies
 jest.mock('@modelcontextprotocol/sdk/server/mcp.js');
-jest.mock('@modelcontextprotocol/sdk/server/sse.js');
+jest.mock('@modelcontextprotocol/sdk/server/streamableHttp.js');
 jest.mock('node:http');
 
 const MockMcpServer = McpServer as jest.MockedClass<typeof McpServer>;
-const MockSSEServerTransport = SSEServerTransport as jest.MockedClass<typeof SSEServerTransport>;
+const MockStreamableHTTPServerTransport = StreamableHTTPServerTransport as jest.MockedClass<typeof StreamableHTTPServerTransport>;
 const MockCreateServer = createServer as jest.MockedFunction<typeof createServer>;
 
 describe('HTTP Transport', () => {
@@ -23,13 +23,12 @@ describe('HTTP Transport', () => {
       registerTool: jest.fn()
     };
     mockTransport = {
-      sessionId: 'test-session-123',
-      start: jest.fn(),
-      handlePostMessage: jest.fn()
+      handleRequest: jest.fn(),
+      sessionId: 'test-session-123'
     };
     mockHttpServer = {
       on: jest.fn(),
-      listen: jest.fn().mockImplementation((port, host, callback) => {
+      listen: jest.fn().mockImplementation((_port: any, _host: any, callback: any) => {
         // Immediately call the callback to simulate successful server start
         if (callback) callback();
       }),
@@ -37,7 +36,7 @@ describe('HTTP Transport', () => {
     };
 
     MockMcpServer.mockImplementation(() => mockServer);
-    MockSSEServerTransport.mockImplementation(() => mockTransport);
+    MockStreamableHTTPServerTransport.mockImplementation(() => mockTransport);
     MockCreateServer.mockReturnValue(mockHttpServer);
   });
 
@@ -51,26 +50,27 @@ describe('HTTP Transport', () => {
       await startHttpTransport(mockServer);
 
       expect(MockCreateServer).toHaveBeenCalled();
-      expect(mockHttpServer.on).toHaveBeenCalledWith('request', expect.any(Function));
       expect(mockHttpServer.listen).toHaveBeenCalledWith(3000, 'localhost', expect.any(Function));
     });
 
-    it('should handle SSE connections', async () => {
-      // Test SSE connection handling - uses default parameter pattern
+    it('should create StreamableHTTPServerTransport with correct options', async () => {
       await startHttpTransport(mockServer);
 
-      // Verify server setup (SSE transport is only created when actual SSE request is made)
-      expect(MockCreateServer).toHaveBeenCalled();
-      expect(mockHttpServer.on).toHaveBeenCalledWith('request', expect.any(Function));
+      expect(MockStreamableHTTPServerTransport).toHaveBeenCalledWith({
+        sessionIdGenerator: expect.any(Function),
+        enableJsonResponse: false,
+        allowedOrigins: undefined,
+        allowedHosts: undefined,
+        enableDnsRebindingProtection: true,
+        onsessioninitialized: expect.any(Function),
+        onsessionclosed: expect.any(Function)
+      });
     });
 
-    it('should handle message POST requests', async () => {
-      // Test message handling - uses default parameter pattern
+    it('should connect MCP server to transport', async () => {
       await startHttpTransport(mockServer);
 
-      // Test would involve creating HTTP requests
-      // and verifying proper handling
-      expect(MockCreateServer).toHaveBeenCalled();
+      expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
     });
 
     it('should handle server errors', async () => {
@@ -91,21 +91,19 @@ describe('HTTP Transport', () => {
     it('should set up request handler', async () => {
       await startHttpTransport(mockServer);
 
-      expect(mockHttpServer.on).toHaveBeenCalledWith('request', expect.any(Function));
+      // StreamableHTTPServerTransport handles requests directly
+      expect(MockStreamableHTTPServerTransport).toHaveBeenCalled();
     });
   });
 
   describe('HTTP request handling', () => {
-    it('should handle CORS headers', async () => {
+    it('should delegate requests to StreamableHTTPServerTransport', async () => {
       await startHttpTransport(mockServer);
-
-      // Get the request handler
-      const requestHandler = mockHttpServer.on.mock.calls.find((call: any) => call[0] === 'request')[1];
 
       // Mock request and response
       const mockReq = {
         method: 'GET',
-        url: '/sse',
+        url: '/mcp',
         headers: { host: 'localhost:3000' }
       };
       const mockRes = {
@@ -114,51 +112,47 @@ describe('HTTP Transport', () => {
         end: jest.fn()
       };
 
-      // Call the request handler
-      await requestHandler(mockReq, mockRes);
+      // Call the transport's handleRequest method directly
+      await mockTransport.handleRequest(mockReq, mockRes);
 
-      // Verify CORS headers are set
-      expect(mockRes.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
-      expect(mockRes.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      expect(mockRes.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      // Verify transport handles the request
+      expect(mockTransport.handleRequest).toHaveBeenCalledWith(mockReq, mockRes);
     });
 
-    it('should handle preflight OPTIONS requests', async () => {
+    it('should handle all HTTP methods through transport', async () => {
       await startHttpTransport(mockServer);
 
-      // Get the request handler
-      const requestHandler = mockHttpServer.on.mock.calls.find((call: any) => call[0] === 'request')[1];
+      // Test different HTTP methods
+      const methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
 
-      // Mock OPTIONS request
-      const mockReq = {
-        method: 'OPTIONS',
-        url: '/sse',
-        headers: { host: 'localhost:3000' }
-      };
-      const mockRes = {
-        setHeader: jest.fn(),
-        writeHead: jest.fn(),
-        end: jest.fn()
-      };
+      for (const method of methods) {
+        const mockReq = {
+          method,
+          url: '/mcp',
+          headers: { host: 'localhost:3000' }
+        };
+        const mockRes = {
+          setHeader: jest.fn(),
+          writeHead: jest.fn(),
+          end: jest.fn()
+        };
 
-      // Call the request handler
-      await requestHandler(mockReq, mockRes);
-
-      // Verify preflight handling
-      expect(mockRes.writeHead).toHaveBeenCalledWith(200);
-      expect(mockRes.end).toHaveBeenCalled();
+        await mockTransport.handleRequest(mockReq, mockRes);
+        expect(mockTransport.handleRequest).toHaveBeenCalledWith(mockReq, mockRes);
+      }
     });
 
-    it('should handle 404 for unknown routes', async () => {
+    it('should handle transport errors gracefully', async () => {
       await startHttpTransport(mockServer);
 
-      // Get the request handler
-      const requestHandler = mockHttpServer.on.mock.calls.find((call: any) => call[0] === 'request')[1];
+      // Mock transport error
+      const transportError = new Error('Transport error');
 
-      // Mock unknown route request
+      mockTransport.handleRequest.mockRejectedValue(transportError);
+
       const mockReq = {
         method: 'GET',
-        url: '/unknown',
+        url: '/mcp',
         headers: { host: 'localhost:3000' }
       };
       const mockRes = {
@@ -167,12 +161,51 @@ describe('HTTP Transport', () => {
         end: jest.fn()
       };
 
-      // Call the request handler
-      await requestHandler(mockReq, mockRes);
+      // Should throw - transport errors are propagated
+      await expect(mockTransport.handleRequest(mockReq, mockRes)).rejects.toThrow('Transport error');
+    });
+  });
 
-      // Verify 404 response
-      expect(mockRes.writeHead).toHaveBeenCalledWith(404);
-      expect(mockRes.end).toHaveBeenCalledWith('Not Found');
+  describe('StreamableHTTPServerTransport configuration', () => {
+    it('should use crypto.randomUUID for session ID generation', async () => {
+      await startHttpTransport(mockServer);
+
+      const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
+
+      expect(transportOptions?.sessionIdGenerator).toBeDefined();
+      expect(typeof transportOptions?.sessionIdGenerator).toBe('function');
+
+      // Test that it generates UUIDs
+      const sessionId = transportOptions?.sessionIdGenerator?.();
+
+      expect(sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    });
+
+    it('should configure session callbacks', async () => {
+      await startHttpTransport(mockServer);
+
+      const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
+
+      expect(transportOptions?.onsessioninitialized).toBeDefined();
+      expect(transportOptions?.onsessionclosed).toBeDefined();
+      expect(typeof transportOptions?.onsessioninitialized).toBe('function');
+      expect(typeof transportOptions?.onsessionclosed).toBe('function');
+    });
+
+    it('should enable SSE streaming', async () => {
+      await startHttpTransport(mockServer);
+
+      const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
+
+      expect(transportOptions?.enableJsonResponse).toBe(false);
+    });
+
+    it('should enable DNS rebinding protection', async () => {
+      await startHttpTransport(mockServer);
+
+      const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
+
+      expect(transportOptions?.enableDnsRebindingProtection).toBe(true);
     });
   });
 });
