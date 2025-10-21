@@ -208,6 +208,12 @@ export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<H
                 } else {
                   // Handle regular JSON response
                   const parsed = JSON.parse(data);
+                  
+                  // Extract session ID from response if available
+                  if (parsed.result?.sessionId) {
+                    sessionId = parsed.result.sessionId;
+                  }
+                  
                   const entry = pendingRequests.get(id);
 
                   if (entry) {
@@ -258,7 +264,10 @@ export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<H
           }
         });
 
-        // Extract session ID from response headers if available
+        // Extract session ID from response if available
+        if (response.result?.sessionId) {
+          sessionId = response.result.sessionId;
+        }
         return response;
       },
 
