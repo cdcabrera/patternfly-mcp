@@ -16,9 +16,9 @@ describe('HTTP Transport E2E Tests', () => {
 
   describe('Basic HTTP Transport', () => {
     it('should start HTTP server on specified port', async () => {
-      client = await startHttpServer({ port: 3001, host: 'localhost' });
-
-      expect(client.baseUrl).toMatch(/http:\/\/localhost:3001/);
+      client = await startHttpServer({ port: 4001, host: 'localhost' });
+      
+      expect(client.baseUrl).toMatch(/http:\/\/localhost:4001/);
       expect(client.sessionId).toBeUndefined();
     });
 
@@ -94,8 +94,8 @@ describe('HTTP Transport E2E Tests', () => {
     });
 
     it('should handle multiple concurrent sessions', async () => {
-      const client1 = await startHttpServer({ port: 3003 });
-      const client2 = await startHttpServer({ port: 3004 });
+      const client1 = await startHttpServer({ port: 4003 });
+      const client2 = await startHttpServer({ port: 4004 });
 
       await client1.initialize();
       await client2.initialize();
@@ -208,9 +208,9 @@ describe('HTTP Transport E2E Tests', () => {
 
   describe('Configuration Options', () => {
     it('should start server on custom port', async () => {
-      client = await startHttpServer({ port: 3003 });
-
-      expect(client.baseUrl).toMatch(/3003/);
+      client = await startHttpServer({ port: 4005 });
+      
+      expect(client.baseUrl).toMatch(/4005/);
     });
 
     it('should start server on custom host', async () => {
