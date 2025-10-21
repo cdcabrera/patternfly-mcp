@@ -156,8 +156,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
 
       // Send multiple concurrent requests
       const requests = Array.from({ length: 3 }, () =>
-        client.send({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })
-      );
+        client.send({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }));
 
       await Promise.all(requests);
 
