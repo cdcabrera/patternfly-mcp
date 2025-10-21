@@ -9,7 +9,6 @@ interface CliOptions {
   http?: boolean;
   port?: number;
   host?: string;
-  cors?: boolean;
   allowedOrigins?: string[];
   allowedHosts?: string[];
 }
@@ -235,7 +234,6 @@ const parseCliOptions = (): CliOptions => {
     http: process.argv.includes('--http'),
     port: getArgValue('--port', 3000),
     host: getArgValue('--host', 'localhost'),
-    cors: !process.argv.includes('--no-cors'),
     allowedOrigins: getArgValue('--allowed-origins')?.split(','),
     allowedHosts: getArgValue('--allowed-hosts')?.split(',')
   };
