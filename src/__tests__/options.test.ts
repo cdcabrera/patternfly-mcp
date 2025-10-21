@@ -40,22 +40,17 @@ describe('parseCliOptions', () => {
       {
         description: 'with --http flag',
         args: ['node', 'script.js', '--http'],
-        expected: { http: true, port: 3000, host: 'localhost', cors: true }
+        expected: { http: true, port: 3000, host: 'localhost' }
       },
       {
         description: 'with --http and --port',
         args: ['node', 'script.js', '--http', '--port', '8080'],
-        expected: { http: true, port: 8080, host: 'localhost', cors: true }
+        expected: { http: true, port: 8080, host: 'localhost' }
       },
       {
         description: 'with --http and --host',
         args: ['node', 'script.js', '--http', '--host', '0.0.0.0'],
-        expected: { http: true, port: 3000, host: '0.0.0.0', cors: true }
-      },
-      {
-        description: 'with --no-cors',
-        args: ['node', 'script.js', '--http', '--no-cors'],
-        expected: { http: true, port: 3000, host: 'localhost', cors: false }
+        expected: { http: true, port: 3000, host: '0.0.0.0' }
       },
       {
         description: 'with --allowed-origins',
@@ -64,7 +59,6 @@ describe('parseCliOptions', () => {
           http: true,
           port: 3000,
           host: 'localhost',
-          cors: true,
           allowedOrigins: ['https://app.com', 'https://admin.app.com']
         }
       },
@@ -75,7 +69,6 @@ describe('parseCliOptions', () => {
           http: true,
           port: 3000,
           host: 'localhost',
-          cors: true,
           allowedHosts: ['localhost', '127.0.0.1']
         }
       }
