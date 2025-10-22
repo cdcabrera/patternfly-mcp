@@ -16,6 +16,7 @@ describe('runServer', () => {
   let consoleInfoSpy: jest.SpyInstance;
   let consoleLogSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
+  let processOnSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -37,12 +38,16 @@ describe('runServer', () => {
     consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation();
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+    // Spy on process.on
+    processOnSpy = jest.spyOn(process, 'on').mockImplementation();
   });
 
   afterEach(() => {
     consoleInfoSpy.mockRestore();
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
+    processOnSpy.mockRestore();
   });
 
   it.each([
@@ -116,7 +121,8 @@ describe('runServer', () => {
       info: consoleInfoSpy.mock.calls,
       registerTool: mockServer.registerTool.mock.calls,
       mcpServer: MockMcpServer.mock.calls,
-      log: consoleLogSpy.mock.calls
+      log: consoleLogSpy.mock.calls,
+      process: processOnSpy.mock.calls
     }).toMatchSnapshot('console');
   });
 
@@ -138,35 +144,5 @@ describe('runServer', () => {
 
     await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Connection failed');
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating MCP server:', error);
-  });
-
-  describe('SIGINT handling', () => {
-    let processOnSpy: jest.SpyInstance;
-
-    beforeEach(() => {
-      processOnSpy = jest.spyOn(process, 'on').mockImplementation();
-    });
-
-    afterEach(() => {
-      processOnSpy.mockRestore();
-    });
-
-    it('should register SIGINT handler when enableSigint is true', async () => {
-      await runServer(undefined, { enableSigint: true });
-
-      expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
-    });
-
-    it('should not register SIGINT handler when enableSigint is false', async () => {
-      await runServer(undefined, { enableSigint: false });
-
-      expect(processOnSpy).not.toHaveBeenCalledWith('SIGINT', expect.any(Function));
-    });
-
-    it('should register SIGINT handler by default when enableSigint is not specified', async () => {
-      await runServer();
-
-      expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
-    });
   });
 });
