@@ -1,6 +1,6 @@
 import { main, start, type CliOptions } from '../index';
 import { parseCliOptions, freezeOptions, type GlobalOptions } from '../options';
-import { runServer } from '../server';
+import { createServer } from '../server';
 
 // Mock dependencies
 jest.mock('../options');
@@ -8,7 +8,7 @@ jest.mock('../server');
 
 const mockParseCliOptions = parseCliOptions as jest.MockedFunction<typeof parseCliOptions>;
 const mockFreezeOptions = freezeOptions as jest.MockedFunction<typeof freezeOptions>;
-const mockRunServer = runServer as jest.MockedFunction<typeof runServer>;
+const mockCreateServer = createServer as jest.MockedFunction<typeof createServer>;
 
 describe('main', () => {
   let consoleErrorSpy: jest.SpyInstance;
@@ -26,7 +26,10 @@ describe('main', () => {
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
     mockFreezeOptions.mockReturnValue({} as GlobalOptions);
-    mockRunServer.mockResolvedValue(undefined);
+    mockCreateServer.mockResolvedValue({
+      stop: jest.fn().mockResolvedValue(undefined),
+      isRunning: jest.fn().mockReturnValue(true)
+    });
   });
 
   afterEach(() => {
@@ -48,13 +51,13 @@ describe('main', () => {
     await main();
 
     expect(mockParseCliOptions).toHaveBeenCalled();
-    expect(mockRunServer).toHaveBeenCalled();
+    expect(mockCreateServer).toHaveBeenCalled();
   });
 
   it('should handle server startup errors', async () => {
     const error = new Error('Server failed to start');
 
-    mockRunServer.mockRejectedValue(error);
+    mockCreateServer.mockRejectedValue(error);
 
     await main();
 
@@ -103,8 +106,13 @@ describe('main', () => {
       return {} as GlobalOptions;
     });
 
-    mockRunServer.mockImplementation(async () => {
+    mockCreateServer.mockImplementation(async () => {
       callOrder.push('run');
+
+      return {
+        stop: jest.fn().mockResolvedValue(undefined),
+        isRunning: jest.fn().mockReturnValue(true)
+      };
     });
 
     await main();
@@ -161,7 +169,10 @@ describe('start alias', () => {
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
     mockFreezeOptions.mockReturnValue({} as GlobalOptions);
-    mockRunServer.mockResolvedValue(undefined);
+    mockCreateServer.mockResolvedValue({
+      stop: jest.fn().mockResolvedValue(undefined),
+      isRunning: jest.fn().mockReturnValue(true)
+    });
   });
 
   afterEach(() => {
@@ -178,7 +189,7 @@ describe('start alias', () => {
 
     expect(mockParseCliOptions).toHaveBeenCalled();
     expect(mockFreezeOptions).toHaveBeenCalledWith(cliOptions);
-    expect(mockRunServer).toHaveBeenCalled();
+    expect(mockCreateServer).toHaveBeenCalled();
   });
 
   it('should accept programmatic options like main', async () => {
