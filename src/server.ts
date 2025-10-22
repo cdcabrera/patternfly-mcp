@@ -9,7 +9,23 @@ type McpTool = [string, { description: string; inputSchema: any }, (args: any) =
 type McpToolCreator = () => McpTool;
 
 /**
- * Create, register tool and errors, then run the server.
+ * Server instance with shutdown capability
+ */
+interface ServerInstance {
+
+  /**
+   * Stop the server gracefully
+   */
+  stop(): Promise<void>;
+
+  /**
+   * Check if server is running
+   */
+  isRunning(): boolean;
+}
+
+/**
+ * Create and run a server with shutdown, register tool and errors.
  *
  * @param options
  * @param settings
@@ -20,9 +36,13 @@ const runServer = async (options = OPTIONS, {
     usePatternFlyDocsTool,
     fetchDocsTool
   ]
-}: { tools?: McpToolCreator[] } = {}): Promise<void> => {
+}: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
+  let server: McpServer | null = null;
+  let transport: StdioServerTransport | null = null;
+  let running = false;
+
   try {
-    const server = new McpServer(
+    server = new McpServer(
       {
         name: options.name,
         version: options.version
@@ -38,26 +58,47 @@ const runServer = async (options = OPTIONS, {
       const [name, schema, callback] = toolCreator();
 
       console.info(`Registered tool: ${name}`);
-      server.registerTool(name, schema, callback);
+      server?.registerTool(name, schema, callback);
     });
 
     process.on('SIGINT', async () => {
-      await server?.close();
-      process.exit(0);
+      if (server && running) {
+        await server?.close();
+        running = false;
+        console.log('PatternFly MCP server stopped');
+        process.exit(0);
+      }
     });
 
-    const transport = new StdioServerTransport();
+    transport = new StdioServerTransport();
 
     await server.connect(transport);
+
+    running = true;
     console.log('PatternFly MCP server running on stdio');
   } catch (error) {
     console.error('Error creating MCP server:', error);
     throw error;
   }
+
+  return {
+    async stop(): Promise<void> {
+      if (server && running) {
+        await server?.close();
+        running = false;
+        console.log('PatternFly MCP server stopped');
+      }
+    },
+
+    isRunning(): boolean {
+      return running;
+    }
+  };
 };
 
 export {
   runServer,
   type McpTool,
-  type McpToolCreator
+  type McpToolCreator,
+  type ServerInstance
 };
