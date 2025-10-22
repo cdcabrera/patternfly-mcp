@@ -223,10 +223,12 @@ import { runServer } from '@patternfly/patternfly-mcp/server';
 // Or from the package root (index.ts re-exports it)
 import { runServer } from '@patternfly/patternfly-mcp';
 
-// Starts the MCP server and listens on stdio
+// Starts the MCP server with default options (no CLI option overrides)
 await runServer();
 // Server runs until interrupted (Ctrl+C)
 ```
+
+**Note**: `runServer()` uses default options and doesn't allow overriding CLI options. Use `main()` if you need to override options programmatically.
 
 ### Programmatic Option Overrides
 
