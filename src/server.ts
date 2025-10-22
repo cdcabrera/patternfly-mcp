@@ -9,6 +9,88 @@ type McpTool = [string, { description: string; inputSchema: any }, (args: any) =
 type McpToolCreator = () => McpTool;
 
 /**
+ * Server instance with shutdown capability
+ */
+interface ServerInstance {
+
+  /**
+   * Stop the server gracefully
+   */
+  stop(): Promise<void>;
+
+  /**
+   * Check if server is running
+   */
+  isRunning(): boolean;
+}
+
+/**
+ * Create a server instance with shutdown capability
+ */
+class PatternFlyMcpServer implements ServerInstance {
+  private server: McpServer | null = null;
+  private transport: StdioServerTransport | null = null;
+  private running = false;
+
+  /**
+   *
+   * @param options
+   * @param tools
+   */
+  constructor(
+    private options = OPTIONS,
+    private tools: McpToolCreator[] = [usePatternFlyDocsTool, fetchDocsTool]
+  ) {}
+
+  /**
+   *
+   */
+  async start(): Promise<void> {
+    try {
+      this.server = new McpServer(
+        {
+          name: this.options.name,
+          version: this.options.version
+        },
+        {
+          capabilities: {
+            tools: {}
+          }
+        }
+      );
+
+      this.tools.forEach(toolCreator => {
+        const [name, schema, callback] = toolCreator();
+
+        console.info(`Registered tool: ${name}`);
+        this.server!.registerTool(name, schema, callback);
+      });
+
+      this.transport = new StdioServerTransport();
+      await this.server.connect(this.transport);
+
+      this.running = true;
+      console.log('PatternFly MCP server running on stdio');
+    } catch (error) {
+      console.error('Error creating MCP server:', error);
+      throw error;
+    }
+  }
+
+  async stop(): Promise<void> {
+    if (this.server && this.running) {
+      await this.server.close();
+      this.running = false;
+      console.log('PatternFly MCP server stopped');
+    }
+  }
+
+  isRunning(): boolean {
+    return this.running;
+  }
+}
+
+/**
  * Create, register tool and errors, then run the server.
  *
  * @param options
@@ -56,8 +138,28 @@ const runServer = async (options = OPTIONS, {
   }
 };
 
+/**
+ * Create and start a server instance with shutdown capability
+ *
+ * @param options
+ * @param root0
+ * @param root0.tools
+ */
+const createServer = async (options = OPTIONS, {
+  tools = [usePatternFlyDocsTool, fetchDocsTool]
+}: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
+  const server = new PatternFlyMcpServer(options, tools);
+
+  await server.start();
+
+  return server;
+};
+
 export {
   runServer,
+  createServer,
+  PatternFlyMcpServer,
   type McpTool,
-  type McpToolCreator
+  type McpToolCreator,
+  type ServerInstance
 };
