@@ -201,38 +201,23 @@ npx @modelcontextprotocol/inspector-cli \
 
 ## Programmatic usage (advanced)
 
-The package provides multiple ways to use it programmatically:
-
-### Option 1: Using the main function with option overrides
+The package provides programmatic access through the `main()` function, which allows you to override CLI options:
 
 ```js
 // Import the main function
 import { main } from '@patternfly/patternfly-mcp';
+
+// Use with default options (equivalent to CLI without flags)
+await main();
 
 // Override CLI options programmatically
 await main({ docsHost: true });
 // Server runs with --docs-host equivalent enabled
 ```
 
-### Option 2: Using runServer directly
-
-```js
-// Prefer the public export subpath
-import { runServer } from '@patternfly/patternfly-mcp/server';
-
-// Or from the package root (index.ts re-exports it)
-import { runServer } from '@patternfly/patternfly-mcp';
-
-// Starts the MCP server with default options (no CLI option overrides)
-await runServer();
-// Server runs until interrupted (Ctrl+C)
-```
-
-**Note**: `runServer()` uses default options and doesn't allow overriding CLI options. Use `main()` if you need to override options programmatically.
-
 ### Programmatic Option Overrides
 
-When using the `main()` function, you can override any CLI options:
+You can override any CLI options when using the `main()` function:
 
 ```js
 import { main } from '@patternfly/patternfly-mcp';

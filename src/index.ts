@@ -35,4 +35,4 @@ if (process.env.NODE_ENV !== 'local') {
   });
 }
 
-export { main, runServer };
+export { main };
