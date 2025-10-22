@@ -1,5 +1,8 @@
 // Shared helpers for all Jest tests
 
+// Set NODE_ENV to test for all tests
+// process.env.NODE_ENV = 'test';
+
 /**
  * Note: Mock @patternfly/patternfly-component-schemas/json to avoid top-level await issues in Jest
  * - This package uses top-level await which Jest cannot handle without transformation.
