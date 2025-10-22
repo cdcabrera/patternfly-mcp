@@ -39,7 +39,7 @@ describe('runServer', () => {
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-    // Spy on process.on
+    // Spy on process.on method
     processOnSpy = jest.spyOn(process, 'on').mockImplementation();
   });
 
