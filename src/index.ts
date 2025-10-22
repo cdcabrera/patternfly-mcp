@@ -35,4 +35,4 @@ if (process.env.NODE_ENV !== 'local') {
   });
 }
 
-export { main, main as start };
+export { main, main as start, type CliOptions };

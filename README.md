@@ -205,7 +205,7 @@ The package provides programmatic access through the `start()` function (or `mai
 
 ```js
 // Import the start function (or use 'main' as an alternative)
-import { start, main } from '@patternfly/patternfly-mcp';
+import { start, main, type CliOptions } from '@patternfly/patternfly-mcp';
 
 // Use with default options (equivalent to CLI without flags)
 await start();
@@ -224,7 +224,7 @@ await main({ docsHost: true });
 You can override any CLI options when using the `start()` or `main()` function:
 
 ```js
-import { start, main } from '@patternfly/patternfly-mcp';
+import { start, main, type CliOptions } from '@patternfly/patternfly-mcp';
 
 // Override docsHost option
 await start({ docsHost: true });
@@ -236,6 +236,10 @@ await start({
   docsHost: true,
   // Future CLI options can be added here
 });
+
+// TypeScript users can use the CliOptions type for type safety
+const options: Partial<CliOptions> = { docsHost: true };
+await start(options);
 ```
 
 ## Returned content details
