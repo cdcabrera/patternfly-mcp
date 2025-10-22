@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { freezeOptions, parseCliOptions, type CliOptions } from './options';
+import { setOptions, parseCliOptions, type CliOptions } from './options';
 import { runServer, type ServerInstance } from './server';
 
 /**
@@ -17,8 +17,8 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Merge programmatic options with CLI options (programmatic takes precedence)
     const finalOptions = { ...cliOptions, ...programmaticOptions };
 
-    // Freeze options to prevent further changes
-    freezeOptions(finalOptions);
+    // Set options with CLI and programmatic overrides
+    setOptions(finalOptions);
 
     // Create and return server-instance
     return await runServer();
