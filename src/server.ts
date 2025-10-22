@@ -41,6 +41,15 @@ const runServer = async (options = OPTIONS, {
   let transport: StdioServerTransport | null = null;
   let running = false;
 
+  const stopServer = async () => {
+    if (server && running) {
+      await server?.close();
+      running = false;
+      console.log('PatternFly MCP server stopped');
+      process.exit(0);
+    }
+  };
+
   try {
     server = new McpServer(
       {
@@ -61,14 +70,7 @@ const runServer = async (options = OPTIONS, {
       server?.registerTool(name, schema, callback);
     });
 
-    process.on('SIGINT', async () => {
-      if (server && running) {
-        await server?.close();
-        running = false;
-        console.log('PatternFly MCP server stopped');
-        process.exit(0);
-      }
-    });
+    process.on('SIGINT', async () => stopServer());
 
     transport = new StdioServerTransport();
 
@@ -83,11 +85,7 @@ const runServer = async (options = OPTIONS, {
 
   return {
     async stop(): Promise<void> {
-      if (server && running) {
-        await server?.close();
-        running = false;
-        console.log('PatternFly MCP server stopped');
-      }
+      return await stopServer();
     },
 
     isRunning(): boolean {
