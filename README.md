@@ -201,32 +201,38 @@ npx @modelcontextprotocol/inspector-cli \
 
 ## Programmatic usage (advanced)
 
-The package provides programmatic access through the `main()` function, which allows you to override CLI options:
+The package provides programmatic access through the `start()` function (or `main()`), which allows you to override CLI options:
 
 ```js
-// Import the main function
-import { main } from '@patternfly/patternfly-mcp';
+// Import the start function (or use 'main' as an alternative)
+import { start, main } from '@patternfly/patternfly-mcp';
 
 // Use with default options (equivalent to CLI without flags)
+await start();
+// or
 await main();
 
 // Override CLI options programmatically
+await start({ docsHost: true });
+// or
 await main({ docsHost: true });
 // Server runs with --docs-host equivalent enabled
 ```
 
 ### Programmatic Option Overrides
 
-You can override any CLI options when using the `main()` function:
+You can override any CLI options when using the `start()` or `main()` function:
 
 ```js
-import { main } from '@patternfly/patternfly-mcp';
+import { start, main } from '@patternfly/patternfly-mcp';
 
 // Override docsHost option
+await start({ docsHost: true });
+// or
 await main({ docsHost: true });
 
 // Multiple options can be overridden
-await main({ 
+await start({ 
   docsHost: true,
   // Future CLI options can be added here
 });
