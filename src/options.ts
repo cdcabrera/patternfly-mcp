@@ -181,9 +181,12 @@ const parseCliOptions = (): CliOptions => ({
  * @param cliOptions
  */
 const freezeOptions = (cliOptions: CliOptions) => {
-  Object.assign(OPTIONS, {
-    ...cliOptions
-  });
+  // Only assign to OPTIONS if it's not already frozen
+  if (!Object.isFrozen(OPTIONS)) {
+    Object.assign(OPTIONS, {
+      ...cliOptions
+    });
+  }
 
   return Object.freeze(OPTIONS);
 };
