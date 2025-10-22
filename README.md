@@ -230,41 +230,9 @@ await server.stop();
 console.log('Server running:', server.isRunning()); // false
 ```
 
-### Advanced Configuration
-
-For more control over server behavior, you can use the `runServer` function directly:
-
-```typescript
-import { runServer, type ServerInstance } from '@patternfly/patternfly-mcp';
-
-// Disable automatic SIGINT handling (Ctrl+C)
-const server = await runServer(undefined, { 
-  enableSigint: false 
-});
-
-// Check server status
-console.log('Server running:', server.isRunning()); // true
-
-// Custom SIGINT handling
-process.on('SIGINT', async () => {
-  console.log('Custom shutdown logic');
-  await server.stop();
-  console.log('Server running:', server.isRunning()); // false
-  process.exit(0);
-});
-
-// Enable SIGINT handling (default behavior)
-const serverWithSigint = await runServer(undefined, { 
-  enableSigint: true 
-});
-
-// Manual shutdown when needed
-await serverWithSigint.stop();
-```
-
 ### ServerInstance Interface
 
-The `start()` and `runServer()` functions return a `ServerInstance` object with the following methods:
+The `start()` function returns a `ServerInstance` object with the following methods:
 
 ```typescript
 interface ServerInstance {
