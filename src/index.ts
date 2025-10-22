@@ -21,7 +21,8 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     freezeOptions(finalOptions);
 
     // Create and return server-instance
-    return await runServer();
+    // Enable SIGINT handler by default for CLI usage
+    return await runServer(undefined, { enableSigint: true });
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

@@ -30,13 +30,15 @@ interface ServerInstance {
  * @param options
  * @param settings
  * @param settings.tools
+ * @param settings.enableSigint
  */
 const runServer = async (options = OPTIONS, {
   tools = [
     usePatternFlyDocsTool,
     fetchDocsTool
-  ]
-}: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
+  ],
+  enableSigint = true
+}: { tools?: McpToolCreator[]; enableSigint?: boolean } = {}): Promise<ServerInstance> => {
   let server: McpServer | null = null;
   let transport: StdioServerTransport | null = null;
   let running = false;
@@ -70,7 +72,9 @@ const runServer = async (options = OPTIONS, {
       server?.registerTool(name, schema, callback);
     });
 
-    process.on('SIGINT', async () => stopServer());
+    if (enableSigint) {
+      process.on('SIGINT', async () => stopServer());
+    }
 
     transport = new StdioServerTransport();
 

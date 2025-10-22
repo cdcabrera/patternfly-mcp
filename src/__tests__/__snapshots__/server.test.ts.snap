@@ -25,6 +25,56 @@ exports[`runServer should attempt to run server, create transport, connect, and 
 }
 `;
 
+exports[`runServer should attempt to run server, disable SIGINT handler: console 1`] = `
+{
+  "info": [],
+  "log": [
+    [
+      "PatternFly MCP server running on stdio",
+    ],
+  ],
+  "mcpServer": [
+    [
+      {
+        "name": "@patternfly/patternfly-mcp",
+        "version": "0.0.0",
+      },
+      {
+        "capabilities": {
+          "tools": {},
+        },
+      },
+    ],
+  ],
+  "registerTool": [],
+}
+`;
+
+exports[`runServer should attempt to run server, enable SIGINT handler explicitly: console 1`] = `
+{
+  "info": [],
+  "log": [
+    [
+      "PatternFly MCP server running on stdio",
+    ],
+  ],
+  "mcpServer": [
+    [
+      {
+        "name": "@patternfly/patternfly-mcp",
+        "version": "0.0.0",
+      },
+      {
+        "capabilities": {
+          "tools": {},
+        },
+      },
+    ],
+  ],
+  "registerTool": [],
+}
+`;
+
 exports[`runServer should attempt to run server, register a tool: console 1`] = `
 {
   "info": [

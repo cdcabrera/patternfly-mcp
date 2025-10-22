@@ -223,6 +223,31 @@ const options: Partial<CliOptions> = { docsHost: true };
 await start(options);
 ```
 
+### Advanced Configuration
+
+For more control over server behavior, you can use the `runServer` function directly:
+
+```typescript
+import { runServer } from '@patternfly/patternfly-mcp';
+
+// Disable automatic SIGINT handling (Ctrl+C)
+const server = await runServer(undefined, { 
+  enableSigint: false 
+});
+
+// Custom SIGINT handling
+process.on('SIGINT', async () => {
+  console.log('Custom shutdown logic');
+  await server.stop();
+  process.exit(0);
+});
+
+// Enable SIGINT handling (default behavior)
+const serverWithSigint = await runServer(undefined, { 
+  enableSigint: true 
+});
+```
+
 ## Returned content details
 
 For each provided path or URL, the server returns a section:

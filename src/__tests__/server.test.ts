@@ -90,9 +90,26 @@ describe('runServer', () => {
           jest.fn()
         ])
       ]
+    },
+    {
+      description: 'disable SIGINT handler',
+      options: undefined,
+      tools: [],
+      enableSigint: false
+    },
+    {
+      description: 'enable SIGINT handler explicitly',
+      options: undefined,
+      tools: [],
+      enableSigint: true
     }
-  ])('should attempt to run server, $description', async ({ options, tools }) => {
-    await runServer(options as GlobalOptions, (tools && { tools }) || undefined);
+  ])('should attempt to run server, $description', async ({ options, tools, enableSigint }) => {
+    const settings = {
+      ...(tools && { tools }),
+      ...(enableSigint !== undefined && { enableSigint })
+    };
+
+    await runServer(options as GlobalOptions, Object.keys(settings).length > 0 ? settings : undefined);
 
     expect(MockStdioServerTransport).toHaveBeenCalled();
     expect({
@@ -121,5 +138,35 @@ describe('runServer', () => {
 
     await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Connection failed');
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating MCP server:', error);
+  });
+
+  describe('SIGINT handling', () => {
+    let processOnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      processOnSpy = jest.spyOn(process, 'on').mockImplementation();
+    });
+
+    afterEach(() => {
+      processOnSpy.mockRestore();
+    });
+
+    it('should register SIGINT handler when enableSigint is true', async () => {
+      await runServer(undefined, { enableSigint: true });
+
+      expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+    });
+
+    it('should not register SIGINT handler when enableSigint is false', async () => {
+      await runServer(undefined, { enableSigint: false });
+
+      expect(processOnSpy).not.toHaveBeenCalledWith('SIGINT', expect.any(Function));
+    });
+
+    it('should register SIGINT handler by default when enableSigint is not specified', async () => {
+      await runServer();
+
+      expect(processOnSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+    });
   });
 });
