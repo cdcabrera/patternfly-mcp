@@ -201,9 +201,20 @@ npx @modelcontextprotocol/inspector-cli \
 
 ## Programmatic usage (advanced)
 
-The `runServer` function is exported via the package exports map. You can import it from the dedicated subpath or the package root.
+The package provides multiple ways to use it programmatically:
 
-Example (ESM):
+### Option 1: Using the main function with option overrides
+
+```js
+// Import the main function
+import { main } from '@patternfly/patternfly-mcp';
+
+// Override CLI options programmatically
+await main({ docsHost: true });
+// Server runs with --docs-host equivalent enabled
+```
+
+### Option 2: Using runServer directly
 
 ```js
 // Prefer the public export subpath
@@ -215,6 +226,23 @@ import { runServer } from '@patternfly/patternfly-mcp';
 // Starts the MCP server and listens on stdio
 await runServer();
 // Server runs until interrupted (Ctrl+C)
+```
+
+### Programmatic Option Overrides
+
+When using the `main()` function, you can override any CLI options:
+
+```js
+import { main } from '@patternfly/patternfly-mcp';
+
+// Override docsHost option
+await main({ docsHost: true });
+
+// Multiple options can be overridden
+await main({ 
+  docsHost: true,
+  // Future CLI options can be added here
+});
 ```
 
 ## Returned content details
