@@ -27,68 +27,56 @@ interface ServerInstance {
 /**
  * Create a server instance with shutdown capability
  */
-class PatternFlyMcpServer implements ServerInstance {
-  private server: McpServer | null = null;
-  private transport: StdioServerTransport | null = null;
-  private running = false;
+const createServerInstance = async (options = OPTIONS, {
+  tools = [usePatternFlyDocsTool, fetchDocsTool]
+}: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
+  let server: McpServer | null = null;
+  let transport: StdioServerTransport | null = null;
+  let running = false;
 
-  /**
-   *
-   * @param options
-   * @param tools
-   */
-  constructor(
-    private options = OPTIONS,
-    private tools: McpToolCreator[] = [usePatternFlyDocsTool, fetchDocsTool]
-  ) {}
-
-  /**
-   *
-   */
-  async start(): Promise<void> {
-    try {
-      this.server = new McpServer(
-        {
-          name: this.options.name,
-          version: this.options.version
-        },
-        {
-          capabilities: {
-            tools: {}
-          }
+  try {
+    server = new McpServer(
+      {
+        name: options.name,
+        version: options.version
+      },
+      {
+        capabilities: {
+          tools: {}
         }
-      );
+      }
+    );
 
-      this.tools.forEach(toolCreator => {
-        const [name, schema, callback] = toolCreator();
+    tools.forEach(toolCreator => {
+      const [name, schema, callback] = toolCreator();
+      console.info(`Registered tool: ${name}`);
+      server!.registerTool(name, schema, callback);
+    });
 
-        console.info(`Registered tool: ${name}`);
-        this.server!.registerTool(name, schema, callback);
-      });
+    transport = new StdioServerTransport();
+    await server.connect(transport);
 
-      this.transport = new StdioServerTransport();
-      await this.server.connect(this.transport);
+    running = true;
+    console.log('PatternFly MCP server running on stdio');
+  } catch (error) {
+    console.error('Error creating MCP server:', error);
+    throw error;
+  }
 
-      this.running = true;
-      console.log('PatternFly MCP server running on stdio');
-    } catch (error) {
-      console.error('Error creating MCP server:', error);
-      throw error;
+  return {
+    async stop(): Promise<void> {
+      if (server && running) {
+        await server.close();
+        running = false;
+        console.log('PatternFly MCP server stopped');
+      }
+    },
+
+    isRunning(): boolean {
+      return running;
     }
-  }
-
-  async stop(): Promise<void> {
-    if (this.server && this.running) {
-      await this.server.close();
-      this.running = false;
-      console.log('PatternFly MCP server stopped');
-    }
-  }
-
-  isRunning(): boolean {
-    return this.running;
-  }
-}
+  };
+};
 
 /**
  * Create, register tool and errors, then run the server.
@@ -141,24 +129,19 @@ const runServer = async (options = OPTIONS, {
 /**
  * Create and start a server instance with shutdown capability
  *
- * @param options
- * @param root0
- * @param root0.tools
+ * @param options - Server options
+ * @param root0 - Settings object
+ * @param root0.tools - Array of tool creators
  */
 const createServer = async (options = OPTIONS, {
   tools = [usePatternFlyDocsTool, fetchDocsTool]
 }: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
-  const server = new PatternFlyMcpServer(options, tools);
-
-  await server.start();
-
-  return server;
+  return await createServerInstance(options, { tools });
 };
 
 export {
   runServer,
   createServer,
-  PatternFlyMcpServer,
   type McpTool,
   type McpToolCreator,
   type ServerInstance
