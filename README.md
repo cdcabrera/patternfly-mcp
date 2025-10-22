@@ -204,23 +204,30 @@ npx @modelcontextprotocol/inspector-cli \
 The package provides programmatic access through the `start()` function (or `main()` as an alternative):
 
 ```typescript
-import { start, main, type CliOptions } from '@patternfly/patternfly-mcp';
+import { start, main, type CliOptions, type ServerInstance } from '@patternfly/patternfly-mcp';
 
 // Use with default options (equivalent to CLI without flags)
-await start();
+const server = await start();
 
 // Override CLI options programmatically
-await start({ docsHost: true });
+const serverWithOptions = await start({ docsHost: true });
 
 // Multiple options can be overridden
-await start({ 
+const customServer = await start({ 
   docsHost: true,
   // Future CLI options can be added here
 });
 
 // TypeScript users can use the CliOptions type for type safety
 const options: Partial<CliOptions> = { docsHost: true };
-await start(options);
+const typedServer = await start(options);
+
+// Server instance provides shutdown control
+console.log('Server running:', server.isRunning()); // true
+
+// Graceful shutdown
+await server.stop();
+console.log('Server running:', server.isRunning()); // false
 ```
 
 ### Advanced Configuration
@@ -228,17 +235,21 @@ await start(options);
 For more control over server behavior, you can use the `runServer` function directly:
 
 ```typescript
-import { runServer } from '@patternfly/patternfly-mcp';
+import { runServer, type ServerInstance } from '@patternfly/patternfly-mcp';
 
 // Disable automatic SIGINT handling (Ctrl+C)
 const server = await runServer(undefined, { 
   enableSigint: false 
 });
 
+// Check server status
+console.log('Server running:', server.isRunning()); // true
+
 // Custom SIGINT handling
 process.on('SIGINT', async () => {
   console.log('Custom shutdown logic');
   await server.stop();
+  console.log('Server running:', server.isRunning()); // false
   process.exit(0);
 });
 
@@ -246,6 +257,43 @@ process.on('SIGINT', async () => {
 const serverWithSigint = await runServer(undefined, { 
   enableSigint: true 
 });
+
+// Manual shutdown when needed
+await serverWithSigint.stop();
+```
+
+### ServerInstance Interface
+
+The `start()` and `runServer()` functions return a `ServerInstance` object with the following methods:
+
+```typescript
+interface ServerInstance {
+  /**
+   * Stop the server gracefully
+   */
+  stop(): Promise<void>;
+
+  /**
+   * Check if server is running
+   */
+  isRunning(): boolean;
+}
+```
+
+**Usage Examples**:
+```typescript
+const server = await start();
+
+// Check if server is running
+if (server.isRunning()) {
+  console.log('Server is active');
+}
+
+// Graceful shutdown
+await server.stop();
+
+// Verify shutdown
+console.log('Server running:', server.isRunning()); // false
 ```
 
 ## Returned content details
