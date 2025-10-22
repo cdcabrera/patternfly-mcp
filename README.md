@@ -17,7 +17,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 ## Prerequisites
 
-- Node.js 18.0.0 or higher
+- Node.js 20.0.0 or higher
 - npm (or another Node package manager)
 
 ## Installation
@@ -74,7 +74,7 @@ These are the most relevant NPM scripts from package.json:
 
 ## Usage
 
-The MCP server communicates over stdio and provides access to PatternFly documentation through the following tools. Both tools accept an argument named urlList which must be an array of strings. Each string is either:
+The MCP server communicates over stdio and provides access to PatternFly documentation through the following tools. Both tools accept an argument named `urlList` which must be an array of strings. Each string is either:
 - An external URL (e.g., a raw GitHub URL to a .md file), or
 - A local file path (e.g., documentation/.../README.md). When running with the --docs-host flag, these paths are resolved under the llms-files directory instead.
 
@@ -118,7 +118,7 @@ Then, passing a local path such as react-core/6.0.0/llms.txt in urlList will loa
 
 ## MCP client configuration examples
 
-Most MCP clients use a JSON configuration that tells the client how to start this server. The server itself does not read that JSON; it only reads CLI flags and environment variables. Below are examples you can adapt to your MCP client.
+Most MCP clients use a JSON configuration to specify how to start this server. The server itself only reads CLI flags and environment variables, not the JSON configuration. Below are examples you can adapt to your MCP client.
 
 ### Minimal client config (npx)
 
@@ -197,11 +197,11 @@ npx @modelcontextprotocol/inspector-cli \
 ## Environment variables
 
 - DOC_MCP_FETCH_TIMEOUT_MS: Milliseconds to wait before aborting an HTTP fetch (default: 15000)
-- DOC_MCP_CLEAR_COOLDOWN_MS: Default cooldown value used in internal cache configuration. The current public API does not expose a clearCache tool.
+- DOC_MCP_CLEAR_COOLDOWN_MS: Default cooldown value used in internal cache configuration. The current public API does not expose a `clearCache` tool.
 
 ## Programmatic usage (advanced)
 
-The package provides programmatic access through the `start()` function (or `main()` as an alternative):
+The package provides programmatic access through the `start()` function:
 
 ```typescript
 import { start, main, type CliOptions, type ServerInstance } from '@patternfly/patternfly-mcp';
