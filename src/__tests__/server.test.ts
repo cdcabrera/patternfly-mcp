@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { runServer } from '../server';
+import { createServer } from '../server';
 import { type GlobalOptions } from '../options';
 
 // Mock dependencies
@@ -10,7 +10,7 @@ jest.mock('@modelcontextprotocol/sdk/server/stdio.js');
 const MockMcpServer = McpServer as jest.MockedClass<typeof McpServer>;
 const MockStdioServerTransport = StdioServerTransport as jest.MockedClass<typeof StdioServerTransport>;
 
-describe('runServer', () => {
+describe('createServer', () => {
   let mockServer: any;
   let mockTransport: any;
   let consoleInfoSpy: jest.SpyInstance;
@@ -92,7 +92,7 @@ describe('runServer', () => {
       ]
     }
   ])('should attempt to run server, $description', async ({ options, tools }) => {
-    await runServer(options as GlobalOptions, (tools && { tools }) || undefined);
+    await createServer(options as GlobalOptions, (tools && { tools }) || undefined);
 
     expect(MockStdioServerTransport).toHaveBeenCalled();
     expect({
@@ -110,7 +110,7 @@ describe('runServer', () => {
       throw error;
     });
 
-    await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Server creation failed');
+    await expect(createServer(undefined, { tools: [] })).rejects.toThrow('Server creation failed');
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating MCP server:', error);
   });
 
@@ -119,7 +119,7 @@ describe('runServer', () => {
 
     mockServer.connect.mockRejectedValue(error);
 
-    await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Connection failed');
+    await expect(createServer(undefined, { tools: [] })).rejects.toThrow('Connection failed');
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating MCP server:', error);
   });
 });

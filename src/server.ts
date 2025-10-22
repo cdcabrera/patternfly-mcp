@@ -25,9 +25,13 @@ interface ServerInstance {
 }
 
 /**
- * Create a server instance with shutdown capability
+ * Create and run a server with shutdown, register tool and errors.
+ *
+ * @param options
+ * @param settings
+ * @param settings.tools
  */
-const createServerInstance = async (options = OPTIONS, {
+const createServer = async (options = OPTIONS, {
   tools = [usePatternFlyDocsTool, fetchDocsTool]
 }: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
   let server: McpServer | null = null;
@@ -49,6 +53,7 @@ const createServerInstance = async (options = OPTIONS, {
 
     tools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator();
+
       console.info(`Registered tool: ${name}`);
       server!.registerTool(name, schema, callback);
     });
@@ -78,69 +83,7 @@ const createServerInstance = async (options = OPTIONS, {
   };
 };
 
-/**
- * Create, register tool and errors, then run the server.
- *
- * @param options
- * @param settings
- * @param settings.tools
- */
-const runServer = async (options = OPTIONS, {
-  tools = [
-    usePatternFlyDocsTool,
-    fetchDocsTool
-  ]
-}: { tools?: McpToolCreator[] } = {}): Promise<void> => {
-  try {
-    const server = new McpServer(
-      {
-        name: options.name,
-        version: options.version
-      },
-      {
-        capabilities: {
-          tools: {}
-        }
-      }
-    );
-
-    tools.forEach(toolCreator => {
-      const [name, schema, callback] = toolCreator();
-
-      console.info(`Registered tool: ${name}`);
-      server.registerTool(name, schema, callback);
-    });
-
-    process.on('SIGINT', async () => {
-      await server?.close();
-      process.exit(0);
-    });
-
-    const transport = new StdioServerTransport();
-
-    await server.connect(transport);
-    console.log('PatternFly MCP server running on stdio');
-  } catch (error) {
-    console.error('Error creating MCP server:', error);
-    throw error;
-  }
-};
-
-/**
- * Create and start a server instance with shutdown capability
- *
- * @param options - Server options
- * @param root0 - Settings object
- * @param root0.tools - Array of tool creators
- */
-const createServer = async (options = OPTIONS, {
-  tools = [usePatternFlyDocsTool, fetchDocsTool]
-}: { tools?: McpToolCreator[] } = {}): Promise<ServerInstance> => {
-  return await createServerInstance(options, { tools });
-};
-
 export {
-  runServer,
   createServer,
   type McpTool,
   type McpToolCreator,
