@@ -5,7 +5,7 @@
  */
 
 import { start } from '../src/index';
-import { OPTIONS, parseCliOptions, freezeOptions } from '../src/options';
+import { OPTIONS, parseCliOptions, setOptions } from '../src/options';
 
 describe('CLI Functionality', () => {
   let originalArgv: string[];
@@ -29,8 +29,8 @@ describe('CLI Functionality', () => {
 
       expect(cliOptions.docsHost).toBe(true);
 
-      // Test freezeOptions with CLI options
-      freezeOptions(cliOptions);
+      // Test setOptions with CLI options
+      setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(true);
 
       // Test start() with CLI options
@@ -46,8 +46,8 @@ describe('CLI Functionality', () => {
 
       expect(cliOptions.docsHost).toBe(false);
 
-      // Test freezeOptions with CLI options
-      freezeOptions(cliOptions);
+      // Test setOptions with CLI options
+      setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(false);
 
       // Test start() with CLI options
@@ -63,8 +63,8 @@ describe('CLI Functionality', () => {
 
       expect(cliOptions.docsHost).toBe(false);
 
-      // Test freezeOptions with CLI options
-      freezeOptions(cliOptions);
+      // Test setOptions with CLI options
+      setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(false);
 
       // Test start() with CLI options
@@ -77,7 +77,7 @@ describe('CLI Functionality', () => {
       process.argv = ['node', 'script.js', '--docs-host'];
       const cliOptions1 = parseCliOptions();
 
-      freezeOptions(cliOptions1);
+      setOptions(cliOptions1);
       start(cliOptions1);
 
       expect(cliOptions1.docsHost).toBe(true);
@@ -87,7 +87,7 @@ describe('CLI Functionality', () => {
       process.argv = ['node', 'script.js'];
       const cliOptions2 = parseCliOptions();
 
-      freezeOptions(cliOptions2);
+      setOptions(cliOptions2);
       start(cliOptions2);
 
       expect(cliOptions2.docsHost).toBe(false);

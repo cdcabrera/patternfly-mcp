@@ -5,7 +5,7 @@
  */
 
 import { start, type CliOptions } from '../src/index';
-import { OPTIONS, parseCliOptions, freezeOptions } from '../src/options';
+import { OPTIONS } from '../src/options';
 
 describe('Programmatic API Usage', () => {
   let originalArgv: string[];

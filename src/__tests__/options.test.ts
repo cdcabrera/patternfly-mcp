@@ -1,5 +1,5 @@
 import * as options from '../options';
-import { parseCliOptions, freezeOptions, OPTIONS } from '../options';
+import { parseCliOptions, setOptions, OPTIONS } from '../options';
 
 describe('options', () => {
   it('should return specific properties', () => {
@@ -36,9 +36,9 @@ describe('parseCliOptions', () => {
   });
 });
 
-describe('freezeOptions', () => {
+describe('setOptions', () => {
   it('should return options with consistent properties', () => {
-    const result = freezeOptions({ docsHost: true });
+    const result = setOptions({ docsHost: true });
 
     expect(Object.isFrozen(result)).toBe(false); // No longer frozen since we removed Object.freeze()
     expect(result).not.toBe(OPTIONS); // Now returns a fresh instance, not the global OPTIONS
@@ -58,8 +58,8 @@ describe('freezeOptions', () => {
       it('should create a deep copy of OPTIONS with unique sessionId', () => {
         const originalDocsHost = OPTIONS.docsHost;
 
-        // Create a fresh instance using freezeOptions
-        const freshOptions = freezeOptions({ docsHost: !originalDocsHost });
+        // Create a fresh instance using setOptions
+        const freshOptions = setOptions({ docsHost: !originalDocsHost });
 
         // Verify sessionId is unique and present
         expect(freshOptions.sessionId).toBeDefined();
@@ -73,14 +73,14 @@ describe('freezeOptions', () => {
 
       it('should create independent instances with unique sessionIds', () => {
         // Create first instance
-        const firstOptions = freezeOptions({ docsHost: true });
+        const firstOptions = setOptions({ docsHost: true });
 
         expect(firstOptions.sessionId).toBeDefined();
         expect(firstOptions.docsHost).toBe(true);
         expect(OPTIONS.docsHost).toBe(true);
 
         // Create second instance
-        const secondOptions = freezeOptions({ docsHost: false });
+        const secondOptions = setOptions({ docsHost: false });
 
         expect(secondOptions.sessionId).toBeDefined();
         expect(secondOptions.docsHost).toBe(false);
@@ -92,7 +92,7 @@ describe('freezeOptions', () => {
       });
 
       it('should handle nested object properties correctly', () => {
-        const freshOptions = freezeOptions({ docsHost: true });
+        const freshOptions = setOptions({ docsHost: true });
 
         // Verify sessionId is present
         expect(freshOptions.sessionId).toBeDefined();
@@ -108,7 +108,7 @@ describe('freezeOptions', () => {
       });
 
       it('should preserve all OPTIONS properties including sessionId', () => {
-        const freshOptions = freezeOptions({ docsHost: true });
+        const freshOptions = setOptions({ docsHost: true });
 
         // Verify sessionId is present
         expect(freshOptions.sessionId).toBeDefined();
@@ -140,7 +140,7 @@ describe('freezeOptions', () => {
       it('should handle empty CLI options with sessionId', () => {
         const originalDocsHost = OPTIONS.docsHost;
 
-        const freshOptions = freezeOptions({});
+        const freshOptions = setOptions({});
 
         // Verify sessionId is present
         expect(freshOptions.sessionId).toBeDefined();
@@ -154,7 +154,7 @@ describe('freezeOptions', () => {
       it('should handle partial CLI options with sessionId', () => {
         const originalName = OPTIONS.name;
 
-        const freshOptions = freezeOptions({ docsHost: true });
+        const freshOptions = setOptions({ docsHost: true });
 
         // Verify sessionId is present
         expect(freshOptions.sessionId).toBeDefined();
@@ -170,7 +170,7 @@ describe('freezeOptions', () => {
 
     describe('OPTIONS immutability', () => {
       it('should not freeze the returned instance', () => {
-        const freshOptions = freezeOptions({ docsHost: true });
+        const freshOptions = setOptions({ docsHost: true });
 
         // Verify sessionId is present
         expect(freshOptions.sessionId).toBeDefined();
@@ -180,7 +180,7 @@ describe('freezeOptions', () => {
       });
 
       it('should allow modification of returned instance', () => {
-        const freshOptions = freezeOptions({ docsHost: true });
+        const freshOptions = setOptions({ docsHost: true });
 
         // Verify sessionId is present
         expect(freshOptions.sessionId).toBeDefined();
@@ -194,8 +194,8 @@ describe('freezeOptions', () => {
       });
 
       it('should maintain isolation between instances using sessionId', () => {
-        const firstOptions = freezeOptions({ docsHost: true });
-        const secondOptions = freezeOptions({ docsHost: false });
+        const firstOptions = setOptions({ docsHost: true });
+        const secondOptions = setOptions({ docsHost: false });
 
         // Verify sessionIds are different (indicating isolation)
         expect(firstOptions.sessionId).not.toBe(secondOptions.sessionId);
@@ -210,21 +210,21 @@ describe('freezeOptions', () => {
       });
     });
 
-    describe('multiple freezeOptions calls', () => {
+    describe('multiple setOptions calls', () => {
       it('should handle multiple calls correctly with unique sessionIds', () => {
-        const firstOptions = freezeOptions({ docsHost: true });
+        const firstOptions = setOptions({ docsHost: true });
 
         expect(firstOptions.sessionId).toBeDefined();
         expect(firstOptions.docsHost).toBe(true);
         expect(OPTIONS.docsHost).toBe(true);
 
-        const secondOptions = freezeOptions({ docsHost: false });
+        const secondOptions = setOptions({ docsHost: false });
 
         expect(secondOptions.sessionId).toBeDefined();
         expect(secondOptions.docsHost).toBe(false);
         expect(OPTIONS.docsHost).toBe(false);
 
-        const thirdOptions = freezeOptions({});
+        const thirdOptions = setOptions({});
 
         expect(thirdOptions.sessionId).toBeDefined();
         expect(thirdOptions.docsHost).toBe(false);
@@ -237,9 +237,9 @@ describe('freezeOptions', () => {
       });
 
       it('should create independent instances on each call with unique sessionIds', () => {
-        const firstOptions = freezeOptions({ docsHost: true });
-        const secondOptions = freezeOptions({ docsHost: false });
-        const thirdOptions = freezeOptions({});
+        const firstOptions = setOptions({ docsHost: true });
+        const secondOptions = setOptions({ docsHost: false });
+        const thirdOptions = setOptions({});
 
         // Verify all sessionIds are different (indicating fresh instances)
         expect(firstOptions.sessionId).not.toBe(secondOptions.sessionId);

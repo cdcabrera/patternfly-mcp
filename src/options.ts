@@ -195,7 +195,7 @@ const parseCliOptions = (): CliOptions => ({
  *
  * @param cliOptions
  */
-const freezeOptions = (cliOptions: CliOptions) => {
+const setOptions = (cliOptions: CliOptions) => {
   // Create fresh instance using spread syntax for cleaner code
   const freshOptions = { ...structuredClone(OPTIONS), ...cliOptions };
 
@@ -210,7 +210,7 @@ const freezeOptions = (cliOptions: CliOptions) => {
 
 export {
   parseCliOptions,
-  freezeOptions,
+  setOptions,
   OPTIONS,
   PF_EXTERNAL,
   PF_EXTERNAL_CHARTS,
