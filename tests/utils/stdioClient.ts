@@ -149,7 +149,7 @@ export const startServer = async ({
     try {
       // Try graceful shutdown first
       proc.kill(signal);
-      
+
       // Set a timeout to force kill if graceful shutdown doesn't work
       const forceKillTimer = setTimeout(() => {
         try {

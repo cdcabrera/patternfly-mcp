@@ -27,7 +27,7 @@ describe('Programmatic API Usage', () => {
       }
     }
     serverInstances = [];
-    
+
     // Restore original process.argv
     process.argv = originalArgv;
   });
@@ -38,17 +38,20 @@ describe('Programmatic API Usage', () => {
       const firstOptions: Partial<CliOptions> = { docsHost: true };
 
       const server1 = await start(firstOptions);
+
       serverInstances.push(server1);
 
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
+
       expect(server1.isRunning()).toBe(true);
 
       // Second start() call with different options
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
       const server2 = await start(secondOptions);
+
       serverInstances.push(server2);
 
       expect(OPTIONS.docsHost).toBe(false);
@@ -58,6 +61,7 @@ describe('Programmatic API Usage', () => {
 
       // Third start() call with no options
       const server3 = await start({});
+
       serverInstances.push(server3);
 
       expect(OPTIONS.docsHost).toBe(false);
@@ -71,13 +75,16 @@ describe('Programmatic API Usage', () => {
 
       // Multiple calls with same options
       const server1 = await start(options);
+
       serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
+
       expect(server1.isRunning()).toBe(true);
 
       const server2 = await start(options);
+
       serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
@@ -85,6 +92,7 @@ describe('Programmatic API Usage', () => {
       expect(server2.isRunning()).toBe(true);
 
       const server3 = await start(options);
+
       serverInstances.push(server3);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
@@ -97,14 +105,17 @@ describe('Programmatic API Usage', () => {
       const initialOptions: Partial<CliOptions> = { docsHost: true };
 
       const server1 = await start(initialOptions);
+
       serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
+
       expect(server1.isRunning()).toBe(true);
 
       // Call with empty options - this will reset to default value
       const server2 = await start({});
+
       serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(false); // Will reset to default
       expect(OPTIONS.sessionId).toBeDefined();
@@ -113,6 +124,7 @@ describe('Programmatic API Usage', () => {
 
       // Call with undefined options - this will also reset to default value
       const server3 = await start(undefined as any);
+
       serverInstances.push(server3);
       expect(OPTIONS.docsHost).toBe(false); // Will reset to default
       expect(OPTIONS.sessionId).toBeDefined();
@@ -125,25 +137,31 @@ describe('Programmatic API Usage', () => {
 
       // First call
       const server1 = await start(options);
+
       serverInstances.push(server1);
       const firstDocsHost = OPTIONS.docsHost;
       const firstSessionId = OPTIONS.sessionId;
+
       expect(server1.isRunning()).toBe(true);
 
       // Second call with different options
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
       const server2 = await start(secondOptions);
+
       serverInstances.push(server2);
       const secondDocsHost = OPTIONS.docsHost;
       const secondSessionId = OPTIONS.sessionId;
+
       expect(server2.isRunning()).toBe(true);
 
       // Third call with original options
       const server3 = await start(options);
+
       serverInstances.push(server3);
       const thirdDocsHost = OPTIONS.docsHost;
       const thirdSessionId = OPTIONS.sessionId;
+
       expect(server3.isRunning()).toBe(true);
 
       // Verify values changed as expected
@@ -163,18 +181,24 @@ describe('Programmatic API Usage', () => {
 
       // Start multiple calls concurrently
       const server1 = await start(options1);
+
       serverInstances.push(server1);
       const firstSessionId = OPTIONS.sessionId;
+
       expect(server1.isRunning()).toBe(true);
 
       const server2 = await start(options2);
+
       serverInstances.push(server2);
       const secondSessionId = OPTIONS.sessionId;
+
       expect(server2.isRunning()).toBe(true);
 
       const server3 = await start({});
+
       serverInstances.push(server3);
       const thirdSessionId = OPTIONS.sessionId;
+
       expect(server3.isRunning()).toBe(true);
 
       // OPTIONS should reflect the last call
@@ -193,6 +217,7 @@ describe('Programmatic API Usage', () => {
       const firstOptions: Partial<CliOptions> = { docsHost: true };
 
       const server1 = await start(firstOptions);
+
       serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
       expect(server1.isRunning()).toBe(true);
@@ -201,12 +226,14 @@ describe('Programmatic API Usage', () => {
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
       const server2 = await start(secondOptions);
+
       serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(false);
       expect(server2.isRunning()).toBe(true);
 
       // Third call with no options
       const server3 = await start({});
+
       serverInstances.push(server3);
       expect(OPTIONS.docsHost).toBe(false);
       expect(server3.isRunning()).toBe(true);
@@ -217,6 +244,7 @@ describe('Programmatic API Usage', () => {
 
       // First call
       const server1 = await start(options);
+
       serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
       expect(server1.isRunning()).toBe(true);
@@ -226,6 +254,7 @@ describe('Programmatic API Usage', () => {
 
       // Second call with modified options
       const server2 = await start(options);
+
       serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(false);
       expect(server2.isRunning()).toBe(true);
@@ -237,14 +266,17 @@ describe('Programmatic API Usage', () => {
 
       // Start multiple calls concurrently
       const server1 = await start(options1);
+
       serverInstances.push(server1);
       expect(server1.isRunning()).toBe(true);
 
       const server2 = await start(options2);
+
       serverInstances.push(server2);
       expect(server2.isRunning()).toBe(true);
 
       const server3 = await start({});
+
       serverInstances.push(server3);
       expect(server3.isRunning()).toBe(true);
 
@@ -259,6 +291,7 @@ describe('Programmatic API Usage', () => {
       const invalidOptions = { invalidProperty: 'value' } as any;
 
       const server = await start(invalidOptions);
+
       serverInstances.push(server);
 
       // Should not throw and server should be running
@@ -268,11 +301,13 @@ describe('Programmatic API Usage', () => {
     it('should handle null/undefined options', async () => {
       // Test with null options
       const server1 = await start(null as any);
+
       serverInstances.push(server1);
       expect(server1.isRunning()).toBe(true);
 
       // Test with undefined options
       const server2 = await start(undefined as any);
+
       serverInstances.push(server2);
       expect(server2.isRunning()).toBe(true);
     });
@@ -281,6 +316,7 @@ describe('Programmatic API Usage', () => {
       const emptyOptions = {};
 
       const server = await start(emptyOptions);
+
       serverInstances.push(server);
 
       // Should not throw and server should be running
