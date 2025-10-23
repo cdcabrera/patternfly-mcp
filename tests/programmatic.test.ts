@@ -1,115 +1,150 @@
 /**
  * Programmatic API tests for the PatternFly MCP server.
- * This verifies the programmatic usage of setOptions() function and OPTIONS management.
+ * This verifies the programmatic usage of start() function and OPTIONS management.
  * Focuses on sessionId verification and programmatic API behavior.
- * Note: These tests focus on options management without setOptionsing actual servers.
+ * Tests actual server instances with proper cleanup.
  */
 
-import { type CliOptions } from '../src/index';
-import { OPTIONS, setOptions } from '../src/options';
+import { start, type CliOptions, type ServerInstance } from '../src/index';
+import { OPTIONS } from '../src/options';
 
 describe('Programmatic API Usage', () => {
   let originalArgv: string[];
+  let serverInstances: ServerInstance[] = [];
 
   beforeEach(() => {
     // Store original process.argv
     originalArgv = process.argv;
+    // Clear server instances array
+    serverInstances = [];
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Clean up all server instances
+    for (const server of serverInstances) {
+      if (server.isRunning()) {
+        await server.stop();
+      }
+    }
+    serverInstances = [];
+    
     // Restore original process.argv
     process.argv = originalArgv;
   });
 
-  describe('Programmatic setOptions() calls', () => {
-    it('should handle multiple setOptions() calls with different options and unique sessionIds', async () => {
-      // First setOptions() call
+  describe('Programmatic start() calls', () => {
+    it('should handle multiple start() calls with different options and unique sessionIds', async () => {
+      // First start() call
       const firstOptions: Partial<CliOptions> = { docsHost: true };
 
-      setOptions(firstOptions);
+      const server1 = await start(firstOptions);
+      serverInstances.push(server1);
 
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
+      expect(server1.isRunning()).toBe(true);
 
-      // Second setOptions() call with different options
+      // Second start() call with different options
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
-      setOptions(secondOptions);
+      const server2 = await start(secondOptions);
+      serverInstances.push(server2);
 
       expect(OPTIONS.docsHost).toBe(false);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+      expect(server2.isRunning()).toBe(true);
 
-      // Third setOptions() call with no options
-      setOptions({});
+      // Third start() call with no options
+      const server3 = await start({});
+      serverInstances.push(server3);
 
       expect(OPTIONS.docsHost).toBe(false);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+      expect(server3.isRunning()).toBe(true);
     });
 
-    it('should handle multiple setOptions() calls with same options but unique sessionIds', async () => {
+    it('should handle multiple start() calls with same options but unique sessionIds', async () => {
       const options: Partial<CliOptions> = { docsHost: true };
 
       // Multiple calls with same options
-      setOptions(options);
+      const server1 = await start(options);
+      serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
+      expect(server1.isRunning()).toBe(true);
 
-      setOptions(options);
+      const server2 = await start(options);
+      serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+      expect(server2.isRunning()).toBe(true);
 
-      setOptions(options);
+      const server3 = await start(options);
+      serverInstances.push(server3);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+      expect(server3.isRunning()).toBe(true);
     });
 
-    it('should handle setOptions() calls with empty options and unique sessionIds', async () => {
+    it('should handle start() calls with empty options and unique sessionIds', async () => {
       // Start with some value
       const initialOptions: Partial<CliOptions> = { docsHost: true };
 
-      setOptions(initialOptions);
+      const server1 = await start(initialOptions);
+      serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
+      expect(server1.isRunning()).toBe(true);
 
-      // Call with empty options - this will keep the current value
-      setOptions({});
-      expect(OPTIONS.docsHost).toBe(true); // Will keep current value
+      // Call with empty options - this will reset to default value
+      const server2 = await start({});
+      serverInstances.push(server2);
+      expect(OPTIONS.docsHost).toBe(false); // Will reset to default
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+      expect(server2.isRunning()).toBe(true);
 
-      // Call with undefined options - this will also keep the current value
-      setOptions(undefined as any);
-      expect(OPTIONS.docsHost).toBe(true); // Will keep current value
+      // Call with undefined options - this will also reset to default value
+      const server3 = await start(undefined as any);
+      serverInstances.push(server3);
+      expect(OPTIONS.docsHost).toBe(false); // Will reset to default
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+      expect(server3.isRunning()).toBe(true);
     });
 
-    it('should create fresh instances for each setOptions() call with unique sessionIds', async () => {
+    it('should create fresh instances for each start() call with unique sessionIds', async () => {
       const options: Partial<CliOptions> = { docsHost: true };
 
       // First call
-      setOptions(options);
+      const server1 = await start(options);
+      serverInstances.push(server1);
       const firstDocsHost = OPTIONS.docsHost;
       const firstSessionId = OPTIONS.sessionId;
+      expect(server1.isRunning()).toBe(true);
 
       // Second call with different options
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
-      setOptions(secondOptions);
+      const server2 = await start(secondOptions);
+      serverInstances.push(server2);
       const secondDocsHost = OPTIONS.docsHost;
       const secondSessionId = OPTIONS.sessionId;
+      expect(server2.isRunning()).toBe(true);
 
       // Third call with original options
-      setOptions(options);
+      const server3 = await start(options);
+      serverInstances.push(server3);
       const thirdDocsHost = OPTIONS.docsHost;
       const thirdSessionId = OPTIONS.sessionId;
+      expect(server3.isRunning()).toBe(true);
 
       // Verify values changed as expected
       expect(firstDocsHost).toBe(true);
@@ -122,19 +157,25 @@ describe('Programmatic API Usage', () => {
       expect(firstSessionId).not.toBe(thirdSessionId);
     });
 
-    it('should handle concurrent setOptions() calls with unique sessionIds', async () => {
+    it('should handle concurrent start() calls with unique sessionIds', async () => {
       const options1: Partial<CliOptions> = { docsHost: true };
       const options2: Partial<CliOptions> = { docsHost: false };
 
       // Start multiple calls concurrently
-      setOptions(options1);
+      const server1 = await start(options1);
+      serverInstances.push(server1);
       const firstSessionId = OPTIONS.sessionId;
+      expect(server1.isRunning()).toBe(true);
 
-      setOptions(options2);
+      const server2 = await start(options2);
+      serverInstances.push(server2);
       const secondSessionId = OPTIONS.sessionId;
+      expect(server2.isRunning()).toBe(true);
 
-      setOptions({});
+      const server3 = await start({});
+      serverInstances.push(server3);
       const thirdSessionId = OPTIONS.sessionId;
+      expect(server3.isRunning()).toBe(true);
 
       // OPTIONS should reflect the last call
       expect(OPTIONS.docsHost).toBe(false);
@@ -151,33 +192,43 @@ describe('Programmatic API Usage', () => {
       // First call
       const firstOptions: Partial<CliOptions> = { docsHost: true };
 
-      setOptions(firstOptions);
+      const server1 = await start(firstOptions);
+      serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
+      expect(server1.isRunning()).toBe(true);
 
       // Second call
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
-      setOptions(secondOptions);
+      const server2 = await start(secondOptions);
+      serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(false);
+      expect(server2.isRunning()).toBe(true);
 
       // Third call with no options
-      setOptions({});
+      const server3 = await start({});
+      serverInstances.push(server3);
       expect(OPTIONS.docsHost).toBe(false);
+      expect(server3.isRunning()).toBe(true);
     });
 
     it('should handle OPTIONS updates correctly', async () => {
       const options: Partial<CliOptions> = { docsHost: true };
 
       // First call
-      setOptions(options);
+      const server1 = await start(options);
+      serverInstances.push(server1);
       expect(OPTIONS.docsHost).toBe(true);
+      expect(server1.isRunning()).toBe(true);
 
       // Modify the options object
       options.docsHost = false;
 
       // Second call with modified options
-      setOptions(options);
+      const server2 = await start(options);
+      serverInstances.push(server2);
       expect(OPTIONS.docsHost).toBe(false);
+      expect(server2.isRunning()).toBe(true);
     });
 
     it('should handle concurrent OPTIONS updates', async () => {
@@ -185,9 +236,17 @@ describe('Programmatic API Usage', () => {
       const options2: Partial<CliOptions> = { docsHost: false };
 
       // Start multiple calls concurrently
-      setOptions(options1);
-      setOptions(options2);
-      setOptions({});
+      const server1 = await start(options1);
+      serverInstances.push(server1);
+      expect(server1.isRunning()).toBe(true);
+
+      const server2 = await start(options2);
+      serverInstances.push(server2);
+      expect(server2.isRunning()).toBe(true);
+
+      const server3 = await start({});
+      serverInstances.push(server3);
+      expect(server3.isRunning()).toBe(true);
 
       // OPTIONS should reflect the last call
       expect(OPTIONS.docsHost).toBe(false);
@@ -199,30 +258,33 @@ describe('Programmatic API Usage', () => {
       // Test with invalid options
       const invalidOptions = { invalidProperty: 'value' } as any;
 
-      setOptions(invalidOptions);
+      const server = await start(invalidOptions);
+      serverInstances.push(server);
 
-      // Should not throw
-      expect(true).toBe(true);
+      // Should not throw and server should be running
+      expect(server.isRunning()).toBe(true);
     });
 
     it('should handle null/undefined options', async () => {
       // Test with null options
-      setOptions(null as any);
+      const server1 = await start(null as any);
+      serverInstances.push(server1);
+      expect(server1.isRunning()).toBe(true);
 
       // Test with undefined options
-      setOptions(undefined as any);
-
-      // Should not throw
-      expect(true).toBe(true);
+      const server2 = await start(undefined as any);
+      serverInstances.push(server2);
+      expect(server2.isRunning()).toBe(true);
     });
 
     it('should handle empty options object', async () => {
       const emptyOptions = {};
 
-      setOptions(emptyOptions);
+      const server = await start(emptyOptions);
+      serverInstances.push(server);
 
-      // Should not throw
-      expect(true).toBe(true);
+      // Should not throw and server should be running
+      expect(server.isRunning()).toBe(true);
     });
   });
 });
