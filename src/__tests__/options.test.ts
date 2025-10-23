@@ -41,7 +41,7 @@ describe('freezeOptions', () => {
     const result = freezeOptions({ docsHost: true });
 
     expect(Object.isFrozen(result)).toBe(true);
-    expect(result).toBe(OPTIONS);
+    expect(result).not.toBe(OPTIONS); // Now returns a fresh instance, not the global OPTIONS
     expect(result).toMatchSnapshot('frozen');
   });
 });
