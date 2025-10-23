@@ -4,8 +4,8 @@
  * Simplified using sessionId for verification.
  */
 
-import { start, type CliOptions } from '../index';
-import { OPTIONS, parseCliOptions, freezeOptions } from '../options';
+import { start, type CliOptions } from '../src/index';
+import { OPTIONS, parseCliOptions, freezeOptions } from '../src/options';
 
 describe('E2E CLI and Programmatic Usage', () => {
   let originalArgv: string[];
