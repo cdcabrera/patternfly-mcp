@@ -126,9 +126,7 @@ const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
 /**
  * Generate a unique session ID
  */
-const generateSessionId = (): string => {
-  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+const generateSessionId = (): string => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 /**
  * Global configuration options object.
