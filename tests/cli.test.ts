@@ -1,13 +1,13 @@
 /**
- * End-to-end tests for CLI usage scenarios.
- * This verifies CLI argument parsing and integration with the server.
- * Focuses on CLI-specific functionality and integration testing.
+ * CLI functionality tests for the PatternFly MCP server.
+ * This verifies CLI argument parsing and integration with options management.
+ * Focuses on CLI-specific functionality and parsing behavior.
  */
 
-import { start, type CliOptions } from '../src/index';
+import { start } from '../src/index';
 import { OPTIONS, parseCliOptions, freezeOptions } from '../src/options';
 
-describe('E2E CLI Usage', () => {
+describe('CLI Functionality', () => {
   let originalArgv: string[];
 
   beforeEach(() => {
@@ -94,5 +94,4 @@ describe('E2E CLI Usage', () => {
       expect(OPTIONS.docsHost).toBe(false);
     });
   });
-
 });
