@@ -176,16 +176,52 @@ const parseCliOptions = (): CliOptions => ({
 });
 
 /**
+ * Create a fresh options instance using structuredClone
+ *
+ * @param overrides - Options to override in the fresh instance
+ */
+const createFreshOptions = (overrides: Partial<CliOptions> = {}) => {
+  const baseOptions = {
+    pfExternal: PF_EXTERNAL,
+    pfExternalCharts: PF_EXTERNAL_CHARTS,
+    pfExternalChartsComponents: PF_EXTERNAL_CHARTS_COMPONENTS,
+    pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
+    pfExternalDesign: PF_EXTERNAL_DESIGN,
+    pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
+    pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
+    pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
+    resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
+    toolMemoOptions: TOOL_MEMO_OPTIONS,
+    separator: DEFAULT_SEPARATOR,
+    urlRegex: URL_REGEX,
+    name: packageJson.name,
+    version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
+    repoName: process.cwd()?.split?.('/')?.pop?.()?.trim?.(),
+    contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
+    docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
+    llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
+  };
+
+  // Create fresh instance using structuredClone (Node.js 18+)
+  const freshOptions = structuredClone(baseOptions);
+
+  Object.assign(freshOptions, overrides);
+
+  return Object.freeze(freshOptions);
+};
+
+/**
  * Make global options immutable after combining CLI options with app defaults.
  *
  * @param cliOptions
  */
 const freezeOptions = (cliOptions: CliOptions) => {
-  // Only assign to OPTIONS if it's not already frozen
+  // Create a fresh instance every time using structuredClone
+  const freshOptions = createFreshOptions(cliOptions);
+
+  // Update the global OPTIONS reference only if it's not already frozen
   if (!Object.isFrozen(OPTIONS)) {
-    Object.assign(OPTIONS, {
-      ...cliOptions
-    });
+    Object.assign(OPTIONS, freshOptions);
   }
 
   return Object.freeze(OPTIONS);
