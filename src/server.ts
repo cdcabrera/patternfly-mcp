@@ -49,6 +49,7 @@ const runServer = async (options = OPTIONS, {
       running = false;
       console.log('PatternFly MCP server stopped');
       process.exit(0);
+
       /*
       try {
         // Close the server first
