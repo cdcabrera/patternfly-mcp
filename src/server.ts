@@ -8,6 +8,8 @@ type McpTool = [string, { description: string; inputSchema: any }, (args: any) =
 
 type McpToolCreator = () => McpTool;
 
+type StopServerOptions = { exitProcess?: boolean };
+
 /**
  * Server instance with shutdown capability
  */
@@ -16,7 +18,7 @@ interface ServerInstance {
   /**
    * Stop the server gracefully
    */
-  stop(): Promise<void>;
+  stop(options?: StopServerOptions): Promise<void>;
 
   /**
    * Check if server is running
@@ -43,12 +45,16 @@ const runServer = async (options = OPTIONS, {
   let transport: StdioServerTransport | null = null;
   let running = false;
 
-  const stopServer = async () => {
+  const stopServer = async ({ exitProcess = true }: StopServerOptions = {}) => {
     if (server && running) {
       await server?.close();
       running = false;
+      transport = null;
       console.log('PatternFly MCP server stopped');
-      process.exit(0);
+
+      if (exitProcess === true) {
+        process.exit(0);
+      }
 
       /*
       try {
@@ -112,8 +118,8 @@ const runServer = async (options = OPTIONS, {
   }
 
   return {
-    async stop(): Promise<void> {
-      return await stopServer();
+    async stop(options?: StopServerOptions): Promise<void> {
+      return await stopServer(options);
     },
 
     isRunning(): boolean {

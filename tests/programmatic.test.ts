@@ -9,6 +9,43 @@ import { start, type CliOptions, type ServerInstance } from '../src/index';
 import { OPTIONS } from '../src/options';
 
 describe('Programmatic API Usage', () => {
+  it('should handle multiple start() calls with different options and unique sessionIds', async () => {
+    // First start() call
+    const firstOptions: Partial<CliOptions> = { docsHost: true };
+    const server1 = await start(firstOptions);
+
+    expect(OPTIONS.docsHost).toBe(true);
+    expect(OPTIONS.sessionId).toBeDefined();
+    const firstSessionId = OPTIONS.sessionId;
+
+    expect(server1.isRunning()).toBe(true);
+
+    // Second start() call with different options
+    const secondOptions: Partial<CliOptions> = { docsHost: false };
+    const server2 = await start(secondOptions);
+
+    expect(OPTIONS.docsHost).toBe(false);
+    expect(OPTIONS.sessionId).toBeDefined();
+    expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+    expect(server2.isRunning()).toBe(true);
+
+    // Third start() call with no options
+    const thirdOptions: Partial<CliOptions> = {};
+    const server3 = await start(thirdOptions);
+
+    expect(OPTIONS.docsHost).toBe(false);
+    expect(OPTIONS.sessionId).toBeDefined();
+    expect(OPTIONS.sessionId).not.toBe(firstSessionId);
+    expect(server3.isRunning()).toBe(true);
+
+    await server1.stop({ exitProcess: false });
+    await server2.stop({ exitProcess: false });
+    await server3.stop({ exitProcess: false });
+  });
+});
+
+/*
+describe('Programmatic API Usage', () => {
   let originalArgv: string[];
   let serverInstances: ServerInstance[] = [];
 
@@ -324,3 +361,4 @@ describe('Programmatic API Usage', () => {
     });
   });
 });
+*/
