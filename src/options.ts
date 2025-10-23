@@ -176,35 +176,20 @@ const parseCliOptions = (): CliOptions => ({
 });
 
 /**
- * Create a fresh options instance using structuredClone
- *
- * @param overrides - Options to override in the fresh instance
- */
-const createFreshOptions = (overrides: Partial<CliOptions> = {}) => {
-  // Use the global OPTIONS as the base (no duplication)
-  const freshOptions = structuredClone(OPTIONS);
-
-  Object.assign(freshOptions, overrides);
-
-  return Object.freeze(freshOptions);
-};
-
-/**
  * Make global options immutable after combining CLI options with app defaults.
  *
  * @param cliOptions
  */
 const freezeOptions = (cliOptions: CliOptions) => {
-  // Create a fresh instance every time using structuredClone
-  const freshOptions = createFreshOptions(cliOptions);
+  // Create fresh instance directly using structuredClone
+  const freshOptions = structuredClone(OPTIONS);
 
-  // Update the global OPTIONS reference only if it's not already frozen
-  // This maintains backward compatibility for existing code
-  if (!Object.isFrozen(OPTIONS)) {
-    Object.assign(OPTIONS, freshOptions);
-  }
+  Object.assign(freshOptions, cliOptions);
+  Object.freeze(freshOptions);
 
-  // Return the fresh instance directly (eliminates redundancy for new code)
+  // Update the global OPTIONS reference
+  Object.assign(OPTIONS, freshOptions);
+
   return freshOptions;
 };
 
