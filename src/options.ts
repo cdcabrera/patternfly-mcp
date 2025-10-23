@@ -185,7 +185,6 @@ const freezeOptions = (cliOptions: CliOptions) => {
   const freshOptions = structuredClone(OPTIONS);
 
   Object.assign(freshOptions, cliOptions);
-  Object.freeze(freshOptions);
 
   // Update the global OPTIONS reference
   Object.assign(OPTIONS, freshOptions);

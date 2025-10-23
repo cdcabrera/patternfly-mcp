@@ -37,11 +37,11 @@ describe('parseCliOptions', () => {
 });
 
 describe('freezeOptions', () => {
-  it('should return frozen options with consistent properties', () => {
+  it('should return options with consistent properties', () => {
     const result = freezeOptions({ docsHost: true });
 
-    expect(Object.isFrozen(result)).toBe(true);
+    expect(Object.isFrozen(result)).toBe(false); // No longer frozen since we removed Object.freeze()
     expect(result).not.toBe(OPTIONS); // Now returns a fresh instance, not the global OPTIONS
-    expect(result).toMatchSnapshot('frozen');
+    expect(result).toMatchSnapshot('options');
   });
 });
