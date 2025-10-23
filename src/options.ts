@@ -31,6 +31,7 @@ interface AppDefaults {
   contextPath: string;
   docsPath: string;
   llmsFilesPath: string;
+  sessionId?: string;
 }
 
 /**
@@ -123,6 +124,13 @@ const PF_EXTERNAL_CHARTS_COMPONENTS = `${PF_EXTERNAL_CHARTS}/victory/components`
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
 
 /**
+ * Generate a unique session ID
+ */
+const generateSessionId = (): string => {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+/**
  * Global configuration options object.
  *
  * @type {GlobalOptions}
@@ -145,6 +153,7 @@ const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
  * @property {string} contextPath - Current working directory.
  * @property {string} docsPath - Path to the documentation directory.
  * @property {string} llmsFilesPath - Path to the LLMs files directory.
+ * @property {string} sessionId - Unique session identifier.
  */
 const OPTIONS: GlobalOptions = {
   pfExternal: PF_EXTERNAL,
@@ -165,6 +174,7 @@ const OPTIONS: GlobalOptions = {
   contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
   docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
+  // sessionId is optional and will be set when freezeOptions is called
 };
 
 /**
@@ -183,6 +193,9 @@ const parseCliOptions = (): CliOptions => ({
 const freezeOptions = (cliOptions: CliOptions) => {
   // Create fresh instance using spread syntax for cleaner code
   const freshOptions = { ...structuredClone(OPTIONS), ...cliOptions };
+
+  // Generate a new session ID for this fresh instance
+  freshOptions.sessionId = generateSessionId();
 
   // Update the global OPTIONS reference
   Object.assign(OPTIONS, freshOptions);
