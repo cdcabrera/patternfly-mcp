@@ -181,10 +181,8 @@ const parseCliOptions = (): CliOptions => ({
  * @param cliOptions
  */
 const freezeOptions = (cliOptions: CliOptions) => {
-  // Create fresh instance directly using structuredClone
-  const freshOptions = structuredClone(OPTIONS);
-
-  Object.assign(freshOptions, cliOptions);
+  // Create fresh instance using spread syntax for cleaner code
+  const freshOptions = { ...structuredClone(OPTIONS), ...cliOptions };
 
   // Update the global OPTIONS reference
   Object.assign(OPTIONS, freshOptions);
