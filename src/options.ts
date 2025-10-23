@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import packageJson from '../package.json';
+import { generateHash } from './server.helpers';
 
 /**
  * CLI options that users can set via command line arguments
@@ -124,9 +125,15 @@ const PF_EXTERNAL_CHARTS_COMPONENTS = `${PF_EXTERNAL_CHARTS}/victory/components`
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
 
 /**
- * Generate a unique session ID
+ * Generate a unique session ID using hash-based approach
  */
-const generateSessionId = (): string => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const generateSessionId = (): string => {
+  const timestamp = Date.now();
+  const randomNumber = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  const data = `session_${timestamp}_${randomNumber}`;
+
+  return generateHash(data);
+};
 
 /**
  * Global configuration options object.

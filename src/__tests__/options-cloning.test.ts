@@ -16,7 +16,7 @@ describe('OPTIONS cloning', () => {
 
       // Verify sessionId is unique and present
       expect(freshOptions.sessionId).toBeDefined();
-      expect(freshOptions.sessionId).toMatch(/^session_\d+_[a-z0-9]+$/);
+      expect(freshOptions.sessionId).toMatch(/^[a-f0-9]{40}$/); // SHA1 hash format
       expect(OPTIONS.sessionId).toBe(freshOptions.sessionId);
 
       // Verify the values are correct
@@ -65,7 +65,7 @@ describe('OPTIONS cloning', () => {
 
       // Verify sessionId is present
       expect(freshOptions.sessionId).toBeDefined();
-      expect(freshOptions.sessionId).toMatch(/^session_\d+_[a-z0-9]+$/);
+      expect(freshOptions.sessionId).toMatch(/^[a-f0-9]{40}$/); // SHA1 hash format
 
       // Verify all expected properties exist
       expect(freshOptions).toHaveProperty('pfExternal');
