@@ -26,7 +26,10 @@ describe('main', () => {
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
     mockSetOptions.mockReturnValue({} as GlobalOptions);
-    mockRunServer.mockResolvedValue(undefined);
+    mockRunServer.mockResolvedValue({
+  stop: jest.fn().mockResolvedValue(undefined),
+  isRunning: jest.fn().mockReturnValue(true)
+} as any);
   });
 
   afterEach(() => {
@@ -105,6 +108,10 @@ describe('main', () => {
 
     mockRunServer.mockImplementation(async () => {
       callOrder.push('run');
+      return {
+        stop: jest.fn().mockResolvedValue(undefined),
+        isRunning: jest.fn().mockReturnValue(true)
+      } as any;
     });
 
     await main();
@@ -161,7 +168,10 @@ describe('start alias', () => {
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
     mockSetOptions.mockReturnValue({} as GlobalOptions);
-    mockRunServer.mockResolvedValue(undefined);
+    mockRunServer.mockResolvedValue({
+  stop: jest.fn().mockResolvedValue(undefined),
+  isRunning: jest.fn().mockReturnValue(true)
+} as any);
   });
 
   afterEach(() => {
