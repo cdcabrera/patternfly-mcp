@@ -86,6 +86,7 @@ exports[`options should return specific properties 1`] = `
     },
   },
   "URL_REGEX": /\\^\\(https\\?:\\)\\\\/\\\\//i,
+  "generateSessionId": [Function],
   "parseCliOptions": [Function],
   "setOptions": [Function],
 }

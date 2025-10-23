@@ -125,17 +125,6 @@ const PF_EXTERNAL_CHARTS_COMPONENTS = `${PF_EXTERNAL_CHARTS}/victory/components`
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
 
 /**
- * Generate a unique session ID using hash-based approach
- */
-const generateSessionId = (): string => {
-  const timestamp = Date.now();
-  const randomNumber = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-  const data = `session_${timestamp}_${randomNumber}`;
-
-  return generateHash(data);
-};
-
-/**
  * Global configuration options object.
  *
  * @type {GlobalOptions}
@@ -158,7 +147,7 @@ const generateSessionId = (): string => {
  * @property {string} contextPath - Current working directory.
  * @property {string} docsPath - Path to the documentation directory.
  * @property {string} llmsFilesPath - Path to the LLMs files directory.
- * @property {string} sessionId - Unique session identifier.
+ * @property {string} [sessionId] - Unique session identifier.
  */
 const OPTIONS: GlobalOptions = {
   pfExternal: PF_EXTERNAL,
@@ -179,7 +168,6 @@ const OPTIONS: GlobalOptions = {
   contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
   docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
-  // sessionId is optional and will be set when freezeOptions is called
 };
 
 /**
@@ -189,6 +177,17 @@ const parseCliOptions = (): CliOptions => ({
   docsHost: process.argv.includes('--docs-host')
   // Future CLI options can be added here
 });
+
+/**
+ * Generate a unique session ID
+ */
+const generateSessionId = (): string => {
+  const timestamp = Date.now();
+  const randomNumber = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  const data = `session_${timestamp}_${randomNumber}`;
+
+  return generateHash(data);
+};
 
 /**
  * Make global options immutable after combining CLI options with app defaults.
@@ -209,6 +208,7 @@ const setOptions = (cliOptions: CliOptions) => {
 };
 
 export {
+  generateSessionId,
   parseCliOptions,
   setOptions,
   OPTIONS,
