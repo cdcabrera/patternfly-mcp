@@ -4,7 +4,6 @@
  * Focuses on CLI-specific functionality and parsing behavior.
  */
 
-import { start } from '../src/index';
 import { OPTIONS, parseCliOptions, setOptions } from '../src/options';
 
 describe('CLI Functionality', () => {
@@ -29,12 +28,8 @@ describe('CLI Functionality', () => {
 
       expect(cliOptions.docsHost).toBe(true);
 
-      // Test setOptions with CLI options
+      // Test setOptions() with CLI options
       setOptions(cliOptions);
-      expect(OPTIONS.docsHost).toBe(true);
-
-      // Test start() with CLI options
-      start(cliOptions);
       expect(OPTIONS.docsHost).toBe(true);
     });
 
@@ -50,8 +45,8 @@ describe('CLI Functionality', () => {
       setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(false);
 
-      // Test start() with CLI options
-      start(cliOptions);
+      // Test setOptions() with CLI options
+      setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(false);
     });
 
@@ -67,8 +62,8 @@ describe('CLI Functionality', () => {
       setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(false);
 
-      // Test start() with CLI options
-      start(cliOptions);
+      // Test setOptions() with CLI options
+      setOptions(cliOptions);
       expect(OPTIONS.docsHost).toBe(false);
     });
 
@@ -78,7 +73,7 @@ describe('CLI Functionality', () => {
       const cliOptions1 = parseCliOptions();
 
       setOptions(cliOptions1);
-      start(cliOptions1);
+      setOptions(cliOptions1);
 
       expect(cliOptions1.docsHost).toBe(true);
       expect(OPTIONS.docsHost).toBe(true);
@@ -88,7 +83,7 @@ describe('CLI Functionality', () => {
       const cliOptions2 = parseCliOptions();
 
       setOptions(cliOptions2);
-      start(cliOptions2);
+      setOptions(cliOptions2);
 
       expect(cliOptions2.docsHost).toBe(false);
       expect(OPTIONS.docsHost).toBe(false);

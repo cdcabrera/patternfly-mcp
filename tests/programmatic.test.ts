@@ -1,11 +1,12 @@
 /**
  * Programmatic API tests for the PatternFly MCP server.
- * This verifies the programmatic usage of start() function and OPTIONS management.
+ * This verifies the programmatic usage of setOptions() function and OPTIONS management.
  * Focuses on sessionId verification and programmatic API behavior.
+ * Note: These tests focus on options management without setOptionsing actual servers.
  */
 
-import { start, type CliOptions } from '../src/index';
-import { OPTIONS } from '../src/options';
+import { type CliOptions } from '../src/index';
+import { OPTIONS, setOptions } from '../src/options';
 
 describe('Programmatic API Usage', () => {
   let originalArgv: string[];
@@ -20,93 +21,93 @@ describe('Programmatic API Usage', () => {
     process.argv = originalArgv;
   });
 
-  describe('Programmatic start() calls', () => {
-    it('should handle multiple start() calls with different options and unique sessionIds', async () => {
-      // First start() call
+  describe('Programmatic setOptions() calls', () => {
+    it('should handle multiple setOptions() calls with different options and unique sessionIds', async () => {
+      // First setOptions() call
       const firstOptions: Partial<CliOptions> = { docsHost: true };
 
-      start(firstOptions);
+      setOptions(firstOptions);
 
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
 
-      // Second start() call with different options
+      // Second setOptions() call with different options
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
-      start(secondOptions);
+      setOptions(secondOptions);
 
       expect(OPTIONS.docsHost).toBe(false);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
 
-      // Third start() call with no options
-      start({});
+      // Third setOptions() call with no options
+      setOptions({});
 
       expect(OPTIONS.docsHost).toBe(false);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
     });
 
-    it('should handle multiple start() calls with same options but unique sessionIds', async () => {
+    it('should handle multiple setOptions() calls with same options but unique sessionIds', async () => {
       const options: Partial<CliOptions> = { docsHost: true };
 
       // Multiple calls with same options
-      start(options);
+      setOptions(options);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
 
-      start(options);
+      setOptions(options);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
 
-      start(options);
+      setOptions(options);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
     });
 
-    it('should handle start() calls with empty options and unique sessionIds', async () => {
+    it('should handle setOptions() calls with empty options and unique sessionIds', async () => {
       // Start with some value
       const initialOptions: Partial<CliOptions> = { docsHost: true };
 
-      start(initialOptions);
+      setOptions(initialOptions);
       expect(OPTIONS.docsHost).toBe(true);
       expect(OPTIONS.sessionId).toBeDefined();
       const firstSessionId = OPTIONS.sessionId;
 
-      // Call with empty options - this will reset to default value
-      start({});
-      expect(OPTIONS.docsHost).toBe(false); // Will be reset to default
+      // Call with empty options - this will keep the current value
+      setOptions({});
+      expect(OPTIONS.docsHost).toBe(true); // Will keep current value
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
 
-      // Call with undefined options - this will also reset to default value
-      start(undefined as any);
-      expect(OPTIONS.docsHost).toBe(false); // Will be reset to default
+      // Call with undefined options - this will also keep the current value
+      setOptions(undefined as any);
+      expect(OPTIONS.docsHost).toBe(true); // Will keep current value
       expect(OPTIONS.sessionId).toBeDefined();
       expect(OPTIONS.sessionId).not.toBe(firstSessionId);
     });
 
-    it('should create fresh instances for each start() call with unique sessionIds', async () => {
+    it('should create fresh instances for each setOptions() call with unique sessionIds', async () => {
       const options: Partial<CliOptions> = { docsHost: true };
 
       // First call
-      start(options);
+      setOptions(options);
       const firstDocsHost = OPTIONS.docsHost;
       const firstSessionId = OPTIONS.sessionId;
 
       // Second call with different options
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
-      start(secondOptions);
+      setOptions(secondOptions);
       const secondDocsHost = OPTIONS.docsHost;
       const secondSessionId = OPTIONS.sessionId;
 
       // Third call with original options
-      start(options);
+      setOptions(options);
       const thirdDocsHost = OPTIONS.docsHost;
       const thirdSessionId = OPTIONS.sessionId;
 
@@ -121,18 +122,18 @@ describe('Programmatic API Usage', () => {
       expect(firstSessionId).not.toBe(thirdSessionId);
     });
 
-    it('should handle concurrent start() calls with unique sessionIds', async () => {
+    it('should handle concurrent setOptions() calls with unique sessionIds', async () => {
       const options1: Partial<CliOptions> = { docsHost: true };
       const options2: Partial<CliOptions> = { docsHost: false };
 
       // Start multiple calls concurrently
-      start(options1);
+      setOptions(options1);
       const firstSessionId = OPTIONS.sessionId;
 
-      start(options2);
+      setOptions(options2);
       const secondSessionId = OPTIONS.sessionId;
 
-      start({});
+      setOptions({});
       const thirdSessionId = OPTIONS.sessionId;
 
       // OPTIONS should reflect the last call
@@ -150,17 +151,17 @@ describe('Programmatic API Usage', () => {
       // First call
       const firstOptions: Partial<CliOptions> = { docsHost: true };
 
-      start(firstOptions);
+      setOptions(firstOptions);
       expect(OPTIONS.docsHost).toBe(true);
 
       // Second call
       const secondOptions: Partial<CliOptions> = { docsHost: false };
 
-      start(secondOptions);
+      setOptions(secondOptions);
       expect(OPTIONS.docsHost).toBe(false);
 
       // Third call with no options
-      start({});
+      setOptions({});
       expect(OPTIONS.docsHost).toBe(false);
     });
 
@@ -168,14 +169,14 @@ describe('Programmatic API Usage', () => {
       const options: Partial<CliOptions> = { docsHost: true };
 
       // First call
-      start(options);
+      setOptions(options);
       expect(OPTIONS.docsHost).toBe(true);
 
       // Modify the options object
       options.docsHost = false;
 
       // Second call with modified options
-      start(options);
+      setOptions(options);
       expect(OPTIONS.docsHost).toBe(false);
     });
 
@@ -184,9 +185,9 @@ describe('Programmatic API Usage', () => {
       const options2: Partial<CliOptions> = { docsHost: false };
 
       // Start multiple calls concurrently
-      start(options1);
-      start(options2);
-      start({});
+      setOptions(options1);
+      setOptions(options2);
+      setOptions({});
 
       // OPTIONS should reflect the last call
       expect(OPTIONS.docsHost).toBe(false);
@@ -198,7 +199,7 @@ describe('Programmatic API Usage', () => {
       // Test with invalid options
       const invalidOptions = { invalidProperty: 'value' } as any;
 
-      start(invalidOptions);
+      setOptions(invalidOptions);
 
       // Should not throw
       expect(true).toBe(true);
@@ -206,10 +207,10 @@ describe('Programmatic API Usage', () => {
 
     it('should handle null/undefined options', async () => {
       // Test with null options
-      start(null as any);
+      setOptions(null as any);
 
       // Test with undefined options
-      start(undefined as any);
+      setOptions(undefined as any);
 
       // Should not throw
       expect(true).toBe(true);
@@ -218,7 +219,7 @@ describe('Programmatic API Usage', () => {
     it('should handle empty options object', async () => {
       const emptyOptions = {};
 
-      start(emptyOptions);
+      setOptions(emptyOptions);
 
       // Should not throw
       expect(true).toBe(true);
