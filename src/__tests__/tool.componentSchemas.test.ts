@@ -28,7 +28,7 @@ describe('componentSchemasTool', () => {
   const [toolName, toolSchema, toolCallback] = componentSchemasTool();
 
   it('should have correct tool name and schema', () => {
-    expect(toolName).toBe('component-schemas');
+    expect(toolName).toBe('componentSchemas');
     expect(toolSchema.description).toBeDefined();
     expect(toolSchema.inputSchema).toBeDefined();
   });

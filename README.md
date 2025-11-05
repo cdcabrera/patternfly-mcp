@@ -195,7 +195,7 @@ npx @modelcontextprotocol/inspector-cli \
   ]'
 ```
 
-component-schemas (get component JSON Schema):
+componentSchemas (get component JSON Schema):
 
 ```bash
 npx @modelcontextprotocol/inspector-cli \
@@ -203,7 +203,7 @@ npx @modelcontextprotocol/inspector-cli \
   --server patternfly-docs \
   --cli \
   --method tools/call \
-  --tool-name component-schemas \
+  --tool-name componentSchemas \
   --tool-arg componentName='Button'
 ```
 

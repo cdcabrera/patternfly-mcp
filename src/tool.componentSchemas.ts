@@ -85,7 +85,7 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
   };
 
   return [
-    'component-schemas',
+    'componentSchemas',
     {
       description: 'Get JSON Schema for a PatternFly React component. Returns prop definitions, types, and validation rules. Use this for structured component metadata, not documentation.',
       inputSchema: {
