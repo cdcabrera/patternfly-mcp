@@ -42,7 +42,7 @@ interface FuzzySearchOptions {
  *
  * @param query - Search query string
  * @param items - Array of strings to search
- * @returns Closest matching string or null
+ * @returns {string | null} Closest matching string or null
  *
  * @example
  * ```typescript
@@ -64,7 +64,7 @@ const findClosest = (
   const closestText = closest(queryLower, itemTexts);
   const closestIndex = itemTexts.indexOf(closestText);
 
-  return closestIndex >= 0 ? items[closestIndex] : null;
+  return closestIndex >= 0 && closestIndex < items.length ? items[closestIndex] ?? null : null;
 };
 
 /**
@@ -75,7 +75,7 @@ const findClosest = (
  * @param query - Search query string
  * @param items - Array of strings to search
  * @param options - Search configuration options
- * @returns Array of matching strings with distance and match type
+ * @returns {FuzzySearchResult[]} Array of matching strings with distance and match type
  *
  * @example
  * ```typescript
@@ -110,6 +110,7 @@ const fuzzySearch = (
 
     // Determine match type
     let matchType: FuzzySearchResult['matchType'];
+
     if (editDistance === 0) {
       matchType = 'exact';
     } else if (itemLower.startsWith(queryLower)) {
@@ -135,6 +136,7 @@ const fuzzySearch = (
     if (a.distance !== b.distance) {
       return a.distance - b.distance;
     }
+
     return a.item.localeCompare(b.item);
   });
 
