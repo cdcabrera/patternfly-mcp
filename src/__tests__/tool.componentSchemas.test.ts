@@ -40,6 +40,7 @@ describe('componentSchemasTool', () => {
     expect(result.content[0].type).toBe('text');
 
     const response = JSON.parse(result.content[0].text);
+
     expect(response.$schema).toBeDefined();
     expect(response.type).toBe('object');
     expect(response.title).toBe('Button Props');
@@ -61,6 +62,7 @@ describe('componentSchemasTool', () => {
     const result = await toolCallback({ componentName: 'Button' });
 
     const response = JSON.parse(result.content[0].text);
+
     expect(response).toHaveProperty('$schema');
     expect(response).toHaveProperty('type');
     expect(response).toHaveProperty('title');

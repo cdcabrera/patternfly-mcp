@@ -15,5 +15,5 @@ export default {
         tsconfig: '<rootDir>/tsconfig.json'
       }
     ]
-  },
+  }
 };

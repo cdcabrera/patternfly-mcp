@@ -3,6 +3,7 @@
 // TODO: Remove this file once the package exports its own types.
 
 declare module '@patternfly/patternfly-component-schemas/json' {
+
   /**
    * An array of all available PatternFly component names.
    */
