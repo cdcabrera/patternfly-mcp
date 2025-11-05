@@ -38,7 +38,7 @@ interface FuzzySearchOptions {
 }
 
 /**
- * Find closest match using fastest-levenshtein's closest function
+ * Find the closest match using fastest-levenshtein's closest function
  *
  * @param query - Search query string
  * @param items - Array of strings to search
@@ -55,22 +55,13 @@ const findClosest = (
   items: string[]
 ): string | null => {
   // Trim query (user input) to handle accidental spaces, but don't trim items
-  // (authoritative data) to preserve them as-is. Component names are PascalCase
-  // and shouldn't have spaces, but preserving items is safer.
   const queryLower = query.toLowerCase().trim();
-  const itemTexts = items.map(item => item.toLowerCase());
 
-  // Use fastest-levenshtein's closest function
-  const closestText = closest(queryLower, itemTexts);
-  const closestIndex = itemTexts.indexOf(closestText);
-
-  return closestIndex >= 0 && closestIndex < items.length ? items[closestIndex] ?? null : null;
+  return closest(queryLower, items) || null;
 };
 
 /**
  * Fuzzy search using fastest-levenshtein
- *
- * Works with arrays of strings only. Consumer should convert objects to strings before calling.
  *
  * @param query - Search query string
  * @param items - Array of strings to search

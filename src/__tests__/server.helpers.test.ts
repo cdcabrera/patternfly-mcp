@@ -50,56 +50,62 @@ describe('isPromise', () => {
 });
 
 describe('findClosest', () => {
-  const components = ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup'];
-
-  it('should find exact match', () => {
-    const result = findClosest('Button', components);
-
-    expect(result).toBe('Button');
-  });
-
-  it('should find closest match with case insensitive search', () => {
-    const result = findClosest('button', components);
-
-    expect(result).toBe('Button');
-  });
-
-  it('should find closest match for partial query', () => {
-    const result = findClosest('but', components);
-
-    expect(result).toBe('Button');
-  });
-
-  it('should find closest match with typo', () => {
-    const result = findClosest('buton', components);
-
-    expect(result).toBe('Button');
-  });
-
-  it('should handle query with spaces (trimmed)', () => {
-    const result = findClosest('  button  ', components);
-
-    expect(result).toBe('Button');
-  });
-
-  it('should return null for completely unrelated query', () => {
-    const result = findClosest('xyzabc123', components);
-
-    // Note: closest() will still return something, but might be very distant
-    // This tests the behavior with a very different string
-    expect(result).toBeTruthy(); // closest() always returns something
-  });
-
-  it('should handle empty array', () => {
-    const result = findClosest('button', []);
-
-    expect(result).toBeNull();
-  });
-
-  it('should find closest among similar options', () => {
-    const result = findClosest('badge', components);
-
-    expect(result).toBe('Badge');
+  it.each([
+    {
+      description: 'empty haystack',
+      needle: 'Button',
+      haystack: []
+    },
+    {
+      description: 'empty needle',
+      needle: '',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'non-existent needle',
+      needle: 'lorem',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'non-existent needle with case insensitive search',
+      needle: 'LOREM',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'exact match',
+      needle: 'Alert',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'partial query',
+      needle: 'but',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'typo',
+      needle: 'buton',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'multiple matches',
+      needle: 'badge',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'multiple matches with case insensitive search',
+      needle: 'BADGE',
+      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+    },
+    {
+      description: 'match spacing',
+      needle: 'dolor sit',
+      haystack: ['sit', 'dolor', 'dolor sit']
+    }
+  ])('should attempt to find a closest match, $description', ({ needle, haystack }) => {
+    expect({
+      needle,
+      match: findClosest(needle, haystack)
+    }).toMatchSnapshot();
   });
 });
 

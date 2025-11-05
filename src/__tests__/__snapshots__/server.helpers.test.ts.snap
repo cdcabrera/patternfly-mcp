@@ -1,5 +1,75 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`findClosest should attempt to find a closest match, empty haystack 1`] = `
+{
+  "match": null,
+  "needle": "Button",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, empty needle 1`] = `
+{
+  "match": "Badge",
+  "needle": "",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, exact match 1`] = `
+{
+  "match": "Alert",
+  "needle": "Alert",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, match spacing 1`] = `
+{
+  "match": "dolor sit",
+  "needle": "dolor sit",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, multiple matches 1`] = `
+{
+  "match": "Badge",
+  "needle": "badge",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, multiple matches with case insensitive search 1`] = `
+{
+  "match": "Badge",
+  "needle": "BADGE",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, non-existent needle 1`] = `
+{
+  "match": "Alert",
+  "needle": "lorem",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, non-existent needle with case insensitive search 1`] = `
+{
+  "match": "Alert",
+  "needle": "LOREM",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, partial query 1`] = `
+{
+  "match": "Button",
+  "needle": "but",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, typo 1`] = `
+{
+  "match": "Button",
+  "needle": "buton",
+}
+`;
+
 exports[`generateHash should minimally generate a consistent hash: hash, object and primitive values 1`] = `
 {
   "valueArray": "0e8e2b3096e6aee20e3cd10b7788ce3d72502061",
