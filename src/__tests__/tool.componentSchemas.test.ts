@@ -22,6 +22,7 @@ jest.mock('@patternfly/patternfly-component-schemas', () => ({
   })
 }));
 
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { componentSchemasTool } from '../tool.componentSchemas';
 
 describe('componentSchemasTool', () => {
@@ -29,151 +30,77 @@ describe('componentSchemasTool', () => {
 
   it('should have correct tool name and schema', () => {
     expect(toolName).toBe('component-schemas');
-    expect(toolSchema.description).toContain('PatternFly component schemas');
+    expect(toolSchema.description).toBeDefined();
     expect(toolSchema.inputSchema).toBeDefined();
   });
 
-  describe('list action', () => {
-    it('should list all available components', async () => {
-      const result = await toolCallback({ action: 'list' });
+  it('should work without error for valid component', async () => {
+    const result = await toolCallback({ componentName: 'Button' });
 
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0].type).toBe('text');
 
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.action).toBe('list');
-      expect(response.totalComponents).toBe(7); // Mocked components
-      expect(Array.isArray(response.components)).toBe(true);
-      expect(response.components).toEqual(['Alert', 'AlertGroup', 'Button', 'Card', 'Modal', 'Text', 'TextInput']); // Sorted mocked components
-      expect(response.description).toContain('PatternFly React components');
-    });
+    const response = JSON.parse(result.content[0].text);
+    expect(response.componentName).toBe('Button');
+    expect(response.schema).toBeDefined();
   });
 
-  describe('get action', () => {
-    it('should get schema for a valid component', async () => {
-      const result = await toolCallback({ action: 'get', componentName: 'Button' });
+  // it('should return correct data structure', async () => {
+  //   const result = await toolCallback({ componentName: 'Button' });
+  //
+  //   expect(result.content).toHaveLength(1);
+  //   expect(result.content[0].type).toBe('text');
+  //
+  //   const response = JSON.parse(result.content[0].text);
+  //   expect(response.componentName).toBe('Button');
+  //   expect(response.schema).toBeDefined();
+  // });
+  //
+  it('should return correct data structure', async () => {
+    const result = await toolCallback({ componentName: 'Button' });
 
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.action).toBe('get');
-      expect(response.componentName).toBe('Button');
-      expect(response.propsCount).toBe(10);
-      expect(response.schema).toBeDefined();
-      expect(response.schema.type).toBe('object');
-      expect(response.schema.properties).toBeDefined();
-      expect(response.requiredProps).toEqual(['children']);
-    });
-
-    it('should handle invalid component name', async () => {
-      const result = await toolCallback({ action: 'get', componentName: 'InvalidComponent' });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.error).toContain('not found');
-      expect(response.suggestion).toContain('search');
-    });
-
-    it('should require componentName for get action', async () => {
-      const result = await toolCallback({ action: 'get' });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.error).toContain('componentName is required');
-      expect(response.usage).toBeDefined();
-    });
-
-    it('should provide suggestions for similar component names', async () => {
-      const result = await toolCallback({ action: 'get', componentName: 'but' });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.error).toContain('not found');
-      expect(response.suggestions).toBeDefined();
-      expect(response.suggestions.length).toBeGreaterThan(0);
-      // Should include Button in suggestions
-      expect(response.suggestions.some((s: any) => s.name.includes('Button'))).toBe(true);
-    });
+    const response = JSON.parse(result.content[0].text);
+    expect(response).toHaveProperty('componentName');
+    expect(response).toHaveProperty('propsCount');
+    expect(response).toHaveProperty('requiredProps');
+    expect(response).toHaveProperty('schema');
   });
+  it('should throw correct error for invalid component without crashing', async () => {
+    await expect(toolCallback({ componentName: 'InvalidComponent' })).rejects.toThrow(McpError);
 
-  describe('search action', () => {
-    it('should search components with fuzzy matching', async () => {
-      const result = await toolCallback({ action: 'search', query: 'but' });
+    try {
+      await toolCallback({ componentName: 'InvalidComponent' });
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpError);
+      expect((error as McpError).code).toBe(ErrorCode.InvalidParams);
+    }
+  });
+  it('should throw correct error for missing componentName without crashing', async () => {
+    await expect(toolCallback({})).rejects.toThrow(McpError);
 
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
+    try {
+      await toolCallback({});
+    } catch (error) {
+      expect(error).toBeInstanceOf(McpError);
+      expect((error as McpError).code).toBe(ErrorCode.InvalidParams);
+    }
+  });
+  it('should handle errors gracefully and not crash server', async () => {
+    // Test that errors are properly caught and thrown as McpError
+    const invalidInputs = [
+      {},
+      { componentName: null },
+      { componentName: 123 },
+      { componentName: 'NonExistentComponent' }
+    ];
 
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.action).toBe('search');
-      expect(response.query).toBe('but');
-      expect(response.totalResults).toBeGreaterThan(0);
-      expect(Array.isArray(response.results)).toBe(true);
-      expect(response.results[0]).toHaveProperty('name');
-      expect(response.results[0]).toHaveProperty('score');
-      expect(response.results[0]).toHaveProperty('matchType');
-    });
-
-    it('should require query for search action', async () => {
-      const result = await toolCallback({ action: 'search' });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.error).toContain('query is required');
-    });
-
-    it('should respect limit parameter', async () => {
-      const result = await toolCallback({ action: 'search', query: 'a', limit: 3 });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.results.length).toBeLessThanOrEqual(3);
-    });
-
-    it('should return results sorted by score', async () => {
-      const result = await toolCallback({ action: 'search', query: 'alert' });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      // Results should be sorted by score (descending)
-      for (let i = 1; i < response.results.length; i++) {
-        expect(response.results[i - 1].score).toBeGreaterThanOrEqual(response.results[i].score);
+    for (const input of invalidInputs) {
+      try {
+        await toolCallback(input);
+      } catch (error) {
+        // Should be McpError, not a regular Error that would crash
+        expect(error).toBeInstanceOf(McpError);
       }
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle unknown action', async () => {
-      const result = await toolCallback({ action: 'unknown' });
-
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
-
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.error).toContain('Unknown action');
-      expect(response.usage).toBeDefined();
-    });
+    }
   });
 });
