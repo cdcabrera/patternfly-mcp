@@ -49,13 +49,15 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
     const exactMatch = componentNames.find(name => name.toLowerCase() === trimmedComponentName.toLowerCase());
 
     if (exactMatch === undefined) {
-      const suggestions = fuzzySearch(trimmedComponentName, componentNames, {
+      const fuzzyResults = fuzzySearch(trimmedComponentName, componentNames, {
         maxDistance: 3,
         maxResults: 5
       });
 
+      const suggestions = fuzzyResults.map(result => result.item);
+
       const suggestionMessage = suggestions.length > 0
-        ? `Did you mean "${suggestions[0]?.item}"?`
+        ? `Did you mean "${suggestions.shift()}"?`
         : 'No similar components found.';
 
       throw new McpError(
