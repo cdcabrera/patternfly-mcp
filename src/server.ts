@@ -7,7 +7,7 @@ import { OPTIONS } from './options';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
-type McpToolCreator = () => McpTool;
+type McpToolCreator = (options?: any) => McpTool;
 
 /**
  * Server instance with shutdown capability
@@ -68,7 +68,7 @@ const runServer = async (options = OPTIONS, {
     );
 
     tools.forEach(toolCreator => {
-      const [name, schema, callback] = toolCreator();
+      const [name, schema, callback] = toolCreator(options);
 
       console.info(`Registered tool: ${name}`);
       server?.registerTool(name, schema, callback);

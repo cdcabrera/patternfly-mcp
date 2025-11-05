@@ -1,238 +1,104 @@
 import { z } from 'zod';
-import { componentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas';
-import type { McpToolCreator } from './server';
-
-const ComponentSchemasInputSchema = z.object({
-  action: z
-    .enum(['list', 'get', 'search'])
-    .describe(
-      'Action to perform: list all components, get specific component schema, or search components with fuzzy matching'
-    ),
-  componentName: z
-    .string()
-    .optional()
-    .describe(
-      'Name of the component to get schema for (required when action is "get")'
-    ),
-  query: z
-    .string()
-    .optional()
-    .describe(
-      'Search query for fuzzy matching components (required when action is "search")'
-    ),
-  limit: z
-    .number()
-    .optional()
-    .describe('Maximum number of search results to return (default: 10)')
-});
-
-type ComponentSchemasInput = z.infer<typeof ComponentSchemasInputSchema>;
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { componentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
+import { type McpTool } from './server';
+import { OPTIONS } from './options';
+import { memo } from './server.caching';
+import { fuzzySearch } from './server.helpers';
 
 /**
- * Simple fuzzy search for component names
+ * Component schema type from @patternfly/patternfly-component-schemas
+ * This is the JSON Schema object returned directly from getComponentSchema
+ */
+type ComponentSchema = {
+  $schema: string;
+  type: string;
+  title: string;
+  description: string;
+  properties: Record<string, any>;
+  additionalProperties?: boolean;
+  required?: string[];
+};
+
+/**
+ * componentSchemas tool function (tuple pattern)
  *
- * @param query - Search query string
- * @param components - Array of component names to search
- * @param limit - Maximum number of results to return
+ * @param options
  */
-function searchComponents(
-  query: string,
-  components: string[],
-  limit = 10
-): Array<{ name: string; score: number; matchType: string }> {
-  const queryLower = query.toLowerCase();
-  const results: Array<{ name: string; score: number; matchType: string }> = [];
+const componentSchemasTool = (options = OPTIONS): McpTool => {
+  const memoGetComponentSchema = memo(
+    async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
+    options.toolMemoOptions.fetchDocs // Use the same memo options as fetchDocs
+  );
 
-  for (const component of components) {
-    const componentLower = component.toLowerCase();
-    let score = 0;
-    let matchType = '';
+  const callback = async (args: any = {}) => {
+    const { componentName } = args;
 
-    // Exact match (highest priority)
-    if (componentLower === queryLower) {
-      score = 1000;
-      matchType = 'exact';
-    // eslint-disable-next-line @stylistic/brace-style
-    }
-    // Starts with query (high priority)
-    else if (componentLower.startsWith(queryLower)) {
-      score = 900 - queryLower.length;
-      matchType = 'prefix';
-    // eslint-disable-next-line @stylistic/brace-style
-    }
-    // Contains query (medium priority)
-    else if (componentLower.includes(queryLower)) {
-      const index = componentLower.indexOf(queryLower);
-
-      score = 800 - index - queryLower.length;
-      matchType = 'contains';
+    if (typeof componentName !== 'string') {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Missing required parameter: componentName (must be a string): ${componentName}`
+      );
     }
 
-    if (score > 0) {
-      results.push({ name: component, score, matchType });
+    // Trim componentName (user input) to handle accidental spaces, but don't trim componentNames
+    // (authoritative data) to preserve them as-is
+    const trimmedComponentName = componentName.trim();
+
+    // Try an exact match first (case-insensitive)
+    const exactMatch = componentNames.find(name => name.toLowerCase() === trimmedComponentName.toLowerCase());
+
+    if (exactMatch === undefined) {
+      const fuzzyResults = fuzzySearch(trimmedComponentName, componentNames, {
+        maxDistance: 3,
+        maxResults: 5
+      });
+
+      const suggestions = fuzzyResults.map(result => result.item);
+
+      const suggestionMessage = suggestions.length > 0
+        ? `Did you mean "${suggestions.shift()}"?`
+        : 'No similar components found.';
+
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Component "${trimmedComponentName}" not found. ${suggestionMessage}`
+      );
     }
-  }
 
-  // Sort by score and return top results
-  return results.sort((a, b) => b.score - a.score).slice(0, limit);
-}
+    // Get schema using a memoized function
+    let componentSchema: ComponentSchema;
 
-/**
- * Tool for accessing PatternFly component schemas
- * Provides JSON Schema validation and documentation for PatternFly React components
- */
-const componentSchemasTool: McpToolCreator = () => [
-  'component-schemas',
-  {
-    description:
-      'Access PatternFly component schemas for validation and documentation. Can list all available components, search with fuzzy matching, or get detailed schema for a specific component.',
-    inputSchema: ComponentSchemasInputSchema.describe(
-      'Input for component schemas tool'
-    )
-  },
-  async (args: ComponentSchemasInput) => {
     try {
-      const { action, componentName, query, limit = 10 } = args;
-
-      if (action === 'list') {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  action: 'list',
-                  totalComponents: componentNames.length,
-                  components: componentNames.sort(),
-                  description:
-                    'Available PatternFly React components with JSON Schema validation'
-                },
-                null,
-                2
-              )
-            }
-          ]
-        };
-      }
-
-      if (action === 'search') {
-        if (!query) {
-          throw new Error('query is required when action is "search"');
-        }
-
-        const searchResults = searchComponents(query, componentNames, limit);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  action: 'search',
-                  query,
-                  totalResults: searchResults.length,
-                  results: searchResults,
-                  description: `Search results for "${query}"`
-                },
-                null,
-                2
-              )
-            }
-          ]
-        };
-      }
-
-      if (action === 'get') {
-        if (!componentName) {
-          throw new Error('componentName is required when action is "get"');
-        }
-
-        // First try exact match
-        if (!componentNames.includes(componentName)) {
-          // If no exact match, provide search suggestions
-          const suggestions = searchComponents(
-            componentName,
-            componentNames,
-            5
-          );
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(
-                  {
-                    error: `Component "${componentName}" not found`,
-                    suggestions: suggestions.map(s => ({
-                      name: s.name,
-                      matchType: s.matchType,
-                      confidence: Math.round((s.score / 1000) * 100)
-                    })),
-                    suggestion:
-                      suggestions.length > 0
-                        ? `Did you mean "${suggestions[0]?.name}"? Use the "search" action for more options.`
-                        : 'Use the "search" action to find similar components.'
-                  },
-                  null,
-                  2
-                )
-              }
-            ]
-          };
-        }
-
-        const componentSchema = await getComponentSchema(componentName);
-
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  action: 'get',
-                  componentName: componentSchema.componentName,
-                  propsCount: componentSchema.propsCount,
-                  requiredProps: componentSchema.requiredProps || [],
-                  schema: componentSchema.schema,
-                  description: `JSON Schema for ${componentName} component props`
-                },
-                null,
-                2
-              )
-            }
-          ]
-        };
-      }
-
-      throw new Error(`Unknown action: ${action}`);
+      componentSchema = await memoGetComponentSchema(exactMatch);
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error occurred';
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                error: errorMessage,
-                usage: {
-                  listComponents: { action: 'list' },
-                  searchComponents: { action: 'search', query: 'button' },
-                  getComponentSchema: {
-                    action: 'get',
-                    componentName: 'Button'
-                  }
-                }
-              },
-              null,
-              2
-            )
-          }
-        ]
-      };
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to fetch component schema: ${error}`
+      );
     }
-  }
-];
+
+    // Return schema as JSON string (schema is already the JSON Schema object)
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(componentSchema, null, 2)
+        }
+      ]
+    };
+  };
+
+  return [
+    'componentSchemas',
+    {
+      description: 'Get JSON Schema for a PatternFly React component. Returns prop definitions, types, and validation rules. Use this for structured component metadata, not documentation.',
+      inputSchema: {
+        componentName: z.string().describe('Name of the PatternFly component (e.g., "Button", "Table")')
+      }
+    },
+    callback
+  ];
+};
 
 export { componentSchemasTool };
