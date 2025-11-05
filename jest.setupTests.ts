@@ -1,8 +1,10 @@
 // Shared helpers for all Jest tests
 
-// Mock @patternfly/patternfly-component-schemas/json to avoid top-level await issues in Jest
-// This package uses top-level await which Jest cannot handle without transformation
-// Individual tests can override this mock if needed
+/**
+ * Note: Mock @patternfly/patternfly-component-schemas/json to avoid top-level await issues in Jest
+ * - This package uses top-level await which Jest cannot handle without transformation.
+ * - Individual tests can override this mock if needed
+ */
 jest.mock('@patternfly/patternfly-component-schemas/json', () => ({
   componentNames: ['Button', 'Alert', 'Card', 'Modal', 'AlertGroup', 'Text', 'TextInput'],
   getComponentSchema: jest.fn().mockImplementation((name: string) => {
@@ -22,6 +24,6 @@ jest.mock('@patternfly/patternfly-component-schemas/json', () => ({
       });
     }
 
-    return Promise.reject(new Error(`Component "${name}" not found`));
+    throw new Error(`Component "${name}" not found`);
   })
 }), { virtual: true });

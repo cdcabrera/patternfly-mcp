@@ -28,7 +28,7 @@ type ComponentSchema = {
 const componentSchemasTool = (options = OPTIONS): McpTool => {
   const memoGetComponentSchema = memo(
     async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
-    options.toolMemoOptions.fetchDocs // Use same memo options as fetchDocs
+    options.toolMemoOptions.fetchDocs // Use the same memo options as fetchDocs
   );
 
   const callback = async (args: any = {}) => {
@@ -41,10 +41,15 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
       );
     }
 
-    // Try exact match first
-    if (componentNames.includes(componentName) === false) {
-      // Use fuzzySearch helper for suggestions
-      const suggestions = fuzzySearch(componentName, componentNames, {
+    // Trim componentName (user input) to handle accidental spaces, but don't trim componentNames
+    // (authoritative data) to preserve them as-is
+    const trimmedComponentName = componentName.trim();
+
+    // Try an exact match first (case-insensitive)
+    const exactMatch = componentNames.find(name => name.toLowerCase() === trimmedComponentName.toLowerCase());
+
+    if (exactMatch === undefined) {
+      const suggestions = fuzzySearch(trimmedComponentName, componentNames, {
         maxDistance: 3,
         maxResults: 5
       });
@@ -55,15 +60,15 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
 
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Component "${componentName}" not found. ${suggestionMessage}`
+        `Component "${trimmedComponentName}" not found. ${suggestionMessage}`
       );
     }
 
-    // Get schema using memoized function
+    // Get schema using a memoized function
     let componentSchema: ComponentSchema;
 
     try {
-      componentSchema = await memoGetComponentSchema(componentName);
+      componentSchema = await memoGetComponentSchema(exactMatch);
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
