@@ -23,8 +23,8 @@ const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.t
 /**
  * Fuzzy search result using fastest-levenshtein
  */
-interface FuzzySearchResult<T> {
-  item: T;
+interface FuzzySearchResult {
+  item: string;
   distance: number;
   matchType: 'exact' | 'prefix' | 'contains' | 'fuzzy';
 }
@@ -35,16 +35,14 @@ interface FuzzySearchResult<T> {
 interface FuzzySearchOptions {
   maxDistance?: number;
   maxResults?: number;
-  getText?: (item: T) => string;
 }
 
 /**
  * Find closest match using fastest-levenshtein's closest function
  *
  * @param query - Search query string
- * @param items - Array of items to search
- * @param options - Search configuration options
- * @returns Closest matching item or null if no match within maxDistance
+ * @param items - Array of strings to search
+ * @returns Closest matching string or null
  *
  * @example
  * ```typescript
@@ -52,14 +50,15 @@ interface FuzzySearchOptions {
  * // Returns: 'Button' (the closest match)
  * ```
  */
-const findClosest = <T>(
+const findClosest = (
   query: string,
-  items: T[],
-  options: FuzzySearchOptions = {}
-): T | null => {
-  const { getText = (item: T) => String(item) } = options;
-  const itemTexts = items.map(item => getText(item).toLowerCase());
+  items: string[]
+): string | null => {
+  // Trim query (user input) to handle accidental spaces, but don't trim items
+  // (authoritative data) to preserve them as-is. Component names are PascalCase
+  // and shouldn't have spaces, but preserving items is safer.
   const queryLower = query.toLowerCase().trim();
+  const itemTexts = items.map(item => item.toLowerCase());
 
   // Use fastest-levenshtein's closest function
   const closestText = closest(queryLower, itemTexts);
@@ -71,13 +70,12 @@ const findClosest = <T>(
 /**
  * Fuzzy search using fastest-levenshtein
  *
- * Leverages the package's distance function and uses closest for finding matches.
- * Returns results sorted by distance (lowest first).
+ * Works with arrays of strings only. Consumer should convert objects to strings before calling.
  *
  * @param query - Search query string
- * @param items - Array of items to search
+ * @param items - Array of strings to search
  * @param options - Search configuration options
- * @returns Array of matching items with distance and match type
+ * @returns Array of matching strings with distance and match type
  *
  * @example
  * ```typescript
@@ -88,34 +86,35 @@ const findClosest = <T>(
  * // Returns: [{ item: 'Button', distance: 0, matchType: 'exact' }, ...]
  * ```
  */
-const fuzzySearch = <T>(
+const fuzzySearch = (
   query: string,
-  items: T[],
+  items: string[],
   options: FuzzySearchOptions = {}
-): FuzzySearchResult<T>[] => {
+): FuzzySearchResult[] => {
   const {
     maxDistance = 3,
-    maxResults = 10,
-    getText = (item: T) => String(item)
+    maxResults = 10
   } = options;
 
+  // Trim query (user input) to handle accidental spaces, but don't trim items
+  // (authoritative data) to preserve them as-is. Component names are PascalCase
+  // and shouldn't have spaces, but preserving items is safer.
   const queryLower = query.toLowerCase().trim();
-  const results: FuzzySearchResult<T>[] = [];
+  const results: FuzzySearchResult[] = [];
 
   for (const item of items) {
-    const text = getText(item);
-    const textLower = text.toLowerCase();
+    const itemLower = item.toLowerCase();
 
     // Use fastest-levenshtein's distance function
-    const editDistance = distance(queryLower, textLower);
+    const editDistance = distance(queryLower, itemLower);
 
     // Determine match type
-    let matchType: FuzzySearchResult<T>['matchType'];
+    let matchType: FuzzySearchResult['matchType'];
     if (editDistance === 0) {
       matchType = 'exact';
-    } else if (textLower.startsWith(queryLower)) {
+    } else if (itemLower.startsWith(queryLower)) {
       matchType = 'prefix';
-    } else if (textLower.includes(queryLower)) {
+    } else if (itemLower.includes(queryLower)) {
       matchType = 'contains';
     } else {
       matchType = 'fuzzy';
@@ -136,7 +135,7 @@ const fuzzySearch = <T>(
     if (a.distance !== b.distance) {
       return a.distance - b.distance;
     }
-    return getText(a.item).localeCompare(getText(b.item));
+    return a.item.localeCompare(b.item);
   });
 
   return results.slice(0, maxResults);
