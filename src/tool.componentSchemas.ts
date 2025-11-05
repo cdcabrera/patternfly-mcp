@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { componentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas';
+import { componentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
 import { OPTIONS } from './options';
 import { memo } from './server.caching';
@@ -17,28 +17,22 @@ type ComponentSchema = {
 };
 
 /**
- * Memoized getComponentSchema function
- */
-const memoizedGetComponentSchema = memo(
-  async (componentName: string): Promise<ComponentSchema> => {
-    return await getComponentSchema(componentName);
-  },
-  {
-    cacheLimit: 50,
-    expire: 5 * 60 * 1000 // 5 minute cache
-  }
-);
-
-/**
  * componentSchemas tool function (tuple pattern)
  *
  * @param options
  */
 const componentSchemasTool = (options = OPTIONS): McpTool => {
+  const memoGetComponentSchema = memo(async (componentName: string): Promise<ComponentSchema> => {
+    return await getComponentSchema(componentName);
+  }, {
+    cacheLimit: 25,
+    expire: 30 * 1000 // 30 second sliding cache
+  });
+
   const callback = async (args: any = {}) => {
     const { componentName } = args;
 
-    if (!componentName || typeof componentName !== 'string') {
+    if (typeof componentName !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
         `Missing required parameter: componentName (must be a string): ${componentName}`
@@ -46,7 +40,7 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
     }
 
     // Try exact match first
-    if (!componentNames.includes(componentName)) {
+    if (componentNames.includes(componentName) === false) {
       // Use fuzzySearch helper for suggestions
       const suggestions = fuzzySearch(componentName, componentNames, {
         maxDistance: 3,
@@ -67,7 +61,7 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
     let componentSchema: ComponentSchema;
 
     try {
-      componentSchema = await memoizedGetComponentSchema(componentName);
+      componentSchema = await memoGetComponentSchema(componentName);
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
