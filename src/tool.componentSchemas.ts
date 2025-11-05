@@ -8,12 +8,16 @@ import { fuzzySearch } from './server.helpers';
 
 /**
  * Component schema type from @patternfly/patternfly-component-schemas
+ * This is the JSON Schema object returned directly from getComponentSchema
  */
 type ComponentSchema = {
-  componentName: string;
-  propsCount: number;
-  requiredProps: string[];
-  schema: Record<string, any>;
+  $schema: string;
+  type: string;
+  title: string;
+  description: string;
+  properties: Record<string, any>;
+  additionalProperties?: boolean;
+  required?: string[];
 };
 
 /**
@@ -22,12 +26,12 @@ type ComponentSchema = {
  * @param options
  */
 const componentSchemasTool = (options = OPTIONS): McpTool => {
-  const memoGetComponentSchema = memo(async (componentName: string): Promise<ComponentSchema> => {
-    return await getComponentSchema(componentName);
-  }, {
-    cacheLimit: 25,
-    expire: 30 * 1000 // 30 second sliding cache
-  });
+  const memoGetComponentSchema = memo(
+    async (componentName: string): Promise<ComponentSchema> => {
+      return await getComponentSchema(componentName);
+    },
+    options.toolMemoOptions.fetchDocs // Use same memo options as fetchDocs
+  );
 
   const callback = async (args: any = {}) => {
     const { componentName } = args;
@@ -69,21 +73,12 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
       );
     }
 
-    // Return schema as JSON string
+    // Return schema as JSON string (schema is already the JSON Schema object)
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify(
-            {
-              componentName: componentSchema.componentName,
-              propsCount: componentSchema.propsCount,
-              requiredProps: componentSchema.requiredProps || [],
-              schema: componentSchema.schema
-            },
-            null,
-            2
-          )
+          text: JSON.stringify(componentSchema, null, 2)
         }
       ]
     };

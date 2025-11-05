@@ -1,21 +1,20 @@
 // Mock the PatternFly schemas module since it uses ES modules
-jest.mock('@patternfly/patternfly-component-schemas', () => ({
+jest.mock('@patternfly/patternfly-component-schemas/json', () => ({
   componentNames: ['Button', 'Alert', 'Card', 'Modal', 'AlertGroup', 'Text', 'TextInput'],
   getComponentSchema: jest.fn().mockImplementation((name: string) => {
     if (name === 'Button') {
       return Promise.resolve({
-        componentName: 'Button',
-        propsCount: 10,
-        requiredProps: ['children'],
-        schema: {
-          type: 'object',
-          properties: {
-            variant: { type: 'string', enum: ['primary', 'secondary'] },
-            size: { type: 'string', enum: ['sm', 'md', 'lg'] },
-            children: { type: 'string' }
-          },
-          required: ['children']
-        }
+        $schema: 'https://json-schema.org/draft/2020-12/schema',
+        type: 'object',
+        title: 'Button Props',
+        description: 'Props for the Button component',
+        properties: {
+          variant: { type: 'string', enum: ['primary', 'secondary'] },
+          size: { type: 'string', enum: ['sm', 'md', 'lg'] },
+          children: { type: 'string', description: 'Content rendered inside the button' }
+        },
+        required: ['children'],
+        additionalProperties: false
       });
     }
     throw new Error(`Component "${name}" not found`);
@@ -41,8 +40,10 @@ describe('componentSchemasTool', () => {
     expect(result.content[0].type).toBe('text');
 
     const response = JSON.parse(result.content[0].text);
-    expect(response.componentName).toBe('Button');
-    expect(response.schema).toBeDefined();
+    expect(response.$schema).toBeDefined();
+    expect(response.type).toBe('object');
+    expect(response.title).toBe('Button Props');
+    expect(response.properties).toBeDefined();
   });
 
   // it('should return correct data structure', async () => {
@@ -60,10 +61,11 @@ describe('componentSchemasTool', () => {
     const result = await toolCallback({ componentName: 'Button' });
 
     const response = JSON.parse(result.content[0].text);
-    expect(response).toHaveProperty('componentName');
-    expect(response).toHaveProperty('propsCount');
-    expect(response).toHaveProperty('requiredProps');
-    expect(response).toHaveProperty('schema');
+    expect(response).toHaveProperty('$schema');
+    expect(response).toHaveProperty('type');
+    expect(response).toHaveProperty('title');
+    expect(response).toHaveProperty('description');
+    expect(response).toHaveProperty('properties');
   });
   it('should throw correct error for invalid component without crashing', async () => {
     await expect(toolCallback({ componentName: 'InvalidComponent' })).rejects.toThrow(McpError);
