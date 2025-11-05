@@ -18,7 +18,7 @@ describe('componentSchemasTool', () => {
   });
 });
 
-describe('fetchDocsTool, callback', () => {
+describe('componentSchemasTool, callback', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

@@ -49,7 +49,7 @@ exports[`componentSchemasTool should have a consistent return structure: structu
 ]
 `;
 
-exports[`fetchDocsTool, callback should parse parameters, default 1`] = `
+exports[`componentSchemasTool, callback should parse parameters, default 1`] = `
 {
   "content": [
     {
@@ -90,7 +90,7 @@ exports[`fetchDocsTool, callback should parse parameters, default 1`] = `
 }
 `;
 
-exports[`fetchDocsTool, callback should parse parameters, with lower case componentName 1`] = `
+exports[`componentSchemasTool, callback should parse parameters, with lower case componentName 1`] = `
 {
   "content": [
     {
@@ -131,7 +131,7 @@ exports[`fetchDocsTool, callback should parse parameters, with lower case compon
 }
 `;
 
-exports[`fetchDocsTool, callback should parse parameters, with trimmed componentName 1`] = `
+exports[`componentSchemasTool, callback should parse parameters, with trimmed componentName 1`] = `
 {
   "content": [
     {
@@ -172,7 +172,7 @@ exports[`fetchDocsTool, callback should parse parameters, with trimmed component
 }
 `;
 
-exports[`fetchDocsTool, callback should parse parameters, with upper case componentName 1`] = `
+exports[`componentSchemasTool, callback should parse parameters, with upper case componentName 1`] = `
 {
   "content": [
     {
