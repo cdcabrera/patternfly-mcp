@@ -87,7 +87,7 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
   return [
     'component-schemas',
     {
-      description: 'Get JSON Schema for a PatternFly React component. Returns schema validation rules and prop documentation for the specified component.',
+      description: 'Get structured component metadata and JSON Schema validation for PatternFly React components. Returns JSON Schema with prop definitions, types, descriptions, and validation rules for the specified component. Use this tool when you need precise component prop information, validation schemas, or structured metadata for code generation, validation, or documentation purposes.',
       inputSchema: {
         componentName: z.string().describe('Name of the PatternFly component (e.g., "Button", "Table")')
       }
