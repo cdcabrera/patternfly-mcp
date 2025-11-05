@@ -16,7 +16,4 @@ export default {
       }
     ]
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(@patternfly/patternfly-component-schemas)/)'
-  ]
 };

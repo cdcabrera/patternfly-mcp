@@ -10,7 +10,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 - **TypeScript**: Full type safety and modern JavaScript features
 - **PatternFly Documentation Access**: Browse, search, and retrieve PatternFly development rules
-- **Component Schemas**: Access JSON Schema validation for all 462+ PatternFly React components
+- **Component Schemas**: Access JSON Schema validation for PatternFly React components (see [@patternfly/patternfly-component-schemas](https://github.com/patternfly/patternfly-component-schemas))
 - **Comprehensive Rule Coverage**: Access setup, guidelines, components, charts, chatbot, and troubleshooting documentation
 - **Smart Search**: Find specific rules and patterns across all documentation
 - **Error Handling**: Robust error handling with proper MCP error codes
@@ -195,7 +195,7 @@ npx @modelcontextprotocol/inspector-cli \
   ]'
 ```
 
-component-schemas (list all components):
+component-schemas (get component JSON Schema):
 
 ```bash
 npx @modelcontextprotocol/inspector-cli \
@@ -204,21 +204,10 @@ npx @modelcontextprotocol/inspector-cli \
   --cli \
   --method tools/call \
   --tool-name component-schemas \
-  --tool-arg action='list'
-```
-
-component-schemas (get specific component schema):
-
-```bash
-npx @modelcontextprotocol/inspector-cli \
-  --config ./mcp-config.json \
-  --server patternfly-docs \
-  --cli \
-  --method tools/call \
-  --tool-name component-schemas \
-  --tool-arg action='get' \
   --tool-arg componentName='Button'
 ```
+
+> **Note**: For detailed information about component schemas and available components, see the [@patternfly/patternfly-component-schemas](https://github.com/patternfly/patternfly-component-schemas) repository.
 
 ## Environment variables
 
