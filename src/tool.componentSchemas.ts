@@ -50,39 +50,37 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
 
     const exact = results.find(r => r.matchType === 'exact');
 
-    if (!exact) {
-      const suggestions = results.map(r => r.item);
-      const suggestionMessage = suggestions.length > 0
-        ? `Did you mean "${suggestions.shift()}"?`
-        : 'No similar components found.';
+    if (exact) {
+      let componentSchema: ComponentSchema;
 
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Component "${componentName.trim()}" not found. ${suggestionMessage}`
-      );
+      try {
+        componentSchema = await memoGetComponentSchema(exact.item);
+      } catch (error) {
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Failed to fetch component schema: ${error}`
+        );
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(componentSchema, null, 2)
+          }
+        ]
+      };
     }
 
-    // Get schema using a memoized function
-    let componentSchema: ComponentSchema;
+    const suggestions = results.map(r => r.item);
+    const suggestionMessage = suggestions.length > 0
+      ? `Did you mean "${suggestions.shift()}"?`
+      : 'No similar components found.';
 
-    try {
-      componentSchema = await memoGetComponentSchema(exact.item);
-    } catch (error) {
-      throw new McpError(
-        ErrorCode.InternalError,
-        `Failed to fetch component schema: ${error}`
-      );
-    }
-
-    // Return schema as JSON string (schema is already the JSON Schema object)
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(componentSchema, null, 2)
-        }
-      ]
-    };
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `Component "${componentName.trim()}" not found. ${suggestionMessage}`
+    );
   };
 
   return [
