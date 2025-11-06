@@ -1,4 +1,10 @@
-import { fuzzySearch, findClosest } from '../server.search';
+import { normalizeString, fuzzySearch, findClosest } from '../server.search';
+
+describe('normalizeString', () => {
+  it('should normalize a string', () => {
+    expect(normalizeString('résumé')).toBe(normalizeString('resume'));
+  });
+});
 
 describe('findClosest', () => {
   const components = ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup'];

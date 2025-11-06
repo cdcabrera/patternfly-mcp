@@ -40,7 +40,7 @@ interface FuzzySearchOptions {
 }
 
 /**
- * Lightweight normalization: trim, lowercase, remove diacritics, squash separators
+ * Lightweight normalization: trim, lowercase, remove diacritics (a sign/accent character), squash separators
  *
  * @param str
  */
@@ -88,7 +88,8 @@ const findClosest = (
 /**
  * Fuzzy search using fastest-levenshtein
  *
- * Skip fuzzy matches distance check if potential distance against `maxDistance` can't be met.
+ * - Distance check is only run after exact, prefix, suffix, and contain matches fail.
+ * - Skips fuzzy matches distance check if potential distance against `maxDistance` can't be met.
  *
  * @param query - Search query string
  * @param items - Array of strings to search
