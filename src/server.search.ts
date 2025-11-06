@@ -57,7 +57,7 @@ const normalizeString = (str: string) => String(str || '')
  *
  * @param query - Search query string
  * @param items - Array of strings to search
- * @param options - Search configuration options
+ * @param {ClosestSearchOptions} options - Search configuration options
  * @returns {string | null} Closest matching string or null
  *
  * @example
@@ -92,7 +92,7 @@ const findClosest = (
  *
  * @param query - Search query string
  * @param items - Array of strings to search
- * @param options - Search configuration options
+ * @param {FuzzySearchOptions} options - Search configuration options
  * @returns {FuzzySearchResult[]} Array of matching strings with distance and match type
  *
  * @example
