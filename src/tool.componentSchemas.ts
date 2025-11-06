@@ -41,11 +41,12 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
       );
     }
 
-    // Use fuzzySearch to handle exact and suggestions in one pass
+    // Use fuzzySearch with `isFuzzyMatch` to handle exact and intentional suggestions in one pass
     const results = fuzzySearch(componentName, componentNames, {
       maxDistance: 3,
       maxResults: 5,
-      isFuzzyMatch: true
+      isFuzzyMatch: true,
+      deduplicateByNormalized: true
     });
 
     const exact = results.find(r => r.matchType === 'exact');
@@ -72,9 +73,9 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
       };
     }
 
-    const suggestions = results.map(r => r.item);
-    const suggestionMessage = suggestions.length > 0
-      ? `Did you mean "${suggestions.shift()}"?`
+    const suggestions = results.map(r => r.item).slice(0, 3);
+    const suggestionMessage = suggestions.length
+      ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
       : 'No similar components found.';
 
     throw new McpError(
