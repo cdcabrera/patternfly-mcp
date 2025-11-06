@@ -36,6 +36,7 @@ interface FuzzySearchResult {
  * - `maxResults` - Maximum number of results to return
  * - `isExactMatch` - Include exact matches
  * - `isPrefixMatch` - Include matches with prefix
+ * - `isSuffixMatch` - Include matches with suffix
  * - `isContainsMatch` - Include matches with contains
  * - `isFuzzyMatch` - Include matches with fuzzy
  */
@@ -44,14 +45,26 @@ interface FuzzySearchOptions {
   maxResults?: number;
   isExactMatch?: boolean;
   isPrefixMatch?: boolean;
+  isSuffixMatch?: boolean;
   isContainsMatch?: boolean;
   isFuzzyMatch?: boolean;
 }
 
 /**
- * Find the closest match using fastest-levenshtein's closest function.
+ * Lightweight normalization: trim, lowercase, remove diacritics, squash separators
  *
- * User input is trimmed to handle accidental spaces.
+ * @param str
+ */
+const normalizeString = (str: string) => String(str || '')
+  .trim()
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[\s_\-]+/g, ' ')
+  .replace(/\s+/g, ' ');
+
+/**
+ * Find the closest match using fastest-levenshtein's closest function.
  *
  * @param query - Search query string
  * @param items - Array of strings to search
@@ -67,9 +80,11 @@ const findClosest = (
   query: string,
   items: string[]
 ): string | null => {
-  const queryLower = query.toLowerCase().trim();
+  const queryLower = normalizeString(query);
+  const normalizedItems = items.map(item => (item ? normalizeString(item) : item));
+  const closestMatch = closest(queryLower, normalizedItems);
 
-  return closest(queryLower, items) || null;
+  return items[normalizedItems.indexOf(closestMatch)] || null;
 };
 
 /**
@@ -101,39 +116,48 @@ const fuzzySearch = (
     maxResults = 10,
     isExactMatch = true,
     isPrefixMatch = true,
+    isSuffixMatch = true,
     isContainsMatch = true,
     isFuzzyMatch = false
   } = options;
 
-  const queryLower = query.trim().toLowerCase();
+  const queryNormalized = normalizeString(query);
+  const seenItem = new Set<string>();
   const results: FuzzySearchResult[] = [];
 
   items.forEach(item => {
-    const itemLower = item.toLowerCase();
+    if (seenItem.has(item)) {
+      return;
+    }
+
+    seenItem.add(item);
+
+    const itemNormalized = normalizeString(item);
     let editDistance = 0;
     let matchType: FuzzySearchResult['matchType'] | undefined;
 
-    if (itemLower === queryLower) {
+    if (itemNormalized === queryNormalized) {
       matchType = 'exact';
-    } else if (queryLower !== '' && itemLower.startsWith(queryLower)) {
+    } else if (queryNormalized !== '' && itemNormalized.startsWith(queryNormalized)) {
       matchType = 'prefix';
-      editDistance = 1;
-    } else if (queryLower !== '' && itemLower.endsWith(queryLower)) {
+    } else if (queryNormalized !== '' && itemNormalized.endsWith(queryNormalized)) {
       matchType = 'suffix';
-      editDistance = 1;
-    } else if (queryLower !== '' && itemLower.includes(queryLower)) {
+    } else if (queryNormalized !== '' && itemNormalized.includes(queryNormalized)) {
       matchType = 'contains';
-      editDistance = 2;
     } else if (isFuzzyMatch) {
       matchType = 'fuzzy';
-      editDistance = distance(queryLower, itemLower);
+      editDistance = distance(queryNormalized, itemNormalized);
     }
 
     if (matchType === undefined) {
       return;
     }
 
-    const isIncluded = (matchType === 'exact' && isExactMatch) || (matchType === 'prefix' && isPrefixMatch) || (matchType === 'contains' && isContainsMatch) || (matchType === 'fuzzy' && isFuzzyMatch);
+    const isIncluded = (matchType === 'exact' && isExactMatch) ||
+      (matchType === 'prefix' && isPrefixMatch) ||
+      (matchType === 'suffix' && isSuffixMatch) ||
+      (matchType === 'contains' && isContainsMatch) ||
+      (matchType === 'fuzzy' && isFuzzyMatch);
 
     if (editDistance <= maxDistance && isIncluded) {
       results.push({
@@ -159,6 +183,7 @@ const fuzzySearch = (
 export {
   generateHash,
   isPromise,
+  normalizeString,
   fuzzySearch,
   findClosest,
   type FuzzySearchResult,

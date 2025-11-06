@@ -157,6 +157,7 @@ describe('fuzzySearch', () => {
         maxDistance: 10,
         isExactMatch: false,
         isPrefixMatch: false,
+        isSuffixMatch: false,
         isContainsMatch: false,
         isFuzzyMatch: true
       }
