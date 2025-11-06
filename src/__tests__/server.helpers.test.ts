@@ -213,60 +213,6 @@ describe('fuzzySearch', () => {
       options: undefined
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
-    const results = fuzzySearch(query, items, options);
-
-    expect(results).toMatchSnapshot();
+    expect(fuzzySearch(query, items, options)).toMatchSnapshot();
   });
-
-  /*
-
-
-  describe('match type detection', () => {
-    it('should correctly identify exact matches', () => {
-      const results = fuzzySearch('Button', components);
-
-      expect(results[0]?.matchType).toBe('exact');
-      expect(results[0]?.distance).toBe(0);
-    });
-
-    it('should correctly identify prefix matches', () => {
-      const results = fuzzySearch('but', components);
-      const prefixMatches = results.filter(r => r.matchType === 'prefix' && r.item.toLowerCase().startsWith('but'));
-
-      expect(prefixMatches.length).toBeGreaterThan(0);
-    });
-
-    it('should correctly identify contains matches', () => {
-      const results = fuzzySearch('roup', components, { maxDistance: 10 });
-      const containsMatches = results.filter(r => r.matchType === 'contains');
-
-      expect(containsMatches.length).toBeGreaterThan(0);
-    });
-
-    it('should correctly identify fuzzy matches', () => {
-      const results = fuzzySearch('buton', components, { maxDistance: 3 });
-      const fuzzyMatches = results.filter(r => r.matchType === 'fuzzy');
-
-      if (fuzzyMatches.length > 0 && fuzzyMatches[0]) {
-        expect(fuzzyMatches[0].distance).toBeGreaterThan(0);
-      }
-    });
-  });
-
-  describe('default options', () => {
-    it('should use default maxDistance of 3', () => {
-      const results = fuzzySearch('buton', components);
-
-      results.forEach(result => {
-        expect(result.distance).toBeLessThanOrEqual(3);
-      });
-    });
-
-    it('should use default maxResults of 10', () => {
-      const results = fuzzySearch('a', components);
-
-      expect(results.length).toBeLessThanOrEqual(10);
-    });
-  });
-  */
 });
