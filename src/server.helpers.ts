@@ -80,9 +80,14 @@ const findClosest = (
   query: string,
   items: string[]
 ): string | null => {
-  const queryLower = normalizeString(query);
+  const normalizedQuery = normalizeString(query);
+
+  if (!normalizedQuery || !Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+
   const normalizedItems = items.map(item => (item ? normalizeString(item) : item));
-  const closestMatch = closest(queryLower, normalizedItems);
+  const closestMatch = closest(normalizedQuery, normalizedItems);
 
   return items[normalizedItems.indexOf(closestMatch)] || null;
 };

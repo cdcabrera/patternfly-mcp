@@ -9,7 +9,7 @@ exports[`findClosest should attempt to find a closest match, empty haystack 1`] 
 
 exports[`findClosest should attempt to find a closest match, empty needle 1`] = `
 {
-  "match": "Badge",
+  "match": null,
   "query": "",
 }
 `;
