@@ -11,6 +11,16 @@ describe('findClosest', () => {
 
   it.each([
     {
+      description: 'undefined items',
+      query: 'Button',
+      items: undefined
+    },
+    {
+      description: 'null items',
+      query: 'Button',
+      items: null
+    },
+    {
       description: 'empty haystack',
       query: 'Button',
       items: []
@@ -63,7 +73,7 @@ describe('findClosest', () => {
   ])('should attempt to find a closest match, $description', ({ query, items }) => {
     expect({
       query,
-      match: findClosest(query, items)
+      match: findClosest(query, items as string[])
     }).toMatchSnapshot();
   });
 });
@@ -72,6 +82,18 @@ describe('fuzzySearch', () => {
   const components = ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup', 'Card', 'CardHeader'];
 
   it.each([
+    {
+      description: 'undefined items',
+      query: 'Button',
+      items: undefined,
+      options: undefined
+    },
+    {
+      description: 'null items',
+      query: 'Button',
+      items: null,
+      options: undefined
+    },
     {
       description: 'exact match',
       query: 'Button',
@@ -261,6 +283,6 @@ describe('fuzzySearch', () => {
       options: undefined
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
-    expect(fuzzySearch(query, items, options)).toMatchSnapshot();
+    expect(fuzzySearch(query, items as string[], options)).toMatchSnapshot();
   });
 });

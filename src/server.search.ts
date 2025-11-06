@@ -53,7 +53,7 @@ const normalizeString = (str: string) => String(str || '')
   .toLowerCase()
   .normalize('NFKD')
   .replace(/[\u0300-\u036f]/g, '')
-  .replace(/[\s_\-]+/g, ' ')
+  .replace(/[\s_-]+/g, ' ')
   .replace(/\s+/g, ' ');
 
 /**
@@ -74,7 +74,7 @@ const normalizeString = (str: string) => String(str || '')
  */
 const findClosest = (
   query: string,
-  items: string[],
+  items: string[] = [],
   {
     normalizeFn = normalizeString
   }: ClosestSearchOptions = {}
@@ -117,7 +117,7 @@ const findClosest = (
  */
 const fuzzySearch = (
   query: string,
-  items: string[],
+  items: string[] = [],
   {
     maxDistance = 3,
     maxResults = 10,
@@ -129,35 +129,35 @@ const fuzzySearch = (
     isFuzzyMatch = false
   }: FuzzySearchOptions = {}
 ): FuzzySearchResult[] => {
-  const queryNormalized = normalizeFn(query);
+  const normalizedQuery = normalizeFn(query);
   const seenItem = new Set<string>();
   const results: FuzzySearchResult[] = [];
 
-  items.forEach(item => {
+  items?.forEach(item => {
     if (seenItem.has(item)) {
       return;
     }
 
     seenItem.add(item);
 
-    const itemNormalized = normalizeFn(item);
+    const normalizedItem = normalizeFn(item);
     let editDistance = 0;
     let matchType: FuzzySearchResult['matchType'] | undefined;
 
-    if (itemNormalized === queryNormalized) {
+    if (normalizedItem === normalizedQuery) {
       matchType = 'exact';
-    } else if (queryNormalized !== '' && itemNormalized.startsWith(queryNormalized)) {
+    } else if (normalizedQuery !== '' && normalizedItem.startsWith(normalizedQuery)) {
       matchType = 'prefix';
       editDistance = 1;
-    } else if (queryNormalized !== '' && itemNormalized.endsWith(queryNormalized)) {
+    } else if (normalizedQuery !== '' && normalizedItem.endsWith(normalizedQuery)) {
       matchType = 'suffix';
       editDistance = 1;
-    } else if (queryNormalized !== '' && itemNormalized.includes(queryNormalized)) {
+    } else if (normalizedQuery !== '' && normalizedItem.includes(normalizedQuery)) {
       matchType = 'contains';
       editDistance = 2;
-    } else if (isFuzzyMatch && Math.abs(itemNormalized.length - queryNormalized.length) <= maxDistance) {
+    } else if (isFuzzyMatch && Math.abs(normalizedItem.length - normalizedQuery.length) <= maxDistance) {
       matchType = 'fuzzy';
-      editDistance = distance(queryNormalized, itemNormalized);
+      editDistance = distance(normalizedQuery, normalizedItem);
     }
 
     if (matchType === undefined) {

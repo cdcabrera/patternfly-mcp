@@ -56,6 +56,13 @@ exports[`findClosest should attempt to find a closest match, non-existent needle
 }
 `;
 
+exports[`findClosest should attempt to find a closest match, null items 1`] = `
+{
+  "match": null,
+  "query": "Button",
+}
+`;
+
 exports[`findClosest should attempt to find a closest match, partial query 1`] = `
 {
   "match": "Button",
@@ -67,6 +74,13 @@ exports[`findClosest should attempt to find a closest match, typo 1`] = `
 {
   "match": "Button",
   "query": "buton",
+}
+`;
+
+exports[`findClosest should attempt to find a closest match, undefined items 1`] = `
+{
+  "match": null,
+  "query": "Button",
 }
 `;
 
@@ -333,6 +347,8 @@ exports[`fuzzySearch should fuzzy match, multiple words maxDistance 1`] = `
 
 exports[`fuzzySearch should fuzzy match, negative maxDistance 1`] = `[]`;
 
+exports[`fuzzySearch should fuzzy match, null items 1`] = `[]`;
+
 exports[`fuzzySearch should fuzzy match, prefix match 1`] = `
 [
   {
@@ -397,3 +413,5 @@ exports[`fuzzySearch should fuzzy match, trimmed query 1`] = `
   },
 ]
 `;
+
+exports[`fuzzySearch should fuzzy match, undefined items 1`] = `[]`;
