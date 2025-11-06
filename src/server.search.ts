@@ -28,6 +28,7 @@ interface FuzzySearchResult {
  * - `maxResults` - Maximum number of results to return
  * - `normalizeFn` - Function to normalize strings (default: `normalizeString`)
  * - `isExactMatch` | `isPrefixMatch` | `isSuffixMatch` | `isContainsMatch` | `isFuzzyMatch` - Enable specific match modes
+ * - `deduplicateByNormalized` - If true, deduplicate results by normalized value instead of original string (default: false)
  */
 interface FuzzySearchOptions {
   maxDistance?: number;
@@ -38,6 +39,7 @@ interface FuzzySearchOptions {
   isSuffixMatch?: boolean;
   isContainsMatch?: boolean;
   isFuzzyMatch?: boolean;
+  deduplicateByNormalized?: boolean;
 }
 
 /**
@@ -129,7 +131,8 @@ const fuzzySearch = (
     isPrefixMatch = true,
     isSuffixMatch = true,
     isContainsMatch = true,
-    isFuzzyMatch = false
+    isFuzzyMatch = false,
+    deduplicateByNormalized = false
   }: FuzzySearchOptions = {}
 ): FuzzySearchResult[] => {
   const normalizedQuery = normalizeFn(query);
@@ -137,13 +140,14 @@ const fuzzySearch = (
   const results: FuzzySearchResult[] = [];
 
   items?.forEach(item => {
-    if (seenItem.has(item)) {
+    const normalizedItem = normalizeFn(item);
+    const deduplicationKey = deduplicateByNormalized ? normalizedItem : item;
+
+    if (seenItem.has(deduplicationKey)) {
       return;
     }
 
-    seenItem.add(item);
-
-    const normalizedItem = normalizeFn(item);
+    seenItem.add(deduplicationKey);
     let editDistance = 0;
     let matchType: FuzzySearchResult['matchType'] | undefined;
 

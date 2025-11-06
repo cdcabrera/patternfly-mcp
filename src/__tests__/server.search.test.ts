@@ -281,6 +281,14 @@ describe('fuzzySearch', () => {
       query: 'resume',
       items: ['Résumé', 'resume', 'RESUME'],
       options: undefined
+    },
+    {
+      description: 'deduplicate by normalized value',
+      query: 'button',
+      items: ['Button', 'button', 'BUTTON'],
+      options: {
+        deduplicateByNormalized: true
+      }
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
     expect(fuzzySearch(query, items as string[], options)).toMatchSnapshot();
