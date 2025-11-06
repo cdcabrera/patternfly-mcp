@@ -173,11 +173,20 @@ describe('fuzzySearch', () => {
       options: undefined
     },
     {
-      description: 'multiple words',
+      description: 'multiple words maxDistance',
       query: 'ipsum dolor',
       items: ['Lorem Ipsum Dolor Sit'],
       options: {
         maxDistance: 10
+      }
+    },
+    {
+      description: 'multiple words',
+      query: 'badge   group',
+      items: ['BadgeGroup'],
+      options: {
+        isFuzzyMatch: true,
+        maxDistance: 2
       }
     },
     {
@@ -216,6 +225,40 @@ describe('fuzzySearch', () => {
       options: {
         maxDistance: 10
       }
+    },
+    {
+      description: 'suffix match',
+      query: 'header',
+      items: ['Card', 'CardHeader'],
+      options: {
+        isExactMatch: false,
+        isPrefixMatch: false,
+        isContainsMatch: false,
+        isFuzzyMatch: false
+      }
+    },
+    {
+      description: 'mixed types by maxDistance',
+      query: 'butto',
+      items: ['Button', 'ButtonGroup', 'Burrito'],
+      options: {
+        maxDistance: 1,
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'matches are alphabetized',
+      query: 'butt',
+      items: ['ButtonGroup', 'Button'],
+      options: {
+        maxDistance: 10
+      }
+    },
+    {
+      description: 'matches are normalized',
+      query: 'resume',
+      items: ['Résumé', 'resume', 'RESUME'],
+      options: undefined
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
     expect(fuzzySearch(query, items, options)).toMatchSnapshot();

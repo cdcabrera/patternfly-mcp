@@ -261,7 +261,67 @@ exports[`fuzzySearch should fuzzy match, match within restricted distance 1`] = 
 ]
 `;
 
+exports[`fuzzySearch should fuzzy match, matches are alphabetized 1`] = `
+[
+  {
+    "distance": 1,
+    "item": "Button",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 1,
+    "item": "ButtonGroup",
+    "matchType": "prefix",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, matches are normalized 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "resume",
+    "matchType": "exact",
+  },
+  {
+    "distance": 0,
+    "item": "RESUME",
+    "matchType": "exact",
+  },
+  {
+    "distance": 0,
+    "item": "Résumé",
+    "matchType": "exact",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, mixed types by maxDistance 1`] = `
+[
+  {
+    "distance": 1,
+    "item": "Button",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 1,
+    "item": "ButtonGroup",
+    "matchType": "prefix",
+  },
+]
+`;
+
 exports[`fuzzySearch should fuzzy match, multiple words 1`] = `
+[
+  {
+    "distance": 1,
+    "item": "BadgeGroup",
+    "matchType": "fuzzy",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, multiple words maxDistance 1`] = `
 [
   {
     "distance": 2,
@@ -309,6 +369,16 @@ exports[`fuzzySearch should fuzzy match, single item 1`] = `
     "distance": 0,
     "item": "BUTTON",
     "matchType": "exact",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, suffix match 1`] = `
+[
+  {
+    "distance": 1,
+    "item": "CardHeader",
+    "matchType": "suffix",
   },
 ]
 `;
