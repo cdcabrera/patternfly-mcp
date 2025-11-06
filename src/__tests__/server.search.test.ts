@@ -173,6 +173,43 @@ describe('fuzzySearch', () => {
       options: {
         maxDistance: 10
       }
+    },
+    {
+      description: 'negative maxDistance',
+      query: 'button',
+      items: ['Button'],
+      options: {
+        maxDistance: -1
+      }
+    },
+    {
+      description: 'empty query against maxDistance',
+      query: '',
+      items: ['A', 'AB', 'ABCDE', 'ABCDEFG'],
+      options: {
+        maxDistance: 3,
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'length-delta precheck for maxDistance',
+      query: 'AB',
+      items: ['ABCDEFGH'],
+      options: {
+        maxDistance: 2,
+        isExactMatch: false,
+        isPrefixMatch: false,
+        isSuffixMatch: false,
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'duplicate items',
+      query: 'button',
+      items: ['Button', 'Button', 'Button'],
+      options: {
+        maxDistance: 10
+      }
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
     expect(fuzzySearch(query, items, options)).toMatchSnapshot();

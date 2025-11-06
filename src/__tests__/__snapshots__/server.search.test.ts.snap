@@ -90,9 +90,34 @@ exports[`fuzzySearch should fuzzy match, contains match multiple 1`] = `
 ]
 `;
 
+exports[`fuzzySearch should fuzzy match, duplicate items 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "Button",
+    "matchType": "exact",
+  },
+]
+`;
+
 exports[`fuzzySearch should fuzzy match, empty items 1`] = `[]`;
 
 exports[`fuzzySearch should fuzzy match, empty query 1`] = `[]`;
+
+exports[`fuzzySearch should fuzzy match, empty query against maxDistance 1`] = `
+[
+  {
+    "distance": 1,
+    "item": "A",
+    "matchType": "fuzzy",
+  },
+  {
+    "distance": 2,
+    "item": "AB",
+    "matchType": "fuzzy",
+  },
+]
+`;
 
 exports[`fuzzySearch should fuzzy match, empty query extended distance 1`] = `
 [
@@ -204,6 +229,8 @@ exports[`fuzzySearch should fuzzy match, fuzzy match within distance 1`] = `
 ]
 `;
 
+exports[`fuzzySearch should fuzzy match, length-delta precheck for maxDistance 1`] = `[]`;
+
 exports[`fuzzySearch should fuzzy match, match within max results 1`] = `
 [
   {
@@ -243,6 +270,8 @@ exports[`fuzzySearch should fuzzy match, multiple words 1`] = `
   },
 ]
 `;
+
+exports[`fuzzySearch should fuzzy match, negative maxDistance 1`] = `[]`;
 
 exports[`fuzzySearch should fuzzy match, prefix match 1`] = `
 [

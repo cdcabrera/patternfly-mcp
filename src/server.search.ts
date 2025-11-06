@@ -88,7 +88,7 @@ const findClosest = (
 /**
  * Fuzzy search using fastest-levenshtein
  *
- * User input is trimmed to handle accidental spaces.
+ * Skip fuzzy matches distance check if potential distance against `maxDistance` can't be met.
  *
  * @param query - Search query string
  * @param items - Array of strings to search
@@ -144,7 +144,7 @@ const fuzzySearch = (
     } else if (queryNormalized !== '' && itemNormalized.includes(queryNormalized)) {
       matchType = 'contains';
       editDistance = 2;
-    } else if (isFuzzyMatch) {
+    } else if (isFuzzyMatch && Math.abs(itemNormalized.length - queryNormalized.length) <= maxDistance) {
       matchType = 'fuzzy';
       editDistance = distance(queryNormalized, itemNormalized);
     }
