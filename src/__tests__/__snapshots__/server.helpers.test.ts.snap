@@ -73,17 +73,17 @@ exports[`findClosest should attempt to find a closest match, typo 1`] = `
 exports[`fuzzySearch should fuzzy match, contains match multiple 1`] = `
 [
   {
-    "distance": 0,
+    "distance": 1,
     "item": "AlertGroup",
     "matchType": "suffix",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "BadgeGroup",
     "matchType": "suffix",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "suffix",
   },
@@ -147,7 +147,7 @@ exports[`fuzzySearch should fuzzy match, exact match 1`] = `
     "matchType": "exact",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "prefix",
   },
@@ -162,7 +162,7 @@ exports[`fuzzySearch should fuzzy match, exact match case-insensitive 1`] = `
     "matchType": "exact",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "prefix",
   },
@@ -207,12 +207,12 @@ exports[`fuzzySearch should fuzzy match, fuzzy match within distance 1`] = `
 exports[`fuzzySearch should fuzzy match, match within max results 1`] = `
 [
   {
-    "distance": 0,
+    "distance": 1,
     "item": "Alert",
     "matchType": "prefix",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "AlertGroup",
     "matchType": "prefix",
   },
@@ -227,7 +227,7 @@ exports[`fuzzySearch should fuzzy match, match within restricted distance 1`] = 
     "matchType": "exact",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "prefix",
   },
@@ -237,7 +237,7 @@ exports[`fuzzySearch should fuzzy match, match within restricted distance 1`] = 
 exports[`fuzzySearch should fuzzy match, multiple words 1`] = `
 [
   {
-    "distance": 0,
+    "distance": 2,
     "item": "Lorem Ipsum Dolor Sit",
     "matchType": "contains",
   },
@@ -247,12 +247,12 @@ exports[`fuzzySearch should fuzzy match, multiple words 1`] = `
 exports[`fuzzySearch should fuzzy match, prefix match 1`] = `
 [
   {
-    "distance": 0,
+    "distance": 1,
     "item": "Button",
     "matchType": "prefix",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "prefix",
   },
@@ -262,12 +262,12 @@ exports[`fuzzySearch should fuzzy match, prefix match 1`] = `
 exports[`fuzzySearch should fuzzy match, prefix match multiple 1`] = `
 [
   {
-    "distance": 0,
+    "distance": 1,
     "item": "Button",
     "matchType": "prefix",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "prefix",
   },
@@ -292,7 +292,7 @@ exports[`fuzzySearch should fuzzy match, trimmed query 1`] = `
     "matchType": "exact",
   },
   {
-    "distance": 0,
+    "distance": 1,
     "item": "ButtonGroup",
     "matchType": "prefix",
   },

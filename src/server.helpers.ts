@@ -21,6 +21,13 @@ const generateHash = (content: unknown) =>
 const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.test(Object.prototype.toString.call(obj));
 
 /**
+ * Options for closest search
+ */
+interface ClosestSearchOptions {
+  normalizeFn?: (str: string) => string;
+}
+
+/**
  * Fuzzy search result using fastest-levenshtein
  */
 interface FuzzySearchResult {
@@ -34,6 +41,7 @@ interface FuzzySearchResult {
  *
  * - `maxDistance` - Maximum edit distance for a match
  * - `maxResults` - Maximum number of results to return
+ * - `normalizeFn` - Function to normalize strings (default: `normalizeString`)
  * - `isExactMatch` - Include exact matches
  * - `isPrefixMatch` - Include matches with prefix
  * - `isSuffixMatch` - Include matches with suffix
@@ -43,6 +51,7 @@ interface FuzzySearchResult {
 interface FuzzySearchOptions {
   maxDistance?: number;
   maxResults?: number;
+  normalizeFn?: (str: string) => string;
   isExactMatch?: boolean;
   isPrefixMatch?: boolean;
   isSuffixMatch?: boolean;
@@ -68,6 +77,7 @@ const normalizeString = (str: string) => String(str || '')
  *
  * @param query - Search query string
  * @param items - Array of strings to search
+ * @param options - Search configuration options
  * @returns {string | null} Closest matching string or null
  *
  * @example
@@ -78,15 +88,18 @@ const normalizeString = (str: string) => String(str || '')
  */
 const findClosest = (
   query: string,
-  items: string[]
-): string | null => {
-  const normalizedQuery = normalizeString(query);
+  items: string[],
+  {
+    normalizeFn = normalizeString
+  }: ClosestSearchOptions = {}
+) => {
+  const normalizedQuery = normalizeFn(query);
 
   if (!normalizedQuery || !Array.isArray(items) || items.length === 0) {
     return null;
   }
 
-  const normalizedItems = items.map(item => (item ? normalizeString(item) : item));
+  const normalizedItems = items.map(item => (item ? normalizeFn(item) : item));
   const closestMatch = closest(normalizedQuery, normalizedItems);
 
   return items[normalizedItems.indexOf(closestMatch)] || null;
@@ -114,19 +127,18 @@ const findClosest = (
 const fuzzySearch = (
   query: string,
   items: string[],
-  options: FuzzySearchOptions = {}
-): FuzzySearchResult[] => {
-  const {
+  {
     maxDistance = 3,
     maxResults = 10,
+    normalizeFn = normalizeString,
     isExactMatch = true,
     isPrefixMatch = true,
     isSuffixMatch = true,
     isContainsMatch = true,
     isFuzzyMatch = false
-  } = options;
-
-  const queryNormalized = normalizeString(query);
+  }: FuzzySearchOptions = {}
+): FuzzySearchResult[] => {
+  const queryNormalized = normalizeFn(query);
   const seenItem = new Set<string>();
   const results: FuzzySearchResult[] = [];
 
@@ -137,7 +149,7 @@ const fuzzySearch = (
 
     seenItem.add(item);
 
-    const itemNormalized = normalizeString(item);
+    const itemNormalized = normalizeFn(item);
     let editDistance = 0;
     let matchType: FuzzySearchResult['matchType'] | undefined;
 
@@ -145,10 +157,13 @@ const fuzzySearch = (
       matchType = 'exact';
     } else if (queryNormalized !== '' && itemNormalized.startsWith(queryNormalized)) {
       matchType = 'prefix';
+      editDistance = 1;
     } else if (queryNormalized !== '' && itemNormalized.endsWith(queryNormalized)) {
       matchType = 'suffix';
+      editDistance = 1;
     } else if (queryNormalized !== '' && itemNormalized.includes(queryNormalized)) {
       matchType = 'contains';
+      editDistance = 2;
     } else if (isFuzzyMatch) {
       matchType = 'fuzzy';
       editDistance = distance(queryNormalized, itemNormalized);
@@ -191,6 +206,7 @@ export {
   normalizeString,
   fuzzySearch,
   findClosest,
+  type ClosestSearchOptions,
   type FuzzySearchResult,
   type FuzzySearchOptions
 };
