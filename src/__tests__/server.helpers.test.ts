@@ -53,58 +53,58 @@ describe('findClosest', () => {
   it.each([
     {
       description: 'empty haystack',
-      needle: 'Button',
-      haystack: []
+      query: 'Button',
+      items: []
     },
     {
       description: 'empty needle',
-      needle: '',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: '',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'non-existent needle',
-      needle: 'lorem',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'lorem',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'non-existent needle with case insensitive search',
-      needle: 'LOREM',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'LOREM',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'exact match',
-      needle: 'Alert',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'Alert',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'partial query',
-      needle: 'but',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'but',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'typo',
-      needle: 'buton',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'buton',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'multiple matches',
-      needle: 'badge',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'badge',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'multiple matches with case insensitive search',
-      needle: 'BADGE',
-      haystack: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      query: 'BADGE',
+      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
     },
     {
       description: 'match spacing',
-      needle: 'dolor sit',
-      haystack: ['sit', 'dolor', 'dolor sit']
+      query: 'dolor sit',
+      items: ['sit', 'dolor', 'dolor sit']
     }
-  ])('should attempt to find a closest match, $description', ({ needle, haystack }) => {
+  ])('should attempt to find a closest match, $description', ({ query, items }) => {
     expect({
-      needle,
-      match: findClosest(needle, haystack)
+      query,
+      match: findClosest(query, items)
     }).toMatchSnapshot();
   });
 });
@@ -112,6 +112,24 @@ describe('findClosest', () => {
 describe('fuzzySearch', () => {
   const components = ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup', 'Card', 'CardHeader'];
 
+  it.each([
+    {
+      description: 'exact match',
+      query: 'Button',
+      items: components,
+      options: undefined
+    },
+    {
+      description: 'exact match case-insensitive',
+      query: 'button',
+      items: components,
+      options: undefined
+    }
+  ])('should fuzzy match, $description', ({ query, items, options }) => {
+    expect(fuzzySearch(query, items, options)).toMatchSnapshot();
+  });
+
+  /*
   describe('exact matches', () => {
     it('should find exact match', () => {
       const results = fuzzySearch('Button', components);
@@ -135,6 +153,7 @@ describe('fuzzySearch', () => {
       });
     });
   });
+  */
 
   describe('prefix matches', () => {
     it('should find prefix matches', () => {

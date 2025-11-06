@@ -3,71 +3,91 @@
 exports[`findClosest should attempt to find a closest match, empty haystack 1`] = `
 {
   "match": null,
-  "needle": "Button",
+  "query": "Button",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, empty needle 1`] = `
 {
   "match": "Badge",
-  "needle": "",
+  "query": "",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, exact match 1`] = `
 {
   "match": "Alert",
-  "needle": "Alert",
+  "query": "Alert",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, match spacing 1`] = `
 {
   "match": "dolor sit",
-  "needle": "dolor sit",
+  "query": "dolor sit",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, multiple matches 1`] = `
 {
   "match": "Badge",
-  "needle": "badge",
+  "query": "badge",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, multiple matches with case insensitive search 1`] = `
 {
   "match": "Badge",
-  "needle": "BADGE",
+  "query": "BADGE",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, non-existent needle 1`] = `
 {
   "match": "Alert",
-  "needle": "lorem",
+  "query": "lorem",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, non-existent needle with case insensitive search 1`] = `
 {
   "match": "Alert",
-  "needle": "LOREM",
+  "query": "LOREM",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, partial query 1`] = `
 {
   "match": "Button",
-  "needle": "but",
+  "query": "but",
 }
 `;
 
 exports[`findClosest should attempt to find a closest match, typo 1`] = `
 {
   "match": "Button",
-  "needle": "buton",
+  "query": "buton",
 }
+`;
+
+exports[`fuzzySearch should fuzzy match, exact match 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "Button",
+    "matchType": "exact",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, exact match case-insensitive 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "Button",
+    "matchType": "exact",
+  },
+]
 `;
 
 exports[`generateHash should minimally generate a consistent hash: hash, object and primitive values 1`] = `
