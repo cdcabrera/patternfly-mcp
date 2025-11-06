@@ -19,14 +19,15 @@ interface FuzzySearchResult {
 /**
  * Options for fuzzy search
  *
- * - `maxDistance` - Maximum edit distance for a match
+ * - `maxDistance` - Maximum edit distance for a match. Distance is defined as
+ *   - exact = 0
+ *   - prefix = 1
+ *   - suffix = 1
+ *   - contains = 2
+ *   - fuzzy = Levenshtein edit distance
  * - `maxResults` - Maximum number of results to return
  * - `normalizeFn` - Function to normalize strings (default: `normalizeString`)
- * - `isExactMatch` - Include exact matches
- * - `isPrefixMatch` - Include matches with prefix
- * - `isSuffixMatch` - Include matches with suffix
- * - `isContainsMatch` - Include matches with contains
- * - `isFuzzyMatch` - Include matches with fuzzy
+ * - `isExactMatch` | `isPrefixMatch` | `isSuffixMatch` | `isContainsMatch` | `isFuzzyMatch` - Enable specific match modes
  */
 interface FuzzySearchOptions {
   maxDistance?: number;
@@ -40,7 +41,10 @@ interface FuzzySearchOptions {
 }
 
 /**
- * Lightweight normalization: trim, lowercase, remove diacritics (a sign/accent character), squash separators
+ * Internal lightweight normalization: trim, lowercase, remove diacritics (a sign/accent character), squash separators
+ *
+ * - Functions `findClosest` and `fuzzySearch` use this internally.
+ * - Can be overridden in the `findClosest` and `fuzzySearch` related options for custom normalization.
  *
  * @param str
  */
@@ -54,6 +58,8 @@ const normalizeString = (str: string) => String(str || '')
 
 /**
  * Find the closest match using fastest-levenshtein's closest function.
+ *
+ * - Returns the first original item whose normalized value equals the best normalized candidate.
  *
  * @param query - Search query string
  * @param items - Array of strings to search
@@ -88,8 +94,12 @@ const findClosest = (
 /**
  * Fuzzy search using fastest-levenshtein
  *
- * - Distance check is only run after exact, prefix, suffix, and contain matches fail.
- * - Skips fuzzy matches distance check if potential distance against `maxDistance` can't be met.
+ * - Exact/prefix/suffix/contains are evaluated first with constant distances (0/1/1/2).
+ * - Fuzzy distance is computed only when earlier classifications fail and only when the
+ *   string length delta is within `maxDistance` (cheap lower-bound check).
+ * - Global filter `distance <= maxDistance` applies to all match types.
+ * - Empty-query fallback: if `query` normalizes to `''` and `isFuzzyMatch` is true,
+ *   items with length `<= maxDistance` can match (since `distance('', s) = s.length`).
  *
  * @param query - Search query string
  * @param items - Array of strings to search
