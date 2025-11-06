@@ -219,6 +219,16 @@ exports[`fuzzySearch should fuzzy match, match within restricted distance 1`] = 
 ]
 `;
 
+exports[`fuzzySearch should fuzzy match, multiple words 1`] = `
+[
+  {
+    "distance": 10,
+    "item": "Lorem Ipsum Dolor Sit",
+    "matchType": "contains",
+  },
+]
+`;
+
 exports[`fuzzySearch should fuzzy match, prefix match 1`] = `
 [
   {

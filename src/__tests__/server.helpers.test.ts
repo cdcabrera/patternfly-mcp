@@ -50,6 +50,8 @@ describe('isPromise', () => {
 });
 
 describe('findClosest', () => {
+  const components = ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup'];
+
   it.each([
     {
       description: 'empty haystack',
@@ -59,42 +61,42 @@ describe('findClosest', () => {
     {
       description: 'empty needle',
       query: '',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'non-existent needle',
       query: 'lorem',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'non-existent needle with case insensitive search',
       query: 'LOREM',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'exact match',
       query: 'Alert',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'partial query',
       query: 'but',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'typo',
       query: 'buton',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'multiple matches',
       query: 'badge',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'multiple matches with case insensitive search',
       query: 'BADGE',
-      items: ['Button', 'ButtonGroup', 'Badge', 'BadgeGroup', 'Alert', 'AlertGroup']
+      items: components
     },
     {
       description: 'match spacing',
@@ -211,6 +213,14 @@ describe('fuzzySearch', () => {
       query: 'button',
       items: ['BUTTON'],
       options: undefined
+    },
+    {
+      description: 'multiple words',
+      query: 'ipsum dolor',
+      items: ['Lorem Ipsum Dolor Sit'],
+      options: {
+        maxDistance: 10
+      }
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
     expect(fuzzySearch(query, items, options)).toMatchSnapshot();
