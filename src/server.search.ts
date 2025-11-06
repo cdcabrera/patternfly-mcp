@@ -59,7 +59,11 @@ const normalizeString = (str: string) => String(str || '')
 /**
  * Find the closest match using fastest-levenshtein's closest function.
  *
- * - Returns the first original item whose normalized value equals the best normalized candidate.
+ * - Returns the **first** original item whose normalized value equals the best normalized candidate.
+ * - This is a "first find, first serve" helper - if multiple items normalize to the same value,
+ *   only the first occurrence in the array is returned.
+ * - For multiple matches, use `fuzzySearch` instead.
+ * - Null/undefined items are normalized to empty strings to prevent runtime errors.
  *
  * @param query - Search query string
  * @param items - Array of strings to search
@@ -85,7 +89,8 @@ const findClosest = (
     return null;
   }
 
-  const normalizedItems = items.map(item => (item ? normalizeFn(item) : item));
+  // Normalize items, converting null/undefined to empty strings to prevent runtime errors
+  const normalizedItems = items.map(item => (item ? normalizeFn(item) : ''));
   const closestMatch = closest(normalizedQuery, normalizedItems);
 
   return items[normalizedItems.indexOf(closestMatch)] || null;
