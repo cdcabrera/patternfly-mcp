@@ -35,6 +35,10 @@ interface FuzzySearchResult {
 interface FuzzySearchOptions {
   maxDistance?: number;
   maxResults?: number;
+  isExactMatch?: boolean;
+  isPrefixMatch?: boolean;
+  isContainsMatch?: boolean;
+  isFuzzyMatch?: boolean;
 }
 
 /**
@@ -87,19 +91,20 @@ const fuzzySearch = (
 ): FuzzySearchResult[] => {
   const {
     maxDistance = 3,
-    maxResults = 10
+    maxResults = 10,
+    isExactMatch = true,
+    isPrefixMatch = true,
+    isContainsMatch = true,
+    isFuzzyMatch = false
   } = options;
 
-  const queryLower = query.toLowerCase().trim();
+  const queryLower = query.trim().toLowerCase();
   const results: FuzzySearchResult[] = [];
 
-  for (const item of items) {
+  items.forEach(item => {
     const itemLower = item.toLowerCase();
-
-    // Use fastest-levenshtein's distance function
     const editDistance = distance(queryLower, itemLower);
 
-    // Determine match type
     let matchType: FuzzySearchResult['matchType'];
 
     if (editDistance === 0) {
@@ -112,15 +117,16 @@ const fuzzySearch = (
       matchType = 'fuzzy';
     }
 
-    // Include if within maxDistance
-    if (editDistance <= maxDistance) {
+    const isIncluded = (matchType === 'exact' && isExactMatch) || (matchType === 'prefix' && isPrefixMatch) || (matchType === 'contains' && isContainsMatch) || (matchType === 'fuzzy' && isFuzzyMatch);
+
+    if (editDistance <= maxDistance && isIncluded) {
       results.push({
         item,
         distance: editDistance,
         matchType
       });
     }
-  }
+  });
 
   // Sort by distance (lowest first), then alphabetically
   results.sort((a, b) => {

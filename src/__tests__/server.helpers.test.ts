@@ -124,168 +124,102 @@ describe('fuzzySearch', () => {
       query: 'button',
       items: components,
       options: undefined
+    },
+    {
+      description: 'prefix match',
+      query: 'but',
+      items: components,
+      options: undefined
+    },
+    {
+      description: 'prefix match multiple',
+      query: 'butt',
+      items: components,
+      options: {
+        maxDistance: 10
+      }
+    },
+    {
+      description: 'contains match multiple',
+      query: 'roup',
+      items: components,
+      options: {
+        maxDistance: 10
+      }
+    },
+    {
+      description: 'fuzzy match within distance',
+      query: 'button',
+      items: components,
+      options: {
+        maxDistance: 10,
+        isExactMatch: false,
+        isPrefixMatch: false,
+        isContainsMatch: false,
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'match within max results',
+      query: 'a',
+      items: components,
+      options: {
+        maxDistance: 10,
+        maxResults: 2,
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'match within restricted distance',
+      query: 'button',
+      items: components,
+      options: {
+        maxDistance: 1
+      }
+    },
+    {
+      description: 'empty query',
+      query: '',
+      items: components,
+      options: {
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'empty query extended distance',
+      query: '',
+      items: components,
+      options: {
+        maxDistance: 20,
+        isFuzzyMatch: true
+      }
+    },
+    {
+      description: 'trimmed query',
+      query: ' button  ',
+      items: components,
+      options: undefined
+    },
+    {
+      description: 'empty items',
+      query: 'button',
+      items: [],
+      options: undefined
+    },
+    {
+      description: 'single item',
+      query: 'button',
+      items: ['BUTTON'],
+      options: undefined
     }
   ])('should fuzzy match, $description', ({ query, items, options }) => {
-    expect(fuzzySearch(query, items, options)).toMatchSnapshot();
+    const results = fuzzySearch(query, items, options);
+
+    expect(results).toMatchSnapshot();
   });
 
   /*
-  describe('exact matches', () => {
-    it('should find exact match', () => {
-      const results = fuzzySearch('Button', components);
 
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        item: 'Button',
-        distance: 0,
-        matchType: 'exact'
-      });
-    });
-
-    it('should find exact match case insensitive', () => {
-      const results = fuzzySearch('button', components);
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        item: 'Button',
-        distance: 0,
-        matchType: 'exact'
-      });
-    });
-  });
-  */
-
-  describe('prefix matches', () => {
-    it('should find prefix matches', () => {
-      const results = fuzzySearch('but', components);
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0]?.matchType).toBe('prefix');
-      expect(results[0]?.item).toMatch(/^Button/i);
-    });
-
-    it('should find multiple prefix matches', () => {
-      const results = fuzzySearch('button', components);
-      const buttonMatches = results.filter(r => r.item.toLowerCase().startsWith('button'));
-
-      expect(buttonMatches.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('contains matches', () => {
-    it('should find contains matches', () => {
-      const results = fuzzySearch('roup', components, { maxDistance: 10 });
-
-      expect(results.length).toBeGreaterThan(0);
-      const groupMatches = results.filter(r => r.item.toLowerCase().includes('roup'));
-
-      expect(groupMatches.length).toBeGreaterThan(0);
-      expect(groupMatches[0]?.matchType).toBe('contains');
-    });
-  });
-
-  describe('fuzzy matches', () => {
-    it('should find fuzzy matches within maxDistance', () => {
-      const results = fuzzySearch('buton', components, { maxDistance: 2 });
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0]?.matchType).toBe('fuzzy');
-      expect(results[0]?.distance).toBeLessThanOrEqual(2);
-    });
-
-    it('should not find matches beyond maxDistance', () => {
-      const results = fuzzySearch('xyzabc', components, { maxDistance: 2 });
-      // Should not find matches for completely different strings
-      const validMatches = results.filter(r => r.distance <= 2);
-
-      expect(validMatches.length).toBe(0);
-    });
-  });
-
-  describe('maxResults option', () => {
-    it('should limit results to maxResults', () => {
-      const results = fuzzySearch('a', components, { maxResults: 3 });
-
-      expect(results.length).toBeLessThanOrEqual(3);
-    });
-
-    it('should return all results when maxResults is larger than matches', () => {
-      const results = fuzzySearch('Button', components, { maxResults: 10 });
-
-      expect(results.length).toBe(1);
-    });
-  });
-
-  describe('maxDistance option', () => {
-    it('should respect maxDistance', () => {
-      const results = fuzzySearch('buton', components, { maxDistance: 1 });
-
-      results.forEach(result => {
-        expect(result.distance).toBeLessThanOrEqual(1);
-      });
-    });
-
-    it('should find more matches with larger maxDistance', () => {
-      const results1 = fuzzySearch('buton', components, { maxDistance: 1 });
-      const results2 = fuzzySearch('buton', components, { maxDistance: 3 });
-
-      expect(results2.length).toBeGreaterThanOrEqual(results1.length);
-    });
-  });
-
-  describe('sorting', () => {
-    it('should sort by distance (lowest first)', () => {
-      const results = fuzzySearch('but', components);
-
-      for (let i = 1; i < results.length; i++) {
-        expect(results[i - 1]?.distance).toBeLessThanOrEqual(results[i]?.distance ?? 0);
-      }
-    });
-
-    it('should sort alphabetically when distances are equal', () => {
-      const results = fuzzySearch('card', components);
-
-      // If multiple results have same distance, should be alphabetical
-      if (results.length > 0 && results[0]) {
-        const sameDistance = results.filter(r => r.distance === results[0]!.distance);
-
-        if (sameDistance.length > 1) {
-          for (let i = 1; i < sameDistance.length; i++) {
-            expect(sameDistance[i - 1]?.item.localeCompare(sameDistance[i]?.item ?? '')).toBeLessThanOrEqual(0);
-          }
-        }
-      }
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle empty query', () => {
-      const results = fuzzySearch('', components, { maxDistance: 20 });
-
-      // Empty query distance = length of item, need larger maxDistance
-      expect(results.length).toBeGreaterThan(0);
-    });
-
-    it('should handle query with spaces (trimmed)', () => {
-      const results = fuzzySearch('  button  ', components);
-
-      expect(results.length).toBeGreaterThan(0);
-      expect(results[0]?.item).toBe('Button');
-    });
-
-    it('should handle empty array', () => {
-      const results = fuzzySearch('button', []);
-
-      expect(results).toHaveLength(0);
-    });
-
-    it('should handle single item array', () => {
-      const results = fuzzySearch('button', ['Button']);
-
-      expect(results).toHaveLength(1);
-      expect(results[0]?.item).toBe('Button');
-    });
-  });
 
   describe('match type detection', () => {
     it('should correctly identify exact matches', () => {
@@ -334,4 +268,5 @@ describe('fuzzySearch', () => {
       expect(results.length).toBeLessThanOrEqual(10);
     });
   });
+  */
 });

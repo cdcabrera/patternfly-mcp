@@ -70,6 +70,75 @@ exports[`findClosest should attempt to find a closest match, typo 1`] = `
 }
 `;
 
+exports[`fuzzySearch should fuzzy match, contains match multiple 1`] = `
+[
+  {
+    "distance": 6,
+    "item": "AlertGroup",
+    "matchType": "contains",
+  },
+  {
+    "distance": 6,
+    "item": "BadgeGroup",
+    "matchType": "contains",
+  },
+  {
+    "distance": 7,
+    "item": "ButtonGroup",
+    "matchType": "contains",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, empty items 1`] = `[]`;
+
+exports[`fuzzySearch should fuzzy match, empty query 1`] = `[]`;
+
+exports[`fuzzySearch should fuzzy match, empty query extended distance 1`] = `
+[
+  {
+    "distance": 4,
+    "item": "Card",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 5,
+    "item": "Alert",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 5,
+    "item": "Badge",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 6,
+    "item": "Button",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 10,
+    "item": "AlertGroup",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 10,
+    "item": "BadgeGroup",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 10,
+    "item": "CardHeader",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 11,
+    "item": "ButtonGroup",
+    "matchType": "prefix",
+  },
+]
+`;
+
 exports[`fuzzySearch should fuzzy match, exact match 1`] = `
 [
   {
@@ -81,6 +150,111 @@ exports[`fuzzySearch should fuzzy match, exact match 1`] = `
 `;
 
 exports[`fuzzySearch should fuzzy match, exact match case-insensitive 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "Button",
+    "matchType": "exact",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, fuzzy match within distance 1`] = `
+[
+  {
+    "distance": 5,
+    "item": "Badge",
+    "matchType": "fuzzy",
+  },
+  {
+    "distance": 6,
+    "item": "Alert",
+    "matchType": "fuzzy",
+  },
+  {
+    "distance": 6,
+    "item": "Card",
+    "matchType": "fuzzy",
+  },
+  {
+    "distance": 8,
+    "item": "AlertGroup",
+    "matchType": "fuzzy",
+  },
+  {
+    "distance": 8,
+    "item": "BadgeGroup",
+    "matchType": "fuzzy",
+  },
+  {
+    "distance": 10,
+    "item": "CardHeader",
+    "matchType": "fuzzy",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, match within max results 1`] = `
+[
+  {
+    "distance": 3,
+    "item": "Card",
+    "matchType": "contains",
+  },
+  {
+    "distance": 4,
+    "item": "Alert",
+    "matchType": "prefix",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, match within restricted distance 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "Button",
+    "matchType": "exact",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, prefix match 1`] = `
+[
+  {
+    "distance": 3,
+    "item": "Button",
+    "matchType": "prefix",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, prefix match multiple 1`] = `
+[
+  {
+    "distance": 2,
+    "item": "Button",
+    "matchType": "prefix",
+  },
+  {
+    "distance": 7,
+    "item": "ButtonGroup",
+    "matchType": "prefix",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, single item 1`] = `
+[
+  {
+    "distance": 0,
+    "item": "BUTTON",
+    "matchType": "exact",
+  },
+]
+`;
+
+exports[`fuzzySearch should fuzzy match, trimmed query 1`] = `
 [
   {
     "distance": 0,
