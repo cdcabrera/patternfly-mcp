@@ -41,12 +41,8 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
       );
     }
 
-    // Trim componentName (user input) to handle accidental spaces, but don't trim componentNames
-    // (authoritative data) to preserve them as-is
-    const trimmedComponentName = componentName.trim();
-
     // Use fuzzySearch to handle exact and suggestions in one pass
-    const results = fuzzySearch(trimmedComponentName, componentNames, {
+    const results = fuzzySearch(componentName, componentNames, {
       maxDistance: 3,
       maxResults: 5,
       isFuzzyMatch: true
@@ -62,7 +58,7 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
 
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Component "${trimmedComponentName}" not found. ${suggestionMessage}`
+        `Component "${componentName.trim()}" not found. ${suggestionMessage}`
       );
     }
 
