@@ -45,20 +45,23 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
     // (authoritative data) to preserve them as-is
     const trimmedComponentName = componentName.trim();
 
-    // Try an exact match first (case-insensitive)
-    const exactMatch = componentNames.find(name => name.toLowerCase() === trimmedComponentName.toLowerCase());
+    // Use fuzzySearch to handle exact and suggestions in one pass
+    const results = fuzzySearch(trimmedComponentName, componentNames, {
+      maxDistance: 3,
+      maxResults: 5,
+      isExactMatch: true,
+      isPrefixMatch: true,
+      isSuffixMatch: true,
+      isContainsMatch: true,
+      isFuzzyMatch: true
+    });
 
-    if (exactMatch === undefined) {
-      const fuzzyResults = fuzzySearch(trimmedComponentName, componentNames, {
-        maxDistance: 3,
-        maxResults: 5,
-        isFuzzyMatch: true
-      });
+    const exact = results.find(r => r.matchType === 'exact');
 
-      const suggestions = fuzzyResults.map(result => result.item);
-
+    if (!exact) {
+      const suggestions = results.map(r => r.item);
       const suggestionMessage = suggestions.length > 0
-        ? `Did you mean "${suggestions.shift()}"?`
+        ? `Did you mean "${suggestions[0]}"?`
         : 'No similar components found.';
 
       throw new McpError(
@@ -71,7 +74,7 @@ const componentSchemasTool = (options = OPTIONS): McpTool => {
     let componentSchema: ComponentSchema;
 
     try {
-      componentSchema = await memoGetComponentSchema(exactMatch);
+      componentSchema = await memoGetComponentSchema(exact.item);
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
