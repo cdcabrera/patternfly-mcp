@@ -2,6 +2,14 @@ import { distance, closest } from 'fastest-levenshtein';
 import { memo } from './server.caching';
 
 /**
+ * normalizeString function interface
+ */
+interface NormalizeString {
+  (str: string): string;
+  memo: (str: string) => string;
+}
+
+/**
  * Options for closest search
  */
 interface ClosestSearchOptions {
@@ -48,10 +56,11 @@ interface FuzzySearchOptions {
  *
  * - Functions `findClosest` and `fuzzySearch` use this internally.
  * - Can be overridden in the `findClosest` and `fuzzySearch` related options for custom normalization.
+ * - Function has a `memo` property to allow use as a memoized function.
  *
  * @param str
  */
-const normalizeString = (str: string) => String(str || '')
+const normalizeString: NormalizeString = (str: string) => String(str || '')
   .trim()
   .toLowerCase()
   .normalize('NFKD')
@@ -108,9 +117,9 @@ const findClosest = (
  * - Exact/prefix/suffix/contains are evaluated first with constant distances (0/1/1/2).
  * - Fuzzy distance is computed only when earlier classifications fail and only when the
  *   string length delta is within `maxDistance` (cheap lower-bound check).
- * - Global filter `distance <= maxDistance` applies to all match types.
- * - Empty-query fallback: if `query` normalizes to `''` and `isFuzzyMatch` is true,
- *   items with length `<= maxDistance` can match (since `distance('', s) = s.length`).
+ * - Global filter: result included only if its type is enabled AND distance <= maxDistance.
+ * - Negative `maxDistance` values intentionally filter out all results, including exact matches.
+ * - Empty-query fallback is allowed when `isFuzzyMatch` is true (items with length <= maxDistance can match).
  *
  * @param query - Search query string
  * @param items - Array of strings to search
@@ -208,6 +217,7 @@ export {
   normalizeString,
   fuzzySearch,
   findClosest,
+  type NormalizeString,
   type ClosestSearchOptions,
   type FuzzySearchResult,
   type FuzzySearchOptions
