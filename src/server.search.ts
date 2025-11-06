@@ -1,4 +1,5 @@
 import { distance, closest } from 'fastest-levenshtein';
+import { memo } from './server.caching';
 
 /**
  * Options for closest search
@@ -59,6 +60,11 @@ const normalizeString = (str: string) => String(str || '')
   .replace(/\s+/g, ' ');
 
 /**
+ * Memoized version of normalizedString
+ */
+normalizeString.memo = memo(normalizeString, { cacheLimit: 25 });
+
+/**
  * Find the closest match using fastest-levenshtein's closest function.
  *
  * - Returns the **first** original item whose normalized value equals the best normalized candidate.
@@ -81,7 +87,7 @@ const findClosest = (
   query: string,
   items: string[] = [],
   {
-    normalizeFn = normalizeString
+    normalizeFn = normalizeString.memo
   }: ClosestSearchOptions = {}
 ) => {
   const normalizedQuery = normalizeFn(query);
@@ -126,7 +132,7 @@ const fuzzySearch = (
   {
     maxDistance = 3,
     maxResults = 10,
-    normalizeFn = normalizeString,
+    normalizeFn = normalizeString.memo,
     isExactMatch = true,
     isPrefixMatch = true,
     isSuffixMatch = true,

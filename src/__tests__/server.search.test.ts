@@ -4,6 +4,10 @@ describe('normalizeString', () => {
   it('should normalize a string', () => {
     expect(normalizeString('résumé')).toBe(normalizeString('resume'));
   });
+
+  it('should have memo property', () => {
+    expect(normalizeString.memo).toBeDefined();
+  });
 });
 
 describe('findClosest', () => {
