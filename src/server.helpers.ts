@@ -26,11 +26,18 @@ const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.t
 interface FuzzySearchResult {
   item: string;
   distance: number;
-  matchType: 'exact' | 'prefix' | 'contains' | 'fuzzy';
+  matchType: 'exact' | 'prefix' | 'suffix' | 'contains' | 'fuzzy';
 }
 
 /**
  * Options for fuzzy search
+ *
+ * - `maxDistance` - Maximum edit distance for a match
+ * - `maxResults` - Maximum number of results to return
+ * - `isExactMatch` - Include exact matches
+ * - `isPrefixMatch` - Include matches with prefix
+ * - `isContainsMatch` - Include matches with contains
+ * - `isFuzzyMatch` - Include matches with fuzzy
  */
 interface FuzzySearchOptions {
   maxDistance?: number;
@@ -108,12 +115,15 @@ const fuzzySearch = (
 
     if (itemLower === queryLower) {
       matchType = 'exact';
-    } else if (itemLower.startsWith(queryLower)) {
+    } else if (queryLower !== '' && itemLower.startsWith(queryLower)) {
       matchType = 'prefix';
-      editDistance = distance(queryLower, itemLower);
-    } else if (itemLower.includes(queryLower)) {
+      editDistance = 1;
+    } else if (queryLower !== '' && itemLower.endsWith(queryLower)) {
+      matchType = 'suffix';
+      editDistance = 1;
+    } else if (queryLower !== '' && itemLower.includes(queryLower)) {
       matchType = 'contains';
-      editDistance = distance(queryLower, itemLower);
+      editDistance = 2;
     } else if (isFuzzyMatch) {
       matchType = 'fuzzy';
       editDistance = distance(queryLower, itemLower);
