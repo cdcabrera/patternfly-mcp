@@ -60,7 +60,7 @@ const normalizeString = (str: string) => String(str || '')
   .replace(/\s+/g, ' ');
 
 /**
- * Memoized version of normalizedString
+ * Memoized version of normalizeString
  */
 normalizeString.memo = memo(normalizeString, { cacheLimit: 25 });
 
