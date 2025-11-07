@@ -5,7 +5,7 @@
  * Tests actual server instances with proper cleanup.
  */
 
-import { start, type CliOptions, type ServerInstance } from '../src/index';
+import { start, type CliOptions } from '../src/index';
 import { OPTIONS } from '../src/options';
 
 describe('Programmatic API Usage', () => {
