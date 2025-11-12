@@ -128,32 +128,30 @@ const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
  *
  * @returns {GlobalOptions} Default options object
  */
-const getDefaultOptions = (): GlobalOptions => {
-  return {
-    pfExternal: PF_EXTERNAL,
-    pfExternalCharts: PF_EXTERNAL_CHARTS,
-    pfExternalChartsComponents: PF_EXTERNAL_CHARTS_COMPONENTS,
-    pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
-    pfExternalDesign: PF_EXTERNAL_DESIGN,
-    pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
-    pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
-    pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
-    resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
-    toolMemoOptions: TOOL_MEMO_OPTIONS,
-    separator: DEFAULT_SEPARATOR,
-    urlRegex: URL_REGEX,
-    name: packageJson.name,
-    version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
-    repoName: process.cwd()?.split?.('/')?.pop?.()?.trim?.(),
-    contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
-    docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
-    llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
-  };
-};
+const getDefaultOptions = (): GlobalOptions => ({
+  pfExternal: PF_EXTERNAL,
+  pfExternalCharts: PF_EXTERNAL_CHARTS,
+  pfExternalChartsComponents: PF_EXTERNAL_CHARTS_COMPONENTS,
+  pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
+  pfExternalDesign: PF_EXTERNAL_DESIGN,
+  pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
+  pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
+  pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
+  resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
+  toolMemoOptions: TOOL_MEMO_OPTIONS,
+  separator: DEFAULT_SEPARATOR,
+  urlRegex: URL_REGEX,
+  name: packageJson.name,
+  version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
+  repoName: process.cwd()?.split?.('/')?.pop?.()?.trim?.(),
+  contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
+  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
+  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
+});
 
 /**
  * Global configuration options object.
- * 
+ *
  * @deprecated Use getOptions() from './options.context' instead for context-aware access.
  * This is kept for backward compatibility during migration.
  *
@@ -187,12 +185,10 @@ const OPTIONS: GlobalOptions = getDefaultOptions();
  * @param {CliOptions} cliOptions - CLI options to merge with defaults
  * @returns {GlobalOptions} Combined options
  */
-const createOptions = (cliOptions: CliOptions): GlobalOptions => {
-  return {
-    ...getDefaultOptions(),
-    ...cliOptions
-  };
-};
+const createOptions = (cliOptions: CliOptions): GlobalOptions => ({
+  ...getDefaultOptions(),
+  ...cliOptions
+});
 
 /**
  * Parse CLI arguments and return CLI options
@@ -204,7 +200,7 @@ const parseCliOptions = (): CliOptions => ({
 
 /**
  * Make global options immutable after combining CLI options with app defaults.
- * 
+ *
  * @deprecated Use createOptions() + setOptions() from './options.context' instead.
  * This function is kept for backward compatibility but no longer freezes globally.
  * The actual freezing now happens via setOptions() in the calling code.
@@ -212,11 +208,10 @@ const parseCliOptions = (): CliOptions => ({
  * @param cliOptions
  * @returns {GlobalOptions} Options (caller should use setOptions() to freeze in context)
  */
-const freezeOptions = (cliOptions: CliOptions) => {
+const freezeOptions = (cliOptions: CliOptions) =>
   // Just create options, don't freeze here
   // Freezing happens in context via setOptions() called from index.ts
-  return createOptions(cliOptions);
-};
+  createOptions(cliOptions);
 
 export {
   parseCliOptions,

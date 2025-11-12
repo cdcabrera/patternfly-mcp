@@ -7,6 +7,7 @@ import { getOptions } from './options.context';
  */
 const getLocalDocs = () => {
   const options = getOptions();
+
   return [
     `[@patternfly/react-charts](${join(options.docsPath, 'charts', 'README.md')})`,
     `[@patternfly/react-chatbot](${join(options.docsPath, 'chatbot', 'README.md')})`,
@@ -19,7 +20,6 @@ const getLocalDocs = () => {
   ];
 };
 
-// Export as function to ensure context is used
-const LOCAL_DOCS = getLocalDocs();
-
-export { LOCAL_DOCS, getLocalDocs };
+// Export function directly - LOCAL_DOCS is now computed lazily via getLocalDocs()
+// This ensures context is available when called
+export { getLocalDocs };

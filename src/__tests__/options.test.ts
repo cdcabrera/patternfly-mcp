@@ -1,5 +1,5 @@
 import * as options from '../options';
-import { parseCliOptions, freezeOptions, createOptions, OPTIONS } from '../options';
+import { parseCliOptions, freezeOptions, createOptions } from '../options';
 import { setOptions, getOptions } from '../options.context';
 
 describe('options', () => {
@@ -61,9 +61,11 @@ describe('createOptions', () => {
 describe('context-based options', () => {
   it('should set and get options from context', () => {
     const testOptions = createOptions({ docsHost: true });
+
     setOptions(testOptions);
 
     const retrieved = getOptions();
+
     expect(Object.isFrozen(retrieved)).toBe(true);
     expect(retrieved.docsHost).toBe(true);
   });

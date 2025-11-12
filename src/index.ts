@@ -21,6 +21,7 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Create options and set in context (frozen per-context, not globally)
     // This allows multiple server instances to have different options
     const options = createOptions(finalOptions);
+
     setOptions(options);
 
     // Create and return server-instance
