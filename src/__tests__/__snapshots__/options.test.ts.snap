@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`freezeOptions should return frozen options with consistent properties: frozen 1`] = `
+exports[`freezeOptions should return options with consistent properties (freezing now happens via setOptions): frozen 1`] = `
 {
   "contextPath": "/",
   "docsHost": true,
@@ -136,7 +136,9 @@ exports[`options should return specific properties 1`] = `
     },
   },
   "URL_REGEX": /\\^\\(https\\?:\\)\\\\/\\\\//i,
+  "createOptions": [Function],
   "freezeOptions": [Function],
+  "getDefaultOptions": [Function],
   "parseCliOptions": [Function],
 }
 `;
