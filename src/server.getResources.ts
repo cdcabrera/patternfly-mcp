@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { OPTIONS } from './options';
+import { getOptions } from './options.context';
 import { memo } from './server.caching';
 
 /**
@@ -12,8 +12,9 @@ const readLocalFileFunction = async (filePath: string) => await readFile(filePat
 
 /**
  * Memoized version of readLocalFileFunction
+ * Uses context options for memoization settings
  */
-readLocalFileFunction.memo = memo(readLocalFileFunction, OPTIONS.resourceMemoOptions.readFile);
+readLocalFileFunction.memo = memo(readLocalFileFunction, getOptions().resourceMemoOptions.readFile);
 
 /**
  * Fetch content from a URL with timeout and error handling
@@ -43,8 +44,9 @@ const fetchUrlFunction = async (url: string) => {
 
 /**
  * Memoized version of fetchUrlFunction
+ * Uses context options for memoization settings
  */
-fetchUrlFunction.memo = memo(fetchUrlFunction, OPTIONS.resourceMemoOptions.fetchUrl);
+fetchUrlFunction.memo = memo(fetchUrlFunction, getOptions().resourceMemoOptions.fetchUrl);
 
 /**
  * Resolve a local path depending on docs host flag
@@ -52,7 +54,7 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, OPTIONS.resourceMemoOptions.fetch
  * @param relativeOrAbsolute
  * @param options
  */
-const resolveLocalPathFunction = (relativeOrAbsolute: string, options = OPTIONS) =>
+const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptions()) =>
   (options.docsHost && join(options.llmsFilesPath, relativeOrAbsolute)) || relativeOrAbsolute;
 
 /**
@@ -63,7 +65,7 @@ const resolveLocalPathFunction = (relativeOrAbsolute: string, options = OPTIONS)
  */
 const processDocsFunction = async (
   inputs: string[],
-  options = OPTIONS
+  options = getOptions()
 ) => {
   const seen = new Set<string>();
   const list = inputs
