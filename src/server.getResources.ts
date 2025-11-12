@@ -55,8 +55,11 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, RESOURCE_MEMO_OPTIONS.fetchUrl);
  * @param relativeOrAbsolute
  * @param options
  */
-const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptions()) =>
-  (options.docsHost && join(options.llmsFilesPath, relativeOrAbsolute)) || relativeOrAbsolute;
+const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptions()) => {
+  const useHost = Boolean(options?.docsHost);
+  const base = options?.llmsFilesPath;
+  return (useHost && join(base, relativeOrAbsolute)) || relativeOrAbsolute;
+};
 
 /**
  * Normalize inputs, load all in parallel, and return a joined string.
@@ -83,7 +86,7 @@ const processDocsFunction = async (
 
   const loadOne = async (pathOrUrl: string) => {
     const isUrl = options.urlRegex.test(pathOrUrl);
-    const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
+    const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl, options);
     let content;
 
     if (isUrl) {

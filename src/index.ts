@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createOptions, parseCliOptions, type CliOptions } from './options';
-import { setOptions } from './options.context';
+import { runWithOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
 
 /**
@@ -18,14 +18,11 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Merge programmatic options with CLI options (programmatic takes precedence)
     const finalOptions = { ...cliOptions, ...programmaticOptions };
 
-    // Create options and set in context (frozen per-context, not globally)
-    // This allows multiple server instances to have different options
+    // Create options and run the server within the AsyncLocalStorage context
+    // so all async work (including request handling) inherits the options.
     const options = createOptions(finalOptions);
 
-    setOptions(options);
-
-    // Create and return server-instance
-    return await runServer();
+    return await runWithOptions(options, async () => await runServer());
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
