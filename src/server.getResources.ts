@@ -87,7 +87,7 @@ const processDocsFunction = async (
 
   const loadOne = async (pathOrUrl: string) => {
     const isUrl = options.urlRegex.test(pathOrUrl);
-    const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl, options);
+    const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
     let content;
 
     if (isUrl) {

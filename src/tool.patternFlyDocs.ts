@@ -32,7 +32,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     let result: string;
 
     try {
-      result = await memoProcess(urlList, options);
+      result = await memoProcess(urlList);
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
