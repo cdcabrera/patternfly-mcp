@@ -1,5 +1,5 @@
 import * as options from '../options';
-import { parseCliOptions, freezeOptions, createOptions } from '../options';
+import { parseCliOptions, DEFAULT_OPTIONS, type GlobalOptions } from '../options';
 import { setOptions, getOptions } from '../options.context';
 
 describe('options', () => {
@@ -37,42 +37,36 @@ describe('parseCliOptions', () => {
   });
 });
 
-describe('freezeOptions', () => {
-  it('should return options with consistent properties (freezing now happens via setOptions)', () => {
-    const result = freezeOptions({ docsHost: true });
-
-    // freezeOptions now just creates options, doesn't freeze globally
-    // Freezing happens via setOptions() in context
-    expect(result.docsHost).toBe(true);
-    expect(result).toMatchSnapshot('frozen');
+describe('DEFAULT_OPTIONS', () => {
+  it('should have consistent default properties', () => {
+    expect(DEFAULT_OPTIONS).toMatchSnapshot();
   });
-});
 
-describe('createOptions', () => {
-  it('should create options from CLI options', () => {
-    const result = createOptions({ docsHost: true });
-
-    expect(result.docsHost).toBe(true);
-    expect(result.name).toBeDefined();
-    expect(result.version).toBeDefined();
+  it('should have required properties defined', () => {
+    expect(DEFAULT_OPTIONS.name).toBeDefined();
+    expect(DEFAULT_OPTIONS.version).toBeDefined();
+    expect(DEFAULT_OPTIONS.docsPath).toBeDefined();
+    expect(DEFAULT_OPTIONS.llmsFilesPath).toBeDefined();
   });
 });
 
 describe('context-based options', () => {
   it('should set and get options from context', () => {
-    const testOptions = createOptions({ docsHost: true });
+    const testOptions = { ...DEFAULT_OPTIONS, docsHost: true } as GlobalOptions;
 
-    setOptions(testOptions);
+    const frozen = setOptions(testOptions);
 
     const retrieved = getOptions();
 
     expect(Object.isFrozen(retrieved)).toBe(true);
+    expect(Object.isFrozen(frozen)).toBe(true);
     expect(retrieved.docsHost).toBe(true);
+    expect(frozen.docsHost).toBe(true);
   });
 
-  it('should allow different options in different contexts', async () => {
-    const options1 = createOptions({ docsHost: true });
-    const options2 = createOptions({ docsHost: false });
+  it('should allow different options in different contexts', () => {
+    const options1 = { ...DEFAULT_OPTIONS, docsHost: true } as GlobalOptions;
+    const options2 = { ...DEFAULT_OPTIONS, docsHost: false } as GlobalOptions;
 
     // Test that we can set different options
     setOptions(options1);
@@ -80,5 +74,14 @@ describe('context-based options', () => {
 
     setOptions(options2);
     expect(getOptions().docsHost).toBe(false);
+  });
+
+  it('should return frozen options from setOptions', () => {
+    const testOptions = { ...DEFAULT_OPTIONS, docsHost: true } as GlobalOptions;
+
+    const result = setOptions(testOptions);
+
+    expect(Object.isFrozen(result)).toBe(true);
+    expect(result.docsHost).toBe(true);
   });
 });

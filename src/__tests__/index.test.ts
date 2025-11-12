@@ -1,5 +1,5 @@
 import { main, start, type CliOptions } from '../index';
-import { parseCliOptions, createOptions, type GlobalOptions } from '../options';
+import { parseCliOptions } from '../options';
 import { setOptions } from '../options.context';
 import { runServer } from '../server';
 
@@ -9,7 +9,6 @@ jest.mock('../options.context');
 jest.mock('../server');
 
 const mockParseCliOptions = parseCliOptions as jest.MockedFunction<typeof parseCliOptions>;
-const mockCreateOptions = createOptions as jest.MockedFunction<typeof createOptions>;
 const mockSetOptions = setOptions as jest.MockedFunction<typeof setOptions>;
 const mockRunServer = runServer as jest.MockedFunction<typeof runServer>;
 
@@ -28,8 +27,7 @@ describe('main', () => {
 
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockCreateOptions.mockReturnValue({} as GlobalOptions);
-    mockSetOptions.mockImplementation(() => {});
+    mockSetOptions.mockImplementation(options => Object.freeze({ ...options }));
     mockRunServer.mockResolvedValue({
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true)
@@ -41,17 +39,20 @@ describe('main', () => {
     processExitSpy.mockRestore();
   });
 
-  it('should create and set options with parsed CLI options', async () => {
+  it('should merge and set options with parsed CLI options', async () => {
     const cliOptions = { docsHost: true };
-    const createdOptions = { docsHost: true } as GlobalOptions;
 
     mockParseCliOptions.mockReturnValue(cliOptions);
-    mockCreateOptions.mockReturnValue(createdOptions);
 
     await main();
 
-    expect(mockCreateOptions).toHaveBeenCalledWith(cliOptions);
-    expect(mockSetOptions).toHaveBeenCalledWith(createdOptions);
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        docsHost: true,
+        name: expect.any(String),
+        version: expect.any(String)
+      })
+    );
   });
 
   it('should attempt to parse CLI options and run the server', async () => {
@@ -85,10 +86,10 @@ describe('main', () => {
     expect(processExitSpy).toHaveBeenCalledWith(1);
   });
 
-  it('should handle createOptions errors', async () => {
-    const error = new Error('Failed to create options');
+  it('should handle setOptions errors', async () => {
+    const error = new Error('Failed to set options');
 
-    mockCreateOptions.mockImplementation(() => {
+    mockSetOptions.mockImplementation(() => {
       throw error;
     });
 
@@ -107,14 +108,10 @@ describe('main', () => {
       return { docsHost: false };
     });
 
-    mockCreateOptions.mockImplementation(() => {
-      callOrder.push('create');
-
-      return {} as GlobalOptions;
-    });
-
-    mockSetOptions.mockImplementation(() => {
+    mockSetOptions.mockImplementation(options => {
       callOrder.push('set');
+
+      return Object.freeze({ ...options });
     });
 
     mockRunServer.mockImplementation(async () => {
@@ -128,48 +125,57 @@ describe('main', () => {
 
     await main();
 
-    expect(callOrder).toEqual(['parse', 'create', 'set', 'run']);
+    expect(callOrder).toEqual(['parse', 'set', 'run']);
   });
 
   it('should merge programmatic options with CLI options', async () => {
     const cliOptions = { docsHost: false };
     const programmaticOptions = { docsHost: true };
-    const mergedOptions = { docsHost: true } as GlobalOptions;
 
     mockParseCliOptions.mockReturnValue(cliOptions);
-    mockCreateOptions.mockReturnValue(mergedOptions);
 
     await main(programmaticOptions);
 
-    // Should merge CLI options with programmatic options (programmatic takes precedence)
-    expect(mockCreateOptions).toHaveBeenCalledWith({ docsHost: true });
-    expect(mockSetOptions).toHaveBeenCalledWith(mergedOptions);
+    // Should merge DEFAULT_OPTIONS, CLI options, and programmatic options (programmatic takes precedence)
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        docsHost: true,
+        name: expect.any(String),
+        version: expect.any(String)
+      })
+    );
   });
 
   it('should work with empty programmatic options', async () => {
     const cliOptions = { docsHost: true };
-    const createdOptions = { docsHost: true } as GlobalOptions;
 
     mockParseCliOptions.mockReturnValue(cliOptions);
-    mockCreateOptions.mockReturnValue(createdOptions);
 
     await main({});
 
-    expect(mockCreateOptions).toHaveBeenCalledWith({ docsHost: true });
-    expect(mockSetOptions).toHaveBeenCalledWith(createdOptions);
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        docsHost: true,
+        name: expect.any(String),
+        version: expect.any(String)
+      })
+    );
   });
 
   it('should work with undefined programmatic options', async () => {
     const cliOptions = { docsHost: false };
-    const createdOptions = { docsHost: false } as GlobalOptions;
 
     mockParseCliOptions.mockReturnValue(cliOptions);
-    mockCreateOptions.mockReturnValue(createdOptions);
 
     await main();
 
-    expect(mockCreateOptions).toHaveBeenCalledWith({ docsHost: false });
-    expect(mockSetOptions).toHaveBeenCalledWith(createdOptions);
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        docsHost: false,
+        name: expect.any(String),
+        version: expect.any(String)
+      })
+    );
   });
 });
 
@@ -188,8 +194,7 @@ describe('start alias', () => {
 
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockCreateOptions.mockReturnValue({} as GlobalOptions);
-    mockSetOptions.mockImplementation(() => {});
+    mockSetOptions.mockImplementation(options => Object.freeze({ ...options }));
     mockRunServer.mockResolvedValue({
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true)
@@ -203,31 +208,37 @@ describe('start alias', () => {
 
   it('should be equivalent to main function', async () => {
     const cliOptions = { docsHost: true };
-    const createdOptions = { docsHost: true } as GlobalOptions;
 
     mockParseCliOptions.mockReturnValue(cliOptions);
-    mockCreateOptions.mockReturnValue(createdOptions);
 
     await start();
 
     expect(mockParseCliOptions).toHaveBeenCalled();
-    expect(mockCreateOptions).toHaveBeenCalledWith(cliOptions);
-    expect(mockSetOptions).toHaveBeenCalledWith(createdOptions);
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        docsHost: true,
+        name: expect.any(String),
+        version: expect.any(String)
+      })
+    );
     expect(mockRunServer).toHaveBeenCalled();
   });
 
   it('should accept programmatic options like main', async () => {
     const cliOptions = { docsHost: false };
     const programmaticOptions = { docsHost: true };
-    const mergedOptions = { docsHost: true } as GlobalOptions;
 
     mockParseCliOptions.mockReturnValue(cliOptions);
-    mockCreateOptions.mockReturnValue(mergedOptions);
 
     await start(programmaticOptions);
 
-    expect(mockCreateOptions).toHaveBeenCalledWith({ docsHost: true });
-    expect(mockSetOptions).toHaveBeenCalledWith(mergedOptions);
+    expect(mockSetOptions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        docsHost: true,
+        name: expect.any(String),
+        version: expect.any(String)
+      })
+    );
   });
 });
 
