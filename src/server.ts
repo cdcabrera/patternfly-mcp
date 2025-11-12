@@ -9,6 +9,8 @@ type McpTool = [string, { description: string; inputSchema: any }, (args: any) =
 
 type McpToolCreator = (options?: any) => McpTool;
 
+type StopServerOptions = { exitProcess?: boolean };
+
 /**
  * Server instance with shutdown capability
  */
@@ -17,7 +19,7 @@ interface ServerInstance {
   /**
    * Stop the server gracefully
    */
-  stop(): Promise<void>;
+  stop(options?: StopServerOptions): Promise<void>;
 
   /**
    * Check if server is running
@@ -45,12 +47,40 @@ const runServer = async (options = getOptions(), {
   let transport: StdioServerTransport | null = null;
   let running = false;
 
-  const stopServer = async () => {
+  const stopServer = async ({ exitProcess = true }: StopServerOptions = {}) => {
     if (server && running) {
       await server?.close();
       running = false;
+      transport = null;
       console.log('PatternFly MCP server stopped');
-      process.exit(0);
+
+      if (exitProcess === true) {
+        process.exit(0);
+      }
+
+      /*
+      try {
+        // Close the server first
+        await server?.close();
+
+        // Close the transport if it exists
+        if (transport) {
+          // StdioServerTransport doesn't have a close method, but we can set it to null
+          transport = null;
+        }
+
+        running = false;
+        console.log('PatternFly MCP server stopped');
+
+        // Only exit process if not in test environment
+        if (process.env.NODE_ENV !== 'test') {
+          process.exit(0);
+        }
+      } catch (error) {
+        console.error('Error stopping server:', error);
+        running = false;
+      }
+      */
     }
   };
 
@@ -74,7 +104,7 @@ const runServer = async (options = getOptions(), {
       server?.registerTool(name, schema, (args = {}) => runWithOptions(options, async () => await callback(args)));
     });
 
-    if (enableSigint) {
+    if (enableSigint && process.env.NODE_ENV !== 'test') {
       process.on('SIGINT', async () => stopServer());
     }
 
@@ -90,8 +120,8 @@ const runServer = async (options = getOptions(), {
   }
 
   return {
-    async stop(): Promise<void> {
-      return await stopServer();
+    async stop(options?: StopServerOptions): Promise<void> {
+      return await stopServer(options);
     },
 
     isRunning(): boolean {
