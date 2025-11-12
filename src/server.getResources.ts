@@ -58,6 +58,7 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, RESOURCE_MEMO_OPTIONS.fetchUrl);
 const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptions()) => {
   const useHost = Boolean(options?.docsHost);
   const base = options?.llmsFilesPath;
+
   return (useHost && join(base, relativeOrAbsolute)) || relativeOrAbsolute;
 };
 
