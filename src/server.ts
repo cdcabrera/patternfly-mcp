@@ -57,30 +57,6 @@ const runServer = async (options = getOptions(), {
       if (exitProcess === true) {
         process.exit(0);
       }
-
-      /*
-      try {
-        // Close the server first
-        await server?.close();
-
-        // Close the transport if it exists
-        if (transport) {
-          // StdioServerTransport doesn't have a close method, but we can set it to null
-          transport = null;
-        }
-
-        running = false;
-        console.log('PatternFly MCP server stopped');
-
-        // Only exit process if not in test environment
-        if (process.env.NODE_ENV !== 'test') {
-          process.exit(0);
-        }
-      } catch (error) {
-        console.error('Error stopping server:', error);
-        running = false;
-      }
-      */
     }
   };
 

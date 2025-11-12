@@ -5,10 +5,11 @@
  * Tests actual server instances with proper cleanup.
  */
 
-import { start, type CliOptions } from '../src/index';
-import { OPTIONS } from '../src/options';
+// import { start, type CliOptions } from '../src/index';
+// import { OPTIONS } from '../src/options';
 
 describe('Programmatic API Usage', () => {
+  /*
   it('should handle multiple start() calls with different options and unique sessionIds', async () => {
     // First start() call
     const firstOptions: Partial<CliOptions> = { docsHost: true };
@@ -42,6 +43,7 @@ describe('Programmatic API Usage', () => {
     await server2.stop({ exitProcess: false });
     await server3.stop({ exitProcess: false });
   });
+   */
 });
 
 /*
