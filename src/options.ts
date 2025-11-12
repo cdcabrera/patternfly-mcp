@@ -12,9 +12,9 @@ interface CliOptions {
 /**
  * Application defaults (not user-configurable)
  */
-interface AppDefaults {
-  resourceMemoOptions: typeof RESOURCE_MEMO_OPTIONS;
-  toolMemoOptions: typeof TOOL_MEMO_OPTIONS;
+interface DefaultOptions {
+  resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
+  toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   pfExternal: string;
   pfExternalCharts: string;
   pfExternalChartsComponents: string;
@@ -34,10 +34,10 @@ interface AppDefaults {
 }
 
 /**
- * Frozen options object (immutable configuration)
+ * Combined options object
  */
-interface GlobalOptions extends CliOptions, AppDefaults {
-  // This will be frozen and immutable
+interface GlobalOptions extends CliOptions, DefaultOptions {
+  // Combined DefaultOptions and CliOptions
 }
 
 /**
@@ -123,9 +123,9 @@ const PF_EXTERNAL_CHARTS_COMPONENTS = `${PF_EXTERNAL_CHARTS}/victory/components`
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
 
 /**
- * Global configuration options object.
+ * Global default options. Base defaults before CLI/programmatic overrides.
  *
- * @type {GlobalOptions}
+ * @type {GlobalOptions} Default options object.
  * @property {CliOptions.docsHost} [docsHost] - Flag indicating whether to use the docs-host.
  * @property {string} pfExternal - PatternFly external docs URL.
  * @property {string} pfExternalCharts - PatternFly external charts URL.
@@ -146,7 +146,7 @@ const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
  * @property {string} docsPath - Path to the documentation directory.
  * @property {string} llmsFilesPath - Path to the LLMs files directory.
  */
-const OPTIONS: GlobalOptions = {
+const DEFAULT_OPTIONS: DefaultOptions = {
   pfExternal: PF_EXTERNAL,
   pfExternalCharts: PF_EXTERNAL_CHARTS,
   pfExternalChartsComponents: PF_EXTERNAL_CHARTS_COMPONENTS,
@@ -175,23 +175,8 @@ const parseCliOptions = (): CliOptions => ({
   // Future CLI options can be added here
 });
 
-/**
- * Make global options immutable after combining CLI options with app defaults.
- *
- * @param cliOptions
- */
-const freezeOptions = (cliOptions: CliOptions) => {
-  Object.assign(OPTIONS, {
-    ...cliOptions
-  });
-
-  return Object.freeze(OPTIONS);
-};
-
 export {
   parseCliOptions,
-  freezeOptions,
-  OPTIONS,
   PF_EXTERNAL,
   PF_EXTERNAL_CHARTS,
   PF_EXTERNAL_CHARTS_COMPONENTS,
@@ -202,9 +187,10 @@ export {
   PF_EXTERNAL_ACCESSIBILITY,
   RESOURCE_MEMO_OPTIONS,
   TOOL_MEMO_OPTIONS,
+  DEFAULT_OPTIONS,
   DEFAULT_SEPARATOR,
   URL_REGEX,
   type CliOptions,
-  type AppDefaults,
+  type DefaultOptions,
   type GlobalOptions
 };

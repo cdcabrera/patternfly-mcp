@@ -1,9 +1,8 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`freezeOptions should return frozen options with consistent properties: frozen 1`] = `
+exports[`DEFAULT_OPTIONS should have consistent default properties 1`] = `
 {
   "contextPath": "/",
-  "docsHost": true,
   "docsPath": "/documentation",
   "llmsFilesPath": "/llms-files",
   "name": "@patternfly/patternfly-mcp",
@@ -52,12 +51,7 @@ exports[`freezeOptions should return frozen options with consistent properties: 
 
 exports[`options should return specific properties 1`] = `
 {
-  "DEFAULT_SEPARATOR": "
-
----
-
-",
-  "OPTIONS": {
+  "DEFAULT_OPTIONS": {
     "contextPath": "/",
     "docsPath": "/documentation",
     "llmsFilesPath": "/llms-files",
@@ -103,6 +97,11 @@ exports[`options should return specific properties 1`] = `
     "urlRegex": /\\^\\(https\\?:\\)\\\\/\\\\//i,
     "version": "0.0.0",
   },
+  "DEFAULT_SEPARATOR": "
+
+---
+
+",
   "PF_EXTERNAL": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content",
   "PF_EXTERNAL_ACCESSIBILITY": "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility",
   "PF_EXTERNAL_CHARTS": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/packages/react-charts/src",
@@ -136,7 +135,6 @@ exports[`options should return specific properties 1`] = `
     },
   },
   "URL_REGEX": /\\^\\(https\\?:\\)\\\\/\\\\//i,
-  "freezeOptions": [Function],
   "parseCliOptions": [Function],
 }
 `;
