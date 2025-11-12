@@ -12,9 +12,9 @@ interface CliOptions {
 /**
  * Application defaults (not user-configurable)
  */
-interface AppDefaults {
-  resourceMemoOptions: typeof RESOURCE_MEMO_OPTIONS;
-  toolMemoOptions: typeof TOOL_MEMO_OPTIONS;
+interface DefaultOptions {
+  resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
+  toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   pfExternal: string;
   pfExternalCharts: string;
   pfExternalChartsComponents: string;
@@ -34,10 +34,10 @@ interface AppDefaults {
 }
 
 /**
- * Frozen options object (immutable configuration)
+ * Combined options object
  */
-interface GlobalOptions extends CliOptions, AppDefaults {
-  // This will be frozen and immutable
+interface GlobalOptions extends CliOptions, DefaultOptions {
+  // Combined DefaultOptions and CliOptions
 }
 
 /**
@@ -123,39 +123,9 @@ const PF_EXTERNAL_CHARTS_COMPONENTS = `${PF_EXTERNAL_CHARTS}/victory/components`
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL_CHARTS}/charts`;
 
 /**
- * Get default options (unfrozen, for creating new instances)
- * These are the base defaults before CLI/programmatic overrides
+ * Global default options. Base defaults before CLI/programmatic overrides.
  *
- * @returns {GlobalOptions} Default options object
- */
-const getDefaultOptions = (): GlobalOptions => ({
-  pfExternal: PF_EXTERNAL,
-  pfExternalCharts: PF_EXTERNAL_CHARTS,
-  pfExternalChartsComponents: PF_EXTERNAL_CHARTS_COMPONENTS,
-  pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
-  pfExternalDesign: PF_EXTERNAL_DESIGN,
-  pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
-  pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
-  pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
-  resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
-  toolMemoOptions: TOOL_MEMO_OPTIONS,
-  separator: DEFAULT_SEPARATOR,
-  urlRegex: URL_REGEX,
-  name: packageJson.name,
-  version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
-  repoName: process.cwd()?.split?.('/')?.pop?.()?.trim?.(),
-  contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
-  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
-  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
-});
-
-/**
- * Global configuration options object.
- *
- * @deprecated Use getOptions() from './options.context' instead for context-aware access.
- * This is kept for backward compatibility during migration.
- *
- * @type {GlobalOptions}
+ * @type {GlobalOptions} Default options object.
  * @property {CliOptions.docsHost} [docsHost] - Flag indicating whether to use the docs-host.
  * @property {string} pfExternal - PatternFly external docs URL.
  * @property {string} pfExternalCharts - PatternFly external charts URL.
@@ -176,19 +146,26 @@ const getDefaultOptions = (): GlobalOptions => ({
  * @property {string} docsPath - Path to the documentation directory.
  * @property {string} llmsFilesPath - Path to the LLMs files directory.
  */
-const OPTIONS: GlobalOptions = getDefaultOptions();
-
-/**
- * Create options from CLI options (doesn't freeze)
- * Freezing happens in context via setOptions() from options.context
- *
- * @param {CliOptions} cliOptions - CLI options to merge with defaults
- * @returns {GlobalOptions} Combined options
- */
-const createOptions = (cliOptions: CliOptions): GlobalOptions => ({
-  ...getDefaultOptions(),
-  ...cliOptions
-});
+const DEFAULT_OPTIONS: DefaultOptions = {
+  pfExternal: PF_EXTERNAL,
+  pfExternalCharts: PF_EXTERNAL_CHARTS,
+  pfExternalChartsComponents: PF_EXTERNAL_CHARTS_COMPONENTS,
+  pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
+  pfExternalDesign: PF_EXTERNAL_DESIGN,
+  pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
+  pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
+  pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
+  resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
+  toolMemoOptions: TOOL_MEMO_OPTIONS,
+  separator: DEFAULT_SEPARATOR,
+  urlRegex: URL_REGEX,
+  name: packageJson.name,
+  version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
+  repoName: process.cwd()?.split?.('/')?.pop?.()?.trim?.(),
+  contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
+  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
+  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files')
+};
 
 /**
  * Parse CLI arguments and return CLI options
@@ -198,27 +175,8 @@ const parseCliOptions = (): CliOptions => ({
   // Future CLI options can be added here
 });
 
-/**
- * Make global options immutable after combining CLI options with app defaults.
- *
- * @deprecated Use createOptions() + setOptions() from './options.context' instead.
- * This function is kept for backward compatibility but no longer freezes globally.
- * The actual freezing now happens via setOptions() in the calling code.
- *
- * @param cliOptions
- * @returns {GlobalOptions} Options (caller should use setOptions() to freeze in context)
- */
-const freezeOptions = (cliOptions: CliOptions) =>
-  // Just create options, don't freeze here
-  // Freezing happens in context via setOptions() called from index.ts
-  createOptions(cliOptions);
-
 export {
   parseCliOptions,
-  freezeOptions,
-  getDefaultOptions,
-  createOptions,
-  OPTIONS,
   PF_EXTERNAL,
   PF_EXTERNAL_CHARTS,
   PF_EXTERNAL_CHARTS_COMPONENTS,
@@ -229,9 +187,10 @@ export {
   PF_EXTERNAL_ACCESSIBILITY,
   RESOURCE_MEMO_OPTIONS,
   TOOL_MEMO_OPTIONS,
+  DEFAULT_OPTIONS,
   DEFAULT_SEPARATOR,
   URL_REGEX,
   type CliOptions,
-  type AppDefaults,
+  type DefaultOptions,
   type GlobalOptions
 };

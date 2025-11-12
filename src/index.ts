@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createOptions, parseCliOptions, type CliOptions } from './options';
+import { parseCliOptions, DEFAULT_OPTIONS, type CliOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
 
@@ -15,14 +15,8 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Parse CLI options
     const cliOptions = parseCliOptions();
 
-    // Merge programmatic options with CLI options (programmatic takes precedence)
-    const finalOptions = { ...cliOptions, ...programmaticOptions };
-
-    // Create options and run the server within the AsyncLocalStorage context
-    // so all async work (including request handling) inherits the options.
-    const options = createOptions(finalOptions);
-
-    setOptions(options);
+    // Apply options to context. Merge defaults, cli, and programmatic options
+    setOptions({ ...DEFAULT_OPTIONS, ...cliOptions, ...programmaticOptions });
 
     return await runServer();
   } catch (error) {
