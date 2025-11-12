@@ -11,7 +11,7 @@ import { memo } from './server.caching';
  * @param options
  */
 const fetchDocsTool = (options = getOptions()): McpTool => {
-  const memoProcess = memo(processDocsFunction, options.toolMemoOptions.fetchDocs);
+  const memoProcess = memo(processDocsFunction, options?.toolMemoOptions?.fetchDocs);
 
   const callback = async (args: any = {}) => {
     const { urlList } = args;

@@ -17,7 +17,7 @@ import { memo } from './server.caching';
  * @param options
  */
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
-  const memoProcess = memo(processDocsFunction, options.toolMemoOptions.usePatternFlyDocs);
+  const memoProcess = memo(processDocsFunction, options?.toolMemoOptions?.usePatternFlyDocs);
 
   const callback = async (args: any = {}) => {
     const { urlList } = args;
