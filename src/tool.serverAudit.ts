@@ -4,15 +4,23 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { type McpTool } from './server';
 import { getOptions } from './options.context';
+import { toolName as componentSchemasName } from './tool.componentSchemas';
+import { toolName as fetchDocsName } from './tool.fetchDocs';
+import { toolName as patternflyDocsName } from './tool.patternFlyDocs';
+
+/**
+ * MCP tool name
+ */
+const toolName = 'serverAudit';
 
 /**
  * Expected core tools that should always be registered
  */
 const EXPECTED_CORE_TOOLS = [
-  'usePatternFlyDocs',
-  'fetchDocs',
-  'componentSchemas',
-  'serverAudit'
+  patternflyDocsName,
+  fetchDocsName,
+  componentSchemasName,
+  toolName
 ];
 
 /**
@@ -292,7 +300,7 @@ const serverAuditTool = (options = getOptions()): McpTool => {
   };
 
   return [
-    'serverAudit',
+    toolName,
     {
       description: 'Perform a basic diagnostic audit of the PatternFly MCP server. Returns server information, configuration validation, expected tools, context state, and health checks. Use this to verify the server is running correctly and diagnose issues.',
       inputSchema: {
@@ -306,5 +314,5 @@ const serverAuditTool = (options = getOptions()): McpTool => {
   ];
 };
 
-export { serverAuditTool };
+export { serverAuditTool, toolName };
 

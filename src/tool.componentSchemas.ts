@@ -12,6 +12,11 @@ import { fuzzySearch } from './server.search';
 type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
 
 /**
+ * MCP tool name
+ */
+const toolName = 'componentSchemas';
+
+/**
  * componentSchemas tool function (tuple pattern)
  *
  * Creates an MCP tool that retrieves JSON Schema for PatternFly React components.
@@ -80,7 +85,7 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
   };
 
   return [
-    'componentSchemas',
+    toolName,
     {
       description: 'Get JSON Schema for a PatternFly React component. Returns prop definitions, types, and validation rules. Use this for structured component metadata, not documentation.',
       inputSchema: {
@@ -91,4 +96,4 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
   ];
 };
 
-export { componentSchemasTool };
+export { componentSchemasTool, toolName };

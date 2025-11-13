@@ -6,6 +6,11 @@ import { getOptions } from './options.context';
 import { memo } from './server.caching';
 
 /**
+ * MCP tool name
+ */
+const toolName = 'fetchDocs';
+
+/**
  * fetchDocs tool function (tuple pattern)
  *
  * @param options
@@ -45,7 +50,7 @@ const fetchDocsTool = (options = getOptions()): McpTool => {
   };
 
   return [
-    'fetchDocs',
+    toolName,
     {
       description: 'Fetch documentation for one or more URLs extracted from previous tool calls responses. The URLs should be passed as an array in the "urlList" argument.',
       inputSchema: {
@@ -56,4 +61,4 @@ const fetchDocsTool = (options = getOptions()): McpTool => {
   ];
 };
 
-export { fetchDocsTool };
+export { fetchDocsTool, toolName };

@@ -8,8 +8,12 @@ import { CHART_DOCS } from './docs.chart';
 import { getLocalDocs } from './docs.local';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
-
 import { memo } from './server.caching';
+
+/**
+ * MCP tool name
+ */
+const toolName = 'usePatternFlyDocs';
 
 /**
  * usePatternFlyDocs tool function (tuple pattern)
@@ -51,7 +55,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   };
 
   return [
-    'usePatternFlyDocs',
+    toolName,
     {
       description: `You must use this tool to answer any questions related to PatternFly components or documentation.
 
@@ -78,4 +82,4 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   ];
 };
 
-export { usePatternFlyDocsTool };
+export { usePatternFlyDocsTool, toolName };
