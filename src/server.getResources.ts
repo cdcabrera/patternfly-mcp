@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getOptions } from './options.context';
-import { RESOURCE_MEMO_OPTIONS } from './options';
+import { RESOURCE_MEMO_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 
 /**

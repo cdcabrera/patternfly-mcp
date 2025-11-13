@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { GlobalOptions } from './options';
-import { DEFAULT_OPTIONS } from './options';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * AsyncLocalStorage instance for per-instance options

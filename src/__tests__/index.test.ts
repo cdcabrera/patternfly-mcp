@@ -1,5 +1,6 @@
 import { main, start, type CliOptions } from '../index';
-import { parseCliOptions, DEFAULT_OPTIONS } from '../options';
+import { parseCliOptions } from '../options';
+import { DEFAULT_OPTIONS } from '../options.defaults';
 import { setOptions } from '../options.context';
 import { runServer } from '../server';
 

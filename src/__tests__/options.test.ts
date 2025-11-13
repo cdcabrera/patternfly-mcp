@@ -1,5 +1,6 @@
 import * as options from '../options';
-import { parseCliOptions, DEFAULT_OPTIONS } from '../options';
+import { parseCliOptions } from '../options';
+import { DEFAULT_OPTIONS } from '../options.defaults';
 import { setOptions, getOptions } from '../options.context';
 
 describe('options', () => {
