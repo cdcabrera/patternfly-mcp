@@ -25,8 +25,10 @@ describe('PatternFly MCP, HTTP Transport', () => {
       client = await startHttpServer();
       const response = await client.initialize();
 
-      expect(response.result?.protocolVersion).toBe('2025-06-18');
-      expect((response.result as any)?.serverInfo?.name).toBe('@jephilli-patternfly-docs/mcp');
+      expect({
+        version: response?.result?.protocolVersion,
+        name: (response as any)?.result?.serverInfo?.name
+      }).toMatchSnapshot();
     });
 
     it('should list tools over HTTP', async () => {
@@ -41,9 +43,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
       });
       const toolNames = response.result?.tools?.map((t: any) => t.name) || [];
 
-      expect(toolNames).toContain('usePatternFlyDocs');
-      expect(toolNames).toContain('fetchDocs');
-      expect(toolNames).toHaveLength(2);
+      expect(toolNames).toMatchSnapshot('tools');
     });
 
     it('should handle concurrent requests', async () => {
