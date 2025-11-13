@@ -9,6 +9,25 @@ exports[`main should merge default, cli and programmatic options, merge programm
       },
     ],
   ],
+  "methodRegistersAs": "main",
+  "sequence": [
+    "parse",
+    "set",
+    "run",
+  ],
+}
+`;
+
+exports[`main should merge default, cli and programmatic options, merge programmatic options with CLI options, with start alias 1`] = `
+{
+  "calls": [
+    [
+      {
+        "docsHost": true,
+      },
+    ],
+  ],
+  "methodRegistersAs": "main",
   "sequence": [
     "parse",
     "set",
@@ -26,6 +45,7 @@ exports[`main should merge default, cli and programmatic options, with empty pro
       },
     ],
   ],
+  "methodRegistersAs": "main",
   "sequence": [
     "parse",
     "set",
@@ -43,6 +63,7 @@ exports[`main should merge default, cli and programmatic options, with undefined
       },
     ],
   ],
+  "methodRegistersAs": "main",
   "sequence": [
     "parse",
     "set",

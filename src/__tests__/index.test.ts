@@ -69,19 +69,33 @@ describe('main', () => {
     {
       description: 'parseCliOptions',
       error: new Error('Failed to parse CLI options'),
-      message: 'Failed to start server:'
+      message: 'Failed to start server:',
+      method: main
     },
     {
       description: 'setOptions',
       error: new Error('Failed to set options'),
-      message: 'Failed to start server:'
+      message: 'Failed to start server:',
+      method: main
+    },
+    {
+      description: 'parseCliOptions, with start alias',
+      error: new Error('Failed to parse CLI options'),
+      message: 'Failed to start server:',
+      method: start
+    },
+    {
+      description: 'setOptions, with start alias',
+      error: new Error('Failed to set options'),
+      message: 'Failed to start server:',
+      method: start
     }
-  ])('should handle errors, $description', async ({ error, message }) => {
+  ])('should handle errors, $description', async ({ error, message, method }) => {
     mockSetOptions.mockImplementation(() => {
       throw error;
     });
 
-    await main();
+    await method();
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(message, error);
     expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -91,83 +105,41 @@ describe('main', () => {
     {
       description: 'merge programmatic options with CLI options',
       programmaticOptions: { docsHost: true },
-      cliOptions: { docsHost: false }
+      cliOptions: { docsHost: false },
+      method: main
     },
     {
       description: 'with empty programmatic options',
       programmaticOptions: {},
-      cliOptions: { docsHost: true }
+      cliOptions: { docsHost: true },
+      method: main
     },
     {
       description: 'with undefined programmatic options',
       programmaticOptions: undefined,
-      cliOptions: { docsHost: false }
+      cliOptions: { docsHost: false },
+      method: main
+    },
+    {
+      description: 'merge programmatic options with CLI options, with start alias',
+      programmaticOptions: { docsHost: true },
+      cliOptions: { docsHost: false },
+      method: start
     }
-  ])('should merge default, cli and programmatic options, $description', async ({ programmaticOptions, cliOptions }) => {
+  ])('should merge default, cli and programmatic options, $description', async ({ programmaticOptions, cliOptions, method }) => {
     mockParseCliOptions.mockImplementation(() => {
       callOrder.push('parse');
 
       return cliOptions;
     });
 
-    await main(programmaticOptions);
+    await method(programmaticOptions);
 
     expect({
+      methodRegistersAs: method.name,
       sequence: callOrder,
       calls: mockSetOptions.mock.calls
     }).toMatchSnapshot();
-  });
-});
-
-describe('start alias', () => {
-  let consoleErrorSpy: jest.SpyInstance;
-  let processExitSpy: jest.SpyInstance;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Mock process.exit to prevent actual exit
-    processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => undefined as never);
-
-    // Mock console.error
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
-
-    // Setup default mocks
-    mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockSetOptions.mockImplementation(options =>
-      Object.freeze({ ...DEFAULT_OPTIONS, ...options }) as unknown as GlobalOptions);
-    mockRunServer.mockResolvedValue({
-      stop: jest.fn().mockResolvedValue(undefined),
-      isRunning: jest.fn().mockReturnValue(true)
-    });
-  });
-
-  afterEach(() => {
-    consoleErrorSpy.mockRestore();
-    processExitSpy.mockRestore();
-  });
-
-  it('should be equivalent to main function', async () => {
-    const cliOptions = { docsHost: true };
-
-    mockParseCliOptions.mockReturnValue(cliOptions);
-
-    await start();
-
-    expect(mockParseCliOptions).toHaveBeenCalled();
-    expect(mockSetOptions).toHaveBeenCalledWith(cliOptions);
-    expect(mockRunServer).toHaveBeenCalled();
-  });
-
-  it('should accept programmatic options like main', async () => {
-    const cliOptions = { docsHost: false };
-    const programmaticOptions = { docsHost: true };
-
-    mockParseCliOptions.mockReturnValue(cliOptions);
-
-    await start(programmaticOptions);
-
-    expect(mockSetOptions).toHaveBeenCalledWith(programmaticOptions);
   });
 });
 
