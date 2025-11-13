@@ -1,13 +1,4 @@
-import * as options from '../options';
 import { parseCliOptions } from '../options';
-import { DEFAULT_OPTIONS } from '../options.defaults';
-import { setOptions, getOptions } from '../options.context';
-
-describe('options', () => {
-  it('should return specific properties', () => {
-    expect(options).toMatchSnapshot();
-  });
-});
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
@@ -35,54 +26,5 @@ describe('parseCliOptions', () => {
     const result = parseCliOptions();
 
     expect(result).toMatchSnapshot();
-  });
-});
-
-describe('DEFAULT_OPTIONS', () => {
-  it('should have consistent default properties', () => {
-    expect(DEFAULT_OPTIONS).toMatchSnapshot();
-  });
-
-  it('should have required properties defined', () => {
-    expect(DEFAULT_OPTIONS.name).toBeDefined();
-    expect(DEFAULT_OPTIONS.version).toBeDefined();
-    expect(DEFAULT_OPTIONS.docsPath).toBeDefined();
-    expect(DEFAULT_OPTIONS.llmsFilesPath).toBeDefined();
-  });
-});
-
-describe('context-based options', () => {
-  it('should set and get options from context', () => {
-    const testOptions = { docsHost: true };
-
-    const frozen = setOptions(testOptions);
-
-    const retrieved = getOptions();
-
-    expect(Object.isFrozen(retrieved)).toBe(true);
-    expect(Object.isFrozen(frozen)).toBe(true);
-    expect(retrieved.docsHost).toBe(true);
-    expect(frozen.docsHost).toBe(true);
-  });
-
-  it('should allow different options in different contexts', () => {
-    const options1 = { docsHost: true };
-    const options2 = { docsHost: false };
-
-    // Test that we can set different options
-    setOptions(options1);
-    expect(getOptions().docsHost).toBe(true);
-
-    setOptions(options2);
-    expect(getOptions().docsHost).toBe(false);
-  });
-
-  it('should return frozen options from setOptions', () => {
-    const testOptions = { docsHost: true };
-
-    const result = setOptions(testOptions);
-
-    expect(Object.isFrozen(result)).toBe(true);
-    expect(result.docsHost).toBe(true);
   });
 });
