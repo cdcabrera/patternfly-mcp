@@ -1,5 +1,5 @@
 import { main, start, type CliOptions } from '../index';
-import { parseCliOptions } from '../options';
+import { parseCliOptions, type GlobalOptions } from '../options';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { setOptions } from '../options.context';
 import { runServer } from '../server';
@@ -28,12 +28,8 @@ describe('main', () => {
 
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockSetOptions.mockImplementation(options => {
-      // Mock should return a proper GlobalOptions-like object
-      const merged = { ...DEFAULT_OPTIONS, ...options };
-
-      return Object.freeze(merged) as any;
-    });
+    mockSetOptions.mockImplementation(options =>
+      Object.freeze({ ...DEFAULT_OPTIONS, ...options }) as unknown as GlobalOptions);
     mockRunServer.mockResolvedValue({
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true)
@@ -52,11 +48,7 @@ describe('main', () => {
 
     await main();
 
-    expect(mockSetOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        docsHost: true
-      })
-    );
+    expect(mockSetOptions).toHaveBeenCalledWith(cliOptions);
   });
 
   it('should attempt to parse CLI options and run the server', async () => {
@@ -114,10 +106,8 @@ describe('main', () => {
 
     mockSetOptions.mockImplementation(options => {
       callOrder.push('set');
-      // Mock should return a proper GlobalOptions-like object
-      const merged = { ...DEFAULT_OPTIONS, ...options };
 
-      return Object.freeze(merged) as any;
+      return Object.freeze({ ...DEFAULT_OPTIONS, ...options }) as unknown as GlobalOptions;
     });
 
     mockRunServer.mockImplementation(async () => {
@@ -142,12 +132,8 @@ describe('main', () => {
 
     await main(programmaticOptions);
 
-    // Should merge DEFAULT_OPTIONS, CLI options, and programmatic options (programmatic takes precedence)
-    expect(mockSetOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        docsHost: true
-      })
-    );
+    // Should merge DEFAULT_OPTIONS, CLI options, and programmatic options
+    expect(mockSetOptions).toHaveBeenCalledWith(programmaticOptions);
   });
 
   it('should work with empty programmatic options', async () => {
@@ -157,11 +143,7 @@ describe('main', () => {
 
     await main({});
 
-    expect(mockSetOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        docsHost: true
-      })
-    );
+    expect(mockSetOptions).toHaveBeenCalledWith(cliOptions);
   });
 
   it('should work with undefined programmatic options', async () => {
@@ -171,11 +153,7 @@ describe('main', () => {
 
     await main();
 
-    expect(mockSetOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        docsHost: false
-      })
-    );
+    expect(mockSetOptions).toHaveBeenCalledWith(cliOptions);
   });
 });
 
@@ -194,12 +172,8 @@ describe('start alias', () => {
 
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockSetOptions.mockImplementation(options => {
-      // Mock should return a proper GlobalOptions-like object
-      const merged = { ...DEFAULT_OPTIONS, ...options };
-
-      return Object.freeze(merged) as any;
-    });
+    mockSetOptions.mockImplementation(options =>
+      Object.freeze({ ...DEFAULT_OPTIONS, ...options }) as unknown as GlobalOptions);
     mockRunServer.mockResolvedValue({
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true)
@@ -219,11 +193,7 @@ describe('start alias', () => {
     await start();
 
     expect(mockParseCliOptions).toHaveBeenCalled();
-    expect(mockSetOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        docsHost: true
-      })
-    );
+    expect(mockSetOptions).toHaveBeenCalledWith(cliOptions);
     expect(mockRunServer).toHaveBeenCalled();
   });
 
@@ -235,18 +205,13 @@ describe('start alias', () => {
 
     await start(programmaticOptions);
 
-    expect(mockSetOptions).toHaveBeenCalledWith(
-      expect.objectContaining({
-        docsHost: true
-      })
-    );
+    expect(mockSetOptions).toHaveBeenCalledWith(programmaticOptions);
   });
 });
 
 describe('type exports', () => {
   it('should export CliOptions type', () => {
-    // This test ensures the type is properly exported
-    // TypeScript compilation will fail if the type is not available
+    // TypeScript compilation will fail if the type is unavailable
     const options: Partial<CliOptions> = { docsHost: true };
 
     expect(options).toBeDefined();
