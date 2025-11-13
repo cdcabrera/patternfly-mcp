@@ -1,5 +1,5 @@
 import { main, start, type CliOptions } from '../index';
-import { parseCliOptions } from '../options';
+import { parseCliOptions, DEFAULT_OPTIONS } from '../options';
 import { setOptions } from '../options.context';
 import { runServer } from '../server';
 
@@ -27,7 +27,12 @@ describe('main', () => {
 
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockSetOptions.mockImplementation(options => Object.freeze({ ...options }));
+    mockSetOptions.mockImplementation(options => {
+      // Mock should return a proper GlobalOptions-like object
+      const merged = { ...DEFAULT_OPTIONS, ...options };
+
+      return Object.freeze(merged) as any;
+    });
     mockRunServer.mockResolvedValue({
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true)
@@ -48,9 +53,7 @@ describe('main', () => {
 
     expect(mockSetOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        docsHost: true,
-        name: expect.any(String),
-        version: expect.any(String)
+        docsHost: true
       })
     );
   });
@@ -110,8 +113,10 @@ describe('main', () => {
 
     mockSetOptions.mockImplementation(options => {
       callOrder.push('set');
+      // Mock should return a proper GlobalOptions-like object
+      const merged = { ...DEFAULT_OPTIONS, ...options };
 
-      return Object.freeze({ ...options });
+      return Object.freeze(merged) as any;
     });
 
     mockRunServer.mockImplementation(async () => {
@@ -139,9 +144,7 @@ describe('main', () => {
     // Should merge DEFAULT_OPTIONS, CLI options, and programmatic options (programmatic takes precedence)
     expect(mockSetOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        docsHost: true,
-        name: expect.any(String),
-        version: expect.any(String)
+        docsHost: true
       })
     );
   });
@@ -155,9 +158,7 @@ describe('main', () => {
 
     expect(mockSetOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        docsHost: true,
-        name: expect.any(String),
-        version: expect.any(String)
+        docsHost: true
       })
     );
   });
@@ -171,9 +172,7 @@ describe('main', () => {
 
     expect(mockSetOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        docsHost: false,
-        name: expect.any(String),
-        version: expect.any(String)
+        docsHost: false
       })
     );
   });
@@ -194,7 +193,12 @@ describe('start alias', () => {
 
     // Setup default mocks
     mockParseCliOptions.mockReturnValue({ docsHost: false });
-    mockSetOptions.mockImplementation(options => Object.freeze({ ...options }));
+    mockSetOptions.mockImplementation(options => {
+      // Mock should return a proper GlobalOptions-like object
+      const merged = { ...DEFAULT_OPTIONS, ...options };
+
+      return Object.freeze(merged) as any;
+    });
     mockRunServer.mockResolvedValue({
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true)
@@ -216,9 +220,7 @@ describe('start alias', () => {
     expect(mockParseCliOptions).toHaveBeenCalled();
     expect(mockSetOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        docsHost: true,
-        name: expect.any(String),
-        version: expect.any(String)
+        docsHost: true
       })
     );
     expect(mockRunServer).toHaveBeenCalled();
@@ -234,9 +236,7 @@ describe('start alias', () => {
 
     expect(mockSetOptions).toHaveBeenCalledWith(
       expect.objectContaining({
-        docsHost: true,
-        name: expect.any(String),
-        version: expect.any(String)
+        docsHost: true
       })
     );
   });

@@ -1,5 +1,5 @@
 import * as options from '../options';
-import { parseCliOptions, DEFAULT_OPTIONS, type GlobalOptions } from '../options';
+import { parseCliOptions, DEFAULT_OPTIONS } from '../options';
 import { setOptions, getOptions } from '../options.context';
 
 describe('options', () => {
@@ -52,7 +52,7 @@ describe('DEFAULT_OPTIONS', () => {
 
 describe('context-based options', () => {
   it('should set and get options from context', () => {
-    const testOptions = { ...DEFAULT_OPTIONS, docsHost: true } as GlobalOptions;
+    const testOptions = { docsHost: true };
 
     const frozen = setOptions(testOptions);
 
@@ -65,8 +65,8 @@ describe('context-based options', () => {
   });
 
   it('should allow different options in different contexts', () => {
-    const options1 = { ...DEFAULT_OPTIONS, docsHost: true } as GlobalOptions;
-    const options2 = { ...DEFAULT_OPTIONS, docsHost: false } as GlobalOptions;
+    const options1 = { docsHost: true };
+    const options2 = { docsHost: false };
 
     // Test that we can set different options
     setOptions(options1);
@@ -77,7 +77,7 @@ describe('context-based options', () => {
   });
 
   it('should return frozen options from setOptions', () => {
-    const testOptions = { ...DEFAULT_OPTIONS, docsHost: true } as GlobalOptions;
+    const testOptions = { docsHost: true };
 
     const result = setOptions(testOptions);
 

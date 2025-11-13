@@ -16,11 +16,13 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * This allows multiple server instances to have different options
  * without interfering with each other.
  *
- * @param {Partial<GlobalOptions>} options - Options to set in context
+ * @param {Partial<GlobalOptions>} options - Options to set in context (merged with DEFAULT_OPTIONS)
  * @returns {GlobalOptions} Cloned frozen options object
  */
-const setOptions = (options: GlobalOptions) => {
-  const frozen = Object.freeze(structuredClone(options));
+const setOptions = (options: Partial<GlobalOptions>): GlobalOptions => {
+  // Merge with defaults to ensure all required properties are present
+  const merged = { ...DEFAULT_OPTIONS, ...options } as GlobalOptions;
+  const frozen = Object.freeze(structuredClone(merged));
 
   optionsContext.enterWith(frozen);
 
@@ -44,7 +46,7 @@ const getOptions = (): GlobalOptions => {
     return context;
   }
 
-  return setOptions(DEFAULT_OPTIONS);
+  return setOptions({});
 };
 
 /**

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { parseCliOptions, DEFAULT_OPTIONS, type CliOptions } from './options';
+import { parseCliOptions, type CliOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
 
@@ -15,8 +15,8 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Parse CLI options
     const cliOptions = parseCliOptions();
 
-    // Apply options to context. Merge defaults, cli, and programmatic options
-    setOptions({ ...DEFAULT_OPTIONS, ...cliOptions, ...programmaticOptions });
+    // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
+    setOptions({ ...cliOptions, ...programmaticOptions });
 
     return await runServer();
   } catch (error) {
