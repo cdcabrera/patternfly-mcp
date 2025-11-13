@@ -34,6 +34,7 @@ interface ServerInstance {
  * @param settings
  * @param settings.tools
  * @param settings.enableSigint
+ * @param settings.allowProcessExit
  */
 const runServer = async (options = getOptions(), {
   tools = [
@@ -41,8 +42,9 @@ const runServer = async (options = getOptions(), {
     fetchDocsTool,
     componentSchemasTool
   ],
-  enableSigint = true
-}: { tools?: McpToolCreator[]; enableSigint?: boolean } = {}): Promise<ServerInstance> => {
+  enableSigint = true,
+  allowProcessExit = true
+}: { tools?: McpToolCreator[]; enableSigint?: boolean, allowProcessExit?: boolean } = {}): Promise<ServerInstance> => {
   let server: McpServer | null = null;
   let transport: StdioServerTransport | null = null;
   let running = false;
@@ -52,7 +54,10 @@ const runServer = async (options = getOptions(), {
       await server?.close();
       running = false;
       console.log('PatternFly MCP server stopped');
-      process.exit(0);
+
+      if (allowProcessExit) {
+        process.exit(0);
+      }
     }
   };
 
@@ -83,13 +88,13 @@ const runServer = async (options = getOptions(), {
     if (options.http) {
       await startHttpTransport(server, options);
     } else {
-      const transport = new StdioServerTransport();
+      transport = new StdioServerTransport();
 
       await server.connect(transport);
     }
 
     running = true;
-    console.log(`PatternFly MCP server running on ${Boolean(options.http) && 'http' || 'stdio'}`);
+    console.log(`PatternFly MCP server running on ${(Boolean(options.http) && 'http') || 'stdio'}`);
   } catch (error) {
     console.error('Error creating MCP server:', error);
     throw error;

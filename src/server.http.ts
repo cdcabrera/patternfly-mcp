@@ -1,14 +1,14 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { OPTIONS } from './options';
+import { getOptions } from './options.context';
 
 /**
  * Create Streamable HTTP transport
  *
  * @param options - Global options (default parameter)
  */
-const createStreamableHttpTransport = (options = OPTIONS): StreamableHTTPServerTransport => {
+const createStreamableHttpTransport = (options = getOptions()): StreamableHTTPServerTransport => {
   const transportOptions: any = {
     sessionIdGenerator: () => crypto.randomUUID(),
     enableJsonResponse: false, // Use SSE streaming
@@ -54,7 +54,7 @@ const handleStreamableHttpRequest = async (
  * @param mcpServer - MCP server instance
  * @param options - Global options (default parameter)
  */
-const startHttpTransport = async (mcpServer: McpServer, options = OPTIONS): Promise<void> => {
+const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<void> => {
   const transport = createStreamableHttpTransport(options);
 
   // Connect MCP server to transport
@@ -76,5 +76,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = OPTIONS): Prom
 };
 
 export {
+  createStreamableHttpTransport,
+  handleStreamableHttpRequest,
   startHttpTransport
 };
