@@ -40,11 +40,48 @@ Edit `config/audit-config.yaml` to configure:
 
 ### Run Auditor
 
+**From root directory (recommended):**
+
+**Local execution:**
 ```bash
-# From auditor directory
+# Run with default config
+npm run auditor
+
+# Quick audit (3 runs)
+npm run auditor:quick
+
+# Full audit (10 runs)
+npm run auditor:full
+
+# Custom options
+npm run auditor:custom -- --mcp-url http://localhost:3000 --runs 5
+```
+
+**Containerized execution:**
+```bash
+# Build container (first time only)
+npm run auditor:build
+
+# Run with default config
+npm run auditor:container
+
+# Quick audit (3 runs)
+npm run auditor:container:quick
+
+# Full audit (10 runs)
+npm run auditor:container:full
+
+# Custom options
+# Note: On macOS, use host.containers.internal instead of localhost
+npm run auditor:container:custom -- --mcp-url http://host.containers.internal:3000 --runs 5
+```
+
+**From auditor directory:**
+```bash
+# Using npm workspace
 npm run audit
 
-# Or with custom options
+# Or directly
 node src/index.js --mcp-url http://localhost:3000 --runs 10
 ```
 

@@ -86,6 +86,7 @@ See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
 
 ## Scripts
 
+### MCP Server
 - `build`: Build the TypeScript project
 - `start`: Run the built server
 - `start:dev`: Run with tsx in watch mode (development)
@@ -93,6 +94,39 @@ See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
 - `test:integration`: Build and run integration tests
 - `test:lint`: Run ESLint
 - `test:types`: TypeScript type-check only
+
+### Auditor
+
+**Local execution:**
+- `auditor`: Run auditor with default configuration
+- `auditor:help`: Show auditor help message
+- `auditor:quick`: Run quick audit (3 runs)
+- `auditor:full`: Run full audit (10 runs)
+- `auditor:custom`: Run auditor (pass custom args after `--`)
+
+**Containerized execution:**
+- `auditor:build`: Build auditor container image
+- `auditor:container`: Run auditor in container (default config)
+- `auditor:container:quick`: Run quick audit in container (3 runs)
+- `auditor:container:full`: Run full audit in container (10 runs)
+- `auditor:container:custom`: Run auditor in container (pass custom args after `--`)
+
+**Examples:**
+```bash
+# Local execution
+npm run auditor
+npm run auditor:custom -- --mcp-url http://localhost:3000 --runs 5
+
+# Containerized execution
+npm run auditor:build  # Build once
+npm run auditor:container
+# Note: On macOS, use host.containers.internal instead of localhost
+npm run auditor:container:custom -- --mcp-url http://host.containers.internal:3000 --runs 5
+```
+
+### Tools
+- `tools:huggingface:build`: Build HuggingFace CLI container
+- `tools:huggingface`: Run HuggingFace CLI container
 
 See [DOCS.md](./DOCS.md) for complete documentation.
 

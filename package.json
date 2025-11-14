@@ -38,7 +38,17 @@
     "prepare": "npm run build",
     "prepack": "npm run build",
     "tools:huggingface:build": "podman build -t patternfly-tools-huggingface ./tools/huggingface-cli/.",
-    "tools:huggingface": "podman run -it --rm -v \"$(pwd):/workspace\" --name huggingface-cli patternfly-tools-huggingface"
+    "tools:huggingface": "podman run -it --rm -v \"$(pwd):/workspace\" --name huggingface-cli patternfly-tools-huggingface",
+    "auditor": "cd auditor && node src/index.js",
+    "auditor:help": "cd auditor && node src/index.js --help",
+    "auditor:quick": "cd auditor && node src/index.js --runs 3",
+    "auditor:full": "cd auditor && node src/index.js --runs 10",
+    "auditor:custom": "cd auditor && node src/index.js",
+    "auditor:build": "podman build -t patternfly-mcp-auditor ./auditor/.",
+    "auditor:container": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor",
+    "auditor:container:quick": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor --runs 3",
+    "auditor:container:full": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor --runs 10",
+    "auditor:container:custom": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor"
   },
   "keywords": [
     "mcp",
