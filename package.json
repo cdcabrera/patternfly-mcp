@@ -7,6 +7,9 @@
   "imports": {
     "#toolsHost": "./dist/server.toolsHost.js"
   },
+  "workspaces": [
+    "auditor"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -39,7 +42,30 @@
     "test:lint-fix": "eslint . --fix",
     "test:types": "tsc --noEmit",
     "prepare": "npm run build",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "tools:huggingface:build": "podman build -t patternfly-tools-huggingface ./tools/huggingface-cli/.",
+    "tools:huggingface": "podman run -it --rm -v \"$(pwd):/workspace\" --name huggingface-cli patternfly-tools-huggingface",
+    "auditor": "cd auditor && node src/index.js",
+    "auditor:help": "cd auditor && node src/index.js --help",
+    "auditor:quick": "cd auditor && node src/index.js --runs 3",
+    "auditor:full": "cd auditor && node src/index.js --runs 100",
+    "auditor:custom": "cd auditor && node src/index.js",
+    "auditor:build": "cd auditor && podman build -t patternfly-mcp-auditor .",
+    "auditor:container": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor -e MCP_URL=http://host.containers.internal:3000 patternfly-mcp-auditor",
+    "auditor:container:quick": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor -e MCP_URL=http://host.containers.internal:3000 patternfly-mcp-auditor --runs 3",
+    "auditor:container:full": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor -e MCP_URL=http://host.containers.internal:3000 patternfly-mcp-auditor --runs 100",
+    "auditor:container:custom": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor -e MCP_URL=http://host.containers.internal:3000 patternfly-mcp-auditor",
+    "auditor:mcp:start": "cd auditor && node src/mcp-server.js start",
+    "auditor:mcp:stop": "cd auditor && node src/mcp-server.js stop",
+    "auditor:mcp:status": "cd auditor && node src/mcp-server.js status",
+    "auditor:with-mcp": "cd auditor && node src/mcp-wrapper.js",
+    "auditor:with-mcp:quick": "cd auditor && node src/mcp-wrapper.js --runs 3",
+    "auditor:with-mcp:full": "cd auditor && node src/mcp-wrapper.js --runs 100",
+    "auditor:mcp:start:simple": "cd auditor && node src/mcp-start-simple.js",
+    "auditor:test-server": "cd auditor && node src/test-server-start.js",
+    "auditor:start": "npm run auditor:mcp:start:simple && npm run auditor:container; npm run auditor:mcp:stop || true",
+    "auditor:start:quick": "npm run auditor:mcp:start:simple && npm run auditor:container:quick; npm run auditor:mcp:stop || true",
+    "auditor:start:full": "npm run auditor:mcp:start:simple && npm run auditor:container:full; npm run auditor:mcp:stop || true"
   },
   "keywords": [
     "mcp",
