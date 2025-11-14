@@ -1,17 +1,15 @@
-import { join } from 'node:path';
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
-import { getLocalDocs } from './docs.local';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 
 /**
  * usePatternFlyDocs tool function (tuple pattern)
+ *
+ * Fetches index/overview documentation files (like README.md or llms.txt).
+ * Returns the concatenated content from those files, which typically contain links to specific documentation pages.
  *
  * @param options
  */
@@ -52,25 +50,39 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `You must use this tool to answer any questions related to PatternFly components or documentation.
+      description: `Fetch PatternFly documentation from one or more URLs.
 
-        The description of the tool contains links to ${options.docsHost ? 'llms.txt' : '.md'} files or local file paths that the user has made available.
+        Fetches and returns the concatenated content from PatternFly documentation URLs.
+        Can be used for:
+        - Index/overview files (README.md, llms.txt) that contain links to other pages
+        - Specific documentation pages (design guidelines, accessibility, etc.)
+        - Any PatternFly documentation URL
 
-        ${options.docsHost
-            ? `[@patternfly/react-core@6.0.0^](${join('react-core', '6.0.0', 'llms.txt')})`
-            : `
-            ${COMPONENT_DOCS.join('\n')}
-            ${LAYOUT_DOCS.join('\n')}
-            ${CHART_DOCS.join('\n')}
-            ${getLocalDocs().join('\n')}
-          `
-        }
+        **Parameters**:
+        - urlList (array of strings, required): Array of URLs or file paths to PatternFly documentation
 
-        1. Pick the most suitable URL from the above list, and use that as the "urlList" argument for this tool's execution, to get the docs content. If it's just one, let it be an array with one URL.
-        2. Analyze the URLs listed in the ${options.docsHost ? 'llms.txt' : '.md'} file
-        3. Then fetch specific documentation pages relevant to the user's question with the subsequent tool call.`,
+        **Returns**: Concatenated content from the documentation URLs.
+
+        **Workflow**:
+        1. searchPatternFlyDocs with searchQuery → get URLs (use this to discover documentation URLs by component name)
+        2. usePatternFlyDocs with those URLs → get full documentation
+        OR
+        1. usePatternFlyDocs with index file URLs → get index content
+        2. Parse links: Extract URLs from the index content
+        3. usePatternFlyDocs with those URLs → get full documentation
+
+        **Example - Local path**:
+        Call this tool with urlList: ["documentation/guidelines/README.md"] to get the guidelines index.
+
+        **Example - Remote URL**:
+        Call this tool with urlList: ["https://example.com/patternfly/docs/component/button.md"] to get specific documentation.
+
+        **Note**: URLs can be local file paths (relative to the docs directory) or remote HTTP/HTTPS URLs. Use searchPatternFlyDocs to discover available documentation URLs.
+
+        **Finding URLs**: If you don't know the exact URLs, use the "searchPatternFlyDocs" tool to search for component documentation URLs by name. Then pass those URLs to this tool to fetch the content.
+        To get component prop definitions (JSON Schema), use the "componentSchemas" tool instead.`,
       inputSchema: {
-        urlList: z.array(z.string()).describe('The list of urls to fetch the documentation from')
+        urlList: z.array(z.string()).describe('Array of URLs or file paths to PatternFly documentation. Can be local paths (e.g., "documentation/guidelines/README.md") or remote URLs (e.g., "https://example.com/patternfly/docs/component.md"). Use searchPatternFlyDocs to discover available URLs.')
       }
     },
     callback

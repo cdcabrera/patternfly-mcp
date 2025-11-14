@@ -40,7 +40,7 @@ describe('PatternFly MCP, STDIO', () => {
     const tools = resp?.result?.tools || [];
     const toolNames = tools.map(tool => tool.name).sort();
 
-    expect(toolNames).toEqual(expect.arrayContaining(['usePatternFlyDocs', 'fetchDocs']));
+    expect(toolNames).toEqual(expect.arrayContaining(['usePatternFlyDocs', 'searchPatternFlyDocs', 'componentSchemas']));
     expect({ toolNames }).toMatchSnapshot();
   });
 });
@@ -104,7 +104,7 @@ describe('External URLs', () => {
   it('should fetch a document', async () => {
     const req = {
       method: 'tools/call',
-      params: { name: 'fetchDocs', arguments: { urlList: [url] } }
+      params: { name: 'usePatternFlyDocs', arguments: { urlList: [url] } }
     };
     const resp = await client.send(req, { timeoutMs: 10000 });
     const text = resp?.result?.content?.[0]?.text || '';

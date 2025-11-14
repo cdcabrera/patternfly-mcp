@@ -36,7 +36,7 @@ tests/
 
 ### Files
 
-- **Tools**: `tool.<name>.ts` (e.g., `tool.fetchDocs.ts`)
+- **Tools**: `tool.<name>.ts` (e.g., `tool.usePatternFlyDocs.ts`)
 - **Server modules**: `server.<feature>.ts` (e.g., `server.caching.ts`)
 - **Options**: `options.*.ts` (e.g., `options.context.ts`)
 - **Documentation**: `docs.<category>.ts` (e.g., `docs.component.ts`)
@@ -44,7 +44,7 @@ tests/
 
 ### Functions
 
-- **Tool creators**: `<name>Tool` (e.g., `fetchDocsTool`)
+- **Tool creators**: `<name>Tool` (e.g., `usePatternFlyDocsTool`)
 - **Server functions**: camelCase (e.g., `runServer`, `startHttpTransport`)
 - **Options functions**: camelCase (e.g., `parseCliOptions`, `getOptions`)
 

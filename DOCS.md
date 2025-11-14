@@ -107,6 +107,7 @@ npx @patternfly/patternfly-mcp --http \
 | `--allowed-origins` | CORS allowed origins (comma-separated) | none | `--allowed-origins "https://app.com"` |
 | `--allowed-hosts` | Allowed hosts for DNS rebinding protection | none | `--allowed-hosts "localhost,127.0.0.1"` |
 | `--docs-host` | Enable docs-host mode (local llms.txt) | false | `--docs-host` |
+| `--kill-existing` | Kill existing PatternFly MCP server on same port | false | `--kill-existing` |
 
 **Examples**:
 
@@ -122,7 +123,27 @@ npx @patternfly/patternfly-mcp --http \
   --port 3000 \
   --allowed-origins "https://app.com,https://admin.app.com" \
   --allowed-hosts "localhost,127.0.0.1"
+
+# HTTP mode with auto-kill existing instance
+npx @patternfly/patternfly-mcp --http --kill-existing
 ```
+
+## Resources
+
+The server provides a PatternFly context resource that models can discover and read to understand what PatternFly is and how to use this MCP server.
+
+### Resource: patternfly-context
+
+**URI**: `patternfly://context`
+
+**Description**: Information about PatternFly design system and how to use this MCP server.
+
+**Content**: Markdown text explaining:
+- What PatternFly is (open-source design system)
+- Key features (React components, design guidelines, JSON schemas)
+- How to use the PatternFly MCP server tools
+
+**Usage**: Models can discover this resource via `resources/list` and read it via `resources/read` to get context about PatternFly without relying on client-side configuration.
 
 ## Tools
 
@@ -130,16 +151,16 @@ The server provides three MCP tools for accessing PatternFly documentation and c
 
 ### Tool: usePatternFlyDocs
 
-Use this to fetch high-level index content (for example, a local README.md that contains relevant links, or llms.txt files in docs-host mode). From that content, you can select specific URLs to pass to fetchDocs.
+Fetch PatternFly documentation from one or more URLs. Can be used for index/overview files (README.md, llms.txt) or specific documentation pages (design guidelines, accessibility, etc.).
 
 **Parameters**:
-- `urlList`: string[] (required) - Array of URLs or local file paths
+- `urlList`: string[] (required) - Array of URLs or local file paths to PatternFly documentation
 
 **Response**:
 - `content[0].type`: "text"
 - `content[0].text`: Concatenated documentation content
 
-**Example**:
+**Example - Index file**:
 ```json
 {
   "method": "tools/call",
@@ -152,31 +173,48 @@ Use this to fetch high-level index content (for example, a local README.md that 
 }
 ```
 
-### Tool: fetchDocs
+**Example - Specific documentation page**:
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "usePatternFlyDocs",
+    "arguments": {
+      "urlList": [
+        "https://example.com/patternfly/docs/component/button.md"
+      ]
+    }
+  }
+}
+```
 
-Use this to fetch one or more specific documentation pages (e.g., concrete design guidelines or accessibility pages) after you've identified them via usePatternFlyDocs.
+**Note**: Use searchPatternFlyDocs to discover actual documentation URLs. The URLs can be local file paths or remote HTTP/HTTPS URLs.
+
+### Tool: searchPatternFlyDocs
+
+Search for PatternFly component documentation URLs by component name. Uses fuzzy search against PatternFly component names and returns matching documentation URLs (does not fetch content).
 
 **Parameters**:
-- `urlList`: string[] (required) - Array of URLs or local file paths
+- `searchQuery`: string (required) - Component name to search for (e.g., "button", "table", "accordion")
 
 **Response**:
 - `content[0].type`: "text"
-- `content[0].text`: Concatenated documentation content
+- `content[0].text`: List of matching documentation URLs
 
 **Example**:
 ```json
 {
   "method": "tools/call",
   "params": {
-    "name": "fetchDocs",
+    "name": "searchPatternFlyDocs",
     "arguments": {
-      "urlList": [
-        "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"
-      ]
+      "searchQuery": "button"
     }
   }
 }
 ```
+
+**Note**: After getting URLs from searchPatternFlyDocs, use usePatternFlyDocs to fetch the actual documentation content.
 
 ### Tool: componentSchemas
 
@@ -315,7 +353,7 @@ npx @modelcontextprotocol/inspector-cli \
   --tool-arg urlList='["documentation/guidelines/README.md"]'
 ```
 
-### fetchDocs Example
+### searchPatternFlyDocs Example
 
 ```bash
 npx @modelcontextprotocol/inspector-cli \
@@ -323,11 +361,20 @@ npx @modelcontextprotocol/inspector-cli \
   --server patternfly-docs \
   --cli \
   --method tools/call \
-  --tool-name fetchDocs \
-  --tool-arg urlList='[
-    "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md",
-    "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/about-modal/about-modal.md"
-  ]'
+  --tool-name searchPatternFlyDocs \
+  --tool-arg searchQuery="button"
+```
+
+### usePatternFlyDocs Example (with URLs from searchPatternFlyDocs)
+
+```bash
+npx @modelcontextprotocol/inspector-cli \
+  --config ./mcp-config.json \
+  --server patternfly-docs \
+  --cli \
+  --method tools/call \
+  --tool-name usePatternFlyDocs \
+  --tool-arg urlList='["https://example.com/patternfly/docs/component/button.md"]'
 ```
 
 ### componentSchemas Example
@@ -468,7 +515,10 @@ If an entry fails to load, an inline error message is included for that entry.
 
 ### HTTP Transport Issues
 
-- **Port already in use**: Change the port with `--port` flag
+- **Port already in use**: 
+  - If it's another PatternFly MCP server instance, use `--kill-existing` flag
+  - Or change the port with `--port` flag
+  - The server will show helpful error messages with PID and command
 - **CORS errors**: Add your origin to `--allowed-origins`
 - **Connection refused**: Check `--host` setting and firewall rules
 

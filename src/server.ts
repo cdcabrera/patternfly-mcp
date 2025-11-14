@@ -1,11 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
-import { fetchDocsTool } from './tool.fetchDocs';
+import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { startHttpTransport } from './server.http';
+import { registerPatternFlyContextResource } from './resource.patternflyContext';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -39,7 +40,7 @@ interface ServerInstance {
 const runServer = async (options = getOptions(), {
   tools = [
     usePatternFlyDocsTool,
-    fetchDocsTool,
+    searchPatternFlyDocsTool,
     componentSchemasTool
   ],
   enableSigint = true,
@@ -65,14 +66,20 @@ const runServer = async (options = getOptions(), {
     server = new McpServer(
       {
         name: options.name,
-        version: options.version
+        version: options.version,
+        description: 'PatternFly MCP Server: Provides access to PatternFly React component documentation, design guidelines, and JSON schemas. PatternFly is an open-source design system for building consistent, accessible user interfaces with React components, used by Red Hat and other organizations for enterprise applications.'
       },
       {
         capabilities: {
-          tools: {}
+          tools: {},
+          resources: {}
         }
       }
     );
+
+    // Register PatternFly context resource (discoverable by models)
+    registerPatternFlyContextResource(server, options);
+    console.info('Registered resource: patternfly-context');
 
     tools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
@@ -87,14 +94,16 @@ const runServer = async (options = getOptions(), {
 
     if (options.http) {
       await startHttpTransport(server, options);
+      // HTTP transport logs its own startup message with full URL
     } else {
       transport = new StdioServerTransport();
 
       await server.connect(transport);
+      // Only log for stdio mode (HTTP mode logs its own message)
+      console.log(`PatternFly MCP server running on stdio`);
     }
 
     running = true;
-    console.log(`PatternFly MCP server running on ${(Boolean(options.http) && 'http') || 'stdio'}`);
   } catch (error) {
     console.error('Error creating MCP server:', error);
     throw error;

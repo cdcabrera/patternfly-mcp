@@ -1,0 +1,24 @@
+# Default Baseline Questions
+# These are generic questions unrelated to PatternFly MCP
+
+questions:
+  - id: "baseline-1"
+    prompt: "What is the capital of France?"
+    category: "general"
+  
+  - id: "baseline-2"
+    prompt: "Explain the concept of recursion in programming."
+    category: "programming"
+  
+  - id: "baseline-3"
+    prompt: "What are the three laws of thermodynamics?"
+    category: "science"
+  
+  - id: "baseline-4"
+    prompt: "Describe the difference between HTTP and HTTPS."
+    category: "technology"
+  
+  - id: "baseline-5"
+    prompt: "What is the purpose of version control systems?"
+    category: "technology"
+

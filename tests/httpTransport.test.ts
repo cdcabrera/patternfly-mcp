@@ -120,7 +120,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
       expect(response.result?.content?.[0]?.text).toContain('documentation/guidelines/README.md');
     });
 
-    it('should execute fetchDocs over HTTP', async () => {
+    it('should have usePatternFlyDocs tool available over HTTP', async () => {
       client = await startHttpServer();
       await client.initialize();
 
@@ -128,7 +128,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
       const toolsResponse = await client.send({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
       const toolNames = toolsResponse.result?.tools?.map((t: any) => t.name) || [];
 
-      expect(toolNames).toContain('fetchDocs');
+      expect(toolNames).toContain('usePatternFlyDocs');
     });
   });
 
