@@ -1,0 +1,23 @@
+# HuggingFace CLI Container
+# Provides huggingface-cli (hf command) for downloading models without installing locally
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install huggingface-hub with CLI extras
+# Note: Newer versions use 'hf' command instead of 'huggingface-cli'
+RUN pip install --no-cache-dir "huggingface-hub[cli]" && \
+    echo "HuggingFace CLI installed successfully" && \
+    hf --help > /dev/null
+
+# Set working directory for downloads
+WORKDIR /workspace
+
+# Default volume mount points
+VOLUME ["/workspace", "/data"]
+
+# Default entrypoint - can be overridden
+# Use 'hf' command (modern) with fallback to 'huggingface-cli' (legacy)
+ENTRYPOINT ["hf"]
+
