@@ -54,7 +54,11 @@
     "auditor:mcp:status": "cd auditor && node src/mcp-server.js status",
     "auditor:with-mcp": "cd auditor && node src/mcp-wrapper.js",
     "auditor:with-mcp:quick": "cd auditor && node src/mcp-wrapper.js --runs 3",
-    "auditor:with-mcp:full": "cd auditor && node src/mcp-wrapper.js --runs 10"
+    "auditor:with-mcp:full": "cd auditor && node src/mcp-wrapper.js --runs 10",
+    "auditor:mcp:start:simple": "cd auditor && node src/mcp-start-simple.js",
+    "auditor:start": "npm run auditor:mcp:start:simple && npm run auditor:container; npm run auditor:mcp:stop || true",
+    "auditor:start:quick": "npm run auditor:mcp:start:simple && npm run auditor:container:quick; npm run auditor:mcp:stop || true",
+    "auditor:start:full": "npm run auditor:mcp:start:simple && npm run auditor:container:full; npm run auditor:mcp:stop || true"
   },
   "keywords": [
     "mcp",

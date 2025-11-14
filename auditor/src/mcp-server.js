@@ -112,34 +112,55 @@ async function startServer() {
 
   const proc = spawn(command, args, {
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: false
+    detached: false, // Keep attached to capture output
+    cwd: ROOT_DIR
   });
 
   // Wait for server to be ready
   return new Promise((resolve, reject) => {
     let serverReady = false;
+    let outputBuffer = '';
+    let errorBuffer = '';
+    
     const timeout = setTimeout(() => {
       if (!serverReady) {
         proc.kill();
+        console.error('\n❌ MCP server failed to start within 10 seconds');
+        console.error('Server output:', outputBuffer);
+        console.error('Server errors:', errorBuffer);
         reject(new Error('MCP server failed to start within 10 seconds'));
       }
     }, 10000);
 
     proc.stdout.on('data', (data) => {
       const output = data.toString();
+      outputBuffer += output;
+      // Show output for debugging
+      process.stdout.write(output);
+      
       // Look for server ready message
       if (output.includes('PatternFly MCP server running on http://')) {
         serverReady = true;
         clearTimeout(timeout);
         writePid(proc.pid);
-        console.log(`✅ MCP server started (PID: ${proc.pid})`);
+        console.log(`\n✅ MCP server started (PID: ${proc.pid})`);
         console.log(`   Server running on http://localhost:3000`);
+        
+        // Now detach the process so it can continue running
+        proc.unref();
+        proc.stdout.destroy();
+        proc.stderr.destroy();
+        
         resolve(proc.pid);
       }
     });
 
     proc.stderr.on('data', (data) => {
       const error = data.toString();
+      errorBuffer += error;
+      // Show errors for debugging
+      process.stderr.write(error);
+      
       if (error.includes('Error:') || error.includes('EADDRINUSE')) {
         clearTimeout(timeout);
         proc.kill();

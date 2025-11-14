@@ -73,13 +73,19 @@ npm run auditor:mcp:status  # Check if MCP server is running
 # Build container (first time only)
 npm run auditor:build
 
-# Run with default config
+# Option 1: Convenience scripts (auto-starts/stops MCP)
+npm run auditor:start           # Start MCP, run containerized audit, stop MCP
+npm run auditor:start:quick     # Quick audit (3 runs) with auto MCP management
+npm run auditor:start:full      # Full audit (10 runs) with auto MCP management
+
+# Option 2: Manual MCP management
+npm run auditor:mcp:start       # Start MCP server first
+npm run auditor:container       # Run containerized audit
+npm run auditor:mcp:stop        # Stop MCP server when done
+
+# Option 3: Run containerized auditor (assumes MCP already running)
 npm run auditor:container
-
-# Quick audit (3 runs)
 npm run auditor:container:quick
-
-# Full audit (10 runs)
 npm run auditor:container:full
 
 # Custom options
