@@ -36,7 +36,9 @@
     "test:lint-fix": "eslint . --fix",
     "test:types": "tsc --noEmit",
     "prepare": "npm run build",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "tools:huggingface:build": "podman build -t patternfly-tools-huggingface ./tools/huggingface-cli/.",
+    "tools:huggingface": "podman run -it --rm -v \"$(pwd):/workspace\" --name huggingface-cli patternfly-tools-huggingface"
   },
   "keywords": [
     "mcp",

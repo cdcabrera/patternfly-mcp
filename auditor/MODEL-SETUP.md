@@ -18,23 +18,31 @@ The auditor checks for models in the following order:
 
 ## Downloading Models
 
-### Option 1: HuggingFace (Recommended)
+### Option 1: HuggingFace CLI (Recommended - Containerized)
+
+**No local installation needed!** Use the containerized HuggingFace CLI:
 
 ```bash
+# Build the container (first time only)
+npm run tools:huggingface:build
+
 # Create models directory
 mkdir -p auditor/models
 
 # Download Qwen2.5-0.5B-Instruct Q4_K_M (recommended, ~300MB)
-# Using huggingface-cli (install: pip install huggingface-hub)
-huggingface-cli download Qwen/Qwen2.5-0.5B-Instruct-GGUF \
-  --local-dir auditor/models \
-  --include "*.gguf" \
+npm run tools:huggingface -- download Qwen/Qwen2.5-0.5B-Instruct-GGUF \
+  --local-dir ./auditor/models \
+  --include "qwen2.5-0.5b-instruct-q4_k_m.gguf" \
   --local-dir-use-symlinks False
+```
 
-# Or download directly
+**Or download directly via curl:**
+```bash
 curl -L -o auditor/models/qwen2.5-0.5b-instruct-q4_k_m.gguf \
   https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf
 ```
+
+See [tools/README.md](../tools/README.md) for more HuggingFace CLI examples.
 
 ### Option 2: Other Models
 

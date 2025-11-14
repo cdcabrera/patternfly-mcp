@@ -1,0 +1,21 @@
+# HuggingFace CLI Container
+# Provides huggingface-cli for downloading models without installing locally
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install huggingface-hub CLI
+RUN pip install --no-cache-dir huggingface-hub && \
+    echo "huggingface-cli version:" && \
+    huggingface-cli --version
+
+# Set working directory for downloads
+WORKDIR /workspace
+
+# Default volume mount points
+VOLUME ["/workspace", "/data"]
+
+# Default entrypoint - can be overridden
+ENTRYPOINT ["huggingface-cli"]
+
