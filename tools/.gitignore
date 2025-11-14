@@ -1,0 +1,9 @@
+# Ignore any temporary files or build artifacts
+*.log
+*.tmp
+
+# Ignore downloaded models (if stored here temporarily)
+models/
+*.gguf
+*.bin
+

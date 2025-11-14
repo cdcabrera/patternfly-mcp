@@ -1,0 +1,19 @@
+# Default PatternFly MCP Questions
+# These questions are specifically about PatternFly MCP tooling
+
+questions:
+  - id: "pf-mcp-1"
+    prompt: "What tools and resources are available in the PatternFly MCP server? List all available tools and resources."
+    category: "tooling"
+    expectedTool: "usePatternFlyDocs"
+
+  - id: "pf-mcp-2"
+    prompt: "How do you use the usePatternFlyDocs tool to fetch PatternFly documentation?"
+    category: "tooling"
+    expectedTool: "usePatternFlyDocs"
+
+  - id: "pf-mcp-3"
+    prompt: "What is the PatternFly searchPatternFlyDocs tool and how do you use it?"
+    category: "tooling"
+    expectedTool: "searchPatternFlyDocs"
+
