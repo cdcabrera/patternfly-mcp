@@ -271,33 +271,82 @@ async function validateAndLoadModel(Llama, modelPath) {
 
 /**
  * Get default model (download if needed)
- * For now, returns a path that should be downloaded separately
- * In production, this could use a model downloader
+ * Checks multiple locations for model files
  */
 async function getDefaultModel(Llama) {
-  // Default to a small model: Qwen2.5-0.5B
-  // In production, this would download from HuggingFace or similar
-  // For now, we'll check for a model in a standard location or use a placeholder
+  const { existsSync, readdirSync } = await import('fs');
+  const { join, dirname } = await import('path');
+  const { fileURLToPath } = await import('url');
   
-  const { existsSync } = await import('fs');
-  const { join } = await import('path');
+  // Get the auditor directory (where this file is located)
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const auditorDir = dirname(__dirname); // Go up from src/ to auditor/
+  const rootDir = dirname(auditorDir); // Go up from auditor/ to root/
   
-  // Check for model in workspace/model volume (future)
-  const volumeModelPath = '/workspace/model/qwen2.5-0.5b-instruct-q4_k_m.gguf';
-  if (existsSync(volumeModelPath)) {
-    return volumeModelPath;
+  // List of locations to check (in priority order)
+  const searchPaths = [
+    // 1. Container volume mount (for containerized execution)
+    '/workspace/model',
+    // 2. Auditor models directory (auditor/models/)
+    join(auditorDir, 'models'),
+    // 3. Root models directory (./models/ from root)
+    join(rootDir, 'models'),
+    // 4. Current working directory models (./models/ from cwd)
+    join(process.cwd(), 'models'),
+    // 5. Auditor directory when running from root
+    join(process.cwd(), 'auditor', 'models')
+  ];
+
+  // Preferred model names (in order of preference)
+  const preferredModels = [
+    'qwen2.5-0.5b-instruct-q4_k_m.gguf',
+    'qwen2.5-0.5b-instruct.gguf',
+    'qwen2.5-0.5b.gguf'
+  ];
+
+  // First, try to find preferred model names
+  for (const searchPath of searchPaths) {
+    if (existsSync(searchPath)) {
+      for (const modelName of preferredModels) {
+        const modelPath = join(searchPath, modelName);
+        if (existsSync(modelPath)) {
+          console.log(`   ✅ Found model: ${modelPath}`);
+          return modelPath;
+        }
+      }
+    }
   }
 
-  // Check for model in local models directory
-  const localModelPath = join(process.cwd(), 'models', 'qwen2.5-0.5b-instruct-q4_k_m.gguf');
-  if (existsSync(localModelPath)) {
-    return localModelPath;
+  // If preferred models not found, look for any .gguf file
+  for (const searchPath of searchPaths) {
+    if (existsSync(searchPath)) {
+      try {
+        const files = readdirSync(searchPath);
+        const ggufFiles = files.filter(f => f.endsWith('.gguf'));
+        if (ggufFiles.length > 0) {
+          const modelPath = join(searchPath, ggufFiles[0]);
+          console.log(`   ✅ Found model: ${modelPath} (${ggufFiles[0]})`);
+          if (ggufFiles.length > 1) {
+            console.log(`   ℹ️  Multiple models found, using: ${ggufFiles[0]}`);
+            console.log(`   ℹ️  Other models: ${ggufFiles.slice(1).join(', ')}`);
+          }
+          return modelPath;
+        }
+      } catch (error) {
+        // Skip if directory can't be read
+        continue;
+      }
+    }
   }
 
-  // For development, we'll use a mock if model not found
-  // In production, this should download the model
-  console.warn('   ⚠️  Default model not found. Using mock model for development.');
-  console.warn('   📥 To use a real model, download Qwen2.5-0.5B and place it in ./models/ or /workspace/model/');
+  // No model found
+  console.warn('   ⚠️  No model found in any of these locations:');
+  searchPaths.forEach(path => console.warn(`      - ${path}`));
+  console.warn('   📥 To use a real model, download a GGUF model and place it in:');
+  console.warn('      - auditor/models/ (recommended)');
+  console.warn('      - ./models/ (root directory)');
+  console.warn('      - /workspace/model/ (container volume)');
   return null; // Will trigger mock model fallback
 }
 

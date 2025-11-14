@@ -10,11 +10,20 @@ The PatternFly MCP Auditor uses `node-llama-cpp` to run an embedded model for co
 
 ## Model Locations
 
-The auditor checks for models in the following order:
+The auditor checks for models in the following order (first match wins):
 
 1. **Custom model path** (via config: `model.path`)
-2. **Volume mount** (`/workspace/model/qwen2.5-0.5b-instruct-q4_k_m.gguf`)
-3. **Local directory** (`./models/qwen2.5-0.5b-instruct-q4_k_m.gguf`)
+2. **Container volume mount** (`/workspace/model/`) - For containerized execution
+3. **Auditor models directory** (`auditor/models/`) - **Recommended location** ✅
+4. **Root models directory** (`./models/` from project root)
+5. **Current working directory** (`./models/` from where command is run)
+
+**Recommended**: Place models in `auditor/models/` - this works whether you run from root or auditor directory.
+
+**Note**: If multiple models are found, the auditor will:
+1. Prefer models matching: `qwen2.5-0.5b-instruct-q4_k_m.gguf`, `qwen2.5-0.5b-instruct.gguf`, or `qwen2.5-0.5b.gguf`
+2. Otherwise, use the first `.gguf` file found (alphabetically)
+3. Log which model was selected and any other models found
 
 ## Downloading Models
 
@@ -26,7 +35,7 @@ The auditor checks for models in the following order:
 # Build the container (first time only)
 npm run tools:huggingface:build
 
-# Create models directory
+# Create models directory (if it doesn't exist)
 mkdir -p auditor/models
 
 # Download Qwen2.5-0.5B-Instruct Q4_K_M (recommended, ~300MB)
@@ -34,6 +43,8 @@ npm run tools:huggingface -- download Qwen/Qwen2.5-0.5B-Instruct-GGUF \
   --local-dir ./auditor/models \
   --include "qwen2.5-0.5b-instruct-q4_k_m.gguf" \
   --local-dir-use-symlinks False
+
+# The auditor will automatically find any .gguf file in auditor/models/
 ```
 
 **Or download directly via curl:**
@@ -90,11 +101,23 @@ The auditor includes a compatibility check for custom models:
 ### Model Not Found
 
 ```
-⚠️  Default model not found. Using mock model for development.
-📥 To use a real model, download Qwen2.5-0.5B and place it in ./models/ or /workspace/model/
+⚠️  No model found in any of these locations:
+   - /workspace/model
+   - auditor/models/
+   - ./models/
+   ...
 ```
 
-**Solution**: Download a model using one of the methods above.
+**Solution**: 
+1. Ensure models are in `auditor/models/` directory (recommended)
+2. Models must be in GGUF format (`.gguf` extension)
+3. Check that the file has read permissions
+4. Verify the path is correct: `ls -lh auditor/models/*.gguf`
+
+**Quick check**: Run the auditor and look for the "Found model" message:
+```
+✅ Found model: /path/to/auditor/models/qwen2.5-0.5b-instruct-q4_k_m.gguf
+```
 
 ### Model Loading Failed
 
