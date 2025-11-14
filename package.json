@@ -4,6 +4,9 @@
   "description": "PatternFly documentation MCP server built with Node.js and TypeScript",
   "main": "dist/index.js",
   "type": "module",
+  "workspaces": [
+    "auditor"
+  ],
   "exports": {
     ".": "./dist/index.js"
   },

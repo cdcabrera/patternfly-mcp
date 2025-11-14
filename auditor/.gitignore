@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Reports
+reports/*.md
+reports/*.json
+reports/*.yaml
+reports/*.yml
+!reports/.gitkeep
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Model files (if downloaded)
+models/
+*.gguf
+*.bin
+

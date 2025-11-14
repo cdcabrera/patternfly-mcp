@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Reports
+reports/
+*.md
+*.json
+*.yaml
+*.yml
+!reports/.gitkeep
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation (keep in image, but ignore in build context if needed)
+# README.md
+# PLAN.md
+
+# Model files (if downloaded locally)
+models/
+*.gguf
+*.bin
+
+# Test files
+*.test.js
+*.test.ts
+__tests__/
+tests/
+
