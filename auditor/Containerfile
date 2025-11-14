@@ -1,0 +1,47 @@
+# PatternFly MCP Auditor - Containerfile
+# Multi-stage build for minimal image size (<900MB target)
+
+# Stage 1: Base with Node.js and build dependencies
+FROM node:20-slim AS base
+
+# Install system dependencies for node-llama-cpp
+# Note: node-llama-cpp may require build tools for native compilation
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+
+# Install production dependencies only
+# Note: Using npm install instead of npm ci since this is a workspace package
+RUN npm install --production && npm cache clean --force
+
+# Stage 2: Copy application code
+FROM base AS app
+
+# Copy auditor source code
+COPY src/ ./src/
+COPY config/ ./config/
+COPY questions/ ./questions/
+
+# Create reports directory
+RUN mkdir -p ./reports
+
+# Volume mounts (configured at runtime)
+# - /workspace/patternfly-mcp: PatternFly MCP codebase (read-only)
+# - /workspace/model: Optional custom model (future - reserved)
+VOLUME ["/workspace/patternfly-mcp", "/workspace/model"]
+
+# Default command
+CMD ["node", "src/index.js"]
+
+# Labels
+LABEL maintainer="Red Hat"
+LABEL description="PatternFly MCP Auditor - Containerized consistency auditor"
+LABEL version="0.1.0"
+

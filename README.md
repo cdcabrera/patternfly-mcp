@@ -51,6 +51,7 @@ npx @patternfly/patternfly-mcp --http --port 3000
 | `--allowed-origins` | CORS allowed origins (comma-separated) | none |
 | `--allowed-hosts` | Allowed hosts for DNS rebinding protection | none |
 | `--docs-host` | Enable docs-host mode (local llms.txt) | false |
+| `--kill-existing` | Kill existing PatternFly MCP server on same port | false |
 
 **Examples**:
 
@@ -66,14 +67,17 @@ npx @patternfly/patternfly-mcp --http \
   --port 3000 \
   --allowed-origins "https://app.com" \
   --allowed-hosts "localhost,127.0.0.1"
+
+# HTTP mode with auto-kill existing instance
+npx @patternfly/patternfly-mcp --http --kill-existing
 ```
 
 ## Tools
 
 The server provides three MCP tools:
 
-- **usePatternFlyDocs**: Fetch high-level index content (READMEs, llms.txt files)
-- **fetchDocs**: Fetch specific documentation pages (design guidelines, accessibility)
+- **searchPatternFlyDocs**: Search for component documentation URLs by name (returns URLs only)
+- **usePatternFlyDocs**: Fetch PatternFly documentation from URLs (index files or specific pages)
 - **componentSchemas**: Get JSON Schema for PatternFly React components
 
 See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
@@ -86,6 +90,7 @@ See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
 
 ## Scripts
 
+### MCP Server
 - `build`: Build the TypeScript project
 - `start`: Run the built server
 - `start:dev`: Run with tsx in watch mode (development)
@@ -93,6 +98,59 @@ See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
 - `test:integration`: Build and run integration tests
 - `test:lint`: Run ESLint
 - `test:types`: TypeScript type-check only
+
+### Auditor
+
+**Local execution:**
+- `auditor`: Run auditor with default configuration
+- `auditor:help`: Show auditor help message
+- `auditor:quick`: Run quick audit (3 runs)
+- `auditor:full`: Run full audit (10 runs)
+- `auditor:custom`: Run auditor (pass custom args after `--`)
+
+**MCP server management:**
+- `auditor:mcp:start`: Start MCP server in HTTP mode (background)
+- `auditor:mcp:stop`: Stop running MCP server
+- `auditor:mcp:status`: Check if MCP server is running
+
+**Convenience wrappers (start MCP + run auditor + stop MCP):**
+- `auditor:with-mcp`: Start MCP, run auditor, stop MCP
+- `auditor:with-mcp:quick`: Same but with quick audit (3 runs)
+- `auditor:with-mcp:full`: Same but with full audit (10 runs)
+
+**Containerized execution:**
+- `auditor:build`: Build auditor container image
+- `auditor:container`: Run auditor in container (default config)
+- `auditor:container:quick`: Run quick audit in container (3 runs)
+- `auditor:container:full`: Run full audit in container (10 runs)
+- `auditor:container:custom`: Run auditor in container (pass custom args after `--`)
+
+**Examples:**
+```bash
+# Local execution (MCP must be running separately)
+npm run auditor:mcp:start  # Start MCP server first
+npm run auditor
+npm run auditor:mcp:stop   # Stop when done
+
+# Or use convenience wrapper (auto-starts/stops MCP)
+npm run auditor:with-mcp
+npm run auditor:with-mcp:quick
+
+# Manual MCP management
+npm run auditor:mcp:status  # Check if running
+npm run auditor:mcp:start   # Start
+npm run auditor:mcp:stop    # Stop
+
+# Containerized execution
+npm run auditor:build  # Build once
+npm run auditor:container
+# Note: On macOS, use host.containers.internal instead of localhost
+npm run auditor:container:custom -- --mcp-url http://host.containers.internal:3000 --runs 5
+```
+
+### Tools
+- `tools:huggingface:build`: Build HuggingFace CLI container
+- `tools:huggingface`: Run HuggingFace CLI container
 
 See [DOCS.md](./DOCS.md) for complete documentation.
 

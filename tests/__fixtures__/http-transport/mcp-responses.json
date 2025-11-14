@@ -25,8 +25,8 @@
           "description": "You must use this tool to answer any questions related to PatternFly components or documentation."
         },
         {
-          "name": "fetchDocs",
-          "description": "Fetch documentation for one or more URLs extracted from previous tool calls responses."
+          "name": "searchPatternFlyDocs",
+          "description": "Search for PatternFly component documentation URLs by component name."
         }
       ]
     }

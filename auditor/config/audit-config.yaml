@@ -1,0 +1,67 @@
+# PatternFly MCP Auditor Configuration
+
+audit:
+  runs: 5                    # Number of audit runs
+  timeout: 30000             # Per-question timeout (ms)
+  
+mcp:
+  url: "http://localhost:3000"  # MCP server URL (HTTP mode)
+  timeout: 10000             # MCP request timeout (ms)
+
+model:
+  path: null                 # null = use embedded, path = custom model
+  temperature: 0.7         # Model temperature
+  maxTokens: 512            # Max response tokens
+  concise: true             # Add "be concise" constraint to prompts (default: true)
+
+questions:
+  baseline:
+    - id: "baseline-1"
+      prompt: "What is the capital of France?"
+      category: "general"
+    - id: "baseline-2"
+      prompt: "Explain the concept of recursion in programming."
+      category: "programming"
+    - id: "baseline-3"
+      prompt: "What are the three laws of thermodynamics?"
+      category: "science"
+    - id: "baseline-4"
+      prompt: "Describe the difference between HTTP and HTTPS."
+      category: "technology"
+    - id: "baseline-5"
+      prompt: "What is the purpose of version control systems?"
+      category: "technology"
+  
+  pf-mcp:
+    - id: "pf-mcp-1"
+      prompt: "What tools and resources are available in the PatternFly MCP server? List all available tools and resources."
+      category: "tooling"
+      expectedTool: "usePatternFlyDocs"
+    - id: "pf-mcp-2"
+      prompt: "How do I use the usePatternFlyDocs tool to fetch PatternFly documentation?"
+      category: "tooling"
+      expectedTool: "usePatternFlyDocs"
+    - id: "pf-mcp-3"
+      prompt: "What is the PatternFly componentSchemas tool and how do I use it to get PatternFly component prop definitions?"
+      category: "tooling"
+      expectedTool: "componentSchemas"
+
+interjection:
+  strategy: "random"         # "random" | "even" | "weighted"
+  ratio: 0.3                # Ratio of PF-MCP to baseline (if weighted)
+
+healthChecks:
+  - name: "server-accessible"
+    type: "mcp"
+    tool: "usePatternFlyDocs"
+    critical: true  # Exit if MCP server is not accessible (checks via tool list)
+  - name: "tools-registered"
+    type: "mcp"
+    tool: "usePatternFlyDocs"
+    critical: true  # Exit if required tools are not registered
+
+reporting:
+  formats: ["markdown", "json"]  # "markdown" | "table" | "json" | "yaml"
+  outputDir: "./reports"
+  filename: "audit-{timestamp}"
+

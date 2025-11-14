@@ -23,7 +23,7 @@ type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
 const componentSchemasTool = (options = getOptions()): McpTool => {
   const memoGetComponentSchema = memo(
     async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
-    options?.toolMemoOptions?.fetchDocs // Use the same memo options as fetchDocs
+    options?.toolMemoOptions?.usePatternFlyDocs // Use the same memo options as usePatternFlyDocs
   );
 
   const callback = async (args: any = {}) => {
@@ -82,9 +82,38 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
   return [
     'componentSchemas',
     {
-      description: 'Get JSON Schema for a PatternFly React component. Returns prop definitions, types, and validation rules. Use this for structured component metadata, not documentation.',
+      description: `MCP Tool: Get JSON Schema for PatternFly React components. Returns prop definitions, types, and validation rules.
+
+        This is an MCP (Model Context Protocol) tool that must be called via JSON-RPC. It returns the complete JSON Schema for a PatternFly React component.
+
+        **What this tool does**:
+        - Returns JSON Schema (as text) containing all prop definitions, types, and validation rules
+        - Uses fuzzy matching to find components by name
+        - Works only with PatternFly React components
+
+        **How to call this MCP tool** (JSON-RPC format - works for both stdio and HTTP transport):
+        {
+          "method": "tools/call",
+          "params": {
+            "name": "componentSchemas",
+            "arguments": {
+              "componentName": "Button"
+            }
+          }
+        }
+        
+        Note: The JSON-RPC format is the same whether using stdio (default) or HTTP transport. The transport layer only affects how messages are sent/received, not the tool call format.
+
+        **Parameters**:
+        - componentName (string, required): The name of the PatternFly component (e.g., "Button", "Tabs", "Card")
+
+        **Returns**: JSON Schema as a string containing all prop definitions, types, and validation rules for the specified component.
+
+        **Fuzzy Matching**: The tool uses fuzzy matching, so "But" will match "Button", and "tab" will match "Tabs".
+
+        **Important**: This is an MCP tool call, not a code function or UI workflow. Call it via the MCP protocol with only the componentName parameter. Do not include props, type, or other parameters - the tool returns the complete schema.`,
       inputSchema: {
-        componentName: z.string().describe('Name of the PatternFly component (e.g., "Button", "Table")')
+        componentName: z.string().describe('Exact or partial name of the PatternFly component (e.g., "Button", "But", "Tabs")')
       }
     },
     callback
