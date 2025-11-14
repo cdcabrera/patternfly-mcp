@@ -6,7 +6,7 @@ This directory contains containerized CLI tools that can be run without installi
 
 ### HuggingFace CLI
 
-The HuggingFace CLI (`huggingface-cli`) is used for downloading models from HuggingFace Hub.
+The HuggingFace CLI (`hf` command) is used for downloading models from HuggingFace Hub.
 
 #### Quick Start
 
@@ -42,6 +42,8 @@ npm run tools:huggingface -- scan-cache Qwen/Qwen2.5-0.5B-Instruct-GGUF
 ```bash
 npm run tools:huggingface -- login
 ```
+
+**Note**: The container uses the modern `hf` command (not the deprecated `huggingface-cli`).
 
 #### Volume Mounts
 

@@ -1,6 +1,6 @@
 # HuggingFace CLI Container
 
-Containerized HuggingFace CLI for downloading models without installing Python/pip locally.
+Containerized HuggingFace CLI (`hf` command) for downloading models without installing Python/pip locally.
 
 ## Quick Start
 
@@ -13,6 +13,8 @@ npm run tools:huggingface -- download Qwen/Qwen2.5-0.5B-Instruct-GGUF \
   --local-dir ./auditor/models \
   --include "*.gguf"
 ```
+
+**Note**: This container uses the modern `hf` command. The older `huggingface-cli` command is deprecated.
 
 ## Common Commands
 
@@ -58,7 +60,7 @@ If you prefer to run the container manually:
 # Build
 podman build -t patternfly-tools-huggingface ./tools/huggingface-cli/.
 
-# Run
+# Run (using 'hf' command)
 podman run -it --rm \
   -v "$(pwd):/workspace" \
   --name huggingface-cli \
