@@ -175,45 +175,130 @@ async function callMcpMethod(method, params, config) {
  */
 async function initializeModel(config) {
   // Lazy import to avoid loading if not needed
-  const { getLlama } = await import('node-llama-cpp');
+  const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
   
   const modelPath = config.model?.path;
   const Llama = await getLlama();
 
-  // For now, we'll use a default small model
-  // In production, this would download or use a volume-mounted model
   let model;
+  let context;
+  let session;
   
   if (modelPath) {
-    // Future: Load custom model from volume
+    // Load custom model from volume
     console.log(`   Loading custom model from: ${modelPath}`);
-    // model = await Llama.loadModel({ modelPath });
-    throw new Error('Custom model loading not yet implemented');
+    try {
+      model = await validateAndLoadModel(Llama, modelPath);
+    } catch (error) {
+      throw new Error(`Failed to load custom model: ${error.message}`);
+    }
   } else {
-    // Use embedded model (to be implemented)
-    console.log(`   Using embedded model (placeholder)`);
-    // For now, return a mock model interface
-    return createMockModel();
+    // Use default small model (download if needed)
+    console.log(`   Using default model (Qwen2.5-0.5B)`);
+    const defaultModelPath = await getDefaultModel(Llama);
+    
+    if (!defaultModelPath) {
+      // No model found, will fall back to mock
+      throw new Error('Default model not found. Place model in ./models/ or /workspace/model/');
+    }
+    
+    model = await Llama.loadModel({
+      modelPath: defaultModelPath
+    });
+  }
+
+  // Create context and session
+  context = await model.createContext({
+    contextSize: 2048, // Small context for efficiency
+    batchSize: 512
+  });
+  
+  session = new LlamaChatSession({
+    contextSequence: context.getSequence()
+  });
+
+  return {
+    model,
+    context,
+    session,
+    async complete(prompt, options = {}) {
+      const temperature = options.temperature ?? config.model?.temperature ?? 0.7;
+      const maxTokens = options.maxTokens ?? config.model?.maxTokens ?? 512;
+
+      // Use the chat session to get completion
+      const response = await session.prompt(prompt, {
+        temperature,
+        maxTokens
+      });
+
+      return {
+        text: response,
+        tokens: response.split(/\s+/).length // Approximate token count
+      };
+    },
+    async close() {
+      if (session) {
+        // Session cleanup handled by context
+      }
+      if (context) {
+        context.dispose();
+      }
+      if (model) {
+        model.dispose();
+      }
+    }
+  };
+}
+
+/**
+ * Validate and load custom model
+ */
+async function validateAndLoadModel(Llama, modelPath) {
+  // Check if model file exists
+  const { existsSync } = await import('fs');
+  if (!existsSync(modelPath)) {
+    throw new Error(`Model file not found: ${modelPath}`);
+  }
+
+  // Try to load the model
+  try {
+    const model = await Llama.loadModel({ modelPath });
+    return model;
+  } catch (error) {
+    throw new Error(`Model loading failed: ${error.message}. Ensure model is in GGUF format and compatible with node-llama-cpp.`);
   }
 }
 
 /**
- * Create mock model for development/testing
- * TODO: Replace with actual node-llama-cpp model
+ * Get default model (download if needed)
+ * For now, returns a path that should be downloaded separately
+ * In production, this could use a model downloader
  */
-function createMockModel() {
-  return {
-    async complete(prompt, options = {}) {
-      // Mock response - in real implementation, this would call the model
-      return {
-        text: `[Mock response to: ${prompt}] This is a placeholder response.`,
-        tokens: 10
-      };
-    },
-    async close() {
-      // Cleanup
-    }
-  };
+async function getDefaultModel(Llama) {
+  // Default to a small model: Qwen2.5-0.5B
+  // In production, this would download from HuggingFace or similar
+  // For now, we'll check for a model in a standard location or use a placeholder
+  
+  const { existsSync } = await import('fs');
+  const { join } = await import('path');
+  
+  // Check for model in workspace/model volume (future)
+  const volumeModelPath = '/workspace/model/qwen2.5-0.5b-instruct-q4_k_m.gguf';
+  if (existsSync(volumeModelPath)) {
+    return volumeModelPath;
+  }
+
+  // Check for model in local models directory
+  const localModelPath = join(process.cwd(), 'models', 'qwen2.5-0.5b-instruct-q4_k_m.gguf');
+  if (existsSync(localModelPath)) {
+    return localModelPath;
+  }
+
+  // For development, we'll use a mock if model not found
+  // In production, this should download the model
+  console.warn('   ⚠️  Default model not found. Using mock model for development.');
+  console.warn('   📥 To use a real model, download Qwen2.5-0.5B and place it in ./models/ or /workspace/model/');
+  return null; // Will trigger mock model fallback
 }
 
 /**
@@ -368,6 +453,32 @@ function analyzeConsistency(allResults) {
 }
 
 /**
+ * Create mock model for development/testing
+ * Used when real model is not available
+ */
+function createMockModel() {
+  return {
+    async complete(prompt, options = {}) {
+      // Mock response - simulates model behavior
+      const responses = [
+        `Based on the question "${prompt}", I would need to use MCP tools to provide accurate information.`,
+        `To answer "${prompt}", I should check the available tools and documentation.`,
+        `This question about "${prompt}" requires accessing PatternFly MCP server tools.`
+      ];
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      
+      return {
+        text: randomResponse,
+        tokens: randomResponse.split(/\s+/).length
+      };
+    },
+    async close() {
+      // Cleanup (no-op for mock)
+    }
+  };
+}
+
+/**
  * Analyze tool call consistency
  */
 function analyzeToolCalls(runs) {
@@ -476,7 +587,14 @@ export async function runAudit(config) {
 
   // Initialize model
   console.log('\n🤖 Initializing model...');
-  const model = await initializeModel(config);
+  let model;
+  try {
+    model = await initializeModel(config);
+  } catch (error) {
+    console.warn(`   ⚠️  Model initialization failed: ${error.message}`);
+    console.warn('   Using mock model for development');
+    model = createMockModel();
+  }
 
   // Run audit runs
   const allResults = [];

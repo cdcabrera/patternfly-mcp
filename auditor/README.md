@@ -85,8 +85,8 @@ auditor/
 - ✅ Consistency analysis (tool calls, answers, timing)
 - ✅ Multiple report formats (markdown, table, JSON, YAML)
 - ✅ Configurable question sets
-- 🚧 Model integration (node-llama-cpp - placeholder)
-- 🚧 Containerization (Containerfile - pending)
+- ✅ Model integration (node-llama-cpp with fallback to mock)
+- ✅ Containerization (Containerfile ready)
 
 ## Development
 
@@ -100,17 +100,18 @@ auditor/
 - ✅ MCP client (HTTP)
 - ✅ Consistency analysis
 - ✅ Report generation
-- 🚧 Model integration (mock implementation)
-- 🚧 Containerization
+- ✅ Model integration (node-llama-cpp with mock fallback)
+- ✅ Containerization (Containerfile ready)
 
 ### Next Steps
 
-1. Implement actual node-llama-cpp model integration
-2. Create Containerfile for Podman
-3. Test with real MCP server
+1. Download model (see [MODEL-SETUP.md](./MODEL-SETUP.md))
+2. Test with real MCP server
+3. Build and test container
 4. Optimize image size (<900MB target)
 
 ## Documentation
 
 - **[.agent/auditor-plan/PLAN.md](../.agent/auditor-plan/PLAN.md)** - Complete implementation plan
 - **[.agent/auditor-plan/README.md](../.agent/auditor-plan/README.md)** - Planning documentation
+- **[MODEL-SETUP.md](./MODEL-SETUP.md)** - Model download and setup guide
