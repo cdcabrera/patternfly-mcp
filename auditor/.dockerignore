@@ -4,10 +4,14 @@ node_modules/
 # Reports
 reports/
 *.md
-*.json
 *.yaml
 *.yml
 !reports/.gitkeep
+
+# Exclude JSON files except package files
+*.json
+!package.json
+!package-lock.json
 
 # Logs
 *.log

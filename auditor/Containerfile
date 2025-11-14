@@ -15,10 +15,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json ./
 
 # Install production dependencies only
-RUN npm ci --production && npm cache clean --force
+# Note: Using npm install instead of npm ci since this is a workspace package
+RUN npm install --production && npm cache clean --force
 
 # Stage 2: Copy application code
 FROM base AS app
