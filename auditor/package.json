@@ -1,0 +1,23 @@
+{
+  "name": "@patternfly/patternfly-mcp-auditor",
+  "version": "0.1.0",
+  "description": "Containerized consistency auditor for PatternFly MCP server",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "audit": "node src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "node-llama-cpp": "^3.14.2",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "Red Hat",
+  "license": "MIT"
+}
+
