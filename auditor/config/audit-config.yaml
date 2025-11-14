@@ -12,6 +12,7 @@ model:
   path: null                 # null = use embedded, path = custom model
   temperature: 0.7         # Model temperature
   maxTokens: 512            # Max response tokens
+  concise: true             # Add "be concise" constraint to prompts (default: true)
 
 questions:
   baseline:
@@ -53,9 +54,11 @@ healthChecks:
   - name: "server-accessible"
     type: "http"
     endpoint: "/health"
+    critical: true  # Exit if MCP server is not accessible
   - name: "tools-registered"
     type: "mcp"
     tool: "usePatternFlyDocs"
+    critical: true  # Exit if required tools are not registered
 
 reporting:
   formats: ["markdown", "json"]  # "markdown" | "table" | "json" | "yaml"

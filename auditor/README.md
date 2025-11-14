@@ -44,17 +44,28 @@ Edit `config/audit-config.yaml` to configure:
 
 **Local execution:**
 ```bash
-# Run with default config
+# Option 1: Manual MCP management
+npm run auditor:mcp:start  # Start MCP server first
+npm run auditor            # Run audit
+npm run auditor:mcp:stop   # Stop MCP server when done
+
+# Option 2: Convenience wrapper (auto-starts/stops MCP)
+npm run auditor:with-mcp           # Start MCP, run audit, stop MCP
+npm run auditor:with-mcp:quick     # Quick audit (3 runs)
+npm run auditor:with-mcp:full       # Full audit (10 runs)
+
+# Option 3: Run auditor (assumes MCP already running)
 npm run auditor
-
-# Quick audit (3 runs)
 npm run auditor:quick
-
-# Full audit (10 runs)
 npm run auditor:full
-
-# Custom options
 npm run auditor:custom -- --mcp-url http://localhost:3000 --runs 5
+```
+
+**MCP server management:**
+```bash
+npm run auditor:mcp:start   # Start MCP server in HTTP mode
+npm run auditor:mcp:stop    # Stop MCP server
+npm run auditor:mcp:status  # Check if MCP server is running
 ```
 
 **Containerized execution:**

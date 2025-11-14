@@ -48,7 +48,13 @@
     "auditor:container": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor",
     "auditor:container:quick": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor --runs 3",
     "auditor:container:full": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor --runs 10",
-    "auditor:container:custom": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor"
+    "auditor:container:custom": "podman run -it --rm --network host -v \"$(pwd):/workspace\" -v \"$(pwd)/auditor/reports:/app/reports\" --name patternfly-auditor patternfly-mcp-auditor",
+    "auditor:mcp:start": "cd auditor && node src/mcp-server.js start",
+    "auditor:mcp:stop": "cd auditor && node src/mcp-server.js stop",
+    "auditor:mcp:status": "cd auditor && node src/mcp-server.js status",
+    "auditor:with-mcp": "cd auditor && node src/mcp-wrapper.js",
+    "auditor:with-mcp:quick": "cd auditor && node src/mcp-wrapper.js --runs 3",
+    "auditor:with-mcp:full": "cd auditor && node src/mcp-wrapper.js --runs 10"
   },
   "keywords": [
     "mcp",

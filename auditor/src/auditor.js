@@ -114,7 +114,8 @@ async function runHealthChecks(config) {
         results.push({
           name: check.name,
           status: response.ok ? 'pass' : 'fail',
-          message: response.ok ? 'Server accessible' : `HTTP ${response.status}`
+          message: response.ok ? 'Server accessible' : `HTTP ${response.status}`,
+          critical: check.critical || false
         });
       } else if (check.type === 'mcp') {
         // Check if MCP server responds to list_tools
@@ -124,16 +125,36 @@ async function runHealthChecks(config) {
         results.push({
           name: check.name,
           status: hasTool ? 'pass' : 'fail',
-          message: hasTool ? `Tool ${check.tool} registered` : `Tool ${check.tool} not found`
+          message: hasTool ? `Tool ${check.tool} registered` : `Tool ${check.tool} not found`,
+          critical: check.critical || false
         });
       }
     } catch (error) {
       results.push({
         name: check.name,
         status: 'fail',
-        message: error.message
+        message: error.message,
+        critical: check.critical || false
       });
     }
+  }
+
+  // Check for critical failures
+  const criticalFailures = results.filter(r => r.critical && r.status === 'fail');
+  if (criticalFailures.length > 0) {
+    const failureMessages = criticalFailures.map(f => `  - ${f.name}: ${f.message}`).join('\n');
+    const mcpUrl = config.mcp?.url || 'not configured';
+    
+    throw new Error(
+      `❌ Critical health check(s) failed:\n${failureMessages}\n\n` +
+      `MCP server is not available at ${mcpUrl}\n\n` +
+      `Troubleshooting:\n` +
+      `  1. Ensure MCP server is running: npm run auditor:mcp:start\n` +
+      `  2. Check the URL is correct: ${mcpUrl}\n` +
+      `  3. For containerized execution, use: http://host.containers.internal:3000\n` +
+      `  4. Verify MCP server is in HTTP mode: npx @patternfly/patternfly-mcp --http --port 3000\n\n` +
+      `Exiting audit.`
+    );
   }
 
   return results;
@@ -367,9 +388,15 @@ async function runAuditRun(runNumber, questions, model, config) {
     try {
       console.log(`   [${i + 1}/${questions.length}] ${question.id}: ${question.prompt.substring(0, 50)}...`);
 
+      // Build prompt with conciseness constraint (if enabled)
+      const conciseEnabled = config.model?.concise !== false; // Default to true
+      const prompt = conciseEnabled
+        ? `Please be concise in your response. ${question.prompt}`
+        : question.prompt;
+
       // Send question to model
       const modelResponse = await Promise.race([
-        model.complete(question.prompt, {
+        model.complete(prompt, {
           temperature: config.model?.temperature || 0.7,
           maxTokens: config.model?.maxTokens || 512
         }),

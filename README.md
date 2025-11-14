@@ -104,6 +104,16 @@ See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
 - `auditor:full`: Run full audit (10 runs)
 - `auditor:custom`: Run auditor (pass custom args after `--`)
 
+**MCP server management:**
+- `auditor:mcp:start`: Start MCP server in HTTP mode (background)
+- `auditor:mcp:stop`: Stop running MCP server
+- `auditor:mcp:status`: Check if MCP server is running
+
+**Convenience wrappers (start MCP + run auditor + stop MCP):**
+- `auditor:with-mcp`: Start MCP, run auditor, stop MCP
+- `auditor:with-mcp:quick`: Same but with quick audit (3 runs)
+- `auditor:with-mcp:full`: Same but with full audit (10 runs)
+
 **Containerized execution:**
 - `auditor:build`: Build auditor container image
 - `auditor:container`: Run auditor in container (default config)
@@ -113,9 +123,19 @@ See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.
 
 **Examples:**
 ```bash
-# Local execution
+# Local execution (MCP must be running separately)
+npm run auditor:mcp:start  # Start MCP server first
 npm run auditor
-npm run auditor:custom -- --mcp-url http://localhost:3000 --runs 5
+npm run auditor:mcp:stop   # Stop when done
+
+# Or use convenience wrapper (auto-starts/stops MCP)
+npm run auditor:with-mcp
+npm run auditor:with-mcp:quick
+
+# Manual MCP management
+npm run auditor:mcp:status  # Check if running
+npm run auditor:mcp:start   # Start
+npm run auditor:mcp:stop    # Stop
 
 # Containerized execution
 npm run auditor:build  # Build once

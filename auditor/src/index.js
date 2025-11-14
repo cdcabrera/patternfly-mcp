@@ -146,7 +146,17 @@ async function main() {
   try {
     // Run audit
     console.log('🚀 Starting audit...\n');
-    const results = await runAudit(config);
+    let results;
+    try {
+      results = await runAudit(config);
+    } catch (error) {
+      // Handle critical health check failures
+      if (error.message.includes('Critical health check')) {
+        console.error(`\n${error.message}`);
+        process.exit(1);
+      }
+      throw error;
+    }
 
     // Generate reports
     console.log('\n📊 Generating reports...');

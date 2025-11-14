@@ -26,3 +26,6 @@ models/
 *.gguf
 *.bin
 
+# MCP server PID file (created at root)
+../.mcp-server.pid
+
