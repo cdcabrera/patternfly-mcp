@@ -286,15 +286,17 @@ async function getDefaultModel(Llama) {
   
   // List of locations to check (in priority order)
   const searchPaths = [
-    // 1. Container volume mount (for containerized execution)
+    // 1. Container volume mount - dedicated model directory
     '/workspace/model',
-    // 2. Auditor models directory (auditor/models/)
+    // 2. Container volume mount - auditor models (when running in container)
+    '/workspace/auditor/models',
+    // 3. Auditor models directory (auditor/models/) - when running locally
     join(auditorDir, 'models'),
-    // 3. Root models directory (./models/ from root)
+    // 4. Root models directory (./models/ from root)
     join(rootDir, 'models'),
-    // 4. Current working directory models (./models/ from cwd)
+    // 5. Current working directory models (./models/ from cwd)
     join(process.cwd(), 'models'),
-    // 5. Auditor directory when running from root
+    // 6. Auditor directory when running from root
     join(process.cwd(), 'auditor', 'models')
   ];
 

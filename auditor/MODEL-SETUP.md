@@ -13,10 +13,11 @@ The PatternFly MCP Auditor uses `node-llama-cpp` to run an embedded model for co
 The auditor checks for models in the following order (first match wins):
 
 1. **Custom model path** (via config: `model.path`)
-2. **Container volume mount** (`/workspace/model/`) - For containerized execution
-3. **Auditor models directory** (`auditor/models/`) - **Recommended location** ✅
-4. **Root models directory** (`./models/` from project root)
-5. **Current working directory** (`./models/` from where command is run)
+2. **Container volume mount - dedicated** (`/workspace/model/`) - For dedicated model volume
+3. **Container volume mount - auditor** (`/workspace/auditor/models/`) - **For containerized execution** ✅
+4. **Auditor models directory** (`auditor/models/`) - **Recommended for local execution** ✅
+5. **Root models directory** (`./models/` from project root)
+6. **Current working directory** (`./models/` from where command is run)
 
 **Recommended**: Place models in `auditor/models/` - this works whether you run from root or auditor directory.
 
