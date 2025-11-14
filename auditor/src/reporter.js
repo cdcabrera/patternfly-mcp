@@ -129,6 +129,46 @@ function generateMarkdownReport(auditResults, config) {
 
       report += `\n`;
     }
+
+    // Raw Answers Section
+    report += `### Raw Model Answers\n\n`;
+    report += `This section shows the actual model responses for each question across all runs.\n\n`;
+
+    // Group results by question ID
+    const resultsByQuestion = {};
+    for (const result of results) {
+      if (!resultsByQuestion[result.questionId]) {
+        resultsByQuestion[result.questionId] = [];
+      }
+      resultsByQuestion[result.questionId].push(result);
+    }
+
+    for (const [questionId, questionResults] of Object.entries(resultsByQuestion)) {
+      const question = questions.find(q => q.id === questionId);
+      report += `#### ${questionId}: ${question?.prompt || 'Unknown'}\n\n`;
+
+      // Sort by run number
+      questionResults.sort((a, b) => a.runNumber - b.runNumber);
+
+      for (const result of questionResults) {
+        const statusIcon = result.success ? '✅' : '❌';
+        report += `**Run ${result.runNumber}** ${statusIcon}\n\n`;
+        
+        if (result.success && result.answer) {
+          report += `\`\`\`\n${result.answer}\n\`\`\`\n\n`;
+        } else if (result.error) {
+          report += `*Error: ${result.error}*\n\n`;
+        } else {
+          report += `*No answer provided*\n\n`;
+        }
+
+        if (result.toolCalls && result.toolCalls.length > 0) {
+          report += `*Tool calls: ${result.toolCalls.map(tc => tc.tool).join(', ')}*\n\n`;
+        }
+
+        report += `---\n\n`;
+      }
+    }
   }
 
   // Recommendations
@@ -206,6 +246,48 @@ function generateMarkdownTable(auditResults, config) {
       : 'none';
 
     report += `| ${result.runNumber} | ${result.questionId} | ${success} | ${duration} | ${toolCalls} |\n`;
+  }
+
+  report += `\n`;
+
+  // Raw Answers Section
+  report += `## Raw Model Answers\n\n`;
+  report += `This section shows the actual model responses for each question across all runs.\n\n`;
+
+  // Group results by question ID
+  const resultsByQuestion = {};
+  for (const result of results) {
+    if (!resultsByQuestion[result.questionId]) {
+      resultsByQuestion[result.questionId] = [];
+    }
+    resultsByQuestion[result.questionId].push(result);
+  }
+
+  for (const [questionId, questionResults] of Object.entries(resultsByQuestion)) {
+    const question = questions.find(q => q.id === questionId);
+    report += `### ${questionId}: ${question?.prompt || 'Unknown'}\n\n`;
+
+    // Sort by run number
+    questionResults.sort((a, b) => a.runNumber - b.runNumber);
+
+    for (const result of questionResults) {
+      const statusIcon = result.success ? '✅' : '❌';
+      report += `**Run ${result.runNumber}** ${statusIcon}\n\n`;
+      
+      if (result.success && result.answer) {
+        report += `\`\`\`\n${result.answer}\n\`\`\`\n\n`;
+      } else if (result.error) {
+        report += `*Error: ${result.error}*\n\n`;
+      } else {
+        report += `*No answer provided*\n\n`;
+      }
+
+      if (result.toolCalls && result.toolCalls.length > 0) {
+        report += `*Tool calls: ${result.toolCalls.map(tc => tc.tool).join(', ')}*\n\n`;
+      }
+
+      report += `---\n\n`;
+    }
   }
 
   return report;
