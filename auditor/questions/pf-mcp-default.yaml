@@ -3,7 +3,7 @@
 
 questions:
   - id: "pf-mcp-1"
-    prompt: "What tools are available in the PatternFly MCP server? List all available tools."
+    prompt: "What tools and resources are available in the PatternFly MCP server? List all available tools and resources."
     category: "tooling"
     expectedTool: "usePatternFlyDocs"
 
