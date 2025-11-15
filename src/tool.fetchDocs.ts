@@ -47,7 +47,7 @@ const fetchDocsTool = (options = getOptions()): McpTool => {
   return [
     'fetchDocs',
     {
-      description: 'Fetch documentation for one or more URLs extracted from previous tool calls responses. The URLs should be passed as an array in the "urlList" argument.',
+      description: 'Fetch documentation for one or more URLs extracted from previous tool calls responses. The URL or URLs should be passed as an array in the "urlList" argument.',
       inputSchema: {
         urlList: z.array(z.string()).describe('The list of URLs to fetch documentation from')
       }

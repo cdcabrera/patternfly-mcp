@@ -52,17 +52,17 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `You must use this tool to answer any questions related to PatternFly components or documentation.
+      description: `Use this tool to answer any questions related to PatternFly components or documentation.
 
-        The description of the tool contains links to ${options.docsHost ? 'llms.txt' : '.md'} files or local file paths that the user has made available.
+        Listed below are links to ${options.docsHost ? 'llms.txt' : '.md'} files or local file paths for PatternFly components and documentation:
 
         ${options.docsHost
             ? `[@patternfly/react-core@6.0.0^](${join('react-core', '6.0.0', 'llms.txt')})`
             : `
-            ${COMPONENT_DOCS.join('\n')}
-            ${LAYOUT_DOCS.join('\n')}
-            ${CHART_DOCS.join('\n')}
-            ${getLocalDocs().join('\n')}
+            - ${COMPONENT_DOCS.join('\n- ')}
+            - ${LAYOUT_DOCS.join('\n- ')}
+            - ${CHART_DOCS.join('\n- ')}
+            - ${getLocalDocs().join('\n- ')}
           `
         }
 
