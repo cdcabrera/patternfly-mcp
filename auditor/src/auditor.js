@@ -57,7 +57,7 @@ function getDefaultPfMcpQuestions() {
     },
     {
       id: 'pf-mcp-3',
-      prompt: 'What is the componentSchemas tool and how do I use it to get component prop definitions?',
+      prompt: 'What is the PatternFly componentSchemas tool and how do I use it to get PatternFly component prop definitions?',
       category: 'tooling',
       expectedTool: 'componentSchemas'
     }
@@ -956,7 +956,7 @@ function calculateVariance(values) {
 /**
  * Main audit function
  */
-export async function runAudit(config) {
+export async function runAudit(config, abortSignal = null) {
   // Load questions
   const { baseline, pfMcp } = loadQuestions(config);
   const strategy = config.interjection?.strategy || 'random';
@@ -986,21 +986,53 @@ export async function runAudit(config) {
     model = createMockModel();
   }
 
-  // Run audit runs
+  // Run audit runs with interrupt checking
   const allResults = [];
-  for (let run = 1; run <= config.audit.runs; run++) {
-    const results = await runAuditRun(run, questions, model, config);
-    allResults.push(...results);
+  
+  // Check for interrupt signal periodically
+  const checkInterrupt = () => {
+    return abortSignal?.aborted || false;
+  };
 
-    // Small delay between runs
-    if (run < config.audit.runs) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    for (let run = 1; run <= config.audit.runs; run++) {
+      if (checkInterrupt()) {
+        console.log(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
+        break;
+      }
+
+      const results = await runAuditRun(run, questions, model, config);
+      allResults.push(...results);
+
+      // Small delay between runs (check for interrupt during delay)
+      if (run < config.audit.runs) {
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(resolve, 500);
+          if (abortSignal) {
+            abortSignal.addEventListener('abort', () => {
+              clearTimeout(timeout);
+              reject(new Error('Aborted'));
+            });
+          }
+        }).catch(() => {
+          // Ignore abort errors during delay
+        });
+        
+        if (checkInterrupt()) {
+          console.log(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
+          break;
+        }
+      }
     }
-  }
-
-  // Cleanup model
-  if (model.close) {
-    await model.close();
+  } finally {
+    // Cleanup model
+    if (model && model.close) {
+      try {
+        await model.close();
+      } catch (error) {
+        console.warn(`   ⚠️  Error closing model: ${error.message}`);
+      }
+    }
   }
 
   // Analyze consistency

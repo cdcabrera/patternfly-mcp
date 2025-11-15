@@ -128,6 +128,38 @@ function mergeConfig(config, cliArgs) {
 async function main() {
   console.log('🔍 PatternFly MCP Auditor\n');
 
+  // Set up signal handlers for graceful shutdown
+  let isShuttingDown = false;
+  let auditResults = null;
+  let abortController = new AbortController();
+
+  const handleShutdown = async (signal) => {
+    if (isShuttingDown) {
+      console.log('\n⚠️  Force shutdown...');
+      process.exit(130);
+    }
+    isShuttingDown = true;
+    console.log(`\n\n⚠️  Received ${signal}. Shutting down gracefully...`);
+    
+    // Signal the audit to stop
+    abortController.abort();
+    
+    if (auditResults) {
+      console.log('💾 Saving partial results...');
+      try {
+        await generateReports(auditResults, auditResults.config);
+        console.log('✅ Partial results saved');
+      } catch (err) {
+        console.error('❌ Failed to save partial results:', err.message);
+      }
+    }
+    
+    process.exit(130); // 128 + 2 (SIGINT)
+  };
+
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+
   // Parse CLI arguments
   const cliArgs = parseArgs();
 
@@ -152,12 +184,33 @@ async function main() {
     console.log('🚀 Starting audit...\n');
     let results;
     try {
-      results = await runAudit(config);
+      results = await runAudit(config, abortController.signal);
+      auditResults = results; // Store for potential shutdown
+      
+      // Check if we were interrupted
+      if (abortController.signal.aborted) {
+        console.log('\n⚠️  Audit was interrupted. Partial results saved above.');
+        process.exit(130);
+      }
     } catch (error) {
       // Handle critical health check failures
       if (error.message.includes('Critical health check')) {
         console.error(`\n${error.message}`);
         process.exit(1);
+      }
+      // Handle abort errors
+      if (error.name === 'AbortError' || abortController.signal.aborted) {
+        console.log('\n⚠️  Audit was interrupted.');
+        if (auditResults) {
+          console.log('💾 Saving partial results...');
+          try {
+            await generateReports(auditResults, auditResults.config);
+            console.log('✅ Partial results saved');
+          } catch (err) {
+            console.error('❌ Failed to save partial results:', err.message);
+          }
+        }
+        process.exit(130);
       }
       throw error;
     }
@@ -181,6 +234,10 @@ async function main() {
     reportFiles.forEach(file => {
       console.log(`     - ${file}`);
     });
+
+    // Clear shutdown handlers since we're done
+    process.removeAllListeners('SIGINT');
+    process.removeAllListeners('SIGTERM');
 
     // Exit with error code if inconsistencies found
     if (results.analysis.overall.inconsistentRuns > 0) {
