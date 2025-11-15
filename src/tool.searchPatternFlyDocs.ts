@@ -5,6 +5,7 @@ import { type McpTool } from './server';
 import { COMPONENT_DOCS } from './docs.component';
 import { LAYOUT_DOCS } from './docs.layout';
 import { CHART_DOCS } from './docs.chart';
+import { getLocalDocs } from './docs.local';
 import { getOptions } from './options.context';
 import { fuzzySearch } from './server.search';
 
@@ -34,7 +35,7 @@ const extractUrl = (docUrl: string): string => {
  */
 const buildComponentToDocsMap = (): Map<string, string[]> => {
   const map = new Map<string, string[]>();
-  const allDocs = [...COMPONENT_DOCS, ...LAYOUT_DOCS, ...CHART_DOCS];
+  const allDocs = [...COMPONENT_DOCS, ...LAYOUT_DOCS, ...CHART_DOCS, ...getLocalDocs()];
 
   for (const docUrl of allDocs) {
     const componentName = extractComponentName(docUrl);
