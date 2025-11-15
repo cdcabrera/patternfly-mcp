@@ -59,7 +59,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         - Returns concatenated text content from the documentation
         - Works with index/overview files (README.md, llms.txt) or specific documentation pages
 
-        **How to call this MCP tool** (JSON-RPC format):
+        **How to call this MCP tool** (JSON-RPC format - works for both stdio and HTTP transport):
         {
           "method": "tools/call",
           "params": {
@@ -69,6 +69,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
             }
           }
         }
+        
+        Note: The JSON-RPC format is the same whether using stdio (default) or HTTP transport. The transport layer only affects how messages are sent/received, not the tool call format.
 
         **Parameters**:
         - urlList (array of strings, required): Array of URLs or file paths. Can be local paths (e.g., "documentation/guidelines/README.md") or remote URLs (e.g., "https://www.patternfly.org/components/button")

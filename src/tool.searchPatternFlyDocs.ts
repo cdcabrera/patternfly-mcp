@@ -155,7 +155,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         - Returns URLs only (does NOT fetch or return documentation content)
         - Use "usePatternFlyDocs" to fetch the actual documentation from these URLs
 
-        **How to call this MCP tool** (JSON-RPC format):
+        **How to call this MCP tool** (JSON-RPC format - works for both stdio and HTTP transport):
         {
           "method": "tools/call",
           "params": {
@@ -165,6 +165,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
             }
           }
         }
+        
+        Note: The JSON-RPC format is the same whether using stdio (default) or HTTP transport. The transport layer only affects how messages are sent/received, not the tool call format.
 
         **Parameters**:
         - searchQuery (string, required): Component name to search for (e.g., "button", "table", "accordion")

@@ -91,7 +91,7 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
         - Uses fuzzy matching to find components by name
         - Works only with PatternFly React components
 
-        **How to call this MCP tool** (JSON-RPC format):
+        **How to call this MCP tool** (JSON-RPC format - works for both stdio and HTTP transport):
         {
           "method": "tools/call",
           "params": {
@@ -101,6 +101,8 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
             }
           }
         }
+        
+        Note: The JSON-RPC format is the same whether using stdio (default) or HTTP transport. The transport layer only affects how messages are sent/received, not the tool call format.
 
         **Parameters**:
         - componentName (string, required): The name of the PatternFly component (e.g., "Button", "Tabs", "Card")
