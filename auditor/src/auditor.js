@@ -987,37 +987,57 @@ function detectConfusion(answers, question) {
 }
 
 /**
+ * Calculate similarity between two answers
+ */
+function calculateAnswerSimilarity(answer1, answer2) {
+  const words1 = answer1.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  const words2 = answer2.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  
+  // Calculate word overlap
+  const commonWords = words1.filter(w => words2.includes(w));
+  const totalUniqueWords = new Set([...words1, ...words2]).size;
+  const wordOverlap = totalUniqueWords > 0 ? commonWords.length / totalUniqueWords : 0;
+  
+  // Calculate length similarity
+  const lengthDiff = Math.abs(answer1.length - answer2.length) / Math.max(answer1.length, answer2.length, 1);
+  const lengthSimilarity = 1 - Math.min(lengthDiff, 1);
+  
+  // Combined similarity (weighted: 70% word overlap, 30% length)
+  return (wordOverlap * 0.7) + (lengthSimilarity * 0.3);
+}
+
+/**
  * Calculate majority-rule consistency (resistant to outliers)
  * Returns consistency based on how many runs match the majority pattern
+ * Uses improved clustering algorithm that checks similarity to all group members
  */
-function calculateMajorityConsistency(answers, similarityThreshold = 0.7) {
+function calculateMajorityConsistency(answers, similarityThreshold = 0.4) {
   if (answers.length <= 1) {
-    return { consistency: 1.0, majoritySize: answers.length };
+    return { consistency: 1.0, majoritySize: answers.length, totalRuns: answers.length };
   }
 
-  // Simple similarity: compare answer lengths and key content
-  // Group answers by similarity
+  // Improved clustering: use all group members for comparison, not just the first
   const groups = [];
   
   for (const answer of answers) {
-    let matched = false;
+    let bestMatch = null;
+    let bestSimilarity = 0;
+    
+    // Find the group with the highest average similarity
     for (const group of groups) {
-      // Check if answer is similar to group representative
-      const rep = group[0];
-      const lengthDiff = Math.abs(answer.length - rep.length) / Math.max(answer.length, rep.length, 1);
-      const hasCommonWords = answer.split(/\s+/).filter(w => 
-        rep.split(/\s+/).includes(w) && w.length > 4
-      ).length / Math.max(answer.split(/\s+/).length, rep.split(/\s+/).length, 1);
+      // Calculate average similarity to all members of this group
+      const similarities = group.map(member => calculateAnswerSimilarity(answer, member));
+      const avgSimilarity = similarities.reduce((a, b) => a + b, 0) / similarities.length;
       
-      // If similar enough, add to group
-      if (lengthDiff < 0.5 && hasCommonWords > 0.3) {
-        group.push(answer);
-        matched = true;
-        break;
+      if (avgSimilarity > bestSimilarity && avgSimilarity >= similarityThreshold) {
+        bestSimilarity = avgSimilarity;
+        bestMatch = group;
       }
     }
     
-    if (!matched) {
+    if (bestMatch) {
+      bestMatch.push(answer);
+    } else {
       groups.push([answer]);
     }
   }
