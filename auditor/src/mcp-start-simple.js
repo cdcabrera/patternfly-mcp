@@ -160,8 +160,9 @@ async function main() {
   }
   
   // Start server in background with --kill-existing flag for safety
+  // Use '0.0.0.0' as host so it's accessible from containers on macOS Podman
   // Use 'pipe' for stdout/stderr so we can filter out expected errors from readiness checks
-  const proc = spawn('node', [builtServer, '--http', '--port', '3000', '--host', 'localhost', '--kill-existing'], {
+  const proc = spawn('node', [builtServer, '--http', '--port', '3000', '--host', '0.0.0.0', '--kill-existing'], {
     cwd: ROOT_DIR,
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true

@@ -105,6 +105,10 @@ function loadConfig(configPath) {
 function mergeConfig(config, cliArgs) {
   if (cliArgs.mcpUrl) {
     config.mcp.url = cliArgs.mcpUrl;
+  } else if (process.env.MCP_URL) {
+    // Allow MCP URL to be set via environment variable (useful for containers)
+    config.mcp = config.mcp || {};
+    config.mcp.url = process.env.MCP_URL;
   }
   if (cliArgs.runs) {
     config.audit.runs = cliArgs.runs;

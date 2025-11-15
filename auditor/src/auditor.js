@@ -118,7 +118,28 @@ async function runHealthChecks(config) {
           critical: check.critical || false
         });
       } else if (check.type === 'mcp') {
-        // Check if MCP server responds to list_tools
+        // Check if MCP server responds to tools/list
+        // First ensure we're initialized (only once, reuse session)
+        if (!mcpSessionId) {
+          try {
+            const initResult = await callMcpMethod('initialize', {
+              protocolVersion: '2025-06-18',
+              capabilities: {},
+              clientInfo: {
+                name: 'patternfly-mcp-auditor',
+                version: '1.0.0'
+              }
+            }, config);
+            // Store session ID if returned
+            if (initResult?.sessionId) {
+              mcpSessionId = initResult.sessionId;
+            }
+          } catch (initError) {
+            // If initialization fails, the tools/list will also fail, so throw
+            throw new Error(`MCP initialization failed: ${initError.message}`);
+          }
+        }
+        
         const mcpResponse = await callMcpMethod('tools/list', {}, config);
         const tools = mcpResponse?.tools || [];
         const hasTool = tools.some(t => t.name === check.tool);
@@ -133,7 +154,7 @@ async function runHealthChecks(config) {
       results.push({
         name: check.name,
         status: 'fail',
-        message: error.message,
+        message: error.message || String(error),
         critical: check.critical || false
       });
     }
@@ -163,28 +184,104 @@ async function runHealthChecks(config) {
 /**
  * Call MCP server method via HTTP
  */
+// Store session ID for MCP HTTP transport
+let mcpSessionId = null;
+
 async function callMcpMethod(method, params, config) {
   const url = config.mcp.url;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method,
-      params,
-      id: Date.now()
-    }),
-    timeout: config.mcp.timeout || 10000
-  });
-
-  if (!response.ok) {
-    throw new Error(`MCP request failed: ${response.status} ${response.statusText}`);
+  
+  // Prepare headers with required Accept header for MCP HTTP transport
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json, text/event-stream'
+  };
+  
+  // Add session ID if we have one
+  if (mcpSessionId) {
+    headers['mcp-session-id'] = mcpSessionId;
+  }
+  
+  let response;
+  const timeout = config.mcp?.timeout || 10000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method,
+        params,
+        id: Date.now()
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+  } catch (fetchError) {
+    clearTimeout(timeoutId);
+    if (fetchError.name === 'AbortError') {
+      throw new Error(`Request to ${url} timed out after ${timeout}ms`);
+    }
+    // node-fetch v3 error format: "request to <url> failed, reason: <reason>"
+    const errorMsg = fetchError.message || String(fetchError);
+    const reasonMatch = errorMsg.match(/reason: (.+)$/);
+    const reason = reasonMatch ? reasonMatch[1] : (fetchError.cause?.message || errorMsg);
+    throw new Error(`Failed to connect to MCP server at ${url}: ${reason}`);
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`MCP request failed: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`);
+  }
+
+  // Extract session ID from response headers if present
+  const sessionIdHeader = response.headers.get('mcp-session-id');
+  if (sessionIdHeader && !mcpSessionId) {
+    mcpSessionId = sessionIdHeader;
+  }
+
+  // Handle SSE response (text/event-stream)
+  const contentType = response.headers.get('content-type') || '';
+  let data;
+  
+  if (contentType.includes('text/event-stream')) {
+    // Parse SSE format
+    const text = await response.text();
+    const lines = text.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const jsonData = line.substring(6).trim();
+        if (jsonData) {
+          data = JSON.parse(jsonData);
+          break;
+        }
+      }
+    }
+    if (!data) {
+      throw new Error('Failed to parse SSE response');
+    }
+  } else {
+    // Regular JSON response
+    data = await response.json();
+  }
+
   if (data.error) {
+    // If it's a "not initialized" error, try to initialize first
+    if (data.error.message && data.error.message.includes('not initialized') && method !== 'initialize') {
+      // Initialize the session first
+      await callMcpMethod('initialize', {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: {
+          name: 'patternfly-mcp-auditor',
+          version: '1.0.0'
+        }
+      }, config);
+      // Retry the original call
+      return await callMcpMethod(method, params, config);
+    }
     throw new Error(`MCP error: ${data.error.message}`);
   }
 
