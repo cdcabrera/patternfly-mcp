@@ -52,9 +52,9 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Use this tool to answer any questions related to PatternFly components or documentation.
+      description: `Use the "usePatternFlyDocs" tool to answer any questions related to PatternFly components or documentation.
 
-        Listed below are URL links to ${options.docsHost ? 'llms.txt' : '.md'} PatternFly components and documentation:
+        Listed below are descriptive URL links to ${options.docsHost ? 'llms.txt' : '.md'} PatternFly components and documentation:
 
         ${options.docsHost
             ? `[@patternfly/react-core@6.0.0^](${join('react-core', '6.0.0', 'llms.txt')})`
@@ -67,9 +67,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         }
 
         To use the tool:
-        1. Pick the most suitable URL, or URLS, from the above list
-        2. Submit the URL or URLs as an array to the "urlList" argument.
-        3. Analyze the URLs listed in the ${options.docsHost ? 'llms.txt' : '.md'} file
+        1. Pick the most suitable URL, or URLS, from the above list and submit the URL or URLs as an array to the "urlList" argument.
+        2. Analyze the URLs listed in the ${options.docsHost ? 'llms.txt' : '.md'} file.
         4. Then fetch specific documentation pages relevant to the user's question with the subsequent tool call.`,
       inputSchema: {
         urlList: z.array(z.string()).describe('The array list of a URL or URLs to fetch documentation from')
