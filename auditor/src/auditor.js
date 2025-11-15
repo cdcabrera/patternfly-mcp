@@ -697,6 +697,8 @@ function analyzeConsistency(allResults, questions) {
   // Analyze each question
   for (const [questionId, runs] of Object.entries(byQuestion)) {
     const question = questions.find(q => q.id === questionId);
+    const isPfMcp = question && question.category === 'tooling';
+    
     const questionAnalysis = {
       toolConsistency: analyzeToolCalls(runs),
       answerConsistency: analyzeAnswers(runs, question),
@@ -704,11 +706,20 @@ function analyzeConsistency(allResults, questions) {
       overallConsistency: 0
     };
 
-    // Weighted average
-    questionAnalysis.overallConsistency =
-      (questionAnalysis.toolConsistency.consistency * 0.4) +
-      (questionAnalysis.answerConsistency.consistency * 0.4) +
-      (questionAnalysis.timingConsistency.consistency * 0.2);
+    // Weighted average - different weights for PF-MCP vs baseline
+    // PF-MCP: Tool (50%) + Answer (30%) + Timing (20%) - tool usage is most important
+    // Baseline: Tool (40%) + Answer (40%) + Timing (20%) - balanced approach
+    if (isPfMcp) {
+      questionAnalysis.overallConsistency =
+        (questionAnalysis.toolConsistency.consistency * 0.5) +
+        (questionAnalysis.answerConsistency.consistency * 0.3) +
+        (questionAnalysis.timingConsistency.consistency * 0.2);
+    } else {
+      questionAnalysis.overallConsistency =
+        (questionAnalysis.toolConsistency.consistency * 0.4) +
+        (questionAnalysis.answerConsistency.consistency * 0.4) +
+        (questionAnalysis.timingConsistency.consistency * 0.2);
+    }
 
     analysis.questions[questionId] = questionAnalysis;
 
@@ -815,8 +826,215 @@ function analyzeToolCalls(runs) {
 }
 
 /**
+ * Detect confusion/misinformation in PF-MCP tooling answers
+ */
+function detectConfusion(answers, question) {
+  if (!question || question.category !== 'tooling') {
+    return {
+      confusionScore: 0,
+      incorrectPatterns: [],
+      descriptionMisalignment: 0,
+      parameterConfusion: 0,
+      workflowConfusion: 0
+    };
+  }
+
+  const lowerAnswers = answers.map(a => a.toLowerCase());
+  const confusion = {
+    incorrectPatterns: [],
+    descriptionMisalignment: 0,
+    parameterConfusion: 0,
+    workflowConfusion: 0
+  };
+
+  // Detect confusion patterns based on expected tool
+  const expectedTool = question.expectedTool || '';
+  
+  if (expectedTool === 'usePatternFlyDocs') {
+    // ❌ Wrong: suggesting component names instead of URLs
+    const componentNamePatterns = [
+      /pass.*component.*name/i,
+      /component.*name/i,
+      /pass.*"button"/i,
+      /pass.*button/i,
+      /call.*with.*component/i
+    ];
+    
+    // ❌ Wrong: suggesting command-line usage
+    const cliPatterns = [
+      /command.*line/i,
+      /terminal.*command/i,
+      /cli/i,
+      /usePatternFlyDocs\s*$/i, // Just the tool name without parameters
+      /navigate.*directory/i,
+      /open.*terminal/i
+    ];
+    
+    // ✅ Correct: mentioning URLs
+    const correctPatterns = [
+      /url/i,
+      /urlList/i,
+      /array.*url/i,
+      /documentation.*url/i
+    ];
+    
+    let incorrectCount = 0;
+    let correctCount = 0;
+    
+    for (const answer of lowerAnswers) {
+      const hasIncorrect = componentNamePatterns.some(p => p.test(answer)) || 
+                          cliPatterns.some(p => p.test(answer));
+      const hasCorrect = correctPatterns.some(p => p.test(answer));
+      
+      if (hasIncorrect && !hasCorrect) {
+        incorrectCount++;
+        if (componentNamePatterns.some(p => p.test(answer))) {
+          confusion.incorrectPatterns.push('suggests component names instead of URLs');
+        }
+        if (cliPatterns.some(p => p.test(answer))) {
+          confusion.incorrectPatterns.push('suggests command-line usage');
+        }
+      }
+      if (hasCorrect) {
+        correctCount++;
+      }
+    }
+    
+    confusion.parameterConfusion = incorrectCount / answers.length;
+    confusion.workflowConfusion = incorrectCount / answers.length;
+    
+  } else if (expectedTool === 'componentSchemas') {
+    // ❌ Wrong: suggesting URLs or search functionality
+    const wrongPatterns = [
+      /url/i,
+      /search.*for/i,
+      /lookup/i,
+      /fetch.*url/i
+    ];
+    
+    // ✅ Correct: mentioning component name parameter
+    const correctPatterns = [
+      /componentName/i,
+      /component.*name/i,
+      /fuzzy.*match/i,
+      /pass.*component/i
+    ];
+    
+    let incorrectCount = 0;
+    let correctCount = 0;
+    
+    for (const answer of lowerAnswers) {
+      const hasIncorrect = wrongPatterns.some(p => p.test(answer));
+      const hasCorrect = correctPatterns.some(p => p.test(answer));
+      
+      if (hasIncorrect && !hasCorrect) {
+        incorrectCount++;
+        confusion.incorrectPatterns.push('suggests URLs or search instead of component name');
+      }
+      if (hasCorrect) {
+        correctCount++;
+      }
+    }
+    
+    confusion.parameterConfusion = incorrectCount / answers.length;
+    
+  } else if (expectedTool === 'searchPatternFlyDocs' || question.id === 'pf-mcp-1') {
+    // For tools/list or searchPatternFlyDocs - check if answers confuse it with content fetching
+    const wrongPatterns = [
+      /fetch.*content/i,
+      /get.*documentation.*content/i,
+      /returns.*content/i
+    ];
+    
+    // ✅ Correct: mentioning URLs only
+    const correctPatterns = [
+      /returns.*url/i,
+      /url.*only/i,
+      /does.*not.*fetch/i,
+      /search.*url/i
+    ];
+    
+    let incorrectCount = 0;
+    
+    for (const answer of lowerAnswers) {
+      const hasIncorrect = wrongPatterns.some(p => p.test(answer));
+      const hasCorrect = correctPatterns.some(p => p.test(answer));
+      
+      if (hasIncorrect && !hasCorrect) {
+        incorrectCount++;
+        confusion.incorrectPatterns.push('confuses URL search with content fetching');
+      }
+    }
+    
+    confusion.workflowConfusion = incorrectCount / answers.length;
+  }
+
+  // Calculate overall confusion score
+  const confusionScores = [
+    confusion.parameterConfusion,
+    confusion.workflowConfusion,
+    confusion.descriptionMisalignment
+  ].filter(s => s > 0);
+  
+  confusion.confusionScore = confusionScores.length > 0
+    ? confusionScores.reduce((a, b) => a + b, 0) / confusionScores.length
+    : 0;
+
+  // Deduplicate incorrect patterns
+  confusion.incorrectPatterns = [...new Set(confusion.incorrectPatterns)];
+
+  return confusion;
+}
+
+/**
+ * Calculate majority-rule consistency (resistant to outliers)
+ * Returns consistency based on how many runs match the majority pattern
+ */
+function calculateMajorityConsistency(answers, similarityThreshold = 0.7) {
+  if (answers.length <= 1) {
+    return { consistency: 1.0, majoritySize: answers.length };
+  }
+
+  // Simple similarity: compare answer lengths and key content
+  // Group answers by similarity
+  const groups = [];
+  
+  for (const answer of answers) {
+    let matched = false;
+    for (const group of groups) {
+      // Check if answer is similar to group representative
+      const rep = group[0];
+      const lengthDiff = Math.abs(answer.length - rep.length) / Math.max(answer.length, rep.length, 1);
+      const hasCommonWords = answer.split(/\s+/).filter(w => 
+        rep.split(/\s+/).includes(w) && w.length > 4
+      ).length / Math.max(answer.split(/\s+/).length, rep.split(/\s+/).length, 1);
+      
+      // If similar enough, add to group
+      if (lengthDiff < 0.5 && hasCommonWords > 0.3) {
+        group.push(answer);
+        matched = true;
+        break;
+      }
+    }
+    
+    if (!matched) {
+      groups.push([answer]);
+    }
+  }
+
+  // Find largest group (majority)
+  const majorityGroup = groups.reduce((max, group) => 
+    group.length > max.length ? group : max, groups[0] || []);
+  
+  const majoritySize = majorityGroup.length;
+  const consistency = majoritySize / answers.length;
+
+  return { consistency, majoritySize, totalRuns: answers.length };
+}
+
+/**
  * Analyze answer consistency
- * For PF-MCP questions, also checks if answers align with tool descriptions
+ * For PF-MCP questions, also checks if answers align with tool descriptions and detects confusion
  */
 function analyzeAnswers(runs, question = null) {
   if (runs.length === 0) {
@@ -886,38 +1104,56 @@ function analyzeAnswers(runs, question = null) {
       // Combine tool mention and description alignment (weighted)
       const pfMcpScore = (toolMentionScore * 0.6) + (descriptionAlignmentScore * 0.4);
       
-      // Also check length consistency
-      const lengths = answers.map(a => a.length);
-      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
-      const variance = calculateVariance(lengths);
-      const lengthConsistency = variance < avgLength * 0.3 ? 1.0 : Math.max(0, 1 - (variance / avgLength));
+      // Use majority-rule consistency (resistant to outliers)
+      const majorityConsistency = calculateMajorityConsistency(answers);
       
-      // Combined score: 70% PF-MCP alignment, 30% length consistency
-      const consistency = (pfMcpScore * 0.7) + (lengthConsistency * 0.3);
+      // Detect confusion/misinformation
+      const confusion = detectConfusion(answers, question);
+      
+      // Combined score: 60% majority consistency, 40% PF-MCP alignment
+      // But reduce score if there's high confusion (consistently wrong answers)
+      let consistency = (majorityConsistency.consistency * 0.6) + (pfMcpScore * 0.4);
+      
+      // Penalize for confusion: if confusion is high, reduce consistency score
+      if (confusion.confusionScore > 0.5) {
+        // High confusion means answers are consistently wrong
+        consistency = consistency * (1 - confusion.confusionScore * 0.5); // Reduce by up to 50%
+      }
       
       return {
-        consistency,
-        isConsistent: consistency >= 0.7,
-        answerLengths: lengths,
-        variance,
+        consistency: Math.max(0, Math.min(1, consistency)), // Clamp to 0-1
+        isConsistent: consistency >= 0.7 && confusion.confusionScore < 0.5,
+        answerLengths: answers.map(a => a.length),
+        variance: calculateVariance(answers.map(a => a.length)),
         toolMentionScore,
         descriptionAlignmentScore,
-        pfMcpAlignment: pfMcpScore
+        pfMcpAlignment: pfMcpScore,
+        majorityConsistency: majorityConsistency.consistency,
+        majoritySize: majorityConsistency.majoritySize,
+        totalRuns: majorityConsistency.totalRuns,
+        confusion: confusion
       };
     }
   }
 
   // Fallback: Simple consistency check based on answer length (for baseline questions)
+  // Use majority-rule for baseline questions too
+  const majorityConsistency = calculateMajorityConsistency(answers);
   const lengths = answers.map(a => a.length);
   const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
   const variance = calculateVariance(lengths);
-  const consistency = variance < avgLength * 0.3 ? 1.0 : Math.max(0, 1 - (variance / avgLength));
+  const lengthConsistency = variance < avgLength * 0.3 ? 1.0 : Math.max(0, 1 - (variance / avgLength));
+  
+  // Combine majority consistency with length consistency
+  const consistency = (majorityConsistency.consistency * 0.7) + (lengthConsistency * 0.3);
 
   return {
     consistency,
     isConsistent: consistency >= 0.7,
     answerLengths: lengths,
-    variance
+    variance,
+    majorityConsistency: majorityConsistency.consistency,
+    majoritySize: majorityConsistency.majoritySize
   };
 }
 

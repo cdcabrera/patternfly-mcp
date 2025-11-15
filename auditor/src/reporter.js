@@ -117,7 +117,14 @@ function generateMarkdownReport(auditResults, config) {
       const question = questions.find(q => q.id === questionId);
       const category = question?.category || 'unknown';
       const consistency = (questionAnalysis.overallConsistency * 100).toFixed(1);
-      const status = questionAnalysis.overallConsistency >= 0.8 ? '✅ Consistent' : '❌ Inconsistent';
+      let status = questionAnalysis.overallConsistency >= 0.8 ? '✅ Consistent' : '❌ Inconsistent';
+      
+      // Add confusion warning if high confusion detected
+      if (questionAnalysis.answerConsistency.confusion && 
+          questionAnalysis.answerConsistency.confusion.confusionScore > 0.5) {
+        status += ' ⚠️ Confused';
+      }
+      
       report += `| ${questionId} | ${category} | ${consistency}% | ${status} |\n`;
     }
     report += `\n`;
@@ -132,6 +139,27 @@ function generateMarkdownReport(auditResults, config) {
       report += `- **Answer Consistency**: ${(questionAnalysis.answerConsistency.consistency * 100).toFixed(1)}% ${questionAnalysis.answerConsistency.isConsistent ? '✅' : '❌'}\n`;
       if (questionAnalysis.answerConsistency.pfMcpAlignment !== undefined) {
         report += `  - PF-MCP Alignment: ${(questionAnalysis.answerConsistency.pfMcpAlignment * 100).toFixed(1)}% (Tool mentions: ${(questionAnalysis.answerConsistency.toolMentionScore * 100).toFixed(1)}%, Description match: ${(questionAnalysis.answerConsistency.descriptionAlignmentScore * 100).toFixed(1)}%)\n`;
+      }
+      if (questionAnalysis.answerConsistency.majorityConsistency !== undefined) {
+        report += `  - Majority Consistency: ${(questionAnalysis.answerConsistency.majorityConsistency * 100).toFixed(1)}% (${questionAnalysis.answerConsistency.majoritySize || 0}/${questionAnalysis.answerConsistency.totalRuns || 0} runs)\n`;
+      }
+      if (questionAnalysis.answerConsistency.confusion && questionAnalysis.answerConsistency.confusion.confusionScore > 0) {
+        const confusion = questionAnalysis.answerConsistency.confusion;
+        const confusionPercent = (confusion.confusionScore * 100).toFixed(1);
+        const confusionIcon = confusion.confusionScore > 0.5 ? '⚠️' : 'ℹ️';
+        report += `  - ${confusionIcon} **Confusion Score**: ${confusionPercent}%\n`;
+        if (confusion.incorrectPatterns && confusion.incorrectPatterns.length > 0) {
+          report += `    - Incorrect Patterns Detected:\n`;
+          for (const pattern of confusion.incorrectPatterns) {
+            report += `      - ${pattern}\n`;
+          }
+        }
+        if (confusion.parameterConfusion > 0) {
+          report += `    - Parameter Confusion: ${(confusion.parameterConfusion * 100).toFixed(1)}%\n`;
+        }
+        if (confusion.workflowConfusion > 0) {
+          report += `    - Workflow Confusion: ${(confusion.workflowConfusion * 100).toFixed(1)}%\n`;
+        }
       }
       report += `- **Timing Consistency**: ${(questionAnalysis.timingConsistency.consistency * 100).toFixed(1)}% ${questionAnalysis.timingConsistency.isConsistent ? '✅' : '❌'}\n`;
 
@@ -251,12 +279,40 @@ function generateMarkdownTable(auditResults, config) {
     const avgDuration = questionAnalysis.timingConsistency.avgDuration
       ? `${questionAnalysis.timingConsistency.avgDuration.toFixed(0)}ms`
       : 'N/A';
-    const status = questionAnalysis.overallConsistency >= 0.8 ? '✅' : '❌';
+    let status = questionAnalysis.overallConsistency >= 0.8 ? '✅' : '❌';
+    
+    // Add confusion warning if high confusion detected
+    if (questionAnalysis.answerConsistency.confusion && 
+        questionAnalysis.answerConsistency.confusion.confusionScore > 0.5) {
+      status += ' ⚠️';
+    }
 
     report += `| ${questionId} | ${category} | ${prompt} | ${consistency}% | ${toolCalls} | ${avgDuration} | ${status} |\n`;
   }
 
   report += `\n`;
+
+  // Confusion Analysis Section (if any confusion detected)
+  const confusedQuestions = Object.entries(analysis.questions)
+    .filter(([_, qa]) => qa.answerConsistency.confusion && qa.answerConsistency.confusion.confusionScore > 0.3);
+  
+  if (confusedQuestions.length > 0) {
+    report += `## ⚠️ Confusion Analysis\n\n`;
+    report += `Questions with detected confusion/misinformation:\n\n`;
+    report += `| Question ID | Confusion Score | Incorrect Patterns |\n`;
+    report += `|------------|-----------------|-------------------|\n`;
+    
+    for (const [questionId, questionAnalysis] of confusedQuestions) {
+      const confusion = questionAnalysis.answerConsistency.confusion;
+      const confusionPercent = (confusion.confusionScore * 100).toFixed(1);
+      const patterns = confusion.incorrectPatterns && confusion.incorrectPatterns.length > 0
+        ? confusion.incorrectPatterns.join('; ')
+        : 'None detected';
+      
+      report += `| ${questionId} | ${confusionPercent}% | ${patterns} |\n`;
+    }
+    report += `\n`;
+  }
 
   // Run-by-run breakdown
   report += `## Run-by-Run Breakdown\n\n`;
