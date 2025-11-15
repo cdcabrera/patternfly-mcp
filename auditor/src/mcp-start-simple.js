@@ -155,8 +155,8 @@ async function main() {
     process.exit(1);
   }
   
-  // Start server in background
-  const proc = spawn('node', [builtServer, '--http', '--port', '3000', '--host', 'localhost'], {
+  // Start server in background with --kill-existing flag for safety
+  const proc = spawn('node', [builtServer, '--http', '--port', '3000', '--host', 'localhost', '--kill-existing'], {
     cwd: ROOT_DIR,
     stdio: 'inherit',
     detached: true

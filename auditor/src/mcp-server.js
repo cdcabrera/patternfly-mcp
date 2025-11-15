@@ -27,7 +27,7 @@ function getMcpServerCommand() {
   if (existsSync(builtServer)) {
     return {
       command: 'node',
-      args: [builtServer, '--http', '--port', '3000', '--host', 'localhost']
+      args: [builtServer, '--http', '--port', '3000', '--host', 'localhost', '--kill-existing']
     };
   }
 
@@ -38,7 +38,7 @@ function getMcpServerCommand() {
   // Fallback to npx (if published)
   return {
     command: 'npx',
-    args: ['@patternfly/patternfly-mcp', '--http', '--port', '3000', '--host', 'localhost']
+    args: ['@patternfly/patternfly-mcp', '--http', '--port', '3000', '--host', 'localhost', '--kill-existing']
   };
 }
 
