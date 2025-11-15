@@ -45,7 +45,7 @@ function getDefaultPfMcpQuestions() {
   return [
     {
       id: 'pf-mcp-1',
-      prompt: 'What tools are available in the PatternFly MCP server? List all available tools.',
+      prompt: 'What tools and resources are available in the PatternFly MCP server? List all available tools and resources.',
       category: 'tooling',
       expectedTool: 'usePatternFlyDocs'
     },
@@ -593,9 +593,14 @@ async function runAuditRun(runNumber, questions, model, config) {
 
       // Build prompt with tool results and conciseness constraint
       // IMPORTANT: Only pass question text and tool results to model - never pass source code or file contents
-      // Note: PatternFly context is available via MCP resource (patternfly://context) - models should discover and use it
       const conciseEnabled = config.model?.concise !== false; // Default to true
       let prompt = question.prompt;
+
+      // Add generic hint about MCP resources for PF-MCP questions
+      // This helps models discover available resources without being too specific
+      if (question.category === 'tooling') {
+        prompt = `${prompt}\n\nNote: You may want to check available MCP resources for additional context about this server.`;
+      }
 
       if (toolResults) {
         // Sanitize toolResults to ensure no source code leaks through
