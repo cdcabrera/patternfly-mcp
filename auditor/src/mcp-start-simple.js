@@ -7,15 +7,15 @@
  * This is a simpler alternative to the full mcp-server.js management script.
  */
 
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const ROOT_DIR = dirname(dirname(__dirname)); // Go up from auditor/src/ to root
-
-import { existsSync } from 'fs';
+const PID_FILE = join(ROOT_DIR, '.mcp-server.pid');
 
 function waitForServer(maxWait = 10000) {
   return new Promise((resolve) => {
@@ -69,7 +69,68 @@ function waitForServer(maxWait = 10000) {
   });
 }
 
+/**
+ * Kill any existing MCP server processes
+ */
+async function killExistingServers() {
+  console.log('🧹 Cleaning up any existing MCP server instances...');
+  
+  // Kill any processes on port 3000 first (most reliable)
+  try {
+    execSync('lsof -ti:3000 | xargs kill -9 2>/dev/null || true', { stdio: 'ignore' });
+  } catch (e) {
+    // Ignore errors
+  }
+  
+  // Kill any node processes running the MCP server
+  try {
+    execSync('pkill -9 -f "node.*dist/index.js.*--http" 2>/dev/null || true', { stdio: 'ignore' });
+  } catch (e) {
+    // Ignore errors
+  }
+  
+  // Try to stop via PID file
+  if (existsSync(PID_FILE)) {
+    try {
+      const pid = parseInt(readFileSync(PID_FILE, 'utf8').trim(), 10);
+      if (!isNaN(pid) && isProcessRunning(pid)) {
+        try {
+          process.kill(pid, 'SIGTERM');
+          // Wait for graceful shutdown
+          await new Promise(resolve => setTimeout(resolve, 500));
+          if (isProcessRunning(pid)) {
+            process.kill(pid, 'SIGKILL');
+          }
+        } catch (e) {
+          // Process doesn't exist
+        }
+      }
+      unlinkSync(PID_FILE);
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+  
+  // Give processes a moment to fully die
+  await new Promise(resolve => setTimeout(resolve, 500));
+}
+
+/**
+ * Check if a process is running
+ */
+function isProcessRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function main() {
+  // Kill any existing servers first
+  await killExistingServers();
+  
   console.log('🚀 Starting MCP server...');
   
   // Check if server is built
