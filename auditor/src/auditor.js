@@ -293,9 +293,9 @@ async function callMcpMethod(method, params, config) {
     throw new Error(`MCP error: ${data.error.message}`);
   }
 
-  // Debug: Log response for tools/list to verify structure
-  if (method === 'tools/list') {
-    console.log(`   🔍 Debug tools/list response:`, JSON.stringify(data, null, 2).substring(0, 500));
+  // Debug: Log response for tools/list to verify structure (only if verbose or no tools found)
+  if (method === 'tools/list' && (!data.result?.tools || data.result.tools.length === 0)) {
+    console.warn(`   ⚠️  tools/list returned no tools. Full response:`, JSON.stringify(data, null, 2));
   }
 
   return data.result;

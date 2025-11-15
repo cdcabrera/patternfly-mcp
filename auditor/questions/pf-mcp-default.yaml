@@ -6,14 +6,14 @@ questions:
     prompt: "What tools are available in the PatternFly MCP server? List all available tools."
     category: "tooling"
     expectedTool: "usePatternFlyDocs"
-  
+
   - id: "pf-mcp-2"
     prompt: "How do I use the usePatternFlyDocs tool to fetch PatternFly documentation?"
     category: "tooling"
     expectedTool: "usePatternFlyDocs"
-  
+
   - id: "pf-mcp-3"
-    prompt: "What is the componentSchemas tool and how do I use it to get component prop definitions?"
+    prompt: "What is the pf componentSchemas tool and how do I use it to get component prop definitions?"
     category: "tooling"
     expectedTool: "componentSchemas"
 
