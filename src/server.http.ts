@@ -71,7 +71,11 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       console.log(`PatternFly MCP server running on http://${options.host || 'localhost'}:${options.port || 3000}`);
       resolve();
     });
-    server.on('error', reject);
+    server.on('error', (error) => {
+      // Log error for debugging
+      console.error('HTTP server error:', error);
+      reject(error);
+    });
   });
 };
 
