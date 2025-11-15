@@ -10,6 +10,7 @@ interface CliOptions {
   host?: string;
   allowedOrigins?: string[];
   allowedHosts?: string[];
+  killExisting?: boolean;
 }
 
 /**
@@ -85,7 +86,8 @@ const parseCliOptions = (): CliOptions => {
     port: getArgValue('--port', 3000),
     host: getArgValue('--host', 'localhost'),
     allowedOrigins: getArgValue('--allowed-origins')?.split(','),
-    allowedHosts: getArgValue('--allowed-hosts')?.split(',')
+    allowedHosts: getArgValue('--allowed-hosts')?.split(','),
+    killExisting: process.argv.includes('--kill-existing')
   };
 
   // Validate options

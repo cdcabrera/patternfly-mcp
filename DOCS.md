@@ -107,6 +107,7 @@ npx @patternfly/patternfly-mcp --http \
 | `--allowed-origins` | CORS allowed origins (comma-separated) | none | `--allowed-origins "https://app.com"` |
 | `--allowed-hosts` | Allowed hosts for DNS rebinding protection | none | `--allowed-hosts "localhost,127.0.0.1"` |
 | `--docs-host` | Enable docs-host mode (local llms.txt) | false | `--docs-host` |
+| `--kill-existing` | Kill existing PatternFly MCP server on same port | false | `--kill-existing` |
 
 **Examples**:
 
@@ -122,6 +123,9 @@ npx @patternfly/patternfly-mcp --http \
   --port 3000 \
   --allowed-origins "https://app.com,https://admin.app.com" \
   --allowed-hosts "localhost,127.0.0.1"
+
+# HTTP mode with auto-kill existing instance
+npx @patternfly/patternfly-mcp --http --kill-existing
 ```
 
 ## Tools
@@ -468,7 +472,10 @@ If an entry fails to load, an inline error message is included for that entry.
 
 ### HTTP Transport Issues
 
-- **Port already in use**: Change the port with `--port` flag
+- **Port already in use**: 
+  - If it's another PatternFly MCP server instance, use `--kill-existing` flag
+  - Or change the port with `--port` flag
+  - The server will show helpful error messages with PID and command
 - **CORS errors**: Add your origin to `--allowed-origins`
 - **Connection refused**: Check `--host` setting and firewall rules
 

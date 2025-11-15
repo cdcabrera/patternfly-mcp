@@ -51,6 +51,7 @@ npx @patternfly/patternfly-mcp --http --port 3000
 | `--allowed-origins` | CORS allowed origins (comma-separated) | none |
 | `--allowed-hosts` | Allowed hosts for DNS rebinding protection | none |
 | `--docs-host` | Enable docs-host mode (local llms.txt) | false |
+| `--kill-existing` | Kill existing PatternFly MCP server on same port | false |
 
 **Examples**:
 
@@ -66,6 +67,9 @@ npx @patternfly/patternfly-mcp --http \
   --port 3000 \
   --allowed-origins "https://app.com" \
   --allowed-hosts "localhost,127.0.0.1"
+
+# HTTP mode with auto-kill existing instance
+npx @patternfly/patternfly-mcp --http --kill-existing
 ```
 
 ## Tools
