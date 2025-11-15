@@ -601,6 +601,7 @@ async function runAuditRun(runNumber, questions, model, config) {
         category: question.category,
         answer: modelResponse.text,
         toolCalls,
+        toolResults: toolResults || null, // Store tool results for consistency analysis
         duration,
         timestamp: new Date().toISOString(),
         success: true
@@ -695,9 +696,10 @@ function analyzeConsistency(allResults, questions) {
 
   // Analyze each question
   for (const [questionId, runs] of Object.entries(byQuestion)) {
+    const question = questions.find(q => q.id === questionId);
     const questionAnalysis = {
       toolConsistency: analyzeToolCalls(runs),
-      answerConsistency: analyzeAnswers(runs),
+      answerConsistency: analyzeAnswers(runs, question),
       timingConsistency: analyzeTiming(runs),
       overallConsistency: 0
     };
@@ -814,8 +816,9 @@ function analyzeToolCalls(runs) {
 
 /**
  * Analyze answer consistency
+ * For PF-MCP questions, also checks if answers align with tool descriptions
  */
-function analyzeAnswers(runs) {
+function analyzeAnswers(runs, question = null) {
   if (runs.length === 0) {
     return { consistency: 1.0, isConsistent: true };
   }
@@ -825,8 +828,86 @@ function analyzeAnswers(runs) {
     return { consistency: 0, isConsistent: false };
   }
 
-  // Simple consistency check based on answer length
-  // Real implementation would use semantic similarity
+  // For PF-MCP questions, check if answers mention correct tools and align with descriptions
+  if (question && question.category === 'tooling') {
+    // Get tool results from first run (they should be the same across runs)
+    const firstRun = runs.find(r => r.toolResults);
+    if (firstRun && firstRun.toolResults) {
+      // Extract tool names from tool results
+      const toolNames = [];
+      const toolDescriptions = [];
+      
+      // Parse tool results to extract tool info
+      if (firstRun.toolResults.includes('Available PatternFly MCP tools:')) {
+        const lines = firstRun.toolResults.split('\n');
+        for (const line of lines) {
+          if (line.trim().startsWith('- ')) {
+            const match = line.match(/- (\w+):\s*(.+)/);
+            if (match) {
+              toolNames.push(match[1]);
+              toolDescriptions.push(match[2]);
+            }
+          }
+        }
+      }
+      
+      // Check if answers mention the correct tools
+      let toolMentionScore = 0;
+      let descriptionAlignmentScore = 0;
+      
+      if (toolNames.length > 0) {
+        // Check if each answer mentions the expected tools
+        const mentionScores = answers.map(answer => {
+          const lowerAnswer = answer.toLowerCase();
+          const mentionedTools = toolNames.filter(tool => 
+            lowerAnswer.includes(tool.toLowerCase())
+          );
+          return mentionedTools.length / toolNames.length;
+        });
+        toolMentionScore = mentionScores.reduce((a, b) => a + b, 0) / mentionScores.length;
+        
+        // Check if answers align with tool descriptions (simple keyword matching)
+        const alignmentScores = answers.map(answer => {
+          const lowerAnswer = answer.toLowerCase();
+          let matches = 0;
+          for (const desc of toolDescriptions) {
+            // Extract key terms from description (words > 3 chars)
+            const keyTerms = desc.toLowerCase()
+              .split(/\s+/)
+              .filter(term => term.length > 3 && !['the', 'and', 'for', 'with'].includes(term));
+            const foundTerms = keyTerms.filter(term => lowerAnswer.includes(term));
+            matches += foundTerms.length / Math.max(keyTerms.length, 1);
+          }
+          return matches / Math.max(toolDescriptions.length, 1);
+        });
+        descriptionAlignmentScore = alignmentScores.reduce((a, b) => a + b, 0) / alignmentScores.length;
+      }
+      
+      // Combine tool mention and description alignment (weighted)
+      const pfMcpScore = (toolMentionScore * 0.6) + (descriptionAlignmentScore * 0.4);
+      
+      // Also check length consistency
+      const lengths = answers.map(a => a.length);
+      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+      const variance = calculateVariance(lengths);
+      const lengthConsistency = variance < avgLength * 0.3 ? 1.0 : Math.max(0, 1 - (variance / avgLength));
+      
+      // Combined score: 70% PF-MCP alignment, 30% length consistency
+      const consistency = (pfMcpScore * 0.7) + (lengthConsistency * 0.3);
+      
+      return {
+        consistency,
+        isConsistent: consistency >= 0.7,
+        answerLengths: lengths,
+        variance,
+        toolMentionScore,
+        descriptionAlignmentScore,
+        pfMcpAlignment: pfMcpScore
+      };
+    }
+  }
+
+  // Fallback: Simple consistency check based on answer length (for baseline questions)
   const lengths = answers.map(a => a.length);
   const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
   const variance = calculateVariance(lengths);

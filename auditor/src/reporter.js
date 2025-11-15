@@ -130,6 +130,9 @@ function generateMarkdownReport(auditResults, config) {
       report += `- **Overall Consistency**: ${(questionAnalysis.overallConsistency * 100).toFixed(1)}%\n`;
       report += `- **Tool Consistency**: ${(questionAnalysis.toolConsistency.consistency * 100).toFixed(1)}% ${questionAnalysis.toolConsistency.isConsistent ? '✅' : '❌'}\n`;
       report += `- **Answer Consistency**: ${(questionAnalysis.answerConsistency.consistency * 100).toFixed(1)}% ${questionAnalysis.answerConsistency.isConsistent ? '✅' : '❌'}\n`;
+      if (questionAnalysis.answerConsistency.pfMcpAlignment !== undefined) {
+        report += `  - PF-MCP Alignment: ${(questionAnalysis.answerConsistency.pfMcpAlignment * 100).toFixed(1)}% (Tool mentions: ${(questionAnalysis.answerConsistency.toolMentionScore * 100).toFixed(1)}%, Description match: ${(questionAnalysis.answerConsistency.descriptionAlignmentScore * 100).toFixed(1)}%)\n`;
+      }
       report += `- **Timing Consistency**: ${(questionAnalysis.timingConsistency.consistency * 100).toFixed(1)}% ${questionAnalysis.timingConsistency.isConsistent ? '✅' : '❌'}\n`;
 
       if (questionAnalysis.toolConsistency.toolCalls.length > 0) {
