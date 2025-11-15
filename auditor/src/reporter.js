@@ -61,7 +61,9 @@ export async function generateReports(auditResults, config) {
  */
 function generateMarkdownReport(auditResults, config) {
   const { healthChecks, questions, results, analysis, timestamp } = auditResults;
-  const consistencyScore = (analysis.overall.consistencyScore * 100).toFixed(1);
+  const pfMcpScore = (analysis.pfMcp?.consistencyScore * 100 || 0).toFixed(1);
+  const overallScore = (analysis.overall.consistencyScore * 100).toFixed(1);
+  const baselineScore = (analysis.baseline?.consistencyScore * 100 || 0).toFixed(1);
   const consistentRuns = analysis.overall.consistentRuns;
   const inconsistentRuns = analysis.overall.inconsistentRuns;
   const totalRuns = config.audit.runs;
@@ -83,11 +85,22 @@ function generateMarkdownReport(auditResults, config) {
     report += `\n`;
   }
 
-  // Overall Results
-  report += `## Overall Results\n\n`;
-  report += `- **Consistency Score**: ${consistencyScore}%\n`;
+  // Consistency Scores (PF-MCP is primary focus)
+  report += `## Consistency Scores\n\n`;
+  report += `### 🎯 PF-MCP Consistency (Primary Focus)\n\n`;
+  report += `- **Score**: ${pfMcpScore}%\n`;
+  report += `- **Questions**: ${analysis.pfMcp?.totalQuestions || 0} PF-MCP questions\n`;
+  report += `- **Status**: ${parseFloat(pfMcpScore) >= 80 ? '✅ Consistent' : '❌ Needs Attention'}\n\n`;
+  
+  report += `### 📊 Overall Consistency (All Questions)\n\n`;
+  report += `- **Score**: ${overallScore}%\n`;
+  report += `- **Questions**: ${analysis.overall.totalQuestions} total questions\n`;
   report += `- **Consistent Runs**: ${consistentRuns}/${totalRuns}\n`;
   report += `- **Inconsistent Runs**: ${inconsistentRuns}/${totalRuns}\n\n`;
+  
+  report += `### 📈 Baseline Consistency (Non-PF-MCP Questions)\n\n`;
+  report += `- **Score**: ${baselineScore}%\n`;
+  report += `- **Questions**: ${analysis.baseline?.totalQuestions || 0} baseline questions\n\n`;
 
   // Consistency Analysis
   report += `## Consistency Analysis\n\n`;
@@ -205,10 +218,17 @@ function generateMarkdownReport(auditResults, config) {
  */
 function generateMarkdownTable(auditResults, config) {
   const { questions, results, analysis } = auditResults;
-  const consistencyScore = (analysis.overall.consistencyScore * 100).toFixed(1);
+  const pfMcpScore = (analysis.pfMcp?.consistencyScore * 100 || 0).toFixed(1);
+  const overallScore = (analysis.overall.consistencyScore * 100).toFixed(1);
+  const baselineScore = (analysis.baseline?.consistencyScore * 100 || 0).toFixed(1);
 
   let report = `# PatternFly MCP Audit Report - Table View\n\n`;
-  report += `**Consistency Score**: ${consistencyScore}%\n\n`;
+  report += `## Consistency Scores\n\n`;
+  report += `| Category | Score | Questions | Status |\n`;
+  report += `|----------|-------|-----------|--------|\n`;
+  report += `| **🎯 PF-MCP (Primary)** | **${pfMcpScore}%** | ${analysis.pfMcp?.totalQuestions || 0} | ${parseFloat(pfMcpScore) >= 80 ? '✅' : '❌'} |\n`;
+  report += `| 📊 Overall (All) | ${overallScore}% | ${analysis.overall.totalQuestions} | ${parseFloat(overallScore) >= 80 ? '✅' : '❌'} |\n`;
+  report += `| 📈 Baseline | ${baselineScore}% | ${analysis.baseline?.totalQuestions || 0} | ${parseFloat(baselineScore) >= 80 ? '✅' : '❌'} |\n\n`;
 
   // Main results table
   report += `## Question Results\n\n`;

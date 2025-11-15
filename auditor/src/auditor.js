@@ -485,11 +485,75 @@ async function runAuditRun(runNumber, questions, model, config) {
     try {
       console.log(`   [${i + 1}/${questions.length}] ${question.id}: ${question.prompt.substring(0, 50)}...`);
 
-      // Build prompt with conciseness constraint (if enabled)
+      // For PF-MCP questions, call MCP tools first to get actual data
+      let toolCalls = [];
+      let toolResults = '';
+      
+      if (question.category === 'tooling') {
+        try {
+          // Get available tools first
+          const toolsList = await callMcpMethod('tools/list', {}, config);
+          const tools = toolsList?.tools || [];
+          
+          // Call appropriate tool based on question
+          if (question.id === 'pf-mcp-1' || question.prompt.includes('tools are available')) {
+            // List tools question - use tools/list result
+            toolResults = `Available PatternFly MCP tools:\n${tools.map(t => `- ${t.name}: ${t.description || 'No description'}`).join('\n')}`;
+            toolCalls.push({
+              tool: 'tools/list',
+              args: {},
+              timestamp: Date.now()
+            });
+          } else if (question.id === 'pf-mcp-2' || question.prompt.includes('usePatternFlyDocs')) {
+            // Example: call usePatternFlyDocs with a sample URL
+            const toolResult = await callMcpMethod('tools/call', {
+              name: 'usePatternFlyDocs',
+              arguments: {
+                urlList: ['https://www.patternfly.org/v4/components/about-modal']
+              }
+            }, config);
+            // Extract content from tool result
+            const content = toolResult?.content?.[0]?.text || JSON.stringify(toolResult, null, 2);
+            toolResults = `Tool result from usePatternFlyDocs:\n${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}`;
+            toolCalls.push({
+              tool: 'usePatternFlyDocs',
+              args: { urlList: ['https://www.patternfly.org/v4/components/about-modal'] },
+              timestamp: Date.now()
+            });
+          } else if (question.id === 'pf-mcp-3' || question.prompt.includes('componentSchemas')) {
+            // Example: call componentSchemas
+            const toolResult = await callMcpMethod('tools/call', {
+              name: 'componentSchemas',
+              arguments: {
+                componentName: 'Button'
+              }
+            }, config);
+            // Extract content from tool result
+            const content = toolResult?.content?.[0]?.text || JSON.stringify(toolResult, null, 2);
+            toolResults = `Tool result from componentSchemas:\n${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}`;
+            toolCalls.push({
+              tool: 'componentSchemas',
+              args: { componentName: 'Button' },
+              timestamp: Date.now()
+            });
+          }
+        } catch (toolError) {
+          console.warn(`   ⚠️  Tool call failed for ${question.id}: ${toolError.message}`);
+          // Continue without tool results - model will answer from its knowledge
+        }
+      }
+
+      // Build prompt with tool results and conciseness constraint
       const conciseEnabled = config.model?.concise !== false; // Default to true
-      const prompt = conciseEnabled
-        ? `Please be concise in your response. ${question.prompt}`
-        : question.prompt;
+      let prompt = question.prompt;
+      
+      if (toolResults) {
+        prompt = `${prompt}\n\nHere is the actual data from the PatternFly MCP server:\n${toolResults}\n\nPlease use this information to answer the question.`;
+      }
+      
+      if (conciseEnabled) {
+        prompt = `Please be concise in your response. ${prompt}`;
+      }
 
       // Send question to model
       const modelResponse = await Promise.race([
@@ -504,9 +568,6 @@ async function runAuditRun(runNumber, questions, model, config) {
 
       const endTime = Date.now();
       const duration = endTime - startTime;
-
-      // Extract tool calls from response (simplified - real implementation would parse model output)
-      const toolCalls = extractToolCalls(modelResponse.text, config);
 
       results.push({
         runNumber,
@@ -571,7 +632,7 @@ function extractToolCalls(text, config) {
 /**
  * Analyze consistency across runs
  */
-function analyzeConsistency(allResults) {
+function analyzeConsistency(allResults, questions) {
   // Group results by question ID
   const byQuestion = {};
   for (const result of allResults) {
@@ -581,12 +642,28 @@ function analyzeConsistency(allResults) {
     byQuestion[result.questionId].push(result);
   }
 
+  // Separate PF-MCP and baseline questions
+  const pfMcpQuestionIds = questions.filter(q => q.category === 'tooling').map(q => q.id);
+  const baselineQuestionIds = questions.filter(q => q.category !== 'tooling').map(q => q.id);
+
   const analysis = {
     overall: {
       consistencyScore: 0,
       consistentRuns: 0,
       inconsistentRuns: 0,
       totalQuestions: Object.keys(byQuestion).length
+    },
+    pfMcp: {
+      consistencyScore: 0,
+      consistentRuns: 0,
+      inconsistentRuns: 0,
+      totalQuestions: pfMcpQuestionIds.length
+    },
+    baseline: {
+      consistencyScore: 0,
+      consistentRuns: 0,
+      inconsistentRuns: 0,
+      totalQuestions: baselineQuestionIds.length
     },
     questions: {}
   };
@@ -611,17 +688,49 @@ function analyzeConsistency(allResults) {
     // Count consistent vs inconsistent
     if (questionAnalysis.overallConsistency >= 0.8) {
       analysis.overall.consistentRuns++;
+      if (pfMcpQuestionIds.includes(questionId)) {
+        analysis.pfMcp.consistentRuns++;
+      } else if (baselineQuestionIds.includes(questionId)) {
+        analysis.baseline.consistentRuns++;
+      }
     } else {
       analysis.overall.inconsistentRuns++;
+      if (pfMcpQuestionIds.includes(questionId)) {
+        analysis.pfMcp.inconsistentRuns++;
+      } else if (baselineQuestionIds.includes(questionId)) {
+        analysis.baseline.inconsistentRuns++;
+      }
     }
   }
 
-  // Calculate overall score
+  // Calculate overall score (all questions)
   if (analysis.overall.totalQuestions > 0) {
     analysis.overall.consistencyScore =
       Object.values(analysis.questions)
         .reduce((sum, q) => sum + q.overallConsistency, 0) /
       analysis.overall.totalQuestions;
+  }
+
+  // Calculate PF-MCP score (primary focus)
+  if (analysis.pfMcp.totalQuestions > 0) {
+    const pfMcpScores = pfMcpQuestionIds
+      .filter(id => analysis.questions[id])
+      .map(id => analysis.questions[id].overallConsistency);
+    if (pfMcpScores.length > 0) {
+      analysis.pfMcp.consistencyScore =
+        pfMcpScores.reduce((sum, score) => sum + score, 0) / pfMcpScores.length;
+    }
+  }
+
+  // Calculate baseline score
+  if (analysis.baseline.totalQuestions > 0) {
+    const baselineScores = baselineQuestionIds
+      .filter(id => analysis.questions[id])
+      .map(id => analysis.questions[id].overallConsistency);
+    if (baselineScores.length > 0) {
+      analysis.baseline.consistencyScore =
+        baselineScores.reduce((sum, score) => sum + score, 0) / baselineScores.length;
+    }
   }
 
   return analysis;
@@ -790,7 +899,7 @@ export async function runAudit(config) {
 
   // Analyze consistency
   console.log('\n📊 Analyzing consistency...');
-  const analysis = analyzeConsistency(allResults);
+  const analysis = analyzeConsistency(allResults, questions);
 
   return {
     config,

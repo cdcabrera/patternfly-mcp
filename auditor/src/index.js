@@ -168,7 +168,14 @@ async function main() {
 
     // Print summary
     console.log('\n✅ Audit complete!');
-    console.log(`   Consistency Score: ${(results.analysis.overall.consistencyScore * 100).toFixed(1)}%`);
+    const pfMcpScore = (results.analysis.pfMcp?.consistencyScore * 100 || 0).toFixed(1);
+    const overallScore = (results.analysis.overall.consistencyScore * 100).toFixed(1);
+    const baselineScore = (results.analysis.baseline?.consistencyScore * 100 || 0).toFixed(1);
+    
+    console.log(`\n📊 Consistency Scores:`);
+    console.log(`   🎯 PF-MCP (Primary): ${pfMcpScore}%`);
+    console.log(`   📊 Overall (All): ${overallScore}%`);
+    console.log(`   📈 Baseline: ${baselineScore}%`);
     console.log(`   Consistent Runs: ${results.analysis.overall.consistentRuns}/${config.audit.runs}`);
     console.log(`   Reports generated:`);
     reportFiles.forEach(file => {
