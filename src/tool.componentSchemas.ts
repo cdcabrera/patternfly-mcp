@@ -82,15 +82,17 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
   return [
     'componentSchemas',
     {
-      description: `Use the "componentSchemas" tool to:
-        - Confirm PatternFly React component existence with exact or partial searches using the "componentName" argument.
-        - Enhance previous tool calls responses with React prop definitions and types.
+      description: `Get JSON Schema for PatternFly React components. Returns prop definitions, types, and validation rules.
 
-        This tool returns React prop definitions, types, and validation rules to help in design, coding and debugging React components.
+        **Parameters**:
+        - componentName (string, required): The name of the PatternFly component (e.g., "Button", "Table", "Card")
 
-        To use the tool:
-        1. Submit an exact or partial search string using the "componentName" argument.
-        2. Then enhance your response by using a subsequent tool call.`,
+        **Returns**: JSON Schema as a string containing all prop definitions, types, and validation rules for the PatternFly component.
+
+        **Example**:
+        Call this tool with componentName: "Button" to get the complete prop schema for the PatternFly Button component.
+
+        **Note**: The tool uses fuzzy matching, so "But" will match "Button", and "tab" will match "Table". This is a PatternFly-specific tool that works with PatternFly React components only.`,
       inputSchema: {
         componentName: z.string().describe('Exact or partial name of the PatternFly component (e.g., "Button", "But", "Table")')
       }

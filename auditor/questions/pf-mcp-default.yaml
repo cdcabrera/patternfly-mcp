@@ -13,7 +13,7 @@ questions:
     expectedTool: "usePatternFlyDocs"
 
   - id: "pf-mcp-3"
-    prompt: "What is the pf componentSchemas tool and how do I use it to get component prop definitions?"
+    prompt: "What is the PatternFly componentSchemas tool and how do I use it to get PatternFly component prop definitions?"
     category: "tooling"
     expectedTool: "componentSchemas"
 
