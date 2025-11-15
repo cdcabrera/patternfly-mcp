@@ -1,6 +1,6 @@
 /**
  * PatternFly MCP Auditor - Core Audit Logic
- * 
+ *
  * Handles question shuffling, MCP client communication, model interaction,
  * and consistency analysis.
  */
@@ -139,17 +139,17 @@ async function runHealthChecks(config) {
             throw new Error(`MCP initialization failed: ${initError.message}`);
           }
         }
-        
+
         const mcpResponse = await callMcpMethod('tools/list', {}, config);
         const tools = mcpResponse?.tools || [];
-        
+
         // Debug: Log tools received during health check
         if (tools.length > 0) {
           console.log(`   🔧 Health check: Received ${tools.length} tools: ${tools.map(t => t.name).join(', ')}`);
         } else {
           console.warn(`   ⚠️  Health check: No tools returned! Response: ${JSON.stringify(mcpResponse)}`);
         }
-        
+
         const hasTool = tools.some(t => t.name === check.tool);
         results.push({
           name: check.name,
@@ -173,7 +173,7 @@ async function runHealthChecks(config) {
   if (criticalFailures.length > 0) {
     const failureMessages = criticalFailures.map(f => `  - ${f.name}: ${f.message}`).join('\n');
     const mcpUrl = config.mcp?.url || 'not configured';
-    
+
     throw new Error(
       `❌ Critical health check(s) failed:\n${failureMessages}\n\n` +
       `MCP server is not available at ${mcpUrl}\n\n` +
@@ -197,23 +197,23 @@ let mcpSessionId = null;
 
 async function callMcpMethod(method, params, config) {
   const url = config.mcp.url;
-  
+
   // Prepare headers with required Accept header for MCP HTTP transport
   const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json, text/event-stream'
   };
-  
+
   // Add session ID if we have one
   if (mcpSessionId) {
     headers['mcp-session-id'] = mcpSessionId;
   }
-  
+
   let response;
   const timeout = config.mcp?.timeout || 10000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     response = await fetch(url, {
       method: 'POST',
@@ -253,7 +253,7 @@ async function callMcpMethod(method, params, config) {
   // Handle SSE response (text/event-stream)
   const contentType = response.headers.get('content-type') || '';
   let data;
-  
+
   if (contentType.includes('text/event-stream')) {
     // Parse SSE format
     const text = await response.text();
@@ -307,14 +307,14 @@ async function callMcpMethod(method, params, config) {
 async function initializeModel(config) {
   // Lazy import to avoid loading if not needed
   const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
-  
+
   const modelPath = config.model?.path;
   const Llama = await getLlama();
 
   let model;
   let context;
   let session;
-  
+
   if (modelPath) {
     // Load custom model from volume
     console.log(`   Loading custom model from: ${modelPath}`);
@@ -327,12 +327,12 @@ async function initializeModel(config) {
     // Use default small model (download if needed)
     console.log(`   Using default model (Qwen2.5-0.5B)`);
     const defaultModelPath = await getDefaultModel(Llama);
-    
+
     if (!defaultModelPath) {
       // No model found, will fall back to mock
       throw new Error('Default model not found. Place model in ./models/ or /workspace/model/');
     }
-    
+
     model = await Llama.loadModel({
       modelPath: defaultModelPath
     });
@@ -343,7 +343,7 @@ async function initializeModel(config) {
     contextSize: 2048, // Small context for efficiency
     batchSize: 512
   });
-  
+
   session = new LlamaChatSession({
     contextSequence: context.getSequence()
   });
@@ -408,13 +408,13 @@ async function getDefaultModel(Llama) {
   const { existsSync, readdirSync } = await import('fs');
   const { join, dirname } = await import('path');
   const { fileURLToPath } = await import('url');
-  
+
   // Get the auditor directory (where this file is located)
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const auditorDir = dirname(__dirname); // Go up from src/ to auditor/
   const rootDir = dirname(auditorDir); // Go up from auditor/ to root/
-  
+
   // List of locations to check (in priority order)
   const searchPaths = [
     // 1. Container volume mount - dedicated model directory
@@ -488,7 +488,7 @@ async function getDefaultModel(Llama) {
  */
 async function runAuditRun(runNumber, questions, model, config) {
   console.log(`\n🔄 Run ${runNumber}/${config.audit.runs}`);
-  
+
   const results = [];
 
   for (let i = 0; i < questions.length; i++) {
@@ -501,13 +501,13 @@ async function runAuditRun(runNumber, questions, model, config) {
       // For PF-MCP questions, call MCP tools first to get actual data
       let toolCalls = [];
       let toolResults = '';
-      
+
       if (question.category === 'tooling') {
         try {
           // Get available tools first
           const toolsList = await callMcpMethod('tools/list', {}, config);
           const tools = toolsList?.tools || [];
-          
+
           // Debug: Log tools received
           console.log(`   🔧 Tools received from MCP: ${tools.length} tools`);
           if (tools.length > 0) {
@@ -515,7 +515,7 @@ async function runAuditRun(runNumber, questions, model, config) {
           } else {
             console.warn(`   ⚠️  No tools returned from tools/list! Response: ${JSON.stringify(toolsList)}`);
           }
-          
+
           // Call appropriate tool based on question
           if (question.id === 'pf-mcp-1' || question.prompt.includes('tools are available')) {
             // List tools question - use tools/list result
@@ -534,7 +534,7 @@ async function runAuditRun(runNumber, questions, model, config) {
             const toolResult = await callMcpMethod('tools/call', {
               name: 'usePatternFlyDocs',
               arguments: {
-                urlList: ['https://www.patternfly.org/v4/components/about-modal']
+                urlList: ['https://www.patternfly.org/components/about-modall']
               }
             }, config);
             // Extract content from tool result
@@ -542,7 +542,7 @@ async function runAuditRun(runNumber, questions, model, config) {
             toolResults = `Tool result from usePatternFlyDocs:\n${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}`;
             toolCalls.push({
               tool: 'usePatternFlyDocs',
-              args: { urlList: ['https://www.patternfly.org/v4/components/about-modal'] },
+              args: { urlList: ['https://www.patternfly.org/components/about-modal'] },
               timestamp: Date.now()
             });
           } else if (question.id === 'pf-mcp-3' || question.prompt.includes('componentSchemas')) {
@@ -571,11 +571,11 @@ async function runAuditRun(runNumber, questions, model, config) {
       // Build prompt with tool results and conciseness constraint
       const conciseEnabled = config.model?.concise !== false; // Default to true
       let prompt = question.prompt;
-      
+
       if (toolResults) {
         prompt = `${prompt}\n\nHere is the actual data from the PatternFly MCP server:\n${toolResults}\n\nPlease use this information to answer the question.`;
       }
-      
+
       if (conciseEnabled) {
         prompt = `Please be concise in your response. ${prompt}`;
       }
@@ -632,7 +632,7 @@ async function runAuditRun(runNumber, questions, model, config) {
  */
 function extractToolCalls(text, config) {
   const toolCalls = [];
-  
+
   // Simple pattern matching for tool calls
   // In real implementation, this would parse structured model output
   const toolPatterns = [
@@ -698,7 +698,7 @@ function analyzeConsistency(allResults, questions) {
   for (const [questionId, runs] of Object.entries(byQuestion)) {
     const question = questions.find(q => q.id === questionId);
     const isPfMcp = question && question.category === 'tooling';
-    
+
     const questionAnalysis = {
       toolConsistency: analyzeToolCalls(runs),
       answerConsistency: analyzeAnswers(runs, question),
@@ -788,7 +788,7 @@ function createMockModel() {
         `This question about "${prompt}" requires accessing PatternFly MCP server tools.`
       ];
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
+
       return {
         text: randomResponse,
         tokens: randomResponse.split(/\s+/).length
@@ -808,7 +808,7 @@ function analyzeToolCalls(runs) {
     return { consistency: 1.0, isConsistent: true, toolCalls: [] };
   }
 
-  const toolCallSets = runs.map(r => 
+  const toolCallSets = runs.map(r =>
     (r.toolCalls || []).map(tc => tc.tool).sort().join(',')
   );
 
@@ -849,7 +849,7 @@ function detectConfusion(answers, question) {
 
   // Detect confusion patterns based on expected tool
   const expectedTool = question.expectedTool || '';
-  
+
   if (expectedTool === 'usePatternFlyDocs') {
     // ❌ Wrong: suggesting component names instead of URLs
     const componentNamePatterns = [
@@ -859,7 +859,7 @@ function detectConfusion(answers, question) {
       /pass.*button/i,
       /call.*with.*component/i
     ];
-    
+
     // ❌ Wrong: suggesting command-line usage
     const cliPatterns = [
       /command.*line/i,
@@ -869,7 +869,7 @@ function detectConfusion(answers, question) {
       /navigate.*directory/i,
       /open.*terminal/i
     ];
-    
+
     // ✅ Correct: mentioning URLs
     const correctPatterns = [
       /url/i,
@@ -877,15 +877,15 @@ function detectConfusion(answers, question) {
       /array.*url/i,
       /documentation.*url/i
     ];
-    
+
     let incorrectCount = 0;
     let correctCount = 0;
-    
+
     for (const answer of lowerAnswers) {
-      const hasIncorrect = componentNamePatterns.some(p => p.test(answer)) || 
+      const hasIncorrect = componentNamePatterns.some(p => p.test(answer)) ||
                           cliPatterns.some(p => p.test(answer));
       const hasCorrect = correctPatterns.some(p => p.test(answer));
-      
+
       if (hasIncorrect && !hasCorrect) {
         incorrectCount++;
         if (componentNamePatterns.some(p => p.test(answer))) {
@@ -899,10 +899,10 @@ function detectConfusion(answers, question) {
         correctCount++;
       }
     }
-    
+
     confusion.parameterConfusion = incorrectCount / answers.length;
     confusion.workflowConfusion = incorrectCount / answers.length;
-    
+
   } else if (expectedTool === 'componentSchemas') {
     // ❌ Wrong: suggesting URLs or search functionality
     const wrongPatterns = [
@@ -911,7 +911,7 @@ function detectConfusion(answers, question) {
       /lookup/i,
       /fetch.*url/i
     ];
-    
+
     // ✅ Correct: mentioning component name parameter
     const correctPatterns = [
       /componentName/i,
@@ -919,14 +919,14 @@ function detectConfusion(answers, question) {
       /fuzzy.*match/i,
       /pass.*component/i
     ];
-    
+
     let incorrectCount = 0;
     let correctCount = 0;
-    
+
     for (const answer of lowerAnswers) {
       const hasIncorrect = wrongPatterns.some(p => p.test(answer));
       const hasCorrect = correctPatterns.some(p => p.test(answer));
-      
+
       if (hasIncorrect && !hasCorrect) {
         incorrectCount++;
         confusion.incorrectPatterns.push('suggests URLs or search instead of component name');
@@ -935,9 +935,9 @@ function detectConfusion(answers, question) {
         correctCount++;
       }
     }
-    
+
     confusion.parameterConfusion = incorrectCount / answers.length;
-    
+
   } else if (expectedTool === 'searchPatternFlyDocs' || question.id === 'pf-mcp-1') {
     // For tools/list or searchPatternFlyDocs - check if answers confuse it with content fetching
     const wrongPatterns = [
@@ -945,7 +945,7 @@ function detectConfusion(answers, question) {
       /get.*documentation.*content/i,
       /returns.*content/i
     ];
-    
+
     // ✅ Correct: mentioning URLs only
     const correctPatterns = [
       /returns.*url/i,
@@ -953,19 +953,19 @@ function detectConfusion(answers, question) {
       /does.*not.*fetch/i,
       /search.*url/i
     ];
-    
+
     let incorrectCount = 0;
-    
+
     for (const answer of lowerAnswers) {
       const hasIncorrect = wrongPatterns.some(p => p.test(answer));
       const hasCorrect = correctPatterns.some(p => p.test(answer));
-      
+
       if (hasIncorrect && !hasCorrect) {
         incorrectCount++;
         confusion.incorrectPatterns.push('confuses URL search with content fetching');
       }
     }
-    
+
     confusion.workflowConfusion = incorrectCount / answers.length;
   }
 
@@ -975,7 +975,7 @@ function detectConfusion(answers, question) {
     confusion.workflowConfusion,
     confusion.descriptionMisalignment
   ].filter(s => s > 0);
-  
+
   confusion.confusionScore = confusionScores.length > 0
     ? confusionScores.reduce((a, b) => a + b, 0) / confusionScores.length
     : 0;
@@ -992,16 +992,16 @@ function detectConfusion(answers, question) {
 function calculateAnswerSimilarity(answer1, answer2) {
   const words1 = answer1.toLowerCase().split(/\s+/).filter(w => w.length > 3);
   const words2 = answer2.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-  
+
   // Calculate word overlap
   const commonWords = words1.filter(w => words2.includes(w));
   const totalUniqueWords = new Set([...words1, ...words2]).size;
   const wordOverlap = totalUniqueWords > 0 ? commonWords.length / totalUniqueWords : 0;
-  
+
   // Calculate length similarity
   const lengthDiff = Math.abs(answer1.length - answer2.length) / Math.max(answer1.length, answer2.length, 1);
   const lengthSimilarity = 1 - Math.min(lengthDiff, 1);
-  
+
   // Combined similarity (weighted: 70% word overlap, 30% length)
   return (wordOverlap * 0.7) + (lengthSimilarity * 0.3);
 }
@@ -1018,23 +1018,23 @@ function calculateMajorityConsistency(answers, similarityThreshold = 0.4) {
 
   // Improved clustering: use all group members for comparison, not just the first
   const groups = [];
-  
+
   for (const answer of answers) {
     let bestMatch = null;
     let bestSimilarity = 0;
-    
+
     // Find the group with the highest average similarity
     for (const group of groups) {
       // Calculate average similarity to all members of this group
       const similarities = group.map(member => calculateAnswerSimilarity(answer, member));
       const avgSimilarity = similarities.reduce((a, b) => a + b, 0) / similarities.length;
-      
+
       if (avgSimilarity > bestSimilarity && avgSimilarity >= similarityThreshold) {
         bestSimilarity = avgSimilarity;
         bestMatch = group;
       }
     }
-    
+
     if (bestMatch) {
       bestMatch.push(answer);
     } else {
@@ -1043,9 +1043,9 @@ function calculateMajorityConsistency(answers, similarityThreshold = 0.4) {
   }
 
   // Find largest group (majority)
-  const majorityGroup = groups.reduce((max, group) => 
+  const majorityGroup = groups.reduce((max, group) =>
     group.length > max.length ? group : max, groups[0] || []);
-  
+
   const majoritySize = majorityGroup.length;
   const consistency = majoritySize / answers.length;
 
@@ -1074,7 +1074,7 @@ function analyzeAnswers(runs, question = null) {
       // Extract tool names from tool results
       const toolNames = [];
       const toolDescriptions = [];
-      
+
       // Parse tool results to extract tool info
       if (firstRun.toolResults.includes('Available PatternFly MCP tools:')) {
         const lines = firstRun.toolResults.split('\n');
@@ -1088,22 +1088,22 @@ function analyzeAnswers(runs, question = null) {
           }
         }
       }
-      
+
       // Check if answers mention the correct tools
       let toolMentionScore = 0;
       let descriptionAlignmentScore = 0;
-      
+
       if (toolNames.length > 0) {
         // Check if each answer mentions the expected tools
         const mentionScores = answers.map(answer => {
           const lowerAnswer = answer.toLowerCase();
-          const mentionedTools = toolNames.filter(tool => 
+          const mentionedTools = toolNames.filter(tool =>
             lowerAnswer.includes(tool.toLowerCase())
           );
           return mentionedTools.length / toolNames.length;
         });
         toolMentionScore = mentionScores.reduce((a, b) => a + b, 0) / mentionScores.length;
-        
+
         // Check if answers align with tool descriptions (simple keyword matching)
         const alignmentScores = answers.map(answer => {
           const lowerAnswer = answer.toLowerCase();
@@ -1120,26 +1120,26 @@ function analyzeAnswers(runs, question = null) {
         });
         descriptionAlignmentScore = alignmentScores.reduce((a, b) => a + b, 0) / alignmentScores.length;
       }
-      
+
       // Combine tool mention and description alignment (weighted)
       const pfMcpScore = (toolMentionScore * 0.6) + (descriptionAlignmentScore * 0.4);
-      
+
       // Use majority-rule consistency (resistant to outliers)
       const majorityConsistency = calculateMajorityConsistency(answers);
-      
+
       // Detect confusion/misinformation
       const confusion = detectConfusion(answers, question);
-      
+
       // Combined score: 60% majority consistency, 40% PF-MCP alignment
       // But reduce score if there's high confusion (consistently wrong answers)
       let consistency = (majorityConsistency.consistency * 0.6) + (pfMcpScore * 0.4);
-      
+
       // Penalize for confusion: if confusion is high, reduce consistency score
       if (confusion.confusionScore > 0.5) {
         // High confusion means answers are consistently wrong
         consistency = consistency * (1 - confusion.confusionScore * 0.5); // Reduce by up to 50%
       }
-      
+
       return {
         consistency: Math.max(0, Math.min(1, consistency)), // Clamp to 0-1
         isConsistent: consistency >= 0.7 && confusion.confusionScore < 0.5,
@@ -1163,7 +1163,7 @@ function analyzeAnswers(runs, question = null) {
   const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
   const variance = calculateVariance(lengths);
   const lengthConsistency = variance < avgLength * 0.3 ? 1.0 : Math.max(0, 1 - (variance / avgLength));
-  
+
   // Combine majority consistency with length consistency
   const consistency = (majorityConsistency.consistency * 0.7) + (lengthConsistency * 0.3);
 
@@ -1244,7 +1244,7 @@ export async function runAudit(config, abortSignal = null) {
 
   // Run audit runs with interrupt checking
   const allResults = [];
-  
+
   // Check for interrupt signal periodically
   const checkInterrupt = () => {
     return abortSignal?.aborted || false;
@@ -1273,7 +1273,7 @@ export async function runAudit(config, abortSignal = null) {
         }).catch(() => {
           // Ignore abort errors during delay
         });
-        
+
         if (checkInterrupt()) {
           console.log(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
           break;
