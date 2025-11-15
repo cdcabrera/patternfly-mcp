@@ -66,75 +66,64 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     handleStreamableHttpRequest(req, res, transport);
   });
 
-  // Start server
-  return new Promise((resolve, reject) => {
-    const port = options.port || 3000;
-    const host = options.host || 'localhost';
+  const port = options.port || 3000;
+  const host = options.host || 'localhost';
+  
+  // Check for port conflicts and handle kill-existing BEFORE creating the Promise
+  const processInfo = getProcessOnPort(port);
+  if (processInfo) {
+    const isSameProcess = isSameMcpServer(processInfo.command);
     
-    // Check for port conflicts before attempting to listen
-    const processInfo = getProcessOnPort(port);
-    if (processInfo) {
-      const isSameProcess = isSameMcpServer(processInfo.command);
+    if (options.killExisting && isSameProcess) {
+      // User explicitly requested to kill existing instance
+      console.log(`\n⚠️  Port ${port} is in use by another PatternFly MCP server instance (PID: ${processInfo.pid})`);
+      console.log(`   Killing existing instance as requested...`);
       
-      if (options.killExisting && isSameProcess) {
-        // User explicitly requested to kill existing instance
-        console.log(`\n⚠️  Port ${port} is in use by another PatternFly MCP server instance (PID: ${processInfo.pid})`);
-        console.log(`   Killing existing instance as requested...`);
-        
-        if (killProcess(processInfo.pid)) {
-          console.log(`   ✅ Successfully killed process ${processInfo.pid}`);
-          // Wait a moment for port to be released
-          setTimeout(() => {
-            startListening();
-          }, 500);
-          return;
-        } else {
-          console.error(`   ❌ Failed to kill process ${processInfo.pid}`);
-          reject(new Error(`Failed to kill existing process on port ${port}`));
-          return;
-        }
-      } else if (options.killExisting && !isSameProcess) {
-        // User requested kill but it's not the same process - don't kill it!
-        console.error(`\n❌ Port ${port} is in use by a different process (PID: ${processInfo.pid})`);
-        console.error(`   Command: ${processInfo.command}`);
-        console.error(`   --kill-existing flag only works for PatternFly MCP server instances.`);
-        console.error(`   Please stop the process manually or use a different port.\n`);
-        reject(new Error(`Port ${port} is in use by a different process`));
-        return;
+      if (killProcess(processInfo.pid)) {
+        console.log(`   ✅ Successfully killed process ${processInfo.pid}`);
+        // Wait a moment for port to be released
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        throw new Error(`Failed to kill existing process on port ${port}`);
       }
+    } else if (options.killExisting && !isSameProcess) {
+      // User requested kill but it's not the same process - don't kill it!
+      console.error(`\n❌ Port ${port} is in use by a different process (PID: ${processInfo.pid})`);
+      console.error(`   Command: ${processInfo.command}`);
+      console.error(`   --kill-existing flag only works for PatternFly MCP server instances.`);
+      console.error(`   Please stop the process manually or use a different port.\n`);
+      throw new Error(`Port ${port} is in use by a different process`);
     }
+  }
+
+  // Start server (port should be free now, or we'll get an error)
+  return new Promise((resolve, reject) => {
+    server.listen(port, host, () => {
+      console.log(`PatternFly MCP server running on http://${host}:${port}`);
+      resolve();
+    });
     
-    // Start listening (either port is free, or we killed the existing process)
-    startListening();
-    
-    function startListening() {
-      server.listen(port, host, () => {
-        console.log(`PatternFly MCP server running on http://${host}:${port}`);
-        resolve();
-      });
-      
-      server.on('error', (error: NodeJS.ErrnoException) => {
-        // Handle port conflict with helpful error message
-        if (error.code === 'EADDRINUSE') {
-          const processInfo = getProcessOnPort(port);
-          
-          if (processInfo) {
-            const errorMessage = formatPortConflictError(port, processInfo);
-            console.error(errorMessage);
-            reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`));
-          } else {
-            console.error(`\n❌ Port ${port} is already in use.\n`);
-            console.error(`   Unable to determine which process is using the port.\n`);
-            console.error(`   Try using a different port: --port <different-port>\n`);
-            reject(error);
-          }
+    server.on('error', (error: NodeJS.ErrnoException) => {
+      // Handle port conflict with helpful error message
+      if (error.code === 'EADDRINUSE') {
+        const processInfo = getProcessOnPort(port);
+        
+        if (processInfo) {
+          const errorMessage = formatPortConflictError(port, processInfo);
+          console.error(errorMessage);
+          reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`));
         } else {
-          // Log other errors for debugging
-          console.error('HTTP server error:', error);
+          console.error(`\n❌ Port ${port} is already in use.\n`);
+          console.error(`   Unable to determine which process is using the port.\n`);
+          console.error(`   Try using a different port: --port <different-port>\n`);
           reject(error);
         }
-      });
-    }
+      } else {
+        // Log other errors for debugging
+        console.error('HTTP server error:', error);
+        reject(error);
+      }
+    });
   });
 };
 
