@@ -20,7 +20,17 @@ PatternFly provides React components, design guidelines, and development tools f
 - Comprehensive documentation and examples
 
 **PatternFly MCP Server:**
-This MCP server provides tools to access PatternFly documentation, component schemas, and design guidelines. Use the available tools to fetch documentation, search for component information, and retrieve component prop definitions.`;
+This MCP server provides tools and resources to access PatternFly documentation, component schemas, and design guidelines.
+
+**Available Tools** (call via MCP tools/call):
+- searchPatternFlyDocs: Search for component documentation URLs by name (returns URLs only)
+- usePatternFlyDocs: Fetch documentation content from URLs (requires urlList parameter)
+- componentSchemas: Get JSON Schema for PatternFly React components (requires componentName parameter)
+
+**Available Resources** (read via MCP resources/read):
+- patternfly://context: This resource - information about PatternFly and this MCP server
+
+**Important**: All tools are MCP tools that must be called via JSON-RPC protocol, not code functions or UI workflows. Use the MCP protocol's tools/call method with the correct parameters for each tool.`;
 
 /**
  * Register PatternFly context resource

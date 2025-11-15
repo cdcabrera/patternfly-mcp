@@ -50,37 +50,40 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Fetch PatternFly documentation from one or more URLs.
+      description: `MCP Tool: Fetch PatternFly documentation from one or more URLs.
 
-        Fetches and returns the concatenated content from PatternFly documentation URLs.
-        Can be used for:
-        - Index/overview files (README.md, llms.txt) that contain links to other pages
-        - Specific documentation pages (design guidelines, accessibility, etc.)
-        - Any PatternFly documentation URL
+        This is an MCP (Model Context Protocol) tool that must be called via JSON-RPC. It fetches and returns the concatenated content from PatternFly documentation URLs.
+
+        **What this tool does**:
+        - Fetches documentation content from URLs (does NOT search - use searchPatternFlyDocs for that)
+        - Returns concatenated text content from the documentation
+        - Works with index/overview files (README.md, llms.txt) or specific documentation pages
+
+        **How to call this MCP tool** (JSON-RPC format):
+        {
+          "method": "tools/call",
+          "params": {
+            "name": "usePatternFlyDocs",
+            "arguments": {
+              "urlList": ["documentation/guidelines/README.md"]
+            }
+          }
+        }
 
         **Parameters**:
-        - urlList (array of strings, required): Array of URLs or file paths to PatternFly documentation
+        - urlList (array of strings, required): Array of URLs or file paths. Can be local paths (e.g., "documentation/guidelines/README.md") or remote URLs (e.g., "https://www.patternfly.org/components/button")
 
-        **Returns**: Concatenated content from the documentation URLs.
+        **Returns**: Text content from the documentation URLs (concatenated if multiple URLs provided).
 
         **Workflow**:
-        1. searchPatternFlyDocs with searchQuery → get URLs (use this to discover documentation URLs by component name)
-        2. usePatternFlyDocs with those URLs → get full documentation
+        1. Use searchPatternFlyDocs with component name → get documentation URLs
+        2. Use usePatternFlyDocs with those URLs → get full documentation content
         OR
-        1. usePatternFlyDocs with index file URLs → get index content
-        2. Parse links: Extract URLs from the index content
-        3. usePatternFlyDocs with those URLs → get full documentation
+        1. Use usePatternFlyDocs with index file URL → get index content with links
+        2. Extract URLs from the index content
+        3. Use usePatternFlyDocs with those URLs → get full documentation
 
-        **Example - Local path**:
-        Call this tool with urlList: ["documentation/guidelines/README.md"] to get the guidelines index.
-
-        **Example - Remote URL**:
-        Call this tool with urlList: ["https://example.com/patternfly/docs/component/button.md"] to get specific documentation.
-
-        **Note**: URLs can be local file paths (relative to the docs directory) or remote HTTP/HTTPS URLs. Use searchPatternFlyDocs to discover available documentation URLs.
-
-        **Finding URLs**: If you don't know the exact URLs, use the "searchPatternFlyDocs" tool to search for component documentation URLs by name. Then pass those URLs to this tool to fetch the content.
-        To get component prop definitions (JSON Schema), use the "componentSchemas" tool instead.`,
+        **Important**: This is an MCP tool call, not a code function or UI button. Call it via the MCP protocol with the urlList parameter only. Do not include searchQuery or other parameters - use searchPatternFlyDocs for searching.`,
       inputSchema: {
         urlList: z.array(z.string()).describe('Array of URLs or file paths to PatternFly documentation. Can be local paths (e.g., "documentation/guidelines/README.md") or remote URLs (e.g., "https://example.com/patternfly/docs/component.md"). Use searchPatternFlyDocs to discover available URLs.')
       }

@@ -146,24 +146,36 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: `Search for PatternFly component documentation URLs by component name.
+      description: `MCP Tool: Search for PatternFly component documentation URLs by component name.
 
-        Uses fuzzy search against PatternFly component names to find matching documentation URLs.
-        Returns URLs only and does NOT fetch content. Use "usePatternFlyDocs" to fetch the actual documentation.
+        This is an MCP (Model Context Protocol) tool that must be called via JSON-RPC. It searches for documentation URLs but does NOT fetch content.
+
+        **What this tool does**:
+        - Uses fuzzy search against PatternFly component names to find matching documentation URLs
+        - Returns URLs only (does NOT fetch or return documentation content)
+        - Use "usePatternFlyDocs" to fetch the actual documentation from these URLs
+
+        **How to call this MCP tool** (JSON-RPC format):
+        {
+          "method": "tools/call",
+          "params": {
+            "name": "searchPatternFlyDocs",
+            "arguments": {
+              "searchQuery": "button"
+            }
+          }
+        }
 
         **Parameters**:
         - searchQuery (string, required): Component name to search for (e.g., "button", "table", "accordion")
 
-        **Returns**: List of matching documentation URLs that can be passed to "usePatternFlyDocs" to get the full content.
+        **Returns**: List of matching documentation URLs (as text) that can be passed to "usePatternFlyDocs" to get the full content.
 
         **Workflow**:
-        1. searchPatternFlyDocs with searchQuery → get URLs (no content fetched)
-        2. usePatternFlyDocs with those URLs → get full documentation
+        1. Call searchPatternFlyDocs with searchQuery → get URLs (no content fetched)
+        2. Call usePatternFlyDocs with those URLs → get full documentation content
 
-        **Example**:
-        Call this tool with searchQuery: "button" to find all Button component documentation URLs.
-
-        To get component prop definitions (JSON Schema), use the "componentSchemas" tool instead.`,
+        **Important**: This is an MCP tool call, not a code function. Call it via the MCP protocol with only the searchQuery parameter. This tool returns URLs only - use usePatternFlyDocs to fetch the actual documentation.`,
       inputSchema: {
         searchQuery: z.string().describe('Component name to search for. Returns matching documentation URLs. Example: "button", "table", "accordion"')
       }
