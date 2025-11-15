@@ -134,10 +134,6 @@ async function runHealthChecks(config) {
             if (initResult?.sessionId) {
               mcpSessionId = initResult.sessionId;
             }
-            // Store server description from serverInfo if available
-            if (initResult?.serverInfo?.description) {
-              mcpServerDescription = initResult.serverInfo.description;
-            }
           } catch (initError) {
             // If initialization fails, the tools/list will also fail, so throw
             throw new Error(`MCP initialization failed: ${initError.message}`);
@@ -196,9 +192,8 @@ async function runHealthChecks(config) {
 /**
  * Call MCP server method via HTTP
  */
-// Store session ID and server info for MCP HTTP transport
+// Store session ID for MCP HTTP transport
 let mcpSessionId = null;
-let mcpServerDescription = null;
 
 async function callMcpMethod(method, params, config) {
   const url = config.mcp.url;
@@ -292,10 +287,6 @@ async function callMcpMethod(method, params, config) {
             version: '1.0.0'
           }
         }, config);
-        // Store server description from serverInfo if available
-        if (initResult?.serverInfo?.description) {
-          mcpServerDescription = initResult.serverInfo.description;
-        }
         // Retry the original call
         return await callMcpMethod(method, params, config);
       }
@@ -552,7 +543,7 @@ async function runAuditRun(runNumber, questions, model, config) {
             const toolResult = await callMcpMethod('tools/call', {
               name: 'usePatternFlyDocs',
               arguments: {
-                urlList: ['https://www.patternfly.org/components/about-modall']
+                urlList: ['https://www.patternfly.org/components/about-modal']
               }
             }, config);
             // Extract content from tool result
@@ -602,14 +593,9 @@ async function runAuditRun(runNumber, questions, model, config) {
 
       // Build prompt with tool results and conciseness constraint
       // IMPORTANT: Only pass question text and tool results to model - never pass source code or file contents
+      // Note: PatternFly context is available via MCP resource (patternfly://context) - models should discover and use it
       const conciseEnabled = config.model?.concise !== false; // Default to true
       let prompt = question.prompt;
-
-      // Add PatternFly context for PF-MCP questions to help model understand what PatternFly is
-      // Use only the MCP server's description (from initialize response) - single source of truth
-      if (question.category === 'tooling' && mcpServerDescription) {
-        prompt = `Context: ${mcpServerDescription}\n\n${prompt}`;
-      }
 
       if (toolResults) {
         // Sanitize toolResults to ensure no source code leaks through
@@ -619,7 +605,7 @@ async function runAuditRun(runNumber, questions, model, config) {
           .replace(/\/app\/[^\s]+/g, '[path]') // Remove app paths
           .replace(/auditor\/[^\s]+\.(js|ts|yaml|json)/g, '[file]') // Remove file references
           .replace(/\.js|\.ts|\.yaml|\.json/g, '[file]'); // Remove file extensions
-        
+
         prompt = `${prompt}\n\nHere is the actual data from the PatternFly MCP server:\n${sanitizedToolResults}\n\nPlease use this information to answer the question. Only use the information provided above - do not reference any code or files.`;
       }
 
