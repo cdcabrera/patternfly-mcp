@@ -637,7 +637,7 @@ function extractToolCalls(text, config) {
   // In real implementation, this would parse structured model output
   const toolPatterns = [
     /usePatternFlyDocs/i,
-    /fetchDocs/i,
+    /searchPatternFlyDocs/i,
     /componentSchemas/i
   ];
 

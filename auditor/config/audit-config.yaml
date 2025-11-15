@@ -57,7 +57,7 @@ healthChecks:
     critical: true  # Exit if MCP server is not accessible (checks via tool list)
   - name: "tools-registered"
     type: "mcp"
-    tool: "fetchDocs"
+    tool: "usePatternFlyDocs"
     critical: true  # Exit if required tools are not registered
 
 reporting:

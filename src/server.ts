@@ -2,7 +2,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
-import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
@@ -41,7 +40,6 @@ const runServer = async (options = getOptions(), {
   tools = [
     usePatternFlyDocsTool,
     searchPatternFlyDocsTool,
-    fetchDocsTool,
     componentSchemasTool
   ],
   enableSigint = true,

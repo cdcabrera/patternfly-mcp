@@ -157,7 +157,7 @@ questions:
     - id: "pf-mcp-2"
       prompt: "How do I fetch PatternFly component documentation?"
       category: "tooling"
-      expectedTool: "fetchDocs"
+      expectedTool: "usePatternFlyDocs"
     # ... more PF-MCP questions
 
 interjection:

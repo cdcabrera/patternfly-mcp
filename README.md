@@ -76,8 +76,8 @@ npx @patternfly/patternfly-mcp --http --kill-existing
 
 The server provides three MCP tools:
 
-- **usePatternFlyDocs**: Fetch high-level index content (READMEs, llms.txt files)
-- **fetchDocs**: Fetch specific documentation pages (design guidelines, accessibility)
+- **searchPatternFlyDocs**: Search for component documentation URLs by name (returns URLs only)
+- **usePatternFlyDocs**: Fetch PatternFly documentation from URLs (index files or specific pages)
 - **componentSchemas**: Get JSON Schema for PatternFly React components
 
 See [DOCS.md](./DOCS.md) for detailed tool documentation and examples.

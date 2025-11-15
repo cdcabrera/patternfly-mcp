@@ -52,7 +52,7 @@ const buildComponentToDocsMap = (): Map<string, string[]> => {
  * searchPatternFlyDocs tool function (tuple pattern)
  *
  * Searches for PatternFly component documentation URLs using fuzzy search.
- * Returns URLs only (does not fetch content). Use fetchDocs to fetch the actual content.
+ * Returns URLs only (does not fetch content). Use usePatternFlyDocs to fetch the actual content.
  *
  * @param options
  */
@@ -136,7 +136,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       content: [
         {
           type: 'text',
-          text: `Found ${searchResults.length} component(s) matching "${searchQuery}":\n\n${componentList}\n\nDocumentation URLs:\n${urlListText}\n\nUse the "fetchDocs" tool with these URLs to get the full documentation content.`
+            text: `Found ${searchResults.length} component(s) matching "${searchQuery}":\n\n${componentList}\n\nDocumentation URLs:\n${urlListText}\n\nUse the "usePatternFlyDocs" tool with these URLs to get the full documentation content.`
         }
       ]
     };
@@ -148,16 +148,16 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       description: `Search for PatternFly component documentation URLs by component name.
 
         Uses fuzzy search against PatternFly component names to find matching documentation URLs.
-        Returns URLs only and does NOT fetch content. Use "fetchDocs" to fetch the actual documentation.
+        Returns URLs only and does NOT fetch content. Use "usePatternFlyDocs" to fetch the actual documentation.
 
         **Parameters**:
         - searchQuery (string, required): Component name to search for (e.g., "button", "table", "accordion")
 
-        **Returns**: List of matching documentation URLs that can be passed to "fetchDocs" to get the full content.
+        **Returns**: List of matching documentation URLs that can be passed to "usePatternFlyDocs" to get the full content.
 
         **Workflow**:
         1. searchPatternFlyDocs with searchQuery → get URLs (no content fetched)
-        2. fetchDocs with those URLs → get full documentation
+        2. usePatternFlyDocs with those URLs → get full documentation
 
         **Example**:
         Call this tool with searchQuery: "button" to find all Button component documentation URLs.

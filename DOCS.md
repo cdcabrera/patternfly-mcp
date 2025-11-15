@@ -134,16 +134,16 @@ The server provides three MCP tools for accessing PatternFly documentation and c
 
 ### Tool: usePatternFlyDocs
 
-Use this to fetch high-level index content (for example, a local README.md that contains relevant links, or llms.txt files in docs-host mode). From that content, you can select specific URLs to pass to fetchDocs.
+Fetch PatternFly documentation from one or more URLs. Can be used for index/overview files (README.md, llms.txt) or specific documentation pages (design guidelines, accessibility, etc.).
 
 **Parameters**:
-- `urlList`: string[] (required) - Array of URLs or local file paths
+- `urlList`: string[] (required) - Array of URLs or local file paths to PatternFly documentation
 
 **Response**:
 - `content[0].type`: "text"
 - `content[0].text`: Concatenated documentation content
 
-**Example**:
+**Example - Index file**:
 ```json
 {
   "method": "tools/call",
@@ -156,23 +156,12 @@ Use this to fetch high-level index content (for example, a local README.md that 
 }
 ```
 
-### Tool: fetchDocs
-
-Use this to fetch one or more specific documentation pages (e.g., concrete design guidelines or accessibility pages) after you've identified them via usePatternFlyDocs.
-
-**Parameters**:
-- `urlList`: string[] (required) - Array of URLs or local file paths
-
-**Response**:
-- `content[0].type`: "text"
-- `content[0].text`: Concatenated documentation content
-
-**Example**:
+**Example - Specific documentation page**:
 ```json
 {
   "method": "tools/call",
   "params": {
-    "name": "fetchDocs",
+    "name": "usePatternFlyDocs",
     "arguments": {
       "urlList": [
         "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"
@@ -181,6 +170,32 @@ Use this to fetch one or more specific documentation pages (e.g., concrete desig
   }
 }
 ```
+
+### Tool: searchPatternFlyDocs
+
+Search for PatternFly component documentation URLs by component name. Uses fuzzy search against PatternFly component names and returns matching documentation URLs (does not fetch content).
+
+**Parameters**:
+- `searchQuery`: string (required) - Component name to search for (e.g., "button", "table", "accordion")
+
+**Response**:
+- `content[0].type`: "text"
+- `content[0].text`: List of matching documentation URLs
+
+**Example**:
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "searchPatternFlyDocs",
+    "arguments": {
+      "searchQuery": "button"
+    }
+  }
+}
+```
+
+**Note**: After getting URLs from searchPatternFlyDocs, use usePatternFlyDocs to fetch the actual documentation content.
 
 ### Tool: componentSchemas
 
@@ -319,7 +334,7 @@ npx @modelcontextprotocol/inspector-cli \
   --tool-arg urlList='["documentation/guidelines/README.md"]'
 ```
 
-### fetchDocs Example
+### searchPatternFlyDocs Example
 
 ```bash
 npx @modelcontextprotocol/inspector-cli \
@@ -327,7 +342,7 @@ npx @modelcontextprotocol/inspector-cli \
   --server patternfly-docs \
   --cli \
   --method tools/call \
-  --tool-name fetchDocs \
+  --tool-name usePatternFlyDocs \
   --tool-arg urlList='[
     "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md",
     "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/about-modal/about-modal.md"

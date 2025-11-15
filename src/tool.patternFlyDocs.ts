@@ -50,28 +50,35 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Fetch index/overview documentation files for PatternFly components.
+      description: `Fetch PatternFly documentation from one or more URLs.
 
-        Fetches and returns the concatenated content from index/overview files (like README.md or llms.txt).
-        These index files typically contain links to specific documentation pages.
+        Fetches and returns the concatenated content from PatternFly documentation URLs.
+        Can be used for:
+        - Index/overview files (README.md, llms.txt) that contain links to other pages
+        - Specific documentation pages (design guidelines, accessibility, etc.)
+        - Any PatternFly documentation URL
 
         **Parameters**:
-        - urlList (array of strings, required): Array of URLs or file paths to index/overview documentation files
+        - urlList (array of strings, required): Array of URLs or file paths to PatternFly documentation
 
-        **Returns**: Concatenated content from the index files, which typically contain links to specific documentation pages.
+        **Returns**: Concatenated content from the documentation URLs.
 
         **Workflow**:
-        1. usePatternFlyDocs with urlList → get index file content
+        1. searchPatternFlyDocs with searchQuery → get URLs
+        2. usePatternFlyDocs with those URLs → get full documentation
+        OR
+        1. usePatternFlyDocs with index file URLs → get index content
         2. Parse links: Extract URLs from the index content
-        3. fetchDocs with those URLs → get full documentation
+        3. usePatternFlyDocs with those URLs → get full documentation
 
         **Example**:
         Call this tool with urlList: ["documentation/guidelines/README.md"] to get the guidelines index.
+        Or call with urlList: ["https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"] to get specific documentation.
 
         To search for component documentation URLs by name, use the "searchPatternFlyDocs" tool instead.
         To get component prop definitions (JSON Schema), use the "componentSchemas" tool instead.`,
       inputSchema: {
-        urlList: z.array(z.string()).describe('Array of URLs or file paths to fetch index/overview documentation files. Example: ["documentation/guidelines/README.md"]')
+        urlList: z.array(z.string()).describe('Array of URLs or file paths to PatternFly documentation. Example: ["documentation/guidelines/README.md"] or ["https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"]')
       }
     },
     callback
