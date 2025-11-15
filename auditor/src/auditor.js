@@ -519,8 +519,17 @@ async function runAuditRun(runNumber, questions, model, config) {
           // Call appropriate tool based on question
           if (question.id === 'pf-mcp-1' || question.prompt.includes('tools are available')) {
             // List tools question - use tools/list result
+            // Only pass tool names and descriptions - never pass any file paths or code
             if (tools.length > 0) {
-              toolResults = `Available PatternFly MCP tools:\n${tools.map(t => `- ${t.name}: ${t.description || 'No description'}`).join('\n')}`;
+              const toolDescriptions = tools.map(t => {
+                // Sanitize descriptions to remove any file paths
+                const desc = (t.description || 'No description')
+                  .replace(/\/workspace\/[^\s]+/g, '[path]')
+                  .replace(/\/app\/[^\s]+/g, '[path]')
+                  .replace(/file:\/\/\/[^\s]+/g, '[file]');
+                return `- ${t.name}: ${desc}`;
+              }).join('\n');
+              toolResults = `Available PatternFly MCP tools:\n${toolDescriptions}`;
             } else {
               toolResults = `No tools were returned from the PatternFly MCP server. This may indicate a connection issue.`;
             }
@@ -538,8 +547,15 @@ async function runAuditRun(runNumber, questions, model, config) {
               }
             }, config);
             // Extract content from tool result
+            // Only pass the actual documentation content, not any file paths or code references
             const content = toolResult?.content?.[0]?.text || JSON.stringify(toolResult, null, 2);
-            toolResults = `Tool result from usePatternFlyDocs:\n${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}`;
+            // Sanitize content to remove any file paths or code references that might leak through
+            const sanitizedContent = content
+              .replace(/\/workspace\/[^\s]+/g, '[path]')
+              .replace(/\/app\/[^\s]+/g, '[path]')
+              .replace(/file:\/\/\/[^\s]+/g, '[file]')
+              .substring(0, 1000);
+            toolResults = `Tool result from usePatternFlyDocs:\n${sanitizedContent}${content.length > 1000 ? '...' : ''}`;
             toolCalls.push({
               tool: 'usePatternFlyDocs',
               args: { urlList: ['https://www.patternfly.org/components/about-modal'] },
@@ -554,8 +570,15 @@ async function runAuditRun(runNumber, questions, model, config) {
               }
             }, config);
             // Extract content from tool result
+            // Only pass the actual schema content, not any file paths or code references
             const content = toolResult?.content?.[0]?.text || JSON.stringify(toolResult, null, 2);
-            toolResults = `Tool result from componentSchemas:\n${content.substring(0, 1000)}${content.length > 1000 ? '...' : ''}`;
+            // Sanitize content to remove any file paths or code references that might leak through
+            const sanitizedContent = content
+              .replace(/\/workspace\/[^\s]+/g, '[path]')
+              .replace(/\/app\/[^\s]+/g, '[path]')
+              .replace(/file:\/\/\/[^\s]+/g, '[file]')
+              .substring(0, 1000);
+            toolResults = `Tool result from componentSchemas:\n${sanitizedContent}${content.length > 1000 ? '...' : ''}`;
             toolCalls.push({
               tool: 'componentSchemas',
               args: { componentName: 'Button' },
@@ -569,11 +592,20 @@ async function runAuditRun(runNumber, questions, model, config) {
       }
 
       // Build prompt with tool results and conciseness constraint
+      // IMPORTANT: Only pass question text and tool results to model - never pass source code or file contents
       const conciseEnabled = config.model?.concise !== false; // Default to true
       let prompt = question.prompt;
 
       if (toolResults) {
-        prompt = `${prompt}\n\nHere is the actual data from the PatternFly MCP server:\n${toolResults}\n\nPlease use this information to answer the question.`;
+        // Sanitize toolResults to ensure no source code leaks through
+        // Only pass the actual tool response content, not any file paths or code
+        const sanitizedToolResults = toolResults
+          .replace(/\/workspace\/[^\s]+/g, '[path]') // Remove workspace paths
+          .replace(/\/app\/[^\s]+/g, '[path]') // Remove app paths
+          .replace(/auditor\/[^\s]+\.(js|ts|yaml|json)/g, '[file]') // Remove file references
+          .replace(/\.js|\.ts|\.yaml|\.json/g, '[file]'); // Remove file extensions
+        
+        prompt = `${prompt}\n\nHere is the actual data from the PatternFly MCP server:\n${sanitizedToolResults}\n\nPlease use this information to answer the question. Only use the information provided above - do not reference any code or files.`;
       }
 
       if (conciseEnabled) {
@@ -581,6 +613,7 @@ async function runAuditRun(runNumber, questions, model, config) {
       }
 
       // Send question to model
+      // Note: node-llama-cpp models cannot access the file system - they only see the prompt string
       const modelResponse = await Promise.race([
         model.complete(prompt, {
           temperature: config.model?.temperature || 0.7,
