@@ -606,12 +606,9 @@ async function runAuditRun(runNumber, questions, model, config) {
       let prompt = question.prompt;
 
       // Add PatternFly context for PF-MCP questions to help model understand what PatternFly is
-      // Prefer MCP server's description (from initialize response) over config-based context
-      if (question.category === 'tooling') {
-        const patternflyContext = mcpServerDescription || config.model?.context?.patternfly;
-        if (patternflyContext) {
-          prompt = `Context: ${patternflyContext}\n\n${prompt}`;
-        }
+      // Use only the MCP server's description (from initialize response) - single source of truth
+      if (question.category === 'tooling' && mcpServerDescription) {
+        prompt = `Context: ${mcpServerDescription}\n\n${prompt}`;
       }
 
       if (toolResults) {
