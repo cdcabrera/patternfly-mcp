@@ -168,7 +168,9 @@ function generateMarkdownReport(auditResults, config) {
         report += `**Run ${result.runNumber}** ${statusIcon}\n\n`;
         
         if (result.success && result.answer) {
-          report += `\`\`\`\n${result.answer}\n\`\`\`\n\n`;
+          // Escape any markdown code blocks in the answer to prevent formatting issues
+          const escapedAnswer = result.answer.replace(/```/g, '\\`\\`\\`');
+          report += `\`\`\`\n${escapedAnswer}\n\`\`\`\n\n`;
         } else if (result.error) {
           report += `*Error: ${result.error}*\n\n`;
         } else {
@@ -295,7 +297,9 @@ function generateMarkdownTable(auditResults, config) {
       report += `**Run ${result.runNumber}** ${statusIcon}\n\n`;
       
       if (result.success && result.answer) {
-        report += `\`\`\`\n${result.answer}\n\`\`\`\n\n`;
+        // Escape any markdown code blocks in the answer to prevent formatting issues
+        const escapedAnswer = result.answer.replace(/```/g, '\\`\\`\\`');
+        report += `\`\`\`\n${escapedAnswer}\n\`\`\`\n\n`;
       } else if (result.error) {
         report += `*Error: ${result.error}*\n\n`;
       } else {

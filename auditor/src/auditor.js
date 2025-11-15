@@ -142,11 +142,19 @@ async function runHealthChecks(config) {
         
         const mcpResponse = await callMcpMethod('tools/list', {}, config);
         const tools = mcpResponse?.tools || [];
+        
+        // Debug: Log tools received during health check
+        if (tools.length > 0) {
+          console.log(`   🔧 Health check: Received ${tools.length} tools: ${tools.map(t => t.name).join(', ')}`);
+        } else {
+          console.warn(`   ⚠️  Health check: No tools returned! Response: ${JSON.stringify(mcpResponse)}`);
+        }
+        
         const hasTool = tools.some(t => t.name === check.tool);
         results.push({
           name: check.name,
           status: hasTool ? 'pass' : 'fail',
-          message: hasTool ? `Tool ${check.tool} registered` : `Tool ${check.tool} not found`,
+          message: hasTool ? `Tool ${check.tool} registered` : `Tool ${check.tool} not found (received ${tools.length} tools: ${tools.map(t => t.name).join(', ') || 'none'})`,
           critical: check.critical || false
         });
       }
@@ -283,6 +291,11 @@ async function callMcpMethod(method, params, config) {
       return await callMcpMethod(method, params, config);
     }
     throw new Error(`MCP error: ${data.error.message}`);
+  }
+
+  // Debug: Log response for tools/list to verify structure
+  if (method === 'tools/list') {
+    console.log(`   🔍 Debug tools/list response:`, JSON.stringify(data, null, 2).substring(0, 500));
   }
 
   return data.result;
@@ -495,10 +508,22 @@ async function runAuditRun(runNumber, questions, model, config) {
           const toolsList = await callMcpMethod('tools/list', {}, config);
           const tools = toolsList?.tools || [];
           
+          // Debug: Log tools received
+          console.log(`   🔧 Tools received from MCP: ${tools.length} tools`);
+          if (tools.length > 0) {
+            console.log(`   🔧 Tool names: ${tools.map(t => t.name).join(', ')}`);
+          } else {
+            console.warn(`   ⚠️  No tools returned from tools/list! Response: ${JSON.stringify(toolsList)}`);
+          }
+          
           // Call appropriate tool based on question
           if (question.id === 'pf-mcp-1' || question.prompt.includes('tools are available')) {
             // List tools question - use tools/list result
-            toolResults = `Available PatternFly MCP tools:\n${tools.map(t => `- ${t.name}: ${t.description || 'No description'}`).join('\n')}`;
+            if (tools.length > 0) {
+              toolResults = `Available PatternFly MCP tools:\n${tools.map(t => `- ${t.name}: ${t.description || 'No description'}`).join('\n')}`;
+            } else {
+              toolResults = `No tools were returned from the PatternFly MCP server. This may indicate a connection issue.`;
+            }
             toolCalls.push({
               tool: 'tools/list',
               args: {},
