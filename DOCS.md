@@ -128,6 +128,23 @@ npx @patternfly/patternfly-mcp --http \
 npx @patternfly/patternfly-mcp --http --kill-existing
 ```
 
+## Resources
+
+The server provides a PatternFly context resource that models can discover and read to understand what PatternFly is and how to use this MCP server.
+
+### Resource: patternfly-context
+
+**URI**: `patternfly://context`
+
+**Description**: Information about PatternFly design system and how to use this MCP server.
+
+**Content**: Markdown text explaining:
+- What PatternFly is (open-source design system)
+- Key features (React components, design guidelines, JSON schemas)
+- How to use the PatternFly MCP server tools
+
+**Usage**: Models can discover this resource via `resources/list` and read it via `resources/read` to get context about PatternFly without relying on client-side configuration.
+
 ## Tools
 
 The server provides three MCP tools for accessing PatternFly documentation and component schemas.

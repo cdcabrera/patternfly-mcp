@@ -6,6 +6,7 @@ import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { startHttpTransport } from './server.http';
+import { registerPatternFlyContextResource } from './resource.patternflyContext';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -70,10 +71,15 @@ const runServer = async (options = getOptions(), {
       },
       {
         capabilities: {
-          tools: {}
+          tools: {},
+          resources: {}
         }
       }
     );
+
+    // Register PatternFly context resource (discoverable by models)
+    registerPatternFlyContextResource(server, options);
+    console.info('Registered resource: patternfly-context');
 
     tools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
