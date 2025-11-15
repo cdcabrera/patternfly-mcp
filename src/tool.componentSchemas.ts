@@ -82,13 +82,16 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
   return [
     'componentSchemas',
     {
-      description: `Use this tool to
+      description: `Use this tool to:
         - Confirm PatternFly React component existence with exact or partial searches using the "componentName" argument.
         - Enhance previous tool calls responses with React prop definitions and types.
 
-        This tool returns React prop definitions, types, and validation rules to help in design, coding and debugging React components.`,
+        This tool returns React prop definitions, types, and validation rules to help in design, coding and debugging React components.
+
+        To use the tool:
+        1. Submit an exact or partial search string using the "componentName" argument.`,
       inputSchema: {
-        componentName: z.string().describe('Name of the PatternFly component (e.g., "Button", "Table")')
+        componentName: z.string().describe('Exact or partial name of the PatternFly component (e.g., "Button", "But", "Table")')
       }
     },
     callback
