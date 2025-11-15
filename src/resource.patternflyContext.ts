@@ -30,7 +30,7 @@ This MCP server provides tools and resources to access PatternFly documentation,
 **Available Resources** (read via MCP resources/read):
 - patternfly://context: This resource - information about PatternFly and this MCP server
 
-**Important**: All tools are MCP tools that must be called via JSON-RPC protocol, not code functions or UI workflows. Use the MCP protocol's tools/call method with the correct parameters for each tool.`;
+**Important**: All tools are MCP tools that must be called via JSON-RPC protocol, not code functions or UI workflows. Use the MCP protocol's tools/call method with the correct parameters for each tool. The JSON-RPC format is the same for both stdio (default) and HTTP transport - only the message transport layer differs.`;
 
 /**
  * Register PatternFly context resource
