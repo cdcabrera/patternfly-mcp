@@ -134,6 +134,10 @@ async function runHealthChecks(config) {
             if (initResult?.sessionId) {
               mcpSessionId = initResult.sessionId;
             }
+            // Store server description from serverInfo if available
+            if (initResult?.serverInfo?.description) {
+              mcpServerDescription = initResult.serverInfo.description;
+            }
           } catch (initError) {
             // If initialization fails, the tools/list will also fail, so throw
             throw new Error(`MCP initialization failed: ${initError.message}`);
@@ -192,8 +196,9 @@ async function runHealthChecks(config) {
 /**
  * Call MCP server method via HTTP
  */
-// Store session ID for MCP HTTP transport
+// Store session ID and server info for MCP HTTP transport
 let mcpSessionId = null;
+let mcpServerDescription = null;
 
 async function callMcpMethod(method, params, config) {
   const url = config.mcp.url;
@@ -276,20 +281,24 @@ async function callMcpMethod(method, params, config) {
   }
 
   if (data.error) {
-    // If it's a "not initialized" error, try to initialize first
-    if (data.error.message && data.error.message.includes('not initialized') && method !== 'initialize') {
-      // Initialize the session first
-      await callMcpMethod('initialize', {
-        protocolVersion: '2025-06-18',
-        capabilities: {},
-        clientInfo: {
-          name: 'patternfly-mcp-auditor',
-          version: '1.0.0'
+      // If it's a "not initialized" error, try to initialize first
+      if (data.error.message && data.error.message.includes('not initialized') && method !== 'initialize') {
+        // Initialize the session first
+        const initResult = await callMcpMethod('initialize', {
+          protocolVersion: '2025-06-18',
+          capabilities: {},
+          clientInfo: {
+            name: 'patternfly-mcp-auditor',
+            version: '1.0.0'
+          }
+        }, config);
+        // Store server description from serverInfo if available
+        if (initResult?.serverInfo?.description) {
+          mcpServerDescription = initResult.serverInfo.description;
         }
-      }, config);
-      // Retry the original call
-      return await callMcpMethod(method, params, config);
-    }
+        // Retry the original call
+        return await callMcpMethod(method, params, config);
+      }
     throw new Error(`MCP error: ${data.error.message}`);
   }
 
@@ -595,6 +604,15 @@ async function runAuditRun(runNumber, questions, model, config) {
       // IMPORTANT: Only pass question text and tool results to model - never pass source code or file contents
       const conciseEnabled = config.model?.concise !== false; // Default to true
       let prompt = question.prompt;
+
+      // Add PatternFly context for PF-MCP questions to help model understand what PatternFly is
+      // Prefer MCP server's description (from initialize response) over config-based context
+      if (question.category === 'tooling') {
+        const patternflyContext = mcpServerDescription || config.model?.context?.patternfly;
+        if (patternflyContext) {
+          prompt = `Context: ${patternflyContext}\n\n${prompt}`;
+        }
+      }
 
       if (toolResults) {
         // Sanitize toolResults to ensure no source code leaks through

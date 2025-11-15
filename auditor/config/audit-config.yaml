@@ -13,6 +13,12 @@ model:
   temperature: 0.7         # Model temperature
   maxTokens: 512            # Max response tokens
   concise: true             # Add "be concise" constraint to prompts (default: true)
+  context:                  # Context to provide to model for better understanding
+    patternfly: |
+      PatternFly is an open-source design system for building consistent, accessible user interfaces.
+      It provides React components, design guidelines, and development tools for creating enterprise applications.
+      PatternFly is used by Red Hat and other organizations to build consistent UIs with reusable components.
+      The PatternFly MCP server provides tools to access PatternFly documentation, component schemas, and design guidelines.
 
 questions:
   baseline:

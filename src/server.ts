@@ -65,7 +65,8 @@ const runServer = async (options = getOptions(), {
     server = new McpServer(
       {
         name: options.name,
-        version: options.version
+        version: options.version,
+        description: 'PatternFly MCP Server: Provides access to PatternFly React component documentation, design guidelines, and JSON schemas. PatternFly is an open-source design system for building consistent, accessible user interfaces with React components, used by Red Hat and other organizations for enterprise applications.'
       },
       {
         capabilities: {
