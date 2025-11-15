@@ -31,10 +31,18 @@ function waitForServer(maxWait = 10000) {
           port: 3000,
           method: 'POST',
           path: '/',
-          timeout: 1000
+          timeout: 1000,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json, text/event-stream' // Required for MCP HTTP transport
+          }
         }, (res) => {
-          // Any response means server is up (even 406 is fine)
-          resolve(true);
+          // Any response means server is up (even errors are fine - server is responding)
+          // Consume response to avoid hanging
+          res.on('data', () => {});
+          res.on('end', () => {
+            resolve(true);
+          });
         });
         
         req.on('error', () => {
@@ -55,6 +63,13 @@ function waitForServer(maxWait = 10000) {
           }
         });
         
+        // Send a minimal valid JSON-RPC request
+        req.write(JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          id: 1,
+          params: {}
+        }));
         req.end();
       } catch (error) {
         if (Date.now() - startTime < maxWait) {
