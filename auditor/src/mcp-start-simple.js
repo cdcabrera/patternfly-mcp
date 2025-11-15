@@ -38,9 +38,13 @@ function waitForServer(maxWait = 10000) {
           }
         }, (res) => {
           // Any response means server is up (even errors are fine - server is responding)
-          // Consume response to avoid hanging
-          res.on('data', () => {});
+          // Consume response to avoid hanging and prevent error messages
+          let responseData = '';
+          res.on('data', (chunk) => {
+            responseData += chunk.toString();
+          });
           res.on('end', () => {
+            // Server responded, it's ready (even if it's an error response)
             resolve(true);
           });
         });
@@ -156,10 +160,32 @@ async function main() {
   }
   
   // Start server in background with --kill-existing flag for safety
+  // Use 'pipe' for stdout/stderr so we can filter out expected errors from readiness checks
   const proc = spawn('node', [builtServer, '--http', '--port', '3000', '--host', 'localhost', '--kill-existing'], {
     cwd: ROOT_DIR,
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'],
     detached: true
+  });
+  
+  // Forward server output but filter out the expected "Not Acceptable" error from readiness checks
+  // Only filter if it's the JSON error response, not other important messages
+  proc.stdout.on('data', (data) => {
+    const output = data.toString();
+    // Filter out the JSON error response from readiness checks, but keep all other output
+    // This includes kill messages, tool registrations, and startup messages
+    const lines = output.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Skip the JSON error response from readiness checks
+      if (trimmed && !trimmed.startsWith('{"jsonrpc":"2.0","error":{"code":-32000,"message":"Not Acceptable')) {
+        process.stdout.write(line + (line.endsWith('\n') ? '' : '\n'));
+      }
+    }
+  });
+  
+  proc.stderr.on('data', (data) => {
+    // Don't filter stderr - it might contain important error messages including kill status
+    process.stderr.write(data);
   });
   
   proc.unref();
