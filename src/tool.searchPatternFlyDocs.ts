@@ -147,8 +147,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     {
       description: `Search for PatternFly component documentation URLs by component name.
 
-        Uses fuzzy search against PatternFly component names (462 components available) to find matching documentation URLs.
-        Returns URLs only (does NOT fetch content). Use "fetchDocs" to fetch the actual documentation.
+        Uses fuzzy search against PatternFly component names to find matching documentation URLs.
+        Returns URLs only and does NOT fetch content. Use "fetchDocs" to fetch the actual documentation.
 
         **Parameters**:
         - searchQuery (string, required): Component name to search for (e.g., "button", "table", "accordion")
