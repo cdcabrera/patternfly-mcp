@@ -71,14 +71,18 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         2. Parse links: Extract URLs from the index content
         3. usePatternFlyDocs with those URLs → get full documentation
 
-        **Example**:
+        **Example - Local path**:
         Call this tool with urlList: ["documentation/guidelines/README.md"] to get the guidelines index.
-        Or call with urlList: ["https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"] to get specific documentation.
+
+        **Example - Remote URL**:
+        Call this tool with urlList: ["https://example.com/patternfly/docs/component/button.md"] to get specific documentation.
+
+        **Note**: URLs can be local file paths (relative to the docs directory) or remote HTTP/HTTPS URLs. Use searchPatternFlyDocs to discover available documentation URLs.
 
         **Finding URLs**: If you don't know the exact URLs, use the "searchPatternFlyDocs" tool to search for component documentation URLs by name. Then pass those URLs to this tool to fetch the content.
         To get component prop definitions (JSON Schema), use the "componentSchemas" tool instead.`,
       inputSchema: {
-        urlList: z.array(z.string()).describe('Array of URLs or file paths to PatternFly documentation. Example: ["documentation/guidelines/README.md"] or ["https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"]')
+        urlList: z.array(z.string()).describe('Array of URLs or file paths to PatternFly documentation. Can be local paths (e.g., "documentation/guidelines/README.md") or remote URLs (e.g., "https://example.com/patternfly/docs/component.md"). Use searchPatternFlyDocs to discover available URLs.')
       }
     },
     callback

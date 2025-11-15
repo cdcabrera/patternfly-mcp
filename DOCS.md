@@ -164,12 +164,14 @@ Fetch PatternFly documentation from one or more URLs. Can be used for index/over
     "name": "usePatternFlyDocs",
     "arguments": {
       "urlList": [
-        "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md"
+        "https://example.com/patternfly/docs/component/button.md"
       ]
     }
   }
 }
 ```
+
+**Note**: Use searchPatternFlyDocs to discover actual documentation URLs. The URLs can be local file paths or remote HTTP/HTTPS URLs.
 
 ### Tool: searchPatternFlyDocs
 
@@ -342,11 +344,20 @@ npx @modelcontextprotocol/inspector-cli \
   --server patternfly-docs \
   --cli \
   --method tools/call \
+  --tool-name searchPatternFlyDocs \
+  --tool-arg searchQuery="button"
+```
+
+### usePatternFlyDocs Example (with URLs from searchPatternFlyDocs)
+
+```bash
+npx @modelcontextprotocol/inspector-cli \
+  --config ./mcp-config.json \
+  --server patternfly-docs \
+  --cli \
+  --method tools/call \
   --tool-name usePatternFlyDocs \
-  --tool-arg urlList='[
-    "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md",
-    "https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content/accessibility/components/about-modal/about-modal.md"
-  ]'
+  --tool-arg urlList='["https://example.com/patternfly/docs/component/button.md"]'
 ```
 
 ### componentSchemas Example
