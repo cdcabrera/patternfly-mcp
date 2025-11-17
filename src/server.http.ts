@@ -1,6 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
+import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
@@ -84,7 +85,7 @@ const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolea
 
     return true;
   } catch (error) {
-    console.log(`Process ${pid} has failed to shutdown:`, error);
+    console.log(`Process ${pid} has failed to shutdown. You may need to stop the process or use a different port.`, error);
 
     return false;
   }
@@ -109,8 +110,7 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
       `\tProcess: PID ${processInfo.pid}`,
       `\tCommand: ${processInfo.command}`,
       `\n\tThis appears to be another instance of the server.`,
-      `\tYou can kill it with: kill ${processInfo.pid}`,
-      `\tOr use --kill-existing flag to automatically kill it.`,
+      `\tRecommended: rerun with --kill-existing flag to stop it automatically.`,
       `\tOr use a different port: --port <different-port>`
     );
   } else {
@@ -131,7 +131,7 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
  */
 const createStreamableHttpTransport = (options = getOptions()) => {
   const transportOptions: StreamableHTTPServerTransportOptions = {
-    sessionIdGenerator: () => crypto.randomUUID(),
+    sessionIdGenerator: () => randomUUID(),
     enableJsonResponse: false, // Use SSE streaming
     enableDnsRebindingProtection: true,
     onsessioninitialized: (sessionId: string) => {
@@ -142,10 +142,10 @@ const createStreamableHttpTransport = (options = getOptions()) => {
     }
   };
 
-  // Only include optional properties if they have values
   if (options.allowedOrigins) {
     transportOptions.allowedOrigins = options.allowedOrigins;
   }
+
   if (options.allowedHosts) {
     transportOptions.allowedHosts = options.allowedHosts;
   }
@@ -178,7 +178,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   const { port, name, host } = options;
 
   if (!port || !host) {
-    throw new Error('Port and host are required for HTTP transport');
+    throw new Error('Port and host options are required for HTTP transport');
   }
 
   const transport = createStreamableHttpTransport(options);
