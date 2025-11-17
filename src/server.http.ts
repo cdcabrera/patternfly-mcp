@@ -2,7 +2,7 @@ import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getOptions } from './options.context';
-import { getProcessOnPort, formatPortConflictError, isSameMcpServer, killProcess } from './utils/port-check.js';
+import { getProcessOnPort, formatPortConflictError, isSameMcpServer, killProcess } from './server.port.js';
 
 /**
  * Create Streamable HTTP transport
@@ -68,17 +68,17 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   const port = options.port || 3000;
   const host = options.host || 'localhost';
-  
+
   // Check for port conflicts and handle kill-existing BEFORE creating the Promise
   const processInfo = getProcessOnPort(port);
   if (processInfo) {
     const isSameProcess = isSameMcpServer(processInfo.command);
-    
+
     if (options.killExisting && isSameProcess) {
       // User explicitly requested to kill existing instance
       console.log(`\n⚠️  Port ${port} is in use by another PatternFly MCP server instance (PID: ${processInfo.pid})`);
       console.log(`   Killing existing instance as requested...`);
-      
+
       if (killProcess(processInfo.pid)) {
         console.log(`   ✅ Successfully killed process ${processInfo.pid}`);
         // Wait a moment for port to be released
@@ -102,12 +102,12 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       console.log(`PatternFly MCP server running on http://${host}:${port}`);
       resolve();
     });
-    
+
     server.on('error', (error: NodeJS.ErrnoException) => {
       // Handle port conflict with helpful error message
       if (error.code === 'EADDRINUSE') {
         const processInfo = getProcessOnPort(port);
-        
+
         if (processInfo) {
           const errorMessage = formatPortConflictError(port, processInfo);
           console.error(errorMessage);

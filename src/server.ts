@@ -92,7 +92,7 @@ const runServer = async (options = getOptions(), {
       transport = new StdioServerTransport();
 
       await server.connect(transport);
-      // Only log for stdio mode (HTTP mode logs its own message)
+      // STDIO log
       console.log(`PatternFly MCP server running on stdio`);
     }
 
