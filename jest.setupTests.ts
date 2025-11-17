@@ -1,6 +1,16 @@
 // Shared helpers for all Jest tests
 
 /**
+ * Mock fkill to avoid ES module import issues in Jest
+ * - fkill uses ES modules which Jest cannot handle without transformation
+ * - Returns a resolved promise to simulate successful process kill
+ */
+jest.mock('fkill', () => ({
+  __esModule: true,
+  default: jest.fn().mockResolvedValue(undefined)
+}));
+
+/**
  * Note: Mock @patternfly/patternfly-component-schemas/json to avoid top-level await issues in Jest
  * - This package uses top-level await which Jest cannot handle without transformation.
  * - Individual tests can override this mock if needed

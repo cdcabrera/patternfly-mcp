@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
-import { kill } from 'node:process';
+import fkill from 'fkill';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getOptions } from './options.context';
@@ -107,61 +107,29 @@ const isSameMcpServer = (command: string) =>
   command.includes('dist/index.js') && command.includes('--http');
 
 /**
- * Kill a process by PID
+ * Kill a process by PID using fkill
  *
  * @param pid - Process ID to kill
  * @param settings - Optional settings object
- * @param settings.maxWait - Maximum time to wait for the process to exit (default: 1000ms)
- * @param settings.checkInterval - Interval to check process status (default: 100ms)
- * @returns True if successful, false otherwise
+ * @param settings.maxWait - Maximum time to wait for graceful shutdown before force kill (default: 1000ms)
+ * @returns Promise that resolves to true if successful, false otherwise
  */
-const killProcess = (pid: number, { maxWait = 1000, checkInterval = 100 } = {}) => {
+const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolean> => {
   console.log(`Attempting to kill process ${pid}`);
 
   try {
-    // Attempt a graceful shutdown
-    kill(pid, 'SIGTERM');
+    // Use fkill with graceful shutdown, then force after timeout
+    await fkill(pid, {
+      forceAfterTimeout: maxWait,
+      waitForExit: maxWait + 1000,
+      silent: true
+    });
 
-    // Wait a moment for the graceful shutdown (polling)
-    const startTime = Date.now();
+    console.log(`Process ${pid} has exited`);
 
-    // Check if the process still exists
-    while (Date.now() - startTime < maxWait) {
-      try {
-        kill(pid, 0);
-        const start = Date.now();
-
-        while (Date.now() - start < checkInterval) {
-          // Busy wait (cross-platform)
-        }
-      } catch {
-        console.log(`Process ${pid} has exited`);
-
-        return true;
-      }
-    }
-
-    // Process is still running, force kill
-    try {
-      kill(pid, 0);
-      kill(pid, 'SIGKILL');
-      // Give it a moment
-      const start = Date.now();
-
-      while (Date.now() - start < checkInterval) {
-        // Busy wait
-      }
-
-      console.log(`Process ${pid} has exited`);
-
-      return true;
-    } catch {
-      console.log(`Process ${pid} has exited`);
-
-      return true;
-    }
-  } catch {
-    console.log(`Process ${pid} has failed to shutdown.`);
+    return true;
+  } catch (error) {
+    console.log(`Process ${pid} has failed to shutdown:`, error);
 
     return false;
   }
@@ -274,7 +242,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
     if (processInfo) {
       if (isSameMcpServer(processInfo.command)) {
-        killProcess(processInfo.pid);
+        await killProcess(processInfo.pid);
       } else {
         throw new Error(`Port ${port} is in use by a different process`, { cause: processInfo });
       }
