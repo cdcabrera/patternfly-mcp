@@ -75,7 +75,7 @@ These are the most relevant NPM scripts from package.json:
 
 ## Usage
 
-The MCP server communicates over stdio and provides access to PatternFly documentation through the following tools. Both tools accept an argument named `urlList` which must be an array of strings. Each string is either:
+The MCP server can communicate over **stdio** (default) or **HTTP** transport. It provides access to PatternFly documentation through the following tools. Both tools accept an argument named `urlList` which must be an array of strings. Each string is either:
 - An external URL (e.g., a raw GitHub URL to a .md file), or
 - A local file path (e.g., documentation/.../README.md). When running with the --docs-host flag, these paths are resolved under the llms-files directory instead.
 
@@ -116,6 +116,57 @@ npx @patternfly/patternfly-mcp --docs-host
 ```
 
 Then, passing a local path such as react-core/6.0.0/llms.txt in urlList will load from llms-files/react-core/6.0.0/llms.txt.
+
+## HTTP transport mode
+
+By default, the server communicates over stdio. To run the server over HTTP instead, use the `--http` flag. This enables the server to accept HTTP requests on a specified port and host.
+
+### Basic HTTP usage
+
+```bash
+npx @patternfly/patternfly-mcp --http
+```
+
+This starts the server on `http://localhost:3000` (default port and host).
+
+### HTTP options
+
+- `--http`: Enable HTTP transport mode (default: stdio)
+- `--port <number>`: Port number to listen on (default: 3000)
+- `--host <string>`: Host address to bind to (default: localhost)
+- `--allowed-origins <origins>`: Comma-separated list of allowed CORS origins
+- `--allowed-hosts <hosts>`: Comma-separated list of allowed host headers
+- `--kill-existing`: Automatically kill any existing server process using the same port
+
+### Examples
+
+Start on a custom port:
+```bash
+npx @patternfly/patternfly-mcp --http --port 8080
+```
+
+Start on a specific host:
+```bash
+npx @patternfly/patternfly-mcp --http --host 0.0.0.0 --port 3000
+```
+
+Start with CORS allowed origins:
+```bash
+npx @patternfly/patternfly-mcp --http --allowed-origins "http://localhost:3001,https://example.com"
+```
+
+Kill existing server on port before starting:
+```bash
+npx @patternfly/patternfly-mcp --http --port 3000 --kill-existing
+```
+
+### Port conflict handling
+
+If the specified port is already in use, the server will:
+- Detect if another instance of this MCP server is using the port
+- Display a helpful error message with the process ID
+- Suggest using `--kill-existing` to automatically kill the existing process
+- Or suggest using a different port with `--port`
 
 ## MCP client configuration examples
 
@@ -159,6 +210,41 @@ Most MCP clients use a JSON configuration to specify how to start this server. T
       "args": ["dist/index.js"],
       "cwd": "/path/to/patternfly-mcp",
       "description": "PatternFly docs (local build)"
+    }
+  }
+}
+```
+
+### HTTP transport mode
+
+```json
+{
+  "mcpServers": {
+    "patternfly-docs": {
+      "command": "npx",
+      "args": ["-y", "@patternfly/patternfly-mcp@latest", "--http", "--port", "3000"],
+      "description": "PatternFly docs (HTTP transport)"
+    }
+  }
+}
+```
+
+### HTTP transport with custom options
+
+```json
+{
+  "mcpServers": {
+    "patternfly-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@patternfly/patternfly-mcp@latest",
+        "--http",
+        "--port", "8080",
+        "--host", "0.0.0.0",
+        "--allowed-origins", "http://localhost:3001,https://example.com"
+      ],
+      "description": "PatternFly docs (HTTP transport, custom port/host/CORS)"
     }
   }
 }
@@ -228,7 +314,9 @@ const serverWithOptions = await start({ docsHost: true });
 // Multiple options can be overridden
 const customServer = await start({ 
   docsHost: true,
-  // Future CLI options can be added here
+  http: true,
+  port: 8080,
+  host: '0.0.0.0'
 });
 
 // TypeScript users can use the CliOptions type for type safety
