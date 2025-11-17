@@ -87,14 +87,16 @@ const runServer = async (options = getOptions(), {
 
     if (options.http) {
       await startHttpTransport(server, options);
+      // HTTP transport logs its own startup message with full URL
     } else {
       transport = new StdioServerTransport();
 
       await server.connect(transport);
+      // STDIO log
+      console.log(`PatternFly MCP server running on stdio`);
     }
 
     running = true;
-    console.log(`PatternFly MCP server running on ${(Boolean(options.http) && 'http') || 'stdio'}`);
   } catch (error) {
     console.error('Error creating MCP server:', error);
     throw error;
