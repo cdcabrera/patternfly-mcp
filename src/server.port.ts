@@ -8,7 +8,7 @@ import { kill } from 'node:process';
  * @param port - Port number to check
  * @returns Process info or undefined if port is free
  */
-const getProcessOnPort = (port?: number) => {
+const getProcessOnPort = (port: number) => {
   if (!port) {
     return undefined;
   }
@@ -106,17 +106,20 @@ const isSameMcpServer = (command: string) =>
  * Kill a process by PID
  *
  * @param pid - Process ID to kill
+ * @param settings - Optional settings object
+ * @param settings.maxWait - Maximum time to wait for the process to exit (default: 1000ms)
+ * @param settings.checkInterval - Interval to check process status (default: 100ms)
  * @returns True if successful, false otherwise
  */
-const killProcess = (pid: number) => {
+const killProcess = (pid: number, { maxWait = 1000, checkInterval = 100 } = {}) => {
+  console.log(`Attempting to kill process ${pid}`);
+
   try {
     // Attempt a graceful shutdown
     kill(pid, 'SIGTERM');
 
     // Wait a moment for the graceful shutdown (polling)
     const startTime = Date.now();
-    const checkInterval = 100; // Check every 100ms
-    const maxWait = 1000; // Wait up to 1 second
 
     // Check if the process still exists
     while (Date.now() - startTime < maxWait) {
@@ -128,6 +131,8 @@ const killProcess = (pid: number) => {
           // Busy wait (cross-platform)
         }
       } catch {
+        console.log(`Process ${pid} has exited`);
+
         return true;
       }
     }
@@ -139,16 +144,21 @@ const killProcess = (pid: number) => {
       // Give it a moment
       const start = Date.now();
 
-      while (Date.now() - start < 200) {
+      while (Date.now() - start < checkInterval) {
         // Busy wait
       }
 
+      console.log(`Process ${pid} has exited`);
+
       return true;
     } catch {
-      // Process already gone
+      console.log(`Process ${pid} has exited`);
+
       return true;
     }
   } catch {
+    console.log(`Process ${pid} has failed to shutdown.`);
+
     return false;
   }
 };

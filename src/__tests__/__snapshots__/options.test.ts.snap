@@ -7,6 +7,7 @@ exports[`parseCliOptions should attempt to parse args with --docs-host flag 1`] 
   "docsHost": true,
   "host": "localhost",
   "http": false,
+  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -18,6 +19,7 @@ exports[`parseCliOptions should attempt to parse args with other arguments 1`] =
   "docsHost": false,
   "host": "localhost",
   "http": false,
+  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -29,6 +31,7 @@ exports[`parseCliOptions should attempt to parse args without --docs-host flag 1
   "docsHost": false,
   "host": "localhost",
   "http": false,
+  "killExisting": false,
   "port": 3000,
 }
 `;

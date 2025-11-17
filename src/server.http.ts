@@ -79,7 +79,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       if (isSameMcpServer(processInfo.command)) {
         killProcess(processInfo.pid);
       } else {
-        throw new Error(`Port ${port} is in use by a different process`, {cause: processInfo});
+        throw new Error(`Port ${port} is in use by a different process`, { cause: processInfo });
       }
     }
   }
