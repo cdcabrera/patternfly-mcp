@@ -21,9 +21,8 @@ describe('PatternFly MCP, HTTP Transport', () => {
       expect(client.baseUrl).toMatch(/http:\/\/localhost:5001/);
     });
 
-    /*
     it('should initialize MCP session over HTTP', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5003 });
       const response = await client.initialize();
 
       expect({
@@ -33,7 +32,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     it('should list tools over HTTP', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5004 });
       await client.initialize();
 
       const response = await client.send({
@@ -48,7 +47,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     it('should handle concurrent requests', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5005 });
       await client.initialize();
 
       // Send multiple requests concurrently
@@ -71,7 +70,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     it('should handle malformed requests', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5006 });
       await client.initialize();
 
       const response = await client.send({
@@ -102,7 +101,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
 
   describe('Tool Execution', () => {
     it('should execute usePatternFlyDocs over HTTP', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5007 });
       await client.initialize();
 
       const response = await client.send({
@@ -122,7 +121,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     it('should execute fetchDocs over HTTP', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5008 });
       await client.initialize();
 
       // Test that the tool is available
@@ -135,7 +134,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
 
   describe('Performance and Reliability', () => {
     it('should handle rapid successive requests', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5009 });
       await client.initialize();
 
       // Send 5 rapid requests
@@ -150,7 +149,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     it('should maintain performance under load', async () => {
-      client = await startHttpServer();
+      client = await startHttpServer({ port: 5010 });
       await client.initialize();
 
       const startTime = Date.now();
@@ -167,6 +166,5 @@ describe('PatternFly MCP, HTTP Transport', () => {
       // Should complete within reasonable time (3 seconds)
       expect(duration).toBeLessThan(3000);
     });
-    */
   });
 });

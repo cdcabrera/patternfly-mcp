@@ -92,13 +92,26 @@ export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<H
   let sessionId: string | undefined;
   const pendingRequests = new Map<string, PendingEntry>();
   let requestId = 0;
+  let resolved = false;
+
+  // Timeout to prevent hanging if server doesn't start
+  const timeout = setTimeout(() => {
+    if (!resolved) {
+      resolved = true;
+      proc.kill('SIGTERM');
+      reject(new Error(`Timeout waiting for server to start on port ${port}`));
+    }
+  }, 10000); // 10 second timeout
 
   // Handle server output to get the URL
   proc.stdout.on('data', (data: Buffer) => {
     const output = data.toString();
-    const urlMatch = output.match(/PatternFly MCP server running on (http:\/\/[^\s]+)/);
+    // Match any server name followed by "server running on http://..."
+    const urlMatch = output.match(/server running on (http:\/\/[^\s]+)/);
 
-    if (urlMatch && urlMatch[1]) {
+    if (urlMatch && urlMatch[1] && !resolved) {
+      resolved = true;
+      clearTimeout(timeout);
       serverUrl = urlMatch[1];
       resolve(createClient());
     }
@@ -109,16 +122,26 @@ export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<H
     const error = data.toString();
 
     if (error.includes('Error:') || error.includes('EADDRINUSE')) {
-      reject(new Error(`Server error: ${error}`));
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        reject(new Error(`Server error: ${error}`));
+      }
     }
   });
 
   proc.on('error', error => {
-    reject(new Error(`Failed to start server: ${error.message}`));
+    if (!resolved) {
+      resolved = true;
+      clearTimeout(timeout);
+      reject(new Error(`Failed to start server: ${error.message}`));
+    }
   });
 
   proc.on('exit', code => {
-    if (code !== 0 && code !== null) {
+    if (code !== 0 && code !== null && !resolved) {
+      resolved = true;
+      clearTimeout(timeout);
       reject(new Error(`Server exited with code ${code}`));
     }
   });
