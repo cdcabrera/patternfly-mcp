@@ -53,7 +53,7 @@ const runServer = async (options = getOptions(), {
     if (server && running) {
       await server?.close();
       running = false;
-      console.log('PatternFly MCP server stopped');
+      console.log('MCP server stopped');
 
       if (allowProcessExit) {
         process.exit(0);
@@ -87,13 +87,13 @@ const runServer = async (options = getOptions(), {
 
     if (options.http) {
       await startHttpTransport(server, options);
-      // HTTP transport logs its own startup message with full URL
+      // HTTP transport logs its own message
     } else {
       transport = new StdioServerTransport();
 
       await server.connect(transport);
       // STDIO log
-      console.log(`PatternFly MCP server running on stdio`);
+      console.log(`MCP server running on stdio`);
     }
 
     running = true;

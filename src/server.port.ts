@@ -6,9 +6,13 @@ import { kill } from 'node:process';
  * Get process information for a port
  *
  * @param port - Port number to check
- * @returns Process info or null if port is free
+ * @returns Process info or undefined if port is free
  */
-const getProcessOnPort = (port: number): { pid: number; command: string } | null => {
+const getProcessOnPort = (port?: number) => {
+  if (!port) {
+    return undefined;
+  }
+
   try {
     const isWindows = platform() === 'win32';
     let pid: number | null = null;
@@ -45,7 +49,7 @@ const getProcessOnPort = (port: number): { pid: number; command: string } | null
           }
         }
       } catch {
-        return null;
+        return undefined;
       }
     } else {
       // Unix/macOS: Use lsof
@@ -53,19 +57,19 @@ const getProcessOnPort = (port: number): { pid: number; command: string } | null
         const output = execSync(`lsof -ti:${port} -sTCP:LISTEN`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 
         if (!output) {
-          return null;
+          return undefined;
         }
 
         const firstLine = output.split('\n')[0];
 
         if (!firstLine) {
-          return null;
+          return undefined;
         }
 
         pid = parseInt(firstLine, 10);
 
         if (isNaN(pid)) {
-          return null;
+          return undefined;
         }
 
         // Get command name for the PID
@@ -75,17 +79,17 @@ const getProcessOnPort = (port: number): { pid: number; command: string } | null
           // Ignore
         }
       } catch {
-        return null;
+        return undefined;
       }
     }
 
     if (pid === null) {
-      return null;
+      return undefined;
     }
 
     return { pid, command };
   } catch {
-    return null;
+    return undefined;
   }
 };
 
@@ -158,17 +162,15 @@ const killProcess = (pid: number) => {
  * @param processInfo.command - Command string
  * @returns Formatted error message
  */
-const formatPortConflictError = (port: number, processInfo: { pid: number; command: string }) => {
-  const isSameProcess = isSameMcpServer(processInfo.command);
-
+const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) => {
   const message = [
-    `\n❌ Port ${port} is already in use.`,
-    `\tProcess: PID ${processInfo.pid}`,
-    `\tCommand: ${processInfo.command}`
+    `\n❌ Port ${port} is already in use.`
   ];
 
-  if (isSameProcess) {
+  if (processInfo && isSameMcpServer(processInfo.command)) {
     message.push(
+      `\tProcess: PID ${processInfo.pid}`,
+      `\tCommand: ${processInfo.command}`,
       `\n\tThis appears to be another instance of the server.`,
       `\tYou can kill it with: kill ${processInfo.pid}`,
       `\tOr use --kill-existing flag to automatically kill it.`,
@@ -177,7 +179,7 @@ const formatPortConflictError = (port: number, processInfo: { pid: number; comma
   } else {
     message.push(
       `\n\tThis may be a different process. To use this port, you will need to:`,
-      `\t1. Stop the process: kill ${processInfo.pid}`,
+      `\t1. Stop the process`,
       `\t2. Or use a different port: --port <different-port>`
     );
   }
