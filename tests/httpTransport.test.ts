@@ -20,7 +20,8 @@ describe('PatternFly MCP, HTTP Transport', () => {
 
       expect(client.baseUrl).toMatch(/http:\/\/localhost:5001/);
     });
-/*
+
+    /*
     it('should initialize MCP session over HTTP', async () => {
       client = await startHttpServer();
       const response = await client.initialize();
