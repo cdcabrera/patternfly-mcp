@@ -5,7 +5,7 @@ import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
-import { startHttpTransport } from './server.http';
+import { startHttpTransport, type HttpServerHandle } from './server.http';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -47,10 +47,17 @@ const runServer = async (options = getOptions(), {
 }: { tools?: McpToolCreator[]; enableSigint?: boolean, allowProcessExit?: boolean } = {}): Promise<ServerInstance> => {
   let server: McpServer | null = null;
   let transport: StdioServerTransport | null = null;
+  let httpHandle: HttpServerHandle | null = null;
   let running = false;
 
   const stopServer = async () => {
     if (server && running) {
+      // Close HTTP server if it exists
+      if (httpHandle) {
+        await httpHandle.close();
+        httpHandle = null;
+      }
+
       await server?.close();
       running = false;
       console.log(`${options.name} server stopped`);
@@ -86,7 +93,7 @@ const runServer = async (options = getOptions(), {
     }
 
     if (options.http) {
-      await startHttpTransport(server, options);
+      httpHandle = await startHttpTransport(server, options);
       // HTTP transport logs its own message
     } else {
       transport = new StdioServerTransport();

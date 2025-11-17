@@ -1,10 +1,12 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
+import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
 import fkill from 'fkill';
+import packageJson from '../package.json';
 import { getOptions } from './options.context';
 
 /**
@@ -32,10 +34,25 @@ const getProcessOnPort = async (port: number) => {
 
     try {
       if (isWindows) {
-        command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, {
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore']
-        }).trim();
+        // Use PowerShell to get full command line with arguments (required for isSameMcpServer detection)
+        try {
+          const psCmd = `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId=${pid}\\").CommandLine"`;
+
+          command = execSync(psCmd, {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore']
+          }).trim();
+        } catch {
+          // Fallback to tasklist if PowerShell fails (only provides process name, not full command line)
+          try {
+            command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, {
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore']
+            }).trim();
+          } catch {
+            // Ignore - command stays 'unknown'
+          }
+        }
       } else {
         command = execSync(`ps -p ${pid} -o command=`, {
           encoding: 'utf8',
@@ -53,13 +70,42 @@ const getProcessOnPort = async (port: number) => {
 };
 
 /**
- * Check if a process is the same MCP server instance
+ * Tokens that identify this MCP server process
+ * Dynamically generated from package.json bin entries plus the built entry point
+ */
+const SAME_SERVER_TOKENS = [
+  // Direct node invocation of our built entry
+  'dist/index.js',
+  // Installed bin names from package.json#bin
+  ...Object.keys(packageJson.bin || {})
+];
+
+/**
+ * Check if a process is the same MCP server instance (HTTP mode)
  *
- * @param command - Command string to check
+ * We consider it a match if the command line appears to invoke our binary or
+ * the built entry point AND includes the `--http` flag.
+ *
+ * @param rawCommand - Raw command string to check
  * @returns True if it's the same MCP server
  */
-const isSameMcpServer = (command: string) =>
-  command.includes('dist/index.js') && command.includes('--http');
+const isSameMcpServer = (rawCommand: string): boolean => {
+  if (!rawCommand) return false;
+
+  // Normalize to improve cross-platform matching
+  const cmd = rawCommand
+    .replace(/\\/g, '/') // Windows paths → forward slashes
+    .replace(/\s+/g, ' ') // Collapse whitespace
+    .trim()
+    .toLowerCase();
+
+  // Check for --http flag with word boundaries
+  const hasHttpFlag = /(^|\s)--http(\s|$)/.test(cmd);
+
+  if (!hasHttpFlag) return false;
+
+  return SAME_SERVER_TOKENS.some(t => cmd.includes(t.toLowerCase()));
+};
 
 /**
  * Kill a process by PID using fkill
@@ -84,7 +130,7 @@ const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolea
 
     return true;
   } catch (error) {
-    console.log(`Process ${pid} has failed to shutdown:`, error);
+    console.log(`Process ${pid} has failed to shutdown. You may need to stop the process or use a different port.`, error);
 
     return false;
   }
@@ -109,8 +155,7 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
       `\tProcess: PID ${processInfo.pid}`,
       `\tCommand: ${processInfo.command}`,
       `\n\tThis appears to be another instance of the server.`,
-      `\tYou can kill it with: kill ${processInfo.pid}`,
-      `\tOr use --kill-existing flag to automatically kill it.`,
+      `\tRecommended: rerun with --kill-existing flag to stop it automatically.`,
       `\tOr use a different port: --port <different-port>`
     );
   } else {
@@ -131,7 +176,7 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
  */
 const createStreamableHttpTransport = (options = getOptions()) => {
   const transportOptions: StreamableHTTPServerTransportOptions = {
-    sessionIdGenerator: () => crypto.randomUUID(),
+    sessionIdGenerator: () => randomUUID(),
     enableJsonResponse: false, // Use SSE streaming
     enableDnsRebindingProtection: true,
     onsessioninitialized: (sessionId: string) => {
@@ -142,10 +187,10 @@ const createStreamableHttpTransport = (options = getOptions()) => {
     }
   };
 
-  // Only include optional properties if they have values
   if (options.allowedOrigins) {
     transportOptions.allowedOrigins = options.allowedOrigins;
   }
+
   if (options.allowedHosts) {
     transportOptions.allowedHosts = options.allowedHosts;
   }
@@ -169,16 +214,24 @@ const handleStreamableHttpRequest = async (
 };
 
 /**
+ * HTTP server handle for lifecycle management
+ */
+type HttpServerHandle = {
+  close: () => Promise<void>;
+};
+
+/**
  * Start HTTP transport server
  *
  * @param mcpServer - MCP server instance
  * @param options - Global options (default parameter)
+ * @returns Handle with close method for server lifecycle management
  */
-const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<void> => {
+const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<HttpServerHandle> => {
   const { port, name, host } = options;
 
   if (!port || !host) {
-    throw new Error('Port and host are required for HTTP transport');
+    throw new Error('Port and host options are required for HTTP transport');
   }
 
   const transport = createStreamableHttpTransport(options);
@@ -188,7 +241,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   // Set up
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    handleStreamableHttpRequest(req, res, transport);
+    void handleStreamableHttpRequest(req, res, transport);
   });
 
   // Check for port conflicts and handle kill-existing BEFORE creating the Promise
@@ -205,7 +258,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   }
 
   // Start server (port should be free now, or we'll get an error)
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     server.listen(port, host, () => {
       console.log(`${name} server running on http://${host}:${port}`);
       resolve();
@@ -228,6 +281,14 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       }
     });
   });
+
+  return {
+    close: async () => {
+      await new Promise<void>(resolve => {
+        server.close(() => resolve());
+      });
+    }
+  };
 };
 
 export {
@@ -237,5 +298,8 @@ export {
   handleStreamableHttpRequest,
   isSameMcpServer,
   killProcess,
+  SAME_SERVER_TOKENS,
   startHttpTransport
 };
+
+export type { HttpServerHandle };
