@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { runServer } from '../server';
 import { type GlobalOptions } from '../options';
+import { getOptions } from '../options.context';
 
 // Mock dependencies
 jest.mock('@modelcontextprotocol/sdk/server/mcp.js');
@@ -134,7 +135,7 @@ describe('runServer', () => {
     });
 
     await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Server creation failed');
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating MCP server:', error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(`Error creating ${getOptions().name} server:`, error);
   });
 
   it('should handle errors during connection', async () => {
@@ -143,6 +144,6 @@ describe('runServer', () => {
     mockServer.connect.mockRejectedValue(error);
 
     await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Connection failed');
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating MCP server:', error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(`Error creating ${getOptions().name} server:`, error);
   });
 });

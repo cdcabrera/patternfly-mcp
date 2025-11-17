@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { startHttpTransport } from '../server.http';
+import { type GlobalOptions } from '../options';
 
 // Mock dependencies
 jest.mock('@modelcontextprotocol/sdk/server/mcp.js');
@@ -46,15 +47,18 @@ describe('HTTP Transport', () => {
 
   describe('startHttpTransport', () => {
     it('should start HTTP server on specified port and host', async () => {
-      // Uses default parameter pattern - no need to pass options explicitly
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       expect(MockCreateServer).toHaveBeenCalled();
-      expect(mockHttpServer.listen).toHaveBeenCalledWith(3000, 'localhost', expect.any(Function));
+      expect(mockHttpServer.listen).toHaveBeenCalledWith(options.port, options.host, expect.any(Function));
     });
 
     it('should create StreamableHTTPServerTransport with correct options', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       expect(MockStreamableHTTPServerTransport).toHaveBeenCalledWith({
         sessionIdGenerator: expect.any(Function),
@@ -68,12 +72,16 @@ describe('HTTP Transport', () => {
     });
 
     it('should connect MCP server to transport', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
     });
 
     it('should handle server errors', async () => {
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
       const error = new Error('Server error');
 
       mockHttpServer.listen.mockImplementation((_port: any, _host: any, _callback: any) => {
@@ -85,11 +93,13 @@ describe('HTTP Transport', () => {
         throw error;
       });
 
-      await expect(startHttpTransport(mockServer)).rejects.toThrow('Server error');
+      await expect(startHttpTransport(mockServer, options)).rejects.toThrow('Server error');
     });
 
     it('should set up request handler', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       // StreamableHTTPServerTransport handles requests directly
       expect(MockStreamableHTTPServerTransport).toHaveBeenCalled();
@@ -98,7 +108,9 @@ describe('HTTP Transport', () => {
 
   describe('HTTP request handling', () => {
     it('should delegate requests to StreamableHTTPServerTransport', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       // Mock request and response
       const mockReq = {
@@ -120,7 +132,9 @@ describe('HTTP Transport', () => {
     });
 
     it('should handle all HTTP methods through transport', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       // Test different HTTP methods
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
@@ -143,7 +157,9 @@ describe('HTTP Transport', () => {
     });
 
     it('should handle transport errors gracefully', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       // Mock transport error
       const transportError = new Error('Transport error');
@@ -168,7 +184,9 @@ describe('HTTP Transport', () => {
 
   describe('StreamableHTTPServerTransport configuration', () => {
     it('should use crypto.randomUUID for session ID generation', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
 
@@ -182,7 +200,9 @@ describe('HTTP Transport', () => {
     });
 
     it('should configure session callbacks', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
 
@@ -193,7 +213,9 @@ describe('HTTP Transport', () => {
     });
 
     it('should enable SSE streaming', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
 
@@ -201,7 +223,9 @@ describe('HTTP Transport', () => {
     });
 
     it('should enable DNS rebinding protection', async () => {
-      await startHttpTransport(mockServer);
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      await startHttpTransport(mockServer, options);
 
       const transportOptions = MockStreamableHTTPServerTransport.mock.calls[0]?.[0];
 

@@ -1,8 +1,205 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
+import { execSync } from 'node:child_process';
+import { platform } from 'node:os';
+import { kill } from 'node:process';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getOptions } from './options.context';
-import { getProcessOnPort, formatPortConflictError, isSameMcpServer, killProcess } from './server.port.js';
+
+/**
+ * Get process information for a port
+ *
+ * @param port - Port number to check
+ * @returns Process info or undefined if port is free
+ */
+const getProcessOnPort = (port: number) => {
+  if (!port) {
+    return undefined;
+  }
+
+  try {
+    const isWindows = platform() === 'win32';
+    let pid: number | null = null;
+    let command = 'unknown';
+
+    if (isWindows) {
+      // Windows: Use netstat to find PID
+      try {
+        const netstatOutput = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+        const lines = netstatOutput.split('\n');
+
+        for (const line of lines) {
+          if (line.includes('LISTENING')) {
+            const parts = line.trim().split(/\s+/);
+            const lastPart = parts[parts.length - 1];
+
+            if (lastPart) {
+              const foundPid = parseInt(lastPart, 10);
+
+              if (!isNaN(foundPid)) {
+                pid = foundPid;
+                break;
+              }
+            }
+          }
+        }
+
+        if (pid) {
+          // Get command name on Windows
+          try {
+            command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+          } catch {
+            // Ignore
+          }
+        }
+      } catch {
+        return undefined;
+      }
+    } else {
+      // Unix/macOS: Use lsof
+      try {
+        const output = execSync(`lsof -ti:${port} -sTCP:LISTEN`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+
+        if (!output) {
+          return undefined;
+        }
+
+        const firstLine = output.split('\n')[0];
+
+        if (!firstLine) {
+          return undefined;
+        }
+
+        pid = parseInt(firstLine, 10);
+
+        if (isNaN(pid)) {
+          return undefined;
+        }
+
+        // Get command name for the PID
+        try {
+          command = execSync(`ps -p ${pid} -o command=`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+        } catch {
+          // Ignore
+        }
+      } catch {
+        return undefined;
+      }
+    }
+
+    if (pid === null) {
+      return undefined;
+    }
+
+    return { pid, command };
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Check if a process is the same MCP server instance
+ *
+ * @param command - Command string to check
+ * @returns True if it's the same MCP server
+ */
+const isSameMcpServer = (command: string) =>
+  command.includes('dist/index.js') && command.includes('--http');
+
+/**
+ * Kill a process by PID
+ *
+ * @param pid - Process ID to kill
+ * @param settings - Optional settings object
+ * @param settings.maxWait - Maximum time to wait for the process to exit (default: 1000ms)
+ * @param settings.checkInterval - Interval to check process status (default: 100ms)
+ * @returns True if successful, false otherwise
+ */
+const killProcess = (pid: number, { maxWait = 1000, checkInterval = 100 } = {}) => {
+  console.log(`Attempting to kill process ${pid}`);
+
+  try {
+    // Attempt a graceful shutdown
+    kill(pid, 'SIGTERM');
+
+    // Wait a moment for the graceful shutdown (polling)
+    const startTime = Date.now();
+
+    // Check if the process still exists
+    while (Date.now() - startTime < maxWait) {
+      try {
+        kill(pid, 0);
+        const start = Date.now();
+
+        while (Date.now() - start < checkInterval) {
+          // Busy wait (cross-platform)
+        }
+      } catch {
+        console.log(`Process ${pid} has exited`);
+
+        return true;
+      }
+    }
+
+    // Process is still running, force kill
+    try {
+      kill(pid, 0);
+      kill(pid, 'SIGKILL');
+      // Give it a moment
+      const start = Date.now();
+
+      while (Date.now() - start < checkInterval) {
+        // Busy wait
+      }
+
+      console.log(`Process ${pid} has exited`);
+
+      return true;
+    } catch {
+      console.log(`Process ${pid} has exited`);
+
+      return true;
+    }
+  } catch {
+    console.log(`Process ${pid} has failed to shutdown.`);
+
+    return false;
+  }
+};
+
+/**
+ * Format a helpful error message for port conflicts
+ *
+ * @param port - Port number
+ * @param processInfo - Process information
+ * @param processInfo.pid - Process ID
+ * @param processInfo.command - Command string
+ * @returns Formatted error message
+ */
+const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) => {
+  const message = [
+    `\n❌ Port ${port} is already in use.`
+  ];
+
+  if (processInfo && isSameMcpServer(processInfo.command)) {
+    message.push(
+      `\tProcess: PID ${processInfo.pid}`,
+      `\tCommand: ${processInfo.command}`,
+      `\n\tThis appears to be another instance of the server.`,
+      `\tYou can kill it with: kill ${processInfo.pid}`,
+      `\tOr use --kill-existing flag to automatically kill it.`,
+      `\tOr use a different port: --port <different-port>`
+    );
+  } else {
+    message.push(
+      `\n\tThis may be a different process. To use this port, you will need to:`,
+      `\t1. Stop the process`,
+      `\t2. Or use a different port: --port <different-port>`
+    );
+  }
+
+  return message.join('\n');
+};
 
 /**
  * Create Streamable HTTP transport
@@ -55,7 +252,7 @@ const handleStreamableHttpRequest = async (
  * @param options - Global options (default parameter)
  */
 const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<void> => {
-  const { port, host } = options;
+  const { port, name, host } = options;
 
   if (!port || !host) {
     throw new Error('Port and host are required for HTTP transport');
@@ -87,7 +284,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   // Start server (port should be free now, or we'll get an error)
   return new Promise((resolve, reject) => {
     server.listen(port, host, () => {
-      console.log(`MCP server running on http://${host}:${port}`);
+      console.log(`${name} server running on http://${host}:${port}`);
       resolve();
     });
 
@@ -112,6 +309,10 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
 export {
   createStreamableHttpTransport,
+  formatPortConflictError,
+  getProcessOnPort,
   handleStreamableHttpRequest,
+  isSameMcpServer,
+  killProcess,
   startHttpTransport
 };

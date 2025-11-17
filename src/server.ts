@@ -53,7 +53,7 @@ const runServer = async (options = getOptions(), {
     if (server && running) {
       await server?.close();
       running = false;
-      console.log('MCP server stopped');
+      console.log(`${options.name} server stopped`);
 
       if (allowProcessExit) {
         process.exit(0);
@@ -93,12 +93,12 @@ const runServer = async (options = getOptions(), {
 
       await server.connect(transport);
       // STDIO log
-      console.log(`MCP server running on stdio`);
+      console.log(`${options.name} server running on stdio`);
     }
 
     running = true;
   } catch (error) {
-    console.error('Error creating MCP server:', error);
+    console.error(`Error creating ${options.name} server:`, error);
     throw error;
   }
 
