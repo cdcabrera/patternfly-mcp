@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
 import fkill from 'fkill';
@@ -130,7 +130,7 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
  * @param options - Global options (default parameter)
  */
 const createStreamableHttpTransport = (options = getOptions()) => {
-  const transportOptions: any = {
+  const transportOptions: StreamableHTTPServerTransportOptions = {
     sessionIdGenerator: () => crypto.randomUUID(),
     enableJsonResponse: false, // Use SSE streaming
     enableDnsRebindingProtection: true,
