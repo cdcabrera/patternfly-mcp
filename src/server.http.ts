@@ -1,9 +1,10 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
-import fkill from 'fkill';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { portToPid } from 'pid-port';
+import fkill from 'fkill';
 import { getOptions } from './options.context';
 
 /**
@@ -12,83 +13,37 @@ import { getOptions } from './options.context';
  * @param port - Port number to check
  * @returns Process info or undefined if port is free
  */
-const getProcessOnPort = (port: number) => {
+const getProcessOnPort = async (port: number) => {
   if (!port) {
     return undefined;
   }
 
   try {
-    const isWindows = platform() === 'win32';
-    let pid: number | null = null;
-    let command = 'unknown';
+    // Cross-platform PID lookup using pid-port
+    const pid = await portToPid(port);
 
-    if (isWindows) {
-      // Windows: Use netstat to find PID
-      try {
-        const netstatOutput = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-        const lines = netstatOutput.split('\n');
-
-        for (const line of lines) {
-          if (line.includes('LISTENING')) {
-            const parts = line.trim().split(/\s+/);
-            const lastPart = parts[parts.length - 1];
-
-            if (lastPart) {
-              const foundPid = parseInt(lastPart, 10);
-
-              if (!isNaN(foundPid)) {
-                pid = foundPid;
-                break;
-              }
-            }
-          }
-        }
-
-        if (pid) {
-          // Get command name on Windows
-          try {
-            command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-          } catch {
-            // Ignore
-          }
-        }
-      } catch {
-        return undefined;
-      }
-    } else {
-      // Unix/macOS: Use lsof
-      try {
-        const output = execSync(`lsof -ti:${port} -sTCP:LISTEN`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-
-        if (!output) {
-          return undefined;
-        }
-
-        const firstLine = output.split('\n')[0];
-
-        if (!firstLine) {
-          return undefined;
-        }
-
-        pid = parseInt(firstLine, 10);
-
-        if (isNaN(pid)) {
-          return undefined;
-        }
-
-        // Get command name for the PID
-        try {
-          command = execSync(`ps -p ${pid} -o command=`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-        } catch {
-          // Ignore
-        }
-      } catch {
-        return undefined;
-      }
+    if (!pid) {
+      return undefined;
     }
 
-    if (pid === null) {
-      return undefined;
+    // Minimal OS-specific code for command name
+    const isWindows = platform() === 'win32';
+    let command = 'unknown';
+
+    try {
+      if (isWindows) {
+        command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+      } else {
+        command = execSync(`ps -p ${pid} -o command=`, {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore']
+        }).trim();
+      }
+    } catch {
+      // Ignore - command stays 'unknown'
     }
 
     return { pid, command };
@@ -238,7 +193,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   // Check for port conflicts and handle kill-existing BEFORE creating the Promise
   if (options.killExisting) {
-    const processInfo = getProcessOnPort(port);
+    const processInfo = await getProcessOnPort(port);
 
     if (processInfo) {
       if (isSameMcpServer(processInfo.command)) {
@@ -256,9 +211,9 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       resolve();
     });
 
-    server.on('error', (error: NodeJS.ErrnoException) => {
+    server.on('error', async (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
-        const processInfo = getProcessOnPort(port);
+        const processInfo = await getProcessOnPort(port);
 
         console.error(formatPortConflictError(port, processInfo));
 
