@@ -20,7 +20,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 - Node.js 20.0.0 or higher
 - NPM (or another Node package manager)
-- OS Support: macOS, Linux, and attempted Windows support.
+- OS Support: macOS, Linux, and Windows (via Bash on Windows, e.g., Git Bash)
 
 ## Installation
 
@@ -43,6 +43,16 @@ npm run build
 ```bash
 npm run start:dev
 ```
+
+#### Windows (Bash) users
+
+We recommend Git Bash. Configure npm to use Bash for scripts so POSIX commands like `rm -rf` and `export` work:
+
+```bash
+npm config set script-shell bash
+```
+
+Alternatively, add `script-shell=bash` to your user-level `.npmrc` file (typically `~/.npmrc` or `%USERPROFILE%\.npmrc` on Windows). This applies to all projects and won't be checked into git.
 
 ### Use via npx (after publishing)
 
