@@ -189,6 +189,8 @@ When you use `--kill-existing`:
 - If the port is held by the **same MCP server instance**, the process will be stopped automatically and the new server will start.
 - If the port is held by a **different process**, the server will fail fast and report that process's PID/command. It will not terminate unrelated processes. Either stop that process manually or choose a different port.
 
+**Windows**: Uses PowerShell for same-server detection; falls back to `tasklist` if unavailable.
+
 ## MCP client configuration examples
 
 Most MCP clients use a JSON configuration to specify how to start this server. The server itself only reads CLI flags and environment variables, not the JSON configuration. Below are examples you can adapt to your MCP client.
