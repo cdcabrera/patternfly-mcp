@@ -93,7 +93,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     it('should start server on custom host', async () => {
-      client = await startHttpServer({ host: '127.0.0.1' });
+      client = await startHttpServer({ host: '127.0.0.1', port: 5011 });
 
       expect(client.baseUrl).toMatch(/127\.0\.0\.1/);
     });
