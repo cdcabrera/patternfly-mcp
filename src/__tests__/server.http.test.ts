@@ -149,29 +149,33 @@ describe('formatPortConflictError', () => {
   });
 });
 
-describe('HTTP Transport', () => {
+describe('startHttpTransport', () => {
+  const mockFunction = jest.fn();
+  const mockEventHandler = jest.fn();
+  const mockServerClose = jest.fn();
   let mockServer: any;
-  let mockTransport: any;
   let mockHttpServer: any;
+  let mockTransport: any;
 
   beforeEach(() => {
     mockServer = {
-      connect: jest.fn(),
-      registerTool: jest.fn()
-    };
-    mockTransport = {
-      handleRequest: jest.fn(),
-      sessionId: 'test-session-123'
+      connect: mockFunction,
+      registerTool: mockFunction
     };
     mockHttpServer = {
-      on: jest.fn(),
-      listen: jest.fn().mockImplementation((_port: any, _host: any, callback: any) => {
-        // Simulate a successful server start
+      on: mockEventHandler,
+      listen: mockFunction.mockImplementation((_port: any, _host: any, callback: any) => {
         if (callback) {
           callback();
         }
       }),
-      close: jest.fn()
+      close: mockServerClose.mockImplementation((callback: any) => {
+        callback();
+      })
+    };
+    mockTransport = {
+      handleRequest: jest.fn(),
+      sessionId: 'test-session-123'
     };
 
     MockMcpServer.mockImplementation(() => mockServer);
@@ -183,40 +187,214 @@ describe('HTTP Transport', () => {
     jest.clearAllMocks();
   });
 
+  it('should start HTTP server, with port and host', async () => {
+    const server = await startHttpTransport(mockServer, { port: 3000, host: 'localhost' } as GlobalOptions);
+
+    await server.close();
+
+    expect({
+      setupServer: mockFunction.mock.calls,
+      setupTransport: MockStreamableHTTPServerTransport.mock.calls,
+      setupHandlers: mockEventHandler.mock.calls,
+      serverClose: mockServerClose.mock.calls
+    }).toMatchSnapshot('server setup');
+  });
+
+  it.each([
+    {
+      description: 'with invalid port',
+      options: { port: undefined, host: 'localhost' },
+      error: 'are required for HTTP transport'
+    },
+    {
+      description: 'with invalid host',
+      options: { port: 3000, host: undefined },
+      error: 'are required for HTTP transport'
+    },
+    {
+      description: 'with option killExisting and missing processInfo',
+      options: { port: 3000, host: 'localhost', killExisting: true },
+      error: 'is in use by a different process'
+    }
+  ])('should handle option errors, $description', async ({ error, options }) => {
+    await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
+  });
+
+  it.each([
+    {
+      description: 'with server error',
+      options: { port: 3000, host: 'localhost' },
+      error: 'are required for HTTP transport'
+    }
+  ])('should handle server errors, $description', async ({ error, options }) => {
+    MockCreateServer.mockImplementation(() => {
+      throw new Error('frank');
+    });
+
+    await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
+  });
+});
+
+/*
+describe('startHttpTransport', () => {
+  const mockFunction = jest.fn();
+  const mockEventHandler = jest.fn();
+  const mockServerClose = jest.fn();
+  let mockServer: any;
+  let mockTransport: any;
+
+  beforeEach(() => {
+    mockServer = {
+      connect: mockFunction,
+      registerTool: mockFunction
+    };
+
+    mockTransport = {
+      handleRequest: jest.fn(),
+      sessionId: 'test-session-123'
+    };
+
+    MockStreamableHTTPServerTransport.mockImplementation(() => mockTransport);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with port and host',
+      options: { port: 3000, host: 'localhost' }
+    }
+  ])('should start HTTP server, $description', async ({ options }) => {
+    const server = await startHttpTransport(mockServer, options as GlobalOptions);
+
+    await server.close();
+
+    expect({
+      setupServer: mockFunction.mock.calls,
+      setupTransport: MockStreamableHTTPServerTransport.mock.calls,
+      setupHandlers: mockEventHandler.mock.calls,
+      serverClose: mockServerClose.mock.calls
+    }).toMatchSnapshot();
+  });
+
+  it.each([
+    {
+      description: 'with invalid port',
+      options: { port: undefined, host: 'localhost' },
+      error: 'are required for HTTP transport'
+    },
+    {
+      description: 'with invalid host',
+      options: { port: 3000, host: undefined },
+      error: 'are required for HTTP transport'
+    },
+    {
+      description: 'with option killExisting and missing processInfo',
+      options: { port: 3000, host: 'localhost', killExisting: true },
+      error: 'is in use by a different process'
+    }
+  ])('should handle option errors, $description', async ({ error, options }) => {
+    await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
+  });
+});
+*/
+
+/*
+describe('startHttpTransport', () => {
+  const mockFunction = jest.fn();
+  const mockEventHandler = jest.fn();
+  const mockServerClose = jest.fn();
+  let mockServer: any;
+  let mockTransport: any;
+  let mockHttpServer: any;
+
+  beforeEach(() => {
+    mockServer = {
+      connect: mockFunction,
+      registerTool: mockFunction
+    };
+    mockTransport = {
+      handleRequest: jest.fn(),
+      sessionId: 'test-session-123'
+    };
+    mockHttpServer = {
+      on: mockEventHandler,
+      listen: mockFunction.mockImplementation((_port: any, _host: any, callback: any) => {
+        if (callback) {
+          callback();
+        }
+      }),
+      close: mockServerClose.mockImplementation((callback: any) => {
+        callback();
+      })
+    };
+
+    MockMcpServer.mockImplementation(() => mockServer);
+    MockStreamableHTTPServerTransport.mockImplementation(() => mockTransport);
+    MockCreateServer.mockReturnValue(mockHttpServer);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with port and host',
+      options: { port: 3000, host: 'localhost' }
+    }
+  ])('should start HTTP server, $description', async ({ options }) => {
+    const server = await startHttpTransport(mockServer, options as GlobalOptions);
+
+    await server.close();
+
+    expect({
+      setupServer: mockFunction.mock.calls,
+      setupTransport: MockStreamableHTTPServerTransport.mock.calls,
+      setupHandlers: mockEventHandler.mock.calls,
+      serverClose: mockServerClose.mock.calls
+    }).toMatchSnapshot();
+  });
+
+  it.each([
+    {
+      description: 'with invalid port',
+      options: { port: undefined, host: 'localhost' },
+      error: 'are required for HTTP transport'
+    },
+    {
+      description: 'with invalid host',
+      options: { port: 3000, host: undefined },
+      error: 'are required for HTTP transport'
+    },
+    {
+      description: 'with option killExisting and missing processInfo',
+      options: { port: 3000, host: 'localhost', killExisting: true },
+      error: 'is in use by a different process'
+    }
+  ])('should handle option errors, $description', async ({ error, options }) => {
+    await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
+  });
+
+  it.each([
+    {
+      description: 'with server error',
+      options: { port: 3000, host: 'localhost' },
+      error: 'are required for HTTP transport'
+    }
+  ])('should handle server errors, $description', async ({ error, options }) => {
+    MockCreateServer.mockImplementation(() => {
+      throw new Error('frank');
+    });
+
+    await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
+  });
+
   /*
   describe('startHttpTransport', () => {
-    it('should start HTTP server on specified port and host', async () => {
-      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
 
-      await startHttpTransport(mockServer, options);
-
-      expect(MockCreateServer).toHaveBeenCalled();
-      expect(mockHttpServer.listen).toHaveBeenCalledWith(options.port, options.host, expect.any(Function));
-    });
-
-    it('should create StreamableHTTPServerTransport with correct options', async () => {
-      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
-
-      await startHttpTransport(mockServer, options);
-
-      expect(MockStreamableHTTPServerTransport).toHaveBeenCalledWith({
-        sessionIdGenerator: expect.any(Function),
-        enableJsonResponse: false,
-        allowedOrigins: undefined,
-        allowedHosts: undefined,
-        enableDnsRebindingProtection: true,
-        onsessioninitialized: expect.any(Function),
-        onsessionclosed: expect.any(Function)
-      });
-    });
-
-    it('should connect MCP server to transport', async () => {
-      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
-
-      await startHttpTransport(mockServer, options);
-
-      expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
-    });
 
     it('should handle server errors', async () => {
       const options = { port: 3000, host: 'localhost' } as GlobalOptions;
@@ -235,40 +413,7 @@ describe('HTTP Transport', () => {
       await expect(startHttpTransport(mockServer, options)).rejects.toThrow('Server error');
     });
 
-    it('should set up request handler', async () => {
-      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
 
-      await startHttpTransport(mockServer, options);
-
-      // StreamableHTTPServerTransport handles requests directly
-      expect(MockStreamableHTTPServerTransport).toHaveBeenCalled();
-    });
-
-    it('should return handle with close method', async () => {
-      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
-
-      const handle = await startHttpTransport(mockServer, options);
-
-      expect(handle).toBeDefined();
-      expect(typeof handle.close).toBe('function');
-    });
-
-    it('should close HTTP server when handle.close() is called', async () => {
-      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
-
-      const handle = await startHttpTransport(mockServer, options);
-
-      // Mock server.close to call callback immediately
-      mockHttpServer.close.mockImplementation((callback: () => void) => {
-        if (callback) {
-          callback();
-        }
-      });
-
-      await handle.close();
-
-      expect(mockHttpServer.close).toHaveBeenCalled();
-    });
   });
 
   describe('HTTP request handling', () => {
@@ -398,4 +543,4 @@ describe('HTTP Transport', () => {
     });
   });
   */
-});
+// });

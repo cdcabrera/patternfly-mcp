@@ -45,3 +45,43 @@ exports[`getProcessOnPort should attempt to find a process listening on a port: 
   "pid": 123456789,
 }
 `;
+
+exports[`startHttpTransport should start HTTP server, with port and host: server setup 1`] = `
+{
+  "serverClose": [
+    [
+      [Function],
+    ],
+  ],
+  "setupHandlers": [
+    [
+      "error",
+      [Function],
+    ],
+  ],
+  "setupServer": [
+    [
+      {
+        "handleRequest": [MockFunction],
+        "sessionId": "test-session-123",
+      },
+    ],
+    [
+      3000,
+      "localhost",
+      [Function],
+    ],
+  ],
+  "setupTransport": [
+    [
+      {
+        "enableDnsRebindingProtection": true,
+        "enableJsonResponse": false,
+        "onsessionclosed": [Function],
+        "onsessioninitialized": [Function],
+        "sessionIdGenerator": [Function],
+      },
+    ],
+  ],
+}
+`;

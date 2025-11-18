@@ -8,6 +8,7 @@ import { portToPid } from 'pid-port';
 import fkill from 'fkill';
 import packageJson from '../package.json';
 import { getOptions } from './options.context';
+import {GlobalOptions} from "./options";
 
 /**
  * Get process information for a port
@@ -15,7 +16,7 @@ import { getOptions } from './options.context';
  * @param port - Port number to check
  * @returns Process info or undefined if port is free
  */
-const getProcessOnPort = async (port: number) => {
+const getProcessOnPort = async (port?: number) => {
   if (!port) {
     return undefined;
   }
@@ -147,7 +148,7 @@ const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolea
  * @param processInfo.command - Command string
  * @returns Formatted error message
  */
-const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) => {
+const formatPortConflictError = (port?: number, processInfo?: { pid: number; command: string }) => {
   const message = [
     `\nPort ${port} is already in use.`
   ];
@@ -218,6 +219,43 @@ const handleStreamableHttpRequest = async (
   await transport.handleRequest(req, res);
 };
 
+/*
+const setErrorHandler = (reject: (error: string | Error) => void, options = getOptions()): () => Promise<void> => {
+  const { port } = options;
+
+  return async (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      const processInfo = await getProcessOnPort(port);
+
+      console.error(formatPortConflictError(port, processInfo));
+
+      if (processInfo) {
+        reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo }));
+      }
+    }
+
+    reject(error);
+    /*
+    if (error.code === 'EADDRINUSE') {
+      const processInfo = await getProcessOnPort(port);
+
+      console.error(formatPortConflictError(port, processInfo));
+
+      if (processInfo) {
+        reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo }));
+      } else {
+        console.log('>>>>>>>> WORKING <<<<<<<<<', error);
+        reject(error);
+      }
+    } else {
+      console.error('HTTP server error:', error);
+      reject(error);
+    }
+
+  };
+};
+*/
+
 /**
  * HTTP server handle for lifecycle management
  */
@@ -262,7 +300,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     }
   }
 
-  // Start server (port should be free now, or we'll get an error)
+  // Start the server. Port should be free now, or we'll get an error
   await new Promise<void>((resolve, reject) => {
     server.listen(port, host, () => {
       console.log(`${name} server running on http://${host}:${port}`);
@@ -277,13 +315,10 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
         if (processInfo) {
           reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo }));
-        } else {
-          reject(error);
         }
-      } else {
-        console.error('HTTP server error:', error);
-        reject(error);
       }
+
+      reject(error);
     });
   });
 
