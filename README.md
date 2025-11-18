@@ -20,7 +20,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 - Node.js 20.0.0 or higher
 - NPM (or another Node package manager)
-- OS Support: macOS, Linux, and Windows (via Bash on Windows, e.g., Git Bash)
+- OS Support: macOS, Linux, and Windows (via Bash)
 
 ## Installation
 
