@@ -260,7 +260,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     }
   }
 
-  // Start server (port should be free now, or we'll get an error)
+  // Start the server. Port should be free now, or we'll get an error
   await new Promise<void>((resolve, reject) => {
     server.listen(port, host, () => {
       console.log(`${name} server running on http://${host}:${port}`);
@@ -268,20 +268,21 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     });
 
     server.on('error', async (error: NodeJS.ErrnoException) => {
+      let errorMessage = `HTTP server error: ${error}`;
+      let errorReject = error;
+
       if (error.code === 'EADDRINUSE') {
         const processInfo = await getProcessOnPort(port);
 
-        console.error(formatPortConflictError(port, processInfo));
+        errorMessage = formatPortConflictError(port, processInfo);
 
         if (processInfo) {
-          reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo }));
-        } else {
-          reject(error);
+          errorReject = new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo });
         }
-      } else {
-        console.error('HTTP server error:', error);
-        reject(error);
       }
+
+      console.error(errorMessage);
+      reject(errorReject);
     });
   });
 
