@@ -219,43 +219,6 @@ const handleStreamableHttpRequest = async (
   await transport.handleRequest(req, res);
 };
 
-/*
-const setErrorHandler = (reject: (error: string | Error) => void, options = getOptions()): () => Promise<void> => {
-  const { port } = options;
-
-  return async (error: NodeJS.ErrnoException) => {
-    if (error.code === 'EADDRINUSE') {
-      const processInfo = await getProcessOnPort(port);
-
-      console.error(formatPortConflictError(port, processInfo));
-
-      if (processInfo) {
-        reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo }));
-      }
-    }
-
-    reject(error);
-    /*
-    if (error.code === 'EADDRINUSE') {
-      const processInfo = await getProcessOnPort(port);
-
-      console.error(formatPortConflictError(port, processInfo));
-
-      if (processInfo) {
-        reject(new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo }));
-      } else {
-        console.log('>>>>>>>> WORKING <<<<<<<<<', error);
-        reject(error);
-      }
-    } else {
-      console.error('HTTP server error:', error);
-      reject(error);
-    }
-
-  };
-};
-*/
-
 /**
  * HTTP server handle for lifecycle management
  */
