@@ -214,12 +214,20 @@ const handleStreamableHttpRequest = async (
 };
 
 /**
+ * HTTP server handle for lifecycle management
+ */
+type HttpServerHandle = {
+  close: () => Promise<void>;
+};
+
+/**
  * Start HTTP transport server
  *
  * @param mcpServer - MCP server instance
  * @param options - Global options (default parameter)
+ * @returns Handle with close method for server lifecycle management
  */
-const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<void> => {
+const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<HttpServerHandle> => {
   const { port, name, host } = options;
 
   if (!port || !host) {
@@ -233,7 +241,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   // Set up
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
-    handleStreamableHttpRequest(req, res, transport);
+    void handleStreamableHttpRequest(req, res, transport);
   });
 
   // Check for port conflicts and handle kill-existing BEFORE creating the Promise
@@ -250,7 +258,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   }
 
   // Start server (port should be free now, or we'll get an error)
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     server.listen(port, host, () => {
       console.log(`${name} server running on http://${host}:${port}`);
       resolve();
@@ -273,6 +281,14 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       }
     });
   });
+
+  return {
+    close: async () => {
+      await new Promise<void>(resolve => {
+        server.close(() => resolve());
+      });
+    }
+  };
 };
 
 export {
@@ -285,3 +301,5 @@ export {
   SAME_SERVER_TOKENS,
   startHttpTransport
 };
+
+export type { HttpServerHandle };

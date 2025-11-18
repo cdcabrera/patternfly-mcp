@@ -104,6 +104,30 @@ describe('HTTP Transport', () => {
       // StreamableHTTPServerTransport handles requests directly
       expect(MockStreamableHTTPServerTransport).toHaveBeenCalled();
     });
+
+    it('should return handle with close method', async () => {
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      const handle = await startHttpTransport(mockServer, options);
+
+      expect(handle).toBeDefined();
+      expect(typeof handle.close).toBe('function');
+    });
+
+    it('should close HTTP server when handle.close() is called', async () => {
+      const options = { port: 3000, host: 'localhost' } as GlobalOptions;
+
+      const handle = await startHttpTransport(mockServer, options);
+
+      // Mock server.close to call callback immediately
+      mockHttpServer.close.mockImplementation((callback: () => void) => {
+        if (callback) callback();
+      });
+
+      await handle.close();
+
+      expect(mockHttpServer.close).toHaveBeenCalled();
+    });
   });
 
   describe('HTTP request handling', () => {
