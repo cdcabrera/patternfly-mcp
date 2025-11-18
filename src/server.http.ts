@@ -70,21 +70,20 @@ const getProcessOnPort = async (port: number) => {
 };
 
 /**
- * Tokens that identify this MCP server process
- * Dynamically generated from package.json bin entries plus the built entry point
+ * Identity tokens for the MCP server process. Generated from package.json bin entries
+ * plus the built entry point.
  */
 const SAME_SERVER_TOKENS = [
-  // Direct node invocation of our built entry
   'dist/index.js',
-  // Installed bin names from package.json#bin
   ...Object.keys(packageJson.bin || {})
 ];
 
 /**
- * Check if a process is the same MCP server instance (HTTP mode)
+ * HTTP mode, check if the process is the MCP server instance
  *
- * We consider it a match if the command line appears to invoke our binary or
- * the built entry point AND includes the `--http` flag.
+ * Consider it a match if the command appears to invoke
+ * - binary
+ * - built entry point AND includes the `--http` flag
  *
  * @param rawCommand - Raw command string to check
  * @returns True if it's the same MCP server
@@ -96,7 +95,7 @@ const isSameMcpServer = (rawCommand: string): boolean => {
 
   // Normalize to improve cross-platform matching
   const cmd = rawCommand
-    .replace(/\\/g, '/') // Windows paths → forward slashes
+    .replace(/\\/g, '/') // Windows paths to forward slashes
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
@@ -150,7 +149,7 @@ const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolea
  */
 const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) => {
   const message = [
-    `\n❌ Port ${port} is already in use.`
+    `\nPort ${port} is already in use.`
   ];
 
   if (processInfo && isSameMcpServer(processInfo.command)) {
@@ -158,8 +157,9 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
       `\tProcess: PID ${processInfo.pid}`,
       `\tCommand: ${processInfo.command}`,
       `\n\tThis appears to be another instance of the server.`,
-      `\tRecommended: rerun with --kill-existing flag to stop it automatically.`,
-      `\tOr use a different port: --port <different-port>`
+      `\tRecommended:`,
+      `\t1. Rerun with the --kill-existing flag to stop it automatically.`,
+      `\t2. Or use a different port: --port <different-port>`
     );
   } else {
     message.push(
