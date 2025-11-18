@@ -34,10 +34,25 @@ const getProcessOnPort = async (port: number) => {
 
     try {
       if (isWindows) {
-        command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, {
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore']
-        }).trim();
+        // Use PowerShell to get full command line with arguments (required for isSameMcpServer detection)
+        try {
+          const psCmd = `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId=${pid}\\").CommandLine"`;
+
+          command = execSync(psCmd, {
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'ignore']
+          }).trim();
+        } catch {
+          // Fallback to tasklist if PowerShell fails (only provides process name, not full command line)
+          try {
+            command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, {
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore']
+            }).trim();
+          } catch {
+            // Ignore - command stays 'unknown'
+          }
+        }
       } else {
         command = execSync(`ps -p ${pid} -o command=`, {
           encoding: 'utf8',
