@@ -6,6 +6,7 @@ import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOption
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
 import fkill from 'fkill';
+import packageJson from '../package.json';
 import { getOptions } from './options.context';
 
 /**
@@ -54,13 +55,42 @@ const getProcessOnPort = async (port: number) => {
 };
 
 /**
- * Check if a process is the same MCP server instance
+ * Tokens that identify this MCP server process
+ * Dynamically generated from package.json bin entries plus the built entry point
+ */
+const SAME_SERVER_TOKENS = [
+  // Direct node invocation of our built entry
+  'dist/index.js',
+  // Installed bin names from package.json#bin
+  ...Object.keys(packageJson.bin || {})
+];
+
+/**
+ * Check if a process is the same MCP server instance (HTTP mode)
  *
- * @param command - Command string to check
+ * We consider it a match if the command line appears to invoke our binary or
+ * the built entry point AND includes the `--http` flag.
+ *
+ * @param rawCommand - Raw command string to check
  * @returns True if it's the same MCP server
  */
-const isSameMcpServer = (command: string) =>
-  command.includes('dist/index.js') && command.includes('--http');
+const isSameMcpServer = (rawCommand: string): boolean => {
+  if (!rawCommand) return false;
+
+  // Normalize to improve cross-platform matching
+  const cmd = rawCommand
+    .replace(/\\/g, '/') // Windows paths → forward slashes
+    .replace(/\s+/g, ' ') // Collapse whitespace
+    .trim()
+    .toLowerCase();
+
+  // Check for --http flag with word boundaries
+  const hasHttpFlag = /(^|\s)--http(\s|$)/.test(cmd);
+
+  if (!hasHttpFlag) return false;
+
+  return SAME_SERVER_TOKENS.some(t => cmd.includes(t.toLowerCase()));
+};
 
 /**
  * Kill a process by PID using fkill
@@ -237,5 +267,6 @@ export {
   handleStreamableHttpRequest,
   isSameMcpServer,
   killProcess,
+  SAME_SERVER_TOKENS,
   startHttpTransport
 };

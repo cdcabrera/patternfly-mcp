@@ -138,6 +138,23 @@ This starts the server on `http://localhost:3000` (default port and host).
 - `--allowed-hosts <hosts>`: Comma-separated list of allowed host headers
 - `--kill-existing`: Automatically kill any existing server process using the same port
 
+#### Security note: DNS rebinding protection (default)
+
+This server enables DNS rebinding protection by default when running in HTTP mode. If you're behind a proxy or load balancer, ensure the client sends a correct `Host` header and configure `--allowed-hosts` accordingly. Otherwise, requests may be rejected by design. For example:
+
+```bash
+npx @patternfly/patternfly-mcp --http \
+  --host 0.0.0.0 --port 3000 \
+  --allowed-hosts "localhost,127.0.0.1,example.com"
+```
+
+If your client runs on a different origin, also set `--allowed-origins` to allow CORS. Example:
+
+```bash
+npx @patternfly/patternfly-mcp --http \
+  --allowed-origins "http://localhost:5173,https://app.example.com"
+```
+
 ### Examples
 
 Start on a custom port:
@@ -165,8 +182,12 @@ npx @patternfly/patternfly-mcp --http --port 3000 --kill-existing
 If the specified port is already in use, the server will:
 - Detect if another instance of this MCP server is using the port
 - Display a helpful error message with the process ID
-- Suggest using `--kill-existing` to automatically kill the existing process
+- Suggest using `--kill-existing` to automatically kill the existing MCP instance
 - Or suggest using a different port with `--port`
+
+When you use `--kill-existing`:
+- If the port is held by the **same MCP server instance**, the process will be stopped automatically and the new server will start.
+- If the port is held by a **different process**, the server will fail fast and report that process's PID/command. It will not terminate unrelated processes. Either stop that process manually or choose a different port.
 
 ## MCP client configuration examples
 
