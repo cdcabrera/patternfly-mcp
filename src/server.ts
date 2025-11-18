@@ -22,7 +22,7 @@ interface ServerInstance {
   stop(): Promise<void>;
 
   /**
-   * Check if server is running
+   * Is the server running?
    */
   isRunning(): boolean;
 }
@@ -52,7 +52,6 @@ const runServer = async (options = getOptions(), {
 
   const stopServer = async () => {
     if (server && running) {
-      // Close HTTP server if it exists
       if (httpHandle) {
         await httpHandle.close();
         httpHandle = null;

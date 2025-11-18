@@ -34,7 +34,7 @@ const getProcessOnPort = async (port: number) => {
 
     try {
       if (isWindows) {
-        // Use PowerShell to get full command line with arguments (required for isSameMcpServer detection)
+        // Use PowerShell to get the full command with arguments (required for isSameMcpServer detection)
         try {
           const psCmd = `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId=${pid}\\").CommandLine"`;
 
@@ -43,7 +43,7 @@ const getProcessOnPort = async (port: number) => {
             stdio: ['ignore', 'pipe', 'ignore']
           }).trim();
         } catch {
-          // Fallback to tasklist if PowerShell fails (only provides process name, not full command line)
+          // Fallback to "tasklist" if PowerShell fails (only provides process name, not full command line)
           try {
             command = execSync(`tasklist /FI "PID eq ${pid}" /FO LIST /NH`, {
               encoding: 'utf8',
@@ -90,19 +90,23 @@ const SAME_SERVER_TOKENS = [
  * @returns True if it's the same MCP server
  */
 const isSameMcpServer = (rawCommand: string): boolean => {
-  if (!rawCommand) return false;
+  if (!rawCommand) {
+    return false;
+  }
 
   // Normalize to improve cross-platform matching
   const cmd = rawCommand
     .replace(/\\/g, '/') // Windows paths → forward slashes
-    .replace(/\s+/g, ' ') // Collapse whitespace
+    .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
 
   // Check for --http flag with word boundaries
   const hasHttpFlag = /(^|\s)--http(\s|$)/.test(cmd);
 
-  if (!hasHttpFlag) return false;
+  if (!hasHttpFlag) {
+    return false;
+  }
 
   return SAME_SERVER_TOKENS.some(t => cmd.includes(t.toLowerCase()));
 };
@@ -119,7 +123,6 @@ const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolea
   console.log(`Attempting to kill process ${pid}`);
 
   try {
-    // Use fkill with graceful shutdown, then force after timeout
     await fkill(pid, {
       forceAfterTimeout: maxWait,
       waitForExit: maxWait + 1000,
@@ -221,7 +224,7 @@ type HttpServerHandle = {
 };
 
 /**
- * Start HTTP transport server
+ * Start the HTTP transport server
  *
  * @param mcpServer - MCP server instance
  * @param options - Global options (default parameter)
@@ -299,7 +302,6 @@ export {
   isSameMcpServer,
   killProcess,
   SAME_SERVER_TOKENS,
-  startHttpTransport
+  startHttpTransport,
+  type HttpServerHandle
 };
-
-export type { HttpServerHandle };

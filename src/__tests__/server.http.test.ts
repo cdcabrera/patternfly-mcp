@@ -30,8 +30,10 @@ describe('HTTP Transport', () => {
     mockHttpServer = {
       on: jest.fn(),
       listen: jest.fn().mockImplementation((_port: any, _host: any, callback: any) => {
-        // Immediately call the callback to simulate successful server start
-        if (callback) callback();
+        // Simulate a successful server start
+        if (callback) {
+          callback();
+        }
       }),
       close: jest.fn()
     };
@@ -121,7 +123,9 @@ describe('HTTP Transport', () => {
 
       // Mock server.close to call callback immediately
       mockHttpServer.close.mockImplementation((callback: () => void) => {
-        if (callback) callback();
+        if (callback) {
+          callback();
+        }
       });
 
       await handle.close();

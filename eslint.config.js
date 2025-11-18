@@ -16,6 +16,7 @@ export default [
   {
     files: ['**/*.ts'],
     rules: {
+      curly: [2, 'all'],
       'no-unused-vars': 0,
       'no-undef': 0,
       'import/no-unresolved': 0,

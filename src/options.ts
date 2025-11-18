@@ -26,24 +26,29 @@ interface GlobalOptions extends CliOptions, DefaultOptions {
  * Get argument value from process.argv
  *
  * @param flag - CLI flag to search for
- * @param defaultValue - Default value if flag not found
+ * @param defaultValue - Default arg value
  */
-const getArgValue = (flag: string, defaultValue?: any): any => {
+const getArgValue = (flag: string, defaultValue?: unknown) => {
   const index = process.argv.indexOf(flag);
 
-  if (index === -1) return defaultValue;
+  if (index === -1) {
+    return defaultValue;
+  }
 
   const value = process.argv[index + 1];
 
-  if (!value || value.startsWith('--')) return defaultValue;
+  if (!value || value.startsWith('--')) {
+    return defaultValue;
+  }
 
-  // Type conversion based on defaultValue
-  if (defaultValue !== undefined) {
-    if (typeof defaultValue === 'number') {
-      const num = parseInt(value, 10);
+  if (typeof defaultValue === 'number') {
+    const num = parseInt(value, 10);
 
-      return isNaN(num) ? defaultValue : num;
+    if (isNaN(num)) {
+      return defaultValue;
     }
+
+    return num;
   }
 
   return value;
@@ -54,43 +59,37 @@ const getArgValue = (flag: string, defaultValue?: any): any => {
  *
  * @param options - Parsed CLI options
  */
-const validateCliOptions = (options: CliOptions): void => {
-  if (options.port !== undefined) {
-    if (options.port < 1 || options.port > 65535) {
-      throw new Error(`Invalid port: ${options.port}. Must be between 1 and 65535.`);
-    }
-  }
-
-  if (options.allowedOrigins) {
-    const filteredOrigins = options.allowedOrigins.filter(origin => origin.trim());
-
-    // eslint-disable-next-line no-param-reassign
-    options.allowedOrigins = filteredOrigins;
-  }
-
-  if (options.allowedHosts) {
-    const filteredHosts = options.allowedHosts.filter(host => host.trim());
-
-    // eslint-disable-next-line no-param-reassign
-    options.allowedHosts = filteredHosts;
+const validateCliOptions = (options: CliOptions) => {
+  if (options.port !== undefined && (options.port < 1 || options.port > 65535)) {
+    throw new Error(`Invalid port: ${options.port}. Must be between 1 and 65535.`);
   }
 };
 
 /**
- * Parse CLI arguments and return CLI options
+ * Parses and return command-line options for the CLI.
+ *
+ * @returns An object containing the processed and validated CLI options:
+ * - `docsHost`: Indicates if the `--docs-host` option is enabled.
+ * - `http`: Indicates if the `--http` option is enabled.
+ * - `port`: The port number specified via `--port`, or defaults to `3000` if not provided.
+ * - `host`: The host name specified via `--host`, or defaults to `'localhost'` if not provided.
+ * - `allowedOrigins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
+ * - `allowedHosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
+ * - `killExisting`: Indicates if the `--kill-existing` option is enabled.
+ *
+ * @throws {Error} If the provided CLI options fail validation.
  */
-const parseCliOptions = (): CliOptions => {
+const parseCliOptions = () => {
   const options: CliOptions = {
     docsHost: process.argv.includes('--docs-host'),
     http: process.argv.includes('--http'),
-    port: getArgValue('--port', 3000),
-    host: getArgValue('--host', 'localhost'),
-    allowedOrigins: getArgValue('--allowed-origins')?.split(','),
-    allowedHosts: getArgValue('--allowed-hosts')?.split(','),
+    port: getArgValue('--port', 3000) as number,
+    host: getArgValue('--host', 'localhost') as string,
+    allowedOrigins: (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim()),
+    allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim()),
     killExisting: process.argv.includes('--kill-existing')
   };
 
-  // Validate options
   validateCliOptions(options);
 
   return options;
