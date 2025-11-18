@@ -161,13 +161,15 @@ const formatPortConflictError = (port: number, processInfo?: { pid: number; comm
       `\t1. Rerun with the --kill-existing flag to stop it automatically.`,
       `\t2. Or use a different port: --port <different-port>`
     );
-  } else {
-    message.push(
-      `\n\tThis may be a different process. To use this port, you will need to:`,
-      `\t1. Stop the process`,
-      `\t2. Or use a different port: --port <different-port>`
-    );
+
+    return message.join('\n');
   }
+
+  message.push(
+    `\n\tThis may be a different process. To use this port, you will need to:`,
+    `\t1. Stop the process`,
+    `\t2. Or use a different port: --port <different-port>`
+  );
 
   return message.join('\n');
 };

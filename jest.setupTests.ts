@@ -1,6 +1,14 @@
 // Shared helpers for all Jest tests
 
 /**
+ * Note: Mock child_process to avoid issues with execSync in tests
+ */
+jest.mock('child_process', () => ({
+  ...jest.requireActual('child_process'),
+  execSync: (...args: any) => `<execSync>${JSON.stringify(args)}</execSync>`
+}));
+
+/**
  * Note: Mock fkill to avoid ES module import issues in Jest
  * - Returns a resolved promise to simulate successful process kill
  */
