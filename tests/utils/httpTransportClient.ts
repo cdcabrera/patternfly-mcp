@@ -87,9 +87,17 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     }
   );
 
-  // Set up error handler
+  // Track whether we're intentionally closing the client
+  // This allows us to suppress expected disconnection errors during cleanup
+  let isClosing = false;
+
+  // Set up error handler - only log unexpected errors
   mcpClient.onerror = (error) => {
-    console.error('MCP Client error:', error);
+    // Only log errors that occur when not intentionally closing
+    // SSE stream disconnection during cleanup is expected behavior
+    if (!isClosing) {
+      console.error('MCP Client error:', error);
+    }
   };
 
   // Connect client to transport (this automatically initializes the session)
@@ -143,7 +151,14 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     },
 
     async close(): Promise<void> {
+      // Mark that we're intentionally closing to suppress expected disconnection errors
+      isClosing = true;
+      
+      // Remove error handler to prevent any error logging during cleanup
+      mcpClient.onerror = null;
+      
       // Close transport first (this closes all connections and sessions)
+      // This may trigger SSE stream disconnection, which is expected
       await transport.close();
       
       // Stop the server
