@@ -60,7 +60,8 @@ const getArgValue = (flag: string, defaultValue?: unknown) => {
  * @param options - Parsed CLI options
  */
 const validateCliOptions = (options: CliOptions) => {
-  if (options.port !== undefined && (options.port < 1 || options.port > 65535)) {
+  const isValidPort = (typeof options.port === 'number') && (options.port > 0 && options.port <= 65536);
+  if (!isValidPort) {
     throw new Error(`Invalid port: ${options.port}. Must be between 1 and 65535.`);
   }
 };
