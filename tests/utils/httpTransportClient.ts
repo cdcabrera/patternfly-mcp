@@ -92,7 +92,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
   let isClosing = false;
 
   // Set up error handler - only log unexpected errors
-  mcpClient.onerror = (error) => {
+  mcpClient.onerror = error => {
     // Only log errors that occur when not intentionally closing
     // SSE stream disconnection during cleanup is expected behavior
     if (!isClosing) {
@@ -107,6 +107,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
   // The server should be ready immediately after start() resolves
   await new Promise(resolve => {
     const timer = setTimeout(resolve, 50);
+
     timer.unref();
   });
 
@@ -119,6 +120,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
       // For tools/list, use the proper schema
       if (request.method === 'tools/list') {
         const result = await mcpClient.request(request, ListToolsResultSchema);
+
         return {
           jsonrpc: '2.0',
           id: null,
@@ -127,6 +129,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
       }
       // For other requests, use the client's request method with generic ResultSchema
       const result = await mcpClient.request(request as any, ResultSchema);
+
       return {
         jsonrpc: '2.0',
         id: null,
@@ -168,6 +171,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
       // Increased delay to ensure SSE stream and all event listeners are cleaned up
       await new Promise(resolve => {
         const timer = setTimeout(resolve, 200);
+
         // Don't keep process alive if this is the only thing running
         timer.unref();
       });
@@ -178,6 +182,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
       // Additional small delay after server stop to ensure all cleanup completes
       await new Promise(resolve => {
         const timer = setTimeout(resolve, 50);
+
         timer.unref();
       });
     }

@@ -59,19 +59,15 @@ const getProcessOnPort = async (port: number) => {
             encoding: 'utf8',
             stdio: ['ignore', 'pipe', 'pipe']
           }).trim();
-        } catch (error) {
-          // If ps fails, check if it's the current process (programmatic usage scenario)
-          // If so, construct command from process.argv to help with detection
+        } catch {
+          // If ps fails, confirm pid then construct the command from process.argv
           if (pid === process.pid) {
-            // For current process, construct command from argv
-            // This helps isSameMcpServer detect it when ps fails
             const argv = process.argv;
+
             if (argv && argv.length > 0) {
               command = argv.join(' ');
             }
-            // If argv construction also fails, command stays 'unknown' and will be handled by killExisting logic
           }
-          // If not current process and ps failed, command stays 'unknown'
         }
       }
     } catch {
@@ -247,13 +243,16 @@ const httpServerRegistry = new Map<number, HttpServerHandle>();
 
 /**
  * Get registered HTTP server instance for a port
+ *
+ * @param port
  */
-const getRegisteredServer = (port: number): HttpServerHandle | undefined => {
-  return httpServerRegistry.get(port);
-};
+const getRegisteredServer = (port: number): HttpServerHandle | undefined => httpServerRegistry.get(port);
 
 /**
  * Register an HTTP server instance
+ *
+ * @param port
+ * @param handle
  */
 const registerServer = (port: number, handle: HttpServerHandle): void => {
   httpServerRegistry.set(port, handle);
@@ -261,6 +260,8 @@ const registerServer = (port: number, handle: HttpServerHandle): void => {
 
 /**
  * Unregister an HTTP server instance
+ *
+ * @param port
  */
 const unregisterServer = (port: number): void => {
   httpServerRegistry.delete(port);
@@ -294,12 +295,14 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   if (options.killExisting) {
     // First, check if there's a registered server instance for this port (programmatic usage)
     const registeredServer = getRegisteredServer(port);
+
     if (registeredServer) {
       console.log(`Closing existing HTTP server instance on port ${port}...`);
       await registeredServer.close();
       // Give the OS a moment to release the port (helps with TIME_WAIT)
       await new Promise(resolve => {
         const timer = setTimeout(resolve, 200);
+
         // Don't keep process alive if this is the only thing running
         timer.unref();
       });
@@ -321,29 +324,32 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       if (error.code === 'EADDRINUSE') {
         // Port is in use - check if it's our process (TIME_WAIT) or a different process
         const processInfo = await getProcessOnPort(port);
-        
+
         if (processInfo && processInfo.pid === process.pid) {
           // Port is in use by current process - likely TIME_WAIT from previous close()
           // Wait a bit and retry once
           console.warn(`Port ${port} is in use by the current process (likely TIME_WAIT). Waiting...`);
           await new Promise(resolve => {
             const timer = setTimeout(resolve, 300);
+
             // Don't keep process alive if this is the only thing running
             timer.unref();
           });
-          
+
           // Try to listen again (this will either succeed or fail with a clearer error)
           server.listen(port, host, () => {
             console.log(`${name} server running on http://${host}:${port}`);
             resolve();
           });
+
           return; // Don't reject - we're retrying
         }
-        
+
         // Different process or couldn't determine - provide helpful error
         const errorMessage = formatPortConflictError(port, processInfo);
+
         console.error(errorMessage);
-        reject(processInfo 
+        reject(processInfo
           ? new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo })
           : error);
       } else {
@@ -360,7 +366,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       await new Promise<void>(resolve => {
         server.close(() => resolve());
       });
-      
+
       // Unregister immediately - the registry is only for finding servers to close
       // Once closed, we don't need it in the registry anymore
       unregisterServer(port);

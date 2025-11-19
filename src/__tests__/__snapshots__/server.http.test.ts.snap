@@ -41,7 +41,7 @@ Port 3000 is already in use.
 
 exports[`getProcessOnPort should attempt to find a process listening on a port: ps fallback 1`] = `
 {
-  "command": "<execSync>["ps -p 123456789 -o command=",{"encoding":"utf8","stdio":["ignore","pipe","ignore"]}]</execSync>",
+  "command": "<execSync>["ps -p 123456789 -o command=",{"encoding":"utf8","stdio":["ignore","pipe","pipe"]}]</execSync>",
   "pid": 123456789,
 }
 `;
