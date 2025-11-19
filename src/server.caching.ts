@@ -48,6 +48,9 @@ const memo = <TArgs extends any[], TReturn>(
         timeout = setTimeout(() => {
           cache.length = 0;
         }, updatedExpire);
+        // Allow process to exit even if cache expiration timer is still active
+        // This prevents Jest from hanging on e2e tests
+        timeout.unref();
       }
 
       // Zero cacheLimit, reset and bypass memoization

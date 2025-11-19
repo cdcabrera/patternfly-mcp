@@ -25,6 +25,9 @@ const fetchUrlFunction = async (url: string) => {
   const controller = new AbortController();
   const timeoutMs = Number(process.env.DOC_MCP_FETCH_TIMEOUT_MS || 15_000);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  // Allow process to exit even if fetch timeout is still active
+  // This prevents Jest from hanging on e2e tests if fetch is still pending
+  timeout.unref();
 
   try {
     const response = await fetch(url, {
