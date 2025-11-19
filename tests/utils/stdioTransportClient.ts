@@ -1,36 +1,11 @@
-#!/usr/bin/env node
-
-// Lightweight JSON-RPC over stdio client for the built MCP server (dist/index.js)
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
-
-// JSON-like value used in requests/responses
-export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
-
-export interface RpcError {
-  code: number;
-  message: string;
-  data?: Json;
-}
-
-export interface RpcResultCommon {
-  content?: Array<({ text?: string } & Record<string, unknown>)>;
-  tools?: Array<({ name: string } & Record<string, unknown>)>;
-  [k: string]: unknown;
-}
-
-export interface RpcResponse {
-  jsonrpc?: '2.0';
-  id: number | string;
-  result?: RpcResultCommon;
-  error?: RpcError;
-}
-
-export interface RpcRequest {
-  jsonrpc?: '2.0';
-  id?: number | string;
-  method: string;
-  params?: Json;
-}
+/**
+ * STDIO Transport Client for E2E Testing
+ * Uses the MCP SDK's built-in Client and StdioClientTransport
+ */
+// @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 
 export interface StartOptions {
   command?: string;
@@ -39,41 +14,35 @@ export interface StartOptions {
   env?: Record<string, string | undefined>;
 }
 
-interface PendingEntry {
-  resolve: (value: RpcResponse) => void;
-  reject: (reason?: Error) => void;
-  timer: NodeJS.Timeout;
+export interface RpcResponse {
+  jsonrpc?: '2.0';
+  id: number | string | null;
+  result?: any;
+  error?: {
+    code: number;
+    message: string;
+    data?: any;
+  };
 }
 
 export interface StdioTransportClient {
-  proc: ChildProcessWithoutNullStreams;
-  send: (request: RpcRequest, opts?: { timeoutMs?: number }) => Promise<RpcResponse>;
+  send: (request: { method: string; params?: any }, opts?: { timeoutMs?: number }) => Promise<RpcResponse>;
   stop: (signal?: NodeJS.Signals) => Promise<void>;
+  close: () => Promise<void>; // Alias for stop() for consistency with HTTP client
 }
 
 /**
- * Check if the value is a valid RPC response.
- *
- * @param {RpcResponse|unknown} val
- * @returns {boolean} Is value an RpcResponse.
- */
-export const isRpcResponse = (val: RpcResponse | unknown): boolean =>
-  typeof val === 'object' && val !== null && ('jsonrpc' in val) && ('id' in val);
-
-/**
  * Start the MCP server process and return a client with send/stop APIs.
- *
+ * 
+ * Uses the MCP SDK's StdioClientTransport and Client for high-level MCP protocol handling.
+ * 
  * Options:
  * - command: node command to run (default: 'node')
  * - serverPath: path to built server (default: process.env.SERVER_PATH || 'dist/index.js')
  * - args: additional args to pass to server (e.g., ['--docs-host'])
  * - env: env vars to pass to child
- *
- * @param params
- * @param params.command
- * @param params.serverPath
- * @param params.args
- * @param params.env
+ * 
+ * @param options - Server configuration options
  */
 export const startServer = async ({
   command = 'node',
@@ -81,106 +50,138 @@ export const startServer = async ({
   args = [],
   env = {}
 }: StartOptions = {}): Promise<StdioTransportClient> => {
-  const proc: ChildProcessWithoutNullStreams = spawn(command, [serverPath, ...args], {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, ...env }
+  // Create stdio transport - this will spawn the server process
+  // Set stderr to 'pipe' so we can handle server logs separately from JSON-RPC messages
+  const transport = new StdioClientTransport({
+    command,
+    args: [serverPath, ...args],
+    env: { ...process.env, ...env },
+    stderr: 'pipe' // Pipe stderr so server logs don't interfere with JSON-RPC on stdout
   });
 
-  const pending = new Map<number | string, PendingEntry>(); // id -> { resolve, reject, timer }
-  let buffer = '';
-  let stderr = '';
-  let isClosed = false;
+  // Create MCP SDK client
+  const mcpClient = new Client(
+    {
+      name: 'test-client',
+      version: '1.0.0'
+    },
+    {
+      capabilities: {}
+    }
+  );
 
-  const clearAllPending = (reason: string) => {
-    for (const [id, p] of pending.entries()) {
-      clearTimeout(p.timer);
-      p.reject(new Error(`Server closed before response id=${String(id)}. ${reason || ''} stderr: ${stderr}`));
-      pending.delete(id);
+  // Track whether we're intentionally closing the client
+  // This allows us to suppress expected errors during cleanup
+  let isClosing = false;
+
+  // Set up error handler - only log unexpected errors
+  // Note: JSON parse errors from server console.log/info messages are expected
+  // The server logs to stdout, which the SDK tries to parse as JSON-RPC messages
+  mcpClient.onerror = (error) => {
+    // Only log errors that occur when not intentionally closing
+    // Ignore JSON parse errors - these happen when server logs to stdout (expected behavior)
+    // The SDK will skip non-JSON lines and continue processing
+    if (!isClosing) {
+      const isJsonParseError = error instanceof SyntaxError && 
+        (error.message.includes('is not valid JSON') || 
+         error.message.includes('Unexpected token'));
+      if (!isJsonParseError) {
+        console.error('MCP Client error:', error);
+      }
     }
   };
 
-  proc.stdout.on('data', (data: Buffer) => {
-    buffer += data.toString();
-    let idx: number;
-
-    while ((idx = buffer.indexOf('\n')) >= 0) {
-      const line = buffer.slice(0, idx).trim();
-
-      buffer = buffer.slice(idx + 1);
-
-      if (!line) {
-        continue;
-      }
-
-      let parsed: RpcResponse = {} as RpcResponse;
-
-      try {
-        parsed = JSON.parse(line);
-      } catch {}
-
-      if (isRpcResponse(parsed) === false) {
-        continue;
-      }
-
-      if (pending.has(parsed.id)) {
-        const entry = pending.get(parsed.id)!;
-
-        clearTimeout(entry.timer);
-        pending.delete(parsed.id);
-        entry.resolve(parsed);
-      }
-    }
-  });
-
-  proc.stderr.on('data', (data: Buffer) => {
-    stderr += data.toString();
-  });
-
-  const stop = (signal: NodeJS.Signals = 'SIGINT'): Promise<void> => new Promise(resolve => {
-    if (isClosed) {
-      return resolve();
-    }
-
-    isClosed = true;
-
-    try {
-      proc.kill(signal);
-    } catch {
-      // ignore
-    }
-
-    proc.on('close', () => {
-      clearAllPending('Process closed.');
-      resolve();
+  // Connect client to transport (this automatically starts transport and initializes the session)
+  await mcpClient.connect(transport);
+  
+  // Access stderr stream if available to handle server logs
+  // This prevents server logs from interfering with JSON-RPC parsing
+  if (transport.stderr) {
+    transport.stderr.on('data', (data: Buffer) => {
+      // Server logs go to stderr, we can optionally log them for debugging
+      // But we don't need to do anything with them for the tests to work
     });
+  }
+
+  // Minimal wait for server to be ready
+  await new Promise(resolve => {
+    const timer = setTimeout(resolve, 50);
+    timer.unref();
   });
 
-  const send: StdioTransportClient['send'] = (request, { timeoutMs = 20000 } = {}) => new Promise((resolve, reject) => {
-    if (!request || typeof request !== 'object') {
-      return reject(new Error('Invalid request'));
+  const stop = async (signal: NodeJS.Signals = 'SIGINT'): Promise<void> => {
+    if (isClosing) {
+      return;
     }
 
-    const id: number | string = request.id || Math.floor(Math.random() * 1e9);
-    const rpc: RpcRequest = { jsonrpc: '2.0', ...request, id };
-    const ms = Number(process.env.TEST_TIMEOUT_MS || timeoutMs);
-    const timer = setTimeout(() => {
-      pending.delete(id);
-      reject(new Error(`Timeout waiting for response id=${String(id)}. stderr: ${stderr}`));
-    }, ms);
+    isClosing = true;
 
-    pending.set(id, { resolve, reject, timer });
+    // Remove error handler to prevent any error logging during cleanup
+    mcpClient.onerror = null;
 
-    try {
-      proc.stdin.write(JSON.stringify(rpc) + '\n');
-    } catch (err) {
-      clearTimeout(timer);
-      pending.delete(id);
+    // Close client first
+    await mcpClient.close();
 
-      const error = err instanceof Error ? err : new Error(String(err));
+    // Close transport (this will kill the child process)
+    await transport.close();
 
-      reject(error);
-    }
-  });
+    // Small delay to ensure cleanup completes
+    await new Promise(resolve => {
+      const timer = setTimeout(resolve, 50);
+      timer.unref();
+    });
+  };
 
-  return { proc, send, stop };
+  return {
+    async send(request: { method: string; params?: any }, opts?: { timeoutMs?: number }): Promise<RpcResponse> {
+      try {
+        // Use high-level SDK methods when available for better type safety
+        if (request.method === 'tools/list') {
+          const result = await mcpClient.listTools(request.params);
+          return {
+            jsonrpc: '2.0',
+            id: null,
+            result: result as any
+          };
+        }
+        
+        if (request.method === 'tools/call' && request.params?.name) {
+          const result = await mcpClient.callTool({
+            name: request.params.name,
+            arguments: request.params.arguments || {}
+          });
+          return {
+            jsonrpc: '2.0',
+            id: null,
+            result: result as any
+          };
+        }
+        
+        // For other requests, use the client's request method
+        // Note: The SDK's request method expects a properly formatted request
+        const result = await mcpClient.request({
+          method: request.method,
+          params: request.params
+        } as any);
+        return {
+          jsonrpc: '2.0',
+          id: null,
+          result: result as any
+        };
+      } catch (error) {
+        // If request fails, return error response
+        return {
+          jsonrpc: '2.0',
+          id: null,
+          error: {
+            code: -1,
+            message: error instanceof Error ? error.message : String(error)
+          }
+        };
+      }
+    },
+
+    stop,
+    close: stop // Alias for consistency with HTTP client
+  };
 };

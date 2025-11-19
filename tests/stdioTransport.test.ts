@@ -39,7 +39,7 @@ describe('PatternFly MCP, STDIO', () => {
   it('should expose expected tools and stable shape', async () => {
     const response = await client.send({ method: 'tools/list' });
     const tools = response?.result?.tools || [];
-    const toolNames = tools.map(tool => tool.name).sort();
+    const toolNames = tools.map((tool: any) => tool.name).sort();
 
     expect(toolNames).toEqual(expect.arrayContaining(['usePatternFlyDocs', 'fetchDocs']));
     expect({ toolNames }).toMatchSnapshot();
