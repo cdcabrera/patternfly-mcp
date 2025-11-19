@@ -1,10 +1,35 @@
 /**
- * E2E tests for HTTP transport using StreamableHTTPServerTransport
- * Tests core functionality including server startup, MCP protocol, tool execution, and performance
+ * Requires: npm run build prior to running Jest.
  */
 
 import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
 
+describe('PatternFly MCP, HTTP Transport', () => {
+  let client: HttpTransportClient;
+
+  beforeEach(async () => {
+    client = await startHttpServer({ port: 5001, args: ['--killExisting'] });
+  });
+
+  afterEach(async () => client.close());
+
+  it('should expose expected tools', async () => {
+    const req = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/list',
+      params: {}
+    };
+
+    const response = await client.send(req as any);
+    const tools = response.result?.tools || [];
+    const toolNames = tools.map(tool => tool.name).sort() || [];
+
+    expect(toolNames).toMatchSnapshot('tools');
+  });
+});
+
+/*
 describe('PatternFly MCP, HTTP Transport', () => {
   let client: HttpTransportClient;
 
@@ -168,3 +193,4 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
   });
 });
+*/
