@@ -5,7 +5,7 @@
 // @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsResultSchema, ResultSchema } from '@modelcontextprotocol/sdk/types.js';
 // E2E tests import from dist/index.js (compiled entry point) - tests the actual production build
 import { start } from '../../dist/index.js';
 
@@ -125,8 +125,8 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
           result: result as any
         };
       }
-      // For other requests, use the client's request method without schema
-      const result = await mcpClient.request(request as any);
+      // For other requests, use the client's request method with generic ResultSchema
+      const result = await mcpClient.request(request as any, ResultSchema);
       return {
         jsonrpc: '2.0',
         id: null,

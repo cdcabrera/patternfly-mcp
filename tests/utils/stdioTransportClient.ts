@@ -5,7 +5,7 @@
 // @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsResultSchema, ResultSchema } from '@modelcontextprotocol/sdk/types.js';
 
 export interface StartOptions {
   command?: string;
@@ -157,12 +157,12 @@ export const startServer = async ({
           };
         }
         
-        // For other requests, use the client's request method
-        // Note: The SDK's request method expects a properly formatted request
+        // For other requests, use the client's request method with generic ResultSchema
+        // Note: The SDK's request method requires a resultSchema parameter
         const result = await mcpClient.request({
           method: request.method,
           params: request.params
-        } as any);
+        } as any, ResultSchema);
         return {
           jsonrpc: '2.0',
           id: null,
