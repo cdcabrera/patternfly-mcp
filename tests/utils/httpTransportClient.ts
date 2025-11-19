@@ -161,8 +161,24 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
       // This may trigger SSE stream disconnection, which is expected
       await transport.close();
       
-      // Stop the server
+      // Wait for transport cleanup to complete
+      // This ensures all event listeners and connections are fully closed
+      // before we shut down the server, preventing Jest worker process warnings
+      // Increased delay to ensure SSE stream and all event listeners are cleaned up
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, 200);
+        // Don't keep process alive if this is the only thing running
+        timer.unref();
+      });
+      
+      // Stop the server after transport is fully closed
       await server.stop();
+      
+      // Additional small delay after server stop to ensure all cleanup completes
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, 50);
+        timer.unref();
+      });
     }
   };
 };
