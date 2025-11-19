@@ -289,6 +289,9 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     void handleStreamableHttpRequest(req, res, transport);
   });
+  
+  // Store transport reference for cleanup
+  let transportRef: StreamableHTTPServerTransport | null = transport;
 
   // Check for port conflicts and handle kill-existing BEFORE creating the Promise
   if (options.killExisting) {
@@ -298,7 +301,11 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       console.log(`Closing existing HTTP server instance on port ${port}...`);
       await registeredServer.close();
       // Give the OS a moment to release the port (helps with TIME_WAIT)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, 200);
+        // Don't keep process alive if this is the only thing running
+        timer.unref();
+      });
     }
     // Note: We don't check getProcessOnPort here because:
     // 1. If there's a registered server, we closed it above
@@ -322,7 +329,11 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
           // Port is in use by current process - likely TIME_WAIT from previous close()
           // Wait a bit and retry once
           console.warn(`Port ${port} is in use by the current process (likely TIME_WAIT). Waiting...`);
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => {
+            const timer = setTimeout(resolve, 300);
+            // Don't keep process alive if this is the only thing running
+            timer.unref();
+          });
           
           // Try to listen again (this will either succeed or fail with a clearer error)
           server.listen(port, host, () => {
@@ -348,12 +359,47 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   const handle: HttpServerHandle = {
     port,
     close: async () => {
-      // Close the server
-      await new Promise<void>(resolve => {
+      // Remove all listeners to prevent them from keeping the process alive
+      server.removeAllListeners('error');
+      server.removeAllListeners('listening');
+      server.removeAllListeners('request');
+      server.removeAllListeners('connection');
+      server.removeAllListeners('close');
+      
+      // Close all active connections immediately
+      if (typeof server.closeAllConnections === 'function') {
+        server.closeAllConnections();
+      }
+      
+      // Close the HTTP server - use destroy() if available for immediate closure
+      await new Promise<void>((resolve) => {
+        let resolved = false;
+        
+        const timeout = setTimeout(() => {
+          // If close times out, destroy the server to force close
+          if (!resolved) {
+            resolved = true;
+            server.removeAllListeners();
+            if (typeof (server as any).destroy === 'function') {
+              (server as any).destroy();
+            }
+            resolve();
+          }
+        }, 50); // Reduced timeout for faster shutdown
+        // Don't keep process alive if this is the only thing running
+        timeout.unref();
+        
         server.close(() => {
-          resolve();
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve();
+          }
         });
       });
+      
+      // Clear transport reference
+      transportRef = null;
       
       // Unregister immediately - the registry is only for finding servers to close
       // Once closed, we don't need it in the registry anymore
