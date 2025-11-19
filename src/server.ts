@@ -49,35 +49,15 @@ const runServer = async (options = getOptions(), {
   let transport: StdioServerTransport | null = null;
   let httpHandle: HttpServerHandle | null = null;
   let running = false;
-  // Store the signal handler so we can remove it on cleanup
-  let sigintHandler: (() => Promise<void>) | null = null;
 
   const stopServer = async () => {
     if (server && running) {
-      // Remove SIGINT handler to prevent it from keeping the process alive
-      if (sigintHandler) {
-        process.removeListener('SIGINT', sigintHandler);
-        sigintHandler = null;
-      }
-      
-      // For HTTP transport, close MCP server first to close transport sessions
-      // Then close HTTP server to close the HTTP connections
-      if (options.http && server) {
-        await server.close();
-        server = null;
-      }
-      
       if (httpHandle) {
         await httpHandle.close();
         httpHandle = null;
       }
 
-      // For non-HTTP transport, close MCP server after transport cleanup
-      if (!options.http && server) {
-        await server.close();
-        server = null;
-      }
-      
+      await server?.close();
       running = false;
       console.log(`${options.name} server stopped`);
 
@@ -106,10 +86,9 @@ const runServer = async (options = getOptions(), {
       console.info(`Registered tool: ${name}`);
       server?.registerTool(name, schema, (args = {}) => runWithOptions(options, async () => await callback(args)));
     });
-    
+
     if (enableSigint) {
-      sigintHandler = async () => stopServer();
-      process.on('SIGINT', sigintHandler);
+      process.on('SIGINT', async () => stopServer());
     }
 
     if (options.http) {

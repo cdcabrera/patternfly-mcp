@@ -289,9 +289,6 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     void handleStreamableHttpRequest(req, res, transport);
   });
-  
-  // Store transport reference for cleanup
-  let transportRef: StreamableHTTPServerTransport | null = transport;
 
   // Check for port conflicts and handle kill-existing BEFORE creating the Promise
   if (options.killExisting) {
@@ -359,47 +356,10 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   const handle: HttpServerHandle = {
     port,
     close: async () => {
-      // Remove all listeners to prevent them from keeping the process alive
-      server.removeAllListeners('error');
-      server.removeAllListeners('listening');
-      server.removeAllListeners('request');
-      server.removeAllListeners('connection');
-      server.removeAllListeners('close');
-      
-      // Close all active connections immediately
-      if (typeof server.closeAllConnections === 'function') {
-        server.closeAllConnections();
-      }
-      
-      // Close the HTTP server - use destroy() if available for immediate closure
-      await new Promise<void>((resolve) => {
-        let resolved = false;
-        
-        const timeout = setTimeout(() => {
-          // If close times out, destroy the server to force close
-          if (!resolved) {
-            resolved = true;
-            server.removeAllListeners();
-            if (typeof (server as any).destroy === 'function') {
-              (server as any).destroy();
-            }
-            resolve();
-          }
-        }, 50); // Reduced timeout for faster shutdown
-        // Don't keep process alive if this is the only thing running
-        timeout.unref();
-        
-        server.close(() => {
-          if (!resolved) {
-            resolved = true;
-            clearTimeout(timeout);
-            resolve();
-          }
-        });
+      // Close the HTTP server
+      await new Promise<void>(resolve => {
+        server.close(() => resolve());
       });
-      
-      // Clear transport reference
-      transportRef = null;
       
       // Unregister immediately - the registry is only for finding servers to close
       // Once closed, we don't need it in the registry anymore
