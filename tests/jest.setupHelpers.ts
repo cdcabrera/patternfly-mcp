@@ -1,0 +1,184 @@
+// Helper utilities for e2e Jest tests
+import { jest } from '@jest/globals';
+import { startHttpFixture } from './utils/httpFixtureServer';
+import { originalFetch } from './jest.setupTests';
+
+type StartHttpFixtureResult = Awaited<ReturnType<typeof startHttpFixture>>;
+
+/**
+ * Route configuration for fetch mocking
+ */
+export interface FetchRoute {
+  /** URL pattern to match (supports wildcards with *) */
+  url: string | RegExp;
+  /** HTTP status code */
+  status?: number;
+  /** Response headers */
+  headers?: Record<string, string>;
+  /** Response body (string, Buffer, or function) */
+  body?: string | Buffer | ((req: Request) => Promise<string | Buffer> | string | Buffer);
+}
+
+/**
+ * Fetch mock helper that routes remote HTTP requests to a fixture server
+ * 
+ * This helper masks the complexity of setting up fetch mocks and fixture servers.
+ * It automatically intercepts remote HTTP requests and routes them to a local fixture server.
+ * 
+ * @example
+ * ```typescript
+ * const mockFetch = setupFetchMock({
+ *   routes: [
+ *     { url: 'https://example.com/doc.md', body: '# Test Doc' },
+ *     { url: /https:\/\/github\.com\/.*\.md/, body: '# GitHub Doc' }
+ *   ],
+ *   excludePorts: [5001] // Don't intercept MCP server requests
+ * });
+ * 
+ * // Later in afterAll:
+ * await mockFetch.cleanup();
+ * ```
+ */
+export interface FetchMockSetup {
+  /** Routes to mock */
+  routes?: FetchRoute[];
+  /** Ports to exclude from interception (e.g., MCP server port) */
+  excludePorts?: number[];
+  /** Fixture server address (default: '127.0.0.1') */
+  address?: string;
+}
+
+export interface FetchMockResult {
+  /** Cleanup function to restore fetch and close fixture server */
+  cleanup: () => Promise<void>;
+  /** Fixture server instance */
+  fixture: StartHttpFixtureResult;
+}
+
+/**
+ * Set up fetch mocking with route-based configuration
+ * 
+ * @param options - Fetch mock configuration
+ * @returns Cleanup function and fixture server instance
+ */
+export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<FetchMockResult> => {
+  const {
+    routes = [],
+    excludePorts = [],
+    address = '127.0.0.1'
+  } = options;
+
+  // Convert routes to fixture server format
+  const fixtureRoutes: Record<string, { status?: number; headers?: Record<string, string>; body?: string | Buffer }> = {};
+  
+  routes.forEach((route, index) => {
+    // Use index-based path for fixture server, we'll match by URL pattern in the mock
+    const path = `/${index}`;
+    fixtureRoutes[path] = {
+      status: route.status || 200,
+      headers: route.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
+      body: typeof route.body === 'string' || route.body instanceof Buffer 
+        ? route.body 
+        : '# Mocked Response'
+    };
+  });
+
+  // Start fixture server
+  const fixture = await startHttpFixture({ routes: fixtureRoutes, address });
+
+  // Create URL pattern matcher
+  const matchRoute = (url: string): FetchRoute | undefined => {
+    return routes.find(route => {
+      if (route.url instanceof RegExp) {
+        return route.url.test(url);
+      }
+      // Support wildcards
+      const pattern = route.url.replace(/\*/g, '.*');
+      const regex = new RegExp(`^${pattern}$`);
+      return regex.test(url);
+    });
+  };
+
+  // Set up fetch mock
+  const fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    
+    // Check if URL should be excluded (e.g., MCP server requests)
+    const shouldExclude = excludePorts.some(port => url.includes(`:${port}`));
+    
+    // Only intercept remote HTTP/HTTPS URLs that match our routes
+    if (!shouldExclude && (url.startsWith('http://') || url.startsWith('https://'))) {
+      const matchedRoute = matchRoute(url);
+      
+      if (matchedRoute) {
+        // Find the route index to get the fixture path
+        const routeIndex = routes.indexOf(matchedRoute);
+        const fixturePath = `/${routeIndex}`;
+        const fixtureUrl = `${fixture.baseUrl}${fixturePath}`;
+        
+        // Handle function body
+        if (typeof matchedRoute.body === 'function') {
+          const bodyResult = await matchedRoute.body(new Request(url, init));
+          // Create a Response with the function result
+          const responseBody = typeof bodyResult === 'string' 
+            ? bodyResult 
+            : bodyResult instanceof Buffer 
+              ? bodyResult 
+              : String(bodyResult);
+          return new Response(responseBody as BodyInit, {
+            status: matchedRoute.status || 200,
+            headers: matchedRoute.headers || {}
+          });
+        }
+        
+        // Use original fetch to hit the fixture server
+        return originalFetch(fixtureUrl, init);
+      }
+    }
+    
+    // For non-matching URLs or excluded ports, use original fetch
+    return originalFetch(input as RequestInfo, init);
+  });
+
+  return {
+    fixture,
+    cleanup: async () => {
+      fetchSpy.mockRestore();
+      await fixture.close();
+    }
+  };
+};
+
+/**
+ * Simple fetch mock that routes all remote URLs to a single fixture
+ * 
+ * @param body - Response body for all intercepted requests
+ * @param options - Additional options
+ * @returns Cleanup function and fixture server instance
+ */
+export const setupSimpleFetchMock = async (
+  body: string,
+  options: { excludePorts?: number[]; address?: string } = {}
+): Promise<FetchMockResult> => {
+  const mockOptions: FetchMockSetup = {
+    routes: [
+      {
+        url: /^https?:\/\/.*/,
+        body,
+        status: 200,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      }
+    ]
+  };
+  
+  if (options.excludePorts) {
+    mockOptions.excludePorts = options.excludePorts;
+  }
+  
+  if (options.address) {
+    mockOptions.address = options.address;
+  }
+  
+  return setupFetchMock(mockOptions);
+};
+

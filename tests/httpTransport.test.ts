@@ -1,57 +1,37 @@
 /**
  * Requires: npm run build prior to running Jest.
  */
-import { jest } from '@jest/globals';
 import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
-import { loadFixture, startHttpFixture } from './utils/httpFixtureServer';
-import { originalFetch } from './jest.setupTests';
+import { loadFixture } from './utils/httpFixtureServer';
+import { setupFetchMock } from './jest.setupHelpers';
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let client: HttpTransportClient | undefined;
-  let fixture: { baseUrl: string; close: () => Promise<void> } | undefined;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let fetchSpy: any;
+  let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
 
-  // Set up fixture server to mock remote HTTP requests
+  // Set up fetch mock to intercept remote HTTP requests
   // This ensures tests don't depend on external services being available
   beforeAll(async () => {
-    // Start fixture server with mock content
+    // Load fixture content
     const body = loadFixture('README.md');
-    fixture = await startHttpFixture({
-      routes: {
-        '/readme': {
+
+    // Set up fetch mock with routes
+    fetchMock = await setupFetchMock({
+      routes: [
+        {
+          url: /\/readme$/,
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body
         },
-        '/test-doc': {
+        {
+          url: /.*\.md$/,
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
         }
-      }
-    });
-
-    // Override the global.fetch mock to intercept remote HTTP requests and route them to fixture server
-    // Get the existing spy (created in jest.setupTests.ts) and override its implementation
-    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-      
-      // Only intercept remote URLs that are NOT the MCP server endpoint
-      // MCP server runs on port 5001, so we skip those requests
-      if ((url.startsWith('http://') || url.startsWith('https://')) && !url.includes(':5001')) {
-        // Extract the path from the original URL or use a default
-        const urlObj = new URL(url);
-        const fixturePath = urlObj.pathname || '/test-doc';
-        // Fixture is guaranteed to exist here since it's set in beforeAll
-        const fixtureUrl = `${fixture!.baseUrl}${fixturePath}`;
-        
-        // Use original fetch to hit the fixture server
-        return originalFetch(fixtureUrl, init);
-      }
-      
-      // For MCP server requests or non-HTTP URLs, use original fetch
-      return originalFetch(input as RequestInfo, init);
+      ],
+      excludePorts: [5001] // Don't intercept MCP server requests
     });
 
     // Start the MCP server
@@ -59,14 +39,9 @@ describe('PatternFly MCP, HTTP Transport', () => {
   });
 
   afterAll(async () => {
-    // Restore fetch mock
-    if (fetchSpy) {
-      fetchSpy.mockRestore();
-    }
-
-    // Close fixture server
-    if (fixture) {
-      await fixture.close();
+    // Cleanup fetch mock (restores fetch and closes fixture server)
+    if (fetchMock) {
+      await fetchMock.cleanup();
     }
 
     // Close MCP server
