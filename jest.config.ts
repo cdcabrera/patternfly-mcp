@@ -15,5 +15,10 @@ export default {
         tsconfig: '<rootDir>/tsconfig.json'
       }
     ]
-  }
+  },
+  transformIgnorePatterns: [
+    // Don't transform dist/ files - they're already compiled ES modules
+    // Since package.json has "type": "module", .js files are ES modules
+    '<rootDir>/dist/'
+  ]
 };

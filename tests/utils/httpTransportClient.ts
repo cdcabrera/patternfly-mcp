@@ -1,14 +1,11 @@
 #!/usr/bin/env node
+// @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
+// dist/ doesn't exist during type checking, but the file exists at runtime for E2E tests
 
 // HTTP transport client for E2E testing using programmatic API
-import { type IncomingMessage } from 'node:http';
-// E2E tests import from dist (built output) - these files exist at runtime
-// @ts-expect-error - dist files exist at runtime for E2E tests
-import { runServer, type ServerInstance } from '../../dist/server.js';
-// @ts-expect-error - dist files exist at runtime for E2E tests
-import { setOptions } from '../../dist/options.context.js';
-// @ts-expect-error - dist files exist at runtime for E2E tests
-import { type CliOptions, type GlobalOptions } from '../../dist/options.js';
+import { type IncomingMessage, request as httpRequest } from 'node:http';
+// E2E tests import from dist/index.js (compiled entry point) - tests the actual production build
+import { start, type ServerInstance, type CliOptions } from '../../dist/index.js';
 
 // JSON-like value used in requests/responses
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
@@ -77,7 +74,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     docsHost = false
   } = options;
 
-  // Build programmatic options
+  // Build programmatic options (will override any CLI options from process.argv)
   const programmaticOptions: Partial<CliOptions> = {
     http: true,
     port,
@@ -94,11 +91,11 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     programmaticOptions.allowedHosts = allowedHosts;
   }
 
-  // Set options in context (merges with DEFAULT_OPTIONS)
-  const globalOptions = setOptions(programmaticOptions) as GlobalOptions;
-
-  // Start server using runServer directly (avoids process.exit in error cases)
-  const server: ServerInstance = await runServer(globalOptions, { allowProcessExit: false });
+  // Start server using public API from dist/index.js (tests the actual compiled output)
+  // Note: start() will parse CLI options from process.argv, but programmaticOptions override them
+  // Use dynamic import() to load ES module from dist/ - Jest/Node will handle it as ES module
+  const { start: startServer } = await import('../../dist/index.js');
+  const server: ServerInstance = await startServer(programmaticOptions);
 
   // Construct base URL from options
   const baseUrl = `http://${host}:${port}`;
@@ -142,8 +139,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
         const postData = JSON.stringify({ ...request, id });
         const url = new URL('/mcp', baseUrl);
 
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const httpRequest = require('http').request({
+        const req = httpRequest({
           hostname: url.hostname,
           port: url.port,
           path: url.pathname,
@@ -217,7 +213,7 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
           });
         });
 
-        httpRequest.on('error', (error: Error) => {
+        req.on('error', (error: Error) => {
           const entry = pendingRequests.get(id);
 
           if (entry) {
@@ -227,8 +223,8 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
           }
         });
 
-        httpRequest.write(postData);
-        httpRequest.end();
+        req.write(postData);
+        req.end();
       });
     },
 

@@ -11,6 +11,10 @@ import { runServer, type ServerInstance } from './server';
  * @returns {Promise<ServerInstance>} Server-instance with shutdown capability
  */
 const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerInstance> => {
+  // If called programmatically (has programmaticOptions), don't allow process.exit
+  // This allows tests to clean up properly
+  const allowProcessExit = !programmaticOptions || Object.keys(programmaticOptions).length === 0;
+
   try {
     // Parse CLI options
     const cliOptions = parseCliOptions();
@@ -18,10 +22,15 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
     setOptions({ ...cliOptions, ...programmaticOptions });
 
-    return await runServer();
+    return await runServer(undefined, { allowProcessExit });
   } catch (error) {
     console.error('Failed to start server:', error);
-    process.exit(1);
+    // Only exit if not called programmatically (allows tests to handle errors)
+    if (allowProcessExit) {
+      process.exit(1);
+    } else {
+      throw error;
+    }
   }
 };
 
