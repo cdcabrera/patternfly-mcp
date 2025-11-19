@@ -298,44 +298,12 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       console.log(`Closing existing HTTP server instance on port ${port}...`);
       await registeredServer.close();
       // Give the OS a moment to release the port (helps with TIME_WAIT)
-      await new Promise(resolve => setTimeout(resolve, 150));
-    } else {
-      // No registered server, check for process on port
-      const processInfo = await getProcessOnPort(port);
-
-      if (processInfo) {
-        // If command is 'unknown', check if it's the current process (programmatic usage)
-        // This handles cases where ps fails but we're running in the same process
-        const isCurrentProcess = processInfo.pid === process.pid;
-        // For programmatic usage, if it's the current process, treat it as the same server
-        // (we can't kill ourselves, and the command might not include --http flag)
-        const isSameServer = isSameMcpServer(processInfo.command) || isCurrentProcess;
-
-        if (isSameServer) {
-          // If it's the current process, we can't kill it (would kill ourselves)
-          // This can happen in programmatic usage when a previous server instance didn't shut down properly
-          // The port might be in TIME_WAIT state - wait for it to be released
-          if (isCurrentProcess) {
-            // Port is in use by current process - likely TIME_WAIT from previous close()
-            // Just wait a bit for it to be released (simpler than complex polling)
-            console.warn(`Port ${port} is in use by the current process. Waiting for port to be released...`);
-            for (let i = 0; i < 20; i++) { // Wait up to 2 seconds
-              await new Promise(resolve => setTimeout(resolve, 100));
-              const checkInfo = await getProcessOnPort(port);
-              if (!checkInfo || checkInfo.pid !== process.pid) {
-                break; // Port is free
-              }
-            }
-          } else {
-            await killProcess(processInfo.pid);
-            // Wait a bit for the process to fully exit and port to be released
-            await new Promise(resolve => setTimeout(resolve, 200));
-          }
-        } else {
-          throw new Error(`Port ${port} is in use by a different process`, { cause: processInfo });
-        }
-      }
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
+    // Note: We don't check getProcessOnPort here because:
+    // 1. If there's a registered server, we closed it above
+    // 2. If there's no registered server but port is in use, server.listen() will throw EADDRINUSE
+    // 3. The EADDRINUSE handler below will provide a helpful error message
   }
 
   // Start the server. Port should be free now, or we'll get an error
@@ -346,21 +314,34 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     });
 
     server.on('error', async (error: NodeJS.ErrnoException) => {
-      let errorMessage = `HTTP server error: ${error}`;
-      let errorReject = error;
-
       if (error.code === 'EADDRINUSE') {
+        // Port is in use - check if it's our process (TIME_WAIT) or a different process
         const processInfo = await getProcessOnPort(port);
-
-        errorMessage = formatPortConflictError(port, processInfo);
-
-        if (processInfo) {
-          errorReject = new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo });
+        
+        if (processInfo && processInfo.pid === process.pid) {
+          // Port is in use by current process - likely TIME_WAIT from previous close()
+          // Wait a bit and retry once
+          console.warn(`Port ${port} is in use by the current process (likely TIME_WAIT). Waiting...`);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Try to listen again (this will either succeed or fail with a clearer error)
+          server.listen(port, host, () => {
+            console.log(`${name} server running on http://${host}:${port}`);
+            resolve();
+          });
+          return; // Don't reject - we're retrying
         }
+        
+        // Different process or couldn't determine - provide helpful error
+        const errorMessage = formatPortConflictError(port, processInfo);
+        console.error(errorMessage);
+        reject(processInfo 
+          ? new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo })
+          : error);
+      } else {
+        console.error(`HTTP server error: ${error}`);
+        reject(error);
       }
-
-      console.error(errorMessage);
-      reject(errorReject);
     });
   });
 
