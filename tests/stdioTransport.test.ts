@@ -3,7 +3,8 @@
  */
 
 import { startServer, type StdioTransportClient } from './utils/stdioTransportClient';
-import { loadFixture, startHttpFixture } from './utils/httpFixtureServer';
+import { loadFixture } from './utils/httpFixtureServer';
+import { setupFetchMock } from './jest.setupHelpers';
 
 describe('PatternFly MCP, STDIO', () => {
   let client: StdioTransportClient;
@@ -72,7 +73,7 @@ describe('Hosted mode, --docs-host', () => {
 });
 
 describe('External URLs', () => {
-  let fixture: { baseUrl: string; close: () => Promise<void>; };
+  let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
   let url: string;
   let client: StdioTransportClient;
 
@@ -85,20 +86,30 @@ describe('External URLs', () => {
   beforeAll(async () => {
     const body = loadFixture('README.md');
 
-    fixture = await startHttpFixture({
-      routes: {
-        '/readme': {
+    // Use fetch mock helper to set up fixture server
+    // Note: The MCP server runs in a child process, so fetch mocking in the test process
+    // won't affect it. However, we use the fixture server URL directly, so the helper
+    // still simplifies fixture server setup/cleanup.
+    // The helper creates index-based paths (/0, /1, etc.), so we use /0 for the first route
+    fetchMock = await setupFetchMock({
+      routes: [
+        {
+          url: /\/readme$/,
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body
         }
-      }
+      ]
     });
-    url = `${fixture.baseUrl}/readme`;
+    // Use the fixture server URL with index-based path (child process will make real fetch to it)
+    url = `${fetchMock.fixture.baseUrl}/0`;
   });
 
   afterAll(async () => {
-    await fixture.close();
+    // Cleanup fetch mock (closes fixture server)
+    if (fetchMock) {
+      await fetchMock.cleanup();
+    }
   });
 
   it('should fetch a document', async () => {
