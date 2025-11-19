@@ -3,8 +3,8 @@
  */
 
 import { startServer, type StdioTransportClient } from './utils/stdioTransportClient';
-import { loadFixture } from './utils/httpFixtureServer';
-import { setupFetchMock } from './jest.setupHelpers';
+import { loadFixture } from './utils/fixtures';
+import { setupFetchMock } from './utils/fetchMock';
 
 describe('PatternFly MCP, STDIO', () => {
   let client: StdioTransportClient;

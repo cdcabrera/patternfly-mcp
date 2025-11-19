@@ -1,7 +1,80 @@
-// Helper utilities for e2e Jest tests
+/**
+ * Fetch Mocking Utilities for E2E Tests
+ * 
+ * Provides high-level helpers for mocking fetch requests by routing them to a local fixture server.
+ */
 import { jest } from '@jest/globals';
-import { startHttpFixture } from './utils/httpFixtureServer';
-import { originalFetch } from './jest.setupTests';
+import http from 'node:http';
+import { originalFetch } from '../jest.setupTests';
+
+type HeadersMap = Record<string, string | number | string[]>;
+type RouteHandler = (req: http.IncomingMessage, res: http.ServerResponse) => void;
+
+interface Route {
+  status?: number;
+  headers?: HeadersMap;
+  body?: string | Buffer | Uint8Array | RouteHandler;
+}
+
+type RoutesMap = Record<string, Route>;
+
+interface StartHttpFixtureOptions {
+  routes?: RoutesMap;
+  address?: string;
+}
+
+/**
+ * Start an HTTP server with a set of routes and return a URL to access them.
+ * 
+ * Internal utility used by setupFetchMock to create a local fixture server.
+ * 
+ * @param options - HTTP fixture options
+ * @returns Promise that resolves with server baseUrl and close method
+ */
+const startHttpFixture = (
+  { routes = {}, address = '127.0.0.1' }: StartHttpFixtureOptions = {}
+): Promise<{ baseUrl: string; close: () => Promise<void> }> =>
+  new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      const url = req.url || '';
+      const route = routes[url];
+
+      if (!route) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        return res.end('Not Found');
+      }
+
+      const { status = 200, headers = {}, body } = route;
+
+      res.statusCode = status;
+
+      Object.entries(headers).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
+
+      if (typeof body === 'function') {
+        return (body as RouteHandler)(req, res);
+      }
+
+      return res.end(body as string | Buffer | Uint8Array | undefined);
+    });
+
+    server.listen(0, address, () => {
+      const addr = server.address();
+
+      if (addr && typeof addr !== 'string') {
+        const host = addr.address === '::' ? address : addr.address;
+        const baseUrl = `http://${host}:${addr.port}`;
+        resolve({ baseUrl, close: () => new Promise<void>(res => server.close(() => res())) });
+      } else {
+        // Fallback if the address isn't available as AddressInfo
+        resolve({ baseUrl: `http://${address}`, close: () => new Promise<void>(res => server.close(() => res())) });
+      }
+    });
+
+    server.on('error', reject);
+  });
 
 type StartHttpFixtureResult = Awaited<ReturnType<typeof startHttpFixture>>;
 

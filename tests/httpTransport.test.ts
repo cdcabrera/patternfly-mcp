@@ -2,8 +2,8 @@
  * Requires: npm run build prior to running Jest.
  */
 import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
-import { loadFixture } from './utils/httpFixtureServer';
-import { setupFetchMock } from './jest.setupHelpers';
+import { loadFixture } from './utils/fixtures';
+import { setupFetchMock } from './utils/fetchMock';
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let client: HttpTransportClient | undefined;
