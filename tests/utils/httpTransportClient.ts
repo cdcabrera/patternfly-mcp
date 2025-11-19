@@ -154,14 +154,14 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     async close(): Promise<void> {
       // Mark that we're intentionally closing to suppress expected disconnection errors
       isClosing = true;
-      
+
       // Remove error handler to prevent any error logging during cleanup
       mcpClient.onerror = null;
-      
+
       // Close transport first (this closes all connections and sessions)
       // This may trigger SSE stream disconnection, which is expected
       await transport.close();
-      
+
       // Wait for transport cleanup to complete
       // This ensures all event listeners and connections are fully closed
       // before we shut down the server, preventing Jest worker process warnings
@@ -171,10 +171,10 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
         // Don't keep process alive if this is the only thing running
         timer.unref();
       });
-      
+
       // Stop the server after transport is fully closed
       await server.stop();
-      
+
       // Additional small delay after server stop to ensure all cleanup completes
       await new Promise(resolve => {
         const timer = setTimeout(resolve, 50);

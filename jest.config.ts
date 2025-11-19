@@ -3,7 +3,6 @@ const baseConfig = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testTimeout: 30000,
-  // verbose: true,
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
@@ -32,7 +31,6 @@ export default {
       transformIgnorePatterns: [
         '<rootDir>/dist/'
       ],
-      // forceExit: true, // Force exit after tests complete to prevent hanging
       ...baseConfig
     }
   ]
