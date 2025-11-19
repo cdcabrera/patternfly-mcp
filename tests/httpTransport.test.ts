@@ -5,19 +5,15 @@
 import { startHttpServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
 
 describe('PatternFly MCP, HTTP Transport', () => {
-  // let client: HttpTransportClient;
+  let client: HttpTransportClient;
 
   beforeEach(async () => {
-
+    client = await startHttpServer({ port: 5001, killExisting: true });
   });
 
-  afterEach(async () => {
-
-  });
+  afterEach(async () => client.close());
 
   it('should expose expected tools and stable shape', async () => {
-    const client = await startHttpServer({ port: 5001, killExisting: true });
-    
     // Client is automatically initialized, so we can directly call tools/list
     const response = await client.send({
       jsonrpc: '2.0',
@@ -29,7 +25,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     const toolNames = tools.map(tool => tool.name).sort();
 
     expect(toolNames).toMatchSnapshot();
-    await client.close();
+
   });
 
   /*
