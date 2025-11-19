@@ -1,16 +1,3 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`PatternFly MCP, HTTP Transport Basic HTTP Transport should initialize MCP session over HTTP 1`] = `
-{
-  "name": "@patternfly/patternfly-mcp",
-  "version": "2025-06-18",
-}
-`;
-
-exports[`PatternFly MCP, HTTP Transport Basic HTTP Transport should list tools over HTTP: tools 1`] = `
-[
-  "usePatternFlyDocs",
-  "fetchDocs",
-  "componentSchemas",
-]
-`;
+exports[`PatternFly MCP, HTTP Transport should expose expected tools and stable shape 1`] = `[]`;

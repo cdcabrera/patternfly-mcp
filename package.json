@@ -28,6 +28,7 @@
     "test": "export NODE_ENV=local; npm run test:lint && npm run test:types && jest --roots=src/",
     "test:dev": "npm test -- --watchAll",
     "test:integration": "npm run build && NODE_OPTIONS='--experimental-vm-modules' jest --roots=tests/",
+    "test:integration:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --roots=tests/ --watch",
     "test:integration-dev": "npm run test:integration -- --watchAll",
     "test:lint": "eslint .",
     "test:lint-fix": "eslint . --fix",
