@@ -6,6 +6,7 @@ import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
+import { memo } from './server.caching';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -30,11 +31,12 @@ interface ServerInstance {
 /**
  * Create and run a server with shutdown, register tool and errors.
  *
- * @param options
- * @param settings
+ * @param options - Server options
+ * @param settings - Server settings (tools, signal handling, etc.)
  * @param settings.tools
  * @param settings.enableSigint
  * @param settings.allowProcessExit
+ * @returns Server instance
  */
 const runServer = async (options = getOptions(), {
   tools = [
@@ -118,6 +120,38 @@ const runServer = async (options = getOptions(), {
     }
   };
 };
+
+/**
+ * Memoized version of runServer.
+ * - Automatically cleans up servers when cache entries are rolled off (cache limit reached)
+ * - Prevents port conflicts by returning the same server instance via memoization
+ * - `onCacheRollout` closes servers that were rolled out of caching due to cache limit
+ */
+runServer.memo = memo(
+  runServer,
+  {
+    cacheLimit: 10,
+    onCacheRollout: async ({ removed }) => {
+      const results: PromiseSettledResult<ServerInstance>[] = await Promise.allSettled(removed);
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const server = result.value;
+
+          if (server?.isRunning?.()) {
+            try {
+              await server.stop();
+            } catch (error) {
+              console.error(`Error stopping server: ${error}`);
+            }
+          }
+        } else {
+          console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
+        }
+      }
+    }
+  }
+);
 
 export {
   runServer,

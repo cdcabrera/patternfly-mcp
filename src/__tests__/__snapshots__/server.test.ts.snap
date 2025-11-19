@@ -28,14 +28,14 @@ exports[`runServer should attempt to run server, create transport, connect, and 
   "info": [],
   "log": [
     [
-      "@patternfly/patternfly-mcp server running on stdio",
+      "test-server-4 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "@patternfly/patternfly-mcp",
-        "version": "0.0.0",
+        "name": "test-server-4",
+        "version": "1.0.0",
       },
       {
         "capabilities": {
@@ -59,14 +59,14 @@ exports[`runServer should attempt to run server, disable SIGINT handler: console
   "info": [],
   "log": [
     [
-      "@patternfly/patternfly-mcp server running on stdio",
+      "test-server-7 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "@patternfly/patternfly-mcp",
-        "version": "0.0.0",
+        "name": "test-server-7",
+        "version": "1.0.0",
       },
       {
         "capabilities": {
@@ -85,14 +85,14 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
   "info": [],
   "log": [
     [
-      "@patternfly/patternfly-mcp server running on stdio",
+      "test-server-8 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "@patternfly/patternfly-mcp",
-        "version": "0.0.0",
+        "name": "test-server-8",
+        "version": "1.0.0",
       },
       {
         "capabilities": {
@@ -120,14 +120,14 @@ exports[`runServer should attempt to run server, register a tool: console 1`] = 
   ],
   "log": [
     [
-      "@patternfly/patternfly-mcp server running on stdio",
+      "test-server-5 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "@patternfly/patternfly-mcp",
-        "version": "0.0.0",
+        "name": "test-server-5",
+        "version": "1.0.0",
       },
       {
         "capabilities": {
@@ -167,14 +167,14 @@ exports[`runServer should attempt to run server, register multiple tools: consol
   ],
   "log": [
     [
-      "@patternfly/patternfly-mcp server running on stdio",
+      "test-server-6 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "@patternfly/patternfly-mcp",
-        "version": "0.0.0",
+        "name": "test-server-6",
+        "version": "1.0.0",
       },
       {
         "capabilities": {
@@ -215,13 +215,13 @@ exports[`runServer should attempt to run server, use custom options: console 1`]
   "info": [],
   "log": [
     [
-      "test-server server running on stdio",
+      "test-server-3 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "test-server",
+        "name": "test-server-3",
         "version": "1.0.0",
       },
       {
@@ -258,8 +258,8 @@ exports[`runServer should attempt to run server, use default tools, http: consol
   "mcpServer": [
     [
       {
-        "name": undefined,
-        "version": undefined,
+        "name": "test-server-2",
+        "version": "1.0.0",
       },
       {
         "capabilities": {
@@ -716,14 +716,14 @@ exports[`runServer should attempt to run server, use default tools, stdio: conso
   ],
   "log": [
     [
-      "@patternfly/patternfly-mcp server running on stdio",
+      "test-server-1 server running on stdio",
     ],
   ],
   "mcpServer": [
     [
       {
-        "name": "@patternfly/patternfly-mcp",
-        "version": "0.0.0",
+        "name": "test-server-1",
+        "version": "1.0.0",
       },
       {
         "capabilities": {

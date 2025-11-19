@@ -21,7 +21,7 @@ const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerIn
     // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
     setOptions({ ...cliOptions, ...programmaticOptions });
 
-    return await runServer(undefined, { allowProcessExit });
+    return await runServer.memo(undefined, { allowProcessExit });
   } catch (error) {
     console.error('Failed to start server:', error);
 

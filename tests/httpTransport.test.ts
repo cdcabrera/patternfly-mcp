@@ -53,7 +53,10 @@ describe('PatternFly MCP, HTTP Transport', () => {
 
   it('should expose expected tools and stable shape', async () => {
     // Client is automatically initialized, so we can directly call tools/list
-    if (!client) throw new Error('Client not initialized');
+    if (!client) {
+      throw new Error('Client not initialized');
+    }
+
     const response = await client.send({
       method: 'tools/list',
       params: {}
