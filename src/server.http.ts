@@ -297,8 +297,8 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     if (registeredServer) {
       console.log(`Closing existing HTTP server instance on port ${port}...`);
       await registeredServer.close();
-      // Wait for the port to actually be released (close() already waits, but give extra time)
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Give the OS a moment to release the port (helps with TIME_WAIT)
+      await new Promise(resolve => setTimeout(resolve, 150));
     } else {
       // No registered server, check for process on port
       const processInfo = await getProcessOnPort(port);
@@ -316,18 +316,14 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
           // This can happen in programmatic usage when a previous server instance didn't shut down properly
           // The port might be in TIME_WAIT state - wait for it to be released
           if (isCurrentProcess) {
-            console.warn(`Port ${port} is in use by the current process (PID ${processInfo.pid}). Waiting for port to be released...`);
-            // Wait for the port to be released (up to 2 seconds)
-            const maxWait = 2000;
-            const checkInterval = 100;
-            const startTime = Date.now();
-            
-            while (Date.now() - startTime < maxWait) {
-              await new Promise(resolve => setTimeout(resolve, checkInterval));
+            // Port is in use by current process - likely TIME_WAIT from previous close()
+            // Just wait a bit for it to be released (simpler than complex polling)
+            console.warn(`Port ${port} is in use by the current process. Waiting for port to be released...`);
+            for (let i = 0; i < 20; i++) { // Wait up to 2 seconds
+              await new Promise(resolve => setTimeout(resolve, 100));
               const checkInfo = await getProcessOnPort(port);
               if (!checkInfo || checkInfo.pid !== process.pid) {
-                // Port is free or different process
-                break;
+                break; // Port is free
               }
             }
           } else {
@@ -371,17 +367,16 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   const handle: HttpServerHandle = {
     port,
     close: async () => {
-      // Don't unregister yet - keep it in registry so killExisting can find and close it
-      // This handles the case where close() is called but a new server tries to start
-      // before the port is fully released
+      // Close the server
       await new Promise<void>(resolve => {
         server.close(() => {
-          // Server is closed, but port might still be in TIME_WAIT
-          // Unregister after closing - killExisting will have already checked the registry
-          unregisterServer(port);
           resolve();
         });
       });
+      
+      // Unregister immediately - the registry is only for finding servers to close
+      // Once closed, we don't need it in the registry anymore
+      unregisterServer(port);
     }
   };
 
