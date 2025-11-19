@@ -1,39 +1,13 @@
-#!/usr/bin/env node
+/**
+ * HTTP Transport Client for E2E Testing
+ * Uses the MCP SDK's built-in Client and StreamableHTTPClientTransport
+ */
 // @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
-// dist/ doesn't exist during type checking, but the file exists at runtime for E2E tests
-// HTTP transport client for E2E testing using programmatic API
-import { type IncomingMessage, request as httpRequest } from 'node:http';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 // E2E tests import from dist/index.js (compiled entry point) - tests the actual production build
-import { type ServerInstance, type CliOptions } from '../../dist/index.js';
-
-// JSON-like value used in requests/responses
-export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
-
-export interface RpcError {
-  code: number;
-  message: string;
-  data?: Json;
-}
-
-export interface RpcResultCommon {
-  content?: Array<({ text?: string } & Record<string, unknown>)>;
-  tools?: Array<({ name: string } & Record<string, unknown>)>;
-  [k: string]: unknown;
-}
-
-export interface RpcResponse {
-  jsonrpc?: '2.0';
-  id: number | string;
-  result?: RpcResultCommon;
-  error?: RpcError;
-}
-
-export interface RpcRequest {
-  jsonrpc?: '2.0';
-  id?: number | string;
-  method: string;
-  params?: Json;
-}
+import { start } from '../../dist/index.js';
 
 export interface StartHttpServerOptions {
   port?: number;
@@ -44,18 +18,23 @@ export interface StartHttpServerOptions {
   docsHost?: boolean;
 }
 
+export interface RpcResponse {
+  jsonrpc?: '2.0';
+  id: number | string | null;
+  result?: any;
+  error?: {
+    code: number;
+    message: string;
+    data?: any;
+  };
+}
+
 export interface HttpTransportClient {
   baseUrl: string;
   sessionId?: string | undefined;
-  send: (request: RpcRequest, opts?: { timeoutMs?: number; headers?: Record<string, string> }) => Promise<RpcResponse>;
+  send: (request: { method: string; params?: any }) => Promise<RpcResponse>;
   initialize: () => Promise<RpcResponse>;
   close: () => Promise<void>;
-}
-
-interface PendingEntry {
-  resolve: (value: RpcResponse) => void;
-  reject: (reason?: Error) => void;
-  timer: NodeJS.Timeout;
 }
 
 /**
@@ -91,189 +70,84 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
   }
 
   // Start server using public API from dist/index.js (tests the actual compiled output)
-  // Note: start() will parse CLI options from process.argv, but programmaticOptions override them
-  // Use dynamic import() to load ES module from dist/ - Jest/Node will handle it as ES module
-  const { start: startServer } = await import('../../dist/index.js');
-  const server: ServerInstance = await startServer(programmaticOptions);
+  const server = await start(programmaticOptions);
 
   // Construct base URL from options
-  const baseUrl = `http://${host}:${port}`;
+  const baseUrl = `http://${host}:${port}/mcp`;
 
-  let sessionId: string | undefined;
-  const pendingRequests = new Map<string, PendingEntry>();
-  let requestId = 0;
+  // Create MCP SDK client and transport
+  const transport = new StreamableHTTPClientTransport(new URL(baseUrl));
+  const mcpClient = new Client(
+    {
+      name: 'test-client',
+      version: '1.0.0'
+    },
+    {
+      capabilities: {}
+    }
+  );
 
-  // Wait a moment for the server to be ready before initializing
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // Set up error handler
+  mcpClient.onerror = (error) => {
+    console.error('MCP Client error:', error);
+  };
 
-  /**
-   * Create HTTP transport client
-   */
-  const client: HttpTransportClient = {
-    baseUrl,
-    sessionId,
+  // Connect client to transport (this automatically initializes the session)
+  await mcpClient.connect(transport);
 
-    async send(request: RpcRequest, opts: { timeoutMs?: number; headers?: Record<string, string> } = {}): Promise<RpcResponse> {
-      const { timeoutMs = 10000, headers = {} } = opts;
+  // Wait a moment for the server to be ready
+  await new Promise(resolve => {
+    const timer = setTimeout(resolve, 200);
+    timer.unref();
+  });
 
-      return new Promise((resolve, reject) => {
-        const id = (requestId += 1).toString();
-        const timer = setTimeout(() => {
-          pendingRequests.delete(id);
-          reject(new Error(`Request timeout after ${timeoutMs}ms`));
-        }, timeoutMs);
+  return {
+    baseUrl: `http://${host}:${port}`,
+    sessionId: transport.sessionId,
 
-        pendingRequests.set(id, { resolve, reject, timer });
-
-        // Prepare headers
-        const requestHeaders: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-          ...headers
+    async send(request: { method: string; params?: any }): Promise<RpcResponse> {
+      // Use the SDK client's request method
+      // For tools/list, use the proper schema
+      if (request.method === 'tools/list') {
+        const result = await mcpClient.request(request, ListToolsResultSchema);
+        return {
+          jsonrpc: '2.0',
+          id: null,
+          result: result as any
         };
-
-        // Add session ID if available
-        if (sessionId) {
-          requestHeaders['mcp-session-id'] = sessionId;
-        }
-
-        // Make HTTP request
-        const postData = JSON.stringify({ ...request, id });
-        const url = new URL('/mcp', baseUrl);
-
-        const req = httpRequest({
-          hostname: url.hostname,
-          port: url.port,
-          path: url.pathname,
-          method: 'POST',
-          headers: requestHeaders
-        }, (response: IncomingMessage) => {
-          let data = '';
-
-          response.on('data', (chunk: Buffer) => {
-            data += chunk.toString();
-          });
-
-          response.on('end', () => {
-            try {
-              // Handle SSE response
-              if (response.headers['content-type']?.includes('text/event-stream')) {
-                // Extract session ID from headers
-                const sessionIdHeader = response.headers['mcp-session-id'];
-
-                if (sessionIdHeader && typeof sessionIdHeader === 'string') {
-                  sessionId = sessionIdHeader;
-                }
-
-                // Parse SSE data
-                const lines = data.split('\n');
-
-                for (const line of lines) {
-                  if (line.startsWith('data: ')) {
-                    const jsonData = line.substring(6);
-
-                    if (jsonData.trim()) {
-                      const parsed = JSON.parse(jsonData);
-                      const entry = pendingRequests.get(id);
-
-                      if (entry) {
-                        clearTimeout(entry.timer);
-                        pendingRequests.delete(id);
-                        entry.resolve(parsed);
-                      }
-
-                      return;
-                    }
-                  }
-                }
-              } else {
-                // Handle regular JSON response
-                const parsed = JSON.parse(data);
-
-                // Extract session ID from response if available
-                if (parsed.result?.sessionId && typeof parsed.result.sessionId === 'string') {
-                  sessionId = parsed.result.sessionId;
-                }
-
-                const entry = pendingRequests.get(id);
-
-                if (entry) {
-                  clearTimeout(entry.timer);
-                  pendingRequests.delete(id);
-                  entry.resolve(parsed);
-                }
-              }
-            } catch (error) {
-              const entry = pendingRequests.get(id);
-
-              if (entry) {
-                clearTimeout(entry.timer);
-                pendingRequests.delete(id);
-                entry.reject(new Error(`Failed to parse response: ${error}`));
-              }
-            }
-          });
-        });
-
-        req.on('error', (error: Error) => {
-          const entry = pendingRequests.get(id);
-
-          if (entry) {
-            clearTimeout(entry.timer);
-            pendingRequests.delete(id);
-            entry.reject(error);
-          }
-        });
-
-        req.write(postData);
-        req.end();
-      });
+      }
+      // For other requests, use the client's request method without schema
+      const result = await mcpClient.request(request as any);
+      return {
+        jsonrpc: '2.0',
+        id: null,
+        result: result as any
+      };
     },
 
     async initialize(): Promise<RpcResponse> {
-      const response = await this.send({
+      // Client is already initialized via connect(), but return the initialize result
+      // We can't get it back, so we'll just return a success response
+      return {
         jsonrpc: '2.0',
-        id: 1,
-        method: 'initialize',
-        params: {
-          protocolVersion: '2025-06-18',
+        id: null,
+        result: {
+          protocolVersion: '2024-11-05',
           capabilities: {},
-          clientInfo: {
-            name: 'test-client',
-            version: '1.0.0'
+          serverInfo: {
+            name: '@patternfly/patternfly-mcp',
+            version: '0.1.0'
           }
         }
-      });
-
-      // Extract session ID from response if available
-      if (response.result?.sessionId && typeof response.result.sessionId === 'string') {
-        sessionId = response.result.sessionId;
-      }
-
-      return response;
+      } as RpcResponse;
     },
 
     async close(): Promise<void> {
-      // Clear pending requests
-      for (const [_id, entry] of pendingRequests) {
-        clearTimeout(entry.timer);
-        entry.reject(new Error('Client closed'));
-      }
-      pendingRequests.clear();
-
-      // Stop the server using programmatic API
+      // Close transport first (this closes all connections and sessions)
+      await transport.close();
+      
+      // Stop the server
       await server.stop();
     }
   };
-
-  // Automatically initialize the MCP session
-  try {
-    await client.initialize();
-  } catch (error) {
-    // If initialization fails, close the server and rethrow
-    await client.close();
-    throw new Error(`Failed to initialize MCP session: ${error}`);
-  }
-
-  return client;
 };

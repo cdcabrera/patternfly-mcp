@@ -1,31 +1,34 @@
 /**
  * Requires: npm run build prior to running Jest.
  */
-
-import { startHttpServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
+import { jest } from '@jest/globals';
+import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
 
 describe('PatternFly MCP, HTTP Transport', () => {
-  let client: HttpTransportClient;
+  let client: HttpTransportClient | undefined;
 
   beforeEach(async () => {
     client = await startHttpServer({ port: 5001, killExisting: true });
   });
 
-  afterEach(async () => client.close());
+  afterEach(async () => {
+    if (client) {
+      await client.close();
+      client = undefined;
+    }
+  });
 
   it('should expose expected tools and stable shape', async () => {
     // Client is automatically initialized, so we can directly call tools/list
+    if (!client) throw new Error('Client not initialized');
     const response = await client.send({
-      jsonrpc: '2.0',
-      id: 1,
       method: 'tools/list',
       params: {}
     });
     const tools = response?.result?.tools || [];
-    const toolNames = tools.map(tool => tool.name).sort();
+    const toolNames = tools.map((tool: any) => tool.name).sort();
 
     expect(toolNames).toMatchSnapshot();
-
   });
 
   /*
