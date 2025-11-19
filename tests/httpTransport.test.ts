@@ -1,17 +1,17 @@
 /**
  * Requires: npm run build prior to running Jest.
  */
-import { jest } from '@jest/globals';
 import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let client: HttpTransportClient | undefined;
 
-  beforeEach(async () => {
+  // Share server instance across all tests for faster execution
+  beforeAll(async () => {
     client = await startHttpServer({ port: 5001, killExisting: true });
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     if (client) {
       await client.close();
       client = undefined;

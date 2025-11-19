@@ -103,9 +103,10 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
   // Connect client to transport (this automatically initializes the session)
   await mcpClient.connect(transport);
 
-  // Wait a moment for the server to be ready
+  // Minimal wait for server to be ready (reduced from 200ms for faster tests)
+  // The server should be ready immediately after start() resolves
   await new Promise(resolve => {
-    const timer = setTimeout(resolve, 200);
+    const timer = setTimeout(resolve, 50);
     timer.unref();
   });
 
