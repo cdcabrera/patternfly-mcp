@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 // @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
 // dist/ doesn't exist during type checking, but the file exists at runtime for E2E tests
-
 // HTTP transport client for E2E testing using programmatic API
 import { type IncomingMessage, request as httpRequest } from 'node:http';
 // E2E tests import from dist/index.js (compiled entry point) - tests the actual production build
-import { start, type ServerInstance, type CliOptions } from '../../dist/index.js';
+import { type ServerInstance, type CliOptions } from '../../dist/index.js';
 
 // JSON-like value used in requests/responses
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
