@@ -2,16 +2,71 @@
  * Requires: npm run build prior to running Jest.
  */
 import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
+import { loadFixture, startHttpFixture } from './utils/httpFixtureServer';
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let client: HttpTransportClient | undefined;
+  let fixture: { baseUrl: string; close: () => Promise<void> } | undefined;
+  let originalFetch: typeof global.fetch;
 
-  // Share server instance across all tests for faster execution
+  // Set up fixture server to mock remote HTTP requests
+  // This ensures tests don't depend on external services being available
   beforeAll(async () => {
+    // Start fixture server with mock content
+    const body = loadFixture('README.md');
+    fixture = await startHttpFixture({
+      routes: {
+        '/readme': {
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          body
+        },
+        '/test-doc': {
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
+        }
+      }
+    });
+
+    // Mock global.fetch to intercept remote HTTP requests and route them to fixture server
+    originalFetch = global.fetch;
+    global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      
+      // Only intercept remote URLs that are NOT the MCP server endpoint
+      // MCP server runs on port 5001, so we skip those requests
+      if ((url.startsWith('http://') || url.startsWith('https://')) && !url.includes(':5001')) {
+        // Extract the path from the original URL or use a default
+        const urlObj = new URL(url);
+        const fixturePath = urlObj.pathname || '/test-doc';
+        // Fixture is guaranteed to exist here since it's set in beforeAll
+        const fixtureUrl = `${fixture!.baseUrl}${fixturePath}`;
+        
+        // Use original fetch to hit the fixture server
+        return originalFetch(fixtureUrl, init);
+      }
+      
+      // For non-HTTP URLs (like file://), use original fetch
+      return originalFetch(input as RequestInfo, init);
+    };
+
+    // Start the MCP server
     client = await startHttpServer({ port: 5001, killExisting: true });
   });
 
   afterAll(async () => {
+    // Restore original fetch
+    if (originalFetch) {
+      global.fetch = originalFetch;
+    }
+
+    // Close fixture server
+    if (fixture) {
+      await fixture.close();
+    }
+
+    // Close MCP server
     if (client) {
       await client.close();
       client = undefined;
