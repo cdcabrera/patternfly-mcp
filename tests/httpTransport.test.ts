@@ -1,13 +1,16 @@
 /**
  * Requires: npm run build prior to running Jest.
  */
+import { jest } from '@jest/globals';
 import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
 import { loadFixture, startHttpFixture } from './utils/httpFixtureServer';
+import { originalFetch } from './jest.setupTests';
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let client: HttpTransportClient | undefined;
   let fixture: { baseUrl: string; close: () => Promise<void> } | undefined;
-  let originalFetch: typeof global.fetch;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let fetchSpy: any;
 
   // Set up fixture server to mock remote HTTP requests
   // This ensures tests don't depend on external services being available
@@ -29,9 +32,9 @@ describe('PatternFly MCP, HTTP Transport', () => {
       }
     });
 
-    // Mock global.fetch to intercept remote HTTP requests and route them to fixture server
-    originalFetch = global.fetch;
-    global.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+    // Override the global.fetch mock to intercept remote HTTP requests and route them to fixture server
+    // Get the existing spy (created in jest.setupTests.ts) and override its implementation
+    fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
       
       // Only intercept remote URLs that are NOT the MCP server endpoint
@@ -47,18 +50,18 @@ describe('PatternFly MCP, HTTP Transport', () => {
         return originalFetch(fixtureUrl, init);
       }
       
-      // For non-HTTP URLs (like file://), use original fetch
+      // For MCP server requests or non-HTTP URLs, use original fetch
       return originalFetch(input as RequestInfo, init);
-    };
+    });
 
     // Start the MCP server
     client = await startHttpServer({ port: 5001, killExisting: true });
   });
 
   afterAll(async () => {
-    // Restore original fetch
-    if (originalFetch) {
-      global.fetch = originalFetch;
+    // Restore fetch mock
+    if (fetchSpy) {
+      fetchSpy.mockRestore();
     }
 
     // Close fixture server
