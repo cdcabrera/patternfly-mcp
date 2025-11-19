@@ -28,16 +28,16 @@ describe('PatternFly MCP, STDIO', () => {
       }
     };
 
-    const resp = await client.send(req);
-    const text = resp?.result?.content?.[0]?.text || '';
+    const response = await client.send(req);
+    const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
     expect(text).toMatchSnapshot();
   });
 
   it('should expose expected tools and stable shape', async () => {
-    const resp = await client.send({ method: 'tools/list' });
-    const tools = resp?.result?.tools || [];
+    const response = await client.send({ method: 'tools/list' });
+    const tools = response?.result?.tools || [];
     const toolNames = tools.map(tool => tool.name).sort();
 
     expect(toolNames).toEqual(expect.arrayContaining(['usePatternFlyDocs', 'fetchDocs']));

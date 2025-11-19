@@ -138,13 +138,13 @@ By default, the server communicates over stdio. To run the server over HTTP inst
 npx @patternfly/patternfly-mcp --http
 ```
 
-This starts the server on `http://localhost:3000` (default port and host).
+This starts the server on `http://127.0.0.1:3000` (default port and host).
 
 ### HTTP options
 
 - `--http`: Enable HTTP transport mode (default: stdio)
 - `--port <number>`: Port number to listen on (default: 3000)
-- `--host <string>`: Host address to bind to (default: localhost)
+- `--host <string>`: Host address to bind to (default: 127.0.0.1)
 - `--allowed-origins <origins>`: Comma-separated list of allowed CORS origins
 - `--allowed-hosts <hosts>`: Comma-separated list of allowed host headers
 - `--kill-existing`: Automatically kill any existing server process using the same port

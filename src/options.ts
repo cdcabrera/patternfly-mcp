@@ -72,7 +72,7 @@ const validateCliOptions = (options: CliOptions) => {
  * - `docsHost`: Indicates if the `--docs-host` option is enabled.
  * - `http`: Indicates if the `--http` option is enabled.
  * - `port`: The port number specified via `--port`, or defaults to `3000` if not provided.
- * - `host`: The host name specified via `--host`, or defaults to `'localhost'` if not provided.
+ * - `host`: The host name specified via `--host`, or defaults to `'127.0.0.1'` if not provided.
  * - `allowedOrigins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
  * - `allowedHosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
  * - `killExisting`: Indicates if the `--kill-existing` option is enabled.
@@ -84,7 +84,7 @@ const parseCliOptions = () => {
     docsHost: process.argv.includes('--docs-host'),
     http: process.argv.includes('--http'),
     port: getArgValue('--port', 3000) as number,
-    host: getArgValue('--host', 'localhost') as string,
+    host: getArgValue('--host', '127.0.0.1') as string,
     allowedOrigins: (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim()),
     allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim()),
     killExisting: process.argv.includes('--kill-existing')

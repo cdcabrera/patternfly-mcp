@@ -65,7 +65,11 @@ export default [
 
   // Test files
   {
-    files: ['**/*.test.ts'],
+    files: [
+      '**/*.test.ts',
+      'tests/**/*.test.ts',
+      '**/__tests__/**/*test.ts'
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 0,
       'no-sparse-arrays': 0
