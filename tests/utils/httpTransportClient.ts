@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 
-// HTTP transport client for E2E testing of StreamableHTTPServerTransport
-import { spawn } from 'node:child_process';
+// HTTP transport client for E2E testing using programmatic API
 import { type IncomingMessage } from 'node:http';
+// E2E tests import from dist (built output) - these files exist at runtime
+// @ts-expect-error - dist files exist at runtime for E2E tests
+import { runServer, type ServerInstance } from '../../dist/server.js';
+// @ts-expect-error - dist files exist at runtime for E2E tests
+import { setOptions } from '../../dist/options.context.js';
+// @ts-expect-error - dist files exist at runtime for E2E tests
+import { type CliOptions, type GlobalOptions } from '../../dist/options.js';
 
 // JSON-like value used in requests/responses
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
@@ -38,8 +44,8 @@ export interface StartHttpServerOptions {
   host?: string;
   allowedOrigins?: string[];
   allowedHosts?: string[];
-  args?: string[];
-  env?: Record<string, string | undefined>;
+  killExisting?: boolean;
+  docsHost?: boolean;
 }
 
 export interface HttpTransportClient {
@@ -57,279 +63,54 @@ interface PendingEntry {
 }
 
 /**
- * Start an HTTP server with the MCP server and return a client for testing
+ * Start an HTTP server using the programmatic API and return a client for testing
  *
  * @param options - Server configuration options
  */
-export const startHttpServer = (options: StartHttpServerOptions = {}): Promise<HttpTransportClient> => new Promise((resolve, reject) => {
+export const startHttpServer = async (options: StartHttpServerOptions = {}): Promise<HttpTransportClient> => {
   const {
-    port = 3000, // Use a default port instead of 0
-    host = 'localhost',
+    port = 3000,
+    host = '127.0.0.1',
     allowedOrigins,
     allowedHosts,
-    args = [],
-    env = {}
+    killExisting = false,
+    docsHost = false
   } = options;
 
-  // Build command arguments
-  const serverArgs = ['--http', '--port', port.toString(), '--host', host, ...args];
+  // Build programmatic options
+  const programmaticOptions: Partial<CliOptions> = {
+    http: true,
+    port,
+    host,
+    killExisting,
+    docsHost
+  };
 
   if (allowedOrigins) {
-    serverArgs.push('--allowed-origins', allowedOrigins.join(','));
+    programmaticOptions.allowedOrigins = allowedOrigins;
   }
 
   if (allowedHosts) {
-    serverArgs.push('--allowed-hosts', allowedHosts.join(','));
+    programmaticOptions.allowedHosts = allowedHosts;
   }
 
-  // Start the MCP server process
-  const proc = spawn('node', ['dist/index.js', ...serverArgs], {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, ...env }
-  });
+  // Set options in context (merges with DEFAULT_OPTIONS)
+  const globalOptions = setOptions(programmaticOptions) as GlobalOptions;
 
-  let serverUrl = '';
+  // Start server using runServer directly (avoids process.exit in error cases)
+  const server: ServerInstance = await runServer(globalOptions, { allowProcessExit: false });
+
+  // Construct base URL from options
+  const baseUrl = `http://${host}:${port}`;
+
   let sessionId: string | undefined;
   const pendingRequests = new Map<string, PendingEntry>();
   let requestId = 0;
-  let resolved = false;
-
-  // Timeout to prevent hanging if server doesn't start
-  const timeout = setTimeout(() => {
-    if (!resolved) {
-      resolved = true;
-      proc.kill('SIGTERM');
-      reject(new Error(`Timeout waiting for server to start on port ${port}`));
-    }
-  }, 10000); // 10 second timeout
-
-  // Handle server output to get the URL
-  proc.stdout.on('data', (data: Buffer) => {
-    const output = data.toString();
-    // Match any server name followed by "server running on http://..."
-    const urlMatch = output.match(/server running on (http:\/\/[^\s]+)/);
-
-    if (urlMatch && urlMatch[1] && !resolved) {
-      resolved = true;
-      clearTimeout(timeout);
-      serverUrl = urlMatch[1];
-      resolve(createClient());
-    }
-  });
-
-  // Handle server errors
-  proc.stderr.on('data', (data: Buffer) => {
-    const error = data.toString();
-
-    if (error.includes('Error:') || error.includes('EADDRINUSE')) {
-      if (!resolved) {
-        resolved = true;
-        clearTimeout(timeout);
-        reject(new Error(`Server error: ${error}`));
-      }
-    }
-  });
-
-  proc.on('error', error => {
-    if (!resolved) {
-      resolved = true;
-      clearTimeout(timeout);
-      reject(new Error(`Failed to start server: ${error.message}`));
-    }
-  });
-
-  proc.on('exit', code => {
-    if (code !== 0 && code !== null && !resolved) {
-      resolved = true;
-      clearTimeout(timeout);
-      reject(new Error(`Server exited with code ${code}`));
-    }
-  });
 
   /**
-     * Create HTTP transport client
-     */
-  function createClient(): HttpTransportClient {
-    return {
-      baseUrl: serverUrl,
-      sessionId,
-
-      async send(request: RpcRequest, opts: { timeoutMs?: number; headers?: Record<string, string> } = {}): Promise<RpcResponse> {
-        const { timeoutMs = 10000, headers = {} } = opts;
-
-        return new Promise((resolve, reject) => {
-          const id = (requestId += 1).toString();
-          const timer = setTimeout(() => {
-            pendingRequests.delete(id);
-            reject(new Error(`Request timeout after ${timeoutMs}ms`));
-          }, timeoutMs);
-
-          pendingRequests.set(id, { resolve, reject, timer });
-
-          // Prepare headers
-          const requestHeaders: Record<string, string> = {
-            'Content-Type': 'application/json',
-            Accept: 'application/json, text/event-stream',
-            ...headers
-          };
-
-          // Add session ID if available
-          if (sessionId) {
-            requestHeaders['mcp-session-id'] = sessionId;
-          }
-
-          // Make HTTP request
-          const postData = JSON.stringify(request);
-          const url = new URL('/mcp', serverUrl);
-
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const httpRequest = require('http').request({
-            hostname: url.hostname,
-            port: url.port,
-            path: url.pathname,
-            method: 'POST',
-            headers: requestHeaders
-          }, (response: IncomingMessage) => {
-            let data = '';
-
-            response.on('data', (chunk: Buffer) => {
-              data += chunk.toString();
-            });
-
-            response.on('end', () => {
-              try {
-                // Handle SSE response
-                if (response.headers['content-type']?.includes('text/event-stream')) {
-                  // Extract session ID from headers
-                  const sessionIdHeader = response.headers['mcp-session-id'];
-
-                  if (sessionIdHeader && typeof sessionIdHeader === 'string') {
-                    sessionId = sessionIdHeader;
-                  }
-
-                  // Parse SSE data
-                  const lines = data.split('\n');
-
-                  for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                      const jsonData = line.substring(6);
-
-                      if (jsonData.trim()) {
-                        const parsed = JSON.parse(jsonData);
-                        const entry = pendingRequests.get(id);
-
-                        if (entry) {
-                          clearTimeout(entry.timer);
-                          pendingRequests.delete(id);
-                          entry.resolve(parsed);
-                        }
-
-                        return;
-                      }
-                    }
-                  }
-                } else {
-                  // Handle regular JSON response
-                  const parsed = JSON.parse(data);
-
-                  // Extract session ID from response if available
-                  if (parsed.result?.sessionId && typeof parsed.result.sessionId === 'string') {
-                    sessionId = parsed.result.sessionId;
-                  }
-
-                  const entry = pendingRequests.get(id);
-
-                  if (entry) {
-                    clearTimeout(entry.timer);
-                    pendingRequests.delete(id);
-                    entry.resolve(parsed);
-                  }
-                }
-              } catch (error) {
-                const entry = pendingRequests.get(id);
-
-                if (entry) {
-                  clearTimeout(entry.timer);
-                  pendingRequests.delete(id);
-                  entry.reject(new Error(`Failed to parse response: ${error}`));
-                }
-              }
-            });
-          });
-
-          httpRequest.on('error', (error: Error) => {
-            const entry = pendingRequests.get(id);
-
-            if (entry) {
-              clearTimeout(entry.timer);
-              pendingRequests.delete(id);
-              entry.reject(error);
-            }
-          });
-
-          httpRequest.write(postData);
-          httpRequest.end();
-        });
-      },
-
-      async initialize(): Promise<RpcResponse> {
-        const response = await this.send({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'initialize',
-          params: {
-            protocolVersion: '2025-06-18',
-            capabilities: {},
-            clientInfo: {
-              name: 'test-client',
-              version: '1.0.0'
-            }
-          }
-        });
-
-        // Extract session ID from response if available
-        if (response.result?.sessionId && typeof response.result.sessionId === 'string') {
-          sessionId = response.result.sessionId;
-        }
-
-        return response;
-      },
-
-      async close(): Promise<void> {
-        // Clear pending requests
-        for (const [_id, entry] of pendingRequests) {
-          clearTimeout(entry.timer);
-          entry.reject(new Error('Client closed'));
-        }
-        pendingRequests.clear();
-
-        // Kill the server process
-        if (proc && !proc.killed) {
-          proc.kill('SIGTERM');
-
-          // Wait a bit for graceful shutdown
-          await new Promise(resolve => setTimeout(resolve, 100));
-
-          // Force kill if still running
-          if (!proc.killed) {
-            proc.kill('SIGKILL');
-          }
-        }
-      }
-    };
-  }
-});
-
-/**
- * Helper function to create a simple HTTP client for testing
- *
- * @param baseUrl - Base URL for the HTTP client
- */
-export const createHttpClient = (baseUrl: string): HttpTransportClient => {
-  let sessionId: string | undefined;
-  let requestId = 0;
-
-  return {
+   * Create HTTP transport client
+   */
+  const client: HttpTransportClient = {
     baseUrl,
     sessionId,
 
@@ -337,12 +118,13 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
       const { timeoutMs = 10000, headers = {} } = opts;
 
       return new Promise((resolve, reject) => {
-        const _id = (requestId += 1).toString();
-
-        void _id; // Suppress unused variable warning
+        const id = (requestId += 1).toString();
         const timer = setTimeout(() => {
+          pendingRequests.delete(id);
           reject(new Error(`Request timeout after ${timeoutMs}ms`));
         }, timeoutMs);
+
+        pendingRequests.set(id, { resolve, reject, timer });
 
         // Prepare headers
         const requestHeaders: Record<string, string> = {
@@ -357,7 +139,7 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
         }
 
         // Make HTTP request
-        const postData = JSON.stringify(request);
+        const postData = JSON.stringify({ ...request, id });
         const url = new URL('/mcp', baseUrl);
 
         // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -375,7 +157,6 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
           });
 
           response.on('end', () => {
-            clearTimeout(timer);
             try {
               // Handle SSE response
               if (response.headers['content-type']?.includes('text/event-stream')) {
@@ -395,8 +176,13 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
 
                     if (jsonData.trim()) {
                       const parsed = JSON.parse(jsonData);
+                      const entry = pendingRequests.get(id);
 
-                      resolve(parsed);
+                      if (entry) {
+                        clearTimeout(entry.timer);
+                        pendingRequests.delete(id);
+                        entry.resolve(parsed);
+                      }
 
                       return;
                     }
@@ -411,17 +197,34 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
                   sessionId = parsed.result.sessionId;
                 }
 
-                resolve(parsed);
+                const entry = pendingRequests.get(id);
+
+                if (entry) {
+                  clearTimeout(entry.timer);
+                  pendingRequests.delete(id);
+                  entry.resolve(parsed);
+                }
               }
             } catch (error) {
-              reject(new Error(`Failed to parse response: ${error}`));
+              const entry = pendingRequests.get(id);
+
+              if (entry) {
+                clearTimeout(entry.timer);
+                pendingRequests.delete(id);
+                entry.reject(new Error(`Failed to parse response: ${error}`));
+              }
             }
           });
         });
 
         httpRequest.on('error', (error: Error) => {
-          clearTimeout(timer);
-          reject(error);
+          const entry = pendingRequests.get(id);
+
+          if (entry) {
+            clearTimeout(entry.timer);
+            pendingRequests.delete(id);
+            entry.reject(error);
+          }
         });
 
         httpRequest.write(postData);
@@ -453,7 +256,17 @@ export const createHttpClient = (baseUrl: string): HttpTransportClient => {
     },
 
     async close(): Promise<void> {
-      // No-op for simple client
+      // Clear pending requests
+      for (const [_id, entry] of pendingRequests) {
+        clearTimeout(entry.timer);
+        entry.reject(new Error('Client closed'));
+      }
+      pendingRequests.clear();
+
+      // Stop the server using programmatic API
+      await server.stop();
     }
   };
+
+  return client;
 };
