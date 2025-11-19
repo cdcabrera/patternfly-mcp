@@ -17,6 +17,8 @@ describe('PatternFly MCP, HTTP Transport', () => {
 
   it('should expose expected tools and stable shape', async () => {
     const client = await startHttpServer({ port: 5001, killExisting: true });
+    
+    // Client is automatically initialized, so we can directly call tools/list
     const response = await client.send({
       jsonrpc: '2.0',
       id: 1,

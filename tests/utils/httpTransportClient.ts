@@ -103,6 +103,9 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
   const pendingRequests = new Map<string, PendingEntry>();
   let requestId = 0;
 
+  // Wait a moment for the server to be ready before initializing
+  await new Promise(resolve => setTimeout(resolve, 200));
+
   /**
    * Create HTTP transport client
    */
@@ -262,6 +265,15 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
       await server.stop();
     }
   };
+
+  // Automatically initialize the MCP session
+  try {
+    await client.initialize();
+  } catch (error) {
+    // If initialization fails, close the server and rethrow
+    await client.close();
+    throw new Error(`Failed to initialize MCP session: ${error}`);
+  }
 
   return client;
 };
