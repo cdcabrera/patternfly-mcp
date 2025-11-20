@@ -266,12 +266,8 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     if (processInfo && isSameMcpServer(processInfo.command)) {
       console.log(`Killing existing MCP server process ${processInfo.pid} on port ${port}...`);
       await killProcess(processInfo.pid);
-      // Small delay for OS to release port
-      await new Promise(resolve => {
-        const timer = setTimeout(resolve, 100);
-
-        timer.unref();
-      });
+      // Note: killProcess already waits for process exit (up to 2000ms)
+      // If port is still in use, server.listen() will throw EADDRINUSE and we handle it gracefully
     } else if (processInfo) {
       throw new Error(formatPortConflictError(port, processInfo));
     }
