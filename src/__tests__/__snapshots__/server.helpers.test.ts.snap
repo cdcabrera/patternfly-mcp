@@ -2,9 +2,9 @@
 
 exports[`generateHash should minimally generate a consistent hash: hash, object and primitive values 1`] = `
 {
-  "valueArray": "c259998330",
+  "valueArray": "c141398357",
   "valueArrayConfirmSort": true,
-  "valueArraySort": "c2035003770",
+  "valueArraySort": "c-668007851",
   "valueBoolFalse": "c-1246907498",
   "valueBoolTrue": "c2039105809",
   "valueFloat": "c-1391273944",

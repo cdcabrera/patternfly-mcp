@@ -12,9 +12,12 @@ exports[`SAME_SERVER_TOKENS should list predictable values 1`] = `
 exports[`formatPortConflictError should return a formatted message, is NOT the same mcp server 1`] = `
 "
 Port 3000 is already in use.
+	Process: PID 987654321
+	Command: node dist/index.js
 
-	This may be a different process. To use this port, you will need to:
-	1. Stop the process
+	This appears to be another instance of the server.
+	Recommended:
+	1. Rerun with the --kill-existing flag to stop it automatically.
 	2. Or use a different port: --port <different-port>"
 `;
 

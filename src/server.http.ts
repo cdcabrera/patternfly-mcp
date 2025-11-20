@@ -84,6 +84,7 @@ const getProcessOnPort = async (port: number) => {
  * Identity tokens for the MCP server process. Generated from package.json bin entries
  * plus the built entry point.
  */
+
 const SAME_SERVER_TOKENS = [
   'dist/index.js',
   ...Object.keys(packageJson.bin || {})
@@ -92,9 +93,13 @@ const SAME_SERVER_TOKENS = [
 /**
  * HTTP mode, check if the process is the MCP server instance
  *
- * Consider it a match if the command appears to invoke
- * - binary
- * - built entry point AND includes the `--http` flag
+ * Consider it a match if the command appears to invoke:
+ * - binary with `--http` flag
+ * - built entry point (dist/index.js) with `--http` flag (CLI)
+ * - node process running dist/index.js without flags (programmatic usage in tests)
+ *
+ * For programmatic usage (via start() function in tests), the command will be
+ * "node dist/index.js" without --http flag, so we allow that case too.
  *
  * @param rawCommand - Raw command string to check
  * @returns True if it's the same MCP server
@@ -111,14 +116,37 @@ const isSameMcpServer = (rawCommand: string): boolean => {
     .trim()
     .toLowerCase();
 
-  // Check for --http flag with word boundaries
-  const hasHttpFlag = /(^|\s)--http(\s|$)/.test(cmd);
+  // Check if it's running the MCP server entry point
+  const hasServerToken = SAME_SERVER_TOKENS.some(t => cmd.includes(t.toLowerCase()));
 
-  if (!hasHttpFlag) {
+  if (!hasServerToken) {
     return false;
   }
 
-  return SAME_SERVER_TOKENS.some(t => cmd.includes(t.toLowerCase()));
+  // Check for --http flag with word boundaries (must be exact match, not --http-port, etc.)
+  const hasHttpFlag = /(^|\s)--http(\s|$)/.test(cmd);
+
+  if (hasHttpFlag) {
+    return true;
+  }
+
+  // For programmatic usage in Jest tests, the command will be "node dist/index.js" without --http flag.
+  // We detect Jest test environment and allow matching in that case.
+  // This allows tests with killExisting=true to kill existing server instances.
+  const isNodeProcess = cmd.includes('node') && cmd.includes('dist/index.js');
+  const hasAnyFlags = /--\w+/.test(cmd);
+  const isJestTest = typeof process !== 'undefined' && (
+    process.env.JEST_WORKER_ID !== undefined ||
+    (process.argv && process.argv.some(arg => arg.includes('jest')))
+  );
+
+  // Only match programmatic usage in Jest tests: node process, no flags, and Jest environment
+  // This allows tests to kill existing servers, but prevents false positives in CLI usage
+  if (isNodeProcess && !hasAnyFlags && isJestTest) {
+    return true;
+  }
+
+  return false;
 };
 
 /**

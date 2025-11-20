@@ -54,12 +54,28 @@ export const generateHash = (anyValue: unknown): string => {
     return value;
   };
 
-  const stringified = isPlainObject(anyValue)
-    ? JSON.stringify(
+  let stringified: string;
+
+  // Handle arrays by hashing each element
+  if (Array.isArray(anyValue)) {
+    stringified = JSON.stringify(anyValue.map(item => {
+      if (isPlainObject(item)) {
+        return JSON.stringify(
+          Object.entries(item).sort(([a], [b]) => a.localeCompare(b)),
+          replacer
+        );
+      }
+
+      return item;
+    }));
+  } else if (isPlainObject(anyValue)) {
+    stringified = JSON.stringify(
       Object.entries(anyValue).sort(([a], [b]) => a.localeCompare(b)),
       replacer
-    )
-    : `${typeof anyValue}${anyValue?.toString() || anyValue}`;
+    );
+  } else {
+    stringified = `${typeof anyValue}${anyValue?.toString() || anyValue}`;
+  }
 
   return hashCode(JSON.stringify({ value: stringified }));
 };
