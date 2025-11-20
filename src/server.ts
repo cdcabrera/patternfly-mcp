@@ -123,15 +123,33 @@ const runServer = async (options = getOptions(), {
 
 /**
  * Memoized version of runServer.
- * - Automatically cleans up servers when the cache expires
+ * - Automatically cleans up servers when cache entries are rolled off (cache limit reached)
  * - Prevents port conflicts by returning the same server instance via memoization
+ * - Note: `onCacheExpire` callback is only used if `expire` option is set (currently unused)
  */
 runServer.memo = memo(
   runServer,
   {
     cacheLimit: 10,
+    onCacheRollout: async entries => {
+      // Handle cache rollout - close servers that were rolled off due to cache limit
+      for (const { value } of entries) {
+        // value is Promise<ServerInstance> (cached promise)
+        try {
+          const serverInstance = await Promise.resolve(value);
+
+          if (serverInstance.isRunning()) {
+            await serverInstance.stop();
+          }
+        } catch {
+          // Server creation failed or already stopped
+          // Ignore - server is already closed or never started
+        }
+      }
+    },
     onCacheExpire: async entries => {
-      // Handle cache expiration - close all servers
+      // Handle cache expiration - close all servers when cache expires
+      // Note: This only fires if `expire` option is set (currently unused)
       for (const { value } of entries) {
         // value is Promise<ServerInstance> (cached promise)
         try {

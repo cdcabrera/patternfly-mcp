@@ -9,6 +9,7 @@ interface MemoOptions<TValue = unknown> {
   debug?: (info: { type: string; value: unknown; cache: unknown[] }) => void;
   expire?: number;
   onCacheExpire?: (entries: Array<{ key: string; value: TValue }>) => void | Promise<void>;
+  onCacheRollout?: (entries: Array<{ key: string; value: TValue }>) => void | Promise<void>;
 }
 
 /**
@@ -26,7 +27,8 @@ interface MemoOptions<TValue = unknown> {
  * @param {number} [options.cacheLimit] - Number of entries to cache before overwriting previous entries (default: 1)
  * @param {Function} [options.debug] - Debug callback function (default: Function.prototype)
  * @param {number} [options.expire] - Expandable milliseconds until cache expires
- * @param {Function} [options.onCacheExpire] - Callback when cache expires, receives array of { key, value } entries
+ * @param {Function} [options.onCacheExpire] - Callback when cache expires (only fires if `expire` option is set), receives array of { key, value } entries
+ * @param {Function} [options.onCacheRollout] - Callback when cache entries are rolled off due to cache limit, receives array of { key, value } entries
  * @returns {Function} Memoized function
  */
 const memo = <TArgs extends any[], TReturn>(
@@ -36,7 +38,8 @@ const memo = <TArgs extends any[], TReturn>(
     cacheLimit = 1,
     debug = () => {},
     expire,
-    onCacheExpire
+    onCacheExpire,
+    onCacheRollout
   }: MemoOptions<TReturn> = {}
 ): (...args: TArgs) => TReturn => {
   const isCacheErrors = Boolean(cacheErrors);
@@ -123,7 +126,26 @@ const memo = <TArgs extends any[], TReturn>(
 
         // Run after cache update to trim
         if (isMemo) {
-          cache.length = cacheLimit * 2;
+          // Check if we need to trim and collect rolled-off entries
+          if (cache.length > cacheLimit * 2) {
+            // Build entries array for rolled-off entries (entries beyond cacheLimit * 2)
+            const rolledOffEntries: Array<{ key: string; value: TReturn }> = [];
+
+            for (let i = cacheLimit * 2; i < cache.length; i += 2) {
+              rolledOffEntries.push({
+                key: cache[i] as string,
+                value: cache[i + 1] as TReturn
+              });
+            }
+
+            // Trim cache to limit
+            cache.length = cacheLimit * 2;
+
+            // Call onCacheRollout handler
+            if (onCacheRollout && rolledOffEntries.length > 0) {
+              Promise.resolve(onCacheRollout(rolledOffEntries)).catch(console.error);
+            }
+          }
         }
       }
 

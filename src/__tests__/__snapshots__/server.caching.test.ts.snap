@@ -20,13 +20,13 @@ exports[`memo should clear cache on inactivity, async: cache list length 1`] = `
 exports[`memo should memoize a function, async 1`] = `
 [
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": undefined,
     "successValue": "[EMPTY]",
     "type": "memo promise",
   },
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": undefined,
     "successValue": "[EMPTY]",
     "type": "memo promise",
@@ -120,13 +120,13 @@ exports[`memo should memoize a function, async bypass memoization when cacheLimi
 exports[`memo should memoize a function, async errors 1`] = `
 [
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": "[EMPTY]",
     "successValue": undefined,
     "type": "memo promise",
   },
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": "[EMPTY]",
     "successValue": undefined,
     "type": "memo promise",
@@ -179,13 +179,13 @@ exports[`memo should memoize a function, async errors 1`] = `
 exports[`memo should memoize a function, async errors NOT cached 1`] = `
 [
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": "7",
     "successValue": undefined,
     "type": "memo promise",
   },
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": "7",
     "successValue": undefined,
     "type": "memo promise",
@@ -255,13 +255,13 @@ exports[`memo should memoize a function, bypass memoization when cacheLimit is z
 exports[`memo should memoize a function, sync 1`] = `
 [
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": undefined,
     "successValue": "[EMPTY]",
     "type": "memo",
   },
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": undefined,
     "successValue": "[EMPTY]",
     "type": "memo",
@@ -314,13 +314,13 @@ exports[`memo should memoize a function, sync 1`] = `
 exports[`memo should memoize a function, sync errors 1`] = `
 [
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": "[EMPTY]",
     "successValue": undefined,
     "type": "memo error",
   },
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": "[EMPTY]",
     "successValue": undefined,
     "type": "memo error",
@@ -373,25 +373,25 @@ exports[`memo should memoize a function, sync errors 1`] = `
 exports[`memo should memoize a function, sync errors NOT cached 1`] = `
 [
   {
-    "cacheLength": 2,
+    "cacheLength": 0,
+    "errorValue": "7",
+    "successValue": undefined,
+    "type": "memo error",
+  },
+  {
+    "cacheLength": 0,
     "errorValue": "7",
     "successValue": undefined,
     "type": "memo error",
   },
   {
     "cacheLength": 2,
-    "errorValue": "7",
-    "successValue": undefined,
-    "type": "memo error",
-  },
-  {
-    "cacheLength": 4,
     "errorValue": undefined,
     "successValue": "8",
     "type": "memo",
   },
   {
-    "cacheLength": 4,
+    "cacheLength": 2,
     "errorValue": undefined,
     "successValue": "8",
     "type": "memo",
