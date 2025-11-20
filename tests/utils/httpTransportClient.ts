@@ -73,16 +73,9 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
   const server = await start(programmaticOptions);
 
   // Verify server is running
-  if (!server.isRunning()) {
+  if (!server?.isRunning()) {
     throw new Error(`Server failed to start on port ${port}`);
   }
-
-  // Wait a bit longer for HTTP server to actually start listening
-  await new Promise(resolve => {
-    const timer = setTimeout(resolve, 200);
-
-    timer.unref();
-  });
 
   // Construct base URL from options
   const baseUrl = `http://${host}:${port}/mcp`;
