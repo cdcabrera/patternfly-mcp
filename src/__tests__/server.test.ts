@@ -55,6 +55,9 @@ describe('runServer', () => {
 
     // Spy on process.on method
     processOnSpy = jest.spyOn(process, 'on').mockImplementation();
+
+    // Mock process.exit to prevent Jest from exiting
+    jest.spyOn(process, 'exit').mockImplementation((() => {}) as never);
   });
 
   afterEach(() => {
@@ -62,25 +65,27 @@ describe('runServer', () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     processOnSpy.mockRestore();
+    // Note: We don't call jest.restoreAllMocks() here as it would clear module mocks
+    // The memoization cache persists across tests, which is expected behavior
   });
 
   it.each([
     {
       description: 'use default tools, stdio',
-      options: undefined,
+      options: { name: 'test-server-1', version: '1.0.0' },
       tools: undefined,
       transportMethod: MockStdioServerTransport
     },
     {
       description: 'use default tools, http',
-      options: { http: true },
+      options: { name: 'test-server-2', version: '1.0.0', http: true },
       tools: undefined,
       transportMethod: MockStartHttpTransport
     },
     {
       description: 'use custom options',
       options: {
-        name: 'test-server',
+        name: 'test-server-3',
         version: '1.0.0'
       },
       tools: [],
@@ -88,13 +93,13 @@ describe('runServer', () => {
     },
     {
       description: 'create transport, connect, and log success message',
-      options: undefined,
+      options: { name: 'test-server-4', version: '1.0.0' },
       tools: [],
       transportMethod: MockStdioServerTransport
     },
     {
       description: 'register a tool',
-      options: undefined,
+      options: { name: 'test-server-5', version: '1.0.0' },
       tools: [
         jest.fn().mockReturnValue([
           'loremIpsum',
@@ -106,7 +111,7 @@ describe('runServer', () => {
     },
     {
       description: 'register multiple tools',
-      options: undefined,
+      options: { name: 'test-server-6', version: '1.0.0' },
       tools: [
         jest.fn().mockReturnValue([
           'loremIpsum',
@@ -123,14 +128,14 @@ describe('runServer', () => {
     },
     {
       description: 'disable SIGINT handler',
-      options: undefined,
+      options: { name: 'test-server-7', version: '1.0.0' },
       tools: [],
       enableSigint: false,
       transportMethod: MockStdioServerTransport
     },
     {
       description: 'enable SIGINT handler explicitly',
-      options: undefined,
+      options: { name: 'test-server-8', version: '1.0.0' },
       tools: [],
       enableSigint: true,
       transportMethod: MockStdioServerTransport
@@ -138,10 +143,11 @@ describe('runServer', () => {
   ])('should attempt to run server, $description', async ({ options, tools, enableSigint, transportMethod }) => {
     const settings = {
       ...(tools && { tools }),
-      ...(enableSigint !== undefined && { enableSigint })
+      ...(enableSigint !== undefined && { enableSigint }),
+      allowProcessExit: false // Prevent process.exit in tests
     };
 
-    const serverInstance = await runServer(options as any, Object.keys(settings).length > 0 ? settings : undefined);
+    const serverInstance = await runServer(options as any, Object.keys(settings).length > 0 ? settings : { allowProcessExit: false });
 
     expect(transportMethod).toHaveBeenCalled();
     expect(serverInstance.isRunning()).toBe(true);
@@ -152,6 +158,9 @@ describe('runServer', () => {
       log: consoleLogSpy.mock.calls,
       process: processOnSpy.mock.calls
     }).toMatchSnapshot('console');
+
+    // Clean up: stop the server to prevent cache pollution
+    await serverInstance.stop();
   });
 
   it.each([
