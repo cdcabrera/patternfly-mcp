@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { runServer, _runServerInternal } from '../server';
+import { runServer } from '../server';
 import { getOptions } from '../options.context';
 import { startHttpTransport, type HttpServerHandle } from '../server.http';
 
@@ -25,10 +25,6 @@ describe('runServer', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
-    // Bypass memoization in tests by mocking runServer.memo to call the original function directly
-    // This follows the pattern from server.getResources.test.ts
-    (runServer as any).memo = runServer;
 
     // Mock server instance
     mockServer = {
@@ -150,7 +146,7 @@ describe('runServer', () => {
       allowProcessExit: false // Prevent process.exit in tests
     };
 
-    const serverInstance = await runServer.memo(options as any, Object.keys(settings).length > 0 ? settings : { allowProcessExit: false });
+    const serverInstance = await runServer(options as any, Object.keys(settings).length > 0 ? settings : { allowProcessExit: false });
 
     expect(transportMethod).toHaveBeenCalled();
     expect(serverInstance.isRunning()).toBe(true);
@@ -176,7 +172,7 @@ describe('runServer', () => {
       options: { http: true }
     }
   ])('should allow server to be stopped, $description', async ({ options }) => {
-    const serverInstance = await runServer.memo({ ...options, name: 'test-server' } as any, { allowProcessExit: false });
+    const serverInstance = await runServer({ ...options, name: 'test-server' } as any, { allowProcessExit: false });
 
     expect(serverInstance.isRunning()).toBe(true);
 
@@ -195,7 +191,7 @@ describe('runServer', () => {
       throw error;
     });
 
-    await expect(runServer.memo(undefined, { tools: [] })).rejects.toThrow('Server creation failed');
+    await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Server creation failed');
     expect(consoleErrorSpy).toHaveBeenCalledWith(`Error creating ${getOptions().name} server:`, error);
   });
 
@@ -204,7 +200,7 @@ describe('runServer', () => {
 
     mockServer.connect.mockRejectedValue(error);
 
-    await expect(runServer.memo(undefined, { tools: [] })).rejects.toThrow('Connection failed');
+    await expect(runServer(undefined, { tools: [] })).rejects.toThrow('Connection failed');
     expect(consoleErrorSpy).toHaveBeenCalledWith(`Error creating ${getOptions().name} server:`, error);
   });
 });

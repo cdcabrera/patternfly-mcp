@@ -29,15 +29,16 @@ interface ServerInstance {
 }
 
 /**
- * Internal server creation function (not memoized)
+ * Create and run a server with shutdown, register tool and errors.
  *
- * @param options
- * @param settings
+ * @param options - Server options
+ * @param settings - Server settings (tools, signal handling, etc.)
  * @param settings.tools
  * @param settings.enableSigint
  * @param settings.allowProcessExit
+ * @returns Server instance
  */
-const _runServerInternal = async (options = getOptions(), {
+const runServer = async (options = getOptions(), {
   tools = [
     usePatternFlyDocsTool,
     fetchDocsTool,
@@ -121,29 +122,12 @@ const _runServerInternal = async (options = getOptions(), {
 };
 
 /**
- * Server creation function
- *
- * @param options - Server options
- * @param settings - Server settings (tools, signal handling, etc.)
- * @returns Server instance
- */
-const runServer = _runServerInternal as typeof _runServerInternal & {
-
-  /**
-   * Memoized server creation function
-   * Prevents port conflicts by returning the same server instance for identical configurations.
-   * Automatically cleans up servers when cache expires.
-   */
-  memo: typeof _runServerInternal;
-};
-
-/**
- * Memoized server creation function
- * Prevents port conflicts by returning the same server instance for identical configurations.
- * Automatically cleans up servers when cache expires.
+ * Memoized version of runServer.
+ * - Automatically cleans up servers when the cache expires
+ * - Prevents port conflicts by returning the same server instance via memoization
  */
 runServer.memo = memo(
-  _runServerInternal,
+  runServer,
   {
     cacheLimit: 10,
     onCacheExpire: async entries => {
@@ -167,7 +151,6 @@ runServer.memo = memo(
 
 export {
   runServer,
-  _runServerInternal, // Exported for test mocking
   type McpTool,
   type McpToolCreator,
   type ServerInstance

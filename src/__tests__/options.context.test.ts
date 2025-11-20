@@ -92,7 +92,7 @@ describe('tool creator options context', () => {
       ];
     };
 
-    await runServer.memo(undefined, { tools: [tool], enableSigint: false });
+    await runServer(undefined, { tools: [tool], enableSigint: false });
 
     // Extract the registered callback wrapper (which applies runWithOptions)
     expect(mockServer.registerTool).toHaveBeenCalledTimes(1);
