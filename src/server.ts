@@ -121,15 +121,28 @@ const _runServerInternal = async (options = getOptions(), {
 };
 
 /**
- * Memoized server creation function
- * Prevents port conflicts by returning the same server instance for identical configurations.
- * Automatically cleans up servers when cache expires.
+ * Server creation function
  *
  * @param options - Server options
  * @param settings - Server settings (tools, signal handling, etc.)
  * @returns Server instance
  */
-const runServer = memo(
+const runServer = _runServerInternal as typeof _runServerInternal & {
+
+  /**
+   * Memoized server creation function
+   * Prevents port conflicts by returning the same server instance for identical configurations.
+   * Automatically cleans up servers when cache expires.
+   */
+  memo: typeof _runServerInternal;
+};
+
+/**
+ * Memoized server creation function
+ * Prevents port conflicts by returning the same server instance for identical configurations.
+ * Automatically cleans up servers when cache expires.
+ */
+runServer.memo = memo(
   _runServerInternal,
   {
     cacheLimit: 10,
@@ -154,6 +167,7 @@ const runServer = memo(
 
 export {
   runServer,
+  _runServerInternal, // Exported for test mocking
   type McpTool,
   type McpToolCreator,
   type ServerInstance
