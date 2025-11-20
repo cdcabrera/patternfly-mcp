@@ -232,7 +232,6 @@ const handleStreamableHttpRequest = async (
  */
 type HttpServerHandle = {
   close: () => Promise<void>;
-  port: number;
 };
 
 /**
@@ -299,7 +298,6 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   });
 
   const handle: HttpServerHandle = {
-    port,
     close: async () => {
       // Close the HTTP server
       await new Promise<void>(resolve => {
