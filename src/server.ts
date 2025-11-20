@@ -6,6 +6,7 @@ import { componentSchemasTool } from './tool.componentSchemas';
 import { getOptions, runWithOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
+import { memo } from './server.caching';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -28,7 +29,7 @@ interface ServerInstance {
 }
 
 /**
- * Create and run a server with shutdown, register tool and errors.
+ * Internal server creation function (not memoized)
  *
  * @param options
  * @param settings
@@ -36,7 +37,7 @@ interface ServerInstance {
  * @param settings.enableSigint
  * @param settings.allowProcessExit
  */
-const runServer = async (options = getOptions(), {
+const _runServerInternal = async (options = getOptions(), {
   tools = [
     usePatternFlyDocsTool,
     fetchDocsTool,
@@ -118,6 +119,38 @@ const runServer = async (options = getOptions(), {
     }
   };
 };
+
+/**
+ * Memoized server creation function
+ * Prevents port conflicts by returning the same server instance for identical configurations.
+ * Automatically cleans up servers when cache expires.
+ *
+ * @param options - Server options
+ * @param settings - Server settings (tools, signal handling, etc.)
+ * @returns Server instance
+ */
+const runServer = memo(
+  _runServerInternal,
+  {
+    cacheLimit: 10,
+    onCacheExpire: async entries => {
+      // Handle cache expiration - close all servers
+      for (const { value } of entries) {
+        // value is Promise<ServerInstance> (cached promise)
+        try {
+          const serverInstance = await Promise.resolve(value);
+
+          if (serverInstance.isRunning()) {
+            await serverInstance.stop();
+          }
+        } catch {
+          // Server creation failed or already stopped
+          // Ignore - server is already closed or never started
+        }
+      }
+    }
+  }
+);
 
 export {
   runServer,

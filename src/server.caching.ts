@@ -1,6 +1,17 @@
 import { generateHash, isPromise } from './server.helpers';
 
 /**
+ * Memoization options
+ */
+interface MemoOptions<TValue = unknown> {
+  cacheErrors?: boolean;
+  cacheLimit?: number;
+  debug?: (info: { type: string; value: unknown; cache: unknown[] }) => void;
+  expire?: number;
+  onCacheExpire?: (entries: Array<{ key: string; value: TValue }>) => void | Promise<void>;
+}
+
+/**
  * Simple argument-based memoize with adjustable cache limit, and extendable cache expire.
  * apidoc-mock: https://github.com/cdcabrera/apidoc-mock.git
  *
@@ -15,6 +26,7 @@ import { generateHash, isPromise } from './server.helpers';
  * @param {number} [options.cacheLimit] - Number of entries to cache before overwriting previous entries (default: 1)
  * @param {Function} [options.debug] - Debug callback function (default: Function.prototype)
  * @param {number} [options.expire] - Expandable milliseconds until cache expires
+ * @param {Function} [options.onCacheExpire] - Callback when cache expires, receives array of { key, value } entries
  * @returns {Function} Memoized function
  */
 const memo = <TArgs extends any[], TReturn>(
@@ -23,13 +35,9 @@ const memo = <TArgs extends any[], TReturn>(
     cacheErrors = true,
     cacheLimit = 1,
     debug = () => {},
-    expire
-  }: {
-    cacheErrors?: boolean;
-    cacheLimit?: number;
-    debug?: (info: { type: string; value: unknown; cache: unknown[] }) => void;
-    expire?: number;
-  } = {}
+    expire,
+    onCacheExpire
+  }: MemoOptions<TReturn> = {}
 ): (...args: TArgs) => TReturn => {
   const isCacheErrors = Boolean(cacheErrors);
   const isFuncPromise = isPromise(func);
@@ -46,7 +54,22 @@ const memo = <TArgs extends any[], TReturn>(
         clearTimeout(timeout);
 
         timeout = setTimeout(() => {
+          // Build entries array before clearing cache
+          const entries: Array<{ key: string; value: TReturn }> = [];
+
+          for (let i = 0; i < cache.length; i += 2) {
+            entries.push({
+              key: cache[i] as string,
+              value: cache[i + 1] as TReturn
+            });
+          }
+
           cache.length = 0;
+
+          // Call onCacheExpire handler
+          if (onCacheExpire) {
+            Promise.resolve(onCacheExpire(entries)).catch(console.error);
+          }
         }, updatedExpire);
 
         // Allow the process to exit
@@ -135,4 +158,4 @@ const memo = <TArgs extends any[], TReturn>(
   return ized();
 };
 
-export { memo };
+export { memo, type MemoOptions };
