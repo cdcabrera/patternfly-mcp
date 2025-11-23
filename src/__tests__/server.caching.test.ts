@@ -168,8 +168,12 @@ describe('memo', () => {
   ])('should clear cache on inactivity and fire "onCacheExpire", $description', async ({ options, params, pause }) => {
     const log: any[] = [];
     const logAsync: any[] = [];
-    const mockOnCacheExpire = (response: any) => log.push(response);
-    const mockOnCacheExpireAsync = async (response: any) => logAsync.push(response);
+    const mockOnCacheExpire = (response: unknown) => {
+      log.push(response);
+    };
+    const mockOnCacheExpireAsync = async (response: unknown) => {
+      logAsync.push(response);
+    };
     const updateLog = async (aLog: any) => {
       const sanitizedLog = [];
 
@@ -278,8 +282,12 @@ describe('memo', () => {
   ])('should fire "onCacheRollout" callback on cache rollout, $description', async ({ options, params }) => {
     const log: any[] = [];
     const logAsync: any[] = [];
-    const mockOnCacheRollout = (response: any) => log.push(response);
-    const mockOnCacheRolloutAsync = async (response: any) => logAsync.push(response);
+    const mockOnCacheRollout = (response: unknown) => {
+      log.push(response);
+    };
+    const mockOnCacheRolloutAsync = async (response: unknown) => {
+      logAsync.push(response);
+    };
     const updateLog = async (aLog: any) => {
       const sanitizedLog = [];
 

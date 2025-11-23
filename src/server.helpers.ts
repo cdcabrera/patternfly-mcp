@@ -15,7 +15,7 @@ const isObject = (obj: unknown) =>
  * @param obj - Object, or otherwise, to check
  * @returns `true` if an object is a "plain object"
  */
-const isPlainObject = (obj: any) => {
+const isPlainObject = (obj: unknown) => {
   if (!isObject(obj)) {
     return false;
   }
@@ -52,7 +52,7 @@ const hashCode = (str: unknown, { algorithm = 'sha1', encoding = 'hex' }: { algo
  *
  * @param value - Value to normalize for hashing, typically for JSON.stringify
  */
-const hashNormalizeValue = (value: any): unknown => {
+const hashNormalizeValue = (value: unknown): unknown => {
   const normalizeSort = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
 
   if (value === null) {
@@ -124,10 +124,12 @@ const hashNormalizeValue = (value: any): unknown => {
   }
 
   if (isPlainObject(value)) {
+    const rec = value as Record<string, unknown>;
+
     return Object.fromEntries(
-      Object.keys(value)
+      Object.keys(rec)
         .sort(normalizeSort)
-        .map(key => [key, hashNormalizeValue(value[key])])
+        .map(key => [key, hashNormalizeValue(rec[key])])
     );
   }
 
@@ -140,8 +142,8 @@ const hashNormalizeValue = (value: any): unknown => {
  * @param anyValue - Value to hash
  * @returns Hash string
  */
-const generateHash = (anyValue: any): string => {
-  const normalizeValue = (_key: any, value: any) => hashNormalizeValue(value);
+const generateHash = (anyValue: unknown): string => {
+  const normalizeValue = (_key: string, value: unknown) => hashNormalizeValue(value);
   let stringify: string;
 
   try {
