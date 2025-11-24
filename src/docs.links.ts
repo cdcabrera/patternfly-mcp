@@ -5,9 +5,7 @@
  * link validation, and testing.
  */
 
-import { CHART_DOCS } from './docs.chart';
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
+import { getAllDocLinks, getComponentUrls, getDoc } from './docs';
 import { getLocalDocs } from './docs.local';
 import { getOptions } from './options.context';
 
@@ -24,18 +22,15 @@ const extractUrlFromMarkdown = (markdownLink: string): string | undefined => {
 };
 
 /**
- * Get all external documentation links (charts, components, layouts)
+ * Get all external documentation links (from JSON index)
  *
+ * @param version - PatternFly version (default: '6')
  * @returns Array of URLs from external documentation sources
  */
-const getExternalLinks = (): string[] => {
-  const allDocs = [
-    ...CHART_DOCS,
-    ...COMPONENT_DOCS,
-    ...LAYOUT_DOCS
-  ];
-
-  const urls = allDocs
+const getExternalLinks = (version?: string): string[] => {
+  const allDocLinks = getAllDocLinks(version || '6');
+  
+  const urls = allDocLinks
     .map(extractUrlFromMarkdown)
     .filter((url): url is string => url !== undefined && url.startsWith('http'));
 
@@ -75,26 +70,51 @@ const getAllLinks = (options = getOptions()) => ({
  * @returns Array of link objects with metadata
  */
 const getLinksWithMetadata = (options = getOptions()) => {
-  const allDocs = [
-    ...CHART_DOCS.map(doc => ({ category: 'chart', doc })),
-    ...COMPONENT_DOCS.map(doc => ({ category: 'component', doc })),
-    ...LAYOUT_DOCS.map(doc => ({ category: 'layout', doc })),
-    ...getLocalDocs(options).map(doc => ({ category: 'local', doc }))
-  ];
-
-  return allDocs.map(({ category, doc }) => {
+  const version = '6'; // Default to version 6 for now
+  const allDocLinks = getAllDocLinks(version);
+  const localDocs = getLocalDocs(options);
+  
+  // Get metadata from JSON index
+  const externalLinks = allDocLinks.map(doc => {
     const url = extractUrlFromMarkdown(doc);
     const textMatch = doc.match(/\[(.*?)\]/);
-
+    const componentMatch = doc.match(/@patternfly\/([^-]+)/);
+    const componentName = componentMatch && componentMatch[1] ? componentMatch[1].trim() : undefined;
+    
+    // Try to determine category from component name
+    let category = 'unknown';
+    if (componentName) {
+      const entry = getDoc(componentName);
+      if (entry) {
+        category = entry.category;
+      }
+    }
+    
     return {
       category,
       text: textMatch ? textMatch[1] : undefined,
       url: url || undefined,
       markdown: doc,
       isExternal: url ? url.startsWith('http') : false,
+      isLocal: false
+    };
+  });
+  
+  const localLinks = localDocs.map(doc => {
+    const url = extractUrlFromMarkdown(doc);
+    const textMatch = doc.match(/\[(.*?)\]/);
+    
+    return {
+      category: 'local',
+      text: textMatch ? textMatch[1] : undefined,
+      url: url || undefined,
+      markdown: doc,
+      isExternal: false,
       isLocal: url ? !url.startsWith('http') : false
     };
-  }).filter(link => link.url !== undefined);
+  });
+  
+  return [...externalLinks, ...localLinks].filter((link): link is NonNullable<typeof link> => link.url !== undefined);
 };
 
 export {
