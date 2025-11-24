@@ -3,10 +3,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
-import { getOptions, runWithOptions } from './options.context';
-import { type GlobalOptions } from './options';
+import { getOptions, memoWithOptions, runWithOptions } from './options.context';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
-import { memo } from './server.caching';
+import { type GlobalOptions } from './options';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -126,11 +125,12 @@ const runServer = async (options = getOptions(), {
  * - Automatically cleans up servers when cache entries are rolled off (cache limit reached)
  * - Prevents port conflicts by returning the same server instance via memoization
  * - `onCacheRollout` closes servers that were rolled out of caching due to cache limit
+ * - Cache limit is configurable via `--cache-limit` CLI option (default: 3)
+ * - Uses memoWithOptions to read cacheLimit from options context
  */
-runServer.memo = memo(
+runServer.memo = memoWithOptions(
   runServer,
   {
-    cacheLimit: 10,
     onCacheRollout: async ({ removed }) => {
       const results: PromiseSettledResult<ServerInstance>[] = await Promise.allSettled(removed);
 

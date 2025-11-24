@@ -147,6 +147,7 @@ This starts the server on `http://127.0.0.1:3000` (default port and host).
 - `--host <string>`: Host address to bind to (default: 127.0.0.1)
 - `--allowed-origins <origins>`: Comma-separated list of allowed CORS origins
 - `--allowed-hosts <hosts>`: Comma-separated list of allowed host headers
+- `--cache-limit <number>`: Number of server instances to cache before automatically closing older instances (default: 3, minimum: 1)
 
 #### Security note: DNS rebinding protection (default)
 
@@ -180,6 +181,16 @@ npx @patternfly/patternfly-mcp --http --host 0.0.0.0 --port 3000
 Start with CORS allowed origins:
 ```bash
 npx @patternfly/patternfly-mcp --http --allowed-origins "http://localhost:3001,https://example.com"
+```
+
+Start with custom cache limit (production: single instance):
+```bash
+npx @patternfly/patternfly-mcp --http --cache-limit 1
+```
+
+Start with custom cache limit (testing: allow 2 instances):
+```bash
+npx @patternfly/patternfly-mcp --http --cache-limit 2
 ```
 
 ### Port conflict handling

@@ -10,6 +10,7 @@ interface CliOptions {
   host?: string;
   allowedOrigins?: string[];
   allowedHosts?: string[];
+  cacheLimit?: number;
 }
 
 /**
@@ -64,6 +65,12 @@ const validateCliOptions = (options: CliOptions) => {
   if (!isValidPort) {
     throw new Error(`Invalid port: ${options.port}. Must be between 1 and 65535.`);
   }
+
+  const isValidCacheLimit = (typeof options.cacheLimit === 'number') && (options.cacheLimit >= 1);
+
+  if (options.cacheLimit !== undefined && !isValidCacheLimit) {
+    throw new Error(`Invalid cache limit: ${options.cacheLimit}. Must be at least 1.`);
+  }
 };
 
 /**
@@ -76,6 +83,7 @@ const validateCliOptions = (options: CliOptions) => {
  * - `host`: The host name specified via `--host`, or defaults to `'127.0.0.1'` if not provided.
  * - `allowedOrigins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
  * - `allowedHosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
+ * - `cacheLimit`: Number of server instances to cache before automatically closing older instances, specified via `--cache-limit`, or defaults to `3` if not provided.
  *
  * @throws {Error} If the provided CLI options fail validation.
  */
@@ -86,7 +94,8 @@ const parseCliOptions = () => {
     port: getArgValue('--port', 3000) as number,
     host: getArgValue('--host', '127.0.0.1') as string,
     allowedOrigins: (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim()),
-    allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim())
+    allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim()),
+    cacheLimit: getArgValue('--cache-limit', 3) as number
   };
 
   validateCliOptions(options);
