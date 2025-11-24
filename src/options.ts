@@ -10,7 +10,6 @@ interface CliOptions {
   host?: string;
   allowedOrigins?: string[];
   allowedHosts?: string[];
-  killExisting?: boolean;
 }
 
 /**
@@ -77,7 +76,6 @@ const validateCliOptions = (options: CliOptions) => {
  * - `host`: The host name specified via `--host`, or defaults to `'127.0.0.1'` if not provided.
  * - `allowedOrigins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
  * - `allowedHosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
- * - `killExisting`: Indicates if the `--kill-existing` option is enabled.
  *
  * @throws {Error} If the provided CLI options fail validation.
  */
@@ -88,8 +86,7 @@ const parseCliOptions = () => {
     port: getArgValue('--port', 3000) as number,
     host: getArgValue('--host', '127.0.0.1') as string,
     allowedOrigins: (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim()),
-    allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim()),
-    killExisting: process.argv.includes('--kill-existing')
+    allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim())
   };
 
   validateCliOptions(options);

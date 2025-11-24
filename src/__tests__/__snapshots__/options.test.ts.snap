@@ -10,7 +10,6 @@ exports[`parseCliOptions should attempt to parse args with --allowed-hosts 1`] =
   "docsHost": false,
   "host": "127.0.0.1",
   "http": true,
-  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -25,7 +24,6 @@ exports[`parseCliOptions should attempt to parse args with --allowed-origins 1`]
   "docsHost": false,
   "host": "127.0.0.1",
   "http": true,
-  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -37,7 +35,6 @@ exports[`parseCliOptions should attempt to parse args with --docs-host flag 1`] 
   "docsHost": true,
   "host": "127.0.0.1",
   "http": false,
-  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -49,7 +46,6 @@ exports[`parseCliOptions should attempt to parse args with --http and --host 1`]
   "docsHost": false,
   "host": "0.0.0.0",
   "http": true,
-  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -61,7 +57,6 @@ exports[`parseCliOptions should attempt to parse args with --http and --port 1`]
   "docsHost": false,
   "host": "127.0.0.1",
   "http": true,
-  "killExisting": false,
   "port": 8080,
 }
 `;
@@ -73,7 +68,6 @@ exports[`parseCliOptions should attempt to parse args with --http flag 1`] = `
   "docsHost": false,
   "host": "127.0.0.1",
   "http": true,
-  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -85,7 +79,6 @@ exports[`parseCliOptions should attempt to parse args with other arguments 1`] =
   "docsHost": false,
   "host": "127.0.0.1",
   "http": false,
-  "killExisting": false,
   "port": 3000,
 }
 `;
@@ -97,7 +90,6 @@ exports[`parseCliOptions should attempt to parse args without --docs-host flag 1
   "docsHost": false,
   "host": "127.0.0.1",
   "http": false,
-  "killExisting": false,
   "port": 3000,
 }
 `;

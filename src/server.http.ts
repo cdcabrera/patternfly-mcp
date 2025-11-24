@@ -5,8 +5,6 @@ import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
-import fkill from 'fkill';
-import packageJson from '../package.json';
 import { getOptions } from './options.context';
 
 /**
@@ -34,7 +32,7 @@ const getProcessOnPort = async (port: number) => {
 
     try {
       if (isWindows) {
-        // Use PowerShell to get the full command with arguments (required for isSameMcpServer detection)
+        // Use PowerShell to get the full command with arguments (for error messages)
         try {
           const psCmd = `powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"ProcessId=${pid}\\").CommandLine"`;
 
@@ -81,107 +79,16 @@ const getProcessOnPort = async (port: number) => {
 };
 
 /**
- * Identity tokens for the MCP server process. Generated from package.json bin entries
- * plus the built entry point.
- */
-const SAME_SERVER_TOKENS = [
-  'dist/index.js',
-  ...Object.keys(packageJson.bin || {})
-];
-
-/**
- * Check if a command appears to be the MCP server instance
- *
- * Simple check: command contains a server token AND has --http flag.
- * Used for messaging and determining if we should kill an existing process.
- *
- * @param rawCommand - Raw command string to check
- * @returns True if the command appears to be the MCP server
- */
-const isSameMcpServer = (rawCommand: string): boolean => {
-  if (!rawCommand) {
-    return false;
-  }
-
-  // Normalize to improve cross-platform matching
-  const cmd = rawCommand
-    .replace(/\\/g, '/') // Windows paths to forward slashes
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
-
-  // Check if command contains any server token
-  const hasServerToken = SAME_SERVER_TOKENS.some(token => cmd.includes(token.toLowerCase()));
-
-  if (!hasServerToken) {
-    return false;
-  }
-
-  // Must have --http flag (exact match, not --http-port, etc.)
-  return /(^|\s)--http(\s|$)/.test(cmd);
-};
-
-/**
- * Kill a process by PID using fkill
- *
- * @param pid - Process ID to kill
- * @param settings - Optional settings object
- * @param settings.maxWait - Maximum time to wait for graceful shutdown before force kill (default: 1000ms)
- * @returns Promise that resolves to true if successful, false otherwise
- */
-const killProcess = async (pid: number, { maxWait = 1000 } = {}): Promise<boolean> => {
-  console.log(`Attempting to kill process ${pid}`);
-
-  try {
-    await fkill(pid, {
-      forceAfterTimeout: maxWait,
-      waitForExit: maxWait + 1000,
-      silent: true
-    });
-
-    console.log(`Process ${pid} has exited`);
-
-    return true;
-  } catch (error) {
-    console.log(`Process ${pid} has failed to shutdown. You may need to stop the process or use a different port.`, error);
-
-    return false;
-  }
-};
-
-/**
  * Format a helpful error message for port conflicts
  *
  * @param port - Port number
- * @param processInfo - Process information
+ * @param processInfo - Process information (optional)
  * @param processInfo.pid - Process ID
  * @param processInfo.command - Command string
  * @returns Formatted error message
  */
-const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) => {
-  const message = [
-    `\nPort ${port} is already in use.`
-  ];
-
-  if (processInfo && isSameMcpServer(processInfo.command)) {
-    message.push(
-      `\tProcess: PID ${processInfo.pid}`,
-      `\tCommand: ${processInfo.command}`,
-      `\n\tThis appears to be another instance of the server.`,
-      `\tRecommended:`,
-      `\t1. Rerun with the --kill-existing flag to stop it automatically.`,
-      `\t2. Or use a different port: --port <different-port>`
-    );
-  } else {
-    message.push(
-      `\n\tThis may be a different process. To use this port, you will need to:`,
-      `\t1. Stop the process`,
-      `\t2. Or use a different port: --port <different-port>`
-    );
-  }
-
-  return message.join('\n');
-};
+const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) =>
+  `Port ${port} is already in use${processInfo ? ` by PID ${processInfo.pid}` : ''}. Please use a different port or stop the process using this port.`;
 
 /**
  * Create Streamable HTTP transport
@@ -258,22 +165,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     void handleStreamableHttpRequest(req, res, transport);
   });
 
-  // Check for port conflicts and handle kill-existing
-  if (options.killExisting) {
-    const processInfo = await getProcessOnPort(port);
-
-    if (processInfo && isSameMcpServer(processInfo.command)) {
-      console.log(`Killing existing MCP server process ${processInfo.pid} on port ${port}...`);
-      await killProcess(processInfo.pid);
-      // Note: killProcess already waits for process exit (up to 2000ms)
-      // If port is still in use, server.listen() will throw EADDRINUSE and we handle it gracefully
-    } else if (processInfo) {
-      throw new Error(formatPortConflictError(port, processInfo));
-    }
-    // If no processInfo, port is free - proceed
-  }
-
-  // Start the server. Port should be free now, or we'll get an error
+  // Start the server. Port conflicts will be handled in the error handler below
   await new Promise<void>((resolve, reject) => {
     server.listen(port, host, () => {
       console.log(`${name} server running on http://${host}:${port}`);
@@ -311,9 +203,6 @@ export {
   formatPortConflictError,
   getProcessOnPort,
   handleStreamableHttpRequest,
-  isSameMcpServer,
-  killProcess,
-  SAME_SERVER_TOKENS,
   startHttpTransport,
   type HttpServerHandle
 };

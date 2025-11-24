@@ -9,15 +9,6 @@ jest.mock('child_process', () => ({
 }));
 
 /**
- * Note: Mock fkill to avoid ES module import issues in Jest
- * - Returns a resolved promise to simulate successful process kill
- */
-jest.mock('fkill', () => ({
-  __esModule: true,
-  default: jest.fn().mockResolvedValue(undefined)
-}));
-
-/**
  * Note: Mock pid-port to avoid ES module import issues in Jest
  * - Returns undefined to simulate port is free (no process found)
  */

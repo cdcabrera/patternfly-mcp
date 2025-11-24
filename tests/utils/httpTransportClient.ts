@@ -14,7 +14,6 @@ export interface StartHttpServerOptions {
   host?: string;
   allowedOrigins?: string[];
   allowedHosts?: string[];
-  killExisting?: boolean;
   docsHost?: boolean;
 }
 
@@ -48,7 +47,6 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     host = '127.0.0.1',
     allowedOrigins,
     allowedHosts,
-    killExisting = false,
     docsHost = false
   } = options;
 
@@ -57,7 +55,6 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}): Pro
     http: true,
     port,
     host,
-    killExisting,
     docsHost
   };
 

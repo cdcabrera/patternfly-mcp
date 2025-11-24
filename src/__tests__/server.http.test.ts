@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { getProcessOnPort, SAME_SERVER_TOKENS, isSameMcpServer, killProcess, formatPortConflictError, startHttpTransport } from '../server.http';
+import { getProcessOnPort, formatPortConflictError, startHttpTransport } from '../server.http';
 import { type GlobalOptions } from '../options';
 
 // Mock dependencies
@@ -11,10 +11,6 @@ jest.mock('node:http');
 jest.mock('pid-port', () => ({
   __esModule: true,
   portToPid: jest.fn().mockImplementation(async () => 123456789)
-}));
-jest.mock('fkill', () => ({
-  __esModule: true,
-  default: jest.fn().mockReturnValue(Promise.resolve())
 }));
 
 const MockMcpServer = McpServer as jest.MockedClass<typeof McpServer>;
@@ -31,115 +27,15 @@ describe('getProcessOnPort', () => {
   });
 });
 
-describe('SAME_SERVER_TOKENS', () => {
-  it('should list predictable values', () => {
-    expect(SAME_SERVER_TOKENS).toMatchSnapshot();
-  });
-});
-
-describe('isSameMcpServer', () => {
-  it.each([
-    {
-      description: 'match "true" against --http variations',
-      param: [
-        '--http node dist/index.js',
-        '/home/user/projects/patternfly-mcp/dist/index.js --http',
-        '/usr/local/bin/patternfly-mcp --http',
-        '/opt/pf-mcp/bin/pf-mcp --http',
-        'pf-mcp --http --port 8080',
-        'pf-mcp --port 3000 --http',
-        'pfmcp --http',
-        'patternfly-mcp --http --port 3000',
-        'node dist/index.js --http',
-        'node dist/index.js --http ',
-        ' node dist/index.js --http',
-        'node dist/index.js --http --port 3000'
-      ],
-      expected: true
-    },
-    {
-      description: 'match "false" against missing or substring or different processes with --http',
-      param: [
-        'pf-mcp',
-        'patternfly-mcp --port 3000',
-        'patternfly-mcp',
-        '/usr/bin/grep patternfly-mcp',
-        'cat dist/index.js',
-        'echo "pf-mcp is great"',
-        'node dist/index.js --http-port 3000',
-        'patternfly-mcp --no-http',
-        'node other-server.js --http',
-        'python server.py --http',
-        'nginx --http'
-      ],
-      expected: false
-    },
-    {
-      description: 'match "true" against npx',
-      param: [
-        'npx @patternfly/patternfly-mcp --http',
-        'npx patternfly-mcp --http --port 3000'
-      ],
-      expected: true
-    },
-    {
-      description: 'match "true" against Windows paths and extra spaces',
-      param: [
-        'node C:\\proj\\dist\\index.js    --http   ',
-        'C:\\Users\\App\\patternfly-mcp.exe --http --port 3000'
-      ],
-      expected: true
-    },
-    {
-      description: 'match "true" against case insensitivity',
-      param: [
-        'NODE DIST/INDEX.JS --HTTP',
-        'PATTERNFLY-MCP --HTTP',
-        'PF-MCP --HTTP'
-      ],
-      expected: true
-    },
-    {
-      description: 'match "false" against empty or falsy input',
-      param: [
-        '',
-        '   '
-      ],
-      expected: false
-    }
-  ])('should determine if the process is the MCP server instance, $description', ({ expected, param }) => {
-    const updatedParams = Array.isArray(param) ? param : [param];
-
-    updatedParams.map(param => {
-      expect(isSameMcpServer(param)).toBe(expected);
-    });
-  });
-});
-
-describe('killProcess', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should attempt to kill a process', async () => {
-    await expect(killProcess(123456789)).resolves.toBe(true);
-  });
-});
-
 describe('formatPortConflictError', () => {
   it.each([
     {
-      description: 'is same mcp server',
+      description: 'with process info',
       port: 3000,
       processInfo: { pid: 123456789, command: 'node dist/index.js --http' }
     },
     {
-      description: 'is NOT the same mcp server',
-      port: 3000,
-      processInfo: { pid: 987654321, command: 'node dist/index.js' }
-    },
-    {
-      description: 'processInfo is missing',
+      description: 'without process info',
       port: 3000,
       processInfo: undefined
     }
@@ -147,7 +43,6 @@ describe('formatPortConflictError', () => {
     expect(formatPortConflictError(port, processInfo)).toMatchSnapshot();
   });
 });
-
 describe('startHttpTransport', () => {
   const mockFunction = jest.fn();
   const mockEventHandler = jest.fn();
@@ -212,28 +107,5 @@ describe('startHttpTransport', () => {
     }
   ])('should handle option errors, $description', async ({ error, options }) => {
     await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
-  });
-
-  it('should proceed when killExisting is true but no process is found (port is free)', async () => {
-    // Mock portToPid to return undefined (port is free) for this test
-    const pidPortModule = await import('pid-port');
-    const originalPortToPid = pidPortModule.portToPid;
-
-    pidPortModule.portToPid = jest.fn().mockResolvedValue(undefined);
-
-    // When killExisting is true but getProcessOnPort returns undefined,
-    // the port is free, so we should proceed successfully
-    const server = await startHttpTransport(mockServer, {
-      port: 3000,
-      host: 'localhost',
-      killExisting: true
-    } as GlobalOptions);
-
-    await server.close();
-
-    expect(mockFunction).toHaveBeenCalled();
-
-    // Restore original
-    pidPortModule.portToPid = originalPortToPid;
   });
 });

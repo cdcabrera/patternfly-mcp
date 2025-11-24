@@ -147,7 +147,6 @@ This starts the server on `http://127.0.0.1:3000` (default port and host).
 - `--host <string>`: Host address to bind to (default: 127.0.0.1)
 - `--allowed-origins <origins>`: Comma-separated list of allowed CORS origins
 - `--allowed-hosts <hosts>`: Comma-separated list of allowed host headers
-- `--kill-existing`: Automatically kill any existing server process using the same port
 
 #### Security note: DNS rebinding protection (default)
 
@@ -183,24 +182,13 @@ Start with CORS allowed origins:
 npx @patternfly/patternfly-mcp --http --allowed-origins "http://localhost:3001,https://example.com"
 ```
 
-Kill existing server on port before starting:
-```bash
-npx @patternfly/patternfly-mcp --http --port 3000 --kill-existing
-```
-
 ### Port conflict handling
 
 If the specified port is already in use, the server will:
-- Detect if another instance of this MCP server is using the port
-- Display a helpful error message with the process ID
-- Suggest using `--kill-existing` to automatically kill the existing MCP instance
-- Or suggest using a different port with `--port`
+- Display a helpful error message with the process ID (if available)
+- Suggest using a different port with `--port` or stopping the process using the port
 
-When you use `--kill-existing`:
-- If the port is held by the **same MCP server instance**, the process will be stopped automatically and the new server will start.
-- If the port is held by a **different process**, the server will fail fast and report that process's PID/command. It will not terminate unrelated processes. Either stop that process manually or choose a different port.
-
-**Windows**: Uses PowerShell for same-server detection; falls back to `tasklist` if unavailable.
+**Note**: The server uses memoization to prevent duplicate server instances within the same process. If you need to restart the server, simply stop the existing instance and start a new one.
 
 ## MCP client configuration examples
 
