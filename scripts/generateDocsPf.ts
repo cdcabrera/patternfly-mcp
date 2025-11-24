@@ -15,10 +15,12 @@
  *   npm run generate:docs-index -- --output src/docs.index.json
  */
 
-import { readdir, stat, readFile } from 'fs/promises';
+import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
 import { join, dirname, basename, relative } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,16 +62,23 @@ type DocsIndex = Record<string, ComponentDoc>;
 // Configuration
 const DEFAULT_SOURCE = join(__dirname, '../.agent/_resources/patternfly-org');
 const DEFAULT_OUTPUT = join(__dirname, '../src/docs.index.json');
+const DEFAULT_HASH_OUTPUT = join(__dirname, '../src/docs.index.json.hash');
 const DEFAULT_VERSION = '6';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/patternfly/patternfly-org/main';
+const GITHUB_REPO = 'https://github.com/patternfly/patternfly-org.git';
 const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
+const TEMP_DIR = process.env.RUNNER_TEMP || process.env.TMPDIR || '/tmp';
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
 const sourceIndex = args.indexOf('--source');
 const outputIndex = args.indexOf('--output');
+const hashOutputIndex = args.indexOf('--hash-output');
+const cloneIndex = args.indexOf('--clone');
 const source = sourceIndex >= 0 && args[sourceIndex + 1] ? args[sourceIndex + 1] : DEFAULT_SOURCE;
 const output = outputIndex >= 0 && args[outputIndex + 1] ? args[outputIndex + 1] : DEFAULT_OUTPUT;
+const hashOutput = hashOutputIndex >= 0 && args[hashOutputIndex + 1] ? args[hashOutputIndex + 1] : DEFAULT_HASH_OUTPUT;
+const shouldClone = cloneIndex >= 0 || !existsSync(join(source, CONTENT_BASE_PATH));
 
 /**
  * Parse path to determine type and category
@@ -323,13 +332,65 @@ async function findMarkdownFiles(dir: string, baseDir: string): Promise<string[]
 }
 
 /**
+ * Clone patternfly-org repository to a temporary directory
+ */
+async function cloneRepository(targetDir: string): Promise<void> {
+  console.log(`Cloning patternfly-org repository to: ${targetDir}`);
+  
+  // Remove existing directory if it exists
+  if (existsSync(targetDir)) {
+    rmSync(targetDir, { recursive: true, force: true });
+  }
+  
+  // Create parent directory if needed
+  const parentDir = dirname(targetDir);
+  if (!existsSync(parentDir)) {
+    await mkdir(parentDir, { recursive: true });
+  }
+  
+  try {
+    // Shallow clone (depth=1) for faster cloning
+    execSync(
+      `git clone --depth 1 --branch main ${GITHUB_REPO} "${targetDir}"`,
+      { stdio: 'inherit' }
+    );
+    console.log('✅ Repository cloned successfully');
+  } catch (error) {
+    throw new Error(`Failed to clone repository: ${error}`);
+  }
+}
+
+/**
+ * Calculate SHA-256 hash of JSON content
+ */
+function calculateHash(content: string): string {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+/**
  * Generate the documentation index
  */
 async function generateIndex(): Promise<DocsIndex> {
-  const contentDir = join(source, CONTENT_BASE_PATH);
+  let actualSource = source;
+  
+  // Clone repository if needed
+  if (shouldClone) {
+    // Use temp directory in CI, or local .agent/_resources otherwise
+    const cloneTarget = process.env.CI 
+      ? join(TEMP_DIR, 'patternfly-org')
+      : source;
+    
+    await cloneRepository(cloneTarget);
+    actualSource = cloneTarget;
+  } else {
+    // Use provided source if it exists
+    actualSource = source;
+  }
+  
+  const contentDir = join(actualSource, CONTENT_BASE_PATH);
   
   if (!existsSync(contentDir)) {
-    throw new Error(`Content directory not found: ${contentDir}\nPlease ensure patternfly-org is cloned to: ${source}`);
+    throw new Error(`Content directory not found: ${contentDir}\nPlease ensure patternfly-org is cloned to: ${actualSource}`);
   }
   
   console.log(`Discovering markdown files in: ${contentDir}`);
@@ -421,15 +482,25 @@ async function main() {
     console.log('Generating PatternFly documentation index...');
     console.log(`Source: ${source}`);
     console.log(`Output: ${output}`);
+    console.log(`Hash output: ${hashOutput}`);
+    if (shouldClone) {
+      console.log('🔄 Will clone repository if needed');
+    }
     
     const index = await generateIndex();
     
     // Write JSON file
     const jsonContent = JSON.stringify(index, null, 2);
-    await import('fs/promises').then(fs => fs.writeFile(output, jsonContent, 'utf-8'));
+    await writeFile(output, jsonContent, 'utf-8');
+    
+    // Calculate and write hash
+    const hash = calculateHash(jsonContent);
+    await writeFile(hashOutput, hash, 'utf-8');
     
     console.log(`\n✅ Generated index with ${Object.keys(index).length} entries`);
     console.log(`📄 Output written to: ${output}`);
+    console.log(`🔐 Hash written to: ${hashOutput}`);
+    console.log(`   Hash: ${hash}`);
     
     // Print summary
     const byType = Object.values(index).reduce((acc, entry) => {
