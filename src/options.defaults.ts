@@ -73,24 +73,28 @@ const URL_REGEX = /^(https?:)\/\//i;
 const PF_EXTERNAL = 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/packages/documentation-site/patternfly-docs/content';
 
 /**
- * PatternFly design guidelines URL
+ * PatternFly design guidelines URL (deprecated - components moved to /components)
+ * Kept for backward compatibility but components are now at PF_EXTERNAL/components
  */
 const PF_EXTERNAL_DESIGN = `${PF_EXTERNAL}/design-guidelines`;
 
 /**
  * PatternFly design guidelines' components' URL
+ * Updated 2025-11-24: Moved from design-guidelines/components to components
  */
-const PF_EXTERNAL_DESIGN_COMPONENTS = `${PF_EXTERNAL_DESIGN}/components`;
+const PF_EXTERNAL_DESIGN_COMPONENTS = `${PF_EXTERNAL}/components`;
 
 /**
  * PatternFly design guidelines' layouts' URL
+ * Updated 2025-11-24: Moved from design-guidelines/layouts to foundations-and-styles/layouts
  */
-const PF_EXTERNAL_DESIGN_LAYOUTS = `${PF_EXTERNAL_DESIGN}/layouts`;
+const PF_EXTERNAL_DESIGN_LAYOUTS = `${PF_EXTERNAL}/foundations-and-styles/layouts`;
 
 /**
  * PatternFly accessibility URL
+ * Updated 2025-11-24: Moved from accessibility to components/accessibility
  */
-const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/accessibility`;
+const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/components/accessibility`;
 
 /**
  * PatternFly charts root URL
