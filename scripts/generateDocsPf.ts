@@ -394,16 +394,92 @@ function calculateIndexMetadata(index: DocsIndex): IndexMetadata {
 }
 
 /**
+ * Diff result for component changes
+ */
+interface ComponentDiff {
+  added: string[];
+  removed: string[];
+  modified: string[];
+}
+
+/**
+ * Compare two indexes using a simple diff algorithm (similar to Myers)
+ * Returns which components were added, removed, or potentially modified
+ */
+function diffIndexes(
+  storedIndex: DocsIndex | null,
+  currentIndex: DocsIndex
+): ComponentDiff {
+  if (!storedIndex || typeof storedIndex !== 'object') {
+    return {
+      added: Object.keys(currentIndex || {}),
+      removed: [],
+      modified: []
+    };
+  }
+  
+  const storedKeys = new Set(Object.keys(storedIndex));
+  const currentKeys = new Set(Object.keys(currentIndex || {}));
+  
+  const added: string[] = [];
+  const removed: string[] = [];
+  const modified: string[] = [];
+  
+  // Find added components (in current but not in stored)
+  for (const key of currentKeys) {
+    if (!storedKeys.has(key)) {
+      added.push(key);
+    }
+  }
+  
+  // Find removed components (in stored but not in current)
+  for (const key of storedKeys) {
+    if (!currentKeys.has(key)) {
+      removed.push(key);
+    }
+  }
+  
+  // Find potentially modified components (exist in both, but content might differ)
+  // For now, we'll mark all common keys as potentially modified
+  // In the future, we could do deep comparison of the entry content
+  for (const key of storedKeys) {
+    if (currentKeys.has(key)) {
+      // Simple check: if URLs changed, consider it modified
+      const storedEntry = storedIndex[key];
+      const currentEntry = currentIndex[key];
+      
+      // Compare a signature of the entry (type + available docs)
+      const storedSig = `${storedEntry.type}:${storedEntry.docs['6']?.available || false}`;
+      const currentSig = `${currentEntry.type}:${currentEntry.docs['6']?.available || false}`;
+      
+      if (storedSig !== currentSig) {
+        modified.push(key);
+      }
+    }
+  }
+  
+  return { added, removed, modified };
+}
+
+/**
  * Compare metadata and determine if significant changes occurred
+ * Uses diff to show exactly what changed
  */
 function compareMetadata(
   stored: IndexMetadata | null,
-  current: IndexMetadata
-): { hasSignificantChanges: boolean; differences: string[] } {
+  current: IndexMetadata,
+  storedIndex: DocsIndex | null,
+  currentIndex: DocsIndex
+): { hasSignificantChanges: boolean; differences: string[]; componentDiff: ComponentDiff } {
   const differences: string[] = [];
+  const componentDiff = diffIndexes(storedIndex, currentIndex);
   
   if (!stored) {
-    return { hasSignificantChanges: true, differences: ['No stored metadata found'] };
+    return { 
+      hasSignificantChanges: true, 
+      differences: ['No stored metadata found'], 
+      componentDiff 
+    };
   }
   
   // Check total entries
@@ -427,10 +503,46 @@ function compareMetadata(
     }
   }
   
-  // Significant if total difference exceeds threshold
-  const hasSignificantChanges = totalDiff >= CHANGE_THRESHOLD || totalTypeDiff >= CHANGE_THRESHOLD;
+  // Add component-level diff details
+  if (componentDiff.added.length > 0) {
+    differences.push(`\nAdded components (${componentDiff.added.length}):`);
+    componentDiff.added.slice(0, 10).forEach(comp => {
+      const entry = currentIndex[comp];
+      differences.push(`  + ${comp} (${entry.type})`);
+    });
+    if (componentDiff.added.length > 10) {
+      differences.push(`  ... and ${componentDiff.added.length - 10} more`);
+    }
+  }
   
-  return { hasSignificantChanges, differences };
+  if (componentDiff.removed.length > 0) {
+    differences.push(`\nRemoved components (${componentDiff.removed.length}):`);
+    componentDiff.removed.slice(0, 10).forEach(comp => {
+      differences.push(`  - ${comp}`);
+    });
+    if (componentDiff.removed.length > 10) {
+      differences.push(`  ... and ${componentDiff.removed.length - 10} more`);
+    }
+  }
+  
+  if (componentDiff.modified.length > 0) {
+    differences.push(`\nModified components (${componentDiff.modified.length}):`);
+    componentDiff.modified.slice(0, 10).forEach(comp => {
+      differences.push(`  ~ ${comp}`);
+    });
+    if (componentDiff.modified.length > 10) {
+      differences.push(`  ... and ${componentDiff.modified.length - 10} more`);
+    }
+  }
+  
+  // Significant if total difference exceeds threshold
+  // Count actual component changes (added + removed) for threshold
+  const componentChangeCount = componentDiff.added.length + componentDiff.removed.length;
+  const hasSignificantChanges = totalDiff >= CHANGE_THRESHOLD || 
+                                totalTypeDiff >= CHANGE_THRESHOLD || 
+                                componentChangeCount >= CHANGE_THRESHOLD;
+  
+  return { hasSignificantChanges, differences, componentDiff };
 }
 
 /**
@@ -555,15 +667,10 @@ async function main() {
     
     const index = await generateIndex();
     
-    // Write JSON file
-    const jsonContent = JSON.stringify(index, null, 2);
-    await writeFile(output, jsonContent, 'utf-8');
-    
-    // Calculate and write metadata
-    const currentMetadata = calculateIndexMetadata(index);
-    
-    // Compare with stored metadata if it exists
+    // Load stored index and metadata BEFORE writing new ones (for comparison)
     let storedMetadata: IndexMetadata | null = null;
+    let storedIndex: DocsIndex | null = null;
+    
     if (existsSync(metadataOutput)) {
       try {
         const storedContent = await readFile(metadataOutput, 'utf-8');
@@ -573,12 +680,34 @@ async function main() {
       }
     }
     
-    const comparison = compareMetadata(storedMetadata, currentMetadata);
+    // Load stored index for diff comparison
+    if (existsSync(output)) {
+      try {
+        const storedIndexContent = await readFile(output, 'utf-8');
+        storedIndex = JSON.parse(storedIndexContent);
+      } catch (error) {
+        // If we can't read stored index, that's okay - we'll just show metadata diff
+        console.warn(`Warning: Could not parse stored index for diff: ${error}`);
+      }
+    }
+    
+    // Write JSON file
+    const jsonContent = JSON.stringify(index, null, 2);
+    await writeFile(output, jsonContent, 'utf-8');
+    
+    // Calculate and write metadata
+    const currentMetadata = calculateIndexMetadata(index);
+    
+    const comparison = compareMetadata(storedMetadata, currentMetadata, storedIndex, index);
+    
+    const changeCount = comparison.componentDiff.added.length + comparison.componentDiff.removed.length;
     
     if (comparison.hasSignificantChanges && storedMetadata) {
       console.log(`\n⚠️  Significant content changes detected (threshold: ${CHANGE_THRESHOLD} entries):`);
+      console.log(`   Component changes: ${changeCount} (${comparison.componentDiff.added.length} added, ${comparison.componentDiff.removed.length} removed)`);
+      console.log(``);
       comparison.differences.forEach(diff => {
-        console.log(`   ${diff}`);
+        console.log(diff);
       });
       console.log(`\n   This indicates PatternFly documentation has been updated.`);
       console.log(`   Review changes and commit the updated files:`);
@@ -587,9 +716,16 @@ async function main() {
     } else if (comparison.hasSignificantChanges) {
       console.log(`\n📝 Initial metadata generated`);
     } else if (storedMetadata && comparison.differences.length > 0) {
-      console.log(`\nℹ️  Minor changes detected (below threshold):`);
+      console.log(`\nℹ️  Minor changes detected (below threshold of ${CHANGE_THRESHOLD}):`);
+      if (changeCount > 0) {
+        console.log(`   Component changes: ${changeCount} (${comparison.componentDiff.added.length} added, ${comparison.componentDiff.removed.length} removed)`);
+      }
       comparison.differences.forEach(diff => {
-        console.log(`   ${diff}`);
+        if (!diff.startsWith('\n') && !diff.startsWith('  ')) {
+          console.log(`   ${diff}`);
+        } else {
+          console.log(diff);
+        }
       });
     }
     
