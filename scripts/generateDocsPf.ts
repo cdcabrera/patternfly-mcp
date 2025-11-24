@@ -19,7 +19,6 @@ import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
 import { join, dirname, basename, relative } from 'path';
 import { existsSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
 import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -62,22 +61,23 @@ type DocsIndex = Record<string, ComponentDoc>;
 // Configuration
 const DEFAULT_SOURCE = join(__dirname, '../.agent/_resources/patternfly-org');
 const DEFAULT_OUTPUT = join(__dirname, '../src/docs.index.json');
-const DEFAULT_HASH_OUTPUT = join(__dirname, '../src/docs.index.json.hash');
+const DEFAULT_VERSION_OUTPUT = join(__dirname, '../src/docs.index.version');
 const DEFAULT_VERSION = '6';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/patternfly/patternfly-org/main';
 const GITHUB_REPO = 'https://github.com/patternfly/patternfly-org.git';
 const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
+const PACKAGE_JSON_PATH = 'packages/documentation-site/package.json';
 const TEMP_DIR = process.env.RUNNER_TEMP || process.env.TMPDIR || '/tmp';
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
 const sourceIndex = args.indexOf('--source');
 const outputIndex = args.indexOf('--output');
-const hashOutputIndex = args.indexOf('--hash-output');
+const versionOutputIndex = args.indexOf('--version-output');
 const cloneIndex = args.indexOf('--clone');
 const source = sourceIndex >= 0 && args[sourceIndex + 1] ? args[sourceIndex + 1] : DEFAULT_SOURCE;
 const output = outputIndex >= 0 && args[outputIndex + 1] ? args[outputIndex + 1] : DEFAULT_OUTPUT;
-const hashOutput = hashOutputIndex >= 0 && args[hashOutputIndex + 1] ? args[hashOutputIndex + 1] : DEFAULT_HASH_OUTPUT;
+const versionOutput = versionOutputIndex >= 0 && args[versionOutputIndex + 1] ? args[versionOutputIndex + 1] : DEFAULT_VERSION_OUTPUT;
 const shouldClone = cloneIndex >= 0 || !existsSync(join(source, CONTENT_BASE_PATH));
 
 /**
@@ -361,10 +361,35 @@ async function cloneRepository(targetDir: string): Promise<void> {
 }
 
 /**
- * Calculate SHA-256 hash of JSON content
+ * Extract major.minor version from semver string
+ * Examples: "1.2.3" -> "1.2", "2.0.0-alpha.1" -> "2.0"
  */
-function calculateHash(content: string): string {
-  return createHash('sha256').update(content).digest('hex');
+function extractMajorMinorVersion(version: string): string {
+  const match = version.match(/^(\d+)\.(\d+)/);
+  if (!match) {
+    throw new Error(`Invalid version format: ${version}`);
+  }
+  return `${match[1]}.${match[2]}`;
+}
+
+/**
+ * Read version from patternfly-org package.json
+ */
+async function getPatternFlyOrgVersion(sourceDir: string): Promise<string> {
+  const packageJsonPath = join(sourceDir, PACKAGE_JSON_PATH);
+  
+  if (!existsSync(packageJsonPath)) {
+    throw new Error(`Package.json not found at: ${packageJsonPath}`);
+  }
+  
+  const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
+  const packageJson = JSON.parse(packageJsonContent);
+  
+  if (!packageJson.version) {
+    throw new Error(`Version not found in package.json at: ${packageJsonPath}`);
+  }
+  
+  return extractMajorMinorVersion(packageJson.version);
 }
 
 /**
@@ -482,7 +507,7 @@ async function main() {
     console.log('Generating PatternFly documentation index...');
     console.log(`Source: ${source}`);
     console.log(`Output: ${output}`);
-    console.log(`Hash output: ${hashOutput}`);
+    console.log(`Version output: ${versionOutput}`);
     if (shouldClone) {
       console.log('🔄 Will clone repository if needed');
     }
@@ -493,14 +518,33 @@ async function main() {
     const jsonContent = JSON.stringify(index, null, 2);
     await writeFile(output, jsonContent, 'utf-8');
     
-    // Calculate and write hash
-    const hash = calculateHash(jsonContent);
-    await writeFile(hashOutput, hash, 'utf-8');
+    // Get and write version (major.minor only) - use the source directory
+    let versionSource = source;
+    if (shouldClone && process.env.CI) {
+      versionSource = join(TEMP_DIR, 'patternfly-org');
+    } else if (shouldClone) {
+      versionSource = source; // Will be cloned to source
+    }
+    const newVersion = await getPatternFlyOrgVersion(versionSource);
+    
+    // Check if version has changed (compare with stored version if it exists)
+    if (existsSync(versionOutput)) {
+      const storedVersion = (await readFile(versionOutput, 'utf-8')).trim();
+      if (storedVersion !== newVersion) {
+        console.log(`\n⚠️  Version change detected:`);
+        console.log(`   Stored version: ${storedVersion}`);
+        console.log(`   New version:    ${newVersion}`);
+        console.log(`   This indicates PatternFly-org has been updated.`);
+        console.log(`   Review changes and commit the updated files.`);
+      }
+    }
+    
+    await writeFile(versionOutput, newVersion, 'utf-8');
     
     console.log(`\n✅ Generated index with ${Object.keys(index).length} entries`);
     console.log(`📄 Output written to: ${output}`);
-    console.log(`🔐 Hash written to: ${hashOutput}`);
-    console.log(`   Hash: ${hash}`);
+    console.log(`📌 Version written to: ${versionOutput}`);
+    console.log(`   PatternFly-org version: ${newVersion} (major.minor)`);
     
     // Print summary
     const byType = Object.values(index).reduce((acc, entry) => {

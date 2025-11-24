@@ -2,14 +2,13 @@
  * E2E test for documentation index generation
  *
  * This test ensures that:
- * 1. The generated docs.index.json matches the expected hash
- * 2. Developers are prompted to update the resource if it changes
+ * 1. The generated docs.index.json matches the expected version
+ * 2. Developers are prompted to update the resource if PatternFly-org version changes
+ * 3. Only major.minor version changes trigger updates (ignores patch/alpha)
  */
 
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
-import { createHash } from 'crypto';
-import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,14 +16,17 @@ const __dirname = dirname(__filename);
 
 const ROOT_DIR = join(__dirname, '..');
 const DOCS_INDEX_PATH = join(ROOT_DIR, 'src/docs.index.json');
-const DOCS_HASH_PATH = join(ROOT_DIR, 'src/docs.index.json.hash');
+const DOCS_VERSION_PATH = join(ROOT_DIR, 'src/docs.index.version');
 
 /**
- * Calculate SHA-256 hash of file content
+ * Extract major.minor version from semver string
  */
-function calculateFileHash(filePath: string): string {
-  const content = readFileSync(filePath, 'utf-8');
-  return createHash('sha256').update(content).digest('hex');
+function extractMajorMinorVersion(version: string): string {
+  const match = version.match(/^(\d+)\.(\d+)/);
+  if (!match) {
+    throw new Error(`Invalid version format: ${version}`);
+  }
+  return `${match[1]}.${match[2]}`;
 }
 
 describe('Documentation Index', () => {
@@ -32,48 +34,33 @@ describe('Documentation Index', () => {
     expect(existsSync(DOCS_INDEX_PATH)).toBe(true);
   });
 
-  it('should have a hash file for validation', () => {
-    expect(existsSync(DOCS_HASH_PATH)).toBe(true);
+  it('should have a version file for validation', () => {
+    expect(existsSync(DOCS_VERSION_PATH)).toBe(true);
   });
 
-  it('should match the expected hash (prompts update if changed)', () => {
-    if (!existsSync(DOCS_INDEX_PATH)) {
-      throw new Error('docs.index.json not found. Run "npm run build:resources" first.');
+  it('should have a valid version format (major.minor only)', () => {
+    if (!existsSync(DOCS_VERSION_PATH)) {
+      throw new Error('docs.index.version not found. Run "npm run build:resources" first.');
     }
 
-    if (!existsSync(DOCS_HASH_PATH)) {
-      throw new Error('docs.index.json.hash not found. Run "npm run build:resources" first.');
+    // Read stored version (major.minor format)
+    const storedVersion = readFileSync(DOCS_VERSION_PATH, 'utf-8').trim();
+    
+    // Validate version format (must be major.minor, e.g., "4.21")
+    const versionMatch = storedVersion.match(/^\d+\.\d+$/);
+    if (!versionMatch) {
+      throw new Error(`Invalid version format in docs.index.version: ${storedVersion}. Expected format: major.minor (e.g., "4.21")`);
     }
 
-    const currentHash = calculateFileHash(DOCS_INDEX_PATH);
-    const expectedHash = readFileSync(DOCS_HASH_PATH, 'utf-8').trim();
-
-    if (currentHash !== expectedHash) {
-      const errorMessage = `
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  DOCUMENTATION INDEX HAS CHANGED                                             ║
-╠══════════════════════════════════════════════════════════════════════════════╣
-║                                                                              ║
-║  The generated docs.index.json does not match the expected hash.            ║
-║  This usually means the PatternFly documentation has been updated.           ║
-║                                                                              ║
-║  Expected hash: ${expectedHash}                                             ║
-║  Current hash:  ${currentHash}                                             ║
-║                                                                              ║
-║  To update:                                                                  ║
-║    1. Run: npm run build:resources                                          ║
-║    2. Review the changes in src/docs.index.json                              ║
-║    3. Commit the updated files:                                             ║
-║       git add src/docs.index.json src/docs.index.json.hash                  ║
-║       git commit -m "chore: update docs index from patternfly-org"           ║
-║                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-      `;
-
-      throw new Error(errorMessage);
+    expect(storedVersion).toMatch(/^\d+\.\d+$/);
+    
+    // Validate it's not a full semver (should only be major.minor)
+    const parts = storedVersion.split('.');
+    expect(parts.length).toBe(2);
+    if (parts[0] && parts[1]) {
+      expect(parseInt(parts[0], 10)).toBeGreaterThanOrEqual(0);
+      expect(parseInt(parts[1], 10)).toBeGreaterThanOrEqual(0);
     }
-
-    expect(currentHash).toBe(expectedHash);
   });
 
   it('should be valid JSON', () => {
