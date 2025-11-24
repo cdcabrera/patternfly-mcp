@@ -96,10 +96,10 @@ const SAME_SERVER_TOKENS = [
  * Consider it a match if the command appears to invoke:
  * - binary with `--http` flag
  * - built entry point (dist/index.js) with `--http` flag (CLI)
- * - node process running dist/index.js without flags (programmatic usage in tests)
+ * - node process running dist/index.js without flags (programmatic usage in test/local environments)
  *
- * For programmatic usage (via start() function in tests), the command will be
- * "node dist/index.js" without --http flag, so we allow that case too.
+ * For programmatic usage (via start() function in test/local environments), the command will be
+ * "node dist/index.js" without --http flag, so we allow that case when NODE_ENV=local.
  *
  * @param rawCommand - Raw command string to check
  * @returns True if it's the same MCP server
@@ -130,19 +130,16 @@ const isSameMcpServer = (rawCommand: string): boolean => {
     return true;
   }
 
-  // For programmatic usage in Jest tests, the command will be "node dist/index.js" without --http flag.
-  // We detect Jest test environment and allow matching in that case.
+  // For programmatic usage in test/local environments, the command will be "node dist/index.js" without --http flag.
+  // We detect test/local environment via NODE_ENV and allow matching in that case.
   // This allows tests with killExisting=true to kill existing server instances.
   const isNodeProcess = cmd.includes('node') && cmd.includes('dist/index.js');
   const hasAnyFlags = /--\w+/.test(cmd);
-  const isJestTest = typeof process !== 'undefined' && (
-    process.env.JEST_WORKER_ID !== undefined ||
-    (process.argv && process.argv.some(arg => arg.includes('jest')))
-  );
+  const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'local';
 
-  // Only match programmatic usage in Jest tests: node process, no flags, and Jest environment
+  // Only match programmatic usage in test/local environments: node process, no flags, and NODE_ENV=local
   // This allows tests to kill existing servers, but prevents false positives in CLI usage
-  if (isNodeProcess && !hasAnyFlags && isJestTest) {
+  if (isNodeProcess && !hasAnyFlags && isTestEnvironment) {
     return true;
   }
 
