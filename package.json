@@ -19,10 +19,10 @@
     "mcp-config-example.json"
   ],
   "scripts": {
-    "build": "npm run build:clean; npm run test:types; pkgroll",
+    "build": "npm run build:clean; npm run build:resources; npm run test:types; pkgroll",
     "build:clean": "rm -rf dist",
     "build:watch": "npm run build -- --watch",
-    "generate:docs-index": "tsx scripts/generate-docs-index.ts",
+    "build:resources": "tsx scripts/generatePfDocs.ts",
     "release": "changelog --non-cc --link-url https://github.com/patternfly/patternfly-mcp.git",
     "start": "node dist/index.js",
     "start:dev": "tsx watch src/index.ts",
