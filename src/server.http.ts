@@ -84,25 +84,19 @@ const getProcessOnPort = async (port: number) => {
  * Identity tokens for the MCP server process. Generated from package.json bin entries
  * plus the built entry point.
  */
-
 const SAME_SERVER_TOKENS = [
   'dist/index.js',
   ...Object.keys(packageJson.bin || {})
 ];
 
 /**
- * HTTP mode, check if the process is the MCP server instance
+ * Check if a command appears to be the MCP server instance
  *
- * Consider it a match if the command appears to invoke:
- * - binary with `--http` flag
- * - built entry point (dist/index.js) with `--http` flag (CLI)
- * - node process running dist/index.js without flags (programmatic usage in test/local environments)
- *
- * For programmatic usage (via start() function in test/local environments), the command will be
- * "node dist/index.js" without --http flag, so we allow that case when NODE_ENV=local.
+ * Simple check: command contains a server token AND has --http flag.
+ * Used for messaging and determining if we should kill an existing process.
  *
  * @param rawCommand - Raw command string to check
- * @returns True if it's the same MCP server
+ * @returns True if the command appears to be the MCP server
  */
 const isSameMcpServer = (rawCommand: string): boolean => {
   if (!rawCommand) {
@@ -116,34 +110,15 @@ const isSameMcpServer = (rawCommand: string): boolean => {
     .trim()
     .toLowerCase();
 
-  // Check if it's running the MCP server entry point
-  const hasServerToken = SAME_SERVER_TOKENS.some(t => cmd.includes(t.toLowerCase()));
+  // Check if command contains any server token
+  const hasServerToken = SAME_SERVER_TOKENS.some(token => cmd.includes(token.toLowerCase()));
 
   if (!hasServerToken) {
     return false;
   }
 
-  // Check for --http flag with word boundaries (must be exact match, not --http-port, etc.)
-  const hasHttpFlag = /(^|\s)--http(\s|$)/.test(cmd);
-
-  if (hasHttpFlag) {
-    return true;
-  }
-
-  // For programmatic usage in test/local environments, the command will be "node dist/index.js" without --http flag.
-  // We detect test/local environment via NODE_ENV and allow matching in that case.
-  // This allows tests with killExisting=true to kill existing server instances.
-  const isNodeProcess = cmd.includes('node') && cmd.includes('dist/index.js');
-  const hasAnyFlags = /--\w+/.test(cmd);
-  const isTestEnvironment = typeof process !== 'undefined' && process.env.NODE_ENV === 'local';
-
-  // Only match programmatic usage in test/local environments: node process, no flags, and NODE_ENV=local
-  // This allows tests to kill existing servers, but prevents false positives in CLI usage
-  if (isNodeProcess && !hasAnyFlags && isTestEnvironment) {
-    return true;
-  }
-
-  return false;
+  // Must have --http flag (exact match, not --http-port, etc.)
+  return /(^|\s)--http(\s|$)/.test(cmd);
 };
 
 /**

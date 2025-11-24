@@ -60,8 +60,6 @@ describe('isSameMcpServer', () => {
     {
       description: 'match "false" against missing or substring or different processes with --http',
       param: [
-        // Note: 'node dist/index.js' returns true in Jest test environment to allow killing existing servers
-        // In CLI usage, it would return false (no --http flag), but in tests we need to kill programmatic servers
         'pf-mcp',
         'patternfly-mcp --port 3000',
         'patternfly-mcp',
