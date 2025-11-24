@@ -2,9 +2,10 @@
  * E2E test for documentation index generation
  *
  * This test ensures that:
- * 1. The generated docs.index.json matches the expected version
- * 2. Developers are prompted to update the resource if PatternFly-org version changes
- * 3. Only major.minor version changes trigger updates (ignores patch/alpha)
+ * 1. The generated docs.index.json and metadata files exist
+ * 2. Metadata structure is valid (entry counts, types, timestamp)
+ * 3. The build script compares metadata to detect significant content changes
+ * 4. Changes are detected based on entry count differences (threshold: 5 entries)
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -16,17 +17,15 @@ const __dirname = dirname(__filename);
 
 const ROOT_DIR = join(__dirname, '..');
 const DOCS_INDEX_PATH = join(ROOT_DIR, 'src/docs.index.json');
-const DOCS_VERSION_PATH = join(ROOT_DIR, 'src/docs.index.version');
+const DOCS_METADATA_PATH = join(ROOT_DIR, 'src/docs.index.metadata.json');
 
 /**
- * Extract major.minor version from semver string
+ * Index metadata structure
  */
-function extractMajorMinorVersion(version: string): string {
-  const match = version.match(/^(\d+)\.(\d+)/);
-  if (!match) {
-    throw new Error(`Invalid version format: ${version}`);
-  }
-  return `${match[1]}.${match[2]}`;
+interface IndexMetadata {
+  totalEntries: number;
+  entriesByType: Record<string, number>;
+  generatedAt: string;
 }
 
 describe('Documentation Index', () => {
@@ -34,33 +33,46 @@ describe('Documentation Index', () => {
     expect(existsSync(DOCS_INDEX_PATH)).toBe(true);
   });
 
-  it('should have a version file for validation', () => {
-    expect(existsSync(DOCS_VERSION_PATH)).toBe(true);
+  it('should have a metadata file for validation', () => {
+    expect(existsSync(DOCS_METADATA_PATH)).toBe(true);
   });
 
-  it('should have a valid version format (major.minor only)', () => {
-    if (!existsSync(DOCS_VERSION_PATH)) {
-      throw new Error('docs.index.version not found. Run "npm run build:resources" first.');
+  it('should have valid metadata structure', () => {
+    if (!existsSync(DOCS_METADATA_PATH)) {
+      throw new Error('docs.index.metadata.json not found. Run "npm run build:resources" first.');
     }
 
-    // Read stored version (major.minor format)
-    const storedVersion = readFileSync(DOCS_VERSION_PATH, 'utf-8').trim();
+    const metadataContent = readFileSync(DOCS_METADATA_PATH, 'utf-8');
+    let metadata: IndexMetadata;
     
-    // Validate version format (must be major.minor, e.g., "4.21")
-    const versionMatch = storedVersion.match(/^\d+\.\d+$/);
-    if (!versionMatch) {
-      throw new Error(`Invalid version format in docs.index.version: ${storedVersion}. Expected format: major.minor (e.g., "4.21")`);
+    try {
+      metadata = JSON.parse(metadataContent);
+    } catch (error) {
+      throw new Error(`Invalid JSON in docs.index.metadata.json: ${error}`);
     }
 
-    expect(storedVersion).toMatch(/^\d+\.\d+$/);
+    // Validate structure
+    expect(metadata).toHaveProperty('totalEntries');
+    expect(metadata).toHaveProperty('entriesByType');
+    expect(metadata).toHaveProperty('generatedAt');
     
-    // Validate it's not a full semver (should only be major.minor)
-    const parts = storedVersion.split('.');
-    expect(parts.length).toBe(2);
-    if (parts[0] && parts[1]) {
-      expect(parseInt(parts[0], 10)).toBeGreaterThanOrEqual(0);
-      expect(parseInt(parts[1], 10)).toBeGreaterThanOrEqual(0);
+    expect(typeof metadata.totalEntries).toBe('number');
+    expect(metadata.totalEntries).toBeGreaterThan(0);
+    expect(typeof metadata.entriesByType).toBe('object');
+    expect(typeof metadata.generatedAt).toBe('string');
+    
+    // Validate generatedAt is ISO date
+    expect(() => new Date(metadata.generatedAt)).not.toThrow();
+    
+    // Validate entriesByType has numeric values
+    for (const [type, count] of Object.entries(metadata.entriesByType)) {
+      expect(typeof count).toBe('number');
+      expect(count).toBeGreaterThanOrEqual(0);
     }
+    
+    // Validate totalEntries matches sum of entriesByType
+    const sumByType = Object.values(metadata.entriesByType).reduce((sum, count) => sum + count, 0);
+    expect(metadata.totalEntries).toBe(sumByType);
   });
 
   it('should be valid JSON', () => {

@@ -7,12 +7,19 @@
  * 2. Parses paths to determine component names, types, and categories
  * 3. Generates aliases automatically
  * 4. Creates version-specific documentation URLs
- * 5. Outputs a JSON index file
+ * 5. Outputs a JSON index file with metadata for change detection
+ *
+ * Change Detection:
+ * - Tracks total entry count and counts by type
+ * - Compares with stored metadata
+ * - Prompts update if changes exceed threshold (default: 5 entries)
+ * - Ignores minor changes below threshold
  *
  * Usage:
- *   npm run generate:docs-index
- *   npm run generate:docs-index -- --source .agent/_resources/patternfly-org
- *   npm run generate:docs-index -- --output src/docs.index.json
+ *   npm run build:resources
+ *   npm run build:resources -- --source .agent/_resources/patternfly-org
+ *   npm run build:resources -- --output src/docs.index.json
+ *   npm run build:resources -- --clone  (force clone even if source exists)
  */
 
 import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
@@ -61,23 +68,23 @@ type DocsIndex = Record<string, ComponentDoc>;
 // Configuration
 const DEFAULT_SOURCE = join(__dirname, '../.agent/_resources/patternfly-org');
 const DEFAULT_OUTPUT = join(__dirname, '../src/docs.index.json');
-const DEFAULT_VERSION_OUTPUT = join(__dirname, '../src/docs.index.version');
+const DEFAULT_METADATA_OUTPUT = join(__dirname, '../src/docs.index.metadata.json');
 const DEFAULT_VERSION = '6';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/patternfly/patternfly-org/main';
 const GITHUB_REPO = 'https://github.com/patternfly/patternfly-org.git';
 const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
-const PACKAGE_JSON_PATH = 'packages/documentation-site/package.json';
 const TEMP_DIR = process.env.RUNNER_TEMP || process.env.TMPDIR || '/tmp';
+const CHANGE_THRESHOLD = 5; // Number of entries that must change to trigger update prompt
 
 // Parse CLI arguments
 const args = process.argv.slice(2);
 const sourceIndex = args.indexOf('--source');
 const outputIndex = args.indexOf('--output');
-const versionOutputIndex = args.indexOf('--version-output');
+const metadataOutputIndex = args.indexOf('--metadata-output');
 const cloneIndex = args.indexOf('--clone');
 const source = sourceIndex >= 0 && args[sourceIndex + 1] ? args[sourceIndex + 1] : DEFAULT_SOURCE;
 const output = outputIndex >= 0 && args[outputIndex + 1] ? args[outputIndex + 1] : DEFAULT_OUTPUT;
-const versionOutput = versionOutputIndex >= 0 && args[versionOutputIndex + 1] ? args[versionOutputIndex + 1] : DEFAULT_VERSION_OUTPUT;
+const metadataOutput = metadataOutputIndex >= 0 && args[metadataOutputIndex + 1] ? args[metadataOutputIndex + 1] : DEFAULT_METADATA_OUTPUT;
 const shouldClone = cloneIndex >= 0 || !existsSync(join(source, CONTENT_BASE_PATH));
 
 /**
@@ -361,35 +368,69 @@ async function cloneRepository(targetDir: string): Promise<void> {
 }
 
 /**
- * Extract major.minor version from semver string
- * Examples: "1.2.3" -> "1.2", "2.0.0-alpha.1" -> "2.0"
+ * Metadata about the documentation index
  */
-function extractMajorMinorVersion(version: string): string {
-  const match = version.match(/^(\d+)\.(\d+)/);
-  if (!match) {
-    throw new Error(`Invalid version format: ${version}`);
-  }
-  return `${match[1]}.${match[2]}`;
+interface IndexMetadata {
+  totalEntries: number;
+  entriesByType: Record<string, number>;
+  generatedAt: string;
 }
 
 /**
- * Read version from patternfly-org package.json
+ * Calculate metadata from the generated index
  */
-async function getPatternFlyOrgVersion(sourceDir: string): Promise<string> {
-  const packageJsonPath = join(sourceDir, PACKAGE_JSON_PATH);
+function calculateIndexMetadata(index: DocsIndex): IndexMetadata {
+  const entriesByType: Record<string, number> = {};
   
-  if (!existsSync(packageJsonPath)) {
-    throw new Error(`Package.json not found at: ${packageJsonPath}`);
+  for (const entry of Object.values(index)) {
+    entriesByType[entry.type] = (entriesByType[entry.type] || 0) + 1;
   }
   
-  const packageJsonContent = await readFile(packageJsonPath, 'utf-8');
-  const packageJson = JSON.parse(packageJsonContent);
+  return {
+    totalEntries: Object.keys(index).length,
+    entriesByType,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Compare metadata and determine if significant changes occurred
+ */
+function compareMetadata(
+  stored: IndexMetadata | null,
+  current: IndexMetadata
+): { hasSignificantChanges: boolean; differences: string[] } {
+  const differences: string[] = [];
   
-  if (!packageJson.version) {
-    throw new Error(`Version not found in package.json at: ${packageJsonPath}`);
+  if (!stored) {
+    return { hasSignificantChanges: true, differences: ['No stored metadata found'] };
   }
   
-  return extractMajorMinorVersion(packageJson.version);
+  // Check total entries
+  const totalDiff = Math.abs(current.totalEntries - stored.totalEntries);
+  if (totalDiff > 0) {
+    differences.push(`Total entries: ${stored.totalEntries} → ${current.totalEntries} (${totalDiff > 0 ? '+' : ''}${totalDiff})`);
+  }
+  
+  // Check entries by type
+  const allTypes = new Set([...Object.keys(stored.entriesByType), ...Object.keys(current.entriesByType)]);
+  let totalTypeDiff = 0;
+  
+  for (const type of allTypes) {
+    const storedCount = stored.entriesByType[type] || 0;
+    const currentCount = current.entriesByType[type] || 0;
+    const diff = Math.abs(currentCount - storedCount);
+    
+    if (diff > 0) {
+      totalTypeDiff += diff;
+      differences.push(`${type}: ${storedCount} → ${currentCount} (${currentCount > storedCount ? '+' : ''}${currentCount - storedCount})`);
+    }
+  }
+  
+  // Significant if total difference exceeds threshold
+  const hasSignificantChanges = totalDiff >= CHANGE_THRESHOLD || totalTypeDiff >= CHANGE_THRESHOLD;
+  
+  return { hasSignificantChanges, differences };
 }
 
 /**
@@ -507,7 +548,7 @@ async function main() {
     console.log('Generating PatternFly documentation index...');
     console.log(`Source: ${source}`);
     console.log(`Output: ${output}`);
-    console.log(`Version output: ${versionOutput}`);
+    console.log(`Metadata output: ${metadataOutput}`);
     if (shouldClone) {
       console.log('🔄 Will clone repository if needed');
     }
@@ -518,33 +559,51 @@ async function main() {
     const jsonContent = JSON.stringify(index, null, 2);
     await writeFile(output, jsonContent, 'utf-8');
     
-    // Get and write version (major.minor only) - use the source directory
-    let versionSource = source;
-    if (shouldClone && process.env.CI) {
-      versionSource = join(TEMP_DIR, 'patternfly-org');
-    } else if (shouldClone) {
-      versionSource = source; // Will be cloned to source
-    }
-    const newVersion = await getPatternFlyOrgVersion(versionSource);
+    // Calculate and write metadata
+    const currentMetadata = calculateIndexMetadata(index);
     
-    // Check if version has changed (compare with stored version if it exists)
-    if (existsSync(versionOutput)) {
-      const storedVersion = (await readFile(versionOutput, 'utf-8')).trim();
-      if (storedVersion !== newVersion) {
-        console.log(`\n⚠️  Version change detected:`);
-        console.log(`   Stored version: ${storedVersion}`);
-        console.log(`   New version:    ${newVersion}`);
-        console.log(`   This indicates PatternFly-org has been updated.`);
-        console.log(`   Review changes and commit the updated files.`);
+    // Compare with stored metadata if it exists
+    let storedMetadata: IndexMetadata | null = null;
+    if (existsSync(metadataOutput)) {
+      try {
+        const storedContent = await readFile(metadataOutput, 'utf-8');
+        storedMetadata = JSON.parse(storedContent);
+      } catch (error) {
+        console.warn(`Warning: Could not parse stored metadata: ${error}`);
       }
     }
     
-    await writeFile(versionOutput, newVersion, 'utf-8');
+    const comparison = compareMetadata(storedMetadata, currentMetadata);
     
-    console.log(`\n✅ Generated index with ${Object.keys(index).length} entries`);
+    if (comparison.hasSignificantChanges && storedMetadata) {
+      console.log(`\n⚠️  Significant content changes detected (threshold: ${CHANGE_THRESHOLD} entries):`);
+      comparison.differences.forEach(diff => {
+        console.log(`   ${diff}`);
+      });
+      console.log(`\n   This indicates PatternFly documentation has been updated.`);
+      console.log(`   Review changes and commit the updated files:`);
+      console.log(`     git add ${output} ${metadataOutput}`);
+      console.log(`     git commit -m "chore: update docs index from patternfly-org"`);
+    } else if (comparison.hasSignificantChanges) {
+      console.log(`\n📝 Initial metadata generated`);
+    } else if (storedMetadata && comparison.differences.length > 0) {
+      console.log(`\nℹ️  Minor changes detected (below threshold):`);
+      comparison.differences.forEach(diff => {
+        console.log(`   ${diff}`);
+      });
+    }
+    
+    await writeFile(metadataOutput, JSON.stringify(currentMetadata, null, 2), 'utf-8');
+    
+    console.log(`\n✅ Generated index with ${currentMetadata.totalEntries} entries`);
     console.log(`📄 Output written to: ${output}`);
-    console.log(`📌 Version written to: ${versionOutput}`);
-    console.log(`   PatternFly-org version: ${newVersion} (major.minor)`);
+    console.log(`📊 Metadata written to: ${metadataOutput}`);
+    console.log(`   Entries by type:`);
+    Object.entries(currentMetadata.entriesByType)
+      .sort(([, a], [, b]) => b - a)
+      .forEach(([type, count]) => {
+        console.log(`     ${type}: ${count}`);
+      });
     
     // Print summary
     const byType = Object.values(index).reduce((acc, entry) => {
