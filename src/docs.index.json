@@ -1,0 +1,2500 @@
+{
+  "Compass": {
+    "component": "Compass",
+    "type": "guide",
+    "category": "AI",
+    "aliases": [
+      "compass"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/AI/Compass/ReactFlow.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "AI": {
+    "component": "AI",
+    "type": "guide",
+    "category": "AI",
+    "aliases": [
+      "ai",
+      "a-i"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/AI/ai.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ConversationDesign": {
+    "component": "ConversationDesign",
+    "type": "guide",
+    "category": "AI",
+    "aliases": [
+      "conversationdesign",
+      "conversation-design"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/AI/conversation-design/conversation-design.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "RapidPrototyping": {
+    "component": "RapidPrototyping",
+    "type": "guide",
+    "category": "AI",
+    "aliases": [
+      "rapidprototyping",
+      "rapid-prototyping"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/rapid-prototyping.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "AboutUs": {
+    "component": "AboutUs",
+    "type": "component",
+    "category": "about-us.md",
+    "aliases": [
+      "aboutus",
+      "about-us"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/about-us.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Accessibility": {
+    "component": "Accessibility",
+    "type": "accessibility",
+    "category": "accessibility",
+    "aliases": [
+      "accessibility"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/accessibility/test-your-product.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "AboutModal": {
+    "component": "AboutModal",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "aboutmodal",
+      "about-modal"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/about-modal/about-modal.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/about-modal/about-modal.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Accordion": {
+    "component": "Accordion",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "accordion",
+      "accordian"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accordion/accordion.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/accordion/accordion.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ActionList": {
+    "component": "ActionList",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "actionlist",
+      "action-list"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/action-list/action-list.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/action-list/action-list.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Alert": {
+    "component": "Alert",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "alert"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/alert/alert.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/alert/alert.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ApplicationLauncher": {
+    "component": "ApplicationLauncher",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "applicationlauncher",
+      "application-launcher",
+      "app-launcher",
+      "launcher"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/application-launcher/application-launcher.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/application-launcher/application-launcher.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Avatar": {
+    "component": "Avatar",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "avatar"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/avatar/avatar.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/avatar/avatar.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Backdrop": {
+    "component": "Backdrop",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "backdrop"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/backdrop/backdrop.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/backdrop/backdrop.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "BackgroundImage": {
+    "component": "BackgroundImage",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "backgroundimage",
+      "background-image"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/background-image/background-image.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/background-image/background-image.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Badge": {
+    "component": "Badge",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "badge"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/badge/badge.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/badge/badge.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Banner": {
+    "component": "Banner",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "banner"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/banner/banner.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/banner/banner.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Brand": {
+    "component": "Brand",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "brand"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/brand/brand.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/brand/brand.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Breadcrumb": {
+    "component": "Breadcrumb",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "breadcrumb"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/breadcrumb/breadcrumb.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/breadcrumb/breadcrumb.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Button": {
+    "component": "Button",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "button",
+      "btn"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/button/button.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/button/button.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "CalendarMonth": {
+    "component": "CalendarMonth",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "calendarmonth",
+      "calendar-month"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/calendar-month/calendar-month.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/calendar-month/calendar-month.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Card": {
+    "component": "Card",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "card"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/card/card.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/card/card.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Checkbox": {
+    "component": "Checkbox",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "checkbox"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/checkbox/checkbox.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/checkbox/checkbox.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Chip": {
+    "component": "Chip",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "chip"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/chip/chip.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/chip/chip.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ClipboardCopy": {
+    "component": "ClipboardCopy",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "clipboardcopy",
+      "clipboard-copy"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/clipboard-copy/clipboard-copy.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/clipboard-copy/clipboard-copy.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "CodeEditor": {
+    "component": "CodeEditor",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "codeeditor",
+      "code-editor"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/code-editor/code-editor.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/code-editor/code-editor.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ContextSelector": {
+    "component": "ContextSelector",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "contextselector",
+      "context-selector"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/context-selector/context-selector.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/context-selector/context-selector.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ExpandableSection": {
+    "component": "ExpandableSection",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "expandablesection",
+      "expandable-section"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/expandable-section/expandable-section.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/expandable-section/expandable-section.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "HelperText": {
+    "component": "HelperText",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "helpertext",
+      "helper-text"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/helper-text/helper-text.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/helper-text/helper-text.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "JumpLinks": {
+    "component": "JumpLinks",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "jumplinks",
+      "jump-links"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": null,
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/jump-links/jump-links.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Label": {
+    "component": "Label",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "label"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/label/label.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/label/label.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Menu": {
+    "component": "Menu",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "menu"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/menu/menu.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/menu/menu.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "MenuToggle": {
+    "component": "MenuToggle",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "menutoggle",
+      "menu-toggle"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/menu-toggle/menu-toggle.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/menu-toggle/menu-toggle.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Modal": {
+    "component": "Modal",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "modal"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/modal/modal.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/modal/modal.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Navigation": {
+    "component": "Navigation",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "navigation"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/navigation/navigation.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/navigation/navigation.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Page": {
+    "component": "Page",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "page",
+      "page-layout"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/page/page.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/page/page.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Progress": {
+    "component": "Progress",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "progress"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/progress/progress.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/progress/progress.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ProgressStepper": {
+    "component": "ProgressStepper",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "progressstepper",
+      "progress-stepper"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/progress-stepper/progress-stepper.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/progress-stepper/progress-stepper.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Radio": {
+    "component": "Radio",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "radio"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/radio/radio.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/radio/radio.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Sidebar": {
+    "component": "Sidebar",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "sidebar",
+      "nav",
+      "navigation"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/sidebar/sidebar.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/sidebar/sidebar.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Skeleton": {
+    "component": "Skeleton",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "skeleton"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/skeleton/skeleton.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/skeleton/skeleton.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "SkipToContent": {
+    "component": "SkipToContent",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "skiptocontent",
+      "skip-to-content"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/skip-to-content/skip-to-content.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/skip-to-content/skip-to-content.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Switch": {
+    "component": "Switch",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "switch"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/switch/switch.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/switch/switch.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Tabs": {
+    "component": "Tabs",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "tabs"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/tabs/tabs.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/tabs/tabs.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Title": {
+    "component": "Title",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "title"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/title/title.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/title/title.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Tooltip": {
+    "component": "Tooltip",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "tooltip"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/tooltip/tooltip.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/tooltip/tooltip.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "TreeView": {
+    "component": "TreeView",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "treeview",
+      "tree-view"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/tree-view/tree-view.md",
+        "accessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/accessibility/tree-view/tree-view.md",
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "BackToTop": {
+    "component": "BackToTop",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "backtotop",
+      "back-to-top"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/back-to-top/back-to-top.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Charts": {
+    "component": "Charts",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "charts"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/charts/tooltip-chart/tooltip-chart.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "CodeBlock": {
+    "component": "CodeBlock",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "codeblock",
+      "code-block"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/code-block/code-block.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Components.md": {
+    "component": "Components.md",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "components.md"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/components.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Content": {
+    "component": "Content",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "content"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/content/content.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DataList": {
+    "component": "DataList",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "datalist",
+      "data-list",
+      "list"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/data-list/data-list.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DatePicker": {
+    "component": "DatePicker",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "datepicker",
+      "date-picker"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/date-picker/date-picker.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DescriptionList": {
+    "component": "DescriptionList",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "descriptionlist",
+      "description-list"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/description-list/description-list.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Divider": {
+    "component": "Divider",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "divider"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/divider/divider.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DragAndDrop": {
+    "component": "DragAndDrop",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "draganddrop",
+      "drag-and-drop"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/drag-and-drop/drag.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Drawer": {
+    "component": "Drawer",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "drawer"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/drawer/drawer.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Dropdown": {
+    "component": "Dropdown",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "dropdown"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/dropdown/dropdown.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DualListSelector": {
+    "component": "DualListSelector",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "duallistselector",
+      "dual-list-selector"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/dual-list-selector/dual-list-selector.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "EmptyState": {
+    "component": "EmptyState",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "emptystate",
+      "empty-state"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/empty-state/empty-state.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "FileUpload": {
+    "component": "FileUpload",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "fileupload",
+      "file-upload"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/file-upload/file-upload.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "FileUploadMultiple": {
+    "component": "FileUploadMultiple",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "fileuploadmultiple",
+      "file-upload-multiple"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/file-upload-multiple/file-upload-multiple.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Form": {
+    "component": "Form",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "form"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/form/forms.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "FormControl": {
+    "component": "FormControl",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "formcontrol",
+      "form-control"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/form-control/form-control.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "FormSelect": {
+    "component": "FormSelect",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "formselect",
+      "form-select",
+      "select",
+      "dropdown-select"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/form-select/form-select.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Hint": {
+    "component": "Hint",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "hint"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/hint/hint.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "InlineEdit": {
+    "component": "InlineEdit",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "inlineedit",
+      "inline-edit"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/inline-edit/inline-edit.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "InputGroup": {
+    "component": "InputGroup",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "inputgroup",
+      "input-group"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/input-group/input-group.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "JumpLink": {
+    "component": "JumpLink",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "jumplink",
+      "jump-link"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/jump-link/jump-link.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "List": {
+    "component": "List",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "list"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/list/list.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "LoginPage": {
+    "component": "LoginPage",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "loginpage",
+      "login-page"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/login-page/login-page.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Masthead": {
+    "component": "Masthead",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "masthead",
+      "header",
+      "topbar"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/masthead/masthead.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "NotificationBadge": {
+    "component": "NotificationBadge",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "notificationbadge",
+      "notification-badge"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/notification-badge/notification-badge.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "NotificationDrawer": {
+    "component": "NotificationDrawer",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "notificationdrawer",
+      "notification-drawer",
+      "notification",
+      "drawer"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/notification-drawer/notification-drawer.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Number input": {
+    "component": "Number input",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "number input"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/number input/number-input.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "OverflowMenu": {
+    "component": "OverflowMenu",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "overflowmenu",
+      "overflow-menu"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/overflow-menu/overflow-menu.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Pagination": {
+    "component": "Pagination",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "pagination"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/pagination/pagination.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Panel": {
+    "component": "Panel",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "panel"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/panel/panel.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "PasswordStrength": {
+    "component": "PasswordStrength",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "passwordstrength",
+      "password-strength"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/password-strength/password-strength.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Popover": {
+    "component": "Popover",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "popover"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/popover/popover.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "SearchInput": {
+    "component": "SearchInput",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "searchinput",
+      "search-input",
+      "search"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/search-input/search-input.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Select": {
+    "component": "Select",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "select"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/select/select.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "SimpleList": {
+    "component": "SimpleList",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "simplelist",
+      "simple-list"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/simple-list/simple-list.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Slider": {
+    "component": "Slider",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "slider"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/slider/slider.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Spinner": {
+    "component": "Spinner",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "spinner"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/spinner/spinner.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Table": {
+    "component": "Table",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "table",
+      "tbl",
+      "data-table",
+      "datatable",
+      "grid-table"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/table/table.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "TextArea": {
+    "component": "TextArea",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "textarea",
+      "text-area"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/text-area/text-area.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "TextInput": {
+    "component": "TextInput",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "textinput",
+      "text-input",
+      "text",
+      "input"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/text-input/text-input.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "TextInputGroup": {
+    "component": "TextInputGroup",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "textinputgroup",
+      "text-input-group"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/text-input-group/text-input-group.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Tile": {
+    "component": "Tile",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "tile"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/tile/tile.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Time picker": {
+    "component": "Time picker",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "time picker"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/time picker/time-picker.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Timestamp": {
+    "component": "Timestamp",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "timestamp"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/timestamp/timestamp.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ToggleGroup": {
+    "component": "ToggleGroup",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "togglegroup",
+      "toggle-group"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/toggle-group/toggle-group.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Toolbar": {
+    "component": "Toolbar",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "toolbar"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/toolbar/toolbar.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Truncate": {
+    "component": "Truncate",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "truncate"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/truncate/truncate.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Wizard": {
+    "component": "Wizard",
+    "type": "component",
+    "category": "component",
+    "aliases": [
+      "wizard"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/wizard/wizard.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "ContentDesign": {
+    "component": "ContentDesign",
+    "type": "content-design",
+    "category": "content-design",
+    "aliases": [
+      "contentdesign",
+      "content-design"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/content-design/content-design.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Grammar": {
+    "component": "Grammar",
+    "type": "content-design",
+    "category": "content-design",
+    "aliases": [
+      "grammar"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/content-design/grammar/units-and-symbols.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "WritingGuides": {
+    "component": "WritingGuides",
+    "type": "content-design",
+    "category": "content-design",
+    "aliases": [
+      "writingguides",
+      "writing-guides"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/content-design/writing-guides/tooltips.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DeveloperGuides": {
+    "component": "DeveloperGuides",
+    "type": "guide",
+    "category": "guide",
+    "aliases": [
+      "developerguides",
+      "developer-guides"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/developer-guides/rtl-handbook.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Extensions": {
+    "component": "Extensions",
+    "type": "extension",
+    "category": "extension",
+    "aliases": [
+      "extensions"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/extensions/extensions.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "LogViewer": {
+    "component": "LogViewer",
+    "type": "extension",
+    "category": "extension",
+    "aliases": [
+      "logviewer",
+      "log-viewer"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/extensions/log-viewer/log-viewer.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Design": {
+    "component": "Design",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "design"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/design.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Develop": {
+    "component": "Develop",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "develop"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/develop.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Tokens": {
+    "component": "Tokens",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "tokens"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/tokens.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "FoundationsAndStyles": {
+    "component": "FoundationsAndStyles",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "foundationsandstyles",
+      "foundations-and-styles"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/foundations-and-styles.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Bullseye": {
+    "component": "Bullseye",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "bullseye"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/bullseye.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Flex": {
+    "component": "Flex",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "flex"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/flex.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Gallery": {
+    "component": "Gallery",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "gallery"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/gallery.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Grid": {
+    "component": "Grid",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "grid"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/grid.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Layouts": {
+    "component": "Layouts",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "layouts"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/layouts.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Level": {
+    "component": "Level",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "level"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/level.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Split": {
+    "component": "Split",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "split"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/split.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Stack": {
+    "component": "Stack",
+    "type": "layout",
+    "category": "layout",
+    "aliases": [
+      "stack"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/stack.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Colors": {
+    "component": "Colors",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "colors"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/colors/colors.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Iconography": {
+    "component": "Iconography",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "iconography"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/iconography/iconography.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Animations": {
+    "component": "Animations",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "animations"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/Animations/Animations.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "MotionDevelopment": {
+    "component": "MotionDevelopment",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "motiondevelopment",
+      "motion-development"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/motion-development.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Motion": {
+    "component": "Motion",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "motion"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/motion.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Spacers": {
+    "component": "Spacers",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "spacers"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/spacers/spacers.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "DarkThemeHandbook": {
+    "component": "DarkThemeHandbook",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "darkthemehandbook",
+      "dark-theme-handbook"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/dark-theme-handbook.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "HighContrastHandbook": {
+    "component": "HighContrastHandbook",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "highcontrasthandbook",
+      "high-contrast-handbook"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/high-contrast-handbook.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Theming": {
+    "component": "Theming",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "theming"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/theming.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Typography": {
+    "component": "Typography",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "typography"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/typography/typography.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "UtilityClasses": {
+    "component": "UtilityClasses",
+    "type": "foundation",
+    "category": "foundation",
+    "aliases": [
+      "utilityclasses",
+      "utility-classes"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/foundations-and-styles/utility-classes/landing-page/utility-classes.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "GetHelp": {
+    "component": "GetHelp",
+    "type": "component",
+    "category": "get-help",
+    "aliases": [
+      "gethelp",
+      "get-help"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-help/report-a-bug.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "GetInvolved": {
+    "component": "GetInvolved",
+    "type": "component",
+    "category": "get-involved",
+    "aliases": [
+      "getinvolved",
+      "get-involved"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-involved/community.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Contribute": {
+    "component": "Contribute",
+    "type": "component",
+    "category": "get-involved",
+    "aliases": [
+      "contribute"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-involved/contribute/contribute-documentation.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "GetStarted": {
+    "component": "GetStarted",
+    "type": "guide",
+    "category": "guide",
+    "aliases": [
+      "getstarted",
+      "get-started"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-started/develop.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "HtmlCss": {
+    "component": "HtmlCss",
+    "type": "guide",
+    "category": "guide",
+    "aliases": [
+      "htmlcss",
+      "html-css"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-started/training/html-css/fundamentals.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Training": {
+    "component": "Training",
+    "type": "guide",
+    "category": "guide",
+    "aliases": [
+      "training"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-started/training/react.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "React": {
+    "component": "React",
+    "type": "guide",
+    "category": "guide",
+    "aliases": [
+      "react"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/get-started/training/react/fundamentals.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Actions": {
+    "component": "Actions",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "actions"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/actions/actions.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "BulkSelection": {
+    "component": "BulkSelection",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "bulkselection",
+      "bulk-selection"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/bulk-selection/bulk-selection.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "CardView": {
+    "component": "CardView",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "cardview",
+      "card-view"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/card-view/card-view.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Dashboard": {
+    "component": "Dashboard",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "dashboard"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/dashboard/dashboard.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Filters": {
+    "component": "Filters",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "filters"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/filters/filters.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Patterns.md": {
+    "component": "Patterns.md",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "patterns.md"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/patterns.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "PrimaryDetail": {
+    "component": "PrimaryDetail",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "primarydetail",
+      "primary-detail"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/primary-detail/primary-detail.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "StatusAndSeverity": {
+    "component": "StatusAndSeverity",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "statusandseverity",
+      "status-and-severity"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/status-and-severity/status-and-severity.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "UsageAndBehavior.md": {
+    "component": "UsageAndBehavior.md",
+    "type": "pattern",
+    "category": "pattern",
+    "aliases": [
+      "usageandbehavior.md",
+      "usage-and-behavior.md"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/patterns/usage-and-behavior.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  },
+  "Releases": {
+    "component": "Releases",
+    "type": "component",
+    "category": "releases",
+    "aliases": [
+      "releases"
+    ],
+    "deprecated": false,
+    "docs": {
+      "6": {
+        "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/releases/upgrade-guide.md",
+        "accessibility": null,
+        "examples": null,
+        "available": true
+      }
+    }
+  }
+}
