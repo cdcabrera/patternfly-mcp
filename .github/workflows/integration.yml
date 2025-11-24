@@ -30,8 +30,12 @@ jobs:
       - name: Install Node.js packages
         if: ${{ steps.modules-cache.outputs.cache-hit != 'true' }}
         run: npm install
+      - name: Generate documentation index
+        run: npm run build:resources -- --clone
       - name: Lint and test
         run: npm test
+      - name: Test documentation index hash
+        run: npm run test:docs-index
       - name: Confirm integration
         if: ${{ success() }}
         run: npm run test:integration

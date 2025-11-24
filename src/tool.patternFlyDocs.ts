@@ -2,9 +2,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
+import { getAllDocLinks } from './docs';
 import { getLocalDocs } from './docs.local';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
@@ -17,6 +15,7 @@ import { memo } from './server.caching';
  */
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   const memoProcess = memo(processDocsFunction, options?.toolMemoOptions?.usePatternFlyDocs);
+  const version = '6'; // Default to version 6 for now
 
   const callback = async (args: any = {}) => {
     const { urlList } = args;
@@ -49,6 +48,9 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     };
   };
 
+  const allDocLinks = getAllDocLinks(version);
+  const localDocs = getLocalDocs(options);
+
   return [
     'usePatternFlyDocs',
     {
@@ -59,10 +61,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         ${options.docsHost
             ? `[@patternfly/react-core@6.0.0^](${join('react-core', '6.0.0', 'llms.txt')})`
             : `
-            ${COMPONENT_DOCS.join('\n')}
-            ${LAYOUT_DOCS.join('\n')}
-            ${CHART_DOCS.join('\n')}
-            ${getLocalDocs().join('\n')}
+            ${allDocLinks.join('\n')}
+            ${localDocs.join('\n')}
           `
         }
 

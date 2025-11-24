@@ -42,4 +42,13 @@ if (process.env.NODE_ENV !== 'local') {
   });
 }
 
+// Export documentation link helpers for standalone scripts and testing
+export {
+  extractUrlFromMarkdown,
+  getExternalLinks,
+  getLocalLinks,
+  getAllLinks,
+  getLinksWithMetadata
+} from './docs.links';
+
 export { main, main as start, type CliOptions, type ServerInstance };

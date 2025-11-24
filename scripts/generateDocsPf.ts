@@ -1,0 +1,979 @@
+#!/usr/bin/env node
+
+/**
+ * Generate PatternFly documentation index JSON from patternfly-org repository
+ *
+ * This script:
+ * 1. Discovers all markdown files in the patternfly-org repository
+ * 2. Parses paths to determine component names, types, and categories
+ * 3. Generates aliases automatically
+ * 4. Creates version-specific documentation URLs
+ * 5. Outputs a JSON index file with metadata for change detection
+ *
+ * Change Detection:
+ * - Tracks total entry count and counts by type
+ * - Compares with stored metadata
+ * - Prompts update if changes exceed threshold (default: 5 entries)
+ * - Ignores minor changes below threshold
+ *
+ * Usage:
+ *   npm run build:resources
+ */
+
+import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
+import { join, dirname, basename, relative } from 'path';
+import { existsSync, rmSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+import { createHash } from 'crypto';
+// import diff from 'fast-diff';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Types
+type ContentType =
+  'component' |
+  'pattern' |
+  'foundation' |
+  'layout' |
+  'extension' |
+  'component-group' |
+  'chart' |
+  'topology' |
+  'accessibility' |
+  'content-design' |
+  'guide';
+
+type DocType = 'design' | 'accessibility' | 'examples';
+
+interface VersionDocs {
+  design: string | null;
+  accessibility: string | null;
+  examples: string | null;
+  available: boolean;
+}
+
+interface ComponentDoc {
+  component: string;
+  type: ContentType;
+  category: string; // Path-based default, can be overridden
+  aliases?: string[];
+  deprecated?: boolean;
+  docs: Record<string, VersionDocs>;
+}
+
+type DocsIndex = Record<string, ComponentDoc>;
+
+// Configuration
+const OUTPUT = join(__dirname, '../src/docs.index.json');
+const METADATA_OUTPUT = join(__dirname, '../src/docs.index.metadata.json');
+const DEFAULT_VERSION = '6';
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/patternfly/patternfly-org/main';
+const GITHUB_REPO = 'https://github.com/patternfly/patternfly-org.git';
+const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
+const TEMP_DIR = join(__dirname, '../tmp');
+const SOURCE = join(TEMP_DIR, 'patternfly-org');
+const TIMESTAMP_FILE = join(TEMP_DIR, 'patternfly-org-clone-timestamp.txt');
+const CLONE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 2 days in milliseconds
+const CHANGE_THRESHOLD = 5; // Number of entries that must change to trigger update prompt
+
+/**
+ * Parse path to determine type and category
+ * Uses path-based defaults unless explicitly specified
+ *
+ * @param path
+ */
+function parsePathToType(path: string): { type: ContentType; category: string; isAccessibility: boolean } | null {
+  const normalizedPath = path.replace(/\\/g, '/');
+
+  // Check if this is an accessibility doc (but still part of a component)
+  const isAccessibility = normalizedPath.includes('/accessibility/');
+
+  // Extract the top-level directory as the default category
+  const parts = normalizedPath.split('/');
+  const topLevelDir = parts.find(p =>
+    p &&
+    !p.startsWith('.') &&
+    p !== 'packages' &&
+    p !== 'documentation-site' &&
+    p !== 'patternfly-docs' &&
+    p !== 'content');
+
+  // Default category is the path segment (e.g., "components", "patterns")
+  // This is the path-based default as requested
+  let category = topLevelDir || 'unknown';
+
+  // Determine type based on path patterns
+  // Note: relativePath is relative to content/, so it's like "patterns/actions/actions.md"
+  let type: ContentType;
+
+  // Check for patterns (with or without leading slash)
+  if (normalizedPath.includes('patterns/') || normalizedPath.startsWith('patterns/')) {
+    type = 'pattern';
+    category = 'pattern';
+  } else if (normalizedPath.includes('components/') || normalizedPath.startsWith('components/')) {
+    // Components (including accessibility subdirectory)
+    type = 'component';
+    category = 'component';
+  } else if (normalizedPath.includes('foundations-and-styles/') || normalizedPath.startsWith('foundations-and-styles/')) {
+    if (normalizedPath.includes('layouts/')) {
+      type = 'layout';
+      category = 'layout';
+    } else {
+      type = 'foundation';
+      category = 'foundation';
+    }
+  } else if (normalizedPath.includes('extensions/') || normalizedPath.startsWith('extensions/')) {
+    type = 'extension';
+    category = 'extension';
+  } else if (normalizedPath.includes('component-groups/') || normalizedPath.startsWith('component-groups/')) {
+    type = 'component-group';
+    category = 'component-group';
+  } else if ((normalizedPath.includes('accessibility/') || normalizedPath.startsWith('accessibility/')) && !normalizedPath.includes('components/')) {
+    // Standalone accessibility docs (not component-specific)
+    type = 'accessibility';
+    category = 'accessibility';
+  } else if (normalizedPath.includes('content-design/') || normalizedPath.startsWith('content-design/')) {
+    type = 'content-design';
+    category = 'content-design';
+  } else if (normalizedPath.includes('get-started/') || normalizedPath.startsWith('get-started/') || normalizedPath.includes('developer-guides/') || normalizedPath.startsWith('developer-guides/')) {
+    type = 'guide';
+    category = 'guide';
+  } else if (normalizedPath.includes('AI/') || normalizedPath.startsWith('AI/')) {
+    type = 'guide'; // AI docs as guides
+    category = 'AI'; // Use path-based category
+  } else {
+    // Default: use path-based category
+    type = 'component'; // Safe default
+  }
+
+  return { type, category, isAccessibility };
+}
+
+/**
+ * Extract component name from path
+ *
+ * @param path
+ * @param type
+ */
+function extractComponentName(path: string, type: ContentType): string {
+  const normalizedPath = path.replace(/\\/g, '/');
+  const parts = normalizedPath.split('/');
+  const fileName = basename(path, '.md');
+
+  // For patterns, use directory name (check this FIRST before components)
+  if (parts.includes('patterns')) {
+    const patternIndex = parts.indexOf('patterns');
+
+    if (patternIndex >= 0 && parts[patternIndex + 1]) {
+      const dirName = parts[patternIndex + 1];
+
+      if (dirName) {
+        return dirName
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join('');
+      }
+    }
+  }
+
+  // For layouts, use the file name (e.g., "bullseye.md" -> "Bullseye")
+  if (parts.includes('layouts')) {
+    return fileName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+  }
+
+  // For components (including accessibility subdirectory), use the directory name
+  if (parts.includes('components')) {
+    const componentIndex = parts.indexOf('components');
+
+    if (componentIndex >= 0) {
+      // Skip "accessibility" directory if present
+      let dirIndex = componentIndex + 1;
+
+      if (parts[dirIndex] === 'accessibility') {
+        dirIndex++;
+      }
+      if (parts[dirIndex]) {
+        const dirName = parts[dirIndex];
+
+        if (dirName) {
+          // Convert kebab-case to PascalCase
+          return dirName
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join('');
+        }
+      }
+    }
+  }
+
+  // For foundations, use file/directory name
+  if (type === 'foundation') {
+    const foundationParts = normalizedPath.split('/foundations-and-styles/')[1]?.split('/') || [];
+    const namePart = foundationParts[foundationParts.length - 1] || fileName;
+
+    return namePart
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+  }
+
+  // For other types, use directory name if available, otherwise file name
+  const dirName = parts[parts.length - 2]; // Parent directory
+
+  if (dirName && dirName !== fileName && !dirName.includes('.')) {
+    return dirName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+  }
+
+  // Default: use file name
+  return fileName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+}
+
+/**
+ * Generate aliases for a component name
+ *
+ * @param componentName
+ * @param type
+ */
+function generateAliases(componentName: string): string[] {
+  const aliases: string[] = [];
+
+  // Lowercase version
+  aliases.push(componentName.toLowerCase());
+
+  // Hyphenated version (PascalCase -> kebab-case)
+  const hyphenated = componentName
+    .replace(/([A-Z])/g, '-$1')
+    .toLowerCase()
+    .replace(/^-/, '');
+
+  if (hyphenated !== componentName.toLowerCase()) {
+    aliases.push(hyphenated);
+  }
+
+  // Common abbreviations
+  const abbrevMap: Record<string, string[]> = {
+    Button: ['btn'],
+    Table: ['tbl', 'data-table', 'datatable', 'grid-table'],
+    Accordion: ['accordian'], // Common misspelling
+    SearchInput: ['search', 'search-input'],
+    TextInput: ['text', 'input', 'text-input'],
+    DataList: ['datalist', 'list'],
+    FormSelect: ['select', 'dropdown-select'],
+    ApplicationLauncher: ['app-launcher', 'launcher'],
+    NotificationDrawer: ['notification', 'drawer'],
+    Page: ['page-layout'],
+    Masthead: ['header', 'topbar'],
+    Sidebar: ['nav', 'navigation']
+  };
+
+  if (abbrevMap[componentName]) {
+    aliases.push(...abbrevMap[componentName]);
+  }
+
+  return [...new Set(aliases)]; // Deduplicate
+}
+
+/**
+ * Determine doc type from path
+ *
+ * @param path
+ */
+function determineDocType(path: string): DocType | null {
+  const normalizedPath = path.replace(/\\/g, '/');
+
+  if (normalizedPath.includes('/accessibility/')) {
+    return 'accessibility';
+  }
+  if (normalizedPath.includes('/examples/')) {
+    return 'examples';
+  }
+
+  // Default to design
+  return 'design';
+}
+
+/**
+ * Build GitHub raw URL for a file
+ *
+ * @param relativePath
+ */
+function buildGitHubUrl(relativePath: string): string {
+  const normalized = relativePath.replace(/\\/g, '/');
+  // The relativePath is already relative to contentDir, so it's the path within content/
+  // We just need to ensure it's clean
+  const cleanPath = normalized
+    .replace(/^\.\//, '')
+    .replace(/^packages\/documentation-site\/patternfly-docs\/content\//, '');
+
+  return `${GITHUB_RAW_BASE}/${CONTENT_BASE_PATH}/${cleanPath}`;
+}
+
+/**
+ * Recursively find all markdown files
+ *
+ * @param dir
+ * @param baseDir
+ */
+async function findMarkdownFiles(dir: string, baseDir: string): Promise<string[]> {
+  const files: string[] = [];
+
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+
+      // Skip node_modules, .git, etc.
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') {
+        continue;
+      }
+
+      if (entry.isDirectory()) {
+        const subFiles = await findMarkdownFiles(fullPath, baseDir);
+
+        files.push(...subFiles);
+      } else if (entry.isFile() && entry.name.endsWith('.md')) {
+        // Skip files in img directories
+        if (!fullPath.includes('/img/')) {
+          files.push(fullPath);
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`Warning: Could not read directory ${dir}: ${error}`);
+  }
+
+  return files;
+}
+
+/**
+ * Check if the clone is older than the maximum age
+ */
+async function isCloneExpired(): Promise<boolean> {
+  // If clone doesn't exist, it's "expired" (needs to be cloned)
+  if (!existsSync(SOURCE)) {
+    return true;
+  }
+
+  // If timestamp file doesn't exist, consider it expired
+  if (!existsSync(TIMESTAMP_FILE)) {
+    return true;
+  }
+
+  try {
+    const timestampContent = await readFile(TIMESTAMP_FILE, 'utf-8');
+    const cloneTimestamp = parseInt(timestampContent.trim(), 10);
+
+    if (isNaN(cloneTimestamp)) {
+      return true; // Invalid timestamp, consider expired
+    }
+
+    const now = Date.now();
+    const age = now - cloneTimestamp;
+
+    return age > CLONE_MAX_AGE_MS;
+  } catch {
+    // If we can't read the timestamp, consider it expired
+    return true;
+  }
+}
+
+/**
+ * Update the clone timestamp file
+ */
+async function updateCloneTimestamp(): Promise<void> {
+  // Ensure temp directory exists
+  if (!existsSync(TEMP_DIR)) {
+    await mkdir(TEMP_DIR, { recursive: true });
+  }
+
+  const timestamp = Date.now().toString();
+
+  await writeFile(TIMESTAMP_FILE, timestamp, 'utf-8');
+}
+
+/**
+ * Clone patternfly-org repository to a temporary directory
+ *
+ * @param targetDir
+ */
+async function cloneRepository(targetDir: string): Promise<void> {
+  console.log(`Cloning patternfly-org repository to: ${targetDir}`);
+
+  // Remove existing directory if it exists
+  if (existsSync(targetDir)) {
+    rmSync(targetDir, { recursive: true, force: true });
+  }
+
+  // Create parent directory if needed
+  const parentDir = dirname(targetDir);
+
+  if (!existsSync(parentDir)) {
+    await mkdir(parentDir, { recursive: true });
+  }
+
+  try {
+    // Shallow clone (depth=1) for faster cloning
+    execSync(
+      `git clone --depth 1 --branch main ${GITHUB_REPO} "${targetDir}"`,
+      { stdio: 'inherit' }
+    );
+    console.log('✅ Repository cloned successfully');
+
+    // Update timestamp after successful clone
+    await updateCloneTimestamp();
+  } catch (error) {
+    throw new Error(`Failed to clone repository: ${error}`);
+  }
+}
+
+/**
+ * Metadata about the documentation index
+ */
+interface IndexMetadata {
+  totalEntries: number;
+  entriesByType: Record<string, number>;
+  generatedAt: string;
+}
+
+/**
+ * Calculate metadata from the generated index
+ *
+ * @param index
+ */
+function calculateIndexMetadata(index: DocsIndex): IndexMetadata {
+  const entriesByType: Record<string, number> = {};
+
+  for (const entry of Object.values(index)) {
+    entriesByType[entry.type] = (entriesByType[entry.type] || 0) + 1;
+  }
+
+  return {
+    totalEntries: Object.keys(index).length,
+    entriesByType,
+    generatedAt: new Date().toISOString()
+  };
+}
+
+/**
+ * Diff result for component changes
+ */
+interface ComponentDiff {
+  added: string[];
+  removed: string[];
+  modified: string[];
+}
+
+/**
+ * Compare a single component entry with stored entry
+ * Returns true if the entry has changed
+ *
+ * @param storedEntry
+ * @param currentEntry
+ */
+function hasEntryChanged(
+  storedEntry: ComponentDoc | undefined,
+  currentEntry: ComponentDoc
+): boolean {
+  if (!storedEntry) {
+    return true; // New entry, considered changed
+  }
+
+  // Compare full JSON representation
+  const storedJson = JSON.stringify(storedEntry, null, 2);
+  const currentJson = JSON.stringify(currentEntry, null, 2);
+
+  return storedJson !== currentJson;
+}
+
+/**
+ * Compare two indexes using hash-based optimization with fast-diff (Myers algorithm)
+ * Returns which components were added, removed, or potentially modified
+ *
+ * Hybrid approach:
+ * 1. Fast path: SHA-1 hash comparison (O(1)) - if hashes match, return early
+ * 2. Slow path: If hashes differ, use fast-diff to find what changed
+ *
+ * This compares the full JSON output, not just keys, to catch all changes:
+ * - URL changes (design, accessibility, examples)
+ * - Metadata changes (category, aliases, type)
+ * - Deprecation status changes
+ * - Version-specific availability changes
+ *
+ * @param storedIndex
+ * @param currentIndex
+ */
+// eslint-disable-next-line
+function diffIndexes(
+  storedIndex: DocsIndex | null,
+  currentIndex: DocsIndex
+): ComponentDiff {
+  if (!storedIndex || typeof storedIndex !== 'object') {
+    return {
+      added: Object.keys(currentIndex || {}),
+      removed: [],
+      modified: []
+    };
+  }
+
+  // Get sorted keys for consistent ordering
+  const storedKeys = Object.keys(storedIndex).sort();
+  const currentKeys = Object.keys(currentIndex || {}).sort();
+
+  // Serialize full JSON content with consistent key ordering
+  // This ensures we compare the actual content, not just structure
+  const storedJson = JSON.stringify(
+    storedKeys.reduce((acc, key) => {
+      const entry = storedIndex[key];
+
+      if (entry) {
+        acc[key] = entry;
+      }
+
+      return acc;
+    }, {} as DocsIndex),
+    null,
+    2
+  );
+
+  const currentJson = JSON.stringify(
+    currentKeys.reduce((acc, key) => {
+      const entry = currentIndex[key];
+
+      if (entry) {
+        acc[key] = entry;
+      }
+
+      return acc;
+    }, {} as DocsIndex),
+    null,
+    2
+  );
+
+  // Fast path: Hash comparison to quickly detect if anything changed
+  // This avoids expensive diff operations when there are no changes (common case)
+  const storedHash = createHash('sha1').update(storedJson).digest('hex');
+  const currentHash = createHash('sha1').update(currentJson).digest('hex');
+
+  if (storedHash === currentHash) {
+    // No changes detected - return early (fast path)
+    return { added: [], removed: [], modified: [] };
+  }
+
+  // Slow path: Hashes differ, use fast-diff to find what changed
+  // const diffResult = diff(storedJson, currentJson);
+
+  const added: string[] = [];
+  const removed: string[] = [];
+  const modified: string[] = [];
+
+  // Find added and removed components by comparing keys
+  const storedKeysSet = new Set(storedKeys);
+  const currentKeysSet = new Set(currentKeys);
+
+  for (const key of currentKeysSet) {
+    if (!storedKeysSet.has(key)) {
+      added.push(key);
+    }
+  }
+
+  for (const key of storedKeysSet) {
+    if (!currentKeysSet.has(key)) {
+      removed.push(key);
+    }
+  }
+
+  // Find modified components by comparing full JSON content
+  // Components exist in both, but their content differs
+  // We use fast-diff results to help identify modifications
+  for (const key of storedKeysSet) {
+    if (currentKeysSet.has(key)) {
+      const storedEntry = storedIndex[key];
+      const currentEntry = currentIndex[key];
+
+      if (storedEntry && currentEntry) {
+        // Compare full JSON representation of each entry
+        const storedEntryJson = JSON.stringify(storedEntry, null, 2);
+        const currentEntryJson = JSON.stringify(currentEntry, null, 2);
+
+        if (storedEntryJson !== currentEntryJson) {
+          modified.push(key);
+        }
+      }
+    }
+  }
+
+  return { added, removed, modified };
+}
+
+/**
+ * Compare metadata and determine if significant changes occurred
+ * Uses diff to show exactly what changed
+ *
+ * @param stored
+ * @param current
+ * @param storedIndex
+ * @param currentIndex
+ * @param componentDiff - Pre-computed component diff (from incremental comparison)
+ */
+function compareMetadata(
+  stored: IndexMetadata | null,
+  current: IndexMetadata,
+  storedIndex: DocsIndex | null,
+  currentIndex: DocsIndex,
+  componentDiff: ComponentDiff
+): { hasSignificantChanges: boolean; differences: string[]; componentDiff: ComponentDiff } {
+  const differences: string[] = [];
+
+  if (!stored) {
+    return {
+      hasSignificantChanges: true,
+      differences: ['No stored metadata found'],
+      componentDiff
+    };
+  }
+
+  // Check total entries
+  const totalDiff = Math.abs(current.totalEntries - stored.totalEntries);
+
+  if (totalDiff > 0) {
+    differences.push(`Total entries: ${stored.totalEntries} → ${current.totalEntries} (${totalDiff > 0 ? '+' : ''}${totalDiff})`);
+  }
+
+  // Check entries by type
+  const allTypes = new Set([...Object.keys(stored.entriesByType), ...Object.keys(current.entriesByType)]);
+  let totalTypeDiff = 0;
+
+  for (const type of allTypes) {
+    const storedCount = stored.entriesByType[type] || 0;
+    const currentCount = current.entriesByType[type] || 0;
+    const diff = Math.abs(currentCount - storedCount);
+
+    if (diff > 0) {
+      totalTypeDiff += diff;
+      differences.push(`${type}: ${storedCount} → ${currentCount} (${currentCount > storedCount ? '+' : ''}${currentCount - storedCount})`);
+    }
+  }
+
+  // Add component-level diff details
+  if (componentDiff.added.length > 0) {
+    differences.push(`\nAdded components (${componentDiff.added.length}):`);
+    componentDiff.added.slice(0, 10).forEach(comp => {
+      const entry = currentIndex[comp];
+
+      if (entry) {
+        differences.push(`  + ${comp} (${entry.type})`);
+      }
+    });
+    if (componentDiff.added.length > 10) {
+      differences.push(`  ... and ${componentDiff.added.length - 10} more`);
+    }
+  }
+
+  if (componentDiff.removed.length > 0) {
+    differences.push(`\nRemoved components (${componentDiff.removed.length}):`);
+    componentDiff.removed.slice(0, 10).forEach(comp => {
+      differences.push(`  - ${comp}`);
+    });
+    if (componentDiff.removed.length > 10) {
+      differences.push(`  ... and ${componentDiff.removed.length - 10} more`);
+    }
+  }
+
+  if (componentDiff.modified.length > 0) {
+    differences.push(`\nModified components (${componentDiff.modified.length}):`);
+    componentDiff.modified.slice(0, 10).forEach(comp => {
+      differences.push(`  ~ ${comp}`);
+    });
+    if (componentDiff.modified.length > 10) {
+      differences.push(`  ... and ${componentDiff.modified.length - 10} more`);
+    }
+  }
+
+  // Significant if total difference exceeds threshold
+  // Count actual component changes (added + removed) for threshold
+  const componentChangeCount = componentDiff.added.length + componentDiff.removed.length;
+  const hasSignificantChanges = totalDiff >= CHANGE_THRESHOLD ||
+    totalTypeDiff >= CHANGE_THRESHOLD ||
+    componentChangeCount >= CHANGE_THRESHOLD;
+
+  return { hasSignificantChanges, differences, componentDiff };
+}
+
+/**
+ * Generate the documentation index with incremental diff tracking
+ * Compares entries as they're built to avoid re-looping later
+ *
+ * @param storedIndex - Optional stored index for incremental comparison
+ * @returns Object with index and component diff
+ */
+async function generateIndex(
+  storedIndex: DocsIndex | null = null
+): Promise<{ index: DocsIndex; componentDiff: ComponentDiff }> {
+  // Check if clone is expired or doesn't exist
+  const expired = await isCloneExpired();
+
+  if (expired || !existsSync(join(SOURCE, CONTENT_BASE_PATH))) {
+    if (expired && existsSync(SOURCE)) {
+      console.log('🔄 Clone is older than 1 day, cleaning up and re-cloning...');
+    }
+    await cloneRepository(SOURCE);
+  }
+
+  const contentDir = join(SOURCE, CONTENT_BASE_PATH);
+
+  if (!existsSync(contentDir)) {
+    throw new Error(`Content directory not found: ${contentDir}\nPlease ensure patternfly-org is cloned to: ${SOURCE}`);
+  }
+
+  console.log(`Discovering markdown files in: ${contentDir}`);
+  const markdownFiles = await findMarkdownFiles(contentDir, contentDir);
+
+  console.log(`Found ${markdownFiles.length} markdown files`);
+
+  const index: DocsIndex = {};
+
+  // Track changes incrementally as we build the index
+  const componentDiff: ComponentDiff = {
+    added: [],
+    removed: [],
+    modified: []
+  };
+
+  // Track which components we've seen in the new index
+  const seenComponents = new Set<string>();
+
+  for (const filePath of markdownFiles) {
+    const relativePath = relative(contentDir, filePath);
+    const typeInfo = parsePathToType(relativePath);
+
+    if (!typeInfo) {
+      console.warn(`Skipping file (could not determine type): ${relativePath}`);
+      continue;
+    }
+
+    const { type, category } = typeInfo;
+    const componentName = extractComponentName(relativePath, type);
+    const docType = determineDocType(relativePath);
+
+    if (!docType) {
+      continue;
+    }
+
+    // Get or create component entry
+    // If it's an accessibility doc for a component, merge into existing entry
+    const isNewComponent = !index[componentName];
+
+    if (isNewComponent) {
+      index[componentName] = {
+        component: componentName,
+        type,
+        category,
+        aliases: generateAliases(componentName),
+        deprecated: false,
+        docs: {}
+      };
+      seenComponents.add(componentName);
+
+      // Track as added if it's new (and we have stored index to compare against)
+      if (storedIndex && !storedIndex[componentName]) {
+        componentDiff.added.push(componentName);
+      }
+    } else {
+      // If entry exists, preserve the original type unless we're upgrading from accessibility to component
+      // This handles the case where accessibility file is processed before design file
+      const existingEntry = index[componentName];
+
+      if (existingEntry) {
+        // If existing is accessibility but we're processing a component doc, upgrade it
+        if (existingEntry.type === 'accessibility' && type === 'component') {
+          existingEntry.type = type;
+          existingEntry.category = category;
+        }
+        // If existing is component and we're processing accessibility, keep component type
+        // (type is already correct, no change needed)
+      }
+    }
+
+    // Ensure version entry exists
+    const currentEntry = index[componentName];
+
+    if (currentEntry) {
+      if (!currentEntry.docs[DEFAULT_VERSION]) {
+        currentEntry.docs[DEFAULT_VERSION] = {
+          design: null,
+          accessibility: null,
+          examples: null,
+          available: false
+        };
+      }
+
+      // Set the URL for this doc type
+      const githubUrl = buildGitHubUrl(relativePath);
+      const versionDocs = currentEntry.docs[DEFAULT_VERSION];
+
+      if (docType === 'design') {
+        versionDocs.design = githubUrl;
+      } else if (docType === 'accessibility') {
+        versionDocs.accessibility = githubUrl;
+      } else if (docType === 'examples') {
+        versionDocs.examples = githubUrl;
+      }
+
+      // Update availability (true if at least one doc exists)
+      versionDocs.available = Boolean(versionDocs.design ||
+        versionDocs.accessibility ||
+        versionDocs.examples);
+    }
+  }
+
+  // After building index, check for modifications and removals
+  if (storedIndex) {
+    // Check for modified components (exist in both, but content changed)
+    for (const componentName of seenComponents) {
+      const storedEntry = storedIndex[componentName];
+      const currentEntry = index[componentName];
+
+      if (storedEntry && currentEntry) {
+        if (hasEntryChanged(storedEntry, currentEntry)) {
+          componentDiff.modified.push(componentName);
+        }
+      }
+    }
+
+    // Check for removed components (in stored but not in current)
+    for (const componentName of Object.keys(storedIndex)) {
+      if (!seenComponents.has(componentName)) {
+        componentDiff.removed.push(componentName);
+      }
+    }
+  }
+
+  return { index, componentDiff };
+}
+
+/**
+ * Main execution
+ */
+async function main() {
+  try {
+    console.log('Generating PatternFly documentation index...');
+    console.log(`Source: ${SOURCE}`);
+    console.log(`Output: ${OUTPUT}`);
+    console.log(`Metadata output: ${METADATA_OUTPUT}`);
+
+    // Load stored index BEFORE generating new one (for incremental comparison)
+    let storedMetadata: IndexMetadata | null = null;
+    let storedIndex: DocsIndex | null = null;
+
+    if (existsSync(METADATA_OUTPUT)) {
+      try {
+        const storedContent = await readFile(METADATA_OUTPUT, 'utf-8');
+
+        storedMetadata = JSON.parse(storedContent);
+      } catch (error) {
+        console.warn(`Warning: Could not parse stored metadata: ${error}`);
+      }
+    }
+
+    // Load stored index for incremental diff comparison
+    if (existsSync(OUTPUT)) {
+      try {
+        const storedIndexContent = await readFile(OUTPUT, 'utf-8');
+
+        storedIndex = JSON.parse(storedIndexContent);
+      } catch (error) {
+        // If we can't read stored index, that's okay - we'll just show metadata diff
+        console.warn(`Warning: Could not parse stored index for diff: ${error}`);
+      }
+    }
+
+    // Generate index with incremental diff tracking
+    // This compares entries as they're built, avoiding re-looping later
+    const { index, componentDiff: incrementalDiff } = await generateIndex(storedIndex);
+
+    // Write JSON file
+    const jsonContent = JSON.stringify(index, null, 2);
+
+    await writeFile(OUTPUT, jsonContent, 'utf-8');
+
+    // Calculate and write metadata
+    const currentMetadata = calculateIndexMetadata(index);
+
+    // Use incremental diff (computed during index generation)
+    // This is more efficient than re-looping through all entries
+    const comparison = compareMetadata(storedMetadata, currentMetadata, storedIndex, index, incrementalDiff);
+
+    const changeCount = comparison.componentDiff.added.length + comparison.componentDiff.removed.length;
+
+    if (comparison.hasSignificantChanges && storedMetadata) {
+      console.log(`\n⚠️  Significant content changes detected (threshold: ${CHANGE_THRESHOLD} entries):`);
+      console.log(`   Component changes: ${changeCount} (${comparison.componentDiff.added.length} added, ${comparison.componentDiff.removed.length} removed)`);
+      console.log(``);
+      comparison.differences.forEach(diff => {
+        console.log(diff);
+      });
+      console.log(`\n   This indicates PatternFly documentation has been updated.`);
+      console.log(`   Review changes and commit the updated files:`);
+      console.log(`     git add ${OUTPUT} ${METADATA_OUTPUT}`);
+      console.log(`     git commit -m "chore: update docs index from patternfly-org"`);
+    } else if (comparison.hasSignificantChanges) {
+      console.log(`\n📝 Initial metadata generated`);
+    } else if (storedMetadata && comparison.differences.length > 0) {
+      console.log(`\nℹ️  Minor changes detected (below threshold of ${CHANGE_THRESHOLD}):`);
+      if (changeCount > 0) {
+        console.log(`   Component changes: ${changeCount} (${comparison.componentDiff.added.length} added, ${comparison.componentDiff.removed.length} removed)`);
+      }
+      comparison.differences.forEach(diff => {
+        if (!diff.startsWith('\n') && !diff.startsWith('  ')) {
+          console.log(`   ${diff}`);
+        } else {
+          console.log(diff);
+        }
+      });
+    }
+
+    await writeFile(METADATA_OUTPUT, JSON.stringify(currentMetadata, null, 2), 'utf-8');
+
+    console.log(`\n✅ Generated index with ${currentMetadata.totalEntries} entries`);
+    console.log(`📄 Output written to: ${OUTPUT}`);
+    console.log(`📊 Metadata written to: ${METADATA_OUTPUT}`);
+    console.log(`   Entries by type:`);
+    Object.entries(currentMetadata.entriesByType)
+      .sort(([, a], [, b]) => b - a)
+      .forEach(([type, count]) => {
+        console.log(`     ${type}: ${count}`);
+      });
+
+    // Print summary
+    const byType = Object.values(index).reduce((acc, entry) => {
+      acc[entry.type] = (acc[entry.type] || 0) + 1;
+
+      return acc;
+    }, {} as Record<string, number>);
+
+    console.log('\nSummary by type:');
+    Object.entries(byType)
+      .sort(([, a], [, b]) => b - a)
+      .forEach(([type, count]) => {
+        console.log(`  ${type}: ${count}`);
+      });
+  } catch (error) {
+    console.error('Error generating index:', error);
+    process.exit(1);
+  }
+}
+
+main();
+
