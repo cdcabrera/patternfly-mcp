@@ -6,8 +6,12 @@ yarn-error.log*
 
 # Build output
 dist/
+tmp/
 build/
 *.tsbuildinfo
+
+# Generated json, stub checked in, generated file ignored
+docs.index.json
 
 # Environment variables
 .env

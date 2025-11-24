@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2025-11-25T00:00:00.000Z",
+  "packageVersion": "0.1.0",
+  "total": 3,
+  "byType": {
+    "component": 3
+  },
+  "documents": {
+    "Button": {
+      "component": "Button",
+      "type": "component",
+      "category": "components",
+      "aliases": [
+        "button"
+      ],
+      "deprecated": false,
+      "docs": {
+        "6": {
+          "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/button/button.md",
+          "accessibility": null,
+          "examples": null,
+          "available": true
+        }
+      }
+    },
+    "Card": {
+      "component": "Card",
+      "type": "component",
+      "category": "components",
+      "aliases": [
+        "card"
+      ],
+      "deprecated": false,
+      "docs": {
+        "6": {
+          "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/card/card.md",
+          "accessibility": null,
+          "examples": null,
+          "available": true
+        }
+      }
+    },
+    "Alert": {
+      "component": "Alert",
+      "type": "component",
+      "category": "components",
+      "aliases": [
+        "alert"
+      ],
+      "deprecated": false,
+      "docs": {
+        "6": {
+          "design": "https://raw.githubusercontent.com/patternfly/patternfly-org/main/packages/documentation-site/patternfly-docs/content/components/alert/alert.md",
+          "accessibility": null,
+          "examples": null,
+          "available": true
+        }
+      }
+    }
+  }
+}

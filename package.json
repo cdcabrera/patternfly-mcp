@@ -19,9 +19,10 @@
     "mcp-config-example.json"
   ],
   "scripts": {
-    "build": "npm run build:clean; npm run test:types; pkgroll",
+    "build": "npm run build:clean; npm run build:resources; npm run test:types; pkgroll --minify",
     "build:clean": "rm -rf dist",
     "build:watch": "npm run build -- --watch",
+    "build:resources": "tsx scripts/generateDocsPf.ts",
     "release": "changelog --non-cc --link-url https://github.com/patternfly/patternfly-mcp.git",
     "start": "node dist/index.js",
     "start:dev": "tsx watch src/index.ts",
@@ -60,6 +61,7 @@
     "@typescript-eslint/parser": "^8.46.1",
     "changelog-light": "^3.0.3",
     "eslint": "^9.37.0",
+    "fast-glob": "^3.3.3",
     "jest": "^30.2.0",
     "pkgroll": "^2.18.0",
     "ts-jest": "29.4.4",
