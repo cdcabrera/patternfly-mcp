@@ -17,7 +17,7 @@
  *
  * Usage:
  *   npm run build:resources
- *   npm run build:resources -- --source .agent/_resources/patternfly-org
+ *   npm run build:resources -- --source /path/to/patternfly-org
  *   npm run build:resources -- --output src/docs.index.json
  *   npm run build:resources -- --clone  (force clone even if source exists)
  */
@@ -67,14 +67,14 @@ interface ComponentDoc {
 type DocsIndex = Record<string, ComponentDoc>;
 
 // Configuration
-const DEFAULT_SOURCE = join(__dirname, '../.agent/_resources/patternfly-org');
 const DEFAULT_OUTPUT = join(__dirname, '../src/docs.index.json');
 const DEFAULT_METADATA_OUTPUT = join(__dirname, '../src/docs.index.metadata.json');
 const DEFAULT_VERSION = '6';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/patternfly/patternfly-org/main';
 const GITHUB_REPO = 'https://github.com/patternfly/patternfly-org.git';
 const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
-const TEMP_DIR = process.env.RUNNER_TEMP || process.env.TMPDIR || '/tmp';
+// Use local tmp directory in repo root (gitignored) instead of system temp
+const TEMP_DIR = join(__dirname, '../tmp');
 const CHANGE_THRESHOLD = 5; // Number of entries that must change to trigger update prompt
 
 // Parse CLI arguments
@@ -83,7 +83,8 @@ const sourceIndex = args.indexOf('--source');
 const outputIndex = args.indexOf('--output');
 const metadataOutputIndex = args.indexOf('--metadata-output');
 const cloneIndex = args.indexOf('--clone');
-const source = sourceIndex >= 0 && args[sourceIndex + 1] ? args[sourceIndex + 1] : DEFAULT_SOURCE;
+// If no source provided, use temp directory (will clone if needed)
+const source = sourceIndex >= 0 && args[sourceIndex + 1] ? args[sourceIndex + 1] : join(TEMP_DIR, 'patternfly-org');
 const output = outputIndex >= 0 && args[outputIndex + 1] ? args[outputIndex + 1] : DEFAULT_OUTPUT;
 const metadataOutput = metadataOutputIndex >= 0 && args[metadataOutputIndex + 1] ? args[metadataOutputIndex + 1] : DEFAULT_METADATA_OUTPUT;
 const shouldClone = cloneIndex >= 0 || !existsSync(join(source, CONTENT_BASE_PATH));
@@ -584,10 +585,8 @@ async function generateIndex(): Promise<DocsIndex> {
   
   // Clone repository if needed
   if (shouldClone) {
-    // Use temp directory in CI, or local .agent/_resources otherwise
-    const cloneTarget = process.env.CI 
-      ? join(TEMP_DIR, 'patternfly-org')
-      : source;
+    // Use temp directory (local to repo, gitignored)
+    const cloneTarget = join(TEMP_DIR, 'patternfly-org');
     
     await cloneRepository(cloneTarget);
     actualSource = cloneTarget;
