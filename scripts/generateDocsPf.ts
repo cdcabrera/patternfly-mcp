@@ -25,7 +25,7 @@ import { join, dirname, basename, relative } from 'path';
 import { existsSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
-import diff from 'fast-diff';
+import { createHash } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -475,8 +475,17 @@ interface ComponentDiff {
 }
 
 /**
- * Compare two indexes using fast-diff (Myers algorithm)
+ * Compare two indexes using hash-based optimization with full JSON comparison
  * Returns which components were added, removed, or potentially modified
+ * 
+ * Uses SHA-1 hash comparison as a fast path (O(1)) to detect if anything changed.
+ * If hashes match, returns early. If hashes differ, performs full comparison.
+ * 
+ * This compares the full JSON output, not just keys, to catch all changes:
+ * - URL changes (design, accessibility, examples)
+ * - Metadata changes (category, aliases, type)
+ * - Deprecation status changes
+ * - Version-specific availability changes
  *
  * @param storedIndex
  * @param currentIndex
@@ -493,45 +502,52 @@ function diffIndexes(
     };
   }
 
-  // Convert object keys to sorted arrays for diffing
-  // Sorting ensures consistent comparison order
+  // Get sorted keys for consistent ordering
   const storedKeys = Object.keys(storedIndex).sort();
   const currentKeys = Object.keys(currentIndex || {}).sort();
 
-  // Use fast-diff to compare the key arrays
-  // Join keys with newlines to create strings for diffing
-  const storedKeysStr = storedKeys.join('\n');
-  const currentKeysStr = currentKeys.join('\n');
+  // Serialize full JSON content with consistent key ordering
+  // This ensures we compare the actual content, not just structure
+  const storedJson = JSON.stringify(
+    storedKeys.reduce((acc, key) => {
+      const entry = storedIndex[key];
+      if (entry) {
+        acc[key] = entry;
+      }
+      return acc;
+    }, {} as DocsIndex),
+    null,
+    2
+  );
 
-  const diffResult = diff(storedKeysStr, currentKeysStr);
+  const currentJson = JSON.stringify(
+    currentKeys.reduce((acc, key) => {
+      const entry = currentIndex[key];
+      if (entry) {
+        acc[key] = entry;
+      }
+      return acc;
+    }, {} as DocsIndex),
+    null,
+    2
+  );
 
+  // Fast path: Hash comparison to quickly detect if anything changed
+  // This avoids expensive diff operations when there are no changes (common case)
+  const storedHash = createHash('sha1').update(storedJson).digest('hex');
+  const currentHash = createHash('sha1').update(currentJson).digest('hex');
+
+  if (storedHash === currentHash) {
+    // No changes detected - return early (fast path)
+    return { added: [], removed: [], modified: [] };
+  }
+
+  // Slow path: Hashes differ, find what changed
   const added: string[] = [];
   const removed: string[] = [];
   const modified: string[] = [];
 
-  // Process diff results
-  // fast-diff returns: [[operation, text], ...]
-  // operation: -1 = DELETE, 0 = EQUAL, 1 = INSERT
-  // Reconstruct the strings from diff to extract added/removed keys
-  let storedReconstructed = '';
-  let currentReconstructed = '';
-
-  for (const [operation, text] of diffResult) {
-    if (operation === diff.DELETE) {
-      storedReconstructed += text;
-    } else if (operation === diff.INSERT) {
-      currentReconstructed += text;
-    } else if (operation === diff.EQUAL) {
-      storedReconstructed += text;
-      currentReconstructed += text;
-    }
-  }
-
-  // Extract keys from reconstructed strings
-  const storedKeysFromDiff = new Set(storedReconstructed.split('\n').filter(k => k.length > 0));
-  const currentKeysFromDiff = new Set(currentReconstructed.split('\n').filter(k => k.length > 0));
-
-  // Find added and removed components
+  // Find added and removed components by comparing keys
   const storedKeysSet = new Set(storedKeys);
   const currentKeysSet = new Set(currentKeys);
 
@@ -547,19 +563,19 @@ function diffIndexes(
     }
   }
 
-  // Find potentially modified components (exist in both, but content might differ)
+  // Find modified components by comparing full JSON content
+  // Components exist in both, but their content differs
   for (const key of storedKeysSet) {
     if (currentKeysSet.has(key)) {
       const storedEntry = storedIndex[key];
       const currentEntry = currentIndex[key];
 
-      // Both entries should exist since we're iterating over keys that exist in both sets
       if (storedEntry && currentEntry) {
-        // Compare a signature of the entry (type + available docs)
-        const storedSig = `${storedEntry.type}:${storedEntry.docs['6']?.available || false}`;
-        const currentSig = `${currentEntry.type}:${currentEntry.docs['6']?.available || false}`;
+        // Compare full JSON representation of each entry
+        const storedEntryJson = JSON.stringify(storedEntry, null, 2);
+        const currentEntryJson = JSON.stringify(currentEntry, null, 2);
 
-        if (storedSig !== currentSig) {
+        if (storedEntryJson !== currentEntryJson) {
           modified.push(key);
         }
       }
@@ -713,7 +729,7 @@ async function generateIndex(): Promise<DocsIndex> {
         component: componentName,
         type,
         category,
-        aliases: generateAliases(componentName, type),
+        aliases: generateAliases(componentName),
         deprecated: false,
         docs: {}
       };
