@@ -3,26 +3,23 @@
 /**
  * Generate PatternFly documentation index JSON from patternfly-org repository
  *
- * This script:
- * 1. Discovers all markdown files in the patternfly-org repository
- * 2. Parses paths to determine component names, types, and categories
- * 3. Generates aliases automatically
- * 4. Creates version-specific documentation URLs
- * 5. Outputs a JSON index file with metadata
- * 6. Sets process.env.PF_DOCS_STATS for runtime access
+ * This script dynamically discovers the repository structure and infers types,
+ * categories, and component names from the actual directory layout.
  *
  * Usage:
  *   npm run build:resources
  */
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
-import { join, basename, relative } from 'path';
-import { existsSync, rmSync } from 'fs';
+import { join, basename, normalize, relative } from 'path';
+import { existsSync, rmSync, readdirSync, statSync } from 'fs';
 import { execSync } from 'child_process';
 import fg from 'fast-glob';
 import packageJson from '../package.json';
 
-// Types
+/**
+ * Type of content - dynamically inferred from directory structure
+ */
 type ContentType =
   'component' |
   'pattern' |
@@ -64,7 +61,7 @@ interface DocsIndexWithMetadata {
   documents: DocsIndex;
 }
 
-// Configuration
+// Configuration - only hardcode what's truly necessary
 const ROOT_DIR = process.cwd();
 const OUTPUT = join(ROOT_DIR, 'src/docs.index.json');
 const DEFAULT_VERSION = '6';
@@ -74,48 +71,48 @@ const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
 const TEMP_DIR = join(ROOT_DIR, 'tmp');
 const SOURCE = join(TEMP_DIR, 'patternfly-org');
 const TIMESTAMP_FILE = join(TEMP_DIR, 'patternfly-org-clone-timestamp.txt');
-const CLONE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+const CLONE_MAX_AGE_DAYS = 3;
+const CLONE_MAX_AGE_MS = CLONE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
-// Path type mapping: path segment -> { type, category }
-const PATH_TYPE_MAP: Record<string, { type: ContentType; category: string }> = {
-  'patterns': { type: 'pattern', category: 'pattern' },
-  'components': { type: 'component', category: 'component' },
-  'foundations-and-styles': { type: 'foundation', category: 'foundation' },
-  'layouts': { type: 'layout', category: 'layout' },
-  'extensions': { type: 'extension', category: 'extension' },
-  'component-groups': { type: 'component-group', category: 'component-group' },
-  'accessibility': { type: 'accessibility', category: 'accessibility' },
-  'content-design': { type: 'content-design', category: 'content-design' },
-  'get-started': { type: 'guide', category: 'guide' },
-  'developer-guides': { type: 'guide', category: 'guide' },
-  'AI': { type: 'guide', category: 'AI' }
+// Path segments to ignore when extracting directories
+const IGNORED_PATH_SEGMENTS = new Set([
+  'packages',
+  'documentation-site',
+  'patternfly-docs',
+  'content',
+  '.',
+  '..',
+  'img',
+  'node_modules'
+]);
+
+// Minimal type normalization - only for special cases that need mapping
+// Everything else uses directory name as-is
+const TYPE_NORMALIZATION: Record<string, ContentType> = {
+  'foundations-and-styles': 'foundation',
+  'get-started': 'guide',
+  'developer-guides': 'guide'
 };
 
-// Component name extraction rules: type -> extraction strategy
-type NameExtractionStrategy = 'directory' | 'filename' | 'parent-directory' | 'last-segment';
+// Known ContentType values - used for type matching
+const KNOWN_CONTENT_TYPES = new Set<ContentType>([
+  'component',
+  'pattern',
+  'foundation',
+  'layout',
+  'extension',
+  'component-group',
+  'chart',
+  'topology',
+  'accessibility',
+  'content-design',
+  'guide'
+]);
 
-const COMPONENT_NAME_EXTRACTION: Record<ContentType, NameExtractionStrategy> = {
-  'pattern': 'directory',
-  'layout': 'filename',
-  'component': 'directory',
-  'foundation': 'last-segment',
-  'extension': 'directory',
-  'component-group': 'directory',
-  'chart': 'directory',
-  'topology': 'directory',
-  'accessibility': 'directory',
-  'content-design': 'directory',
-  'guide': 'parent-directory'
-};
+// Known doc type subdirectories - discovered dynamically but these are common
+const KNOWN_DOC_TYPE_DIRS = new Set(['accessibility', 'examples']);
 
-// Doc type path patterns
-const DOC_TYPE_PATTERNS: Record<DocType, string[]> = {
-  'accessibility': ['/accessibility/'],
-  'examples': ['/examples/'],
-  'design': [] // Default, no pattern needed
-};
-
-// Alias abbreviations map
+// Alias abbreviations - user-facing, less critical but kept for convenience
 const ALIAS_ABBREVIATIONS: Record<string, string[]> = {
   Button: ['btn'],
   Table: ['tbl', 'data-table', 'datatable', 'grid-table'],
@@ -131,15 +128,15 @@ const ALIAS_ABBREVIATIONS: Record<string, string[]> = {
   Sidebar: ['nav', 'navigation']
 };
 
-// Path segments to ignore when extracting top-level directory
-const IGNORED_PATH_SEGMENTS = new Set([
-  'packages',
-  'documentation-site',
-  'patternfly-docs',
-  'content',
-  '.',
-  '..'
-]);
+/**
+ * Convert kebab-case to camelCase for type normalization
+ */
+function kebabToCamelCase(str: string): string {
+  return str
+    .split('-')
+    .map((word, index) => index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+}
 
 /**
  * Convert kebab-case to PascalCase
@@ -152,105 +149,153 @@ function toPascalCase(str: string): string {
 }
 
 /**
- * Parse path to determine type and category using lookup map
+ * Discover top-level directories in content directory using fast-glob
+ * This builds the type mapping dynamically from actual structure
  */
-function parsePathToType(path: string): { type: ContentType; category: string; isAccessibility: boolean } | null {
+async function discoverTopLevelDirectories(contentDir: string): Promise<Set<string>> {
+  const directories = new Set<string>();
+
+  try {
+    // Use fast-glob to find top-level directories
+    const dirs = await fg('*/', {
+      cwd: contentDir,
+      onlyDirectories: true,
+      absolute: false
+    });
+
+    dirs.forEach((dir) => {
+      const dirName = dir.replace(/\/$/, '');
+
+      if (!IGNORED_PATH_SEGMENTS.has(dirName)) {
+        directories.add(dirName);
+      }
+    });
+  } catch (error) {
+    console.warn(`Warning: Could not read content directory ${contentDir}: ${error}`);
+  }
+
+  return directories;
+}
+
+/**
+ * Normalize directory name to ContentType
+ * Uses minimal normalization map, falls back to directory name
+ */
+function normalizeDirectoryToType(dirName: string): ContentType {
+  // Check normalization map first
+  if (TYPE_NORMALIZATION[dirName]) {
+    return TYPE_NORMALIZATION[dirName];
+  }
+
+  // Special case: layouts under foundations-and-styles
+  if (dirName === 'foundations-and-styles') {
+    return 'foundation';
+  }
+
+  // Try to match known ContentType values
+  const normalized = kebabToCamelCase(dirName);
+
+  // If it matches a known type, use it
+  if (KNOWN_CONTENT_TYPES.has(normalized as ContentType)) {
+    return normalized as ContentType;
+  }
+
+  // Default to component for unknown directories
+  return 'component';
+}
+
+/**
+ * Parse path to determine type and category - dynamically inferred
+ */
+function parsePathToType(
+  path: string,
+  topLevelDirs: Set<string>
+): { type: ContentType; category: string; isAccessibility: boolean } | null {
   const normalizedPath = path.replace(/\\/g, '/');
   const isAccessibility = normalizedPath.includes('/accessibility/');
+  const parts = normalizedPath.split('/');
 
-  // Check lookup map first
-  for (const [segment, config] of Object.entries(PATH_TYPE_MAP)) {
-    if (normalizedPath.includes(`${segment}/`) || normalizedPath.startsWith(`${segment}/`)) {
-      // Special case: layouts are under foundations-and-styles
-      if (segment === 'foundations-and-styles' && normalizedPath.includes('layouts/')) {
-        return { type: 'layout', category: 'layout', isAccessibility };
-      }
-      return { ...config, isAccessibility };
+  // Find the first top-level directory in the path
+  let topLevelDir: string | undefined;
+
+  for (const part of parts) {
+    if (topLevelDirs.has(part)) {
+      topLevelDir = part;
+      break;
     }
   }
 
-  // Fallback: use top-level directory name
-  const parts = normalizedPath.split('/');
-  const topLevelDir = parts.find(p => p && !p.startsWith('.') && !IGNORED_PATH_SEGMENTS.has(p));
+  // If no top-level dir found, try to find any non-ignored directory
+  if (!topLevelDir) {
+    topLevelDir = parts.find(p => p && !p.startsWith('.') && !IGNORED_PATH_SEGMENTS.has(p));
+  }
 
   if (!topLevelDir) {
     return null;
   }
 
-  // Default to component type with path-based category
+  // Special case: layouts are under foundations-and-styles
+  if (topLevelDir === 'foundations-and-styles' && normalizedPath.includes('layouts/')) {
+    return { type: 'layout', category: 'layout', isAccessibility };
+  }
+
+  // Normalize directory name to type
+  const type = normalizeDirectoryToType(topLevelDir);
+
   return {
-    type: 'component',
+    type,
     category: topLevelDir,
     isAccessibility
   };
 }
 
 /**
- * Extract component name using configured strategy
+ * Extract component name using generic strategy
+ * Uses directory name or filename, whichever is more specific
  */
 function extractComponentName(path: string, type: ContentType): string {
   const normalizedPath = path.replace(/\\/g, '/');
   const parts = normalizedPath.split('/');
   const fileName = basename(path, '.md');
-  const strategy = COMPONENT_NAME_EXTRACTION[type];
 
-  switch (strategy) {
-    case 'directory': {
-      // Find the directory after the type segment
-      const typeSegment = Object.keys(PATH_TYPE_MAP).find(seg => normalizedPath.includes(`${seg}/`));
-      if (typeSegment) {
-        const typeIndex = parts.indexOf(typeSegment);
-        if (typeIndex >= 0 && parts[typeIndex + 1]) {
-          let dirIndex = typeIndex + 1;
-          // Skip accessibility subdirectory for components
-          if (type === 'component' && parts[dirIndex] === 'accessibility') {
-            dirIndex += 1;
-          }
-          const dirName = parts[dirIndex];
-          if (dirName) {
-            return toPascalCase(dirName);
-          }
-        }
-      }
-      // Fallback to parent directory
-      const dirName = parts[parts.length - 2];
-      return dirName && !dirName.includes('.') ? toPascalCase(dirName) : toPascalCase(fileName);
+  // Remove ignored segments and file extension
+  const relevantParts = parts.filter(p =>
+    p &&
+    !p.startsWith('.') &&
+    !IGNORED_PATH_SEGMENTS.has(p) &&
+    !p.endsWith('.md') &&
+    !KNOWN_DOC_TYPE_DIRS.has(p) // Skip doc type directories
+  );
+
+  // Strategy: use the most specific directory name (last relevant part before filename)
+  // If that's the same as filename, use filename
+  if (relevantParts.length >= 2) {
+    const dirName = relevantParts[relevantParts.length - 1];
+
+    if (dirName && dirName !== fileName && !dirName.includes('.')) {
+      return toPascalCase(dirName);
     }
-
-    case 'filename':
-      return toPascalCase(fileName);
-
-    case 'parent-directory': {
-      // For guides, use the most specific directory (parent of file)
-      const dirName = parts[parts.length - 2];
-      if (dirName && dirName !== fileName && !dirName.includes('.')) {
-        return toPascalCase(dirName);
-      }
-      // Try one level up if parent is same as filename
-      if (parts.length >= 3) {
-        const parentDir = parts[parts.length - 3];
-        if (parentDir && parentDir !== fileName && !parentDir.includes('.')) {
-          return toPascalCase(parentDir);
-        }
-      }
-      return toPascalCase(fileName);
-    }
-
-    case 'last-segment': {
-      // For foundations, use the last path segment before filename
-      const foundationIndex = normalizedPath.indexOf('foundations-and-styles/');
-      if (foundationIndex >= 0) {
-        const afterFoundation = normalizedPath.slice(foundationIndex + 'foundations-and-styles/'.length);
-        const segments = afterFoundation.split('/');
-        const lastSegment = segments[segments.length - 1] || fileName;
-        return toPascalCase(lastSegment.replace('.md', ''));
-      }
-      return toPascalCase(fileName);
-    }
-
-    default:
-      return toPascalCase(fileName);
   }
+
+  // Fallback: use filename
+  return toPascalCase(fileName);
+}
+
+/**
+ * Determine doc type from path - dynamically checks subdirectory structure
+ */
+function determineDocType(path: string): DocType {
+  const normalizedPath = path.replace(/\\/g, '/');
+
+  // Check for known doc type subdirectories
+  for (const docTypeDir of KNOWN_DOC_TYPE_DIRS) {
+    if (normalizedPath.includes(`/${docTypeDir}/`)) {
+      return docTypeDir as DocType;
+    }
+  }
+
+  // Default to design
+  return 'design';
 }
 
 /**
@@ -281,34 +326,20 @@ function generateAliases(componentName: string): string[] {
 }
 
 /**
- * Determine doc type from path using pattern matching
- */
-function determineDocType(path: string): DocType {
-  const normalizedPath = path.replace(/\\/g, '/');
-
-  // Check patterns in order (accessibility before examples)
-  for (const [docType, patterns] of Object.entries(DOC_TYPE_PATTERNS)) {
-    if (patterns.some(pattern => normalizedPath.includes(pattern))) {
-      return docType as DocType;
-    }
-  }
-
-  // Default to design
-  return 'design';
-}
-
-/**
- * Build GitHub raw URL using path utilities
+ * Build GitHub raw URL using URL constructor
  */
 function buildGitHubUrl(relativePath: string): string {
-  const normalized = relativePath.replace(/\\/g, '/')
+  // Normalize path separators and remove leading ./ or ../
+  const normalized = relativePath
+    .replace(/\\/g, '/')
     .replace(/^\.\//, '')
     .replace(/^\.\.\//, '');
 
   // Remove any CONTENT_BASE_PATH prefix if present
   const cleanPath = normalized.replace(new RegExp(`^${CONTENT_BASE_PATH}/?`), '');
+  const url = new URL(`${CONTENT_BASE_PATH}/${cleanPath}`, GITHUB_RAW_BASE);
 
-  return `${GITHUB_RAW_BASE}/${CONTENT_BASE_PATH}/${cleanPath}`;
+  return url.toString();
 }
 
 /**
@@ -316,7 +347,7 @@ function buildGitHubUrl(relativePath: string): string {
  */
 async function findMarkdownFiles(repoRoot: string): Promise<string[]> {
   try {
-    const files = await fg(`${CONTENT_BASE_PATH}/**/*.md`, {
+    return await fg(`${CONTENT_BASE_PATH}/**/*.md`, {
       cwd: repoRoot,
       absolute: true,
       ignore: [
@@ -326,8 +357,6 @@ async function findMarkdownFiles(repoRoot: string): Promise<string[]> {
         '**/.git/**'
       ]
     });
-
-    return files;
   } catch (error) {
     console.warn(`Warning: Could not find markdown files in ${repoRoot}: ${error}`);
     return [];
@@ -378,6 +407,7 @@ async function cloneRepository(targetDir: string): Promise<void> {
   }
 
   const parentDir = join(targetDir, '..');
+
   if (!existsSync(parentDir)) {
     await mkdir(parentDir, { recursive: true });
   }
@@ -400,9 +430,9 @@ async function cloneRepository(targetDir: string): Promise<void> {
 function createIndexWithMetadata(index: DocsIndex): DocsIndexWithMetadata {
   const byType: Record<string, number> = {};
 
-  for (const entry of Object.values(index)) {
+  Object.values(index).forEach(entry => {
     byType[entry.type] = (byType[entry.type] || 0) + 1;
-  }
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -421,7 +451,7 @@ async function generateIndex(): Promise<DocsIndex> {
 
   if (expired || !existsSync(join(SOURCE, CONTENT_BASE_PATH))) {
     if (expired && existsSync(SOURCE)) {
-      console.log('🔄 Clone is older than 3 days, cleaning up and re-cloning...');
+      console.log(`🔄 Clone is older than ${CLONE_MAX_AGE_DAYS} day(s), refreshing...`);
     }
     await cloneRepository(SOURCE);
   }
@@ -432,6 +462,11 @@ async function generateIndex(): Promise<DocsIndex> {
     throw new Error(`Content directory not found: ${contentDir}\nPlease ensure patternfly-org is cloned to: ${SOURCE}`);
   }
 
+  // Discover top-level directories dynamically
+  console.log('🔍 Discovering repository structure...');
+  const topLevelDirs = await discoverTopLevelDirectories(contentDir);
+  console.log(`   Found ${topLevelDirs.size} top-level directories: ${Array.from(topLevelDirs).join(', ')}`);
+
   console.log(`Discovering markdown files in: ${CONTENT_BASE_PATH}`);
   const markdownFiles = await findMarkdownFiles(SOURCE);
   console.log(`Found ${markdownFiles.length} markdown files`);
@@ -440,9 +475,10 @@ async function generateIndex(): Promise<DocsIndex> {
 
   for (const filePath of markdownFiles) {
     // Calculate relative path from contentDir
-    let relativePath = relative(contentDir, filePath).replace(/\\/g, '/').replace(/^\.\//, '');
+    const relativePath = relative(contentDir, filePath).replace(/\\/g, '/').replace(/^\.\//, '');
 
-    const typeInfo = parsePathToType(relativePath);
+    const typeInfo = parsePathToType(relativePath, topLevelDirs);
+
     if (!typeInfo) {
       console.warn(`Skipping file (could not determine type): ${relativePath}`);
       continue;
@@ -480,10 +516,7 @@ async function generateIndex(): Promise<DocsIndex> {
 
     // Set URL using docType as property key
     const versionDocs = entry.docs[DEFAULT_VERSION];
-    const githubUrl = buildGitHubUrl(relativePath);
-    versionDocs[docType] = githubUrl;
-
-    // Update availability
+    versionDocs[docType] = buildGitHubUrl(relativePath);
     versionDocs.available = Boolean(versionDocs.design || versionDocs.accessibility || versionDocs.examples);
   }
 
@@ -495,9 +528,13 @@ async function generateIndex(): Promise<DocsIndex> {
  */
 async function main() {
   try {
-    console.log('Generating PatternFly documentation index...');
-    console.log(`Source: ${SOURCE}`);
-    console.log(`Output: ${OUTPUT}`);
+    const initialMessage = [
+      'Generating PatternFly documentation index...',
+      `Source: ${SOURCE}`,
+      `Output: ${OUTPUT}`
+    ];
+
+    console.log(initialMessage.join('\n'));
 
     const index = await generateIndex();
     const indexWithMetadata = createIndexWithMetadata(index);
@@ -505,30 +542,21 @@ async function main() {
 
     await writeFile(OUTPUT, jsonContent, 'utf-8');
 
-    // Set process.env.PF_DOCS_STATS for runtime access
-    const metadata = {
-      generatedAt: indexWithMetadata.generatedAt,
-      packageVersion: indexWithMetadata.packageVersion,
-      total: indexWithMetadata.total,
-      byType: indexWithMetadata.byType
-    };
-    process.env.PF_DOCS_STATS = JSON.stringify(metadata);
-
     // Log stats
-    console.log(`\n📊 Documentation Index Stats:`);
-    console.log(`   Total entries: ${indexWithMetadata.total}`);
-    console.log(`   Generated at: ${indexWithMetadata.generatedAt}`);
-    console.log(`   Package version: ${indexWithMetadata.packageVersion}`);
-    console.log(`   Entries by type:`);
-    Object.entries(indexWithMetadata.byType)
-      .sort(([, a], [, b]) => b - a)
-      .forEach(([type, count]) => {
-        console.log(`     ${type}: ${count}`);
-      });
+    const statsMessage = [
+      `\n📊 Documentation Index Stats:`,
+      `  Total entries: ${indexWithMetadata.total}`,
+      `  Generated at: ${indexWithMetadata.generatedAt}`,
+      `  Package version: ${indexWithMetadata.packageVersion}`,
+      `  Entries by type:`,
+      ...Object.entries(indexWithMetadata.byType)
+        .sort(([, a], [, b]) => b - a)
+        .map(([type, count]) => `    ${type}: ${count}`),
+      `\n✅ Generated index with ${indexWithMetadata.total} entries`,
+      `📄 Output written to: ${OUTPUT}`
+    ];
 
-    console.log(`\n✅ Generated index with ${indexWithMetadata.total} entries`);
-    console.log(`📄 Output written to: ${OUTPUT}`);
-    console.log(`🔧 process.env.PF_DOCS_STATS set for runtime access`);
+    console.log(statsMessage.join('\n'));
   } catch (error) {
     console.error('Error generating index:', error);
     process.exit(1);

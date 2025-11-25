@@ -8,9 +8,22 @@
 import docsIndexJson from './docs.index.json';
 
 /**
- * Type definitions for the documentation index
+ * Type of content - dynamically inferred from directory structure
+ *
+ * Valid values for `ContentType` include:
+ * - 'component': Refers to UI components or visual building blocks.
+ * - 'pattern': Represents reusable design or development patterns.
+ * - 'foundation': Indicates foundational elements or principles.
+ * - 'layout': Pertains to layout-based design structures.
+ * - 'extension': Denotes add-ons or functional extensions.
+ * - 'component-group': Represents a collection of related components.
+ * - 'chart': Used for data visualization elements.
+ * - 'topology': Refers to elements used in networking or system diagrams.
+ * - 'accessibility': Covers items related to accessibility standards.
+ * - 'content-design': Relates to structuring and designing content.
+ * - 'guide': Represents documentation or reference guides.
  */
-export type ContentType =
+type ContentType =
   'component' |
   'pattern' |
   'foundation' |
@@ -23,7 +36,16 @@ export type ContentType =
   'content-design' |
   'guide';
 
-export type DocType = 'design' | 'accessibility' | 'examples';
+/**
+ * Document link classification. Categorize documents or resources based on their primary
+ * purpose or content.
+ *
+ * Possible values:
+ * - 'design': Refers to documents primarily focused on design-related aspects.
+ * - 'accessibility': Refers to documents that address accessibility considerations.
+ * - 'examples': Refers to documents containing examples or sample implementations.
+ */
+type DocType = 'design' | 'accessibility' | 'examples';
 
 export interface VersionDocs {
   design: string | null;
@@ -236,5 +258,5 @@ export const getComponentUrls = (componentName: string, version: string = '6'): 
   return urls;
 };
 
-export { docsIndex };
+export { docsIndex, type ContentType, type DocType };
 
