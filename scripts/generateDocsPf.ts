@@ -27,6 +27,7 @@ import { join, dirname, basename, relative } from 'path';
 import { existsSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import diff from 'fast-diff';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -403,7 +404,7 @@ interface ComponentDiff {
 }
 
 /**
- * Compare two indexes using a simple diff algorithm (similar to Myers)
+ * Compare two indexes using fast-diff (Myers algorithm)
  * Returns which components were added, removed, or potentially modified
  */
 function diffIndexes(
@@ -418,33 +419,63 @@ function diffIndexes(
     };
   }
   
-  const storedKeys = new Set(Object.keys(storedIndex));
-  const currentKeys = new Set(Object.keys(currentIndex || {}));
+  // Convert object keys to sorted arrays for diffing
+  // Sorting ensures consistent comparison order
+  const storedKeys = Object.keys(storedIndex).sort();
+  const currentKeys = Object.keys(currentIndex || {}).sort();
+  
+  // Use fast-diff to compare the key arrays
+  // Join keys with newlines to create strings for diffing
+  const storedKeysStr = storedKeys.join('\n');
+  const currentKeysStr = currentKeys.join('\n');
+  
+  const diffResult = diff(storedKeysStr, currentKeysStr);
   
   const added: string[] = [];
   const removed: string[] = [];
   const modified: string[] = [];
   
-  // Find added components (in current but not in stored)
-  for (const key of currentKeys) {
-    if (!storedKeys.has(key)) {
+  // Process diff results
+  // fast-diff returns: [[operation, text], ...]
+  // operation: -1 = DELETE, 0 = EQUAL, 1 = INSERT
+  // Reconstruct the strings from diff to extract added/removed keys
+  let storedReconstructed = '';
+  let currentReconstructed = '';
+  
+  for (const [operation, text] of diffResult) {
+    if (operation === diff.DELETE) {
+      storedReconstructed += text;
+    } else if (operation === diff.INSERT) {
+      currentReconstructed += text;
+    } else if (operation === diff.EQUAL) {
+      storedReconstructed += text;
+      currentReconstructed += text;
+    }
+  }
+  
+  // Extract keys from reconstructed strings
+  const storedKeysFromDiff = new Set(storedReconstructed.split('\n').filter(k => k.length > 0));
+  const currentKeysFromDiff = new Set(currentReconstructed.split('\n').filter(k => k.length > 0));
+  
+  // Find added and removed components
+  const storedKeysSet = new Set(storedKeys);
+  const currentKeysSet = new Set(currentKeys);
+  
+  for (const key of currentKeysSet) {
+    if (!storedKeysSet.has(key)) {
       added.push(key);
     }
   }
   
-  // Find removed components (in stored but not in current)
-  for (const key of storedKeys) {
-    if (!currentKeys.has(key)) {
+  for (const key of storedKeysSet) {
+    if (!currentKeysSet.has(key)) {
       removed.push(key);
     }
   }
   
   // Find potentially modified components (exist in both, but content might differ)
-  // For now, we'll mark all common keys as potentially modified
-  // In the future, we could do deep comparison of the entry content
-  for (const key of storedKeys) {
-    if (currentKeys.has(key)) {
-      // Simple check: if URLs changed, consider it modified
+  for (const key of storedKeysSet) {
+    if (currentKeysSet.has(key)) {
       const storedEntry = storedIndex[key];
       const currentEntry = currentIndex[key];
       
