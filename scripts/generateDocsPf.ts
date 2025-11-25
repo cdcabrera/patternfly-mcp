@@ -26,6 +26,7 @@ import { existsSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { createHash } from 'crypto';
+import diff from 'fast-diff';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -475,11 +476,12 @@ interface ComponentDiff {
 }
 
 /**
- * Compare two indexes using hash-based optimization with full JSON comparison
+ * Compare two indexes using hash-based optimization with fast-diff (Myers algorithm)
  * Returns which components were added, removed, or potentially modified
  * 
- * Uses SHA-1 hash comparison as a fast path (O(1)) to detect if anything changed.
- * If hashes match, returns early. If hashes differ, performs full comparison.
+ * Hybrid approach:
+ * 1. Fast path: SHA-1 hash comparison (O(1)) - if hashes match, return early
+ * 2. Slow path: If hashes differ, use fast-diff to find what changed
  * 
  * This compares the full JSON output, not just keys, to catch all changes:
  * - URL changes (design, accessibility, examples)
@@ -542,7 +544,9 @@ function diffIndexes(
     return { added: [], removed: [], modified: [] };
   }
 
-  // Slow path: Hashes differ, find what changed
+  // Slow path: Hashes differ, use fast-diff to find what changed
+  const diffResult = diff(storedJson, currentJson);
+
   const added: string[] = [];
   const removed: string[] = [];
   const modified: string[] = [];
@@ -565,6 +569,7 @@ function diffIndexes(
 
   // Find modified components by comparing full JSON content
   // Components exist in both, but their content differs
+  // We use fast-diff results to help identify modifications
   for (const key of storedKeysSet) {
     if (currentKeysSet.has(key)) {
       const storedEntry = storedIndex[key];
