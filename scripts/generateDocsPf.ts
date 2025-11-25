@@ -20,7 +20,7 @@
  *   npm run build:resources
  */
 
-import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
+import { readdir, readFile, writeFile, mkdir } from 'fs/promises';
 import { join, dirname, basename, relative } from 'path';
 import { existsSync, rmSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -32,17 +32,17 @@ const __dirname = dirname(__filename);
 
 // Types
 type ContentType =
-  'component'
-  | 'pattern'
-  | 'foundation'
-  | 'layout'
-  | 'extension'
-  | 'component-group'
-  | 'chart'
-  | 'topology'
-  | 'accessibility'
-  | 'content-design'
-  | 'guide';
+  'component' |
+  'pattern' |
+  'foundation' |
+  'layout' |
+  'extension' |
+  'component-group' |
+  'chart' |
+  'topology' |
+  'accessibility' |
+  'content-design' |
+  'guide';
 
 type DocType = 'design' | 'accessibility' | 'examples';
 
@@ -167,6 +167,7 @@ function extractComponentName(path: string, type: ContentType): string {
 
     if (patternIndex >= 0 && parts[patternIndex + 1]) {
       const dirName = parts[patternIndex + 1];
+
       if (dirName) {
         return dirName
           .split('-')
@@ -197,6 +198,7 @@ function extractComponentName(path: string, type: ContentType): string {
       }
       if (parts[dirIndex]) {
         const dirName = parts[dirIndex];
+
         if (dirName) {
           // Convert kebab-case to PascalCase
           return dirName
@@ -242,7 +244,7 @@ function extractComponentName(path: string, type: ContentType): string {
  * @param componentName
  * @param type
  */
-function generateAliases(componentName: string, type: ContentType): string[] {
+function generateAliases(componentName: string): string[] {
   const aliases: string[] = [];
 
   // Lowercase version
@@ -380,7 +382,7 @@ async function isCloneExpired(): Promise<boolean> {
     const age = now - cloneTimestamp;
 
     return age > CLONE_MAX_AGE_MS;
-  } catch (error) {
+  } catch {
     // If we can't read the timestamp, consider it expired
     return true;
   }
@@ -545,24 +547,24 @@ function diffIndexes(
     }
   }
 
-    // Find potentially modified components (exist in both, but content might differ)
-    for (const key of storedKeysSet) {
-      if (currentKeysSet.has(key)) {
-        const storedEntry = storedIndex[key];
-        const currentEntry = currentIndex[key];
+  // Find potentially modified components (exist in both, but content might differ)
+  for (const key of storedKeysSet) {
+    if (currentKeysSet.has(key)) {
+      const storedEntry = storedIndex[key];
+      const currentEntry = currentIndex[key];
 
-        // Both entries should exist since we're iterating over keys that exist in both sets
-        if (storedEntry && currentEntry) {
-          // Compare a signature of the entry (type + available docs)
-          const storedSig = `${storedEntry.type}:${storedEntry.docs['6']?.available || false}`;
-          const currentSig = `${currentEntry.type}:${currentEntry.docs['6']?.available || false}`;
+      // Both entries should exist since we're iterating over keys that exist in both sets
+      if (storedEntry && currentEntry) {
+        // Compare a signature of the entry (type + available docs)
+        const storedSig = `${storedEntry.type}:${storedEntry.docs['6']?.available || false}`;
+        const currentSig = `${currentEntry.type}:${currentEntry.docs['6']?.available || false}`;
 
-          if (storedSig !== currentSig) {
-            modified.push(key);
-          }
+        if (storedSig !== currentSig) {
+          modified.push(key);
         }
       }
     }
+  }
 
   return { added, removed, modified };
 }
@@ -620,6 +622,7 @@ function compareMetadata(
     differences.push(`\nAdded components (${componentDiff.added.length}):`);
     componentDiff.added.slice(0, 10).forEach(comp => {
       const entry = currentIndex[comp];
+
       if (entry) {
         differences.push(`  + ${comp} (${entry.type})`);
       }
@@ -695,7 +698,7 @@ async function generateIndex(): Promise<DocsIndex> {
       continue;
     }
 
-    const { type, category, isAccessibility } = typeInfo;
+    const { type, category } = typeInfo;
     const componentName = extractComponentName(relativePath, type);
     const docType = determineDocType(relativePath);
 
