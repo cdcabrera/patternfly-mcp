@@ -476,6 +476,28 @@ interface ComponentDiff {
 }
 
 /**
+ * Compare a single component entry with stored entry
+ * Returns true if the entry has changed
+ *
+ * @param storedEntry
+ * @param currentEntry
+ */
+function hasEntryChanged(
+  storedEntry: ComponentDoc | undefined,
+  currentEntry: ComponentDoc
+): boolean {
+  if (!storedEntry) {
+    return true; // New entry, considered changed
+  }
+
+  // Compare full JSON representation
+  const storedJson = JSON.stringify(storedEntry, null, 2);
+  const currentJson = JSON.stringify(currentEntry, null, 2);
+
+  return storedJson !== currentJson;
+}
+
+/**
  * Compare two indexes using hash-based optimization with fast-diff (Myers algorithm)
  * Returns which components were added, removed, or potentially modified
  * 
@@ -598,15 +620,16 @@ function diffIndexes(
  * @param current
  * @param storedIndex
  * @param currentIndex
+ * @param componentDiff - Pre-computed component diff (from incremental comparison)
  */
 function compareMetadata(
   stored: IndexMetadata | null,
   current: IndexMetadata,
   storedIndex: DocsIndex | null,
-  currentIndex: DocsIndex
+  currentIndex: DocsIndex,
+  componentDiff: ComponentDiff
 ): { hasSignificantChanges: boolean; differences: string[]; componentDiff: ComponentDiff } {
   const differences: string[] = [];
-  const componentDiff = diffIndexes(storedIndex, currentIndex);
 
   if (!stored) {
     return {
@@ -684,9 +707,15 @@ function compareMetadata(
 }
 
 /**
- * Generate the documentation index
+ * Generate the documentation index with incremental diff tracking
+ * Compares entries as they're built to avoid re-looping later
+ *
+ * @param storedIndex - Optional stored index for incremental comparison
+ * @returns Object with index and component diff
  */
-async function generateIndex(): Promise<DocsIndex> {
+async function generateIndex(
+  storedIndex: DocsIndex | null = null
+): Promise<{ index: DocsIndex; componentDiff: ComponentDiff }> {
   // Check if clone is expired or doesn't exist
   const expired = await isCloneExpired();
 
@@ -709,6 +738,16 @@ async function generateIndex(): Promise<DocsIndex> {
   console.log(`Found ${markdownFiles.length} markdown files`);
 
   const index: DocsIndex = {};
+  
+  // Track changes incrementally as we build the index
+  const componentDiff: ComponentDiff = {
+    added: [],
+    removed: [],
+    modified: []
+  };
+  
+  // Track which components we've seen in the new index
+  const seenComponents = new Set<string>();
 
   for (const filePath of markdownFiles) {
     const relativePath = relative(contentDir, filePath);
@@ -729,7 +768,9 @@ async function generateIndex(): Promise<DocsIndex> {
 
     // Get or create component entry
     // If it's an accessibility doc for a component, merge into existing entry
-    if (!index[componentName]) {
+    const isNewComponent = !index[componentName];
+    
+    if (isNewComponent) {
       index[componentName] = {
         component: componentName,
         type,
@@ -738,49 +779,82 @@ async function generateIndex(): Promise<DocsIndex> {
         deprecated: false,
         docs: {}
       };
+      seenComponents.add(componentName);
+      
+      // Track as added if it's new (and we have stored index to compare against)
+      if (storedIndex && !storedIndex[componentName]) {
+        componentDiff.added.push(componentName);
+      }
     } else {
       // If entry exists, preserve the original type unless we're upgrading from accessibility to component
       // This handles the case where accessibility file is processed before design file
       const existingEntry = index[componentName];
 
-      // If existing is accessibility but we're processing a component doc, upgrade it
-      if (existingEntry.type === 'accessibility' && type === 'component') {
-        existingEntry.type = type;
-        existingEntry.category = category;
+      if (existingEntry) {
+        // If existing is accessibility but we're processing a component doc, upgrade it
+        if (existingEntry.type === 'accessibility' && type === 'component') {
+          existingEntry.type = type;
+          existingEntry.category = category;
+        }
+        // If existing is component and we're processing accessibility, keep component type
+        // (type is already correct, no change needed)
       }
-      // If existing is component and we're processing accessibility, keep component type
-      // (type is already correct, no change needed)
     }
 
     // Ensure version entry exists
-    if (!index[componentName].docs[DEFAULT_VERSION]) {
-      index[componentName].docs[DEFAULT_VERSION] = {
-        design: null,
-        accessibility: null,
-        examples: null,
-        available: false
-      };
+    const currentEntry = index[componentName];
+    if (currentEntry) {
+      if (!currentEntry.docs[DEFAULT_VERSION]) {
+        currentEntry.docs[DEFAULT_VERSION] = {
+          design: null,
+          accessibility: null,
+          examples: null,
+          available: false
+        };
+      }
+
+      // Set the URL for this doc type
+      const githubUrl = buildGitHubUrl(relativePath);
+      const versionDocs = currentEntry.docs[DEFAULT_VERSION];
+
+      if (docType === 'design') {
+        versionDocs.design = githubUrl;
+      } else if (docType === 'accessibility') {
+        versionDocs.accessibility = githubUrl;
+      } else if (docType === 'examples') {
+        versionDocs.examples = githubUrl;
+      }
+
+      // Update availability (true if at least one doc exists)
+      versionDocs.available = Boolean(versionDocs.design ||
+        versionDocs.accessibility ||
+        versionDocs.examples);
     }
-
-    // Set the URL for this doc type
-    const githubUrl = buildGitHubUrl(relativePath);
-    const versionDocs = index[componentName].docs[DEFAULT_VERSION];
-
-    if (docType === 'design') {
-      versionDocs.design = githubUrl;
-    } else if (docType === 'accessibility') {
-      versionDocs.accessibility = githubUrl;
-    } else if (docType === 'examples') {
-      versionDocs.examples = githubUrl;
-    }
-
-    // Update availability (true if at least one doc exists)
-    versionDocs.available = Boolean(versionDocs.design ||
-      versionDocs.accessibility ||
-      versionDocs.examples);
   }
 
-  return index;
+  // After building index, check for modifications and removals
+  if (storedIndex) {
+    // Check for modified components (exist in both, but content changed)
+    for (const componentName of seenComponents) {
+      const storedEntry = storedIndex[componentName];
+      const currentEntry = index[componentName];
+      
+      if (storedEntry && currentEntry) {
+        if (hasEntryChanged(storedEntry, currentEntry)) {
+          componentDiff.modified.push(componentName);
+        }
+      }
+    }
+    
+    // Check for removed components (in stored but not in current)
+    for (const componentName of Object.keys(storedIndex)) {
+      if (!seenComponents.has(componentName)) {
+        componentDiff.removed.push(componentName);
+      }
+    }
+  }
+
+  return { index, componentDiff };
 }
 
 /**
@@ -793,27 +867,23 @@ async function main() {
     console.log(`Output: ${OUTPUT}`);
     console.log(`Metadata output: ${METADATA_OUTPUT}`);
 
-    const index = await generateIndex();
-
-    // Load stored index and metadata BEFORE writing new ones (for comparison)
+    // Load stored index BEFORE generating new one (for incremental comparison)
     let storedMetadata: IndexMetadata | null = null;
     let storedIndex: DocsIndex | null = null;
 
     if (existsSync(METADATA_OUTPUT)) {
       try {
         const storedContent = await readFile(METADATA_OUTPUT, 'utf-8');
-
         storedMetadata = JSON.parse(storedContent);
       } catch (error) {
         console.warn(`Warning: Could not parse stored metadata: ${error}`);
       }
     }
 
-    // Load stored index for diff comparison
+    // Load stored index for incremental diff comparison
     if (existsSync(OUTPUT)) {
       try {
         const storedIndexContent = await readFile(OUTPUT, 'utf-8');
-
         storedIndex = JSON.parse(storedIndexContent);
       } catch (error) {
         // If we can't read stored index, that's okay - we'll just show metadata diff
@@ -821,15 +891,20 @@ async function main() {
       }
     }
 
+    // Generate index with incremental diff tracking
+    // This compares entries as they're built, avoiding re-looping later
+    const { index, componentDiff: incrementalDiff } = await generateIndex(storedIndex);
+
     // Write JSON file
     const jsonContent = JSON.stringify(index, null, 2);
-
     await writeFile(OUTPUT, jsonContent, 'utf-8');
 
     // Calculate and write metadata
     const currentMetadata = calculateIndexMetadata(index);
 
-    const comparison = compareMetadata(storedMetadata, currentMetadata, storedIndex, index);
+    // Use incremental diff (computed during index generation)
+    // This is more efficient than re-looping through all entries
+    const comparison = compareMetadata(storedMetadata, currentMetadata, storedIndex, index, incrementalDiff);
 
     const changeCount = comparison.componentDiff.added.length + comparison.componentDiff.removed.length;
 
