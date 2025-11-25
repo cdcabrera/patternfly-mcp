@@ -53,6 +53,9 @@ const runServer = async (options = getOptions(), {
   let running = false;
 
   const stopServer = async () => {
+    // Easily missed, but writing a console.log or stdout entry helps interrupt the process
+    process.stdout.write(`\n${options.name} server shutting down... `);
+
     if (server && running) {
       if (httpHandle) {
         await httpHandle.close();
@@ -61,7 +64,7 @@ const runServer = async (options = getOptions(), {
 
       await server?.close();
       running = false;
-      console.log(`${options.name} server stopped`);
+      process.stdout.write('server stopped!\n');
 
       if (allowProcessExit) {
         process.exit(0);
