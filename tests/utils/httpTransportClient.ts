@@ -17,6 +17,10 @@ export interface StartHttpServerOptions {
   docsHost?: boolean;
 }
 
+export interface StartHttpServerSettings {
+  allowProcessExit?: boolean;
+}
+
 export interface RpcResponse {
   jsonrpc?: '2.0';
   id: number | string | null;
@@ -40,34 +44,26 @@ export interface HttpTransportClient {
  * Start an HTTP server using the programmatic API and return a client for testing
  *
  * @param options - Server configuration options
+ * @param settings - Additional settings for the server (e.g., allowProcessExit)
  */
-export const startHttpServer = async (options: StartHttpServerOptions = {}): Promise<HttpTransportClient> => {
-  const {
-    port = 3000,
-    host = '127.0.0.1',
-    allowedOrigins,
-    allowedHosts,
-    docsHost = false
-  } = options;
-
-  // Build programmatic options (will override any CLI options from process.argv)
-  const programmaticOptions: Partial<CliOptions> = {
+export const startHttpServer = async (options: StartHttpServerOptions = {}, settings: StartHttpServerSettings = {}): Promise<HttpTransportClient> => {
+  const updatedOptions: Partial<CliOptions> = {
     http: true,
-    port,
-    host,
-    docsHost
+    port: 3000,
+    host: '127.0.0.1',
+    allowedOrigins: undefined,
+    allowedHosts: undefined,
+    docsHost: false,
+    ...options
   };
 
-  if (allowedOrigins) {
-    programmaticOptions.allowedOrigins = allowedOrigins;
-  }
-
-  if (allowedHosts) {
-    programmaticOptions.allowedHosts = allowedHosts;
-  }
+  const updatedSettings = {
+    allowProcessExit: false,
+    ...settings
+  };
 
   // Start server using public API from dist/index.js (tests the actual compiled output)
-  const server = await start(programmaticOptions);
+  const server = await start(updatedOptions, updatedSettings);
 
   // Verify server is running
   if (!server?.isRunning()) {
