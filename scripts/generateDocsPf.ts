@@ -22,7 +22,22 @@ import { execSync } from 'child_process';
 import fg from 'fast-glob';
 import packageJson from '../package.json';
 
-// Types
+/**
+ * Type of content.
+ *
+ * Valid values for `ContentType` include:
+ * - 'component': Refers to UI components or visual building blocks.
+ * - 'pattern': Represents reusable design or development patterns.
+ * - 'foundation': Indicates foundational elements or principles.
+ * - 'layout': Pertains to layout-based design structures.
+ * - 'extension': Denotes add-ons or functional extensions.
+ * - 'component-group': Represents a collection of related components.
+ * - 'chart': Used for data visualization elements.
+ * - 'topology': Refers to elements used in networking or system diagrams.
+ * - 'accessibility': Covers items related to accessibility standards.
+ * - 'content-design': Relates to structuring and designing content.
+ * - 'guide': Represents documentation or reference guides.
+ */
 type ContentType =
   'component' |
   'pattern' |
@@ -36,6 +51,15 @@ type ContentType =
   'content-design' |
   'guide';
 
+/**
+ * Document link classification. Categorize documents or resources based on their primary
+ * purpose or content.
+ *
+ * Possible values:
+ * - 'design': Refers to documents primarily focused on design-related aspects.
+ * - 'accessibility': Refers to documents that address accessibility considerations.
+ * - 'examples': Refers to documents containing examples or sample implementations.
+ */
 type DocType = 'design' | 'accessibility' | 'examples';
 
 interface VersionDocs {
@@ -74,7 +98,8 @@ const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
 const TEMP_DIR = join(ROOT_DIR, 'tmp');
 const SOURCE = join(TEMP_DIR, 'patternfly-org');
 const TIMESTAMP_FILE = join(TEMP_DIR, 'patternfly-org-clone-timestamp.txt');
-const CLONE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
+const CLONE_MAX_AGE_DAYS = 3;
+const CLONE_MAX_AGE_MS = CLONE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
 // Path type mapping: path segment -> { type, category }
 const PATH_TYPE_MAP: Record<string, { type: ContentType; category: string }> = {
@@ -433,9 +458,9 @@ async function cloneRepository(targetDir: string): Promise<void> {
 function createIndexWithMetadata(index: DocsIndex): DocsIndexWithMetadata {
   const byType: Record<string, number> = {};
 
-  for (const entry of Object.values(index)) {
+  Object.values(index).forEach(entry => {
     byType[entry.type] = (byType[entry.type] || 0) + 1;
-  }
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -454,7 +479,7 @@ async function generateIndex(): Promise<DocsIndex> {
 
   if (expired || !existsSync(join(SOURCE, CONTENT_BASE_PATH))) {
     if (expired && existsSync(SOURCE)) {
-      console.log('🔄 Clone is older than 3 days, cleaning up and re-cloning...');
+      console.log(`🔄 Clone is older than ${CLONE_MAX_AGE_DAYS} day(s), refreshing...`);
     }
     await cloneRepository(SOURCE);
   }
@@ -515,11 +540,8 @@ async function generateIndex(): Promise<DocsIndex> {
 
     // Set URL using docType as property key
     const versionDocs = entry.docs[DEFAULT_VERSION];
-    const githubUrl = buildGitHubUrl(relativePath);
 
-    versionDocs[docType] = githubUrl;
-
-    // Update availability
+    versionDocs[docType] = buildGitHubUrl(relativePath);
     versionDocs.available = Boolean(versionDocs.design || versionDocs.accessibility || versionDocs.examples);
   }
 
@@ -531,9 +553,13 @@ async function generateIndex(): Promise<DocsIndex> {
  */
 async function main() {
   try {
-    console.log('Generating PatternFly documentation index...');
-    console.log(`Source: ${SOURCE}`);
-    console.log(`Output: ${OUTPUT}`);
+    const initialMessage = [
+      'Generating PatternFly documentation index...',
+      `Source: ${SOURCE}`,
+      `Output: ${OUTPUT}`
+    ];
+
+    console.log(initialMessage.join('\n'));
 
     const index = await generateIndex();
     const indexWithMetadata = createIndexWithMetadata(index);
@@ -541,31 +567,21 @@ async function main() {
 
     await writeFile(OUTPUT, jsonContent, 'utf-8');
 
-    // Set process.env.PF_DOCS_STATS for runtime access
-    const metadata = {
-      generatedAt: indexWithMetadata.generatedAt,
-      packageVersion: indexWithMetadata.packageVersion,
-      total: indexWithMetadata.total,
-      byType: indexWithMetadata.byType
-    };
-
-    process.env.PF_DOCS_STATS = JSON.stringify(metadata);
-
     // Log stats
-    console.log(`\n📊 Documentation Index Stats:`);
-    console.log(`   Total entries: ${indexWithMetadata.total}`);
-    console.log(`   Generated at: ${indexWithMetadata.generatedAt}`);
-    console.log(`   Package version: ${indexWithMetadata.packageVersion}`);
-    console.log(`   Entries by type:`);
-    Object.entries(indexWithMetadata.byType)
-      .sort(([, a], [, b]) => b - a)
-      .forEach(([type, count]) => {
-        console.log(`     ${type}: ${count}`);
-      });
+    const statsMessage = [
+      `\n📊 Documentation Index Stats:`,
+      `  Total entries: ${indexWithMetadata.total}`,
+      `  Generated at: ${indexWithMetadata.generatedAt}`,
+      `  Package version: ${indexWithMetadata.packageVersion}`,
+      `  Entries by type:`,
+      ...Object.entries(indexWithMetadata.byType)
+        .sort(([, a], [, b]) => b - a)
+        .map(([type, count]) => `    ${type}: ${count}`),
+      `\n✅ Generated index with ${indexWithMetadata.total} entries`,
+      `📄 Output written to: ${OUTPUT}`
+    ];
 
-    console.log(`\n✅ Generated index with ${indexWithMetadata.total} entries`);
-    console.log(`📄 Output written to: ${OUTPUT}`);
-    console.log(`🔧 process.env.PF_DOCS_STATS set for runtime access`);
+    console.log(statsMessage.join('\n'));
   } catch (error) {
     console.error('Error generating index:', error);
     process.exit(1);
