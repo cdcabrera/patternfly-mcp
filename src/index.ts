@@ -3,6 +3,7 @@
 import { parseCliOptions, type CliOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
+import { isPlainObject } from './server.helpers';
 
 /**
  * Main function - CLI entry point with optional programmatic overrides
@@ -19,8 +20,11 @@ import { runServer, type ServerInstance } from './server';
  */
 const main = async (
   programmaticOptions?: Partial<CliOptions>,
-  { allowProcessExit = true }: { allowProcessExit?: boolean } = {}
+  { allowProcessExit }: { allowProcessExit?: boolean } = {}
 ): Promise<ServerInstance> => {
+  const updatedAllowProcessExit = allowProcessExit ??
+    (!programmaticOptions || Object.keys(programmaticOptions).length === 0);
+
   try {
     // Parse CLI options
     const cliOptions = parseCliOptions();
@@ -28,12 +32,12 @@ const main = async (
     // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
     setOptions({ ...cliOptions, ...programmaticOptions });
 
-    return await runServer.memo(undefined, { allowProcessExit });
+    return await runServer.memo(undefined, { allowProcessExit: updatedAllowProcessExit });
   } catch (error) {
     console.error('Failed to start server:', error);
 
     // Only exit if not called programmatically (allows tests to handle errors)
-    if (allowProcessExit) {
+    if (updatedAllowProcessExit) {
       process.exit(1);
     } else {
       throw error;
