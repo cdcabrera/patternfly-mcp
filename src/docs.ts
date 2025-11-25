@@ -10,18 +10,18 @@ import docsIndexJson from './docs.index.json';
 /**
  * Type definitions for the documentation index
  */
-export type ContentType = 
-  | 'component'
-  | 'pattern'
-  | 'foundation'
-  | 'layout'
-  | 'extension'
-  | 'component-group'
-  | 'chart'
-  | 'topology'
-  | 'accessibility'
-  | 'content-design'
-  | 'guide';
+export type ContentType =
+  | 'component' |
+  'pattern' |
+  'foundation' |
+  'layout' |
+  'extension' |
+  'component-group' |
+  'chart' |
+  'topology' |
+  'accessibility' |
+  'content-design' |
+  'guide';
 
 export type DocType = 'design' | 'accessibility' | 'examples';
 
@@ -51,96 +51,103 @@ const docsIndex: DocsIndex = docsIndexJson as DocsIndex;
 /**
  * Get all documentation entries
  */
-export const getAllDocs = (): ComponentDoc[] => {
-  return Object.values(docsIndex);
-};
+export const getAllDocs = (): ComponentDoc[] => Object.values(docsIndex);
 
 /**
  * Get documentation entries by type
+ *
+ * @param type
  */
-export const getDocsByType = (type: ContentType): ComponentDoc[] => {
-  return Object.values(docsIndex).filter(entry => entry.type === type);
-};
+export const getDocsByType = (type: ContentType): ComponentDoc[] => Object.values(docsIndex).filter(entry => entry.type === type);
 
 /**
  * Get documentation entries by category
+ *
+ * @param category
  */
-export const getDocsByCategory = (category: string): ComponentDoc[] => {
-  return Object.values(docsIndex).filter(entry => entry.category === category);
-};
+export const getDocsByCategory = (category: string): ComponentDoc[] => Object.values(docsIndex).filter(entry => entry.category === category);
 
 /**
  * Get a specific component documentation entry
+ *
+ * @param componentName
  */
-export const getDoc = (componentName: string): ComponentDoc | undefined => {
-  return docsIndex[componentName];
-};
+export const getDoc = (componentName: string): ComponentDoc | undefined => docsIndex[componentName];
 
 /**
  * Get all component names
  */
-export const getComponentNames = (): string[] => {
-  return Object.keys(docsIndex);
-};
+export const getComponentNames = (): string[] => Object.keys(docsIndex);
 
 /**
  * Get all component names with aliases (for search)
  */
 export const getSearchableNames = (): string[] => {
   const names = new Set<string>();
-  
+
   for (const [componentName, entry] of Object.entries(docsIndex)) {
     names.add(componentName);
     if (entry.aliases) {
       entry.aliases.forEach(alias => names.add(alias));
     }
   }
-  
+
   return Array.from(names);
 };
 
 /**
  * Resolve an alias or name to a component name
+ *
+ * @param name
  */
 export const resolveComponentName = (name: string): string | undefined => {
   // Direct match
   if (docsIndex[name]) {
     return name;
   }
-  
+
   // Check aliases
   for (const [componentName, entry] of Object.entries(docsIndex)) {
     if (entry.aliases?.includes(name)) {
       return componentName;
     }
   }
-  
+
   return undefined;
 };
 
 /**
  * Get markdown links for all documentation entries
  * Format: [@patternfly/ComponentName - Type](url)
+ *
+ * @param version
+ * @param includeUnavailable
  */
 export const getAllDocLinks = (version: string = '6', includeUnavailable: boolean = false): string[] => {
   const links: string[] = [];
-  
+
   for (const entry of Object.values(docsIndex)) {
     const versionDocs = entry.docs[version];
-    
+
     if (!versionDocs || (!versionDocs.available && !includeUnavailable)) {
       continue;
     }
-    
+
     const componentName = entry.component;
-    const typeLabel = entry.type === 'component' ? 'Component' : 
-                     entry.type === 'pattern' ? 'Pattern' :
-                     entry.type === 'layout' ? 'Layout' :
-                     entry.type === 'foundation' ? 'Foundation' :
-                     entry.type === 'extension' ? 'Extension' :
-                     entry.type === 'chart' ? 'Chart' :
-                     entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
-    
+    const typeLabel = entry.type === 'component'
+      ? 'Component'
+      : entry.type === 'pattern'
+        ? 'Pattern'
+        : entry.type === 'layout'
+          ? 'Layout'
+          : entry.type === 'foundation'
+            ? 'Foundation'
+            : entry.type === 'extension'
+              ? 'Extension'
+              : entry.type === 'chart'
+                ? 'Chart'
+                : entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
+
     if (versionDocs.design) {
       links.push(`[@patternfly/${componentName} - ${typeLabel} Design](${versionDocs.design})`);
     }
@@ -151,46 +158,55 @@ export const getAllDocLinks = (version: string = '6', includeUnavailable: boolea
       links.push(`[@patternfly/${componentName} - ${typeLabel} Examples](${versionDocs.examples})`);
     }
   }
-  
+
   return links;
 };
 
 /**
  * Get markdown links for a specific type
+ *
+ * @param type
+ * @param version
  */
-export const getDocLinksByType = (type: ContentType, version: string = '6'): string[] => {
-  return getAllDocLinks(version).filter(link => {
-    const entry = Object.values(docsIndex).find(e => {
-      const versionDocs = e.docs[version];
-      return e.type === type && (
-        link.includes(versionDocs?.design || '') ||
-        link.includes(versionDocs?.accessibility || '') ||
-        link.includes(versionDocs?.examples || '')
-      );
-    });
-    return entry !== undefined;
+export const getDocLinksByType = (type: ContentType, version: string = '6'): string[] => getAllDocLinks(version).filter(link => {
+  const entry = Object.values(docsIndex).find(e => {
+    const versionDocs = e.docs[version];
+
+    return e.type === type && (
+      link.includes(versionDocs?.design || '') ||
+      link.includes(versionDocs?.accessibility || '') ||
+      link.includes(versionDocs?.examples || '')
+    );
   });
-};
+
+  return entry !== undefined;
+});
 
 /**
  * Get URLs for a specific component
+ *
+ * @param componentName
+ * @param version
  */
 export const getComponentUrls = (componentName: string, version: string = '6'): string[] => {
   const entry = docsIndex[componentName];
+
   if (!entry) {
     return [];
   }
-  
+
   const versionDocs = entry.docs[version];
+
   if (!versionDocs || !versionDocs.available) {
     return [];
   }
-  
+
   const urls: string[] = [];
-  if (versionDocs.design) urls.push(versionDocs.design);
-  if (versionDocs.accessibility) urls.push(versionDocs.accessibility);
-  if (versionDocs.examples) urls.push(versionDocs.examples);
-  
+
+  if (versionDocs.design) { urls.push(versionDocs.design); }
+  if (versionDocs.accessibility) { urls.push(versionDocs.accessibility); }
+  if (versionDocs.examples) { urls.push(versionDocs.examples); }
+
   return urls;
 };
 

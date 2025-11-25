@@ -31,17 +31,17 @@ const __dirname = dirname(__filename);
 
 // Types
 type ContentType =
-  | 'component'
-  | 'pattern'
-  | 'foundation'
-  | 'layout'
-  | 'extension'
-  | 'component-group'
-  | 'chart'
-  | 'topology'
-  | 'accessibility'
-  | 'content-design'
-  | 'guide';
+  | 'component' |
+  'pattern' |
+  'foundation' |
+  'layout' |
+  'extension' |
+  'component-group' |
+  'chart' |
+  'topology' |
+  'accessibility' |
+  'content-design' |
+  'guide';
 
 type DocType = 'design' | 'accessibility' | 'examples';
 
@@ -79,6 +79,8 @@ const CHANGE_THRESHOLD = 5; // Number of entries that must change to trigger upd
 /**
  * Parse path to determine type and category
  * Uses path-based defaults unless explicitly specified
+ *
+ * @param path
  */
 function parsePathToType(path: string): { type: ContentType; category: string; isAccessibility: boolean } | null {
   const normalizedPath = path.replace(/\\/g, '/');
@@ -94,8 +96,7 @@ function parsePathToType(path: string): { type: ContentType; category: string; i
     p !== 'packages' &&
     p !== 'documentation-site' &&
     p !== 'patternfly-docs' &&
-    p !== 'content'
-  );
+    p !== 'content');
 
   // Default category is the path segment (e.g., "components", "patterns")
   // This is the path-based default as requested
@@ -150,6 +151,9 @@ function parsePathToType(path: string): { type: ContentType; category: string; i
 
 /**
  * Extract component name from path
+ *
+ * @param path
+ * @param type
  */
 function extractComponentName(path: string, type: ContentType): string {
   const normalizedPath = path.replace(/\\/g, '/');
@@ -159,12 +163,15 @@ function extractComponentName(path: string, type: ContentType): string {
   // For patterns, use directory name (check this FIRST before components)
   if (parts.includes('patterns')) {
     const patternIndex = parts.indexOf('patterns');
+
     if (patternIndex >= 0 && parts[patternIndex + 1]) {
       const dirName = parts[patternIndex + 1];
-      return dirName
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join('');
+      if (dirName) {
+        return dirName
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join('');
+      }
     }
   }
 
@@ -179,19 +186,23 @@ function extractComponentName(path: string, type: ContentType): string {
   // For components (including accessibility subdirectory), use the directory name
   if (parts.includes('components')) {
     const componentIndex = parts.indexOf('components');
+
     if (componentIndex >= 0) {
       // Skip "accessibility" directory if present
       let dirIndex = componentIndex + 1;
+
       if (parts[dirIndex] === 'accessibility') {
         dirIndex++;
       }
       if (parts[dirIndex]) {
         const dirName = parts[dirIndex];
-        // Convert kebab-case to PascalCase
-        return dirName
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join('');
+        if (dirName) {
+          // Convert kebab-case to PascalCase
+          return dirName
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join('');
+        }
       }
     }
   }
@@ -200,6 +211,7 @@ function extractComponentName(path: string, type: ContentType): string {
   if (type === 'foundation') {
     const foundationParts = normalizedPath.split('/foundations-and-styles/')[1]?.split('/') || [];
     const namePart = foundationParts[foundationParts.length - 1] || fileName;
+
     return namePart
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -208,6 +220,7 @@ function extractComponentName(path: string, type: ContentType): string {
 
   // For other types, use directory name if available, otherwise file name
   const dirName = parts[parts.length - 2]; // Parent directory
+
   if (dirName && dirName !== fileName && !dirName.includes('.')) {
     return dirName
       .split('-')
@@ -224,6 +237,9 @@ function extractComponentName(path: string, type: ContentType): string {
 
 /**
  * Generate aliases for a component name
+ *
+ * @param componentName
+ * @param type
  */
 function generateAliases(componentName: string, type: ContentType): string[] {
   const aliases: string[] = [];
@@ -236,24 +252,25 @@ function generateAliases(componentName: string, type: ContentType): string[] {
     .replace(/([A-Z])/g, '-$1')
     .toLowerCase()
     .replace(/^-/, '');
+
   if (hyphenated !== componentName.toLowerCase()) {
     aliases.push(hyphenated);
   }
 
   // Common abbreviations
   const abbrevMap: Record<string, string[]> = {
-    'Button': ['btn'],
-    'Table': ['tbl', 'data-table', 'datatable', 'grid-table'],
-    'Accordion': ['accordian'], // Common misspelling
-    'SearchInput': ['search', 'search-input'],
-    'TextInput': ['text', 'input', 'text-input'],
-    'DataList': ['datalist', 'list'],
-    'FormSelect': ['select', 'dropdown-select'],
-    'ApplicationLauncher': ['app-launcher', 'launcher'],
-    'NotificationDrawer': ['notification', 'drawer'],
-    'Page': ['page-layout'],
-    'Masthead': ['header', 'topbar'],
-    'Sidebar': ['nav', 'navigation'],
+    Button: ['btn'],
+    Table: ['tbl', 'data-table', 'datatable', 'grid-table'],
+    Accordion: ['accordian'], // Common misspelling
+    SearchInput: ['search', 'search-input'],
+    TextInput: ['text', 'input', 'text-input'],
+    DataList: ['datalist', 'list'],
+    FormSelect: ['select', 'dropdown-select'],
+    ApplicationLauncher: ['app-launcher', 'launcher'],
+    NotificationDrawer: ['notification', 'drawer'],
+    Page: ['page-layout'],
+    Masthead: ['header', 'topbar'],
+    Sidebar: ['nav', 'navigation']
   };
 
   if (abbrevMap[componentName]) {
@@ -265,6 +282,8 @@ function generateAliases(componentName: string, type: ContentType): string[] {
 
 /**
  * Determine doc type from path
+ *
+ * @param path
  */
 function determineDocType(path: string): DocType | null {
   const normalizedPath = path.replace(/\\/g, '/');
@@ -275,12 +294,15 @@ function determineDocType(path: string): DocType | null {
   if (normalizedPath.includes('/examples/')) {
     return 'examples';
   }
+
   // Default to design
   return 'design';
 }
 
 /**
  * Build GitHub raw URL for a file
+ *
+ * @param relativePath
  */
 function buildGitHubUrl(relativePath: string): string {
   const normalized = relativePath.replace(/\\/g, '/');
@@ -295,6 +317,9 @@ function buildGitHubUrl(relativePath: string): string {
 
 /**
  * Recursively find all markdown files
+ *
+ * @param dir
+ * @param baseDir
  */
 async function findMarkdownFiles(dir: string, baseDir: string): Promise<string[]> {
   const files: string[] = [];
@@ -312,6 +337,7 @@ async function findMarkdownFiles(dir: string, baseDir: string): Promise<string[]
 
       if (entry.isDirectory()) {
         const subFiles = await findMarkdownFiles(fullPath, baseDir);
+
         files.push(...subFiles);
       } else if (entry.isFile() && entry.name.endsWith('.md')) {
         // Skip files in img directories
@@ -369,11 +395,14 @@ async function updateCloneTimestamp(): Promise<void> {
   }
 
   const timestamp = Date.now().toString();
+
   await writeFile(TIMESTAMP_FILE, timestamp, 'utf-8');
 }
 
 /**
  * Clone patternfly-org repository to a temporary directory
+ *
+ * @param targetDir
  */
 async function cloneRepository(targetDir: string): Promise<void> {
   console.log(`Cloning patternfly-org repository to: ${targetDir}`);
@@ -385,6 +414,7 @@ async function cloneRepository(targetDir: string): Promise<void> {
 
   // Create parent directory if needed
   const parentDir = dirname(targetDir);
+
   if (!existsSync(parentDir)) {
     await mkdir(parentDir, { recursive: true });
   }
@@ -415,6 +445,8 @@ interface IndexMetadata {
 
 /**
  * Calculate metadata from the generated index
+ *
+ * @param index
  */
 function calculateIndexMetadata(index: DocsIndex): IndexMetadata {
   const entriesByType: Record<string, number> = {};
@@ -442,6 +474,9 @@ interface ComponentDiff {
 /**
  * Compare two indexes using fast-diff (Myers algorithm)
  * Returns which components were added, removed, or potentially modified
+ *
+ * @param storedIndex
+ * @param currentIndex
  */
 function diffIndexes(
   storedIndex: DocsIndex | null,
@@ -509,21 +544,24 @@ function diffIndexes(
     }
   }
 
-  // Find potentially modified components (exist in both, but content might differ)
-  for (const key of storedKeysSet) {
-    if (currentKeysSet.has(key)) {
-      const storedEntry = storedIndex[key];
-      const currentEntry = currentIndex[key];
+    // Find potentially modified components (exist in both, but content might differ)
+    for (const key of storedKeysSet) {
+      if (currentKeysSet.has(key)) {
+        const storedEntry = storedIndex[key];
+        const currentEntry = currentIndex[key];
 
-      // Compare a signature of the entry (type + available docs)
-      const storedSig = `${storedEntry.type}:${storedEntry.docs['6']?.available || false}`;
-      const currentSig = `${currentEntry.type}:${currentEntry.docs['6']?.available || false}`;
+        // Both entries should exist since we're iterating over keys that exist in both sets
+        if (storedEntry && currentEntry) {
+          // Compare a signature of the entry (type + available docs)
+          const storedSig = `${storedEntry.type}:${storedEntry.docs['6']?.available || false}`;
+          const currentSig = `${currentEntry.type}:${currentEntry.docs['6']?.available || false}`;
 
-      if (storedSig !== currentSig) {
-        modified.push(key);
+          if (storedSig !== currentSig) {
+            modified.push(key);
+          }
+        }
       }
     }
-  }
 
   return { added, removed, modified };
 }
@@ -531,6 +569,11 @@ function diffIndexes(
 /**
  * Compare metadata and determine if significant changes occurred
  * Uses diff to show exactly what changed
+ *
+ * @param stored
+ * @param current
+ * @param storedIndex
+ * @param currentIndex
  */
 function compareMetadata(
   stored: IndexMetadata | null,
@@ -551,6 +594,7 @@ function compareMetadata(
 
   // Check total entries
   const totalDiff = Math.abs(current.totalEntries - stored.totalEntries);
+
   if (totalDiff > 0) {
     differences.push(`Total entries: ${stored.totalEntries} → ${current.totalEntries} (${totalDiff > 0 ? '+' : ''}${totalDiff})`);
   }
@@ -575,7 +619,9 @@ function compareMetadata(
     differences.push(`\nAdded components (${componentDiff.added.length}):`);
     componentDiff.added.slice(0, 10).forEach(comp => {
       const entry = currentIndex[comp];
-      differences.push(`  + ${comp} (${entry.type})`);
+      if (entry) {
+        differences.push(`  + ${comp} (${entry.type})`);
+      }
     });
     if (componentDiff.added.length > 10) {
       differences.push(`  ... and ${componentDiff.added.length - 10} more`);
@@ -606,8 +652,8 @@ function compareMetadata(
   // Count actual component changes (added + removed) for threshold
   const componentChangeCount = componentDiff.added.length + componentDiff.removed.length;
   const hasSignificantChanges = totalDiff >= CHANGE_THRESHOLD ||
-                                totalTypeDiff >= CHANGE_THRESHOLD ||
-                                componentChangeCount >= CHANGE_THRESHOLD;
+    totalTypeDiff >= CHANGE_THRESHOLD ||
+    componentChangeCount >= CHANGE_THRESHOLD;
 
   return { hasSignificantChanges, differences, componentDiff };
 }
@@ -634,6 +680,7 @@ async function generateIndex(): Promise<DocsIndex> {
 
   console.log(`Discovering markdown files in: ${contentDir}`);
   const markdownFiles = await findMarkdownFiles(contentDir, contentDir);
+
   console.log(`Found ${markdownFiles.length} markdown files`);
 
   const index: DocsIndex = {};
@@ -703,11 +750,9 @@ async function generateIndex(): Promise<DocsIndex> {
     }
 
     // Update availability (true if at least one doc exists)
-    versionDocs.available = !!(
-      versionDocs.design ||
+    versionDocs.available = Boolean(versionDocs.design ||
       versionDocs.accessibility ||
-      versionDocs.examples
-    );
+      versionDocs.examples);
   }
 
   return index;
@@ -732,6 +777,7 @@ async function main() {
     if (existsSync(METADATA_OUTPUT)) {
       try {
         const storedContent = await readFile(METADATA_OUTPUT, 'utf-8');
+
         storedMetadata = JSON.parse(storedContent);
       } catch (error) {
         console.warn(`Warning: Could not parse stored metadata: ${error}`);
@@ -742,6 +788,7 @@ async function main() {
     if (existsSync(OUTPUT)) {
       try {
         const storedIndexContent = await readFile(OUTPUT, 'utf-8');
+
         storedIndex = JSON.parse(storedIndexContent);
       } catch (error) {
         // If we can't read stored index, that's okay - we'll just show metadata diff
@@ -751,6 +798,7 @@ async function main() {
 
     // Write JSON file
     const jsonContent = JSON.stringify(index, null, 2);
+
     await writeFile(OUTPUT, jsonContent, 'utf-8');
 
     // Calculate and write metadata
@@ -802,6 +850,7 @@ async function main() {
     // Print summary
     const byType = Object.values(index).reduce((acc, entry) => {
       acc[entry.type] = (acc[entry.type] || 0) + 1;
+
       return acc;
     }, {} as Record<string, number>);
 
@@ -811,7 +860,6 @@ async function main() {
       .forEach(([type, count]) => {
         console.log(`  ${type}: ${count}`);
       });
-
   } catch (error) {
     console.error('Error generating index:', error);
     process.exit(1);

@@ -29,7 +29,7 @@ const extractUrlFromMarkdown = (markdownLink: string): string | undefined => {
  */
 const getExternalLinks = (version?: string): string[] => {
   const allDocLinks = getAllDocLinks(version || '6');
-  
+
   const urls = allDocLinks
     .map(extractUrlFromMarkdown)
     .filter((url): url is string => url !== undefined && url.startsWith('http'));
@@ -73,23 +73,25 @@ const getLinksWithMetadata = (options = getOptions()) => {
   const version = '6'; // Default to version 6 for now
   const allDocLinks = getAllDocLinks(version);
   const localDocs = getLocalDocs(options);
-  
+
   // Get metadata from JSON index
   const externalLinks = allDocLinks.map(doc => {
     const url = extractUrlFromMarkdown(doc);
     const textMatch = doc.match(/\[(.*?)\]/);
     const componentMatch = doc.match(/@patternfly\/([^-]+)/);
     const componentName = componentMatch && componentMatch[1] ? componentMatch[1].trim() : undefined;
-    
+
     // Try to determine category from component name
     let category = 'unknown';
+
     if (componentName) {
       const entry = getDoc(componentName);
+
       if (entry) {
         category = entry.category;
       }
     }
-    
+
     return {
       category,
       text: textMatch ? textMatch[1] : undefined,
@@ -99,11 +101,11 @@ const getLinksWithMetadata = (options = getOptions()) => {
       isLocal: false
     };
   });
-  
+
   const localLinks = localDocs.map(doc => {
     const url = extractUrlFromMarkdown(doc);
     const textMatch = doc.match(/\[(.*?)\]/);
-    
+
     return {
       category: 'local',
       text: textMatch ? textMatch[1] : undefined,
@@ -113,7 +115,7 @@ const getLinksWithMetadata = (options = getOptions()) => {
       isLocal: url ? !url.startsWith('http') : false
     };
   });
-  
+
   return [...externalLinks, ...localLinks].filter((link): link is NonNullable<typeof link> => link.url !== undefined);
 };
 

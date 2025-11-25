@@ -44,7 +44,7 @@ describe('Documentation Index', () => {
 
     const metadataContent = readFileSync(DOCS_METADATA_PATH, 'utf-8');
     let metadata: IndexMetadata;
-    
+
     try {
       metadata = JSON.parse(metadataContent);
     } catch (error) {
@@ -55,23 +55,24 @@ describe('Documentation Index', () => {
     expect(metadata).toHaveProperty('totalEntries');
     expect(metadata).toHaveProperty('entriesByType');
     expect(metadata).toHaveProperty('generatedAt');
-    
+
     expect(typeof metadata.totalEntries).toBe('number');
     expect(metadata.totalEntries).toBeGreaterThan(0);
     expect(typeof metadata.entriesByType).toBe('object');
     expect(typeof metadata.generatedAt).toBe('string');
-    
+
     // Validate generatedAt is ISO date
     expect(() => new Date(metadata.generatedAt)).not.toThrow();
-    
+
     // Validate entriesByType has numeric values
     for (const [type, count] of Object.entries(metadata.entriesByType)) {
       expect(typeof count).toBe('number');
       expect(count).toBeGreaterThanOrEqual(0);
     }
-    
+
     // Validate totalEntries matches sum of entriesByType
     const sumByType = Object.values(metadata.entriesByType).reduce((sum, count) => sum + count, 0);
+
     expect(metadata.totalEntries).toBe(sumByType);
   });
 
@@ -81,12 +82,13 @@ describe('Documentation Index', () => {
     }
 
     const content = readFileSync(DOCS_INDEX_PATH, 'utf-8');
-    
+
     expect(() => {
       JSON.parse(content);
     }).not.toThrow();
 
     const index = JSON.parse(content);
+
     expect(typeof index).toBe('object');
     expect(Array.isArray(index)).toBe(false); // Should be an object, not array
   });
@@ -101,10 +103,12 @@ describe('Documentation Index', () => {
 
     // Check at least one entry exists
     const entries = Object.values(index);
+
     expect(entries.length).toBeGreaterThan(0);
 
     // Check structure of first entry
     const firstEntry = entries[0] as any;
+
     expect(firstEntry).toHaveProperty('component');
     expect(firstEntry).toHaveProperty('type');
     expect(firstEntry).toHaveProperty('category');
@@ -113,6 +117,7 @@ describe('Documentation Index', () => {
 
     // Check docs structure
     const versionDocs = firstEntry.docs['6'];
+
     if (versionDocs) {
       expect(versionDocs).toHaveProperty('design');
       expect(versionDocs).toHaveProperty('accessibility');
