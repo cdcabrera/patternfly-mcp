@@ -73,6 +73,8 @@ const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
 // Use local tmp directory in repo root (gitignored) instead of system temp
 const TEMP_DIR = join(__dirname, '../tmp');
 const SOURCE = join(TEMP_DIR, 'patternfly-org');
+const TIMESTAMP_FILE = join(TEMP_DIR, 'patternfly-org-clone-timestamp.txt');
+const CLONE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 const CHANGE_THRESHOLD = 5; // Number of entries that must change to trigger update prompt
 
 /**
@@ -327,6 +329,51 @@ async function findMarkdownFiles(dir: string, baseDir: string): Promise<string[]
 }
 
 /**
+ * Check if the clone is older than the maximum age
+ */
+async function isCloneExpired(): Promise<boolean> {
+  // If clone doesn't exist, it's "expired" (needs to be cloned)
+  if (!existsSync(SOURCE)) {
+    return true;
+  }
+  
+  // If timestamp file doesn't exist, consider it expired
+  if (!existsSync(TIMESTAMP_FILE)) {
+    return true;
+  }
+  
+  try {
+    const timestampContent = await readFile(TIMESTAMP_FILE, 'utf-8');
+    const cloneTimestamp = parseInt(timestampContent.trim(), 10);
+    
+    if (isNaN(cloneTimestamp)) {
+      return true; // Invalid timestamp, consider expired
+    }
+    
+    const now = Date.now();
+    const age = now - cloneTimestamp;
+    
+    return age > CLONE_MAX_AGE_MS;
+  } catch (error) {
+    // If we can't read the timestamp, consider it expired
+    return true;
+  }
+}
+
+/**
+ * Update the clone timestamp file
+ */
+async function updateCloneTimestamp(): Promise<void> {
+  // Ensure temp directory exists
+  if (!existsSync(TEMP_DIR)) {
+    await mkdir(TEMP_DIR, { recursive: true });
+  }
+  
+  const timestamp = Date.now().toString();
+  await writeFile(TIMESTAMP_FILE, timestamp, 'utf-8');
+}
+
+/**
  * Clone patternfly-org repository to a temporary directory
  */
 async function cloneRepository(targetDir: string): Promise<void> {
@@ -350,6 +397,9 @@ async function cloneRepository(targetDir: string): Promise<void> {
       { stdio: 'inherit' }
     );
     console.log('✅ Repository cloned successfully');
+    
+    // Update timestamp after successful clone
+    await updateCloneTimestamp();
   } catch (error) {
     throw new Error(`Failed to clone repository: ${error}`);
   }
@@ -567,8 +617,13 @@ function compareMetadata(
  * Generate the documentation index
  */
 async function generateIndex(): Promise<DocsIndex> {
-  // Clone repository if needed
-  if (!existsSync(join(SOURCE, CONTENT_BASE_PATH))) {
+  // Check if clone is expired or doesn't exist
+  const expired = await isCloneExpired();
+  
+  if (expired || !existsSync(join(SOURCE, CONTENT_BASE_PATH))) {
+    if (expired && existsSync(SOURCE)) {
+      console.log('🔄 Clone is older than 1 day, cleaning up and re-cloning...');
+    }
     await cloneRepository(SOURCE);
   }
   
