@@ -50,6 +50,9 @@ const main = async (
   programmaticOptions?: Partial<ProgrammaticOptions>,
   { allowProcessExit }: ProgrammaticSettings = {}
 ): Promise<ServerInstance> => {
+  // this works
+  // const updatedAllowProcessExit = allowProcessExit ?? (programmaticOptions?.mode === 'cli' || programmaticOptions?.mode === 'programmatic');
+  // this doesn't work
   const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode !== 'test';
 
   try {
