@@ -3,7 +3,6 @@
 import { parseCliOptions, type CliOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
-import { isPlainObject } from './server.helpers';
 
 /**
  * Main function - CLI entry point with optional programmatic overrides
