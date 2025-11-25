@@ -11,15 +11,20 @@ import { runServer, type ServerInstance } from './server';
  * specific to programmatic interaction.
  *
  * The `mode` property allows specifying the context of usage.
- * - If set to 'cli', currently, it allows process exits.
- * - If set to 'programmatic', currently, it will NOT allow process exits.
+ * - If set to 'cli' or 'programmatic', it allows process exits.
+ * - If set to 'test', it will NOT allow process exits.
  */
 interface ProgrammaticOptions extends CliOptions {
-  mode?: 'cli' | 'programmatic';
+  mode?: 'cli' | 'programmatic' | 'test';
 }
 
 /**
  * Additional settings for programmatic control.
+ *
+ * `allowProcessExit` is disabled for `test` use by default.
+ * You can enable/disable it directly or via the `mode` property.
+ * - Sets to `true` when `mode=cli` or `mode=programmatic` or undefined.
+ * - Sets to `false` when `mode=test`.
  *
  * Properties:
  * - `allowProcessExit` (optional): Override process exits.
@@ -45,14 +50,9 @@ const main = async (
   programmaticOptions?: Partial<ProgrammaticOptions>,
   { allowProcessExit }: ProgrammaticSettings = {}
 ): Promise<ServerInstance> => {
-  // const updatedProgrammaticOptions = { ...((isPlainObject(programmaticOptions) && programmaticOptions) || {}) };
-
-  // const updatedAllowProcessExit = allowProcessExit ??
-  //  (!programmaticOptions || Object.keys(programmaticOptions).length === 0);
-  const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode === 'cli';
+  const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode !== 'test';
 
   try {
-    // Parse CLI options
     const cliOptions = parseCliOptions();
 
     // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
@@ -62,7 +62,6 @@ const main = async (
   } catch (error) {
     console.error('Failed to start server:', error);
 
-    // Only exit if not called programmatically (allows tests to handle errors)
     if (updatedAllowProcessExit) {
       process.exit(1);
     } else {
