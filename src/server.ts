@@ -134,6 +134,7 @@ runServer.memo = memo(
   runServer,
   {
     cacheLimit: 10,
+    // debug: info => console.info(`Server memo: ${JSON.stringify(info, null, 2) || 'No info available'}`),
     onCacheRollout: async ({ removed }) => {
       const results: PromiseSettledResult<ServerInstance>[] = await Promise.allSettled(removed);
 

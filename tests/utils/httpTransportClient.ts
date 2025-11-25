@@ -59,7 +59,7 @@ export const startHttpServer = async (
   console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
 
   // Start server using public API from dist/index.js (tests the actual compiled output)
-  const server = await start(updatedOptions, { mode: 'test', ...settings });
+  const server = await start({ ...updatedOptions, mode: 'test' }, settings);
 
   // Verify server is running
   if (!server?.isRunning()) {

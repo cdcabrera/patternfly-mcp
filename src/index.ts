@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+// import { fileURLToPath } from 'node:url';
 import { parseCliOptions, type CliOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
@@ -52,6 +53,11 @@ const main = async (
 ): Promise<ServerInstance> => {
   // this works
   // const updatedAllowProcessExit = allowProcessExit ?? (programmaticOptions?.mode === 'cli' || programmaticOptions?.mode === 'programmatic');
+
+  // this doesn't work
+  // const isTestMode = programmaticOptions?.mode === 'test';
+  // const updatedAllowProcessExit = allowProcessExit ?? !isTestMode;
+
   // this doesn't work
   const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode !== 'test';
 
@@ -59,10 +65,10 @@ const main = async (
     const cliOptions = parseCliOptions();
 
     // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
-    setOptions({ ...cliOptions, ...programmaticOptions });
-    console.log('>>>>>>>> SERVER', updatedAllowProcessExit);
+    const mergedOptions = setOptions({ ...cliOptions, ...programmaticOptions });
+    // console.log('>>>>>>>> SERVER', updatedAllowProcessExit);
 
-    return await runServer.memo(undefined, { allowProcessExit: updatedAllowProcessExit });
+    return await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit });
   } catch (error) {
     console.error('Failed to start server:', error);
 
@@ -74,12 +80,30 @@ const main = async (
   }
 };
 
-// Start the server
-if (process.env.NODE_ENV !== 'local') {
+/*
+const isMain = import.meta.url === new URL(process.argv[1], 'file:').href;
+
+if (isMain) {
   main({ mode: 'cli' }).catch(error => {
     console.error('Failed to start server:', error);
     process.exit(1);
   });
+}
+ */
+
+try {
+  const isCli = process.env.NODE_ENV !== 'local' ||
+    (typeof process.argv[1] === 'string' && import.meta.url === new URL(process.argv[1], 'file:').href);
+  // const isCli = process.env.NODE_ENV !== 'local';
+
+  if (isCli) {
+    main({ mode: 'cli' }).catch(error => {
+      console.error('Failed to start server:', error);
+      process.exit(1);
+    });
+  }
+} catch (error) {
+  console.error(error);
 }
 
 export {
