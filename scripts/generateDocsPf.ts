@@ -78,41 +78,41 @@ const CLONE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
 
 // Path type mapping: path segment -> { type, category }
 const PATH_TYPE_MAP: Record<string, { type: ContentType; category: string }> = {
-  'patterns': { type: 'pattern', category: 'pattern' },
-  'components': { type: 'component', category: 'component' },
+  patterns: { type: 'pattern', category: 'pattern' },
+  components: { type: 'component', category: 'component' },
   'foundations-and-styles': { type: 'foundation', category: 'foundation' },
-  'layouts': { type: 'layout', category: 'layout' },
-  'extensions': { type: 'extension', category: 'extension' },
+  layouts: { type: 'layout', category: 'layout' },
+  extensions: { type: 'extension', category: 'extension' },
   'component-groups': { type: 'component-group', category: 'component-group' },
-  'accessibility': { type: 'accessibility', category: 'accessibility' },
+  accessibility: { type: 'accessibility', category: 'accessibility' },
   'content-design': { type: 'content-design', category: 'content-design' },
   'get-started': { type: 'guide', category: 'guide' },
   'developer-guides': { type: 'guide', category: 'guide' },
-  'AI': { type: 'guide', category: 'AI' }
+  AI: { type: 'guide', category: 'AI' }
 };
 
 // Component name extraction rules: type -> extraction strategy
 type NameExtractionStrategy = 'directory' | 'filename' | 'parent-directory' | 'last-segment';
 
 const COMPONENT_NAME_EXTRACTION: Record<ContentType, NameExtractionStrategy> = {
-  'pattern': 'directory',
-  'layout': 'filename',
-  'component': 'directory',
-  'foundation': 'last-segment',
-  'extension': 'directory',
+  pattern: 'directory',
+  layout: 'filename',
+  component: 'directory',
+  foundation: 'last-segment',
+  extension: 'directory',
   'component-group': 'directory',
-  'chart': 'directory',
-  'topology': 'directory',
-  'accessibility': 'directory',
+  chart: 'directory',
+  topology: 'directory',
+  accessibility: 'directory',
   'content-design': 'directory',
-  'guide': 'parent-directory'
+  guide: 'parent-directory'
 };
 
 // Doc type path patterns
 const DOC_TYPE_PATTERNS: Record<DocType, string[]> = {
-  'accessibility': ['/accessibility/'],
-  'examples': ['/examples/'],
-  'design': [] // Default, no pattern needed
+  accessibility: ['/accessibility/'],
+  examples: ['/examples/'],
+  design: [] // Default, no pattern needed
 };
 
 // Alias abbreviations map
@@ -143,6 +143,8 @@ const IGNORED_PATH_SEGMENTS = new Set([
 
 /**
  * Convert kebab-case to PascalCase
+ *
+ * @param str
  */
 function toPascalCase(str: string): string {
   return str
@@ -153,6 +155,8 @@ function toPascalCase(str: string): string {
 
 /**
  * Parse path to determine type and category using lookup map
+ *
+ * @param path
  */
 function parsePathToType(path: string): { type: ContentType; category: string; isAccessibility: boolean } | null {
   const normalizedPath = path.replace(/\\/g, '/');
@@ -165,6 +169,7 @@ function parsePathToType(path: string): { type: ContentType; category: string; i
       if (segment === 'foundations-and-styles' && normalizedPath.includes('layouts/')) {
         return { type: 'layout', category: 'layout', isAccessibility };
       }
+
       return { ...config, isAccessibility };
     }
   }
@@ -187,6 +192,9 @@ function parsePathToType(path: string): { type: ContentType; category: string; i
 
 /**
  * Extract component name using configured strategy
+ *
+ * @param path
+ * @param type
  */
 function extractComponentName(path: string, type: ContentType): string {
   const normalizedPath = path.replace(/\\/g, '/');
@@ -198,15 +206,19 @@ function extractComponentName(path: string, type: ContentType): string {
     case 'directory': {
       // Find the directory after the type segment
       const typeSegment = Object.keys(PATH_TYPE_MAP).find(seg => normalizedPath.includes(`${seg}/`));
+
       if (typeSegment) {
         const typeIndex = parts.indexOf(typeSegment);
+
         if (typeIndex >= 0 && parts[typeIndex + 1]) {
           let dirIndex = typeIndex + 1;
+
           // Skip accessibility subdirectory for components
           if (type === 'component' && parts[dirIndex] === 'accessibility') {
             dirIndex += 1;
           }
           const dirName = parts[dirIndex];
+
           if (dirName) {
             return toPascalCase(dirName);
           }
@@ -214,6 +226,7 @@ function extractComponentName(path: string, type: ContentType): string {
       }
       // Fallback to parent directory
       const dirName = parts[parts.length - 2];
+
       return dirName && !dirName.includes('.') ? toPascalCase(dirName) : toPascalCase(fileName);
     }
 
@@ -223,28 +236,34 @@ function extractComponentName(path: string, type: ContentType): string {
     case 'parent-directory': {
       // For guides, use the most specific directory (parent of file)
       const dirName = parts[parts.length - 2];
+
       if (dirName && dirName !== fileName && !dirName.includes('.')) {
         return toPascalCase(dirName);
       }
       // Try one level up if parent is same as filename
       if (parts.length >= 3) {
         const parentDir = parts[parts.length - 3];
+
         if (parentDir && parentDir !== fileName && !parentDir.includes('.')) {
           return toPascalCase(parentDir);
         }
       }
+
       return toPascalCase(fileName);
     }
 
     case 'last-segment': {
       // For foundations, use the last path segment before filename
       const foundationIndex = normalizedPath.indexOf('foundations-and-styles/');
+
       if (foundationIndex >= 0) {
         const afterFoundation = normalizedPath.slice(foundationIndex + 'foundations-and-styles/'.length);
         const segments = afterFoundation.split('/');
         const lastSegment = segments[segments.length - 1] || fileName;
+
         return toPascalCase(lastSegment.replace('.md', ''));
       }
+
       return toPascalCase(fileName);
     }
 
@@ -255,6 +274,8 @@ function extractComponentName(path: string, type: ContentType): string {
 
 /**
  * Generate aliases for a component name
+ *
+ * @param componentName
  */
 function generateAliases(componentName: string): string[] {
   const aliases = new Set<string>();
@@ -282,6 +303,8 @@ function generateAliases(componentName: string): string[] {
 
 /**
  * Determine doc type from path using pattern matching
+ *
+ * @param path
  */
 function determineDocType(path: string): DocType {
   const normalizedPath = path.replace(/\\/g, '/');
@@ -299,6 +322,8 @@ function determineDocType(path: string): DocType {
 
 /**
  * Build GitHub raw URL using path utilities
+ *
+ * @param relativePath
  */
 function buildGitHubUrl(relativePath: string): string {
   const normalized = relativePath.replace(/\\/g, '/')
@@ -313,6 +338,8 @@ function buildGitHubUrl(relativePath: string): string {
 
 /**
  * Find all markdown files using fast-glob
+ *
+ * @param repoRoot
  */
 async function findMarkdownFiles(repoRoot: string): Promise<string[]> {
   try {
@@ -330,6 +357,7 @@ async function findMarkdownFiles(repoRoot: string): Promise<string[]> {
     return files;
   } catch (error) {
     console.warn(`Warning: Could not find markdown files in ${repoRoot}: ${error}`);
+
     return [];
   }
 }
@@ -369,6 +397,8 @@ async function updateCloneTimestamp(): Promise<void> {
 
 /**
  * Clone patternfly-org repository to a temporary directory
+ *
+ * @param targetDir
  */
 async function cloneRepository(targetDir: string): Promise<void> {
   console.log(`Cloning patternfly-org repository to: ${targetDir}`);
@@ -378,6 +408,7 @@ async function cloneRepository(targetDir: string): Promise<void> {
   }
 
   const parentDir = join(targetDir, '..');
+
   if (!existsSync(parentDir)) {
     await mkdir(parentDir, { recursive: true });
   }
@@ -396,6 +427,8 @@ async function cloneRepository(targetDir: string): Promise<void> {
 
 /**
  * Create combined index with metadata
+ *
+ * @param index
  */
 function createIndexWithMetadata(index: DocsIndex): DocsIndexWithMetadata {
   const byType: Record<string, number> = {};
@@ -434,15 +467,17 @@ async function generateIndex(): Promise<DocsIndex> {
 
   console.log(`Discovering markdown files in: ${CONTENT_BASE_PATH}`);
   const markdownFiles = await findMarkdownFiles(SOURCE);
+
   console.log(`Found ${markdownFiles.length} markdown files`);
 
   const index: DocsIndex = {};
 
   for (const filePath of markdownFiles) {
     // Calculate relative path from contentDir
-    let relativePath = relative(contentDir, filePath).replace(/\\/g, '/').replace(/^\.\//, '');
+    const relativePath = relative(contentDir, filePath).replace(/\\/g, '/').replace(/^\.\//, '');
 
     const typeInfo = parsePathToType(relativePath);
+
     if (!typeInfo) {
       console.warn(`Skipping file (could not determine type): ${relativePath}`);
       continue;
@@ -481,6 +516,7 @@ async function generateIndex(): Promise<DocsIndex> {
     // Set URL using docType as property key
     const versionDocs = entry.docs[DEFAULT_VERSION];
     const githubUrl = buildGitHubUrl(relativePath);
+
     versionDocs[docType] = githubUrl;
 
     // Update availability
@@ -512,6 +548,7 @@ async function main() {
       total: indexWithMetadata.total,
       byType: indexWithMetadata.byType
     };
+
     process.env.PF_DOCS_STATS = JSON.stringify(metadata);
 
     // Log stats
