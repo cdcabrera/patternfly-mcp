@@ -17,9 +17,6 @@
  *
  * Usage:
  *   npm run build:resources
- *   npm run build:resources -- --source /path/to/patternfly-org
- *   npm run build:resources -- --output src/docs.index.json
- *   npm run build:resources -- --clone  (force clone even if source exists)
  */
 
 import { readdir, stat, readFile, writeFile, mkdir } from 'fs/promises';
@@ -67,27 +64,16 @@ interface ComponentDoc {
 type DocsIndex = Record<string, ComponentDoc>;
 
 // Configuration
-const DEFAULT_OUTPUT = join(__dirname, '../src/docs.index.json');
-const DEFAULT_METADATA_OUTPUT = join(__dirname, '../src/docs.index.metadata.json');
+const OUTPUT = join(__dirname, '../src/docs.index.json');
+const METADATA_OUTPUT = join(__dirname, '../src/docs.index.metadata.json');
 const DEFAULT_VERSION = '6';
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/patternfly/patternfly-org/main';
 const GITHUB_REPO = 'https://github.com/patternfly/patternfly-org.git';
 const CONTENT_BASE_PATH = 'packages/documentation-site/patternfly-docs/content';
 // Use local tmp directory in repo root (gitignored) instead of system temp
 const TEMP_DIR = join(__dirname, '../tmp');
+const SOURCE = join(TEMP_DIR, 'patternfly-org');
 const CHANGE_THRESHOLD = 5; // Number of entries that must change to trigger update prompt
-
-// Parse CLI arguments
-const args = process.argv.slice(2);
-const sourceIndex = args.indexOf('--source');
-const outputIndex = args.indexOf('--output');
-const metadataOutputIndex = args.indexOf('--metadata-output');
-const cloneIndex = args.indexOf('--clone');
-// If no source provided, use temp directory (will clone if needed)
-const source = sourceIndex >= 0 && args[sourceIndex + 1] ? args[sourceIndex + 1] : join(TEMP_DIR, 'patternfly-org');
-const output = outputIndex >= 0 && args[outputIndex + 1] ? args[outputIndex + 1] : DEFAULT_OUTPUT;
-const metadataOutput = metadataOutputIndex >= 0 && args[metadataOutputIndex + 1] ? args[metadataOutputIndex + 1] : DEFAULT_METADATA_OUTPUT;
-const shouldClone = cloneIndex >= 0 || !existsSync(join(source, CONTENT_BASE_PATH));
 
 /**
  * Parse path to determine type and category
@@ -581,24 +567,15 @@ function compareMetadata(
  * Generate the documentation index
  */
 async function generateIndex(): Promise<DocsIndex> {
-  let actualSource = source;
-  
   // Clone repository if needed
-  if (shouldClone) {
-    // Use temp directory (local to repo, gitignored)
-    const cloneTarget = join(TEMP_DIR, 'patternfly-org');
-    
-    await cloneRepository(cloneTarget);
-    actualSource = cloneTarget;
-  } else {
-    // Use provided source if it exists
-    actualSource = source;
+  if (!existsSync(join(SOURCE, CONTENT_BASE_PATH))) {
+    await cloneRepository(SOURCE);
   }
   
-  const contentDir = join(actualSource, CONTENT_BASE_PATH);
+  const contentDir = join(SOURCE, CONTENT_BASE_PATH);
   
   if (!existsSync(contentDir)) {
-    throw new Error(`Content directory not found: ${contentDir}\nPlease ensure patternfly-org is cloned to: ${actualSource}`);
+    throw new Error(`Content directory not found: ${contentDir}\nPlease ensure patternfly-org is cloned to: ${SOURCE}`);
   }
   
   console.log(`Discovering markdown files in: ${contentDir}`);
@@ -688,12 +665,9 @@ async function generateIndex(): Promise<DocsIndex> {
 async function main() {
   try {
     console.log('Generating PatternFly documentation index...');
-    console.log(`Source: ${source}`);
-    console.log(`Output: ${output}`);
-    console.log(`Metadata output: ${metadataOutput}`);
-    if (shouldClone) {
-      console.log('🔄 Will clone repository if needed');
-    }
+    console.log(`Source: ${SOURCE}`);
+    console.log(`Output: ${OUTPUT}`);
+    console.log(`Metadata output: ${METADATA_OUTPUT}`);
     
     const index = await generateIndex();
     
@@ -701,9 +675,9 @@ async function main() {
     let storedMetadata: IndexMetadata | null = null;
     let storedIndex: DocsIndex | null = null;
     
-    if (existsSync(metadataOutput)) {
+    if (existsSync(METADATA_OUTPUT)) {
       try {
-        const storedContent = await readFile(metadataOutput, 'utf-8');
+        const storedContent = await readFile(METADATA_OUTPUT, 'utf-8');
         storedMetadata = JSON.parse(storedContent);
       } catch (error) {
         console.warn(`Warning: Could not parse stored metadata: ${error}`);
@@ -711,9 +685,9 @@ async function main() {
     }
     
     // Load stored index for diff comparison
-    if (existsSync(output)) {
+    if (existsSync(OUTPUT)) {
       try {
-        const storedIndexContent = await readFile(output, 'utf-8');
+        const storedIndexContent = await readFile(OUTPUT, 'utf-8');
         storedIndex = JSON.parse(storedIndexContent);
       } catch (error) {
         // If we can't read stored index, that's okay - we'll just show metadata diff
@@ -723,7 +697,7 @@ async function main() {
     
     // Write JSON file
     const jsonContent = JSON.stringify(index, null, 2);
-    await writeFile(output, jsonContent, 'utf-8');
+    await writeFile(OUTPUT, jsonContent, 'utf-8');
     
     // Calculate and write metadata
     const currentMetadata = calculateIndexMetadata(index);
@@ -741,7 +715,7 @@ async function main() {
       });
       console.log(`\n   This indicates PatternFly documentation has been updated.`);
       console.log(`   Review changes and commit the updated files:`);
-      console.log(`     git add ${output} ${metadataOutput}`);
+      console.log(`     git add ${OUTPUT} ${METADATA_OUTPUT}`);
       console.log(`     git commit -m "chore: update docs index from patternfly-org"`);
     } else if (comparison.hasSignificantChanges) {
       console.log(`\n📝 Initial metadata generated`);
@@ -759,11 +733,11 @@ async function main() {
       });
     }
     
-    await writeFile(metadataOutput, JSON.stringify(currentMetadata, null, 2), 'utf-8');
+    await writeFile(METADATA_OUTPUT, JSON.stringify(currentMetadata, null, 2), 'utf-8');
     
     console.log(`\n✅ Generated index with ${currentMetadata.totalEntries} entries`);
-    console.log(`📄 Output written to: ${output}`);
-    console.log(`📊 Metadata written to: ${metadataOutput}`);
+    console.log(`📄 Output written to: ${OUTPUT}`);
+    console.log(`📊 Metadata written to: ${METADATA_OUTPUT}`);
     console.log(`   Entries by type:`);
     Object.entries(currentMetadata.entriesByType)
       .sort(([, a], [, b]) => b - a)
