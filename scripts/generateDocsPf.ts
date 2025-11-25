@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Generate PatternFly documentation index JSON from patternfly-org repository
  *
@@ -31,17 +32,17 @@ const __dirname = dirname(__filename);
 
 // Types
 type ContentType =
-  | 'component' |
-  'pattern' |
-  'foundation' |
-  'layout' |
-  'extension' |
-  'component-group' |
-  'chart' |
-  'topology' |
-  'accessibility' |
-  'content-design' |
-  'guide';
+  'component'
+  | 'pattern'
+  | 'foundation'
+  | 'layout'
+  | 'extension'
+  | 'component-group'
+  | 'chart'
+  | 'topology'
+  | 'accessibility'
+  | 'content-design'
+  | 'guide';
 
 type DocType = 'design' | 'accessibility' | 'examples';
 
