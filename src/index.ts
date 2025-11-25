@@ -7,13 +7,20 @@ import { runServer, type ServerInstance } from './server';
 /**
  * Main function - CLI entry point with optional programmatic overrides
  *
- * @param programmaticOptions - Optional programmatic options that override CLI options
+ * @param [programmaticOptions] - Optional programmatic options that override CLI options
+ * @param options - Additional options for controlling behavior.
+ * @param [options.allowProcessExit=true] - Determines whether the process should exit on failure.
+ *     Useful for tests or programmatic use to avoid exiting.
  * @returns {Promise<ServerInstance>} Server-instance with shutdown capability
+ *
+ * @throws {Error} If the server fails to start or any error occurs during initialization,
+ *     and `allowProcessExit` is set to `false`, the error will be thrown rather than exiting
+ *     the process.
  */
-const main = async (programmaticOptions?: Partial<CliOptions>): Promise<ServerInstance> => {
-  // Don't allow process.exit if called programmatically
-  const allowProcessExit = !programmaticOptions || Object.keys(programmaticOptions).length === 0;
-
+const main = async (
+  programmaticOptions?: Partial<CliOptions>,
+  { allowProcessExit = true }: { allowProcessExit?: boolean } = {}
+): Promise<ServerInstance> => {
   try {
     // Parse CLI options
     const cliOptions = parseCliOptions();
