@@ -54,8 +54,12 @@ export const startHttpServer = async (
 
   const { host, port } = updatedOptions;
 
+  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', updatedOptions);
+  console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+
   // Start server using public API from dist/index.js (tests the actual compiled output)
-  const server = await start(updatedOptions, settings);
+  const server = await start(updatedOptions, { mode: 'test', ...settings });
 
   // Verify server is running
   if (!server?.isRunning()) {

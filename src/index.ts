@@ -57,6 +57,7 @@ const main = async (
 
     // Apply options to context. setOptions merges with DEFAULT_OPTIONS internally
     setOptions({ ...cliOptions, ...programmaticOptions });
+    console.log('>>>>>>>> SERVER', updatedAllowProcessExit);
 
     return await runServer.memo(undefined, { allowProcessExit: updatedAllowProcessExit });
   } catch (error) {

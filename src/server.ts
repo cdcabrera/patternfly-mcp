@@ -133,7 +133,7 @@ const runServer = async (options = getOptions(), {
 runServer.memo = memo(
   runServer,
   {
-    cacheLimit: 3,
+    cacheLimit: 10,
     onCacheRollout: async ({ removed }) => {
       const results: PromiseSettledResult<ServerInstance>[] = await Promise.allSettled(removed);
 
