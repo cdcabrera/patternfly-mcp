@@ -7,19 +7,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ListToolsResultSchema, ResultSchema } from '@modelcontextprotocol/sdk/types.js';
 // E2E tests import from dist/index.js (compiled entry point) - tests the actual production build
-import { start } from '../../dist/index.js';
+import { start, type CliOptions, type ProgrammaticSettings } from '../../dist/index.js';
 
-export interface StartHttpServerOptions {
-  port?: number;
-  host?: string;
-  allowedOrigins?: string[];
-  allowedHosts?: string[];
-  docsHost?: boolean;
-}
+export type StartHttpServerOptions = Partial<CliOptions>;
 
-export interface StartHttpServerSettings {
-  allowProcessExit?: boolean;
-}
+export type StartHttpServerSettings = ProgrammaticSettings;
 
 export interface RpcResponse {
   jsonrpc?: '2.0';
@@ -46,7 +38,10 @@ export interface HttpTransportClient {
  * @param options - Server configuration options
  * @param settings - Additional settings for the server (e.g., allowProcessExit)
  */
-export const startHttpServer = async (options: StartHttpServerOptions = {}, settings: StartHttpServerSettings = {}): Promise<HttpTransportClient> => {
+export const startHttpServer = async (
+  options: StartHttpServerOptions = {},
+  settings: StartHttpServerSettings = {}
+): Promise<HttpTransportClient> => {
   const updatedOptions: Partial<CliOptions> = {
     http: true,
     port: 3000,
@@ -57,13 +52,10 @@ export const startHttpServer = async (options: StartHttpServerOptions = {}, sett
     ...options
   };
 
-  const updatedSettings = {
-    allowProcessExit: false,
-    ...settings
-  };
+  const { host, port } = updatedOptions;
 
   // Start server using public API from dist/index.js (tests the actual compiled output)
-  const server = await start(updatedOptions, updatedSettings);
+  const server = await start(updatedOptions, settings);
 
   // Verify server is running
   if (!server?.isRunning()) {

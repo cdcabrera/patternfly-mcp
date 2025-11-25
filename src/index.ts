@@ -5,9 +5,33 @@ import { setOptions } from './options.context';
 import { runServer, type ServerInstance } from './server';
 
 /**
+ * Options for programmatic usage.
+ *
+ * Extends the CliOptions interface to provide additional configuration
+ * specific to programmatic interaction.
+ *
+ * The `mode` property allows specifying the context of usage.
+ * - If set to 'cli', currently, it allows process exits.
+ * - If set to 'programmatic', currently, it will NOT allow process exits.
+ */
+interface ProgrammaticOptions extends CliOptions {
+  mode?: 'cli' | 'programmatic';
+}
+
+/**
+ * Additional settings for programmatic control.
+ *
+ * Properties:
+ * - `allowProcessExit` (optional): Override process exits.
+ */
+interface ProgrammaticSettings {
+  allowProcessExit?: boolean;
+}
+
+/**
  * Main function - CLI entry point with optional programmatic overrides
  *
- * @param [programmaticOptions] - Optional programmatic options that override CLI options
+ * @param {Partial<ProgrammaticOptions>} [programmaticOptions] - Optional programmatic options that override CLI options
  * @param options - Additional options for controlling behavior.
  * @param [options.allowProcessExit=true] - Determines whether the process should exit on failure.
  *     Useful for tests or programmatic use to avoid exiting.
@@ -18,11 +42,14 @@ import { runServer, type ServerInstance } from './server';
  *     the process.
  */
 const main = async (
-  programmaticOptions?: Partial<CliOptions>,
-  { allowProcessExit }: { allowProcessExit?: boolean } = {}
+  programmaticOptions?: Partial<ProgrammaticOptions>,
+  { allowProcessExit }: ProgrammaticSettings = {}
 ): Promise<ServerInstance> => {
-  const updatedAllowProcessExit = allowProcessExit ??
-    (!programmaticOptions || Object.keys(programmaticOptions).length === 0);
+  // const updatedProgrammaticOptions = { ...((isPlainObject(programmaticOptions) && programmaticOptions) || {}) };
+
+  // const updatedAllowProcessExit = allowProcessExit ??
+  //  (!programmaticOptions || Object.keys(programmaticOptions).length === 0);
+  const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode === 'cli';
 
   try {
     // Parse CLI options
@@ -46,10 +73,17 @@ const main = async (
 
 // Start the server
 if (process.env.NODE_ENV !== 'local') {
-  main().catch(error => {
+  main({ mode: 'cli' }).catch(error => {
     console.error('Failed to start server:', error);
     process.exit(1);
   });
 }
 
-export { main, main as start, type CliOptions, type ServerInstance };
+export {
+  main,
+  main as start,
+  type CliOptions,
+  type ProgrammaticOptions,
+  type ProgrammaticSettings,
+  type ServerInstance
+};
