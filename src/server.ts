@@ -77,9 +77,54 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     // Easily missed, but writing a console.log or stdout entry helps interrupt the process
     // process.stdout.write(`\n${options.name} server shutting down... ${allowProcessExit}`);
-    process.stdout.write('\n');
-    console.log(`${options.name} shutting down...`);
+    // process.stdout.write('\n');
 
+    if (server && running) {
+      console.log(`${options.name} shutting down...`);
+      console.log('...closing Server');
+
+      if (httpHandle) {
+        console.log('...closing HTTP transport');
+        await httpHandle.close();
+        httpHandle = null;
+      }
+
+      console.log('...closing Server');
+      await server?.close();
+      console.log(`${options.name} closed!\n`);
+
+      if (allowProcessExit) {
+        process.exit(0);
+      }
+    }
+
+    /*
+    if (server && running) {
+      console.log(`${options.name} shutting down...`);
+      console.log('...closing Server');
+
+      await Promise.resolve(server?.close())
+        .catch(error => console.error(`Error closing ${options.name} server: ${error}`));
+
+      running = false;
+
+      if (httpHandle) {
+        console.log('...closing HTTP transport');
+        Promise.resolve(httpHandle.close())
+          .catch(error => console.error(`Error closing ${options.name} HTTP transport: ${error}`));
+
+        httpHandle = null;
+      }
+
+      console.log(`${options.name} closed!\n`);
+
+      if (allowProcessExit) {
+        process.exit(0);
+      }
+    }
+    */
+
+    /*
     if (server && running) {
       if (httpHandle) {
         console.log('...closing HTTP transport');
@@ -111,8 +156,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
         // setTimeout(() => process.exit(0), 100);
         process.exit(0);
       }
-       */
-    }
+       * /
+    }*/
   };
 
   try {
