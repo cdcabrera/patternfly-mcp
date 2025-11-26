@@ -90,8 +90,7 @@ try {
 export {
   main,
   main as start,
-  type CliOptions,
-  type ProgrammaticOptions,
-  type ProgrammaticSettings,
+  type ProgrammaticOptions as PfMcpOptions,
+  type ProgrammaticSettings as PfMcpSettings,
   type ServerInstance
 };

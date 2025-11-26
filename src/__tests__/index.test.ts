@@ -1,4 +1,4 @@
-import { main, start, type CliOptions } from '../index';
+import { main, start, type PfMcpOptions } from '../index';
 import { parseCliOptions, type GlobalOptions } from '../options';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { setOptions } from '../options.context';
@@ -149,9 +149,9 @@ describe('main', () => {
 });
 
 describe('type exports', () => {
-  it('should export CliOptions type', () => {
+  it('should export PfMcpOptions type', () => {
     // TypeScript compilation will fail if the type is unavailable
-    const options: Partial<CliOptions> = { docsHost: true };
+    const options: Partial<PfMcpOptions> = { docsHost: true };
 
     expect(options).toBeDefined();
   });
