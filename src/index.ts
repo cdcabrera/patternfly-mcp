@@ -6,14 +6,19 @@ import { setOptions } from './options.context';
 import { runServer, type ServerInstance, type ServerSettings } from './server';
 
 /**
- * Options for programmatic usage.
+ * Options for programmatic usage. Extends the CliOptions interface.
  *
- * Extends the CliOptions interface to provide additional configuration
- * specific to programmatic interaction.
- *
- * The `mode` property allows specifying the context of usage.
+ * `ProgrammaticOptions` introduces an additional optional property
+ * `mode`. The `mode` property allows specifying the context of usage.
  * - If set to 'cli' or 'programmatic', it allows process exits.
  * - If set to 'test', it will NOT allow process exits.
+ *
+ * Properties:
+ * - `mode`: Optional string property that specifies the mode of operation.
+ *   It can take one of the following values:
+ *     - `'cli'`: Functionality is being executed in a command-line interface context.
+ *     - `'programmatic'`: Functionality is invoked programmatically.
+ *     - `'test'`: Functionality is being tested.
  */
 interface ProgrammaticOptions extends CliOptions {
   mode?: 'cli' | 'programmatic' | 'test';
@@ -46,7 +51,7 @@ type ProgrammaticSettings = Pick<ServerSettings, 'allowProcessExit'>;
  *     the process.
  */
 const main = async (
-  programmaticOptions?: Partial<ProgrammaticOptions>,
+  programmaticOptions?: ProgrammaticOptions,
   { allowProcessExit }: ProgrammaticSettings = {}
 ): Promise<ServerInstance> => {
   const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode !== 'test';
@@ -69,6 +74,7 @@ const main = async (
 };
 
 try {
+  // Detect if we're running in a CLI context. Wrap "URL" in a try/catch.
   const isCli = typeof process.argv[1] === 'string' && import.meta.url === new URL(process.argv[1], 'file:').href;
 
   if (isCli) {
