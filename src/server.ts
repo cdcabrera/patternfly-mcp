@@ -13,18 +13,33 @@ type McpTool = [string, { description: string; inputSchema: any }, (args: any) =
 type McpToolCreator = (options?: GlobalOptions) => McpTool;
 
 /**
+ * Server options. Equivalent to GlobalOptions.
+ */
+type ServerOptions = GlobalOptions;
+
+/**
+ * Represents the configuration settings for a server.
+ *
+ * @interface ServerSettings
+ *
+ * @property {McpToolCreator[]} [tools] - An optional array of tool creators used by the server.
+ * @property [enableSigint] - Indicates whether SIGINT signal handling is enabled.
+ * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
+ */
+interface ServerSettings {
+  tools?: McpToolCreator[];
+  enableSigint?: boolean;
+  allowProcessExit?: boolean;
+}
+
+/**
  * Server instance with shutdown capability
+ *
+ * @property stop - Stops the server, gracefully.
+ * @property isRunning - Indicates whether the server is running.
  */
 interface ServerInstance {
-
-  /**
-   * Stop the server gracefully
-   */
   stop(): Promise<void>;
-
-  /**
-   * Is the server running?
-   */
   isRunning(): boolean;
 }
 
@@ -38,7 +53,7 @@ interface ServerInstance {
  * @param settings.allowProcessExit
  * @returns Server instance
  */
-const runServer = async (options = getOptions(), {
+const runServer = async (options: ServerOptions = getOptions(), {
   tools = [
     usePatternFlyDocsTool,
     fetchDocsTool,
@@ -46,7 +61,7 @@ const runServer = async (options = getOptions(), {
   ],
   enableSigint = true,
   allowProcessExit = true
-}: { tools?: McpToolCreator[]; enableSigint?: boolean, allowProcessExit?: boolean } = {}): Promise<ServerInstance> => {
+}: ServerSettings = {}): Promise<ServerInstance> => {
   let server: McpServer | null = null;
   let transport: StdioServerTransport | null = null;
   let httpHandle: HttpServerHandle | null = null;
@@ -134,7 +149,9 @@ runServer.memo = memo(
   runServer,
   {
     cacheLimit: 10,
-    // debug: info => console.info(`Server memo: ${JSON.stringify(info, null, 2) || 'No info available'}`),
+    debug: info => {
+      console.info(`Server memo: ${JSON.stringify(info, null, 2) || 'No info available'}`);
+    },
     onCacheRollout: async ({ removed }) => {
       const results: PromiseSettledResult<ServerInstance>[] = await Promise.allSettled(removed);
 
@@ -161,5 +178,7 @@ export {
   runServer,
   type McpTool,
   type McpToolCreator,
-  type ServerInstance
+  type ServerInstance,
+  type ServerOptions,
+  type ServerSettings
 };
