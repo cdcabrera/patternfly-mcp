@@ -81,7 +81,6 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     if (server && running) {
       console.log(`${options.name} shutting down...`);
-      console.log('...closing Server');
 
       if (httpHandle) {
         console.log('...closing HTTP transport');
@@ -91,6 +90,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
       console.log('...closing Server');
       await server?.close();
+      running = false;
+
       console.log(`${options.name} closed!\n`);
 
       if (allowProcessExit) {
