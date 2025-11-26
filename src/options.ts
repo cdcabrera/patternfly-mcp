@@ -83,7 +83,7 @@ const parseCliOptions = () => {
   const options: CliOptions = {
     docsHost: process.argv.includes('--docs-host'),
     http: process.argv.includes('--http'),
-    port: getArgValue('--port', 3000) as number,
+    port: getArgValue('--port', 3030) as number,
     host: getArgValue('--host', '127.0.0.1') as string,
     allowedOrigins: (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim()),
     allowedHosts: (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim())
