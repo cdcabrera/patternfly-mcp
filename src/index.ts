@@ -68,20 +68,8 @@ const main = async (
   }
 };
 
-/*
-const isMain = import.meta.url === new URL(process.argv[1], 'file:').href;
-
-if (isMain) {
-  main({ mode: 'cli' }).catch(error => {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  });
-}
- */
-
 try {
-  const isCli = process.env.NODE_ENV !== 'local' ||
-    (typeof process.argv[1] === 'string' && import.meta.url === new URL(process.argv[1], 'file:').href);
+  const isCli = typeof process.argv[1] === 'string' && import.meta.url === new URL(process.argv[1], 'file:').href;
 
   if (isCli) {
     main({ mode: 'cli' }).catch(error => {
