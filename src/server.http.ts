@@ -1,4 +1,5 @@
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
+import { Socket } from 'node:net';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -6,6 +7,7 @@ import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOption
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
 import { getOptions } from './options.context';
+
 
 /**
  * Get process information for a port
@@ -161,6 +163,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   await mcpServer.connect(transport);
 
   // Set up
+  const connections = new Set<Socket>();
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     void handleStreamableHttpRequest(req, res, transport);
   });
@@ -170,6 +173,11 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
     server.listen(port, host, () => {
       console.log(`${name} server running on http://${host}:${port}`);
       resolve();
+    });
+
+    server.on('connection', socket => {
+      connections.add(socket);
+      socket.on('close', () => connections.delete(socket));
     });
 
     server.on('error', async (error: NodeJS.ErrnoException) => {
@@ -191,6 +199,18 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   return {
     close: async () => {
+      // 1) Stop accepting new connections and finish requests quickly
+      // If the transport exposes a close/shutdown, call it here (pseudo):
+      // await transport.close?.(); // not in current SDK surface but keep as a future hook
+
+      // 2) Proactively destroy open sockets (SSE/keep-alive)
+      for (const socket of connections) {
+        try {
+          socket.destroy();
+        } catch {}
+      }
+
+      // 3) Close the HTTP server
       await new Promise<void>(resolve => {
         server.close(() => resolve());
       });

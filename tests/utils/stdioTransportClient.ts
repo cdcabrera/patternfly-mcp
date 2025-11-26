@@ -168,7 +168,7 @@ export const startServer = async ({
           return {
             jsonrpc: '2.0',
             id: null,
-            result: result as any
+            result
           };
         }
 
@@ -181,7 +181,7 @@ export const startServer = async ({
           return {
             jsonrpc: '2.0',
             id: null,
-            result: result as any
+            result
           };
         }
 
@@ -195,7 +195,7 @@ export const startServer = async ({
         return {
           jsonrpc: '2.0',
           id: null,
-          result: result as any
+          result
         };
       } catch (error) {
         // If request fails, return error response

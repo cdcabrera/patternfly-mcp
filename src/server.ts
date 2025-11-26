@@ -69,25 +69,100 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let httpHandle: HttpServerHandle | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let running = false;
+  // let stopServerCalled = false;
 
   const stopServer = async () => {
     log.info(`\n${options.name} server shutting down... `);
+    // if (stopServerCalled) {
+    //  return;
+    // }
+
+    // stopServerCalled = true;
+
+    // Easily missed, but writing a console.log or stdout entry helps interrupt the process
+    // process.stdout.write(`\n${options.name} server shutting down... ${allowProcessExit}`);
+    // process.stdout.write('\n');
 
     if (server && running) {
+      log.info(`${options.name} shutting down...`);
+
       if (httpHandle) {
+        log.info('...closing HTTP transport');
         await httpHandle.close();
         httpHandle = null;
       }
 
+      log.info('...closing Server');
       await server?.close();
       running = false;
-      log.info('server stopped!\n');
+      log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
 
       if (allowProcessExit) {
         process.exit(0);
       }
     }
+
+    /*
+    if (server && running) {
+      console.log(`${options.name} shutting down...`);
+      console.log('...closing Server');
+
+      await Promise.resolve(server?.close())
+        .catch(error => console.error(`Error closing ${options.name} server: ${error}`));
+
+      running = false;
+
+      if (httpHandle) {
+        console.log('...closing HTTP transport');
+        Promise.resolve(httpHandle.close())
+          .catch(error => console.error(`Error closing ${options.name} HTTP transport: ${error}`));
+
+        httpHandle = null;
+      }
+
+      console.log(`${options.name} closed!\n`);
+
+      if (allowProcessExit) {
+        process.exit(0);
+      }
+    }
+    */
+
+    /*
+    if (server && running) {
+      if (httpHandle) {
+        console.log('...closing HTTP transport');
+        // await httpHandle.close();
+        await Promise.resolve(httpHandle.close())
+          .catch(error => console.error(`Error closing ${options.name} HTTP transport: ${error}`));
+
+        httpHandle = null;
+      }
+
+      console.log('...closing Server');
+
+      await Promise.resolve(server?.close())
+        .catch(error => console.error(`Error closing ${options.name} server: ${error}`));
+
+      console.log(`${options.name} closed!\n`);
+      running = false;
+      if (allowProcessExit) {
+        process.exit(0);
+      }
+
+      /*
+      await server?.close();
+      running = false;
+      // process.stdout.write('Server stopped!\n');
+      console.log(`${options.name} closed!\n`);
+
+      if (allowProcessExit) {
+        // setTimeout(() => process.exit(0), 100);
+        process.exit(0);
+      }
+       * /
+    }*/
   };
 
   try {
