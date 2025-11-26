@@ -7,11 +7,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ListToolsResultSchema, ResultSchema } from '@modelcontextprotocol/sdk/types.js';
 // E2E tests import from dist/index.js (compiled entry point) - tests the actual production build
-import { start, type CliOptions, type ProgrammaticSettings } from '../../dist/index.js';
+import { start, type PfMcpOptions, type PfMcpSettings } from '../../dist/index.js';
 
-export type StartHttpServerOptions = Partial<CliOptions>;
+export type StartHttpServerOptions = Pick<PfMcpOptions, 'port', 'allowedOrigins', 'allowedHosts', 'docsHost'>;
 
-export type StartHttpServerSettings = ProgrammaticSettings;
+export type StartHttpServerSettings = PfMcpSettings;
 
 export interface RpcResponse {
   jsonrpc?: '2.0';
@@ -42,14 +42,15 @@ export const startHttpServer = async (
   options: StartHttpServerOptions = {},
   settings: StartHttpServerSettings = {}
 ): Promise<HttpTransportClient> => {
-  const updatedOptions: Partial<CliOptions> = {
-    http: true,
-    port: 3000,
-    host: '127.0.0.1',
+  const updatedOptions: PfMcpOptions = {
+    port: 5000,
     allowedOrigins: undefined,
     allowedHosts: undefined,
     docsHost: false,
-    ...options
+    ...options,
+    host: '127.0.0.1',
+    http: true,
+    mode: 'test'
   };
 
   const { host, port } = updatedOptions;
@@ -59,7 +60,7 @@ export const startHttpServer = async (
   console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
 
   // Start server using public API from dist/index.js (tests the actual compiled output)
-  const server = await start({ ...updatedOptions, mode: 'test' }, settings);
+  const server = await start(updatedOptions, settings);
 
   // Verify server is running
   if (!server?.isRunning()) {
@@ -99,11 +100,13 @@ export const startHttpServer = async (
 
   // Minimal wait for server to be ready (reduced from 200ms for faster tests)
   // The server should be ready immediately after start() resolves
+  /*
   await new Promise(resolve => {
     const timer = setTimeout(resolve, 50);
 
     timer.unref();
   });
+  */
 
   return {
     baseUrl: `http://${host}:${port}`,
@@ -163,22 +166,26 @@ export const startHttpServer = async (
       // This ensures all event listeners and connections are fully closed
       // before we shut down the server, preventing Jest worker process warnings
       // Increased delay to ensure SSE stream and all event listeners are cleaned up
+      /*
       await new Promise(resolve => {
         const timer = setTimeout(resolve, 200);
 
         // Don't keep process alive if this is the only thing running
         timer.unref();
       });
-
+      */
+      // console.log();
       // Stop the server after transport is fully closed
       await server.stop();
 
       // Additional small delay after server stop to ensure all cleanup completes
+      /*
       await new Promise(resolve => {
         const timer = setTimeout(resolve, 50);
 
         timer.unref();
       });
+       */
     }
   };
 };
