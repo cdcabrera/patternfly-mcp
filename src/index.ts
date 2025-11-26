@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-// import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parseCliOptions, type CliOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance, type ServerSettings } from './server';
@@ -73,9 +74,15 @@ const main = async (
   }
 };
 
-try {
-  // Detect if we're running in a CLI context. Wrap "URL" in a try/catch.
-  const isCli = typeof process.argv[1] === 'string' && import.meta.url === new URL(process.argv[1], 'file:').href;
+/**
+ * Confirm CLI mode, on success start the server.
+ */
+const cli = async () => {
+  let isCli = false;
+
+  try {
+    isCli = typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+  } catch {}
 
   if (isCli) {
     main({ mode: 'cli' }).catch(error => {
@@ -83,9 +90,10 @@ try {
       process.exit(1);
     });
   }
-} catch (error) {
-  console.error(error);
-}
+};
+
+// CLI startup check
+cli();
 
 export {
   main,
