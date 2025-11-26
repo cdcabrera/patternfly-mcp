@@ -152,7 +152,8 @@ const generateHash = (anyValue: unknown): string => {
     stringify = `$error:${Object.prototype.toString.call(anyValue)}:${error}`;
   }
 
-  return hashCode(stringify);
+  // return hashCode(stringify);
+  return stringify;
 };
 
 export {
