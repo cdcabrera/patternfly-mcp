@@ -21,10 +21,10 @@ type CliOptions = { docsHost: boolean; logging: LoggingOptions };
  * - `--log-stderr`: Enables terminal logging of channel events
  * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
  *
+ * @param argv - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
  */
-const parseCliOptions = (): CliOptions => {
-  const argv = process.argv;
+const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   const docsHost = argv.includes('--docs-host');
   const levelIndex = argv.indexOf('--log-level');
 
