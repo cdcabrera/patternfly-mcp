@@ -1,10 +1,11 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { getOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { createLogger, logSeverity, subscribeToChannel, type LogEvent, type LogLevel } from './logger';
 import { memo } from './server.caching';
 
-type McpLoggingLevel = 'debug' | 'info' | 'notice' | 'warning' | 'error' | 'critical' | 'alert' | 'emergency';
+type McpLoggingLevel = LoggingLevel;
 
 /**
  * Convert a log level to an MCP-compatible level.
