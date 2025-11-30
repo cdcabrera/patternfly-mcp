@@ -7,7 +7,7 @@ import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOption
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
 import { getOptions } from './options.context';
-
+import { log } from './logger';
 
 /**
  * Get process information for a port
@@ -103,10 +103,10 @@ const createStreamableHttpTransport = (options = getOptions()) => {
     enableJsonResponse: false, // Use SSE streaming
     enableDnsRebindingProtection: true,
     onsessioninitialized: (sessionId: string) => {
-      console.log(`Session initialized: ${sessionId}`);
+      log.info(`Session initialized: ${sessionId}`);
     },
     onsessionclosed: (sessionId: string) => {
-      console.log(`Session closed: ${sessionId}`);
+      log.info(`Session closed: ${sessionId}`);
     }
   };
 
@@ -171,7 +171,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   // Start the server. Port conflicts will be handled in the error handler below
   await new Promise<void>((resolve, reject) => {
     server.listen(port, host, () => {
-      console.log(`${name} server running on http://${host}:${port}`);
+      log.info(`${name} server running on http://${host}:${port}`);
       resolve();
     });
 
@@ -186,12 +186,12 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
         const processInfo = await getProcessOnPort(port);
         const errorMessage = formatPortConflictError(port, processInfo);
 
-        console.error(errorMessage);
+        log.error(errorMessage);
         reject(processInfo
           ? new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo })
           : error);
       } else {
-        console.error(`HTTP server error: ${error}`);
+        log.error(`HTTP server error: ${error}`);
         reject(error);
       }
     });
