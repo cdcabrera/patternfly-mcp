@@ -2,6 +2,7 @@ import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { getOptions } from './options.context';
 import { type GlobalOptions } from './options';
+import { DEFAULT_OPTIONS } from './options.defaults';
 import { createLogger, logSeverity, subscribeToChannel, type LogEvent, type LogLevel } from './logger';
 import { memo } from './server.caching';
 
@@ -78,6 +79,6 @@ const createServerLogger = (server: McpServer, options: GlobalOptions = getOptio
 /**
  * Memoize the server logger.
  */
-createServerLogger.memo = memo(createServerLogger, { cacheLimit: 10 });
+createServerLogger.memo = memo(createServerLogger, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 export { createServerLogger, registerMcpSubscriber, toMcpLevel, type McpLoggingLevel };

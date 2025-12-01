@@ -1,8 +1,7 @@
 import { createServer } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { getProcessOnPort, formatPortConflictError, startHttpTransport } from '../server.http';
-import { type GlobalOptions } from '../options';
+import { getProcessOnPort, startHttpTransport } from '../server.http';
 
 // Mock dependencies
 jest.mock('@modelcontextprotocol/sdk/server/mcp.js');
@@ -27,22 +26,6 @@ describe('getProcessOnPort', () => {
   });
 });
 
-describe('formatPortConflictError', () => {
-  it.each([
-    {
-      description: 'with process info',
-      port: 3000,
-      processInfo: { pid: 123456789, command: 'node dist/index.js --http' }
-    },
-    {
-      description: 'without process info',
-      port: 3000,
-      processInfo: undefined
-    }
-  ])('should return a formatted message, $description', ({ port, processInfo }) => {
-    expect(formatPortConflictError(port, processInfo)).toMatchSnapshot();
-  });
-});
 describe('startHttpTransport', () => {
   const mockFunction = jest.fn();
   const mockEventHandler = jest.fn();
@@ -82,7 +65,7 @@ describe('startHttpTransport', () => {
   });
 
   it('should start HTTP server, with port and host', async () => {
-    const server = await startHttpTransport(mockServer, { port: 3000, host: 'localhost' } as GlobalOptions);
+    const server = await startHttpTransport(mockServer, { port: 3000, host: 'localhost' } as any);
 
     await server.close();
 

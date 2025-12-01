@@ -1,4 +1,4 @@
-import { main, start, type PfMcpOptions } from '../index';
+import { main, start, type PfMcpOptions, type CliOptions } from '../index';
 import { parseCliOptions, type GlobalOptions } from '../options';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { setOptions } from '../options.context';

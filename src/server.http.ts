@@ -81,23 +81,13 @@ const getProcessOnPort = async (port: number) => {
 };
 
 /**
- * Format a helpful error message for port conflicts
- *
- * @param port - Port number
- * @param processInfo - Process information (optional)
- * @param processInfo.pid - Process ID
- * @param processInfo.command - Command string
- * @returns Formatted error message
- */
-const formatPortConflictError = (port: number, processInfo?: { pid: number; command: string }) =>
-  `Port ${port} is already in use${processInfo ? ` by PID ${processInfo.pid}` : ''}. Please use a different port or stop the process using this port.`;
-
-/**
  * Create Streamable HTTP transport
  *
- * @param options - Global options (default parameter)
+ * @param {DefaultSession} [options]
  */
 const createStreamableHttpTransport = (options = getOptions()) => {
+  const { http } = options;
+
   const transportOptions: StreamableHTTPServerTransportOptions = {
     sessionIdGenerator: () => randomUUID(),
     enableJsonResponse: false, // Use SSE streaming
@@ -110,12 +100,12 @@ const createStreamableHttpTransport = (options = getOptions()) => {
     }
   };
 
-  if (options.allowedOrigins) {
-    transportOptions.allowedOrigins = options.allowedOrigins;
+  if (http?.allowedOrigins) {
+    transportOptions.allowedOrigins = http.allowedOrigins;
   }
 
-  if (options.allowedHosts) {
-    transportOptions.allowedHosts = options.allowedHosts;
+  if (http?.allowedHosts) {
+    transportOptions.allowedHosts = http.allowedHosts;
   }
 
   return new StreamableHTTPServerTransport(transportOptions);
@@ -146,14 +136,14 @@ type HttpServerHandle = {
 /**
  * Start the HTTP transport server
  *
- * @param mcpServer - MCP server instance
- * @param options - Global options (default parameter)
+ * @param {McpServer} mcpServer
+ * @param {DefaultSession} [options]
  * @returns Handle with close method for server lifecycle management
  */
 const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<HttpServerHandle> => {
-  const { port, name, host } = options;
+  const { name, http } = options;
 
-  if (!port || !host) {
+  if (!http?.port || !http?.host) {
     throw new Error('Port and host options are required for HTTP transport');
   }
 
@@ -170,8 +160,8 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   // Start the server. Port conflicts will be handled in the error handler below
   await new Promise<void>((resolve, reject) => {
-    server.listen(port, host, () => {
-      log.info(`${name} server running on http://${host}:${port}`);
+    server.listen(http.port, http.host, () => {
+      log.info(`${name} server running on http://${http.host}:${http.port}`);
       resolve();
     });
 
@@ -182,14 +172,11 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
     server.on('error', async (error: NodeJS.ErrnoException) => {
       if (error.code === 'EADDRINUSE') {
-        // Port is in use - get process info and provide helpful error
-        const processInfo = await getProcessOnPort(port);
-        const errorMessage = formatPortConflictError(port, processInfo);
+        const processInfo = await getProcessOnPort(http.port);
+        const errorMessage = `Port ${http.port} is already in use${processInfo ? ` by PID ${processInfo.pid}` : ''}.`;
 
         log.error(errorMessage);
-        reject(processInfo
-          ? new Error(`Port ${port} is already in use by PID ${processInfo.pid}`, { cause: processInfo })
-          : error);
+        reject(processInfo ? new Error(errorMessage, { cause: processInfo }) : error);
       } else {
         log.error(`HTTP server error: ${error}`);
         reject(error);
@@ -220,7 +207,6 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
 export {
   createStreamableHttpTransport,
-  formatPortConflictError,
   getProcessOnPort,
   handleStreamableHttpRequest,
   startHttpTransport,

@@ -10,6 +10,7 @@ import packageJson from '../package.json';
  * @property contextPath - Current working directory.
  * @property docsHost - Flag indicating whether to use the docs-host.
  * @property docsPath - Path to the documentation directory.
+ * @property {HttpOptions} http - HTTP server options.
  * @property llmsFilesPath - Path to the LLMs files directory.
  * @property {LoggingOptions} logging - Logging options.
  * @property name - Name of the package.
@@ -33,6 +34,8 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
   docsHost: boolean;
   docsPath: string;
+  http: HttpOptions | undefined;
+  isHttp: boolean;
   llmsFilesPath: string;
   logging: TLogOptions;
   name: string;
@@ -86,6 +89,24 @@ interface LoggingOptions {
 }
 
 /**
+ * HTTP server options.
+ *
+ * @interface HttpOptions
+ * @default { port: 8080, host: '127.0.0.1', allowedOrigins: [], allowedHosts: [] }
+ *
+ * @property port Port number.
+ * @property host Host name.
+ * @property allowedOrigins List of allowed origins.
+ * @property allowedHosts List of allowed hosts.
+ */
+interface HttpOptions {
+  port: number;
+  host: string;
+  allowedOrigins: string[];
+  allowedHosts: string[];
+}
+
+/**
  * Logging session options, non-configurable by the user.
  *
  * @interface LoggingSession
@@ -109,6 +130,16 @@ const LOGGING_OPTIONS: LoggingOptions = {
 };
 
 /**
+ * Base HTTP options.
+ */
+const HTTP_OPTIONS: HttpOptions = {
+  port: 8080,
+  host: '127.0.0.1',
+  allowedOrigins: [],
+  allowedHosts: []
+};
+
+/**
  * Default separator for joining multiple document contents
  */
 const DEFAULT_SEPARATOR = '\n\n---\n\n';
@@ -117,6 +148,9 @@ const DEFAULT_SEPARATOR = '\n\n---\n\n';
  * Resource-level memoization options
  */
 const RESOURCE_MEMO_OPTIONS = {
+  default: {
+    cacheLimit: 3
+  },
   fetchUrl: {
     cacheLimit: 100,
     expire: 3 * 60 * 1000, // 3 minute sliding cache
@@ -226,6 +260,8 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   docsHost: false,
   contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
   docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
+  isHttp: false,
+  http: HTTP_OPTIONS,
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
@@ -261,12 +297,9 @@ export {
   PF_EXTERNAL_ACCESSIBILITY,
   LOG_BASENAME,
   DEFAULT_OPTIONS,
-  DEFAULT_SEPARATOR,
-  RESOURCE_MEMO_OPTIONS,
-  TOOL_MEMO_OPTIONS,
-  URL_REGEX,
   type DefaultOptions,
   type DefaultSession,
+  type HttpOptions,
   type LoggingOptions,
   type LoggingSession
 };

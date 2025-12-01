@@ -7,21 +7,17 @@ import { setOptions } from './options.context';
 import { runServer, type ServerInstance, type ServerSettings } from './server';
 
 /**
- * Options for programmatic usage. Extends the CliOptions interface.
+ * Options for "programmatic" use. Extends the `DefaultOptions` interface.
  *
- * `ProgrammaticOptions` introduces an additional optional property
- * `mode`. The `mode` property allows specifying the context of usage.
- * - If set to 'cli' or 'programmatic', it allows process exits.
- * - If set to 'test', it will NOT allow process exits.
+ * @interface
  *
- * Properties:
- * - `mode`: Optional string property that specifies the mode of operation.
- *   It can take one of the following values:
- *     - `'cli'`: Functionality is being executed in a command-line interface context.
- *     - `'programmatic'`: Functionality is invoked programmatically.
- *     - `'test'`: Functionality is being tested.
+ * @property {('cli' | 'programmatic' | 'test')} [mode] - Optional string property that specifies the mode of operation.
+ *     Defaults to `'programmatic'`.
+ *     - `'cli'`: Functionality is being executed in a cli context. Allows process exits.
+ *     - `'programmatic'`: Functionality is invoked programmatically. Allows process exits.
+ *     - `'test'`: Functionality is being tested. Does NOT allow process exits.
  */
-interface ProgrammaticOptions extends Partial<DefaultOptions> {
+interface PfMcpOptions extends DefaultOptions {
   mode?: 'cli' | 'programmatic' | 'test';
 }
 
@@ -33,18 +29,20 @@ interface ProgrammaticOptions extends Partial<DefaultOptions> {
  * - Sets to `true` when `mode=cli` or `mode=programmatic` or undefined.
  * - Sets to `false` when `mode=test`.
  *
- * Properties:
- * - `allowProcessExit` (optional): Override process exits.
+ * @property {boolean} allowProcessExit - Override process exits. Useful for tests
+ *     or programmatic use to avoid exiting.
+ *     - Providing this property overrides the `mode` property.
+ *     - Defaults to `true` when `mode=cli` or `mode=programmatic` or undefined.
+ *     - Defaults to `false` when `mode=test`.
  */
-type ProgrammaticSettings = Pick<ServerSettings, 'allowProcessExit'>;
+type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 
 /**
  * Main function - CLI entry point with optional programmatic overrides
  *
- * @param {Partial<ProgrammaticOptions>} [programmaticOptions] - Optional programmatic options that override CLI options
- * @param options - Additional options for controlling behavior.
- * @param [options.allowProcessExit=true] - Determines whether the process should exit on failure.
- *     Useful for tests or programmatic use to avoid exiting.
+ * @param [pfMcpOptions] - User configurable options
+ * @param [pfMcpSettings] - MCP server settings
+ *
  * @returns {Promise<ServerInstance>} Server-instance with shutdown capability
  *
  * @throws {Error} If the server fails to start or any error occurs during initialization,
@@ -52,19 +50,23 @@ type ProgrammaticSettings = Pick<ServerSettings, 'allowProcessExit'>;
  *     the process.
  */
 const main = async (
-  programmaticOptions?: ProgrammaticOptions,
-  { allowProcessExit }: ProgrammaticSettings = {}
+  pfMcpOptions: Partial<PfMcpOptions> = {},
+  pfMcpSettings: PfMcpSettings = {}
 ): Promise<ServerInstance> => {
-  const updatedAllowProcessExit = allowProcessExit ?? programmaticOptions?.mode !== 'test';
+  const { mode, ...options } = pfMcpOptions;
+  const { allowProcessExit } = pfMcpSettings;
+
+  const modes = ['cli', 'programmatic', 'test'];
+  const updatedMode = mode && modes.includes(mode) ? mode : 'programmatic';
+  const updatedAllowProcessExit = allowProcessExit ?? updatedMode !== 'test';
 
   try {
     const cliOptions = parseCliOptions();
-    const mergedOptions = setOptions({ ...cliOptions, ...programmaticOptions });
+    const mergedOptions = setOptions({ ...cliOptions, ...options });
 
     // `runServer` doesn't require it, but `memo` does for "uniqueness", pass in the merged options for a hashable argument
     return await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit });
   } catch (error) {
-    // Use console.error, log.error requires initialization
     console.error('Failed to start server:', error);
 
     if (updatedAllowProcessExit) {
@@ -100,7 +102,7 @@ export {
   main,
   main as start,
   type CliOptions,
-  type ProgrammaticOptions as PfMcpOptions,
-  type ProgrammaticSettings as PfMcpSettings,
+  type PfMcpOptions,
+  type PfMcpSettings,
   type ServerInstance
 };

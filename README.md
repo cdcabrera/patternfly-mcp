@@ -20,7 +20,6 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 
 - Node.js 20.0.0 or higher
 - NPM (or another Node package manager)
-- OS Support: macOS, Linux, and Windows (via Bash)
 
 ## Installation
 
@@ -43,16 +42,6 @@ npm run build
 ```bash
 npm run start:dev
 ```
-
-#### Windows (Bash) users
-
-We recommend Git Bash. Configure npm to use Bash for scripts so POSIX commands like `rm -rf` and `export` work:
-
-```bash
-npm config set script-shell bash
-```
-
-Alternatively, add `script-shell=bash` to your user-level `.npmrc` file (typically `~/.npmrc` or `%USERPROFILE%\.npmrc` on Windows). This applies to all projects and won't be checked into git.
 
 ### Use via npx (after publishing)
 
@@ -164,12 +153,12 @@ By default, the server communicates over stdio. To run the server over HTTP inst
 npx @patternfly/patternfly-mcp --http
 ```
 
-This starts the server on `http://127.0.0.1:3000` (default port and host).
+This starts the server on `http://127.0.0.1:8080` (default port and host).
 
 ### HTTP options
 
 - `--http`: Enable HTTP transport mode (default: stdio)
-- `--port <number>`: Port number to listen on (default: 3000)
+- `--port <number>`: Port number to listen on (default: 8080)
 - `--host <string>`: Host address to bind to (default: 127.0.0.1)
 - `--allowed-origins <origins>`: Comma-separated list of allowed CORS origins
 - `--allowed-hosts <hosts>`: Comma-separated list of allowed host headers
@@ -180,7 +169,7 @@ This server enables DNS rebinding protection by default when running in HTTP mod
 
 ```bash
 npx @patternfly/patternfly-mcp --http \
-  --host 0.0.0.0 --port 3000 \
+  --host 0.0.0.0 --port 8080 \
   --allowed-hosts "localhost,127.0.0.1,example.com"
 ```
 
@@ -200,7 +189,7 @@ npx @patternfly/patternfly-mcp --http --port 8080
 
 Start on a specific host:
 ```bash
-npx @patternfly/patternfly-mcp --http --host 0.0.0.0 --port 3000
+npx @patternfly/patternfly-mcp --http --host 0.0.0.0 --port 8080
 ```
 
 Start with CORS allowed origins:
@@ -270,7 +259,7 @@ Most MCP clients use a JSON configuration to specify how to start this server. T
   "mcpServers": {
     "patternfly-docs": {
       "command": "npx",
-      "args": ["-y", "@patternfly/patternfly-mcp@latest", "--http", "--port", "3000"],
+      "args": ["-y", "@patternfly/patternfly-mcp@latest", "--http", "--port", "8080"],
       "description": "PatternFly docs (HTTP transport)"
     }
   }

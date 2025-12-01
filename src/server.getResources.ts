@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getOptions } from './options.context';
-import { RESOURCE_MEMO_OPTIONS } from './options.defaults';
+import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 
 /**
@@ -14,7 +14,7 @@ const readLocalFileFunction = async (filePath: string) => await readFile(filePat
 /**
  * Memoized version of readLocalFileFunction. Use default memo options.
  */
-readLocalFileFunction.memo = memo(readLocalFileFunction, RESOURCE_MEMO_OPTIONS.readFile);
+readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourceMemoOptions.readFile);
 
 /**
  * Fetch content from a URL with timeout and error handling
@@ -48,7 +48,7 @@ const fetchUrlFunction = async (url: string) => {
 /**
  * Memoized version of fetchUrlFunction. Use default memo options.
  */
-fetchUrlFunction.memo = memo(fetchUrlFunction, RESOURCE_MEMO_OPTIONS.fetchUrl);
+fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptions.fetchUrl);
 
 /**
  * Resolve a local path depending on docs host flag

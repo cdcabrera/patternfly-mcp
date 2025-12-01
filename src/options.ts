@@ -1,4 +1,4 @@
-import { DEFAULT_OPTIONS, type DefaultOptions, type DefaultSession, type LoggingOptions } from './options.defaults';
+import { DEFAULT_OPTIONS, type DefaultOptions, type DefaultSession, type LoggingOptions, type HttpOptions } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 
 /**
@@ -11,12 +11,9 @@ type GlobalOptions = DefaultSession;
  */
 type CliOptions = {
   docsHost: boolean;
+  http: HttpOptions | undefined;
+  isHttp: boolean;
   logging: LoggingOptions;
-  http: boolean;
-  port: number;
-  host: string;
-  allowedOrigins: string[];
-  allowedHosts: string[];
 };
 
 /**
@@ -34,7 +31,7 @@ const getArgValue = (flag: string, defaultValue?: unknown) => {
 
   const value = process.argv[index + 1];
 
-  if (!value || value.startsWith('--')) {
+  if (!value || value.startsWith('-')) {
     return defaultValue;
   }
 
@@ -49,19 +46,6 @@ const getArgValue = (flag: string, defaultValue?: unknown) => {
   }
 
   return value;
-};
-
-/**
- * Validate CLI options
- *
- * @param options - Parsed CLI options
- */
-const validateCliOptions = (options: CliOptions) => {
-  const isValidPort = (typeof options.port === 'number') && (options.port > 0 && options.port <= 65536);
-
-  if (!isValidPort) {
-    throw new Error(`Invalid port: ${options.port}. Must be between 1 and 65535.`);
-  }
 };
 
 /**
@@ -81,18 +65,10 @@ const validateCliOptions = (options: CliOptions) => {
  *
  * @param argv - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
- *
- * @throws {Error} If the provided CLI options fail validation.
  */
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   const docsHost = argv.includes('--docs-host');
   const levelIndex = argv.indexOf('--log-level');
-  const http = argv.includes('--http');
-  const port = getArgValue('--port', 3030) as number;
-  const host = getArgValue('--host', '127.0.0.1') as string;
-  const allowedOrigins = (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim());
-  const allowedHosts = (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim());
-
   const logging: LoggingOptions = {
     ...DEFAULT_OPTIONS.logging,
     stderr: argv.includes('--log-stderr'),
@@ -109,19 +85,36 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     }
   }
 
-  const options: CliOptions = { docsHost, logging, http, port, host, allowedOrigins, allowedHosts };
+  const isHttp = argv.includes('--http');
+  let http: HttpOptions | undefined;
 
-  validateCliOptions(options);
+  if (isHttp) {
+    let port = getArgValue('--port');
+    const host = getArgValue('--host');
+    const allowedOrigins = (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim());
+    const allowedHosts = (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim());
 
-  return options;
+    const isPortValid = (typeof port === 'number') && (port > 0 && port <= 65536);
+
+    port = isPortValid ? port : undefined;
+
+    http = {
+      port,
+      host,
+      allowedHosts,
+      allowedOrigins
+    } as HttpOptions;
+  }
+
+  return { docsHost, logging, isHttp, http };
 };
 
 export {
   parseCliOptions,
   getArgValue,
-  validateCliOptions,
   type CliOptions,
-  type LoggingOptions,
   type DefaultOptions,
-  type GlobalOptions
+  type GlobalOptions,
+  type HttpOptions,
+  type LoggingOptions
 };
