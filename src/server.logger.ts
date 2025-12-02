@@ -114,6 +114,8 @@ const createServerLogger = (server: McpServer, options: GlobalOptions = getOptio
           log.debug('Error unsubscribing from diagnostics channel', error);
         }
       });
+      // Clear the list of active subscribers
+      unsubscribeLoggerFuncs.length = 0;
     }
   };
 };
