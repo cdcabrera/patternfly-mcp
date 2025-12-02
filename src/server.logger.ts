@@ -111,10 +111,10 @@ const createServerLogger = (server: McpServer, options: GlobalOptions = getOptio
         try {
           unsubscribe();
         } catch (error) {
-          log.debug('Error unsubscribing from diagnostics channel', error);
+          log.debug('Error unsubscribing from MCP server diagnostics channel', error);
         }
       });
-      // Clear the list of active subscribers
+
       unsubscribeLoggerFuncs.length = 0;
     }
   };

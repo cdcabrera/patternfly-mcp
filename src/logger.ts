@@ -163,7 +163,7 @@ const subscribeToChannel = (
  * @param [formatter] - Optional custom formatter for log events. Default prints: `[LEVEL] msg ...args`
  * @returns Unsubscribe function to remove the subscriber
  */
-const registerStderrSubscriber = (options: LoggingSession, formatter?: (e: LogEvent) => string) => {
+const registerStderrSubscriber = (options: LoggingSession, formatter?: (e: LogEvent) => string): Unsubscribe => {
   const format = formatter || ((event: LogEvent) => {
     const eventLevel = `[${event.level.toUpperCase()}]`;
     const message = event.msg || '';
@@ -192,14 +192,24 @@ const registerStderrSubscriber = (options: LoggingSession, formatter?: (e: LogEv
  * @param {LoggingSession} [options]
  * @returns Unsubscribe function to remove all registered subscribers
  */
-const createLogger = (options: LoggingSession = getLoggerOptions()) => {
+const createLogger = (options: LoggingSession = getLoggerOptions()): Unsubscribe => {
   const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
   if (options?.channelName && options?.stderr) {
     unsubscribeLoggerFuncs.push(registerStderrSubscriber(options));
   }
 
-  return () => unsubscribeLoggerFuncs.forEach(unsubscribe => unsubscribe());
+  return () => {
+    unsubscribeLoggerFuncs.forEach(unsubscribe => {
+      try {
+        unsubscribe();
+      } catch (error) {
+        log.debug('Error unsubscribing from diagnostics channel', error);
+      }
+    });
+
+    unsubscribeLoggerFuncs.length = 0;
+  };
 };
 
 export {
