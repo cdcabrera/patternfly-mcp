@@ -5,6 +5,15 @@ import { getLoggerOptions } from './options.context';
 type LogLevel = LoggingSession['level'];
 
 /**
+ * Unsubscribe function returned by `subscribeToChannel`.
+ *
+ * @note We purposefully don't handle the return `boolean` given by `diagnostics_channel.unsubscribe`. The `unsubscribe`
+ * returns a function that returns a boolean indicating whether the subscription was successfully removed.
+ * https://nodejs.org/api/diagnostics_channel.html#diagnostics_channel_channel_unsubscribe_listener
+ */
+type Unsubscribe = () => void;
+
+/**
  * Log an event with detailed information about a specific action.
  *
  * @interface LogEvent
@@ -116,7 +125,10 @@ const log = {
  * @param {LoggingSession} [options]
  * @returns Function to unsubscribe from the log channel
  */
-const subscribeToChannel = (handler: (message: LogEvent) => void, options: LoggingSession = getLoggerOptions()) => {
+const subscribeToChannel = (
+  handler: (message: LogEvent) => void,
+  options: LoggingSession = getLoggerOptions()
+): Unsubscribe => {
   const channelName = options?.channelName;
 
   if (!channelName) {
@@ -137,7 +149,9 @@ const subscribeToChannel = (handler: (message: LogEvent) => void, options: Loggi
 
   subscribe(channelName, updatedHandler as (message: unknown) => void);
 
-  return () => unsubscribe(channelName, updatedHandler as (message: unknown) => void);
+  return () => {
+    unsubscribe(channelName, updatedHandler as (message: unknown) => void);
+  };
 };
 
 /**
@@ -179,7 +193,7 @@ const registerStderrSubscriber = (options: LoggingSession, formatter?: (e: LogEv
  * @returns Unsubscribe function to remove all registered subscribers
  */
 const createLogger = (options: LoggingSession = getLoggerOptions()) => {
-  const unsubscribeLoggerFuncs: (() => void | boolean)[] = [];
+  const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
   if (options?.channelName && options?.stderr) {
     unsubscribeLoggerFuncs.push(registerStderrSubscriber(options));
@@ -197,5 +211,6 @@ export {
   registerStderrSubscriber,
   subscribeToChannel,
   type LogEvent,
-  type LogLevel
+  type LogLevel,
+  type Unsubscribe
 };

@@ -3,7 +3,7 @@ import { type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { getOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import { createLogger, log, logSeverity, subscribeToChannel, type LogEvent, type LogLevel } from './logger';
+import { createLogger, log, logSeverity, subscribeToChannel, type LogEvent, type LogLevel, type Unsubscribe } from './logger';
 import { memo } from './server.caching';
 
 type McpLoggingLevel = LoggingLevel;
@@ -65,7 +65,7 @@ const registerMcpSubscriber = (server: McpServer, { logging, name }: GlobalOptio
  */
 const createServerLogger = (server: McpServer, options: GlobalOptions = getOptions()) => {
   // Track active subscribers to unsubscribe on server shutdown
-  const unsubscribeLoggerFuncs: (() => boolean | void)[] = [];
+  const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
   if (options?.logging?.channelName) {
     // Register the diagnostics channel
