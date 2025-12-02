@@ -45,7 +45,7 @@ type ServerOnLogHandler = (entry: LogEvent) => void;
 /**
  * Subscribes a handler function to server logs. Automatically unsubscribed on server shutdown.
  */
-type ServerOnLog = (handler: ServerOnLogHandler) => void;
+type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
 
 /**
  * Server instance with shutdown capability
@@ -177,8 +177,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
       return running;
     },
 
-    onLog(handler: ServerOnLogHandler): void {
-      onLogSetup(handler);
+    onLog(handler: ServerOnLogHandler): () => void {
+      return onLogSetup(handler);
     }
   };
 };
