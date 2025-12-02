@@ -17,23 +17,18 @@ import { runServer, type ServerInstance, type ServerSettings } from './server';
  *     - `'programmatic'`: Functionality is invoked programmatically. Allows process exits.
  *     - `'test'`: Functionality is being tested. Does NOT allow process exits.
  */
-interface PfMcpOptions extends DefaultOptions {
+type PfMcpOptions = Partial<DefaultOptions> & {
   mode?: 'cli' | 'programmatic' | 'test';
-}
+};
 
 /**
  * Additional settings for programmatic control.
  *
- * `allowProcessExit` is disabled for `test` use by default.
- * You can enable/disable it directly or via the `mode` property.
- * - Sets to `true` when `mode=cli` or `mode=programmatic` or undefined.
- * - Sets to `false` when `mode=test`.
- *
  * @property {boolean} allowProcessExit - Override process exits. Useful for tests
  *     or programmatic use to avoid exiting.
- *     - Providing this property overrides the `mode` property.
- *     - Defaults to `true` when `mode=cli` or `mode=programmatic` or undefined.
- *     - Defaults to `false` when `mode=test`.
+ *     - Setting directly overrides `mode` property defaults.
+ *     - When `mode=cli` or `mode=programmatic` or `undefined`, defaults to `true`.
+ *     - When `mode=test`, defaults to `false`.
  */
 type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 
