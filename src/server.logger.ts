@@ -92,12 +92,15 @@ const createServerLogger = (server: McpServer, options: GlobalOptions = getOptio
           return;
         }
         activeSubscribe = false;
-        unsubscribe();
 
-        const index = unsubscribeLoggerFuncs.indexOf(wrappedUnsubscribe);
+        try {
+          unsubscribe();
+        } finally {
+          const index = unsubscribeLoggerFuncs.indexOf(wrappedUnsubscribe);
 
-        if (index > -1) {
-          unsubscribeLoggerFuncs.splice(index, 1);
+          if (index > -1) {
+            unsubscribeLoggerFuncs.splice(index, 1);
+          }
         }
       };
 
