@@ -8,6 +8,8 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import { ListToolsResultSchema, ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { start, type PfMcpOptions, type PfMcpSettings, type ServerLogEvent } from '../../dist/index.js';
 
+export type { RpcRequest } from '@modelcontextprotocol/sdk/types.js';
+
 export type StartHttpServerOptions = {
   docsHost?: boolean;
   http?: Partial<PfMcpOptions['http']>;
