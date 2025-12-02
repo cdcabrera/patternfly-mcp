@@ -1,7 +1,3 @@
-#!/usr/bin/env node
-
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { parseCliOptions, type CliOptions, type DefaultOptions } from './options';
 import { setOptions } from './options.context';
 import { runServer, type ServerInstance, type ServerSettings } from './server';
@@ -71,27 +67,6 @@ const main = async (
     }
   }
 };
-
-/**
- * Confirm CLI mode, on success start the server.
- */
-const cli = async () => {
-  let isCli = false;
-
-  try {
-    isCli = typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
-  } catch {}
-
-  if (isCli) {
-    main({ mode: 'cli' }).catch(error => {
-      console.error('Failed to start server:', error);
-      process.exit(1);
-    });
-  }
-};
-
-// CLI startup check
-cli();
 
 export {
   main,

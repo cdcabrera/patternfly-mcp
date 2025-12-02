@@ -35,7 +35,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     // Start the MCP server
-    client = await startHttpServer({ port: 5001 });
+    client = await startHttpServer({ http: { port: 5001 } });
   });
 
   afterAll(async () => {
