@@ -2,13 +2,12 @@
  * HTTP Transport Client for E2E Testing
  * Uses the MCP SDK's built-in Client and StreamableHTTPClientTransport
  */
-// @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ListToolsResultSchema, ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { start, type PfMcpOptions, type PfMcpSettings, type ServerLogEvent } from '../../dist/index.js';
 
-export type { RpcRequest } from '@modelcontextprotocol/sdk/types.js';
+export type { Request as RpcRequest } from '@modelcontextprotocol/sdk/types.js';
 
 export type StartHttpServerOptions = {
   docsHost?: boolean;

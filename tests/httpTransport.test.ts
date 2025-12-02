@@ -1,16 +1,16 @@
 /**
  * Requires: npm run build prior to running Jest.
  */
-import { startHttpServer, type HttpTransportClient } from './utils/httpTransportClient';
+import {
+  startHttpServer,
+  type RpcRequest
+} from './utils/httpTransportClient';
 import { loadFixture } from './utils/fixtures';
 import { setupFetchMock } from './utils/fetchMock';
 
 describe('PatternFly MCP, HTTP Transport', () => {
-  let client: HttpTransportClient | undefined;
   let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
 
-  // Set up fetch mock to intercept remote HTTP requests
-  // This ensures tests don't depend on external services being available
   beforeAll(async () => {
     // Load fixture content
     const body = loadFixture('README.md');
@@ -35,7 +35,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     });
 
     // Start the MCP server
-    client = await startHttpServer({ http: { port: 5001 } });
+    // client = await startHttpServer({ http: { port: 5001 } });
   });
 
   afterAll(async () => {
@@ -45,18 +45,28 @@ describe('PatternFly MCP, HTTP Transport', () => {
     }
 
     // Close MCP server
+    /*
     if (client) {
       await client.close();
       client = undefined;
     }
+    */
+  });
+
+  it('should initialize MCP session over HTTP', async () => {
+    const client = await startHttpServer({ http: { port: 5001 } });
+    const response = await client.initialize();
+
+    expect({
+      version: response?.result?.protocolVersion,
+      name: (response as any)?.result?.serverInfo?.name,
+      baseUrl: client.baseUrl
+    }).toMatchSnapshot();
+    await client.close();
   });
 
   it('should expose expected tools and stable shape', async () => {
-    // Client is automatically initialized, so we can directly call tools/list
-    if (!client) {
-      throw new Error('Client not initialized');
-    }
-
+    const client = await startHttpServer({ http: { port: 5001 } });
     const response = await client.send({
       method: 'tools/list',
       params: {}
@@ -64,23 +74,15 @@ describe('PatternFly MCP, HTTP Transport', () => {
     const tools = response?.result?.tools || [];
     const toolNames = tools.map((tool: any) => tool.name).sort();
 
-    expect(toolNames).toMatchSnapshot();
-  });
-
-  /*
-  it('should initialize MCP session over HTTP', async () => {
-    client = await startHttpServer({ port: 5001, killExisting: true });
-    const response = await client.initialize();
-
     expect({
-      version: response?.result?.protocolVersion,
-      name: (response as any)?.result?.serverInfo?.name
+      toolNames
     }).toMatchSnapshot();
+    await client.close();
   });
 
   it('should concatenate headers and separator with two local files', async () => {
-    client = await startHttpServer({ port: 5001, killExisting: true });
-    const req: RpcRequest = {
+    const client = await startHttpServer({ http: { port: 5001 } });
+    const req = {
       jsonrpc: '2.0',
       id: 1,
       method: 'tools/call',
@@ -93,21 +95,13 @@ describe('PatternFly MCP, HTTP Transport', () => {
           ]
         }
       }
-    };
+    } as RpcRequest;
 
     const response = await client.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
     expect(text).toMatchSnapshot();
-  });
-
-  it('should start server on custom host', async () => {
-    client = await startHttpServer({ port: 5001, killExisting: true });
     await client.close();
-    client = await startHttpServer({ host: '127.0.0.1', port: 5011 });
-
-    expect(client.baseUrl).toMatch(/127\.0\.0\.1/);
   });
-   */
 });
