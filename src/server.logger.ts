@@ -64,30 +64,47 @@ const registerMcpSubscriber = (server: McpServer, { logging, name }: GlobalOptio
  *   - `unsubscribe`: Unsubscribes and cleans up all available registered loggers and handlers.
  */
 const createServerLogger = (server: McpServer, options: GlobalOptions = getOptions()) => {
+  // Track active subscribers to unsubscribe on server shutdown
   const unsubscribeLoggerFuncs: (() => boolean | void)[] = [];
 
   if (options?.logging?.channelName) {
-    // Register the diagnostics channel returns a function to unsubscribe
+    // Register the diagnostics channel
     unsubscribeLoggerFuncs.push(createLogger(options.logging));
 
     if (options.logging.protocol) {
+      // Register the MCP subscriber
       unsubscribeLoggerFuncs.push(registerMcpSubscriber(server, options));
     }
   }
 
   return {
     subscribe: (handler?: (event: LogEvent) => void) => {
-      if (typeof handler === 'function') {
-        const unsubscribe = subscribeToChannel(handler);
-
-        // Track for server-wide cleanup
-        unsubscribeLoggerFuncs.push(unsubscribe);
-
-        return unsubscribe;
+      if (typeof handler !== 'function') {
+        return () => {};
       }
 
-      // No-op
-      return () => {};
+      const unsubscribe = subscribeToChannel(handler);
+      let activeSubscribe = true;
+
+      // Wrap the unsubscribe function so it removes itself from the list of active subscribers
+      const wrappedUnsubscribe = () => {
+        if (!activeSubscribe) {
+          return;
+        }
+        activeSubscribe = false;
+        unsubscribe();
+
+        const index = unsubscribeLoggerFuncs.indexOf(wrappedUnsubscribe);
+
+        if (index > -1) {
+          unsubscribeLoggerFuncs.splice(index, 1);
+        }
+      };
+
+      // Track for server-wide cleanup
+      unsubscribeLoggerFuncs.push(wrappedUnsubscribe);
+
+      return wrappedUnsubscribe;
     },
     unsubscribe: () => {
       unsubscribeLoggerFuncs.forEach(unsubscribe => {
