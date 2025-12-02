@@ -6,7 +6,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ListToolsResultSchema, ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
-import { start, type PfMcpOptions, type PfMcpSettings } from '../../dist/index.js';
+import { start, type PfMcpOptions, type PfMcpSettings, type ServerLogEvent } from '../../dist/index.js';
 
 export type StartHttpServerOptions = {
   docsHost?: boolean;
@@ -35,7 +35,7 @@ export interface HttpTransportClient {
   initialize: () => Promise<RpcResponse>;
   close: () => Promise<void>;
   logs: () => string[];
-  // stderrLogs: () => string[];
+  inProcessLogs: () => string[];
   protocolLogs: () => string[];
 }
 
@@ -73,6 +73,13 @@ export const startHttpServer = async (
 
   // Start server using public API from dist/index.js (tests the actual compiled output)
   const server = await start(updatedOptions, settings);
+
+  // Collect all server logs in-process
+  const inProcessLogs: string[] = [];
+
+  server.onLog((event: ServerLogEvent) => {
+    inProcessLogs.push(event.msg || JSON.stringify(event));
+  });
 
   // Verify server is running
   if (!server?.isRunning()) {
@@ -135,18 +142,6 @@ export const startHttpServer = async (
       await mcpClient.setLoggingLevel(updatedOptions.logging.level as LoggingLevel);
     } catch {}
   }
-
-  // Access stderr stream if available. stderr is used to prevent logs from interfering with JSON-RPC parsing
-  // Collect server stderr logs
-  /*
-  const stderrLogs: string[] = [];
-
-  if (transport?.stderr) {
-    transport.stderr.on('data', (data: Buffer) => {
-      stderrLogs.push(data.toString());
-    });
-  }
-  */
 
   // Wait for the server to be ready
   await new Promise(resolve => {
@@ -226,11 +221,12 @@ export const startHttpServer = async (
         timer.unref();
       });
     },
+
+    inProcessLogs: () => inProcessLogs.slice(),
     logs: () => [
-      // ...stderrLogs,
+      ...inProcessLogs,
       ...protocolLogs
     ],
-    // stderrLogs: () => stderrLogs.slice(),
     protocolLogs: () => protocolLogs.slice()
   };
 };

@@ -36,11 +36,16 @@ interface ServerSettings {
 }
 
 /**
+ * Server log event.
+ */
+type ServerLogEvent = LogEvent;
+
+/**
  * A handler function to subscribe to server logs. Automatically unsubscribed on server shutdown.
  *
- * @param {LogEvent} entry
+ * @param {ServerLogEvent} entry
  */
-type ServerOnLogHandler = (entry: LogEvent) => void;
+type ServerOnLogHandler = (entry: ServerLogEvent) => void;
 
 /**
  * Subscribes a handler function to server logs. Automatically unsubscribed on server shutdown.
@@ -223,6 +228,7 @@ export {
   type McpTool,
   type McpToolCreator,
   type ServerInstance,
+  type ServerLogEvent,
   type ServerOnLog,
   type ServerOnLogHandler,
   type ServerOptions,
