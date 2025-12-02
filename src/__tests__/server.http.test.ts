@@ -65,7 +65,7 @@ describe('startHttpTransport', () => {
   });
 
   it('should start HTTP server, with port and host', async () => {
-    const server = await startHttpTransport(mockServer, { port: 3000, host: 'localhost' } as any);
+    const server = await startHttpTransport(mockServer, { http: { port: 3000, host: 'localhost' } } as any);
 
     await server.close();
 

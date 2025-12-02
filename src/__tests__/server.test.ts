@@ -73,7 +73,7 @@ describe('runServer', () => {
     },
     {
       description: 'use default tools, http',
-      options: { name: 'test-server-2', version: '1.0.0', http: true },
+      options: { name: 'test-server-2', version: '1.0.0', isHttp: true },
       tools: undefined,
       transportMethod: MockStartHttpTransport
     },
@@ -165,7 +165,7 @@ describe('runServer', () => {
     },
     {
       description: 'http stop server',
-      options: { http: true }
+      options: { isHttp: true }
     }
   ])('should allow server to be stopped, $description', async ({ options }) => {
     const serverInstance = await runServer({ ...options, name: 'test-server' } as any, { allowProcessExit: false });
