@@ -10,6 +10,7 @@ import packageJson from '../package.json';
  * @property contextPath - Current working directory.
  * @property docsHost - Flag indicating whether to use the docs-host.
  * @property docsPath - Path to the documentation directory.
+ * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
  * @property llmsFilesPath - Path to the LLMs files directory.
  * @property {LoggingOptions} logging - Logging options.
