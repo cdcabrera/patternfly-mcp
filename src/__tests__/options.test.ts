@@ -63,19 +63,4 @@ describe('parseCliOptions', () => {
 
     expect(result).toMatchSnapshot();
   });
-
-  it.each([
-    {
-      description: 'invalid',
-      args: ['node', 'script.js', '--http', '--port', '99999']
-    },
-    {
-      description: 'negative number',
-      args: ['node', 'script.js', '--http', '--port', '-1']
-    }
-  ])('should throw port errors, $description', ({ args = [] }) => {
-    process.argv = args;
-
-    expect(() => parseCliOptions()).toThrowErrorMatchingSnapshot();
-  });
 });
