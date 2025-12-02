@@ -89,7 +89,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let httpHandle: HttpServerHandle | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let running = false;
-  let onLogSetup: ServerOnLog;
+  let onLogSetup: ServerOnLog = () => () => {};
 
   const stopServer = async () => {
     log.info(`\n${options.name} server shutting down... `);
@@ -152,7 +152,9 @@ const runServer = async (options: ServerOptions = getOptions(), {
     });
 
     if (enableSigint) {
-      process.on('SIGINT', async () => stopServer());
+      process.on('SIGINT', () => {
+        void stopServer();
+      });
     }
 
     if (options.isHttp) {

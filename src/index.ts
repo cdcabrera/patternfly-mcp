@@ -1,6 +1,13 @@
 import { parseCliOptions, type CliOptions, type DefaultOptions } from './options';
 import { setOptions } from './options.context';
-import { runServer, type ServerInstance, type ServerSettings, type ServerOnLogHandler, type ServerLogEvent } from './server';
+import {
+  runServer,
+  type ServerInstance,
+  type ServerSettings,
+  type ServerOnLog,
+  type ServerOnLogHandler,
+  type ServerLogEvent
+} from './server';
 
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
@@ -76,5 +83,6 @@ export {
   type PfMcpSettings,
   type ServerInstance,
   type ServerLogEvent,
+  type ServerOnLog,
   type ServerOnLogHandler
 };
