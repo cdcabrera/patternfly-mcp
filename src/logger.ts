@@ -77,35 +77,6 @@ const publish = (level: LogLevel, options: LoggingSession = getLoggerOptions(), 
 };
 
 /**
- * Subscribe to the diagnostics channel and invoke a handler for each event.
- *
- * If the event doesn't contain a valid `level` property, the handler is not invoked.
- *
- * @param handler - Callback function to handle log events
- * @param {LoggingSession} [options]
- * @returns Function to unsubscribe from the log channel
- */
-const subscribeToChannel = (handler: (message: LogEvent) => void, options: LoggingSession = getLoggerOptions()) => {
-  const channelName = options?.channelName;
-
-  if (!channelName) {
-    throw new Error('subscribeToChannel called without a configured logging channelName');
-  }
-
-  const updatedHandler = (event: LogEvent) => {
-    if (!event?.level) {
-      return;
-    }
-
-    handler.call(null, event);
-  };
-
-  subscribe(channelName, updatedHandler as (message: unknown) => void);
-
-  return () => unsubscribe(channelName, updatedHandler as (message: unknown) => void);
-};
-
-/**
  * Console-like API for publishing structured log events to the diagnostics channel.
  *
  * @property debug Logs messages with 'debug' level.
@@ -134,6 +105,39 @@ const log = {
 
     return publish('error', options, msg, ...args);
   }
+};
+
+/**
+ * Subscribe to the diagnostics channel and invoke a handler for each event.
+ *
+ * If the event doesn't contain a valid `level` property, the handler is not invoked.
+ *
+ * @param handler - Callback function to handle log events
+ * @param {LoggingSession} [options]
+ * @returns Function to unsubscribe from the log channel
+ */
+const subscribeToChannel = (handler: (message: LogEvent) => void, options: LoggingSession = getLoggerOptions()) => {
+  const channelName = options?.channelName;
+
+  if (!channelName) {
+    throw new Error('subscribeToChannel called without a configured logging channelName');
+  }
+
+  const updatedHandler = (event: LogEvent) => {
+    if (!event?.level) {
+      return;
+    }
+
+    try {
+      handler.call(null, event);
+    } catch (error) {
+      log.debug('Error invoking logging subscriber', event, error);
+    }
+  };
+
+  subscribe(channelName, updatedHandler as (message: unknown) => void);
+
+  return () => unsubscribe(channelName, updatedHandler as (message: unknown) => void);
 };
 
 /**

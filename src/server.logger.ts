@@ -59,7 +59,9 @@ const registerMcpSubscriber = (server: McpServer, { logging, name }: GlobalOptio
  *
  * @param {McpServer} server
  * @param {GlobalOptions} options
- * @returns Unsubscribe function to remove all registered subscribers
+ * @returns An object with methods to manage logging subscriptions:
+ *   - `subscribe`: Registers a new log event handler if a valid handler function is provided.
+ *   - `unsubscribe`: Unsubscribes and cleans up all available registered loggers and handlers.
  */
 const createServerLogger = (server: McpServer, options: GlobalOptions = getOptions()) => {
   const unsubscribeLoggerFuncs: (() => boolean | void)[] = [];
@@ -73,7 +75,14 @@ const createServerLogger = (server: McpServer, options: GlobalOptions = getOptio
     }
   }
 
-  return () => unsubscribeLoggerFuncs.forEach(unsubscribe => unsubscribe());
+  return {
+    subscribe: (handler?: (event: LogEvent) => void) => {
+      if (typeof handler === 'function') {
+        unsubscribeLoggerFuncs.push(subscribeToChannel(handler));
+      }
+    },
+    unsubscribe: () => unsubscribeLoggerFuncs.forEach(unsubscribe => unsubscribe())
+  };
 };
 
 /**

@@ -5,7 +5,7 @@ import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
-import { log } from './logger';
+import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { type GlobalOptions } from './options';
 import { getOptions, runWithOptions } from './options.context';
@@ -36,14 +36,28 @@ interface ServerSettings {
 }
 
 /**
+ * A handler function to subscribe to server logs. Automatically unsubscribed on server shutdown.
+ *
+ * @param {LogEvent} entry
+ */
+type ServerOnLogHandler = (entry: LogEvent) => void;
+
+/**
+ * Subscribes a handler function to server logs. Automatically unsubscribed on server shutdown.
+ */
+type ServerOnLog = (handler: ServerOnLogHandler) => void;
+
+/**
  * Server instance with shutdown capability
  *
  * @property stop - Stops the server, gracefully.
  * @property isRunning - Indicates whether the server is running.
+ * @property {ServerOnLog} onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
  */
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
+  onLog: ServerOnLog;
 }
 
 /**
@@ -70,6 +84,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let httpHandle: HttpServerHandle | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let running = false;
+  let onLogSetup: ServerOnLog;
 
   const stopServer = async () => {
     log.info(`\n${options.name} server shutting down... `);
@@ -112,7 +127,13 @@ const runServer = async (options: ServerOptions = getOptions(), {
       }
     );
 
-    unsubscribeServerLogger = createServerLogger.memo(server);
+    const { subscribe, unsubscribe } = createServerLogger.memo(server);
+
+    // Track active logging subscriptions to clean up on stop()
+    unsubscribeServerLogger = unsubscribe;
+
+    // Setup server logging for external handlers
+    onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
 
     tools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
@@ -150,6 +171,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     isRunning(): boolean {
       return running;
+    },
+
+    onLog(handler: ServerOnLogHandler): void {
+      onLogSetup(handler);
     }
   };
 };
@@ -165,7 +190,7 @@ runServer.memo = memo(
   {
     ...DEFAULT_OPTIONS.resourceMemoOptions.default,
     debug: info => {
-      log.info(`Server memo: ${JSON.stringify(info, null, 2) || 'No info available'}`);
+      log.debug(`Server memo: ${JSON.stringify(info, null, 2)}`);
     },
     onCacheRollout: async ({ removed }) => {
       const results: PromiseSettledResult<ServerInstance>[] = await Promise.allSettled(removed);
@@ -194,6 +219,8 @@ export {
   type McpTool,
   type McpToolCreator,
   type ServerInstance,
+  type ServerOnLog,
+  type ServerOnLogHandler,
   type ServerOptions,
   type ServerSettings
 };
