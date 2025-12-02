@@ -127,13 +127,17 @@ const runServer = async (options: ServerOptions = getOptions(), {
       }
     );
 
-    const { subscribe, unsubscribe } = createServerLogger.memo(server);
+    const subUnsub = createServerLogger.memo(server);
 
-    // Track active logging subscriptions to clean up on stop()
-    unsubscribeServerLogger = unsubscribe;
+    if (subUnsub) {
+      const { subscribe, unsubscribe } = subUnsub;
 
-    // Setup server logging for external handlers
-    onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
+      // Track active logging subscriptions to clean up on stop()
+      unsubscribeServerLogger = unsubscribe;
+
+      // Setup server logging for external handlers
+      onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
+    }
 
     tools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);

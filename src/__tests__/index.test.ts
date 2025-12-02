@@ -42,7 +42,8 @@ describe('main', () => {
     });
     const mockServerInstance = {
       stop: jest.fn().mockResolvedValue(undefined),
-      isRunning: jest.fn().mockReturnValue(true)
+      isRunning: jest.fn().mockReturnValue(true),
+      onLog: jest.fn()
     };
 
     mockRunServer.mockImplementation(async () => {

@@ -2,15 +2,17 @@
  * HTTP Transport Client for E2E Testing
  * Uses the MCP SDK's built-in Client and StreamableHTTPClientTransport
  */
+// @ts-nocheck - E2E test file that imports from dist/index.js (compiled output)
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { ListToolsResultSchema, ResultSchema } from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsResultSchema, ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { start, type PfMcpOptions, type PfMcpSettings } from '../../dist/index.js';
 
 export type StartHttpServerOptions = {
   docsHost?: boolean;
-  http?: Partial<PfMcpOptions['http']>,
+  http?: Partial<PfMcpOptions['http']>;
   isHttp?: boolean;
+  logging?: Partial<PfMcpOptions['logging']> & { level?: LoggingLevel };
 };
 
 export type StartHttpServerSettings = PfMcpSettings;
@@ -32,6 +34,9 @@ export interface HttpTransportClient {
   send: (request: { method: string; params?: any }) => Promise<RpcResponse>;
   initialize: () => Promise<RpcResponse>;
   close: () => Promise<void>;
+  logs: () => string[];
+  // stderrLogs: () => string[];
+  protocolLogs: () => string[];
 }
 
 /**
@@ -54,6 +59,12 @@ export const startHttpServer = async (
       allowedOrigins: [],
       allowedHosts: [],
       ...options.http
+    },
+    logging: {
+      level: options.logging?.level || 'info',
+      stderr: options.logging?.stderr || false,
+      protocol: options.logging?.protocol || false,
+      transport: 'mcp'
     },
     mode: 'test'
   };
@@ -103,8 +114,39 @@ export const startHttpServer = async (
     }
   };
 
+  // Collect protocol logs (MCP notifications/message) when enabled via CLI arg
+  const protocolLogs: any[] = [];
+
+  // Register the handler BEFORE connect so we don't miss early server messages
+  if (updatedOptions.logging?.protocol) {
+    try {
+      mcpClient.setNotificationHandler(LoggingMessageNotificationSchema, (params: any) => {
+        protocolLogs.push(params);
+      });
+    } catch {}
+  }
+
   // Connect client to transport (this automatically initializes the session)
   await mcpClient.connect(transport as any);
+
+  // Negotiate protocol logging level if the server advertises it
+  if (updatedOptions.logging?.protocol) {
+    try {
+      await mcpClient.setLoggingLevel(updatedOptions.logging.level as LoggingLevel);
+    } catch {}
+  }
+
+  // Access stderr stream if available. stderr is used to prevent logs from interfering with JSON-RPC parsing
+  // Collect server stderr logs
+  /*
+  const stderrLogs: string[] = [];
+
+  if (transport?.stderr) {
+    transport.stderr.on('data', (data: Buffer) => {
+      stderrLogs.push(data.toString());
+    });
+  }
+  */
 
   // Wait for the server to be ready
   await new Promise(resolve => {
@@ -183,6 +225,12 @@ export const startHttpServer = async (
 
         timer.unref();
       });
-    }
+    },
+    logs: () => [
+      // ...stderrLogs,
+      ...protocolLogs
+    ],
+    // stderrLogs: () => stderrLogs.slice(),
+    protocolLogs: () => protocolLogs.slice()
   };
 };

@@ -93,7 +93,7 @@ describe('createServerLogger', () => {
     }
   ])('should attempt to subscribe and unsubscribe from a channel, $description', ({ options }) => {
     // Use channelName to pass conditions
-    const unsubscribe = createServerLogger((() => {}) as any, options as any);
+    const { unsubscribe } = createServerLogger((() => {}) as any, options as any);
 
     unsubscribe();
 
@@ -110,8 +110,8 @@ describe('createServerLogger', () => {
     class MockServer { sendLoggingMessage = jest.fn(async () => {}); }
     const server = new MockServer() as any;
 
-    const unsubscribeCallOne = createServerLogger.memo(server);
-    const unsubscribeCallTwo = createServerLogger.memo(server);
+    const { unsubscribe: unsubscribeCallOne } = createServerLogger.memo(server);
+    const { unsubscribe: unsubscribeCallTwo } = createServerLogger.memo(server);
 
     log.info('lorem ipsum, dolor sit info');
 
