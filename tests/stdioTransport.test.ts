@@ -9,11 +9,12 @@ import {
 import { setupFetchMock } from './utils/fetchMock';
 
 describe('PatternFly MCP, STDIO', () => {
-  let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
-  let client: StdioTransportClient;
+  let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
+  let CLIENT: StdioTransportClient;
+  let URL_MOCK: string;
 
   beforeAll(async () => {
-    fetchMock = await setupFetchMock({
+    FETCH_MOCK = await setupFetchMock({
       routes: [
         {
           url: /\/README\.md$/,
@@ -40,21 +41,22 @@ describe('PatternFly MCP, STDIO', () => {
       ]
     });
 
-    client = await startServer();
+    URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/0`;
+    CLIENT = await startServer();
   });
 
   afterAll(async () => {
-    if (client) {
-      await client.close();
+    if (CLIENT) {
+      await CLIENT.close();
     }
 
-    if (fetchMock) {
-      await fetchMock.cleanup();
+    if (FETCH_MOCK) {
+      await FETCH_MOCK.cleanup();
     }
   });
 
   it('should expose expected tools and stable shape', async () => {
-    const response = await client.send({
+    const response = await CLIENT.send({
       method: 'tools/list',
       params: {}
     });
@@ -80,7 +82,7 @@ describe('PatternFly MCP, STDIO', () => {
       }
     } as RpcRequest;
 
-    const response = await client?.send(req);
+    const response = await CLIENT?.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
@@ -96,14 +98,14 @@ describe('PatternFly MCP, STDIO', () => {
         name: 'fetchDocs',
         arguments: {
           urlList: [
-            'https://www.patternfly.org/notARealPath/README.md',
-            'https://www.patternfly.org/notARealPath/AboutModal.md'
+            `${URL_MOCK}/notARealPath/README.md`,
+            `${URL_MOCK}/notARealPath/AboutModal.md`
           ]
         }
       }
     } as RpcRequest;
 
-    const response = await client.send(req);
+    const response = await CLIENT.send(req, { timeoutMs: 10000 });
     const text = response?.result?.content?.[0]?.text || '';
 
     // expect(text.startsWith('# Documentation from')).toBe(true);
@@ -112,13 +114,13 @@ describe('PatternFly MCP, STDIO', () => {
 });
 
 describe('Hosted mode, --docs-host', () => {
-  let client: StdioTransportClient;
+  let CLIENT: StdioTransportClient;
 
   beforeEach(async () => {
-    client = await startServer({ args: ['--docs-host'] });
+    CLIENT = await startServer({ args: ['--docs-host'] });
   });
 
-  afterEach(async () => client.stop());
+  afterEach(async () => CLIENT.stop());
 
   it('should read llms-files and includes expected tokens', async () => {
     const req = {
@@ -128,7 +130,7 @@ describe('Hosted mode, --docs-host', () => {
         arguments: { urlList: ['react-core/6.0.0/llms.txt'] }
       }
     };
-    const resp = await client.send(req);
+    const resp = await CLIENT.send(req);
     const text = resp?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
@@ -157,10 +159,10 @@ describe('Logging', () => {
     }
   ])('should allow setting logging options, $description', async ({ args }) => {
     const serverArgs = [...args];
-    const client = await startServer({ args: serverArgs });
+    const CLIENT = await startServer({ args: serverArgs });
 
-    expect(client.logs()).toMatchSnapshot();
+    expect(CLIENT.logs()).toMatchSnapshot();
 
-    await client.stop();
+    await CLIENT.stop();
   });
 });

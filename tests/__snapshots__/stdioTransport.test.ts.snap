@@ -405,11 +405,11 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 `;
 
 exports[`PatternFly MCP, STDIO should concatenate headers and separator with two remote files 1`] = `
-"❌ Failed to load https://www.patternfly.org/notARealPath/README.md: Error: Failed to fetch https://www.patternfly.org/notARealPath/README.md: 404 Not Found
+"❌ Failed to load http://127.0.0.1:50678/0/notARealPath/README.md: Error: Failed to fetch http://127.0.0.1:50678/0/notARealPath/README.md: 404 Not Found
 
 ---
 
-❌ Failed to load https://www.patternfly.org/notARealPath/AboutModal.md: Error: Failed to fetch https://www.patternfly.org/notARealPath/AboutModal.md: 404 Not Found"
+❌ Failed to load http://127.0.0.1:50678/0/notARealPath/AboutModal.md: Error: Failed to fetch http://127.0.0.1:50678/0/notARealPath/AboutModal.md: 404 Not Found"
 `;
 
 exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`] = `
