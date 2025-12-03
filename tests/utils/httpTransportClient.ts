@@ -5,6 +5,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ListToolsResultSchema, ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
+
+// @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
 import { start, type PfMcpOptions, type PfMcpSettings, type ServerLogEvent } from '../../dist/index.js';
 
 export type { Request as RpcRequest } from '@modelcontextprotocol/sdk/types.js';

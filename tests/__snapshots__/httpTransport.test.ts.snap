@@ -108,6 +108,30 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 "
 `;
 
+exports[`PatternFly MCP, HTTP Transport should concatenate headers and separator with two remote files 1`] = `
+"# Documentation from https://www.patternfly.org/notARealPath/README.md
+
+# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
+
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration
+
+---
+
+# Documentation from https://www.patternfly.org/notARealPath/AboutModal.md
+
+# Test Document
+
+This is a test document for mocking remote HTTP requests."
+`;
+
 exports[`PatternFly MCP, HTTP Transport should expose expected tools and stable shape 1`] = `
 {
   "toolNames": [
