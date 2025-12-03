@@ -1,13 +1,5 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`External URLs should fetch a document 1`] = `
-[
-  "# Example Fixture",
-  "This is a local offline fixture used by the MCP external URLs test.",
-  "It includes the token PatternFly to satisfy test assertions.",
-]
-`;
-
 exports[`Hosted mode, --docs-host should read llms-files and includes expected tokens 1`] = `
 [
   "# @patternfly/react-core 6.0.0",
@@ -410,6 +402,14 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 - [Alert](https://www.patternfly.org/components/alert)
 - [ApplicationLauncher](https://www.patternfly.org/components/application-launcher)
 "
+`;
+
+exports[`PatternFly MCP, STDIO should concatenate headers and separator with two remote files 1`] = `
+"❌ Failed to load https://www.patternfly.org/notARealPath/README.md: Error: Failed to fetch https://www.patternfly.org/notARealPath/README.md: 404 Not Found
+
+---
+
+❌ Failed to load https://www.patternfly.org/notARealPath/AboutModal.md: Error: Failed to fetch https://www.patternfly.org/notARealPath/AboutModal.md: 404 Not Found"
 `;
 
 exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`] = `

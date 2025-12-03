@@ -48,7 +48,7 @@ export interface HttpTransportClient {
  * @param options - Server configuration options
  * @param settings - Additional settings for the server (e.g., allowProcessExit)
  */
-export const startHttpServer = async (
+export const startServer = async (
   options: StartHttpServerOptions = {},
   settings: StartHttpServerSettings = {}
 ): Promise<HttpTransportClient> => {

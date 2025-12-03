@@ -7,6 +7,8 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { parseCliOptions } from '../../src/options';
 
+export type { Request as RpcRequest } from '@modelcontextprotocol/sdk/types.js';
+
 export interface StartOptions {
   command?: string;
   serverPath?: string;

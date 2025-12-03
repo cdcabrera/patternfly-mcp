@@ -2,7 +2,7 @@
  * Requires: npm run build prior to running Jest.
  */
 import {
-  startHttpServer,
+  startServer,
   type HttpTransportClient,
   type RpcRequest
 } from './utils/httpTransportClient';
@@ -41,18 +41,17 @@ describe('PatternFly MCP, HTTP Transport', () => {
       excludePorts: [5001]
     });
 
-    // Start the MCP server
-    client = await startHttpServer({ http: { port: 5001 } });
+    client = await startServer({ http: { port: 5001 } });
   });
 
   afterAll(async () => {
-    if (fetchMock) {
-      await fetchMock.cleanup();
-    }
-
     if (client) {
       await client.close();
       client = undefined;
+    }
+
+    if (fetchMock) {
+      await fetchMock.cleanup();
     }
   });
 
@@ -74,9 +73,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
     const tools = response?.result?.tools || [];
     const toolNames = tools.map((tool: any) => tool.name).sort();
 
-    expect({
-      toolNames
-    }).toMatchSnapshot();
+    expect({ toolNames }).toMatchSnapshot();
   });
 
   it('should concatenate headers and separator with two local files', async () => {
@@ -103,7 +100,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
   });
 
   it('should concatenate headers and separator with two remote files', async () => {
-    const client = await startHttpServer({ http: { port: 5002 } });
+    const client = await startServer({ http: { port: 5002 } });
     const req = {
       jsonrpc: '2.0',
       id: 1,

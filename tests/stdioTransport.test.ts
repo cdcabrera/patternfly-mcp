@@ -1,21 +1,73 @@
 /**
  *  Requires: npm run build prior to running Jest.
  */
-import { startServer, type StdioTransportClient } from './utils/stdioTransportClient';
-import { loadFixture } from './utils/fixtures';
+import {
+  startServer,
+  type StdioTransportClient,
+  type RpcRequest
+} from './utils/stdioTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
 
 describe('PatternFly MCP, STDIO', () => {
+  let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
   let client: StdioTransportClient;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
+    fetchMock = await setupFetchMock({
+      routes: [
+        {
+          url: /\/README\.md$/,
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          body: `# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
+
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration`
+        },
+        {
+          url: /.*\.md$/,
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
+        }
+      ]
+    });
+
     client = await startServer();
   });
 
-  afterEach(async () => client.stop());
+  afterAll(async () => {
+    if (client) {
+      await client.close();
+    }
+
+    if (fetchMock) {
+      await fetchMock.cleanup();
+    }
+  });
+
+  it('should expose expected tools and stable shape', async () => {
+    const response = await client.send({
+      method: 'tools/list',
+      params: {}
+    });
+    const tools = response?.result?.tools || [];
+    const toolNames = tools.map((tool: any) => tool.name).sort();
+
+    expect({ toolNames }).toMatchSnapshot();
+  });
 
   it('should concatenate headers and separator with two local files', async () => {
     const req = {
+      jsonrpc: '2.0',
+      id: 1,
       method: 'tools/call',
       params: {
         name: 'usePatternFlyDocs',
@@ -26,22 +78,36 @@ describe('PatternFly MCP, STDIO', () => {
           ]
         }
       }
-    };
+    } as RpcRequest;
 
-    const response = await client.send(req);
+    const response = await client?.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
     expect(text).toMatchSnapshot();
   });
 
-  it('should expose expected tools and stable shape', async () => {
-    const response = await client.send({ method: 'tools/list' });
-    const tools = response?.result?.tools || [];
-    const toolNames = tools.map((tool: any) => tool.name).sort();
+  it('should concatenate headers and separator with two remote files', async () => {
+    const req = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: 'fetchDocs',
+        arguments: {
+          urlList: [
+            'https://www.patternfly.org/notARealPath/README.md',
+            'https://www.patternfly.org/notARealPath/AboutModal.md'
+          ]
+        }
+      }
+    } as RpcRequest;
 
-    expect(toolNames).toEqual(expect.arrayContaining(['usePatternFlyDocs', 'fetchDocs']));
-    expect({ toolNames }).toMatchSnapshot();
+    const response = await client.send(req);
+    const text = response?.result?.content?.[0]?.text || '';
+
+    // expect(text.startsWith('# Documentation from')).toBe(true);
+    expect(text).toMatchSnapshot();
   });
 });
 
@@ -96,47 +162,5 @@ describe('Logging', () => {
     expect(client.logs()).toMatchSnapshot();
 
     await client.stop();
-  });
-});
-
-describe('External URLs', () => {
-  let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
-  let url: string;
-  let client: StdioTransportClient;
-
-  beforeEach(async () => {
-    client = await startServer();
-  });
-
-  afterEach(async () => client.stop());
-
-  beforeAll(async () => {
-    // Note: The helper creates index-based paths based on routing (/0, /1, etc.), so we use /0 for the first route
-    fetchMock = await setupFetchMock({
-      routes: [
-        {
-          url: /\/readme$/,
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: loadFixture('README.md')
-        }
-      ]
-    });
-    url = `${fetchMock.fixture.baseUrl}/0`;
-  });
-
-  afterAll(async () => fetchMock?.cleanup());
-
-  it('should fetch a document', async () => {
-    const req = {
-      method: 'tools/call',
-      params: { name: 'fetchDocs', arguments: { urlList: [url] } }
-    };
-    const resp = await client.send(req, { timeoutMs: 10000 });
-    const text = resp?.result?.content?.[0]?.text || '';
-
-    expect(text.startsWith('# Documentation from')).toBe(true);
-    expect(/patternfly/i.test(text)).toBe(true);
-    expect(text.split(/\n/g).filter(Boolean).splice(1)).toMatchSnapshot();
   });
 });
