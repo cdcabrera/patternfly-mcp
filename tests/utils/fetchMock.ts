@@ -36,12 +36,54 @@ interface StartHttpFixtureOptions {
  * @returns Promise that resolves with server baseUrl and close method
  */
 const startHttpFixture = (
-  { routes = {}, address = '127.0.0.1', port = 0 }: StartHttpFixtureOptions = {}
-): Promise<{ baseUrl: string; close: () => Promise<void> }> =>
+  { routes = {}, address = '127.0.0.1', port = 0 }: StartHttpFixtureOptions = {},
+  regexRoutes: FetchRoute[] = []
+): Promise<{ baseUrl: string; close: () => Promise<void>; addRoute?: (path: string, route: Route) => void }> =>
   new Promise((resolve, reject) => {
+    const dynamicRoutes: Record<string, Route> = { ...routes };
+    
     const server = http.createServer((req, res) => {
       const url = req.url || '';
-      const route = routes[url];
+      let route = dynamicRoutes[url];
+
+      // If route not found and we have regex routes, try to match them
+      if (!route && regexRoutes.length > 0) {
+        const pathname = url;
+        
+        // Try to match against regex routes
+        for (const regexRoute of regexRoutes) {
+          if (regexRoute.url instanceof RegExp) {
+            // Test regex against pathname
+            if (regexRoute.url.test(pathname) || regexRoute.url.test(`http://${address}${pathname}`)) {
+              // Register this route dynamically
+              route = {
+                status: regexRoute.status || 200,
+                headers: regexRoute.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
+                body: typeof regexRoute.body === 'string' || regexRoute.body instanceof Buffer
+                  ? regexRoute.body
+                  : '# Mocked Response'
+              };
+              dynamicRoutes[pathname] = route;
+              break;
+            }
+          } else if (typeof regexRoute.url === 'string' && !regexRoute.url.startsWith('/')) {
+            // String pattern with wildcards
+            const pattern = regexRoute.url.replace(/\*/g, '.*');
+            const regex = new RegExp(`^${pattern}$`);
+            if (regex.test(pathname) || regex.test(`http://${address}${pathname}`)) {
+              route = {
+                status: regexRoute.status || 200,
+                headers: regexRoute.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
+                body: typeof regexRoute.body === 'string' || regexRoute.body instanceof Buffer
+                  ? regexRoute.body
+                  : '# Mocked Response'
+              };
+              dynamicRoutes[pathname] = route;
+              break;
+            }
+          }
+        }
+      }
 
       if (!route) {
         res.statusCode = 404;
@@ -72,17 +114,31 @@ const startHttpFixture = (
         const host = addr.address === '::' ? address : addr.address;
         const baseUrl = `http://${host}:${addr.port}`;
 
-        resolve({ baseUrl, close: () => new Promise<void>(res => server.close(() => res())) });
+        resolve({
+          baseUrl,
+          close: () => new Promise<void>(res => server.close(() => res())),
+          addRoute: (path: string, route: Route) => {
+            dynamicRoutes[path] = route;
+          }
+        });
       } else {
         // Fallback if the address isn't available as AddressInfo
-        resolve({ baseUrl: `http://${address}`, close: () => new Promise<void>(res => server.close(() => res())) });
+        resolve({
+          baseUrl: `http://${address}`,
+          close: () => new Promise<void>(res => server.close(() => res())),
+          addRoute: (path: string, route: Route) => {
+            dynamicRoutes[path] = route;
+          }
+        });
       }
     });
 
     server.on('error', reject);
   });
 
-type StartHttpFixtureResult = Awaited<ReturnType<typeof startHttpFixture>>;
+type StartHttpFixtureResult = Awaited<ReturnType<typeof startHttpFixture>> & {
+  addRoute?: (path: string, route: Route) => void;
+};
 
 /**
  * Route configuration for fetch mocking
@@ -166,54 +222,68 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
   } = options;
 
   // Convert routes to fixture server format
+  // For regex patterns, we need to pre-register routes at expected paths
+  // For direct paths, register them upfront
   const fixtureRoutes: Record<string, { status?: number; headers?: Record<string, string>; body?: string | Buffer }> = {};
+  const routeMap = new Map<FetchRoute, number>(); // Map routes to their index for reference
+  const regexRoutes: FetchRoute[] = []; // Track regex routes for dynamic registration
 
   routes.forEach((route, index) => {
+    routeMap.set(route, index);
+    
     // If url is a string starting with '/', use it directly as the fixture server path
-    // Otherwise, use index-based path for pattern matching routes
-    const path = typeof route.url === 'string' && route.url.startsWith('/')
-      ? route.url
-      : `/${index}`;
-    // Ensure path starts with /
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-    fixtureRoutes[normalizedPath] = {
-      status: route.status || 200,
-      headers: route.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
-      body: typeof route.body === 'string' || route.body instanceof Buffer
-        ? route.body
-        : '# Mocked Response'
-    };
+    if (typeof route.url === 'string' && route.url.startsWith('/')) {
+      const normalizedPath = route.url.startsWith('/') ? route.url : `/${route.url}`;
+      
+      fixtureRoutes[normalizedPath] = {
+        status: route.status || 200,
+        headers: route.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
+        body: typeof route.body === 'string' || route.body instanceof Buffer
+          ? route.body
+          : '# Mocked Response'
+      };
+    } else {
+      // For regex/pattern routes, track them for dynamic registration
+      regexRoutes.push(route);
+    }
   });
 
-  // Start fixture server
+  // Start fixture server with regex routes for dynamic matching
   const fixtureOptions: StartHttpFixtureOptions = { routes: fixtureRoutes, address };
   if (port) {
     fixtureOptions.port = port;
   }
-  const fixture = await startHttpFixture(fixtureOptions);
+  const fixture = await startHttpFixture(fixtureOptions, regexRoutes);
 
   // Create URL pattern matcher
-  const matchRoute = (url: string): FetchRoute | undefined => routes.find(route => {
-    if (route.url instanceof RegExp) {
-      return route.url.test(url);
+  const matchRoute = (url: string): FetchRoute | undefined => {
+    // Extract pathname from URL for matching
+    let pathname: string;
+    try {
+      const urlObj = new URL(url);
+      pathname = urlObj.pathname;
+    } catch {
+      // If URL parsing fails, try to extract pathname manually
+      const match = url.match(/^https?:\/\/[^/]+(\/.*)$/);
+      pathname = (match && match[1]) ? match[1] : url;
     }
-    // If url is a direct path (starts with '/'), extract path from incoming URL and compare
-    if (route.url.startsWith('/')) {
-      try {
-        const urlObj = new URL(url);
-        return urlObj.pathname === route.url;
-      } catch {
-        // If URL parsing fails, fall back to string matching
-        return url === `${fixture.baseUrl}${route.url}` || url.endsWith(route.url);
+    
+    return routes.find(route => {
+      if (route.url instanceof RegExp) {
+        // Test regex against both full URL and pathname for flexibility
+        return route.url.test(url) || route.url.test(pathname);
       }
-    }
-    // Support wildcards for pattern matching
-    const pattern = route.url.replace(/\*/g, '.*');
-    const regex = new RegExp(`^${pattern}$`);
+      // If url is a direct path (starts with '/'), compare pathnames
+      if (route.url.startsWith('/')) {
+        return pathname === route.url;
+      }
+      // Support wildcards for pattern matching (test against full URL)
+      const pattern = route.url.replace(/\*/g, '.*');
+      const regex = new RegExp(`^${pattern}$`);
 
-    return regex.test(url);
-  });
+      return regex.test(url);
+    });
+  };
 
   // Set up fetch mock
   const fetchSpy = jest.spyOn(global, 'fetch').mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -227,11 +297,48 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
       const matchedRoute = matchRoute(url);
 
       if (matchedRoute) {
+        let fixturePath: string;
+        
         // If url is a direct path (starts with '/'), use it directly
-        // Otherwise, calculate from route index for pattern matching routes
-        const fixturePath = typeof matchedRoute.url === 'string' && matchedRoute.url.startsWith('/')
-          ? matchedRoute.url
-          : `/${routes.indexOf(matchedRoute)}`;
+        if (typeof matchedRoute.url === 'string' && matchedRoute.url.startsWith('/')) {
+          fixturePath = matchedRoute.url;
+        } else {
+          // For regex/pattern matches, extract the pathname from the matched URL
+          try {
+            const urlObj = new URL(url);
+            fixturePath = urlObj.pathname;
+          } catch {
+            // If URL parsing fails, fall back to index-based path
+            fixturePath = `/${routes.indexOf(matchedRoute)}`;
+          }
+          
+          // Register the route dynamically at the extracted path
+          // This allows regex patterns to serve from the matched path
+          // Note: This is important for stdio servers that run in separate processes
+          // and make real HTTP requests to the fixture server
+          const normalizedPath = fixturePath.startsWith('/') ? fixturePath : `/${fixturePath}`;
+          if (fixture.addRoute) {
+            // Check if route already exists to avoid overwriting
+            if (!fixtureRoutes[normalizedPath]) {
+              fixture.addRoute(normalizedPath, {
+                status: matchedRoute.status || 200,
+                headers: matchedRoute.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
+                body: typeof matchedRoute.body === 'string' || matchedRoute.body instanceof Buffer
+                  ? matchedRoute.body
+                  : '# Mocked Response'
+              });
+              // Track in fixtureRoutes to avoid duplicate registrations
+              fixtureRoutes[normalizedPath] = {
+                status: matchedRoute.status || 200,
+                headers: matchedRoute.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
+                body: typeof matchedRoute.body === 'string' || matchedRoute.body instanceof Buffer
+                  ? matchedRoute.body
+                  : '# Mocked Response'
+              };
+            }
+          }
+        }
+        
         // Ensure path starts with /
         const normalizedPath = fixturePath.startsWith('/') ? fixturePath : `/${fixturePath}`;
         const fixtureUrl = `${fixture.baseUrl}${normalizedPath}`;
