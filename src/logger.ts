@@ -176,7 +176,7 @@ const registerStderrSubscriber = (options: LoggingSession, formatter?: (e: LogEv
     }).join(' ') || '';
     const separator = rest ? '\t:' : '';
 
-    return `${eventLevel}:\t${message}${separator}${rest}`.trim();
+    return `${eventLevel}: ${message}${separator}${rest}`.trim();
   });
 
   return subscribeToChannel((event: LogEvent) => {

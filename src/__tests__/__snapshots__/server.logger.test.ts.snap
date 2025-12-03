@@ -52,19 +52,19 @@ exports[`createServerLogger should attempt to subscribe and unsubscribe from a c
 exports[`createServerLogger should return a memoized server logger that avoids duplicate sinks; teardown stops emissions: stderr 1`] = `
 [
   [
-    "[DEBUG]:	a
+    "[DEBUG]: a
 ",
   ],
   [
-    "[DEBUG]:	b
+    "[DEBUG]: b
 ",
   ],
   [
-    "[INFO]:	lorem ipsum, dolor sit info
+    "[INFO]: lorem ipsum, dolor sit info
 ",
   ],
   [
-    "[INFO]:	dolor sit amet
+    "[INFO]: dolor sit amet
 ",
   ],
 ]
