@@ -47,6 +47,7 @@ describe('PatternFly MCP, STDIO', () => {
 
   afterAll(async () => {
     if (CLIENT) {
+      // You may still receive jest warnings about a running process, but clean up case we forget at the test level.
       await CLIENT.close();
     }
 

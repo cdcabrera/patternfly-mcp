@@ -9,11 +9,11 @@ import {
 import { setupFetchMock } from './utils/fetchMock';
 
 describe('PatternFly MCP, HTTP Transport', () => {
-  let fetchMock: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
-  let client: HttpTransportClient | undefined;
+  let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
+  let CLIENT: HttpTransportClient | undefined;
 
   beforeAll(async () => {
-    fetchMock = await setupFetchMock({
+    FETCH_MOCK = await setupFetchMock({
       routes: [
         {
           url: /\/README\.md$/,
@@ -41,32 +41,33 @@ describe('PatternFly MCP, HTTP Transport', () => {
       excludePorts: [5001]
     });
 
-    client = await startServer({ http: { port: 5001 } });
+    CLIENT = await startServer({ http: { port: 5001 } });
   });
 
   afterAll(async () => {
-    if (client) {
-      await client.close();
-      client = undefined;
+    if (CLIENT) {
+      // You may still receive jest warnings about a running process, but clean up case we forget at the test level.
+      await CLIENT.close();
+      CLIENT = undefined;
     }
 
-    if (fetchMock) {
-      await fetchMock.cleanup();
+    if (FETCH_MOCK) {
+      await FETCH_MOCK.cleanup();
     }
   });
 
   it('should initialize MCP session over HTTP', async () => {
-    const response = await client?.initialize();
+    const response = await CLIENT?.initialize();
 
     expect({
       version: response?.result?.protocolVersion,
       name: (response as any)?.result?.serverInfo?.name,
-      baseUrl: client?.baseUrl
+      baseUrl: CLIENT?.baseUrl
     }).toMatchSnapshot();
   });
 
   it('should expose expected tools and stable shape', async () => {
-    const response = await client?.send({
+    const response = await CLIENT?.send({
       method: 'tools/list',
       params: {}
     });
@@ -92,7 +93,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
       }
     } as RpcRequest;
 
-    const response = await client?.send(req);
+    const response = await CLIENT?.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
@@ -100,7 +101,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
   });
 
   it('should concatenate headers and separator with two remote files', async () => {
-    const client = await startServer({ http: { port: 5002 } });
+    const CLIENT = await startServer({ http: { port: 5002 } });
     const req = {
       jsonrpc: '2.0',
       id: 1,
@@ -116,11 +117,11 @@ describe('PatternFly MCP, HTTP Transport', () => {
       }
     } as RpcRequest;
 
-    const response = await client.send(req);
+    const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
     expect(text).toMatchSnapshot();
-    client.close();
+    CLIENT.close();
   });
 });
