@@ -82,16 +82,12 @@ describe('Logging', () => {
       args: ['--log-stderr']
     },
     {
-      description: 'verbose',
-      args: ['--log-stderr', '--verbose']
-    },
-    {
       description: 'with log level filtering',
       args: ['--log-level', 'warn']
     },
     {
       description: 'with mcp protocol',
-      args: ['--verbose', '--log-protocol']
+      args: ['--log-protocol']
     }
   ])('should allow setting logging options, $description', async ({ args }) => {
     const serverArgs = [...args];
