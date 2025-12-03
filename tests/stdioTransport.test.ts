@@ -20,6 +20,7 @@ describe('PatternFly MCP, STDIO', () => {
       routes: [
         {
           url: /\/README\.md$/,
+          path: '/notARealPath/README.md',
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body: `# PatternFly Development Rules
@@ -36,6 +37,7 @@ describe('PatternFly MCP, STDIO', () => {
         },
         {
           url: /.*\.md$/,
+          path: '/notARealPath/AboutModal.md',
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
@@ -43,7 +45,7 @@ describe('PatternFly MCP, STDIO', () => {
       ]
     });
 
-    URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/0`;
+    URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/`;
     CLIENT = await startServer();
   });
 
@@ -101,9 +103,9 @@ describe('PatternFly MCP, STDIO', () => {
         name: 'fetchDocs',
         arguments: {
           urlList: [
-            URL_MOCK
-            // `${URL_MOCK}/notARealPath/README.md`,
-            // `${URL_MOCK}/notARealPath/AboutModal.md`
+            // URL_MOCK
+            `${URL_MOCK}notARealPath/README.md`,
+            `${URL_MOCK}notARealPath/AboutModal.md`
           ]
         }
       }

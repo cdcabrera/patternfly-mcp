@@ -270,13 +270,13 @@ exports[`Logging should allow setting logging options, default 1`] = `[]`;
 
 exports[`Logging should allow setting logging options, stderr 1`] = `
 [
-  "[INFO]:	Registered tool: usePatternFlyDocs
+  "[INFO]: Registered tool: usePatternFlyDocs
 ",
-  "[INFO]:	Registered tool: fetchDocs
+  "[INFO]: Registered tool: fetchDocs
 ",
-  "[INFO]:	Registered tool: componentSchemas
+  "[INFO]: Registered tool: componentSchemas
 ",
-  "[INFO]:	@patternfly/patternfly-mcp server running on stdio transport
+  "[INFO]: @patternfly/patternfly-mcp server running on stdio transport
 ",
 ]
 `;
@@ -405,7 +405,7 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 `;
 
 exports[`PatternFly MCP, STDIO should concatenate headers and separator with two remote files 1`] = `
-"# Documentation from http://127.0.0.1:5010/0
+"# Documentation from http://127.0.0.1:5010/notARealPath/README.md
 
 # PatternFly Development Rules
             This is a generated offline fixture used by the MCP external URLs test.
@@ -417,7 +417,15 @@ exports[`PatternFly MCP, STDIO should concatenate headers and separator with two
             ### 🚀 Setup & Environment
             - **Setup Rules** - Project initialization requirements
             - **Quick Start** - Essential setup steps
-            - **Environment Rules** - Development configuration"
+            - **Environment Rules** - Development configuration
+
+---
+
+# Documentation from http://127.0.0.1:5010/notARealPath/AboutModal.md
+
+# Test Document
+
+This is a test document for mocking remote HTTP requests."
 `;
 
 exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`] = `

@@ -92,6 +92,9 @@ export interface FetchRoute {
   /** URL pattern to match (supports wildcards with *) */
   url: string | RegExp;
 
+  /** Explicit path on the fixture server (e.g., '/notARealPath/README.md'). If not provided, uses index-based path (e.g., '/0') */
+  path?: string;
+
   /** HTTP status code */
   status?: number;
 
@@ -169,10 +172,12 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
   const fixtureRoutes: Record<string, { status?: number; headers?: Record<string, string>; body?: string | Buffer }> = {};
 
   routes.forEach((route, index) => {
-    // Use index-based path for fixture server, we'll match by URL pattern in the mock
-    const path = `/${index}`;
+    // Use explicit path if provided, otherwise fall back to index-based path for backward compatibility
+    const path = route.path || `/${index}`;
+    // Ensure path starts with /
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
-    fixtureRoutes[path] = {
+    fixtureRoutes[normalizedPath] = {
       status: route.status || 200,
       headers: route.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
       body: typeof route.body === 'string' || route.body instanceof Buffer
@@ -212,10 +217,11 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
       const matchedRoute = matchRoute(url);
 
       if (matchedRoute) {
-        // Find the route index to get the fixture path
-        const routeIndex = routes.indexOf(matchedRoute);
-        const fixturePath = `/${routeIndex}`;
-        const fixtureUrl = `${fixture.baseUrl}${fixturePath}`;
+        // Use explicit path if provided, otherwise calculate from route index
+        const fixturePath = matchedRoute.path || `/${routes.indexOf(matchedRoute)}`;
+        // Ensure path starts with /
+        const normalizedPath = fixturePath.startsWith('/') ? fixturePath : `/${fixturePath}`;
+        const fixtureUrl = `${fixture.baseUrl}${normalizedPath}`;
 
         // Handle function body
         if (typeof matchedRoute.body === 'function') {
