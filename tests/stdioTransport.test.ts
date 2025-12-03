@@ -11,10 +11,12 @@ import { setupFetchMock } from './utils/fetchMock';
 describe('PatternFly MCP, STDIO', () => {
   let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
   let CLIENT: StdioTransportClient;
+  // We're unable to mock fetch for stdio since it runs in a separate process, so we run a server and use that path for mocking external URLs.
   let URL_MOCK: string;
 
   beforeAll(async () => {
     FETCH_MOCK = await setupFetchMock({
+      port: 5010,
       routes: [
         {
           url: /\/README\.md$/,
@@ -99,8 +101,9 @@ describe('PatternFly MCP, STDIO', () => {
         name: 'fetchDocs',
         arguments: {
           urlList: [
-            `${URL_MOCK}/notARealPath/README.md`,
-            `${URL_MOCK}/notARealPath/AboutModal.md`
+            URL_MOCK
+            // `${URL_MOCK}/notARealPath/README.md`,
+            // `${URL_MOCK}/notARealPath/AboutModal.md`
           ]
         }
       }

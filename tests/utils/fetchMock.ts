@@ -21,6 +21,7 @@ type RoutesMap = Record<string, Route>;
 interface StartHttpFixtureOptions {
   routes?: RoutesMap;
   address?: string;
+  port?: number;
 }
 
 /**
@@ -31,10 +32,11 @@ interface StartHttpFixtureOptions {
  * @param options - HTTP fixture options
  * @param options.routes - Map of URL paths to route handlers
  * @param options.address - Server address to listen on (default: '127.0.0.1')
+ * @param options.port - Server port to listen on (default: 0, which means a random port)
  * @returns Promise that resolves with server baseUrl and close method
  */
 const startHttpFixture = (
-  { routes = {}, address = '127.0.0.1' }: StartHttpFixtureOptions = {}
+  { routes = {}, address = '127.0.0.1', port = 0 }: StartHttpFixtureOptions = {}
 ): Promise<{ baseUrl: string; close: () => Promise<void> }> =>
   new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
@@ -63,7 +65,7 @@ const startHttpFixture = (
       return res.end(body as string | Buffer | Uint8Array | undefined);
     });
 
-    server.listen(0, address, () => {
+    server.listen(port, address, () => {
       const addr = server.address();
 
       if (addr && typeof addr !== 'string') {
@@ -130,6 +132,9 @@ export interface FetchMockSetup {
 
   /** Fixture server address (default: '127.0.0.1') */
   address?: string;
+
+  /** Fixture server port (default: 0, which means a random port) */
+  port?: number;
 }
 
 export interface FetchMockResult {
@@ -156,7 +161,8 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
   const {
     routes = [],
     excludePorts = [],
-    address = '127.0.0.1'
+    address = '127.0.0.1',
+    port = 0
   } = options;
 
   // Convert routes to fixture server format
@@ -176,7 +182,11 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
   });
 
   // Start fixture server
-  const fixture = await startHttpFixture({ routes: fixtureRoutes, address });
+  const fixtureOptions: StartHttpFixtureOptions = { routes: fixtureRoutes, address };
+  if (port) {
+    fixtureOptions.port = port;
+  }
+  const fixture = await startHttpFixture(fixtureOptions);
 
   // Create URL pattern matcher
   const matchRoute = (url: string): FetchRoute | undefined => routes.find(route => {

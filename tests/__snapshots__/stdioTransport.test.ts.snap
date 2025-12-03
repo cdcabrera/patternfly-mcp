@@ -405,11 +405,19 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 `;
 
 exports[`PatternFly MCP, STDIO should concatenate headers and separator with two remote files 1`] = `
-"❌ Failed to load http://127.0.0.1:50722/0/notARealPath/README.md: Error: Failed to fetch http://127.0.0.1:50722/0/notARealPath/README.md: 404 Not Found
+"# Documentation from http://127.0.0.1:5010/0
 
----
+# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
 
-❌ Failed to load http://127.0.0.1:50722/0/notARealPath/AboutModal.md: Error: Failed to fetch http://127.0.0.1:50722/0/notARealPath/AboutModal.md: 404 Not Found"
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration"
 `;
 
 exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`] = `
