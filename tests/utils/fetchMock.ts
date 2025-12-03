@@ -89,11 +89,8 @@ type StartHttpFixtureResult = Awaited<ReturnType<typeof startHttpFixture>>;
  */
 export interface FetchRoute {
 
-  /** URL pattern to match (supports wildcards with *) */
+  /** URL pattern to match (RegExp, string pattern with wildcards, or direct path starting with '/') */
   url: string | RegExp;
-
-  /** Explicit path on the fixture server (e.g., '/notARealPath/README.md'). If not provided, uses index-based path (e.g., '/0') */
-  path?: string;
 
   /** HTTP status code */
   status?: number;
@@ -172,8 +169,11 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
   const fixtureRoutes: Record<string, { status?: number; headers?: Record<string, string>; body?: string | Buffer }> = {};
 
   routes.forEach((route, index) => {
-    // Use explicit path if provided, otherwise fall back to index-based path for backward compatibility
-    const path = route.path || `/${index}`;
+    // If url is a string starting with '/', use it directly as the fixture server path
+    // Otherwise, use index-based path for pattern matching routes
+    const path = typeof route.url === 'string' && route.url.startsWith('/')
+      ? route.url
+      : `/${index}`;
     // Ensure path starts with /
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 
@@ -198,7 +198,17 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
     if (route.url instanceof RegExp) {
       return route.url.test(url);
     }
-    // Support wildcards
+    // If url is a direct path (starts with '/'), extract path from incoming URL and compare
+    if (route.url.startsWith('/')) {
+      try {
+        const urlObj = new URL(url);
+        return urlObj.pathname === route.url;
+      } catch {
+        // If URL parsing fails, fall back to string matching
+        return url === `${fixture.baseUrl}${route.url}` || url.endsWith(route.url);
+      }
+    }
+    // Support wildcards for pattern matching
     const pattern = route.url.replace(/\*/g, '.*');
     const regex = new RegExp(`^${pattern}$`);
 
@@ -217,8 +227,11 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
       const matchedRoute = matchRoute(url);
 
       if (matchedRoute) {
-        // Use explicit path if provided, otherwise calculate from route index
-        const fixturePath = matchedRoute.path || `/${routes.indexOf(matchedRoute)}`;
+        // If url is a direct path (starts with '/'), use it directly
+        // Otherwise, calculate from route index for pattern matching routes
+        const fixturePath = typeof matchedRoute.url === 'string' && matchedRoute.url.startsWith('/')
+          ? matchedRoute.url
+          : `/${routes.indexOf(matchedRoute)}`;
         // Ensure path starts with /
         const normalizedPath = fixturePath.startsWith('/') ? fixturePath : `/${fixturePath}`;
         const fixtureUrl = `${fixture.baseUrl}${normalizedPath}`;
