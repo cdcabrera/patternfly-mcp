@@ -52,9 +52,6 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 /**
  * Set and freeze cloned options in the current async context.
  *
- * - Applies a unique session ID and logging channel name
- * - Certain settings are not allowed to be overridden by the caller to ensure consistency across instances
- *
  * @param {Partial<DefaultOptions>} [options] - Optional options to set in context. Merged with DEFAULT_OPTIONS.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
@@ -76,6 +73,7 @@ const setOptions = (options?: Partial<DefaultOptions>): GlobalOptions => {
 
   const frozen = freezeObject(structuredClone(merged));
 
+  setSessionOptions();
   optionsContext.enterWith(frozen);
 
   return frozen;
@@ -91,15 +89,7 @@ const setOptions = (options?: Partial<DefaultOptions>): GlobalOptions => {
  *
  * @returns {GlobalOptions} Current options from context or defaults
  */
-const getOptions = (): GlobalOptions => {
-  const context = optionsContext.getStore();
-
-  if (context) {
-    return context;
-  }
-
-  return setOptions({});
-};
+const getOptions = (): GlobalOptions => optionsContext.getStore() || setOptions();
 
 /**
  * Get logging options from the current context.
