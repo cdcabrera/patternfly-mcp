@@ -135,8 +135,12 @@ describe('startHttpTransport', () => {
       url: '/foo/bar?x=1'
     },
     {
-      description: 'reject a malformed url',
+      description: 'reject a malformed path',
       url: 'http:]//localhost:8000/mcp'
+    },
+    {
+      description: 'reject a malformed url',
+      url: 'http://['
     }
   ])('accept and reject paths, $description', async ({ url }) => {
     await startHttpTransport(mockServer, { http: { port: 3000, host: 'localhost' } } as any);
@@ -162,7 +166,8 @@ describe('startHttpTransport', () => {
         statusCode: response.statusCode,
         shouldKeepAlive: response.shouldKeepAlive
       },
-      calls: mockResponse.mock.calls
+      calls: mockResponse.mock.calls,
+      isTransportCalled: mockTransport.handleRequest.mock.calls.length > 0
     }).toMatchSnapshot();
   });
 });

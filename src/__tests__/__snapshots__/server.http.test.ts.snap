@@ -10,6 +10,7 @@ exports[`getProcessOnPort should attempt to find a process listening on a port: 
 exports[`startHttpTransport accept and reject paths, accept a basic path 1`] = `
 {
   "calls": [],
+  "isTransportCalled": true,
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
@@ -20,6 +21,7 @@ exports[`startHttpTransport accept and reject paths, accept a basic path 1`] = `
 exports[`startHttpTransport accept and reject paths, accept a casing insensitive path 1`] = `
 {
   "calls": [],
+  "isTransportCalled": true,
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
@@ -30,6 +32,7 @@ exports[`startHttpTransport accept and reject paths, accept a casing insensitive
 exports[`startHttpTransport accept and reject paths, accept a path with query params 1`] = `
 {
   "calls": [],
+  "isTransportCalled": true,
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
@@ -40,6 +43,7 @@ exports[`startHttpTransport accept and reject paths, accept a path with query pa
 exports[`startHttpTransport accept and reject paths, accept a trailing slash 1`] = `
 {
   "calls": [],
+  "isTransportCalled": true,
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
@@ -50,9 +54,33 @@ exports[`startHttpTransport accept and reject paths, accept a trailing slash 1`]
 exports[`startHttpTransport accept and reject paths, accept a trailing slash with path 1`] = `
 {
   "calls": [],
+  "isTransportCalled": true,
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
+  },
+}
+`;
+
+exports[`startHttpTransport accept and reject paths, reject a malformed path 1`] = `
+{
+  "calls": [
+    [
+      "Content-Type",
+      "text/plain",
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff",
+    ],
+    [
+      "Not Found",
+    ],
+  ],
+  "isTransportCalled": false,
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
   },
 }
 `;
@@ -69,12 +97,13 @@ exports[`startHttpTransport accept and reject paths, reject a malformed url 1`] 
       "nosniff",
     ],
     [
-      "Not Found",
+      "Bad Request",
     ],
   ],
+  "isTransportCalled": false,
   "response": {
     "shouldKeepAlive": false,
-    "statusCode": 404,
+    "statusCode": 400,
   },
 }
 `;
@@ -94,6 +123,7 @@ exports[`startHttpTransport accept and reject paths, reject a partial path 1`] =
       "Not Found",
     ],
   ],
+  "isTransportCalled": false,
   "response": {
     "shouldKeepAlive": false,
     "statusCode": 404,
@@ -116,6 +146,7 @@ exports[`startHttpTransport accept and reject paths, reject a root path 1`] = `
       "Not Found",
     ],
   ],
+  "isTransportCalled": false,
   "response": {
     "shouldKeepAlive": false,
     "statusCode": 404,
@@ -138,6 +169,7 @@ exports[`startHttpTransport accept and reject paths, reject an incorrect path 1`
       "Not Found",
     ],
   ],
+  "isTransportCalled": false,
   "response": {
     "shouldKeepAlive": false,
     "statusCode": 404,
@@ -160,6 +192,7 @@ exports[`startHttpTransport accept and reject paths, reject an malformed path 1`
       "Not Found",
     ],
   ],
+  "isTransportCalled": false,
   "response": {
     "shouldKeepAlive": false,
     "statusCode": 404,
