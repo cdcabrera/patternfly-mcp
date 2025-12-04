@@ -168,19 +168,22 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       const host = req.headers.host || `${http.host}:${http.port}`;
       const url = new URL(req.url || '/', `http://${host}`);
 
-      if (!url.pathname.startsWith(MCP_BASE_PATH)) {
-        log.warn(`HTTP 404 request for unexpected path: ${url.pathname}`);
-        res.statusCode = 404;
-        res.setHeader('Content-Type', 'text/plain');
-        res.end('Not Found');
-
-        return;
+      if (!url.pathname.startsWith(`${MCP_BASE_PATH}/`)) {
+        throw new Error('Unexpected path', { cause: { statusCode: 404, message: 'Not Found' } });
       }
-    } catch {
-      log.warn(`HTTP 400, unexpected path, url parsing failed: ${req?.url || '<empty>'}`);
-      res.statusCode = 400;
+    } catch (error) {
+      const cause = (error as { cause?: unknown })?.cause as { statusCode?: number, message?: string } | undefined;
+      const statusCode = cause?.statusCode || 400;
+      const message = cause?.message || 'Bad Request';
+      const method = req?.method || 'UNKNOWN';
+      const remote = req?.socket?.remoteAddress || 'unknown';
+      const path = req?.url || '<empty>';
+
+      log.warn(`HTTP ${statusCode} [${method}] from ${remote}, unexpected path: ${path}`);
+      res.statusCode = statusCode;
       res.setHeader('Content-Type', 'text/plain');
-      res.end('Bad Request');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.end(message);
 
       return;
     }
