@@ -1,5 +1,8 @@
 import { parseCliOptions, type CliOptions, type DefaultOptions } from './options';
-import { setOptions } from './options.context';
+import {
+  setOptions,
+  setSessionOptions
+} from './options.context';
 import {
   runServer,
   type ServerInstance,
@@ -61,9 +64,17 @@ const main = async (
   try {
     const cliOptions = parseCliOptions();
     const mergedOptions = setOptions({ ...cliOptions, ...options });
+    // const session = getSessionOptions();
+
+    // just setting this creates potential issues.
+    setSessionOptions();
 
     // `runServer` doesn't require it, but `memo` does for "uniqueness", pass in the merged options for a hashable argument
-    return await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit });
+    return runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit });
+
+    // use runWithSession to enable session in listeners
+    // return await runWithSession(session, async () =>
+    // runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
   } catch (error) {
     console.error('Failed to start server:', error);
 

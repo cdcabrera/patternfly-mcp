@@ -41,6 +41,18 @@ const setSessionOptions = (session: Session = initializeSession()) => {
  */
 const getSessionOptions = (): Session => sessionContext.getStore() || setSessionOptions();
 
+/*
+const getSessionOptions = (): Session => {
+  const context = sessionContext.getStore();
+
+  if (context) {
+    return context;
+  }
+
+  throw new Error('Session context is not initialized');
+};
+ */
+
 const runWithSession = async <TReturn>(
   session: Session,
   callback: () => TReturn | Promise<TReturn>
