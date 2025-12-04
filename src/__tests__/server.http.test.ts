@@ -172,15 +172,18 @@ describe('startHttpTransport', () => {
 
     await mockRequestHandler?.(mockRequest, response);
 
+    const isRequestCalled = mockTransport.handleRequest.mock.calls.length > 0;
+
     expect({
       response: {
         statusCode: response.statusCode,
         shouldKeepAlive: response.shouldKeepAlive
       },
-      calls: mockResponse.mock.calls,
-      transportCalled: mockTransport.handleRequest.mock.calls.length > 0
+      responseCalls: mockResponse.mock.calls,
+      requestCalls: mockTransport.handleRequest.mock.calls,
+      isRequestCalled
     }).toMatchSnapshot();
 
-    expect(mockTransport.handleRequest.mock.calls.length > 0).toBe(isTransportCalled);
+    expect(isRequestCalled).toBe(isTransportCalled);
   });
 });

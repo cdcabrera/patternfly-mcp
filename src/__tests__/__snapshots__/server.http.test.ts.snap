@@ -9,62 +9,153 @@ exports[`getProcessOnPort should attempt to find a process listening on a port: 
 
 exports[`startHttpTransport accept and reject paths, accept a basic path 1`] = `
 {
-  "calls": [],
+  "isRequestCalled": true,
+  "requestCalls": [
+    [
+      {
+        "method": "GET",
+        "socket": {
+          "remoteAddress": "127.0.0.1",
+        },
+        "url": "/mcp",
+      },
+      {
+        "end": [MockFunction],
+        "setHeader": [MockFunction],
+        "shouldKeepAlive": undefined,
+        "statusCode": undefined,
+      },
+    ],
+  ],
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
   },
-  "transportCalled": true,
+  "responseCalls": [],
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, accept a casing insensitive path 1`] = `
 {
-  "calls": [],
+  "isRequestCalled": true,
+  "requestCalls": [
+    [
+      {
+        "method": "GET",
+        "socket": {
+          "remoteAddress": "127.0.0.1",
+        },
+        "url": "/MCP",
+      },
+      {
+        "end": [MockFunction],
+        "setHeader": [MockFunction],
+        "shouldKeepAlive": undefined,
+        "statusCode": undefined,
+      },
+    ],
+  ],
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
   },
-  "transportCalled": true,
+  "responseCalls": [],
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, accept a path with query params 1`] = `
 {
-  "calls": [],
+  "isRequestCalled": true,
+  "requestCalls": [
+    [
+      {
+        "method": "GET",
+        "socket": {
+          "remoteAddress": "127.0.0.1",
+        },
+        "url": "/MCP/SSE?x=1",
+      },
+      {
+        "end": [MockFunction],
+        "setHeader": [MockFunction],
+        "shouldKeepAlive": undefined,
+        "statusCode": undefined,
+      },
+    ],
+  ],
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
   },
-  "transportCalled": true,
+  "responseCalls": [],
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, accept a trailing slash 1`] = `
 {
-  "calls": [],
+  "isRequestCalled": true,
+  "requestCalls": [
+    [
+      {
+        "method": "GET",
+        "socket": {
+          "remoteAddress": "127.0.0.1",
+        },
+        "url": "/mcp/",
+      },
+      {
+        "end": [MockFunction],
+        "setHeader": [MockFunction],
+        "shouldKeepAlive": undefined,
+        "statusCode": undefined,
+      },
+    ],
+  ],
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
   },
-  "transportCalled": true,
+  "responseCalls": [],
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, accept a trailing slash with path 1`] = `
 {
-  "calls": [],
+  "isRequestCalled": true,
+  "requestCalls": [
+    [
+      {
+        "method": "GET",
+        "socket": {
+          "remoteAddress": "127.0.0.1",
+        },
+        "url": "/mcp/sse",
+      },
+      {
+        "end": [MockFunction],
+        "setHeader": [MockFunction],
+        "shouldKeepAlive": undefined,
+        "statusCode": undefined,
+      },
+    ],
+  ],
   "response": {
     "shouldKeepAlive": undefined,
     "statusCode": undefined,
   },
-  "transportCalled": true,
+  "responseCalls": [],
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, reject a malformed path 1`] = `
 {
-  "calls": [
+  "isRequestCalled": false,
+  "requestCalls": [],
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+  "responseCalls": [
     [
       "Content-Type",
       "text/plain",
@@ -77,17 +168,18 @@ exports[`startHttpTransport accept and reject paths, reject a malformed path 1`]
       "Not Found",
     ],
   ],
-  "response": {
-    "shouldKeepAlive": false,
-    "statusCode": 404,
-  },
-  "transportCalled": false,
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, reject a malformed url 1`] = `
 {
-  "calls": [
+  "isRequestCalled": false,
+  "requestCalls": [],
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 400,
+  },
+  "responseCalls": [
     [
       "Content-Type",
       "text/plain",
@@ -100,17 +192,18 @@ exports[`startHttpTransport accept and reject paths, reject a malformed url 1`] 
       "Bad Request",
     ],
   ],
-  "response": {
-    "shouldKeepAlive": false,
-    "statusCode": 400,
-  },
-  "transportCalled": false,
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, reject a partial path 1`] = `
 {
-  "calls": [
+  "isRequestCalled": false,
+  "requestCalls": [],
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+  "responseCalls": [
     [
       "Content-Type",
       "text/plain",
@@ -123,17 +216,18 @@ exports[`startHttpTransport accept and reject paths, reject a partial path 1`] =
       "Not Found",
     ],
   ],
-  "response": {
-    "shouldKeepAlive": false,
-    "statusCode": 404,
-  },
-  "transportCalled": false,
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, reject a root path 1`] = `
 {
-  "calls": [
+  "isRequestCalled": false,
+  "requestCalls": [],
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+  "responseCalls": [
     [
       "Content-Type",
       "text/plain",
@@ -146,17 +240,18 @@ exports[`startHttpTransport accept and reject paths, reject a root path 1`] = `
       "Not Found",
     ],
   ],
-  "response": {
-    "shouldKeepAlive": false,
-    "statusCode": 404,
-  },
-  "transportCalled": false,
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, reject an incorrect path 1`] = `
 {
-  "calls": [
+  "isRequestCalled": false,
+  "requestCalls": [],
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+  "responseCalls": [
     [
       "Content-Type",
       "text/plain",
@@ -169,17 +264,18 @@ exports[`startHttpTransport accept and reject paths, reject an incorrect path 1`
       "Not Found",
     ],
   ],
-  "response": {
-    "shouldKeepAlive": false,
-    "statusCode": 404,
-  },
-  "transportCalled": false,
 }
 `;
 
 exports[`startHttpTransport accept and reject paths, reject an malformed path 1`] = `
 {
-  "calls": [
+  "isRequestCalled": false,
+  "requestCalls": [],
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+  "responseCalls": [
     [
       "Content-Type",
       "text/plain",
@@ -192,11 +288,6 @@ exports[`startHttpTransport accept and reject paths, reject an malformed path 1`
       "Not Found",
     ],
   ],
-  "response": {
-    "shouldKeepAlive": false,
-    "statusCode": 404,
-  },
-  "transportCalled": false,
 }
 `;
 
