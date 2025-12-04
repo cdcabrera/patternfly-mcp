@@ -68,8 +68,8 @@ const getArgValue = (flag: string, defaultValue?: unknown) => {
  * - `--http`: Indicates if the `--http` option is enabled.
  * - `--port`: The port number specified via `--port`, or defaults to `3000` if not provided.
  * - `--host`: The host name specified via `--host`, or defaults to `'127.0.0.1'` if not provided.
- * - `--allowedOrigins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
- * - `--allowedHosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
+ * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
+ * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
  *
  * @param argv - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
@@ -102,7 +102,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     const allowedOrigins = (getArgValue('--allowed-origins') as string)?.split(',')?.filter((origin: string) => origin.trim());
     const allowedHosts = (getArgValue('--allowed-hosts') as string)?.split(',')?.filter((host: string) => host.trim());
 
-    const isPortValid = (typeof port === 'number') && (port > 0 && port <= 65536);
+    const isPortValid = (typeof port === 'number') && (port > 0 && port < 65536);
 
     port = isPortValid ? port : undefined;
 
