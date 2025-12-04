@@ -41,6 +41,15 @@ const setSessionOptions = (session: Session = initializeSession()) => {
  */
 const getSessionOptions = (): Session => sessionContext.getStore() || setSessionOptions();
 
+const runWithSession = async <TReturn>(
+  session: Session,
+  callback: () => TReturn | Promise<TReturn>
+) => {
+  const frozen = freezeObject(structuredClone(session));
+
+  return sessionContext.run(frozen, callback);
+};
+
 /**
  * AsyncLocalStorage instance for per-instance options
  *
@@ -73,7 +82,6 @@ const setOptions = (options?: Partial<DefaultOptions>): GlobalOptions => {
 
   const frozen = freezeObject(structuredClone(merged));
 
-  setSessionOptions();
   optionsContext.enterWith(frozen);
 
   return frozen;
@@ -127,6 +135,7 @@ export {
   initializeSession,
   optionsContext,
   runWithOptions,
+  runWithSession,
   sessionContext,
   setOptions,
   setSessionOptions

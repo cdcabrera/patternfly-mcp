@@ -8,7 +8,12 @@ import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { type GlobalOptions } from './options';
-import { getOptions, runWithOptions } from './options.context';
+import {
+  getOptions,
+  getSessionOptions,
+  runWithOptions,
+  runWithSession
+} from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
@@ -84,6 +89,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
+  const session = getSessionOptions();
+
   let server: McpServer | null = null;
   let transport: StdioServerTransport | null = null;
   let httpHandle: HttpServerHandle | null = null;
@@ -148,7 +155,9 @@ const runServer = async (options: ServerOptions = getOptions(), {
       const [name, schema, callback] = toolCreator(options);
 
       log.info(`Registered tool: ${name}`);
-      server?.registerTool(name, schema, (args = {}) => runWithOptions(options, async () => await callback(args)));
+      server?.registerTool(name, schema, (args = {}) =>
+        runWithSession(session, async () =>
+          runWithOptions(options, async () => await callback(args))));
     });
 
     if (enableSigint) {
