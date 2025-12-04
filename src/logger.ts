@@ -59,7 +59,7 @@ const logSeverity = (level: unknown): number =>
  * @param [args] - Optional additional arguments for the log event
  */
 const publish = (level: LogLevel, options: LoggingSession = getLoggerOptions(), msg?: unknown, ...args: unknown[]) => {
-  const channelName = options?.channelName;
+  const channelName = options?.getChannelName?.();
   const timestamp = Date.now();
   const event: LogEvent = { level, time: timestamp };
 
@@ -129,7 +129,7 @@ const subscribeToChannel = (
   handler: (message: LogEvent) => void,
   options: LoggingSession = getLoggerOptions()
 ): Unsubscribe => {
-  const channelName = options?.channelName;
+  const channelName = options?.getChannelName?.();
 
   if (!channelName) {
     throw new Error('subscribeToChannel called without a configured logging channelName');
@@ -195,7 +195,7 @@ const registerStderrSubscriber = (options: LoggingSession, formatter?: (e: LogEv
 const createLogger = (options: LoggingSession = getLoggerOptions()): Unsubscribe => {
   const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
-  if (options?.channelName && options?.stderr) {
+  if (options?.getChannelName?.() && options?.stderr) {
     unsubscribeLoggerFuncs.push(registerStderrSubscriber(options));
   }
 

@@ -67,7 +67,7 @@ const createServerLogger = (server: McpServer, options: GlobalOptions = getOptio
   // Track active subscribers to unsubscribe on server shutdown
   const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
-  if (options?.logging?.channelName) {
+  if (options?.logging?.getChannelName?.()) {
     // Register the diagnostics channel
     unsubscribeLoggerFuncs.push(createLogger(options.logging));
 

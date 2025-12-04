@@ -58,18 +58,9 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 }
 
 /**
- * Session defaults, not user-configurable
+ * Session defaults, not user-configurable.
  */
-/**
- * Represents the default session configuration with an associated session ID,
- * inheriting properties from the DefaultOptions interface.
- *
- * @extends DefaultOptions<LoggingSession>
- * @property sessionId The unique identifier for the session.
- */
-interface DefaultSession extends DefaultOptions<LoggingSession> {
-  readonly sessionId: string;
-}
+type DefaultSession = DefaultOptions<LoggingSession>;
 
 /**
  * Logging options.
@@ -113,11 +104,11 @@ interface HttpOptions {
  * @interface LoggingSession
  * @extends LoggingOptions
  * @property baseName Name of the logging channel.
- * @property channelName Unique identifier for the logging channel.
+ * @property getChannelName Return the unique identifier for the logging channel.
  */
 interface LoggingSession extends LoggingOptions {
   readonly baseName: string;
-  readonly channelName: string;
+  readonly getChannelName: () => string;
 }
 
 /**

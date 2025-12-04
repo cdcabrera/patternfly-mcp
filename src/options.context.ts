@@ -12,6 +12,20 @@ import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
  */
 const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 
+const once = <T>(factory: () => T): () => T => {
+  let created = false;
+  let value: T;
+
+  return () => {
+    if (!created) {
+      created = true;
+      value = factory();
+    }
+
+    return value;
+  };
+};
+
 /**
  * Set and freeze cloned options in the current async context.
  *
@@ -23,29 +37,30 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  */
 const setOptions = (options?: Partial<DefaultOptions>): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
-  const sessionId = (process.env.NODE_ENV === 'local' && '1234d567-1ce9-123d-1413-a1234e56c789') || randomUUID();
 
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const baseName = LOG_BASENAME;
-  const channelName = `${baseName}:${sessionId}`;
-  const merged: GlobalOptions = {
+  const getChannelName = once(() =>
+    `${baseName}:${(process.env.NODE_ENV === 'local' && '1234d567-1ce9-123d-1413-a1234e56c789') || randomUUID()}`);
+  const merged = structuredClone({
     ...base,
-    sessionId,
+    resourceMemoOptions: DEFAULT_OPTIONS.resourceMemoOptions,
+    toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions
+  });
+
+  const frozen: GlobalOptions = {
+    ...merged,
     logging: {
       level: baseLogging.level,
       stderr: baseLogging.stderr,
       protocol: baseLogging.protocol,
       transport: baseLogging.transport,
       baseName,
-      channelName
-    },
-    resourceMemoOptions: DEFAULT_OPTIONS.resourceMemoOptions,
-    toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions
+      getChannelName
+    }
   };
 
-  const frozen = freezeObject(structuredClone(merged));
-
-  optionsContext.enterWith(frozen);
+  optionsContext.enterWith(freezeObject(frozen));
 
   return frozen;
 };
