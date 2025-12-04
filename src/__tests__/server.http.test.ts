@@ -30,6 +30,7 @@ describe('startHttpTransport', () => {
   const mockFunction = jest.fn();
   const mockEventHandler = jest.fn();
   const mockServerClose = jest.fn();
+  let mockRequestHandler: ((req: any, res: any) => void) | undefined;
   let mockServer: any;
   let mockHttpServer: any;
   let mockTransport: any;
@@ -57,7 +58,11 @@ describe('startHttpTransport', () => {
 
     MockMcpServer.mockImplementation(() => mockServer);
     MockStreamableHTTPServerTransport.mockImplementation(() => mockTransport);
-    MockCreateServer.mockReturnValue(mockHttpServer);
+
+    MockCreateServer.mockImplementation((handler: any) => {
+      mockRequestHandler = handler;
+      return mockHttpServer as any;
+    });
   });
 
   afterEach(() => {
@@ -90,5 +95,68 @@ describe('startHttpTransport', () => {
     }
   ])('should handle option errors, $description', async ({ error, options }) => {
     await expect(startHttpTransport(mockServer, options as any)).rejects.toThrow(error);
+  });
+
+  it.each([
+    {
+      description: 'accept a basic path',
+      url: '/mcp'
+    },
+    {
+      description: 'accept a trailing slash',
+      url: '/mcp/'
+    },
+    {
+      description: 'accept a trailing slash with path',
+      url: '/mcp/sse'
+    },
+    {
+      description: 'accept a casing insensitive path',
+      url: '/MCP'
+    },
+    {
+      description: 'accept a path with query params',
+      url: '/MCP/SSE?x=1'
+    },
+    {
+      description: 'reject a root path',
+      url: '/'
+    },
+    {
+      description: 'reject a partial path',
+      url: '/mc'
+    },
+    {
+      description: 'reject an malformed path',
+      url: '/mcpish'
+    },
+    {
+      description: 'reject an incorrect path',
+      url: '/foo/bar?x=1'
+    },
+    {
+      description: 'reject a malformed url',
+      url: 'http:]//localhost:8000/mcp'
+    }
+  ])('accept and reject paths, $description', async ({ url }) => {
+    await startHttpTransport(mockServer, { http: { port: 3000, host: 'localhost' } } as any);
+
+    const mockResponse = jest.fn();
+    const response = {
+      statusCode: mockResponse,
+      shouldKeepAlive: mockResponse,
+      setHeader: mockResponse,
+      end: mockResponse
+    };
+
+    const mockRequest = {
+      url,
+      method: 'GET',
+      socket: { remoteAddress: '127.0.0.1' }
+    };
+
+    await mockRequestHandler?.(mockRequest, response);
+
+    expect(mockResponse.mock.calls).toMatchSnapshot();
   });
 });
