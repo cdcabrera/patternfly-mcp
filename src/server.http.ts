@@ -10,6 +10,13 @@ import { getOptions } from './options.context';
 import { log } from './logger';
 
 /**
+ * Fixed base path for MCP transport endpoints.
+ *
+ * @note Clients should use http://host:port/mcp and transport-managed subpaths like `/mcp/sse`.
+ */
+const MCP_BASE_PATH = '/mcp';
+
+/**
  * Get process information for a port
  *
  * @param port - Port number to check
@@ -154,7 +161,30 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
 
   // Set up
   const connections = new Set<Socket>();
+
+  // Gate handling to a fixed base path to avoid exposing the transport on arbitrary routes
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+    try {
+      const host = req.headers.host || `${http.host}:${http.port}`;
+      const url = new URL(req.url || '/', `http://${host}`);
+
+      if (!url.pathname.startsWith(MCP_BASE_PATH)) {
+        log.warn(`HTTP 404 request for unexpected path: ${url.pathname}`);
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Not Found');
+
+        return;
+      }
+    } catch {
+      log.warn(`HTTP 400, unexpected path, url parsing failed: ${req?.url || '<empty>'}`);
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'text/plain');
+      res.end('Bad Request');
+
+      return;
+    }
+
     void handleStreamableHttpRequest(req, res, transport);
   });
 
@@ -210,5 +240,6 @@ export {
   getProcessOnPort,
   handleStreamableHttpRequest,
   startHttpTransport,
+  MCP_BASE_PATH,
   type HttpServerHandle
 };
