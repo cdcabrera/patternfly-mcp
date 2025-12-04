@@ -15,6 +15,7 @@ exports[`parseCliOptions should attempt to parse args with --allowed-hosts 1`] =
   "isHttp": true,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -37,6 +38,7 @@ exports[`parseCliOptions should attempt to parse args with --allowed-origins 1`]
   "isHttp": true,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -51,6 +53,7 @@ exports[`parseCliOptions should attempt to parse args with --docs-host flag 1`] 
   "isHttp": false,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -70,6 +73,7 @@ exports[`parseCliOptions should attempt to parse args with --http and --host 1`]
   "isHttp": true,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -89,6 +93,7 @@ exports[`parseCliOptions should attempt to parse args with --http and --port 1`]
   "isHttp": true,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -108,6 +113,7 @@ exports[`parseCliOptions should attempt to parse args with --http flag 1`] = `
   "isHttp": true,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -122,6 +128,7 @@ exports[`parseCliOptions should attempt to parse args with --log-level flag 1`] 
   "isHttp": false,
   "logging": {
     "level": "warn",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -136,6 +143,7 @@ exports[`parseCliOptions should attempt to parse args with --log-stderr flag and
   "isHttp": false,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": true,
     "stderr": true,
     "transport": "stdio",
@@ -150,6 +158,7 @@ exports[`parseCliOptions should attempt to parse args with --verbose flag 1`] = 
   "isHttp": false,
   "logging": {
     "level": "debug",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -164,6 +173,7 @@ exports[`parseCliOptions should attempt to parse args with --verbose flag and --
   "isHttp": false,
   "logging": {
     "level": "debug",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -178,6 +188,7 @@ exports[`parseCliOptions should attempt to parse args with other arguments 1`] =
   "isHttp": false,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",
@@ -192,6 +203,7 @@ exports[`parseCliOptions should attempt to parse args without --docs-host flag 1
   "isHttp": false,
   "logging": {
     "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
     "protocol": false,
     "stderr": false,
     "transport": "stdio",

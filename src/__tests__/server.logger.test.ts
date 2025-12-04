@@ -1,5 +1,5 @@
 import diagnostics_channel from 'node:diagnostics_channel';
-import { getOptions, setOptions } from '../options.context';
+import { getLoggerOptions, setOptions } from '../options.context';
 import { toMcpLevel, registerMcpSubscriber, createServerLogger } from '../server.logger';
 import { log } from '../logger';
 
@@ -50,8 +50,8 @@ describe('registerMcpSubscriber', () => {
   });
 
   it('should attempt to subscribe and unsubscribe from a channel', () => {
-    const options = getOptions();
-    const unsubscribe = registerMcpSubscriber((() => {}) as any, options);
+    const loggingSession = getLoggerOptions();
+    const unsubscribe = registerMcpSubscriber((() => {}) as any, loggingSession);
 
     unsubscribe();
 
@@ -80,15 +80,15 @@ describe('createServerLogger', () => {
   it.each([
     {
       description: 'with stderr, and emulated channel to pass checks',
-      options: { logging: { channelName: 'loremIpsum', stderr: true, protocol: false } }
+      options: { channelName: 'loremIpsum', stderr: true, protocol: false }
     },
     {
       description: 'with stderr, protocol, and emulated channel to pass checks',
-      options: { logging: { channelName: 'loremIpsum', stderr: true, protocol: true } }
+      options: { channelName: 'loremIpsum', stderr: true, protocol: true }
     },
     {
       description: 'with no logging options',
-      options: { logging: {} },
+      options: {},
       stderr: false
     }
   ])('should attempt to subscribe and unsubscribe from a channel, $description', ({ options }) => {
