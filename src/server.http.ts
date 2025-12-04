@@ -168,13 +168,16 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       const host = req.headers.host || `${http.host}:${http.port}`;
       const url = new URL(req.url || '/', `http://${host}`);
 
-      if (!url.pathname.startsWith(`${MCP_BASE_PATH}/`)) {
+      const isExactBase = new RegExp(`^${MCP_BASE_PATH}`, 'i').test(url.pathname);
+      const isUnderBase = url.pathname.startsWith(`${MCP_BASE_PATH}/`);
+
+      if (!isExactBase && !isUnderBase) {
         throw new Error('Unexpected path', { cause: { statusCode: 404, message: 'Not Found' } });
       }
     } catch (error) {
-      const cause = (error as { cause?: unknown })?.cause as { statusCode?: number, message?: string } | undefined;
-      const statusCode = cause?.statusCode || 400;
-      const message = cause?.message || 'Bad Request';
+      const cause = (error as { cause?: unknown })?.cause as { statusCode?: unknown; message?: unknown } | undefined;
+      const statusCode = typeof cause?.statusCode === 'number' ? cause.statusCode : 400;
+      const message = typeof cause?.message === 'string' ? cause.message : 'Bad Request';
       const method = req?.method || 'UNKNOWN';
       const remote = req?.socket?.remoteAddress || 'unknown';
       const path = req?.url || '<empty>';
