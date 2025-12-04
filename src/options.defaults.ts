@@ -64,7 +64,8 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  * @default { level: 'debug', logger: packageJson.name, stderr: false, protocol: false, transport: 'stdio' }
  *
  * @property level Logging level.
- * @property logger Logger name.
+ * @property logger Logger name. Human-readable/configurable logger name used in MCP protocol messages. Isolated
+ *     to make passing logging options between modules easier.
  * @property stderr Flag indicating whether to log to stderr.
  * @property protocol Flag indicating whether to log protocol details.
  * @property transport Transport mechanism for logging.

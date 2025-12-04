@@ -64,6 +64,7 @@ export const startServer = async (
       ...options.http
     },
     logging: {
+      logger: '@patternfly/patternfly-mcp',
       level: options.logging?.level || 'info',
       stderr: options.logging?.stderr || false,
       protocol: options.logging?.protocol || false,
