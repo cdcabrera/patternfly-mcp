@@ -10,9 +10,9 @@ import { createServerLogger } from './server.logger';
 import { type GlobalOptions } from './options';
 import {
   getOptions,
-  getSessionOptions,
-  runWithOptions,
-  runWithSession
+  // getSessionOptions,
+  runWithOptions
+  // runWithSession
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 
@@ -89,7 +89,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
-  const session = getSessionOptions();
+  // const session = getSessionOptions();
 
   let server: McpServer | null = null;
   let transport: StdioServerTransport | null = null;
@@ -156,8 +156,9 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
       log.info(`Registered tool: ${name}`);
       server?.registerTool(name, schema, (args = {}) =>
-        runWithSession(session, async () =>
-          runWithOptions(options, async () => await callback(args))));
+        runWithOptions(options, async () => await callback(args)));
+      // runWithSession(session, async () =>
+      //  runWithOptions(options, async () => await callback(args))));
     });
 
     if (enableSigint) {

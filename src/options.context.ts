@@ -1,8 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { type Session, type GlobalOptions } from './options';
+// import { type Session, type GlobalOptions } from './options';
+import { type GlobalOptions } from './options';
 import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession, type DefaultOptions } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
+import { memo } from './server.caching';
 
 /**
  * AsyncLocalStorage instance for a per-instance session state.
@@ -10,19 +12,21 @@ import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
  * The `sessionContext` allows sharing a common context without explicitly
  * passing it as a parameter.
  */
-const sessionContext = new AsyncLocalStorage<Session>();
+// const sessionContext = new AsyncLocalStorage<Session>();
 
 /**
  * Initialize and return session data.
  *
  * @returns {Session} Immutable session with a session ID and channel name.
  */
+/*
 const initializeSession = (): Session => {
   const sessionId = (process.env.NODE_ENV === 'local' && '1234d567-1ce9-123d-1413-a1234e56c789') || randomUUID();
   const channelName = `${LOG_BASENAME}:${sessionId}`;
 
   return freezeObject({ sessionId, channelName });
 };
+ */
 
 /**
  * Set and return the current session options.
@@ -30,17 +34,20 @@ const initializeSession = (): Session => {
  * @param {Session} [session]
  * @returns {Session}
  */
+/*
 const setSessionOptions = (session: Session = initializeSession()) => {
   sessionContext.enterWith(session);
 
   return session;
 };
+ */
 
 /**
  * Get the current session options or set a new session with defaults.
  */
-const getSessionOptions = (): Session => sessionContext.getStore() || setSessionOptions();
+// const getSessionOptions = (): Session => sessionContext.getStore() || setSessionOptions();
 
+/*
 const runWithSession = async <TReturn>(
   session: Session,
   callback: () => TReturn | Promise<TReturn>
@@ -49,6 +56,7 @@ const runWithSession = async <TReturn>(
 
   return sessionContext.run(frozen, callback);
 };
+   */
 
 /**
  * AsyncLocalStorage instance for per-instance options
@@ -99,16 +107,20 @@ const setOptions = (options?: Partial<DefaultOptions>): GlobalOptions => {
  */
 const getOptions = (): GlobalOptions => optionsContext.getStore() || setOptions();
 
+// const getChannelName = memo(() => `${LOG_BASENAME}:${randomUUID()}`);
+// const channelName = getChannelName();
+
 /**
  * Get logging options from the current context.
  *
- * @param {Session} [session] - Session options to use in context.
  * @returns {LoggingSession} Logging options from context.
  */
-const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
+// const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
+const getLoggerOptions = (): LoggingSession => {
   const base = getOptions().logging;
+  const getChannelName = () => memo(() => `${LOG_BASENAME}:${randomUUID()}`)();
 
-  return { ...base, channelName: session.channelName };
+  return { ...base, channelName, getChannelName };
 };
 
 /**
@@ -129,15 +141,16 @@ const runWithOptions = async <TReturn>(
 };
 
 export {
+  getChannelName,
   getLoggerOptions,
   getOptions,
-  getSessionOptions,
-  initializeSession,
+  // getSessionOptions,
+  // initializeSession,
   optionsContext,
   runWithOptions,
-  runWithSession,
-  sessionContext,
-  setOptions,
-  setSessionOptions
+  // runWithSession,
+  // sessionContext,
+  setOptions
+  // setSessionOptions
 };
 
