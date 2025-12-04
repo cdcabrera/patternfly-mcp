@@ -193,6 +193,8 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
       res.statusCode = statusCode;
       res.setHeader('Content-Type', 'text/plain');
       res.setHeader('X-Content-Type-Options', 'nosniff');
+      // Ensure socket closes after res.end()
+      res.shouldKeepAlive = false;
       res.end(message);
 
       return;
