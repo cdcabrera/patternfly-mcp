@@ -17,6 +17,11 @@ import { log } from './logger';
 const MCP_BASE_PATH = '/mcp';
 
 /**
+ * The base URL of the MCP server.
+ */
+const MCP_HOST = 'http://mcp.local';
+
+/**
  * Get process information for a port
  *
  * @param port - Port number to check
@@ -165,8 +170,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   // Gate handling to a fixed base path to avoid exposing the transport on arbitrary routes
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     try {
-      const host = req.headers.host || `${http.host}:${http.port}`;
-      const url = new URL(req.url || '/', `http://${host}`);
+      const url = new URL(req.url || '/', MCP_HOST);
 
       const pathname = (url.pathname || '/').toLowerCase();
       const basePath = MCP_BASE_PATH.toLowerCase();
@@ -250,5 +254,6 @@ export {
   handleStreamableHttpRequest,
   startHttpTransport,
   MCP_BASE_PATH,
+  MCP_HOST,
   type HttpServerHandle
 };
