@@ -1,10 +1,18 @@
-import { DEFAULT_OPTIONS, type DefaultOptions, type DefaultSession, type LoggingOptions, type HttpOptions } from './options.defaults';
+import { DEFAULT_OPTIONS, type DefaultOptions, type LoggingOptions, type HttpOptions } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 
 /**
- * Combined options object
+ * Session defaults, not user-configurable
  */
-type GlobalOptions = DefaultSession;
+type Session = {
+  readonly sessionId: string;
+  readonly channelName: string
+};
+
+/**
+ * Global options, convenience type for `DefaultOptions`
+ */
+type GlobalOptions = DefaultOptions;
 
 /**
  * Options parsed from CLI arguments
@@ -116,5 +124,6 @@ export {
   type DefaultOptions,
   type GlobalOptions,
   type HttpOptions,
-  type LoggingOptions
+  type LoggingOptions,
+  type Session
 };

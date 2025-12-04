@@ -58,32 +58,20 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 }
 
 /**
- * Session defaults, not user-configurable
- */
-/**
- * Represents the default session configuration with an associated session ID,
- * inheriting properties from the DefaultOptions interface.
- *
- * @extends DefaultOptions<LoggingSession>
- * @property sessionId The unique identifier for the session.
- */
-interface DefaultSession extends DefaultOptions<LoggingSession> {
-  readonly sessionId: string;
-}
-
-/**
  * Logging options.
  *
  * @interface LoggingOptions
- * @default { level: 'info', stderr: false, protocol: false, baseName: `${packageJson.name}:log`, transport: 'stdio' }
+ * @default { level: 'debug', logger: packageJson.name, stderr: false, protocol: false, transport: 'stdio' }
  *
  * @property level Logging level.
+ * @property logger Logger name.
  * @property stderr Flag indicating whether to log to stderr.
  * @property protocol Flag indicating whether to log protocol details.
  * @property transport Transport mechanism for logging.
  */
 interface LoggingOptions {
   level: 'debug' | 'info' | 'warn' | 'error';
+  logger: string;
   stderr: boolean;
   protocol: boolean;
   transport: 'stdio' | 'mcp';
@@ -112,11 +100,9 @@ interface HttpOptions {
  *
  * @interface LoggingSession
  * @extends LoggingOptions
- * @property baseName Name of the logging channel.
  * @property channelName Unique identifier for the logging channel.
  */
 interface LoggingSession extends LoggingOptions {
-  readonly baseName: string;
   readonly channelName: string;
 }
 
@@ -125,6 +111,7 @@ interface LoggingSession extends LoggingOptions {
  */
 const LOGGING_OPTIONS: LoggingOptions = {
   level: 'info',
+  logger: packageJson.name,
   stderr: false,
   protocol: false,
   transport: 'stdio'
@@ -299,7 +286,6 @@ export {
   LOG_BASENAME,
   DEFAULT_OPTIONS,
   type DefaultOptions,
-  type DefaultSession,
   type HttpOptions,
   type LoggingOptions,
   type LoggingSession

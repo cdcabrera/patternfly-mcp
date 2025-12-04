@@ -16,6 +16,7 @@ exports[`options defaults should return specific properties 1`] = `
     "llmsFilesPath": "/llms-files",
     "logging": {
       "level": "info",
+      "logger": "@patternfly/patternfly-mcp",
       "protocol": false,
       "stderr": false,
       "transport": "stdio",

@@ -1,8 +1,7 @@
 import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
-import { getOptions } from './options.context';
-import { type GlobalOptions } from './options';
-import { DEFAULT_OPTIONS } from './options.defaults';
+import { getLoggerOptions } from './options.context';
+import { DEFAULT_OPTIONS, type LoggingSession } from './options.defaults';
 import { createLogger, log, logSeverity, subscribeToChannel, type LogEvent, type LogLevel, type Unsubscribe } from './logger';
 import { memo } from './server.caching';
 
@@ -35,12 +34,12 @@ const toMcpLevel = (level: LogLevel): McpLoggingLevel => {
  * - Event is fire-and-forget, swallow errors to avoid affecting app flow
  *
  * @param {McpServer} server - MCP server instance
- * @param {GlobalOptions} options
+ * @param {LoggingSession} loggingSession
  * @returns Unsubscribe function to remove the subscriber.
  */
-const registerMcpSubscriber = (server: McpServer, { logging, name }: GlobalOptions) =>
+const registerMcpSubscriber = (server: McpServer, loggingSession: LoggingSession) =>
   subscribeToChannel((event: LogEvent) => {
-    if (logSeverity(event.level) < logSeverity(logging?.level)) {
+    if (logSeverity(event.level) < logSeverity(loggingSession.level)) {
       return;
     }
 
@@ -49,7 +48,7 @@ const registerMcpSubscriber = (server: McpServer, { logging, name }: GlobalOptio
 
     try {
       void server
-        .sendLoggingMessage({ level: toMcpLevel(event.level), logger: name, data })
+        .sendLoggingMessage({ level: toMcpLevel(event.level), logger: loggingSession.logger, data })
         .catch(() => {});
     } catch {}
   });
@@ -58,22 +57,22 @@ const registerMcpSubscriber = (server: McpServer, { logging, name }: GlobalOptio
  * Create a logger for the server instance.
  *
  * @param {McpServer} server
- * @param {GlobalOptions} options
+ * @param {LoggingSession} [loggingSession]
  * @returns An object with methods to manage logging subscriptions:
  *   - `subscribe`: Registers a new log event handler if a valid handler function is provided.
  *   - `unsubscribe`: Unsubscribes and cleans up all available registered loggers and handlers.
  */
-const createServerLogger = (server: McpServer, options: GlobalOptions = getOptions()) => {
+const createServerLogger = (server: McpServer, loggingSession: LoggingSession = getLoggerOptions()) => {
   // Track active subscribers to unsubscribe on server shutdown
   const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
-  if (options?.logging?.channelName) {
+  if (loggingSession?.channelName) {
     // Register the diagnostics channel
-    unsubscribeLoggerFuncs.push(createLogger(options.logging));
+    unsubscribeLoggerFuncs.push(createLogger(loggingSession));
 
-    if (options.logging.protocol) {
+    if (loggingSession.protocol) {
       // Register the MCP subscriber
-      unsubscribeLoggerFuncs.push(registerMcpSubscriber(server, options));
+      unsubscribeLoggerFuncs.push(registerMcpSubscriber(server, loggingSession));
     }
   }
 
