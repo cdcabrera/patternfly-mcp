@@ -65,7 +65,8 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  *
  * @property level Logging level.
  * @property logger Logger name. Human-readable/configurable logger name used in MCP protocol messages. Isolated
- *     to make passing logging options between modules easier.
+ *     to make passing logging options between modules easier. This does not change the session unique
+ *     diagnostics-channel name and is intended to label messages forwarded over the MCP protocol.
  * @property stderr Flag indicating whether to log to stderr.
  * @property protocol Flag indicating whether to log protocol details.
  * @property transport Transport mechanism for logging.
