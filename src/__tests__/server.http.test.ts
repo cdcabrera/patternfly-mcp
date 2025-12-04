@@ -143,8 +143,8 @@ describe('startHttpTransport', () => {
 
     const mockResponse = jest.fn();
     const response = {
-      statusCode: mockResponse,
-      shouldKeepAlive: mockResponse,
+      statusCode: undefined,
+      shouldKeepAlive: undefined,
       setHeader: mockResponse,
       end: mockResponse
     };
@@ -157,6 +157,12 @@ describe('startHttpTransport', () => {
 
     await mockRequestHandler?.(mockRequest, response);
 
-    expect(mockResponse.mock.calls).toMatchSnapshot();
+    expect({
+      response: {
+        statusCode: response.statusCode,
+        shouldKeepAlive: response.shouldKeepAlive
+      },
+      calls: mockResponse.mock.calls
+    }).toMatchSnapshot();
   });
 });

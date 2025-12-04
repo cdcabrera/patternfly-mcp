@@ -7,94 +7,164 @@ exports[`getProcessOnPort should attempt to find a process listening on a port: 
 }
 `;
 
-exports[`startHttpTransport accept and reject paths, accept a basic path 1`] = `[]`;
+exports[`startHttpTransport accept and reject paths, accept a basic path 1`] = `
+{
+  "calls": [],
+  "response": {
+    "shouldKeepAlive": undefined,
+    "statusCode": undefined,
+  },
+}
+`;
 
-exports[`startHttpTransport accept and reject paths, accept a casing insensitive path 1`] = `[]`;
+exports[`startHttpTransport accept and reject paths, accept a casing insensitive path 1`] = `
+{
+  "calls": [],
+  "response": {
+    "shouldKeepAlive": undefined,
+    "statusCode": undefined,
+  },
+}
+`;
 
-exports[`startHttpTransport accept and reject paths, accept a path with query params 1`] = `[]`;
+exports[`startHttpTransport accept and reject paths, accept a path with query params 1`] = `
+{
+  "calls": [],
+  "response": {
+    "shouldKeepAlive": undefined,
+    "statusCode": undefined,
+  },
+}
+`;
 
-exports[`startHttpTransport accept and reject paths, accept a trailing slash 1`] = `[]`;
+exports[`startHttpTransport accept and reject paths, accept a trailing slash 1`] = `
+{
+  "calls": [],
+  "response": {
+    "shouldKeepAlive": undefined,
+    "statusCode": undefined,
+  },
+}
+`;
 
-exports[`startHttpTransport accept and reject paths, accept a trailing slash with path 1`] = `[]`;
+exports[`startHttpTransport accept and reject paths, accept a trailing slash with path 1`] = `
+{
+  "calls": [],
+  "response": {
+    "shouldKeepAlive": undefined,
+    "statusCode": undefined,
+  },
+}
+`;
 
 exports[`startHttpTransport accept and reject paths, reject a malformed url 1`] = `
-[
-  [
-    "Content-Type",
-    "text/plain",
+{
+  "calls": [
+    [
+      "Content-Type",
+      "text/plain",
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff",
+    ],
+    [
+      "Not Found",
+    ],
   ],
-  [
-    "X-Content-Type-Options",
-    "nosniff",
-  ],
-  [
-    "Not Found",
-  ],
-]
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+}
 `;
 
 exports[`startHttpTransport accept and reject paths, reject a partial path 1`] = `
-[
-  [
-    "Content-Type",
-    "text/plain",
+{
+  "calls": [
+    [
+      "Content-Type",
+      "text/plain",
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff",
+    ],
+    [
+      "Not Found",
+    ],
   ],
-  [
-    "X-Content-Type-Options",
-    "nosniff",
-  ],
-  [
-    "Not Found",
-  ],
-]
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+}
 `;
 
 exports[`startHttpTransport accept and reject paths, reject a root path 1`] = `
-[
-  [
-    "Content-Type",
-    "text/plain",
+{
+  "calls": [
+    [
+      "Content-Type",
+      "text/plain",
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff",
+    ],
+    [
+      "Not Found",
+    ],
   ],
-  [
-    "X-Content-Type-Options",
-    "nosniff",
-  ],
-  [
-    "Not Found",
-  ],
-]
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+}
 `;
 
 exports[`startHttpTransport accept and reject paths, reject an incorrect path 1`] = `
-[
-  [
-    "Content-Type",
-    "text/plain",
+{
+  "calls": [
+    [
+      "Content-Type",
+      "text/plain",
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff",
+    ],
+    [
+      "Not Found",
+    ],
   ],
-  [
-    "X-Content-Type-Options",
-    "nosniff",
-  ],
-  [
-    "Not Found",
-  ],
-]
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+}
 `;
 
 exports[`startHttpTransport accept and reject paths, reject an malformed path 1`] = `
-[
-  [
-    "Content-Type",
-    "text/plain",
+{
+  "calls": [
+    [
+      "Content-Type",
+      "text/plain",
+    ],
+    [
+      "X-Content-Type-Options",
+      "nosniff",
+    ],
+    [
+      "Not Found",
+    ],
   ],
-  [
-    "X-Content-Type-Options",
-    "nosniff",
-  ],
-  [
-    "Not Found",
-  ],
-]
+  "response": {
+    "shouldKeepAlive": false,
+    "statusCode": 404,
+  },
+}
 `;
 
 exports[`startHttpTransport should start HTTP server, with port and host: server setup 1`] = `
