@@ -100,49 +100,60 @@ describe('startHttpTransport', () => {
   it.each([
     {
       description: 'accept a basic path',
-      url: '/mcp'
+      url: '/mcp',
+      isTransportCalled: true
     },
     {
       description: 'accept a trailing slash',
-      url: '/mcp/'
+      url: '/mcp/',
+      isTransportCalled: true
     },
     {
       description: 'accept a trailing slash with path',
-      url: '/mcp/sse'
+      url: '/mcp/sse',
+      isTransportCalled: true
     },
     {
       description: 'accept a casing insensitive path',
-      url: '/MCP'
+      url: '/MCP',
+      isTransportCalled: true
     },
     {
       description: 'accept a path with query params',
-      url: '/MCP/SSE?x=1'
+      url: '/MCP/SSE?x=1',
+      isTransportCalled: true
     },
     {
       description: 'reject a root path',
-      url: '/'
+      url: '/',
+      isTransportCalled: false
     },
     {
       description: 'reject a partial path',
-      url: '/mc'
+      url: '/mc',
+      isTransportCalled: false
     },
     {
       description: 'reject an malformed path',
-      url: '/mcpish'
+      url: '/mcpish',
+      isTransportCalled: false
     },
     {
       description: 'reject an incorrect path',
-      url: '/foo/bar?x=1'
+      url: '/foo/bar?x=1',
+      isTransportCalled: false
     },
     {
       description: 'reject a malformed path',
-      url: 'http:]//localhost:8000/mcp'
+      url: 'http:]//localhost:8000/mcp',
+      isTransportCalled: false
     },
     {
       description: 'reject a malformed url',
-      url: 'http://['
+      url: 'http://[',
+      isTransportCalled: false
     }
-  ])('accept and reject paths, $description', async ({ url }) => {
+  ])('accept and reject paths, $description', async ({ url, isTransportCalled }) => {
     await startHttpTransport(mockServer, { http: { port: 3000, host: 'localhost' } } as any);
 
     const mockResponse = jest.fn();
@@ -167,7 +178,9 @@ describe('startHttpTransport', () => {
         shouldKeepAlive: response.shouldKeepAlive
       },
       calls: mockResponse.mock.calls,
-      isTransportCalled: mockTransport.handleRequest.mock.calls.length > 0
+      transportCalled: mockTransport.handleRequest.mock.calls.length > 0
     }).toMatchSnapshot();
+
+    expect(mockTransport.handleRequest.mock.calls.length > 0).toBe(isTransportCalled);
   });
 });
