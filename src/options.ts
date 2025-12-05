@@ -120,7 +120,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
       http.port = port;
     }
 
-    if (host !== undefined && host !== null && typeof host === 'string') {
+    if (typeof host === 'string') {
       http.host = host;
     }
 
@@ -128,7 +128,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
       http.allowedHosts = allowedHosts;
     }
 
-    if (Array.isArray(allowedOrigins) && allowedOrigins?.length) {
+    if (Array.isArray(allowedOrigins) && allowedOrigins.length) {
       http.allowedOrigins = allowedOrigins;
     }
   }
