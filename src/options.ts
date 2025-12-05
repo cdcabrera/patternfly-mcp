@@ -25,7 +25,7 @@ type CliOptions = {
 };
 
 /**
- * Get argument value from process.argv
+ * Get argument value from argv (defaults to `process.argv`).
  *
  * @param flag - CLI flag to search for
  * @param [options] - Options

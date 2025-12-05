@@ -61,7 +61,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 /**
  * Set and freeze cloned options in the current async context.
  *
- * @param {Partial<DefaultOptions>} [options] - Optional options to set in context. Merged with DEFAULT_OPTIONS.
+ * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {

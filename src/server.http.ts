@@ -95,7 +95,7 @@ const getProcessOnPort = async (port: number) => {
 /**
  * Create Streamable HTTP transport
  *
- * @param {DefaultSession} [options]
+ * @param {GlobalOptions} [options]
  */
 const createStreamableHttpTransport = (options = getOptions()) => {
   const { http } = options;
