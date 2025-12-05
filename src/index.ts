@@ -1,4 +1,9 @@
-import { parseCliOptions, type CliOptions, type DefaultOptions, type Session } from './options';
+import {
+  parseCliOptions,
+  type CliOptions,
+  type DefaultOptionsOverrides,
+  type Session
+} from './options';
 import {
   getSessionOptions,
   setOptions,
@@ -24,7 +29,7 @@ import {
  *     - `'programmatic'`: Functionality is invoked programmatically. Allows process exits.
  *     - `'test'`: Functionality is being tested. Does NOT allow process exits.
  */
-type PfMcpOptions = Partial<DefaultOptions> & {
+type PfMcpOptions = DefaultOptionsOverrides & {
   mode?: 'cli' | 'programmatic' | 'test';
 };
 

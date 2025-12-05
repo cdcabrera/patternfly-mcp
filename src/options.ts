@@ -1,4 +1,4 @@
-import { DEFAULT_OPTIONS, type DefaultOptions, type LoggingOptions, type HttpOptions } from './options.defaults';
+import { DEFAULT_OPTIONS, type DefaultOptions, type DefaultOptionsOverrides, type LoggingOptions, type HttpOptions } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 
 /**
@@ -19,18 +19,18 @@ type GlobalOptions = DefaultOptions;
  */
 type CliOptions = {
   docsHost: boolean;
-  http: HttpOptions | undefined;
+  http: Partial<HttpOptions> | undefined;
   isHttp: boolean;
-  logging: LoggingOptions;
+  logging: Partial<LoggingOptions>;
 };
 
 /**
  * Get argument value from process.argv
  *
  * @param flag - CLI flag to search for
- * @param options - Options
- * @param options.defaultValue - Default arg value
- * @param options.argv - Command-line arguments to parse. Defaults to `process.argv`.
+ * @param [options] - Options
+ * @param [options.defaultValue] - Default arg value
+ * @param [options.argv] - Command-line arguments to parse. Defaults to `process.argv`.
  */
 const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defaultValue?: unknown, argv?: string[] } = {}) => {
   const index = argv.indexOf(flag);
@@ -73,7 +73,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
  * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
  *
- * @param argv - Command-line arguments to parse. Defaults to `process.argv`.
+ * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
  */
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
@@ -96,11 +96,11 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   const isHttp = argv.includes('--http');
-  let http: HttpOptions | undefined;
+  let http: Partial<HttpOptions> = {};
 
   if (isHttp) {
     const rawPort = getArgValue('--port', { argv });
-    const parsedPort = typeof rawPort === 'string' ? Number.parseInt(String(rawPort), 10) : undefined;
+    const parsedPort = Number.parseInt(String(rawPort || ''), 10);
     const host = getArgValue('--host', { argv });
 
     const allowedOrigins = (getArgValue('--allowed-origins', { argv }) as string)
@@ -113,7 +113,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
       ?.map((host: string) => host.trim())
       ?.filter(Boolean);
 
-    const isPortValid = (typeof parsedPort === 'number') && Number.isInteger(parsedPort) && (parsedPort > 0 && parsedPort < 65536);
+    const isPortValid = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 65536;
     const port = isPortValid ? parsedPort : undefined;
 
     http = {
@@ -132,6 +132,7 @@ export {
   getArgValue,
   type CliOptions,
   type DefaultOptions,
+  type DefaultOptionsOverrides,
   type GlobalOptions,
   type HttpOptions,
   type LoggingOptions,

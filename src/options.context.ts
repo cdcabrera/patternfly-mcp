@@ -1,6 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { type Session, type GlobalOptions } from './options';
+import {
+  type Session,
+  type GlobalOptions,
+  DefaultOptionsOverrides
+} from './options';
 import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession, type DefaultOptions } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
 
@@ -64,7 +68,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @param {Partial<DefaultOptions>} [options] - Optional options to set in context. Merged with DEFAULT_OPTIONS.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: Partial<DefaultOptions>): GlobalOptions => {
+const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const merged: GlobalOptions = {
