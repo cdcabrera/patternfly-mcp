@@ -76,8 +76,23 @@ exports[`parseCliOptions should attempt to parse args with --http and --port 1`]
 {
   "docsHost": false,
   "http": {
-    "port": 8080,
+    "port": 6000,
   },
+  "isHttp": true,
+  "logging": {
+    "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
+    "protocol": false,
+    "stderr": false,
+    "transport": "stdio",
+  },
+}
+`;
+
+exports[`parseCliOptions should attempt to parse args with --http and invalid --port 1`] = `
+{
+  "docsHost": false,
+  "http": {},
   "isHttp": true,
   "logging": {
     "level": "info",

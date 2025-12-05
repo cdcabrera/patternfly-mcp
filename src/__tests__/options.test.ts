@@ -42,7 +42,11 @@ describe('parseCliOptions', () => {
     },
     {
       description: 'with --http and --port',
-      args: ['node', 'script.js', '--http', '--port', '8080']
+      args: ['node', 'script.js', '--http', '--port', '6000']
+    },
+    {
+      description: 'with --http and invalid --port',
+      args: ['node', 'script.js', '--http', '--port', '0']
     },
     {
       description: 'with --http and --host',
