@@ -19,7 +19,7 @@ type GlobalOptions = DefaultOptions;
  */
 type CliOptions = {
   docsHost: boolean;
-  http: Partial<HttpOptions> | undefined;
+  http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
 };
