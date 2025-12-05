@@ -1,10 +1,10 @@
-import { createServer, IncomingMessage, ServerResponse } from 'node:http';
-import { Socket } from 'node:net';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { type Socket } from 'node:net';
 import { execSync } from 'node:child_process';
 import { platform } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { portToPid } from 'pid-port';
 import { getOptions } from './options.context';
 import { log } from './logger';

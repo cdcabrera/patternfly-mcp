@@ -1,10 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import {
-  type AppSession,
-  type GlobalOptions,
-  DefaultOptionsOverrides
-} from './options';
+import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } from './options';
 import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
 
