@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import {
-  type Session,
+  type AppSession,
   type GlobalOptions,
   DefaultOptionsOverrides
 } from './options';
@@ -14,14 +14,14 @@ import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
  * The `sessionContext` allows sharing a common context without explicitly
  * passing it as a parameter.
  */
-const sessionContext = new AsyncLocalStorage<Session>();
+const sessionContext = new AsyncLocalStorage<AppSession>();
 
 /**
  * Initialize and return session data.
  *
- * @returns {Session} Immutable session with a session ID and channel name.
+ * @returns {AppSession} Immutable session with a session ID and channel name.
  */
-const initializeSession = (): Session => {
+const initializeSession = (): AppSession => {
   const sessionId = (process.env.NODE_ENV === 'local' && '1234d567-1ce9-123d-1413-a1234e56c789') || randomUUID();
   const channelName = `${LOG_BASENAME}:${sessionId}`;
 
@@ -31,10 +31,10 @@ const initializeSession = (): Session => {
 /**
  * Set and return the current session options.
  *
- * @param {Session} [session]
- * @returns {Session}
+ * @param {AppSession} [session]
+ * @returns {AppSession}
  */
-const setSessionOptions = (session: Session = initializeSession()) => {
+const setSessionOptions = (session: AppSession = initializeSession()) => {
   sessionContext.enterWith(session);
 
   return session;
@@ -43,10 +43,10 @@ const setSessionOptions = (session: Session = initializeSession()) => {
 /**
  * Get the current session options or set a new session with defaults.
  */
-const getSessionOptions = (): Session => sessionContext.getStore() || setSessionOptions();
+const getSessionOptions = (): AppSession => sessionContext.getStore() || setSessionOptions();
 
 const runWithSession = async <TReturn>(
-  session: Session,
+  session: AppSession,
   callback: () => TReturn | Promise<TReturn>
 ) => {
   const frozen = freezeObject(structuredClone(session));
@@ -106,7 +106,7 @@ const getOptions = (): GlobalOptions => optionsContext.getStore() || setOptions(
 /**
  * Get logging options from the current context.
  *
- * @param {Session} [session] - Session options to use in context.
+ * @param {AppSession} [session] - Session options to use in context.
  * @returns {LoggingSession} Logging options from context.
  */
 const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {

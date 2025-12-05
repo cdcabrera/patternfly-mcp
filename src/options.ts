@@ -4,7 +4,7 @@ import { type LogLevel, logSeverity } from './logger';
 /**
  * Session defaults, not user-configurable
  */
-type Session = {
+type AppSession = {
   readonly sessionId: string;
   readonly channelName: string
 };
@@ -139,11 +139,11 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
 export {
   parseCliOptions,
   getArgValue,
+  type AppSession,
   type CliOptions,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type GlobalOptions,
   type HttpOptions,
-  type LoggingOptions,
-  type Session
+  type LoggingOptions
 };
