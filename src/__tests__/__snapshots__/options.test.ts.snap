@@ -88,7 +88,7 @@ exports[`parseCliOptions should attempt to parse args with --http and --port 1`]
     "allowedHosts": undefined,
     "allowedOrigins": undefined,
     "host": undefined,
-    "port": undefined,
+    "port": 8080,
   },
   "isHttp": true,
   "logging": {
