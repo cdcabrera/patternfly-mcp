@@ -5,7 +5,7 @@ import {
   type GlobalOptions,
   DefaultOptionsOverrides
 } from './options';
-import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession, type DefaultOptions } from './options.defaults';
+import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
 
 /**

@@ -96,7 +96,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   const isHttp = argv.includes('--http');
-  let http: Partial<HttpOptions> = {};
+  const http: Partial<HttpOptions> = {};
 
   if (isHttp) {
     const rawPort = getArgValue('--port', { argv });
@@ -116,12 +116,21 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     const isPortValid = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 65536;
     const port = isPortValid ? parsedPort : undefined;
 
-    http = {
-      port,
-      host,
-      allowedHosts,
-      allowedOrigins
-    } as HttpOptions;
+    if (port !== undefined) {
+      http.port = port;
+    }
+
+    if (host !== undefined && host !== null && typeof host === 'string') {
+      http.host = host;
+    }
+
+    if (Array.isArray(allowedHosts) && allowedHosts.length) {
+      http.allowedHosts = allowedHosts;
+    }
+
+    if (Array.isArray(allowedOrigins) && allowedOrigins?.length) {
+      http.allowedOrigins = allowedOrigins;
+    }
   }
 
   return { docsHost, logging, isHttp, http };
