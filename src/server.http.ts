@@ -149,7 +149,7 @@ type HttpServerHandle = {
  * Start the HTTP transport server
  *
  * @param {McpServer} mcpServer
- * @param {DefaultSession} [options]
+ * @param {GlobalOptions} [options]
  * @returns Handle with close method for server lifecycle management
  */
 const startHttpTransport = async (mcpServer: McpServer, options = getOptions()): Promise<HttpServerHandle> => {

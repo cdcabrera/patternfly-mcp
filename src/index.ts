@@ -1,4 +1,4 @@
-import { parseCliOptions, type CliOptions, type DefaultOptions } from './options';
+import { parseCliOptions, type CliOptions, type DefaultOptions, type Session } from './options';
 import {
   getSessionOptions,
   setOptions,
@@ -65,7 +65,7 @@ const main = async (
   try {
     const cliOptions = parseCliOptions();
     const mergedOptions = setOptions({ ...cliOptions, ...options });
-    const session = getSessionOptions();
+    const session: Session = getSessionOptions();
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () =>
