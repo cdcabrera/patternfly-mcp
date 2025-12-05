@@ -52,20 +52,17 @@ export default [
       '@typescript-eslint': tseslint.plugin
     },
     rules: {
-      // Enforce inline type specifiers: `import { type Foo } from 'x'`
       '@typescript-eslint/consistent-type-imports': [
-        'error',
+        2,
         {
           prefer: 'type-imports',
           fixStyle: 'inline-type-imports',
           disallowTypeAnnotations: false
         }
       ],
-      // Enforce inline type specifiers in exports: `export { type Foo }`
       '@typescript-eslint/consistent-type-exports': [
-        'error',
+        2,
         {
-          prefer: 'type-exports',
           fixMixedExportsWithInlineTypeSpecifier: true
         }
       ],
