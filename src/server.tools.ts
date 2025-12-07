@@ -16,8 +16,8 @@ import {
   isLoadAck,
   isManifestResult,
   isInvokeResult,
-  type ToolDescriptor,
-  type IpcResponse
+  type ToolDescriptor
+  // type IpcResponse
 } from './server.toolsIpc';
 import { getOptions } from './options.context';
 
@@ -41,6 +41,9 @@ type AppToolPlugin = {
   createTools?: (options?: GlobalOptions) => McpTool[];
 };
 
+/**
+ * Plugin factory signature.
+ */
 type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
 
 /**
@@ -177,9 +180,7 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
       try {
         // Invoke once without options to inspect the shape
         result = (candidate as () => unknown)();
-      } catch (error) {
-        // Ignore probe errors — we'll fall through to other shape checks
-      }
+      } catch {}
 
       // Case: already a tool creator (tuple check)
       if (Array.isArray(result) && typeof result[0] === 'string') {
@@ -259,9 +260,7 @@ const computeFsReadAllowlist = (specs: string[]): string[] => {
 
   try {
     directories.add(resolve(process.cwd()));
-  } catch (error) {
-    // Best-effort only; ignore resolution errors for cwd
-  }
+  } catch {}
 
   const req = createRequire(import.meta.url);
 
@@ -270,12 +269,10 @@ const computeFsReadAllowlist = (specs: string[]): string[] => {
       const resolvedPath = req.resolve(moduleSpec, { paths: [process.cwd()] as any });
 
       directories.add(dirname(resolvedPath));
-    } catch (resolveError) {
+    } catch {
       try {
         directories.add(resolve(process.cwd(), moduleSpec));
-      } catch (fallbackError) {
-        // Ignore path resolution errors; allowlist remains best-effort
-      }
+      } catch {}
     }
   }
 
@@ -287,9 +284,16 @@ type HostHandle = {
   tools: ToolDescriptor[];
 };
 
+// THIS NEEDS TO GO AWAY WE ARE NOT USING GLOBALS LIKE THIS BECAUSE THE BORK THE SESSION. MAYBE THIS SHOULD BE A SESSION VALUE.
 // Track the active Tools Host for graceful shutdown from the parent.
 let activeToolsHost: HostHandle | null = null;
 
+/**
+ * Spawn a tools host process and return its handle.
+ *
+ * @param specs
+ * @param isolation
+ */
 const spawnToolsHost = async (
   specs: string[],
   isolation: 'none' | 'strict'
@@ -309,33 +313,39 @@ const spawnToolsHost = async (
   const req = createRequire(import.meta.url);
   const entry = req.resolve('./server.toolsHost');
 
-  const child = spawn(process.execPath, [...nodeArgs, entry], {
+  const child: any = spawn(process.execPath, [...nodeArgs, entry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
 
   // hello
   send(child, { t: 'hello', id: makeId() });
-  await awaitIpc(child as unknown as NodeJS.Process, isHelloAck, getPluginLoadTimeout());
+  await awaitIpc(child, isHelloAck, getPluginLoadTimeout());
 
   // load
   const loadId = makeId();
 
   send(child, { t: 'load', id: loadId, specs, invokeTimeoutMs: getPluginInvokeTimeout() });
-  await awaitIpc(child as any, isLoadAck(loadId), getPluginLoadTimeout());
+  await awaitIpc(child, isLoadAck(loadId), getPluginLoadTimeout());
 
   // manifest
   const manifestRequestId = makeId();
 
   send(child, { t: 'manifest:get', id: manifestRequestId });
-  const manifest = await awaitIpc(child as any, isManifestResult(manifestRequestId), getPluginLoadTimeout());
+  const manifest = await awaitIpc(child, isManifestResult(manifestRequestId), getPluginLoadTimeout());
 
-  return { child, tools: (manifest as any).tools as ToolDescriptor[] };
+  return { child, tools: manifest.tools as ToolDescriptor[] };
 };
 
+/**
+ * Ensure tools are in the correct format. Recreate tool creators from a
+ * loaded Tools Host.
+ *
+ * @param {HostHandle} handle
+ */
 const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
   handle.tools.map((tool): McpToolCreator => () => {
     const name = tool.name;
-    const schema = { description: tool.description, inputSchema: tool.inputSchema } as any;
+    const schema = { description: tool.description, inputSchema: tool.inputSchema };
 
     const handler = async (args: unknown) => {
       const requestId = makeId();
@@ -348,15 +358,15 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
         getPluginInvokeTimeout()
       );
 
-      if ('ok' in response && (response as any).ok === false) {
-        const invocationError = new Error((response as any).error?.message || 'Tool invocation failed');
+      if ('ok' in response && response.ok === false) {
+        const invocationError: any = new Error(response.error?.message || 'Tool invocation failed');
 
-        (invocationError as any).stack = (response as any).error?.stack;
-        (invocationError as any).code = (response as any).error?.code;
+        invocationError.stack = response.error?.stack;
+        invocationError.code = response.error?.code;
         throw invocationError;
       }
 
-      return (response as any).result;
+      return response.result;
     };
 
     return [name, schema, handler];
@@ -385,19 +395,15 @@ const composeToolCreators = async (
   }
 
   if (nodeMajor < 22) {
-    try {
-      log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
-    } catch (loggingError) {
-      // Ignore logging failures
-    }
+    log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
 
     return builtinCreators;
   }
 
-  // Node >= 22: spawn Tools Host and proxy externals
   try {
     const host = await spawnToolsHost(modulePaths, isolation);
     const proxies = makeProxyCreators(host);
+
     activeToolsHost = host;
 
     return [...builtinCreators, ...proxies];
@@ -410,14 +416,19 @@ const composeToolCreators = async (
 };
 
 /**
- * Best-effort shutdown of the Tools Host.
- * Sends a shutdown request, then force-kills the child after a grace period
- * if it has not exited. Timers are unref()'d so they do not keep the process alive.
+ * Shutdown child process and clear the active handle.
  *
- * @param gracePeriodMs Grace period before forcible termination (default: 2000ms)
+ * One of the few places we hard-code fallbacks. The hardcoded grace period is strict at 0 ms.
+ *
+ * @param {GlobalOptions} [options]
+ * @param [options.pluginHost.gracePeriodMs] Grace period before forcible termination
  */
-const requestToolsHostShutdown = async (gracePeriodMs = 2000): Promise<void> => {
+const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
+  const { pluginHost } = options || {};
+  const gracePeriodMs = (Number.isInteger(pluginHost?.gracePeriodMs) && pluginHost.gracePeriodMs) || 0;
+  const fallbackGracePeriodMs = (gracePeriodMs * 2) + 500;
   const handle = activeToolsHost;
+
   if (!handle) {
     return;
   }
@@ -425,53 +436,45 @@ const requestToolsHostShutdown = async (gracePeriodMs = 2000): Promise<void> => 
   const child = handle.child;
   let resolved = false;
 
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     const resolveOnce = () => {
       if (resolved) {
         return;
       }
+
       resolved = true;
       child.off('exit', resolveOnce);
       child.off('disconnect', resolveOnce);
-      clearTimeout(forceKillTimer as any);
-      clearTimeout(forceResolveTimer as any);
+
+      clearTimeout(shutdown);
+      clearTimeout(shutdownAgain);
       activeToolsHost = null;
       resolve();
     };
 
     try {
-      const shutdownId = makeId();
-      send(child, { t: 'shutdown', id: shutdownId });
-    } catch (error) {
-      // Ignore send failures; proceed to force kill after grace period.
-    }
+      send(child, { t: 'shutdown', id: makeId() });
+    } catch {}
 
-    const forceKillTimer = setTimeout(() => {
+    const shutdownChild = () => {
       try {
-        if (!child.killed) {
+        if (!child?.killed) {
           child.kill('SIGKILL');
         }
-      } catch (killError) {
-        // Ignore kill errors; proceed to resolve below.
-      }
-      const innerDelay = 250;
-      const localTimer = setTimeout(() => {
+      } finally {
         resolveOnce();
-      }, innerDelay);
-      if (typeof (localTimer as any).unref === 'function') {
-        (localTimer as any).unref();
       }
-    }, gracePeriodMs);
-    if (typeof (forceKillTimer as any).unref === 'function') {
-      (forceKillTimer as any).unref();
-    }
+    };
 
-    const forceResolveTimer = setTimeout(() => {
-      resolveOnce();
-    }, Math.max(gracePeriodMs + 1000, 1500));
-    if (typeof (forceResolveTimer as any).unref === 'function') {
-      (forceResolveTimer as any).unref();
-    }
+    // Shutdown after the grace period
+    const shutdown = setTimeout(shutdownChild, gracePeriodMs);
+
+    shutdown?.unref?.();
+
+    // Just in case shutdown the process again
+    const shutdownAgain = setTimeout(shutdownChild, fallbackGracePeriodMs);
+
+    shutdownAgain?.unref?.();
 
     child.once('exit', resolveOnce);
     child.once('disconnect', resolveOnce);
@@ -487,7 +490,7 @@ export {
   pluginCreatorsToCreators,
   pluginToCreators,
   pluginToolsToCreators,
-  requestToolsHostShutdown,
+  sendToolsHostShutdown,
   type AppToolPlugin,
   type AppToolPluginFactory
 };

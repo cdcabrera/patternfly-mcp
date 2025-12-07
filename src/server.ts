@@ -7,6 +7,7 @@ import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
+import { sendToolsHostShutdown } from './server.tools';
 import { type GlobalOptions } from './options';
 import {
   getOptions,
@@ -225,6 +226,8 @@ runServer.memo = memo(
             } catch (error) {
               console.error(`Error stopping server: ${error}`);
             }
+
+            sendToolsHostShutdown();
           }
         } else {
           console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);

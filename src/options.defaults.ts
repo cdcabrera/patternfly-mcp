@@ -43,16 +43,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   logging: TLogOptions;
   name: string;
   nodeVersion: number;
-
-  /**
-   * Isolation preset for external tool plugins.
-   * 'none' → no special permission hardening (Phase 5 still runs out-of-process),
-   * 'strict' → hardened (Node ≥ 22 Permission Model in Phase 5).
-   */
   pluginIsolation: 'none' | 'strict';
-  /**
-   * Tools Host (external plugin runner) configuration. Pure-data only.
-   */
   pluginHost: PluginHostOptions;
   pfExternal: string;
   pfExternalDesignComponents: string;
@@ -73,16 +64,6 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 }
 
 /**
- * Tools Host options (pure data). Centralized defaults live here.
- */
-interface PluginHostOptions {
-  /** Timeout for child spawn + hello/load/manifest (ms). */
-  loadTimeoutMs: number;
-  /** Timeout per external tool invocation (ms). */
-  invokeTimeoutMs: number;
-}
-
-/**
  * Overrides for default options.
  */
 type DefaultOptionsOverrides = Partial<
@@ -91,7 +72,6 @@ type DefaultOptionsOverrides = Partial<
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
-  pluginHost?: Partial<PluginHostOptions>;
   toolModules?: string[];
 };
 
@@ -138,6 +118,19 @@ interface HttpOptions {
 }
 
 /**
+ * Tools Host options (pure data). Centralized defaults live here.
+ *
+ * @property loadTimeoutMs Timeout for child spawn + hello/load/manifest (ms).
+ * @property invokeTimeoutMs Timeout per external tool invocation (ms).
+ * @property gracePeriodMs Grace period for external tool invocations (ms).
+ */
+interface PluginHostOptions {
+  loadTimeoutMs: number;
+  invokeTimeoutMs: number;
+  gracePeriodMs: number;
+}
+
+/**
  * Logging session options, non-configurable by the user.
  *
  * @interface LoggingSession
@@ -167,6 +160,15 @@ const HTTP_OPTIONS: HttpOptions = {
   host: '127.0.0.1',
   allowedOrigins: [],
   allowedHosts: []
+};
+
+/**
+ * Default plugin host options.
+ */
+const PLUGIN_HOST_OPTIONS: PluginHostOptions = {
+  loadTimeoutMs: 5000,
+  invokeTimeoutMs: 10000,
+  gracePeriodMs: 2000
 };
 
 /**
@@ -310,10 +312,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   name: packageJson.name,
   nodeVersion: getNodeMajorVersion(),
   pluginIsolation: 'none',
-  pluginHost: {
-    loadTimeoutMs: 5000,
-    invokeTimeoutMs: 10000
-  },
+  pluginHost: PLUGIN_HOST_OPTIONS,
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
@@ -352,5 +351,6 @@ export {
   type DefaultOptionsOverrides,
   type HttpOptions,
   type LoggingOptions,
-  type LoggingSession
+  type LoggingSession,
+  type PluginHostOptions
 };

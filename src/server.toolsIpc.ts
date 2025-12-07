@@ -25,6 +25,8 @@ type IpcResponse =
   { t: 'invoke:result'; id: string; ok: false; error: SerializedError } |
   { t: 'shutdown:ack'; id: string };
 
+const makeId = () => Math.random().toString(36).slice(2);
+
 const send = (
   processRef: NodeJS.Process | import('node:child_process').ChildProcess,
   request: IpcRequest
@@ -86,61 +88,46 @@ const awaitIpc = <T extends IpcResponse>(
   processRef.on('disconnect', onExit);
 });
 
-const makeId = () => Math.random().toString(36).slice(2);
-
 // IPC message type guards
 const isHelloAck = (message: any): message is { t: 'hello:ack'; id: string } => {
-  if (!message) {
+  if (!message || message.t !== 'hello:ack') {
     return false;
   }
-  if (message.t !== 'hello:ack') {
-    return false;
-  }
+
   return typeof message.id === 'string';
 };
 
 const isLoadAck = (expectedId: string) => (message: any): message is {
   t: 'load:ack'; id: string; warnings: string[]; errors: string[]
 } => {
-  if (!message) {
+  if (!message || message.t !== 'load:ack' || message.id !== expectedId) {
     return false;
   }
-  if (message.t !== 'load:ack') {
-    return false;
-  }
-  if (message.id !== expectedId) {
-    return false;
-  }
+
   const hasWarnings = Array.isArray(message.warnings);
   const hasErrors = Array.isArray(message.errors);
+
   return hasWarnings && hasErrors;
 };
 
 const isManifestResult = (expectedId: string) => (message: any): message is {
   t: 'manifest:result'; id: string; tools: ToolDescriptor[]
 } => {
-  if (!message) {
+  if (!message || message.t !== 'manifest:result' || message.id !== expectedId) {
     return false;
   }
-  if (message.t !== 'manifest:result') {
-    return false;
-  }
-  if (message.id !== expectedId) {
-    return false;
-  }
+
   return Array.isArray(message.tools);
 };
 
-const isInvokeResult = (expectedId: string) => (message: any): message is (
+const isInvokeResult = (expectedId: string) => (message: any): message is
   { t: 'invoke:result'; id: string; ok: true; result: unknown } |
   { t: 'invoke:result'; id: string; ok: false; error: SerializedError }
-) => {
-  if (!message) {
+=> {
+  if (!message || message.t !== 'invoke:result') {
     return false;
   }
-  if (message.t !== 'invoke:result') {
-    return false;
-  }
+
   return message.id === expectedId;
 };
 
