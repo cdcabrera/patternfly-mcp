@@ -166,7 +166,9 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
       try {
         // Invoke once without options to inspect the shape
         result = (candidate as () => unknown)();
-      } catch {}
+      } catch (error) {
+        // Ignore probe errors — we'll fall through to other shape checks
+      }
 
       // Case: already a tool creator (tuple check)
       if (Array.isArray(result) && typeof result[0] === 'string') {
@@ -241,22 +243,30 @@ const pluginLoadTimeoutMs = 5000;
 const pluginInvokeTimeoutMs = 10000;
 
 const computeFsReadAllowlist = (specs: string[]): string[] => {
-  const list = new Set<string>();
+  const directories = new Set<string>();
 
-  try { list.add(resolve(process.cwd())); } catch {}
+  try {
+    directories.add(resolve(process.cwd()));
+  } catch (error) {
+    // Best-effort only; ignore resolution errors for cwd
+  }
+
   const req = createRequire(import.meta.url);
 
-  for (const spec of specs) {
+  for (const moduleSpec of specs) {
     try {
-      const resolved = req.resolve(spec, { paths: [process.cwd()] as any });
-
-      list.add(dirname(resolved));
-    } catch {
-      try { list.add(resolve(process.cwd(), spec)); } catch {}
+      const resolvedPath = req.resolve(moduleSpec, { paths: [process.cwd()] as any });
+      directories.add(dirname(resolvedPath));
+    } catch (resolveError) {
+      try {
+        directories.add(resolve(process.cwd(), moduleSpec));
+      } catch (fallbackError) {
+        // Ignore path resolution errors; allowlist remains best-effort
+      }
     }
   }
 
-  return [...list];
+  return [...directories];
 };
 
 type HostHandle = {
@@ -273,8 +283,9 @@ const spawnToolsHost = async (
   if (isolation === 'strict') {
     nodeArgs.push('--experimental-permission');
     const allow = computeFsReadAllowlist(specs);
-
-    if (allow.length) { nodeArgs.push(`--allow-fs-read=${allow.join(',')}`); }
+    if (allow.length) {
+      nodeArgs.push(`--allow-fs-read=${allow.join(',')}`);
+    }
     // Deny network and fs write by omission
   }
 
@@ -287,51 +298,60 @@ const spawnToolsHost = async (
 
   // hello
   send(child, { t: 'hello', id: makeId() });
-  await once(child as unknown as NodeJS.Process, (m: any): m is IpcResponse => m?.t === 'hello:ack', pluginLoadTimeoutMs);
+  await once(
+    child as unknown as NodeJS.Process,
+    (message: any): message is IpcResponse => message?.t === 'hello:ack',
+    pluginLoadTimeoutMs
+  );
 
   // load
   const loadId = makeId();
-
   send(child, { t: 'load', id: loadId, specs });
-  await once(child as any, (m: any): m is IpcResponse => m?.t === 'load:ack' && m.id === loadId, pluginLoadTimeoutMs);
+  await once(
+    child as any,
+    (message: any): message is IpcResponse => message?.t === 'load:ack' && message.id === loadId,
+    pluginLoadTimeoutMs
+  );
 
   // manifest
-  const manId = makeId();
-
-  send(child, { t: 'manifest:get', id: manId });
-  const manifest = await once(child as any, (m: any): m is IpcResponse => m?.t === 'manifest:result' && m.id === manId, pluginLoadTimeoutMs);
+  const manifestRequestId = makeId();
+  send(child, { t: 'manifest:get', id: manifestRequestId });
+  const manifest = await once(
+    child as any,
+    (message: any): message is IpcResponse => message?.t === 'manifest:result' && message.id === manifestRequestId,
+    pluginLoadTimeoutMs
+  );
 
   return { child, tools: (manifest as any).tools as ToolDescriptor[] };
 };
 
-const makeProxyCreators = (handle: HostHandle): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
-  const name = tool.name;
-  const schema = { description: tool.description, inputSchema: tool.inputSchema } as any;
+const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
+  handle.tools.map((tool): McpToolCreator => () => {
+    const name = tool.name;
+    const schema = { description: tool.description, inputSchema: tool.inputSchema } as any;
 
-  const handler = async (args: unknown) => {
-    const reqId = makeId();
+    const handler = async (args: unknown) => {
+      const requestId = makeId();
+      send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
 
-    send(handle.child, { t: 'invoke', id: reqId, toolId: tool.id, args });
+      const response = await once(
+        handle.child as unknown as NodeJS.Process,
+        (message: any): message is IpcResponse => message?.t === 'invoke:result' && message.id === requestId,
+        pluginInvokeTimeoutMs
+      );
 
-    const resp = await once(
-      handle.child as unknown as NodeJS.Process,
-      (m: any): m is IpcResponse => m?.t === 'invoke:result' && m.id === reqId,
-      pluginInvokeTimeoutMs
-    );
+      if ('ok' in response && (response as any).ok === false) {
+        const invocationError = new Error((response as any).error?.message || 'Tool invocation failed');
+        (invocationError as any).stack = (response as any).error?.stack;
+        (invocationError as any).code = (response as any).error?.code;
+        throw invocationError;
+      }
 
-    if ('ok' in resp && (resp as any).ok === false) {
-      const err = new Error((resp as any).error?.message || 'Tool invocation failed');
+      return (response as any).result;
+    };
 
-      (err as any).stack = (resp as any).error?.stack;
-      (err as any).code = (resp as any).error?.code;
-      throw err;
-    }
-
-    return (resp as any).result;
-  };
-
-  return [name, schema, handler];
-});
+    return [name, schema, handler];
+  });
 
 /**
  * Compose built-in creators with any externally loaded creators.
@@ -358,7 +378,9 @@ const composeToolCreators = async (
   if (nodeMajor < 22) {
     try {
       log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
-    } catch {}
+    } catch (loggingError) {
+      // Ignore logging failures
+    }
 
     return builtinCreators;
   }

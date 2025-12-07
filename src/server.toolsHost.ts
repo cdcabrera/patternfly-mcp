@@ -15,25 +15,25 @@ const descriptors: ToolDescriptor[] = [];
 
 const pluginInvokeTimeoutMs = 10000;
 
-const makeId = () => Math.random().toString(36).slice(2);
+const makeRandomId = () => Math.random().toString(36).slice(2);
 
-const serializeError = (e: unknown) => ({
-  message: (e as any)?.message || String(e),
-  stack: (e as any)?.stack
+const serializeError = (errorValue: unknown) => ({
+  message: (errorValue as any)?.message || String(errorValue),
+  stack: (errorValue as any)?.stack
 });
 
-process.on('message', async (msg: IpcRequest) => {
+process.on('message', async (request: IpcRequest) => {
   try {
-    switch (msg.t) {
+    switch (request.t) {
       case 'hello': {
-        process.send?.({ t: 'hello:ack', id: msg.id } satisfies IpcResponse);
+        process.send?.({ t: 'hello:ack', id: request.id } satisfies IpcResponse);
         break;
       }
       case 'load': {
         const warnings: string[] = [];
         const errors: string[] = [];
 
-        for (const spec of msg.specs || []) {
+        for (const spec of request.specs || []) {
           try {
             const mod = await import(spec);
             const creators = normalizeToCreators(mod);
@@ -41,7 +41,7 @@ process.on('message', async (msg: IpcRequest) => {
             for (const create of creators) {
               try {
                 const tool = create();
-                const toolId = makeId();
+                const toolId = makeRandomId();
 
                 toolMap.set(toolId, tool as ToolTuple);
                 descriptors.push({
@@ -51,30 +51,30 @@ process.on('message', async (msg: IpcRequest) => {
                   inputSchema: tool[1]?.inputSchema ?? {},
                   source: spec
                 });
-              } catch (e) {
+              } catch (error) {
                 warnings.push(
-                  `Creator realization failed at ${spec}: ${String((e as Error).message || e)}`
+                  `Creator realization failed at ${spec}: ${String((error as Error).message || error)}`
                 );
               }
             }
-          } catch (e) {
-            errors.push(`Failed import: ${spec}: ${String((e as Error).message || e)}`);
+          } catch (error) {
+            errors.push(`Failed import: ${spec}: ${String((error as Error).message || error)}`);
           }
         }
-        process.send?.({ t: 'load:ack', id: msg.id, warnings, errors } satisfies IpcResponse);
+        process.send?.({ t: 'load:ack', id: request.id, warnings, errors } satisfies IpcResponse);
         break;
       }
       case 'manifest:get': {
-        process.send?.({ t: 'manifest:result', id: msg.id, tools: descriptors } satisfies IpcResponse);
+        process.send?.({ t: 'manifest:result', id: request.id, tools: descriptors } satisfies IpcResponse);
         break;
       }
       case 'invoke': {
-        const tool = toolMap.get(msg.toolId);
+        const tool = toolMap.get(request.toolId);
 
         if (!tool) {
           process.send?.({
             t: 'invoke:result',
-            id: msg.id,
+            id: request.id,
             ok: false,
             error: { message: 'Unknown toolId' }
           });
@@ -83,57 +83,61 @@ process.on('message', async (msg: IpcRequest) => {
         const handler = tool[2];
         let settled = false;
         const timer = setTimeout(() => {
-          if (settled) { return; }
+          if (settled) {
+            return;
+          }
           settled = true;
           process.send?.({
             t: 'invoke:result',
-            id: msg.id,
+            id: request.id,
             ok: false,
             error: { message: 'Invoke timeout' }
           });
         }, pluginInvokeTimeoutMs);
 
         try {
-          const result = await Promise.resolve(handler(msg.args));
+          const result = await Promise.resolve(handler(request.args));
 
           if (!settled) {
             settled = true;
             clearTimeout(timer);
-            process.send?.({ t: 'invoke:result', id: msg.id, ok: true, result });
+            process.send?.({ t: 'invoke:result', id: request.id, ok: true, result });
           }
-        } catch (e) {
+        } catch (error) {
           if (!settled) {
             settled = true;
             clearTimeout(timer);
             process.send?.({
               t: 'invoke:result',
-              id: msg.id,
+              id: request.id,
               ok: false,
-              error: serializeError(e)
+              error: serializeError(error)
             });
           }
         }
         break;
       }
       case 'shutdown': {
-        process.send?.({ t: 'shutdown:ack', id: msg.id });
+        process.send?.({ t: 'shutdown:ack', id: request.id });
         process.exit(0);
         break;
       }
     }
-  } catch (e) {
+  } catch (error) {
     try {
       process.send?.({
         t: 'invoke:result',
-        id: (msg as any)?.id || 'n/a',
+        id: (request as any)?.id || 'n/a',
         ok: false,
-        error: serializeError(e)
+        error: serializeError(error)
       } as any);
-    } catch {
-      // ignore
+    } catch (innerError) {
+      // ignore error report failures
     }
   }
 });
 
 // Exit if the parent disconnects.
-process.on('disconnect', () => process.exit(0));
+process.on('disconnect', () => {
+  process.exit(0);
+});

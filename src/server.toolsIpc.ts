@@ -1,15 +1,15 @@
 // IPC protocol types and small helpers for Parent <-> Tools Host
 
-export type IpcRequest =
-  | { t: 'hello'; id: string } |
-  { t: 'load'; id: string; specs: string[] } |
-  { t: 'manifest:get'; id: string } |
-  { t: 'invoke'; id: string; toolId: string; args: unknown } |
-  { t: 'shutdown'; id: string };
+type IpcRequest =
+  | { t: 'hello'; id: string }
+  | { t: 'load'; id: string; specs: string[] }
+  | { t: 'manifest:get'; id: string }
+  | { t: 'invoke'; id: string; toolId: string; args: unknown }
+  | { t: 'shutdown'; id: string };
 
-export type SerializedError = { message: string; stack?: string; code?: string };
+type SerializedError = { message: string; stack?: string; code?: string };
 
-export type ToolDescriptor = {
+type ToolDescriptor = {
   id: string;
   name: string;
   description: string;
@@ -17,48 +17,63 @@ export type ToolDescriptor = {
   source?: string;
 };
 
-export type IpcResponse =
-  | { t: 'hello:ack'; id: string } |
-  { t: 'load:ack'; id: string; warnings: string[]; errors: string[] } |
-  { t: 'manifest:result'; id: string; tools: ToolDescriptor[] } |
-  { t: 'invoke:result'; id: string; ok: true; result: unknown } |
-  { t: 'invoke:result'; id: string; ok: false; error: SerializedError } |
-  { t: 'shutdown:ack'; id: string };
+type IpcResponse =
+  | { t: 'hello:ack'; id: string }
+  | { t: 'load:ack'; id: string; warnings: string[]; errors: string[] }
+  | { t: 'manifest:result'; id: string; tools: ToolDescriptor[] }
+  | { t: 'invoke:result'; id: string; ok: true; result: unknown }
+  | { t: 'invoke:result'; id: string; ok: false; error: SerializedError }
+  | { t: 'shutdown:ack'; id: string };
 
-export const send = (
+const send = (
   proc: NodeJS.Process | import('node:child_process').ChildProcess,
-  msg: IpcRequest
-): boolean => Boolean(proc.send?.(msg));
+  request: IpcRequest
+): boolean => {
+  return Boolean(proc.send?.(request));
+};
 
-export const once = <T extends IpcResponse>(
+const once = <T extends IpcResponse>(
   proc: NodeJS.Process,
-  matcher: (m: any) => m is T,
+  matcher: (message: any) => message is T,
   timeoutMs: number
 ): Promise<T> => new Promise((resolve, reject) => {
-  let done = false;
+  let settled = false;
+
   const cleanup = () => {
     proc.off('message', onMessage);
     proc.off('exit', onExit);
     proc.off('disconnect', onExit);
     clearTimeout(timer as any);
   };
-  const onMessage = (m: any) => {
-    if (done) { return; }
-    if (matcher(m)) {
-      done = true;
+
+  const onMessage = (message: any) => {
+    if (settled) {
+      return;
+    }
+
+    if (matcher(message)) {
+      settled = true;
       cleanup();
-      resolve(m);
+      resolve(message);
     }
   };
+
   const onExit = (code?: number, signal?: string) => {
-    if (done) { return; }
-    done = true;
+    if (settled) {
+      return;
+    }
+
+    settled = true;
     cleanup();
     reject(new Error(`Tools Host exited before response (code=${code}, signal=${signal || 'none'})`));
   };
+
   const timer = setTimeout(() => {
-    if (done) { return; }
-    done = true;
+    if (settled) {
+      return;
+    }
+
+    settled = true;
     cleanup();
     reject(new Error('Timed out waiting for IPC response'));
   }, timeoutMs);
@@ -68,4 +83,14 @@ export const once = <T extends IpcResponse>(
   proc.on('disconnect', onExit);
 });
 
-export const makeId = () => Math.random().toString(36).slice(2);
+const makeId = () => Math.random().toString(36).slice(2);
+
+export {
+  send,
+  once,
+  makeId,
+  type IpcRequest,
+  type IpcResponse,
+  type ToolDescriptor,
+  type SerializedError
+};
