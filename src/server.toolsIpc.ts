@@ -33,7 +33,7 @@ const send = (
 ): boolean => Boolean(processRef.send?.(request));
 
 const awaitIpc = <T extends IpcResponse>(
-  processRef: NodeJS.Process,
+  processRef: NodeJS.Process | import('node:child_process').ChildProcess,
   matcher: (message: any) => message is T,
   timeoutMs: number
 ): Promise<T> => new Promise((resolve, reject) => {
@@ -43,7 +43,7 @@ const awaitIpc = <T extends IpcResponse>(
     processRef.off('message', onMessage);
     processRef.off('exit', onExit);
     processRef.off('disconnect', onExit);
-    clearTimeout(timerId as any);
+    clearTimeout(timerId);
   };
 
   const onMessage = (message: any) => {
@@ -78,10 +78,7 @@ const awaitIpc = <T extends IpcResponse>(
     reject(new Error('Timed out waiting for IPC response'));
   }, timeoutMs);
 
-  // Do not keep the process alive due to this timer
-  if (typeof (timerId as any).unref === 'function') {
-    (timerId as any).unref();
-  }
+  timerId?.unref?.();
 
   processRef.on('message', onMessage);
   processRef.on('exit', onExit);
@@ -122,8 +119,7 @@ const isManifestResult = (expectedId: string) => (message: any): message is {
 
 const isInvokeResult = (expectedId: string) => (message: any): message is
   { t: 'invoke:result'; id: string; ok: true; result: unknown } |
-  { t: 'invoke:result'; id: string; ok: false; error: SerializedError }
-=> {
+  { t: 'invoke:result'; id: string; ok: false; error: SerializedError } => {
   if (!message || message.t !== 'invoke:result') {
     return false;
   }

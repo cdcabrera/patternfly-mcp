@@ -354,7 +354,7 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
       send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
 
       const response = await awaitIpc(
-        handle.child as unknown as NodeJS.Process,
+        handle.child,
         isInvokeResult(requestId),
         getPluginInvokeTimeout()
       );

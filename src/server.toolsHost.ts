@@ -1,24 +1,39 @@
 // Tools Host child process. Loads externals, provides a manifest, executes invokes.
 // IMPORTANT: Never write to stdout. Use IPC only (and stderr if absolutely needed).
 
-import { type IpcRequest, type IpcResponse, type ToolDescriptor, makeId } from './server.toolsIpc';
+import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
 import { normalizeToCreators } from './server.tools';
 import type { McpTool } from './server';
+
+// Discriminated request subtypes for safe property access
+type HelloRequest = Extract<IpcRequest, { t: 'hello' }>;
+
+type LoadRequest = Extract<IpcRequest, { t: 'load' }>;
+
+type ManifestGetRequest = Extract<IpcRequest, { t: 'manifest:get' }>;
+
+type InvokeRequest = Extract<IpcRequest, { t: 'invoke' }>;
+
+type ShutdownRequest = Extract<IpcRequest, { t: 'shutdown' }>;
 
 const toolMap = new Map<string, McpTool>();
 const descriptors: ToolDescriptor[] = [];
 let pluginInvokeTimeoutMs = 10000;
 
-const serializeError = (errorValue: Error) => ({
-  message: errorValue?.message || String(errorValue),
-  stack: errorValue?.stack
-});
+const serializeError = (errorValue: unknown) => {
+  const err = errorValue as Error | undefined;
 
-const requestHello = (request: IpcRequest) => {
+  return {
+    message: (err && err.message) || String(errorValue),
+    stack: err && err.stack
+  };
+};
+
+const requestHello = (request: HelloRequest) => {
   process.send?.({ t: 'hello:ack', id: request.id });
 };
 
-const requestLoad = async (request: IpcRequest) => {
+const requestLoad = async (request: LoadRequest) => {
   // Optional per-call timeout provided by parent
   const maybeInvokeTimeout = request?.invokeTimeoutMs;
 
@@ -61,11 +76,11 @@ const requestLoad = async (request: IpcRequest) => {
   process.send?.({ t: 'load:ack', id: request.id, warnings, errors });
 };
 
-const requestManifestGet = (request: IpcRequest) => {
+const requestManifestGet = (request: ManifestGetRequest) => {
   process.send?.({ t: 'manifest:result', id: request.id, tools: descriptors });
 };
 
-const requestInvoke = async (request: IpcRequest) => {
+const requestInvoke = async (request: InvokeRequest) => {
   const tool = toolMap.get(request.toolId);
 
   if (!tool) {
@@ -121,7 +136,7 @@ const requestInvoke = async (request: IpcRequest) => {
   }
 };
 
-const requestShutdown = (request: IpcRequest) => {
+const requestShutdown = (request: ShutdownRequest) => {
   process.send?.({ t: 'shutdown:ack', id: request.id });
   process.exit(0);
 };
