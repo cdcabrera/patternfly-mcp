@@ -51,6 +51,28 @@ const logSeverity = (level: unknown): number =>
   LOG_LEVELS.indexOf(level as LogLevel);
 
 /**
+ * Format an unknown value as a string, for logging.
+ *
+ * @param value
+ * @returns Formatted string
+ */
+const formatUnknownError = (value: unknown): string => {
+  if (value instanceof Error) {
+    return value.stack || value.message || String(value);
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  try {
+    return `Non-Error thrown: ${JSON.stringify(value)}`;
+  } catch {
+    return String(value);
+  }
+};
+
+/**
  * Publish a structured log event to the diagnostics channel.
  *
  * @param level - Log level for the event
@@ -215,6 +237,7 @@ const createLogger = (options: LoggingSession = getLoggerOptions()): Unsubscribe
 export {
   LOG_LEVELS,
   createLogger,
+  formatUnknownError,
   log,
   logSeverity,
   publish,

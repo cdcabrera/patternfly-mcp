@@ -7,6 +7,7 @@ import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
+import { sendToolsHostShutdown } from './server.tools';
 import { type GlobalOptions } from './options';
 import {
   getOptions,
@@ -113,6 +114,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
       log.info('...closing Server');
       await server?.close();
       running = false;
+
+      try {
+        await sendToolsHostShutdown();
+      } catch {}
 
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
@@ -223,10 +228,16 @@ runServer.memo = memo(
             try {
               await server.stop();
             } catch (error) {
+              // Avoid engaging the contextual log channel on rollout.
               console.error(`Error stopping server: ${error}`);
             }
+
+            try {
+              await sendToolsHostShutdown();
+            } catch {}
           }
         } else {
+          // Avoid engaging the contextual log channel on rollout.
           console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
         }
       }
