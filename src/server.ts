@@ -7,6 +7,7 @@ import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
+import { composeTools, sendToolsHostShutdown } from './server.tools';
 import { type GlobalOptions } from './options';
 import {
   getOptions,
@@ -15,8 +16,9 @@ import {
   runWithSession
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { isZodRawShape, isZodSchema } from './server.schema';
 
-type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
+type McpTool = [string, { description: string; inputSchema: any }, (args: any) => (Promise<any> | any)];
 
 type McpToolCreator = (options?: GlobalOptions) => McpTool;
 
@@ -54,6 +56,9 @@ type ServerOnLogHandler = (entry: ServerLogEvent) => void;
 
 /**
  * Subscribes a handler function to server logs. Automatically unsubscribed on server shutdown.
+ *
+ * @param {ServerOnLogHandler} handler - The function responsible for handling server log events.
+ * @returns A cleanup function that unregisters the logging handler when called.
  */
 type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
 
@@ -71,6 +76,17 @@ interface ServerInstance {
 }
 
 /**
+ * Built-in tools.
+ *
+ * Array of built-in tools
+ */
+const builtinTools: McpToolCreator[] = [
+  usePatternFlyDocsTool,
+  fetchDocsTool,
+  componentSchemasTool
+];
+
+/**
  * Create and run a server with shutdown, register tool and errors.
  *
  * @param [options] Server options
@@ -81,11 +97,7 @@ interface ServerInstance {
  * @returns Server instance
  */
 const runServer = async (options: ServerOptions = getOptions(), {
-  tools = [
-    usePatternFlyDocsTool,
-    fetchDocsTool,
-    componentSchemasTool
-  ],
+  tools = builtinTools,
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
@@ -99,20 +111,24 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let onLogSetup: ServerOnLog = () => () => {};
 
   const stopServer = async () => {
-    log.info(`\n${options.name} server shutting down... `);
+    log.debug(`${options.name} attempting shutdown.`);
 
     if (server && running) {
       log.info(`${options.name} shutting down...`);
 
       if (httpHandle) {
-        log.info('...closing HTTP transport');
+        log.debug('...closing HTTP transport');
         await httpHandle.close();
         httpHandle = null;
       }
 
-      log.info('...closing Server');
+      log.debug('...closing Server');
       await server?.close();
       running = false;
+
+      try {
+        await sendToolsHostShutdown();
+      } catch {}
 
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
@@ -139,7 +155,11 @@ const runServer = async (options: ServerOptions = getOptions(), {
       }
     );
 
+    // Setup server logging.
     const subUnsub = createServerLogger.memo(server);
+
+    // Combine built-in tools with custom ones after logging is set up.
+    const updatedTools = await composeTools(tools);
 
     if (subUnsub) {
       const { subscribe, unsubscribe } = subUnsub;
@@ -151,10 +171,16 @@ const runServer = async (options: ServerOptions = getOptions(), {
       onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
     }
 
-    tools.forEach(toolCreator => {
+    updatedTools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
+      const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
 
       log.info(`Registered tool: ${name}`);
+
+      if (!isZod) {
+        log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. Zod raw shapes are preferred. Kneel before Zod.`);
+      }
+
       server?.registerTool(name, schema, (args = {}) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => await callback(args))));
@@ -194,6 +220,9 @@ const runServer = async (options: ServerOptions = getOptions(), {
     },
 
     onLog(handler: ServerOnLogHandler): () => void {
+      // Simple one-off log event to notify the handler of the server startup.
+      handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging?.transport } as LogEvent);
+
       return onLogSetup(handler);
     }
   };
@@ -223,10 +252,16 @@ runServer.memo = memo(
             try {
               await server.stop();
             } catch (error) {
+              // Avoid engaging the contextual log channel on rollout.
               console.error(`Error stopping server: ${error}`);
             }
+
+            try {
+              await sendToolsHostShutdown();
+            } catch {}
           }
         } else {
+          // Avoid engaging the contextual log channel on rollout.
           console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
         }
       }
@@ -236,6 +271,7 @@ runServer.memo = memo(
 
 export {
   runServer,
+  builtinTools,
   type McpTool,
   type McpToolCreator,
   type ServerInstance,

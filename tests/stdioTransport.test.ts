@@ -1,6 +1,8 @@
 /**
  *  Requires: npm run build prior to running Jest.
  */
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   startServer,
   type StdioTransportClient,
@@ -87,7 +89,7 @@ describe('PatternFly MCP, STDIO', () => {
       }
     } as RpcRequest;
 
-    const response = await CLIENT?.send(req);
+    const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
@@ -170,5 +172,51 @@ describe('Logging', () => {
     expect(CLIENT.logs()).toMatchSnapshot();
 
     await CLIENT.stop();
+  });
+});
+
+describe('Tools', () => {
+  let CLIENT: StdioTransportClient;
+
+  beforeEach(async () => {
+    const abs = resolve(process.cwd(), 'tests/__fixtures__/tool.echo.js');
+    const url = pathToFileURL(abs).href;
+
+    CLIENT = await startServer({ args: ['--log-stderr', '--plugin-isolation', 'strict', '--verbose', '--tool', url] });
+  });
+
+  afterEach(async () => CLIENT.stop());
+
+  it('should access a new tool', async () => {
+    const req = {
+      method: 'tools/list',
+      params: {}
+    };
+
+    const resp = await CLIENT.send(req);
+    const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
+
+    console.warn('>>>>>>>>>>', names);
+
+    expect(names).toContain('echo_plugin_tool');
+    expect(CLIENT.logs()).toMatchSnapshot();
+  });
+
+  it('should interact with the new tool', async () => {
+    const req = {
+      method: 'tools/call',
+      params: {
+        name: 'echo_plugin_tool',
+        arguments: {
+          type: 'echo',
+          lorem: 'ipsum',
+          dolor: 'sit amet'
+        }
+      }
+    };
+
+    const resp = await CLIENT.send(req);
+
+    expect(resp).toMatchSnapshot();
   });
 });
