@@ -22,6 +22,8 @@ type CliOptions = {
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
+  // External tool module specs (paths or package specs) supplied via CLI
+  toolModules?: string[];
 };
 
 /**
@@ -133,7 +135,45 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     }
   }
 
-  return { docsHost, logging, isHttp, http };
+  // Parse external tool modules: single canonical flag `--tool`
+  // Supported forms:
+  //   --tool a --tool b      (repeatable)
+  //   --tool a,b             (comma-separated)
+  const toolModules: string[] = [];
+  const seenSpecs = new Set<string>();
+
+  const addSpec = (spec?: string) => {
+    const trimmed = String(spec || '').trim();
+
+    if (!trimmed || seenSpecs.has(trimmed)) {
+      return;
+    }
+
+    seenSpecs.add(trimmed);
+    toolModules.push(trimmed);
+  };
+
+  for (let argIndex = 0; argIndex < argv.length; argIndex += 1) {
+    const token = argv[argIndex];
+    const next = argv[argIndex + 1];
+
+    if (token === '--tool' && typeof next === 'string' && !next.startsWith('-')) {
+      next
+        .split(',')
+        .map(value => value.trim())
+        .filter(Boolean)
+        .forEach(addSpec);
+      argIndex += 1; // consume the value
+    }
+  }
+
+  return {
+    docsHost,
+    logging,
+    isHttp,
+    http,
+    ...(toolModules.length ? { toolModules } : {})
+  };
 };
 
 export {

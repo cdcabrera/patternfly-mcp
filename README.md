@@ -335,6 +335,38 @@ npx @modelcontextprotocol/inspector-cli \
 - DOC_MCP_FETCH_TIMEOUT_MS: Milliseconds to wait before aborting an HTTP fetch (default: 15000)
 - DOC_MCP_CLEAR_COOLDOWN_MS: Default cooldown value used in internal cache configuration. The current public API does not expose a `clearCache` tool.
 
+## External tools (plugins)
+
+You can load external tool modules at runtime using a single CLI flag or via programmatic options. Modules must be ESM-importable (absolute/relative path or package spec).
+
+CLI examples (single `--tool` flag):
+
+```bash
+# Single module
+npm run start:dev -- --tool ./dist/my-tool.js
+
+# Multiple modules (repeatable)
+npm run start:dev -- --tool ./dist/t1.js --tool ./dist/t2.js
+
+# Multiple modules (comma-separated)
+npm run start:dev -- --tool ./dist/t1.js,./dist/t2.js
+```
+
+Programmatic usage:
+
+```ts
+import { main } from '@patternfly/patternfly-mcp';
+
+await main({
+  toolModules: [
+    new URL('./dist/t1.js', import.meta.url).toString(),
+    './dist/t2.js'
+  ]
+});
+```
+
+Tools provided via `--tool`/`toolModules` are appended after the built-in tools.
+
 ## Programmatic usage (advanced)
 
 The package provides programmatic access through the `start()` function:
