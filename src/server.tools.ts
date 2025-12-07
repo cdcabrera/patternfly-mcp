@@ -256,6 +256,7 @@ const computeFsReadAllowlist = (specs: string[]): string[] => {
   for (const moduleSpec of specs) {
     try {
       const resolvedPath = req.resolve(moduleSpec, { paths: [process.cwd()] as any });
+
       directories.add(dirname(resolvedPath));
     } catch (resolveError) {
       try {
@@ -283,6 +284,7 @@ const spawnToolsHost = async (
   if (isolation === 'strict') {
     nodeArgs.push('--experimental-permission');
     const allow = computeFsReadAllowlist(specs);
+
     if (allow.length) {
       nodeArgs.push(`--allow-fs-read=${allow.join(',')}`);
     }
@@ -306,6 +308,7 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
+
   send(child, { t: 'load', id: loadId, specs });
   await once(
     child as any,
@@ -315,6 +318,7 @@ const spawnToolsHost = async (
 
   // manifest
   const manifestRequestId = makeId();
+
   send(child, { t: 'manifest:get', id: manifestRequestId });
   const manifest = await once(
     child as any,
@@ -332,6 +336,7 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
 
     const handler = async (args: unknown) => {
       const requestId = makeId();
+
       send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
 
       const response = await once(
@@ -342,6 +347,7 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
 
       if ('ok' in response && (response as any).ok === false) {
         const invocationError = new Error((response as any).error?.message || 'Tool invocation failed');
+
         (invocationError as any).stack = (response as any).error?.stack;
         (invocationError as any).code = (response as any).error?.code;
         throw invocationError;

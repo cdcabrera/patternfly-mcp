@@ -1,11 +1,11 @@
 // IPC protocol types and small helpers for Parent <-> Tools Host
 
 type IpcRequest =
-  | { t: 'hello'; id: string }
-  | { t: 'load'; id: string; specs: string[] }
-  | { t: 'manifest:get'; id: string }
-  | { t: 'invoke'; id: string; toolId: string; args: unknown }
-  | { t: 'shutdown'; id: string };
+  | { t: 'hello'; id: string } |
+  { t: 'load'; id: string; specs: string[] } |
+  { t: 'manifest:get'; id: string } |
+  { t: 'invoke'; id: string; toolId: string; args: unknown } |
+  { t: 'shutdown'; id: string };
 
 type SerializedError = { message: string; stack?: string; code?: string };
 
@@ -18,19 +18,17 @@ type ToolDescriptor = {
 };
 
 type IpcResponse =
-  | { t: 'hello:ack'; id: string }
-  | { t: 'load:ack'; id: string; warnings: string[]; errors: string[] }
-  | { t: 'manifest:result'; id: string; tools: ToolDescriptor[] }
-  | { t: 'invoke:result'; id: string; ok: true; result: unknown }
-  | { t: 'invoke:result'; id: string; ok: false; error: SerializedError }
-  | { t: 'shutdown:ack'; id: string };
+  | { t: 'hello:ack'; id: string } |
+  { t: 'load:ack'; id: string; warnings: string[]; errors: string[] } |
+  { t: 'manifest:result'; id: string; tools: ToolDescriptor[] } |
+  { t: 'invoke:result'; id: string; ok: true; result: unknown } |
+  { t: 'invoke:result'; id: string; ok: false; error: SerializedError } |
+  { t: 'shutdown:ack'; id: string };
 
 const send = (
   proc: NodeJS.Process | import('node:child_process').ChildProcess,
   request: IpcRequest
-): boolean => {
-  return Boolean(proc.send?.(request));
-};
+): boolean => Boolean(proc.send?.(request));
 
 const once = <T extends IpcResponse>(
   proc: NodeJS.Process,
