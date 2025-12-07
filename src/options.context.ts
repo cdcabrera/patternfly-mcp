@@ -73,6 +73,10 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   const defaultPluginIsolation = Array.isArray(base.toolModules) && base.toolModules.length > 0 ? 'strict' : 'none';
   const pluginIsolation = requestedPluginIsolation ?? defaultPluginIsolation;
 
+  // Merge pluginHost timeouts (pure data)
+  const maybePluginHost = (base as any).pluginHost;
+  const basePluginHost = isPlainObject(maybePluginHost) ? maybePluginHost : DEFAULT_OPTIONS.pluginHost;
+
   const merged: GlobalOptions = {
     ...base,
     logging: {
@@ -83,6 +87,14 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
       transport: baseLogging.transport
     },
     pluginIsolation,
+    pluginHost: {
+      loadTimeoutMs: Number.isFinite(basePluginHost?.loadTimeoutMs)
+        ? basePluginHost.loadTimeoutMs
+        : DEFAULT_OPTIONS.pluginHost.loadTimeoutMs,
+      invokeTimeoutMs: Number.isFinite(basePluginHost?.invokeTimeoutMs)
+        ? basePluginHost.invokeTimeoutMs
+        : DEFAULT_OPTIONS.pluginHost.invokeTimeoutMs
+    },
     resourceMemoOptions: DEFAULT_OPTIONS.resourceMemoOptions,
     toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions
   };

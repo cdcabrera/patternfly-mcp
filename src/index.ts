@@ -1,5 +1,5 @@
 import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
-import { composeToolCreators } from './server.tools';
+import { composeToolCreators, requestToolsHostShutdown } from './server.tools';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -66,17 +66,27 @@ const main = async (
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () => {
-      const toolCreators = await composeToolCreators(
-        mergedOptions.toolModules,
-        mergedOptions.nodeVersion,
-        mergedOptions.pluginIsolation
-      );
+      // Use getOptions() inside composeToolCreators; no param threading
+      const toolCreators = await composeToolCreators();
 
       // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
-      return runServer.memo(mergedOptions, {
+      const server = await runServer.memo(mergedOptions, {
         allowProcessExit: updatedAllowProcessExit,
         tools: toolCreators
       });
+
+      // Wrap stop() to also request Tools Host shutdown (best-effort, grace then force kill)
+      const originalStop = server.stop.bind(server);
+      return {
+        ...server,
+        async stop() {
+          try {
+            await originalStop();
+          } finally {
+            await requestToolsHostShutdown(2000);
+          }
+        }
+      };
     });
   } catch (error) {
     console.error('Failed to start server:', error);

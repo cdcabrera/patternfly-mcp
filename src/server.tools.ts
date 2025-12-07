@@ -8,7 +8,18 @@ import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
-import { once, send, makeId, type ToolDescriptor, type IpcResponse } from './server.toolsIpc';
+import {
+  awaitIpc,
+  send,
+  makeId,
+  isHelloAck,
+  isLoadAck,
+  isManifestResult,
+  isInvokeResult,
+  type ToolDescriptor,
+  type IpcResponse
+} from './server.toolsIpc';
+import { getOptions } from './options.context';
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -239,8 +250,9 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
 
 // --- Phase 5 additions: Tools Host spawning and proxy creators ---
 
-const pluginLoadTimeoutMs = 5000;
-const pluginInvokeTimeoutMs = 10000;
+// Read timeouts from options at call sites (pure data)
+const getPluginLoadTimeout = () => Math.max(1, getOptions().pluginHost.loadTimeoutMs);
+const getPluginInvokeTimeout = () => Math.max(1, getOptions().pluginHost.invokeTimeoutMs);
 
 const computeFsReadAllowlist = (specs: string[]): string[] => {
   const directories = new Set<string>();
@@ -275,6 +287,9 @@ type HostHandle = {
   tools: ToolDescriptor[];
 };
 
+// Track the active Tools Host for graceful shutdown from the parent.
+let activeToolsHost: HostHandle | null = null;
+
 const spawnToolsHost = async (
   specs: string[],
   isolation: 'none' | 'strict'
@@ -300,31 +315,19 @@ const spawnToolsHost = async (
 
   // hello
   send(child, { t: 'hello', id: makeId() });
-  await once(
-    child as unknown as NodeJS.Process,
-    (message: any): message is IpcResponse => message?.t === 'hello:ack',
-    pluginLoadTimeoutMs
-  );
+  await awaitIpc(child as unknown as NodeJS.Process, isHelloAck, getPluginLoadTimeout());
 
   // load
   const loadId = makeId();
 
-  send(child, { t: 'load', id: loadId, specs });
-  await once(
-    child as any,
-    (message: any): message is IpcResponse => message?.t === 'load:ack' && message.id === loadId,
-    pluginLoadTimeoutMs
-  );
+  send(child, { t: 'load', id: loadId, specs, invokeTimeoutMs: getPluginInvokeTimeout() });
+  await awaitIpc(child as any, isLoadAck(loadId), getPluginLoadTimeout());
 
   // manifest
   const manifestRequestId = makeId();
 
   send(child, { t: 'manifest:get', id: manifestRequestId });
-  const manifest = await once(
-    child as any,
-    (message: any): message is IpcResponse => message?.t === 'manifest:result' && message.id === manifestRequestId,
-    pluginLoadTimeoutMs
-  );
+  const manifest = await awaitIpc(child as any, isManifestResult(manifestRequestId), getPluginLoadTimeout());
 
   return { child, tools: (manifest as any).tools as ToolDescriptor[] };
 };
@@ -339,10 +342,10 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
 
       send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
 
-      const response = await once(
+      const response = await awaitIpc(
         handle.child as unknown as NodeJS.Process,
-        (message: any): message is IpcResponse => message?.t === 'invoke:result' && message.id === requestId,
-        pluginInvokeTimeoutMs
+        isInvokeResult(requestId),
+        getPluginInvokeTimeout()
       );
 
       if ('ok' in response && (response as any).ok === false) {
@@ -371,9 +374,9 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
 const composeToolCreators = async (
-  modulePaths: string[],
-  nodeMajor: number,
-  isolation: 'none' | 'strict' = 'none'
+  modulePaths: string[] = getOptions().toolModules,
+  nodeMajor: number = getOptions().nodeVersion,
+  isolation: 'none' | 'strict' = getOptions().pluginIsolation
 ): Promise<McpToolCreator[]> => {
   const builtinCreators = getBuiltinToolCreators();
 
@@ -395,6 +398,7 @@ const composeToolCreators = async (
   try {
     const host = await spawnToolsHost(modulePaths, isolation);
     const proxies = makeProxyCreators(host);
+    activeToolsHost = host;
 
     return [...builtinCreators, ...proxies];
   } catch (error) {
@@ -403,6 +407,75 @@ const composeToolCreators = async (
 
     return builtinCreators;
   }
+};
+
+/**
+ * Best-effort shutdown of the Tools Host.
+ * Sends a shutdown request, then force-kills the child after a grace period
+ * if it has not exited. Timers are unref()'d so they do not keep the process alive.
+ *
+ * @param gracePeriodMs Grace period before forcible termination (default: 2000ms)
+ */
+const requestToolsHostShutdown = async (gracePeriodMs = 2000): Promise<void> => {
+  const handle = activeToolsHost;
+  if (!handle) {
+    return;
+  }
+
+  const child = handle.child;
+  let resolved = false;
+
+  await new Promise<void>((resolve) => {
+    const resolveOnce = () => {
+      if (resolved) {
+        return;
+      }
+      resolved = true;
+      child.off('exit', resolveOnce);
+      child.off('disconnect', resolveOnce);
+      clearTimeout(forceKillTimer as any);
+      clearTimeout(forceResolveTimer as any);
+      activeToolsHost = null;
+      resolve();
+    };
+
+    try {
+      const shutdownId = makeId();
+      send(child, { t: 'shutdown', id: shutdownId });
+    } catch (error) {
+      // Ignore send failures; proceed to force kill after grace period.
+    }
+
+    const forceKillTimer = setTimeout(() => {
+      try {
+        if (!child.killed) {
+          child.kill('SIGKILL');
+        }
+      } catch (killError) {
+        // Ignore kill errors; proceed to resolve below.
+      }
+      const innerDelay = 250;
+      const localTimer = setTimeout(() => {
+        resolveOnce();
+      }, innerDelay);
+      if (typeof (localTimer as any).unref === 'function') {
+        (localTimer as any).unref();
+      }
+    }, gracePeriodMs);
+    if (typeof (forceKillTimer as any).unref === 'function') {
+      (forceKillTimer as any).unref();
+    }
+
+    const forceResolveTimer = setTimeout(() => {
+      resolveOnce();
+    }, Math.max(gracePeriodMs + 1000, 1500));
+    if (typeof (forceResolveTimer as any).unref === 'function') {
+      (forceResolveTimer as any).unref();
+    }
+
+    child.once('exit', resolveOnce);
+    child.once('disconnect', resolveOnce);
+  });
 };
 
 export {
@@ -414,6 +487,7 @@ export {
   pluginCreatorsToCreators,
   pluginToCreators,
   pluginToolsToCreators,
+  requestToolsHostShutdown,
   type AppToolPlugin,
   type AppToolPluginFactory
 };

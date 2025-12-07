@@ -1,21 +1,13 @@
 // Tools Host child process. Loads externals, provides a manifest, executes invokes.
 // IMPORTANT: Never write to stdout. Use IPC only (and stderr if absolutely needed).
 
-import { type IpcRequest, type IpcResponse, type ToolDescriptor } from './server.toolsIpc';
+import { type IpcRequest, type IpcResponse, type ToolDescriptor, makeId } from './server.toolsIpc';
 import { normalizeToCreators } from './server.tools';
+import type { McpTool } from './server';
 
-type ToolTuple = [
-  string,
-  { description: string; inputSchema: any },
-  (args: any) => Promise<any> | any
-];
-
-const toolMap = new Map<string, ToolTuple>();
+const toolMap = new Map<string, McpTool>();
 const descriptors: ToolDescriptor[] = [];
-
-const pluginInvokeTimeoutMs = 10000;
-
-const makeRandomId = () => Math.random().toString(36).slice(2);
+let pluginInvokeTimeoutMs = 10000;
 
 const serializeError = (errorValue: unknown) => ({
   message: (errorValue as any)?.message || String(errorValue),
@@ -30,6 +22,11 @@ process.on('message', async (request: IpcRequest) => {
         break;
       }
       case 'load': {
+        // Optional per-call timeout provided by parent
+        const maybeInvokeTimeout = (request as any)?.invokeTimeoutMs;
+        if (typeof maybeInvokeTimeout === 'number' && Number.isFinite(maybeInvokeTimeout) && maybeInvokeTimeout > 0) {
+          pluginInvokeTimeoutMs = maybeInvokeTimeout;
+        }
         const warnings: string[] = [];
         const errors: string[] = [];
 
@@ -41,9 +38,9 @@ process.on('message', async (request: IpcRequest) => {
             for (const create of creators) {
               try {
                 const tool = create();
-                const toolId = makeRandomId();
+                const toolId = makeId();
 
-                toolMap.set(toolId, tool as ToolTuple);
+                toolMap.set(toolId, tool as McpTool);
                 descriptors.push({
                   id: toolId,
                   name: tool[0],
@@ -94,6 +91,9 @@ process.on('message', async (request: IpcRequest) => {
             error: { message: 'Invoke timeout' }
           });
         }, pluginInvokeTimeoutMs);
+        if (typeof (timer as any).unref === 'function') {
+          (timer as any).unref();
+        }
 
         try {
           const result = await Promise.resolve(handler(request.args));

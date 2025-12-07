@@ -50,6 +50,10 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
    * 'strict' → hardened (Node ≥ 22 Permission Model in Phase 5).
    */
   pluginIsolation: 'none' | 'strict';
+  /**
+   * Tools Host (external plugin runner) configuration. Pure-data only.
+   */
+  pluginHost: PluginHostOptions;
   pfExternal: string;
   pfExternalDesignComponents: string;
   pfExternalExamplesComponents: string;
@@ -69,6 +73,16 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 }
 
 /**
+ * Tools Host options (pure data). Centralized defaults live here.
+ */
+interface PluginHostOptions {
+  /** Timeout for child spawn + hello/load/manifest (ms). */
+  loadTimeoutMs: number;
+  /** Timeout per external tool invocation (ms). */
+  invokeTimeoutMs: number;
+}
+
+/**
  * Overrides for default options.
  */
 type DefaultOptionsOverrides = Partial<
@@ -77,6 +91,7 @@ type DefaultOptionsOverrides = Partial<
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
+  pluginHost?: Partial<PluginHostOptions>;
   toolModules?: string[];
 };
 
@@ -295,6 +310,10 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   name: packageJson.name,
   nodeVersion: getNodeMajorVersion(),
   pluginIsolation: 'none',
+  pluginHost: {
+    loadTimeoutMs: 5000,
+    invokeTimeoutMs: 10000
+  },
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
