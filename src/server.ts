@@ -115,6 +115,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
       await server?.close();
       running = false;
 
+      try {
+        await sendToolsHostShutdown();
+      } catch {}
+
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
 
@@ -227,7 +231,9 @@ runServer.memo = memo(
               console.error(`Error stopping server: ${error}`);
             }
 
-            sendToolsHostShutdown();
+            try {
+              sendToolsHostShutdown();
+            } catch {}
           }
         } else {
           console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);

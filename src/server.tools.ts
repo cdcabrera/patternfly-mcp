@@ -19,7 +19,7 @@ import {
   type ToolDescriptor
   // type IpcResponse
 } from './server.toolsIpc';
-import { getOptions } from './options.context';
+import { getOptions, getSessionOptions } from './options.context';
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -284,9 +284,10 @@ type HostHandle = {
   tools: ToolDescriptor[];
 };
 
-// THIS NEEDS TO GO AWAY WE ARE NOT USING GLOBALS LIKE THIS BECAUSE THE BORK THE SESSION. MAYBE THIS SHOULD BE A SESSION VALUE.
-// Track the active Tools Host for graceful shutdown from the parent.
-let activeToolsHost: HostHandle | null = null;
+/**
+ * Map of active Tools Hosts per session.
+ */
+const activeHostsBySession = new Map<string, HostHandle>();
 
 /**
  * Spawn a tools host process and return its handle.
@@ -404,7 +405,10 @@ const composeToolCreators = async (
     const host = await spawnToolsHost(modulePaths, isolation);
     const proxies = makeProxyCreators(host);
 
-    activeToolsHost = host;
+    // Associate the spawned host with the current session
+    const { sessionId } = getSessionOptions();
+
+    activeHostsBySession.set(sessionId, host);
 
     return [...builtinCreators, ...proxies];
   } catch (error) {
@@ -416,22 +420,25 @@ const composeToolCreators = async (
 };
 
 /**
- * Shutdown child process and clear the active handle.
+ * Best-effort Tools Host shutdown for the current session.
+ * Policy:
+ * - Primary grace defaults to 0 ms (internal-only, from DEFAULT_OPTIONS.pluginHost.gracePeriodMs)
+ * - Single fallback kill at grace + 200 ms to avoid racing simultaneous kills
  *
- * One of the few places we hard-code fallbacks. The hardcoded grace period is strict at 0 ms.
- *
- * @param {GlobalOptions} [options]
- * @param [options.pluginHost.gracePeriodMs] Grace period before forcible termination
+ * @param {GlobalOptions} options
+ *  * @param [options.pluginHost.gracePeriodMs]
  */
 const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
-  const { pluginHost } = options || {};
-  const gracePeriodMs = (Number.isInteger(pluginHost?.gracePeriodMs) && pluginHost.gracePeriodMs) || 0;
-  const fallbackGracePeriodMs = (gracePeriodMs * 2) + 500;
-  const handle = activeToolsHost;
+  const { sessionId } = getSessionOptions();
+  const handle = activeHostsBySession.get(sessionId);
 
   if (!handle) {
     return;
   }
+
+  const { pluginHost } = options || {};
+  const gracePeriodMs = (Number.isInteger(pluginHost?.gracePeriodMs) && pluginHost.gracePeriodMs) || 0;
+  const fallbackGracePeriodMs = gracePeriodMs + 200;
 
   const child = handle.child;
   let resolved = false;
@@ -446,9 +453,10 @@ const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
       child.off('exit', resolveOnce);
       child.off('disconnect', resolveOnce);
 
-      clearTimeout(shutdown);
-      clearTimeout(shutdownAgain);
-      activeToolsHost = null;
+      clearTimeout(forceKillPrimary);
+      clearTimeout(forceKillFallback);
+
+      activeHostsBySession.delete(sessionId);
       resolve();
     };
 
@@ -466,15 +474,15 @@ const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
       }
     };
 
-    // Shutdown after the grace period
-    const shutdown = setTimeout(shutdownChild, gracePeriodMs);
+    // Primary grace period
+    const forceKillPrimary = setTimeout(shutdownChild, gracePeriodMs);
 
-    shutdown?.unref?.();
+    forceKillPrimary?.unref?.();
 
-    // Just in case shutdown the process again
-    const shutdownAgain = setTimeout(shutdownChild, fallbackGracePeriodMs);
+    // Fallback grace period
+    const forceKillFallback = setTimeout(shutdownChild, fallbackGracePeriodMs);
 
-    shutdownAgain?.unref?.();
+    forceKillFallback?.unref?.();
 
     child.once('exit', resolveOnce);
     child.once('disconnect', resolveOnce);
