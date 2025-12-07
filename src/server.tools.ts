@@ -1,10 +1,10 @@
-/* eslint-disable @stylistic/padding-line-between-statements */
 import { type GlobalOptions } from './options';
 import { type McpTool, type McpToolCreator } from './server';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { log } from './logger';
+import { isPlainObject } from './server.helpers';
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -14,7 +14,7 @@ import { log } from './logger';
  * - Others may expose `createTools(options)` and return `McpTool[]`. We adapt those into creators
  *   via `pluginToolsToCreators()` with a light probe (calling with no options) to determine arity.
  */
-export type AppToolPlugin = {
+type AppToolPlugin = {
   name?: string;
   // Optional: prefer creators if available to avoid double-construction
   createCreators?: (options?: GlobalOptions) => McpToolCreator[];
@@ -22,17 +22,15 @@ export type AppToolPlugin = {
   createTools?: (options?: GlobalOptions) => McpTool[];
 };
 
-export type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
-
-const isRecord = (v: unknown): v is Record<string, unknown> => Boolean(v) && typeof v === 'object';
+type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
 
 /**
  * Type guard for AppToolPlugin
  *
  * @param v - Value to check
  */
-export const isPlugin = (v: unknown): v is AppToolPlugin =>
-  isRecord(v) && (typeof (v as AppToolPlugin).createCreators === 'function' || typeof (v as AppToolPlugin).createTools === 'function');
+const isPlugin = (v: unknown): v is AppToolPlugin =>
+  isPlainObject(v) && (typeof (v as AppToolPlugin).createCreators === 'function' || typeof (v as AppToolPlugin).createTools === 'function');
 
 /**
  * Built-in tool creators (single source of truth for built-ins order).
@@ -40,7 +38,7 @@ export const isPlugin = (v: unknown): v is AppToolPlugin =>
 /**
  * Return the built-in tool creators in their canonical order.
  */
-export const getBuiltinToolCreators = (): McpToolCreator[] => [
+const getBuiltinToolCreators = (): McpToolCreator[] => [
   usePatternFlyDocsTool,
   fetchDocsTool,
   componentSchemasTool
@@ -130,7 +128,7 @@ const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
  *
  * @param mod - Imported module
  */
-export const normalizeToCreators = (mod: any): McpToolCreator[] => {
+const normalizeToCreators = (mod: any): McpToolCreator[] => {
   const candidates: any[] = [mod?.default, mod].filter(Boolean);
 
   for (const c of candidates) {
@@ -138,6 +136,7 @@ export const normalizeToCreators = (mod: any): McpToolCreator[] => {
     if (typeof c === 'function') {
       try {
         const maybeTuple = (c as McpToolCreator)();
+
         if (Array.isArray(maybeTuple) && typeof maybeTuple[0] === 'string') {
           return [c as McpToolCreator];
         }
@@ -150,6 +149,7 @@ export const normalizeToCreators = (mod: any): McpToolCreator[] => {
     if (typeof c === 'function') {
       try {
         const maybePlugin = (c as AppToolPluginFactory)();
+
         if (isPlugin(maybePlugin)) {
           const creators = pluginToCreators(maybePlugin);
 
@@ -185,7 +185,7 @@ export const normalizeToCreators = (mod: any): McpToolCreator[] => {
  *
  * @param paths - Array of module specs/paths to import
  */
-export const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToolCreator[]> => {
+const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToolCreator[]> => {
   const creators: McpToolCreator[] = [];
 
   for (const p of paths) {
@@ -221,11 +221,20 @@ export const loadToolCreatorsFromModules = async (paths: string[] = []): Promise
  *
  * @param modulePaths - Optional array of module specs/paths to import
  */
-export const composeToolCreators = async (modulePaths?: string[]): Promise<McpToolCreator[]> => {
+const composeToolCreators = async (modulePaths?: string[]): Promise<McpToolCreator[]> => {
   const builtin = getBuiltinToolCreators();
   const external = await loadToolCreatorsFromModules(modulePaths || []);
 
   return [...builtin, ...external];
 };
 
-export { type McpTool, type McpToolCreator };
+export {
+  getBuiltinToolCreators,
+  normalizeToCreators,
+  loadToolCreatorsFromModules,
+  composeToolCreators,
+  type AppToolPlugin,
+  type AppToolPluginFactory,
+  type McpTool,
+  type McpToolCreator
+};
