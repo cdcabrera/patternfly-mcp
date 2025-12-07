@@ -5,6 +5,10 @@ const tsConfig = {
 
 const baseConfig = {
   extensionsToTreatAsEsm: ['.ts'],
+  // injectGlobals: true,
+  // moduleNameMapper: {
+  //  '^(\\.{1,2}/.*)\\.js$': '$1'
+  // },
   preset: 'ts-jest',
   testEnvironment: 'node',
   testTimeout: 30000,
@@ -25,7 +29,30 @@ export default {
       roots: ['src'],
       testMatch: ['<rootDir>/src/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/jest.setupTests.ts'],
-      ...baseConfig
+      ...baseConfig,
+      transform: {
+        '^.+\\.(ts|tsx)$': [
+          'ts-jest',
+          {
+            ...tsConfig,
+            diagnostics: {
+              ignoreCodes: [1343]
+            },
+            astTransformers: {
+              before: [
+                {
+                  path: 'ts-jest-mock-import-meta',
+                  options: {
+                    metaObjectReplacement: {
+                      url: 'file:///mock/import-meta-url'
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
     },
     {
       displayName: 'e2e',
