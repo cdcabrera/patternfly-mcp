@@ -61,3 +61,5 @@ coverage/
 # agent
 .archive
 .agent
+auditor
+tmp
