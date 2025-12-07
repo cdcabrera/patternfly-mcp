@@ -62,7 +62,8 @@ const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
       return creators as McpToolCreator[];
     }
   } catch (error) {
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed`, error);
+    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed`);
+    log.warn(formatUnknownError(error));
   }
 
   return [];
@@ -88,9 +89,9 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   } catch (error) {
     // Checking without options may fail for some plugins; just log and continue
     log.warn(
-      `Plugin '${plugin.name || 'unknown'}' createTools() check failed (will still be attempted at runtime)`,
-      error
+      `Plugin '${plugin.name || 'unknown'}' createTools() check failed (will still be attempted at runtime)`
     );
+    log.warn(formatUnknownError(error));
   }
 
   const makeCreatorAt = (toolIndex: number): McpToolCreator => (options?: GlobalOptions) => {
