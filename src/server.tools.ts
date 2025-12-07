@@ -69,14 +69,16 @@ const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
 };
 
 /**
- * Adapt a plugin that exposes `createTools()` into one tool creator per tool.
- * We do a light check (call with no options) to determine viability, then
- * build index-aware creators that re-call with runtime options.
+ * Adapt a plugin that exposes `createTools()` into creators.
+ *
+ * If no tools are discovered during an initial check, a single creator is
+ * returned that will attempt to resolve the first tool at registration time
+ * and throw if none are available.
  *
  * @param {AppToolPlugin} plugin - Plugin instance
  * @returns {McpToolCreator[]} Array of tool creators
  *
- * @throws {Error} If the plugin does not expose `createTools()` or returns an empty array.
+ * @throws {Error} If the tool remains missing at registration time.
  */
 const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   let checkedTools: McpTool[] = [];
@@ -91,19 +93,17 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
     );
   }
 
-  const makeCreatorAt = (toolIndex: number): McpToolCreator => {
-    return (options?: GlobalOptions) => {
-      const toolsAtRuntime = plugin.createTools?.(options) ?? [];
-      const selectedTool = toolsAtRuntime[toolIndex] ?? toolsAtRuntime[0];
+  const makeCreatorAt = (toolIndex: number): McpToolCreator => (options?: GlobalOptions) => {
+    const toolsAtRuntime = plugin.createTools?.(options) ?? [];
+    const selectedTool = toolsAtRuntime[toolIndex] ?? toolsAtRuntime[0];
 
-      if (!selectedTool) {
-        throw new Error(
-          `Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${toolIndex}`
-        );
-      }
+    if (!selectedTool) {
+      throw new Error(
+        `Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${toolIndex}`
+      );
+    }
 
-      return selectedTool;
-    };
+    return selectedTool;
   };
 
   // If the check yielded nothing, still expose a single creator that will
