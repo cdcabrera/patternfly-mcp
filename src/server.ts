@@ -228,14 +228,16 @@ runServer.memo = memo(
             try {
               await server.stop();
             } catch (error) {
+              // Avoid engaging the contextual log channel on rollout.
               console.error(`Error stopping server: ${error}`);
             }
 
             try {
-              sendToolsHostShutdown();
+              await sendToolsHostShutdown();
             } catch {}
           }
         } else {
+          // Avoid engaging the contextual log channel on rollout.
           console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
         }
       }
