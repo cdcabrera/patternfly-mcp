@@ -155,8 +155,8 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
   const candidates: unknown[] = [moduleExports?.default, moduleExports].filter(Boolean);
 
   for (const candidate of candidates) {
-    // Case: already a tool creator
     if (typeof candidate === 'function') {
+      // Case: already a tool creator
       try {
         const maybeTuple = (candidate as McpToolCreator)();
 
@@ -166,10 +166,8 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
       } catch {
         // ignore and continue
       }
-    }
 
-    // Case: plugin factory function
-    if (typeof candidate === 'function') {
+      // Case: plugin factory function
       try {
         const maybePlugin = (candidate as AppToolPluginFactory)();
 
