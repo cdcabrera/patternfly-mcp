@@ -27,6 +27,8 @@ import packageJson from '../package.json';
  * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
+ * @property toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
+ *     registered with the server.
  * @property separator - Default string delimiter.
  * @property urlRegex - Regular expression pattern for URL matching.
  * @property version - Version of the package.
@@ -40,6 +42,9 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   llmsFilesPath: string;
   logging: TLogOptions;
   name: string;
+  nodeVersion: number;
+  pluginIsolation: 'none' | 'strict';
+  pluginHost: PluginHostOptions;
   pfExternal: string;
   pfExternalDesignComponents: string;
   pfExternalExamplesComponents: string;
@@ -53,6 +58,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   separator: string;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
+  toolModules: string[];
   urlRegex: RegExp;
   version: string;
 }
@@ -61,10 +67,12 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  * Overrides for default options.
  */
 type DefaultOptionsOverrides = Partial<
-  Omit<DefaultOptions, 'http' | 'logging'>
+  Omit<DefaultOptions, 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
+  pluginIsolation?: 'none' | 'strict' | undefined;
+  toolModules?: string[];
 };
 
 /**
@@ -110,6 +118,19 @@ interface HttpOptions {
 }
 
 /**
+ * Tools Host options (pure data). Centralized defaults live here.
+ *
+ * @property loadTimeoutMs Timeout for child spawn + hello/load/manifest (ms).
+ * @property invokeTimeoutMs Timeout per external tool invocation (ms).
+ * @property gracePeriodMs Grace period for external tool invocations (ms).
+ */
+interface PluginHostOptions {
+  loadTimeoutMs: number;
+  invokeTimeoutMs: number;
+  gracePeriodMs: number;
+}
+
+/**
  * Logging session options, non-configurable by the user.
  *
  * @interface LoggingSession
@@ -139,6 +160,15 @@ const HTTP_OPTIONS: HttpOptions = {
   host: '127.0.0.1',
   allowedOrigins: [],
   allowedHosts: []
+};
+
+/**
+ * Default plugin host options.
+ */
+const PLUGIN_HOST_OPTIONS: PluginHostOptions = {
+  loadTimeoutMs: 5000,
+  invokeTimeoutMs: 10000,
+  gracePeriodMs: 2000
 };
 
 /**
@@ -254,6 +284,19 @@ const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/accessibility`;
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL}/design-guidelines/charts`;
 
 /**
+ * Get the current Node.js major version.
+ */
+const getNodeMajorVersion = () => {
+  const major = Number.parseInt(process.versions.node.split('.')[0] || '0', 10);
+
+  if (Number.isFinite(major)) {
+    return major;
+  }
+
+  return 0;
+};
+
+/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @type {DefaultOptions} Default options object.
@@ -267,6 +310,9 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
+  nodeVersion: getNodeMajorVersion(),
+  pluginIsolation: 'none',
+  pluginHost: PLUGIN_HOST_OPTIONS,
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
@@ -279,6 +325,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
   toolMemoOptions: TOOL_MEMO_OPTIONS,
+  toolModules: [],
   separator: DEFAULT_SEPARATOR,
   urlRegex: URL_REGEX,
   version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version
@@ -299,9 +346,11 @@ export {
   PF_EXTERNAL_ACCESSIBILITY,
   LOG_BASENAME,
   DEFAULT_OPTIONS,
+  getNodeMajorVersion,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type HttpOptions,
   type LoggingOptions,
-  type LoggingSession
+  type LoggingSession,
+  type PluginHostOptions
 };

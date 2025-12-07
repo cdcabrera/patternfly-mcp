@@ -1,4 +1,5 @@
 import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import { composeToolCreators } from './server.tools';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -64,9 +65,16 @@ const main = async (
     const session = getSessionOptions();
 
     // use runWithSession to enable session in listeners
-    return await runWithSession(session, async () =>
-      // `runServer` doesn't require it, but `memo` does for "uniqueness", pass in the merged options for a hashable argument
-      runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
+    return await runWithSession(session, async () => {
+      // Use getOptions() inside composeToolCreators; no param threading
+      const toolCreators = await composeToolCreators();
+
+      // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
+      return await runServer.memo(mergedOptions, {
+        allowProcessExit: updatedAllowProcessExit,
+        tools: toolCreators
+      });
+    });
   } catch (error) {
     console.error('Failed to start server:', error);
 
