@@ -42,6 +42,12 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   llmsFilesPath: string;
   logging: TLogOptions;
   name: string;
+  /**
+   * Isolation preset for external tool plugins.
+   * 'none' → no special permission hardening (Phase 5 still runs out-of-process),
+   * 'strict' → hardened (Node ≥ 22 Permission Model in Phase 5).
+   */
+  pluginIsolation?: 'none' | 'strict';
   pfExternal: string;
   pfExternalDesignComponents: string;
   pfExternalExamplesComponents: string;
@@ -271,6 +277,8 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
+  // Base default is 'none'; main() will elevate to 'strict' when externals are present
+  pluginIsolation: 'none',
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,

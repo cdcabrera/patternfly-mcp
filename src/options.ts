@@ -23,6 +23,11 @@ type CliOptions = {
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
   toolModules: string[];
+  /**
+   * Isolation preset for external plugins (CLI-provided). If omitted, defaults
+   * to 'strict' when external tools are requested, otherwise 'none'.
+   */
+  pluginIsolation?: 'none' | 'strict';
 };
 
 /**
@@ -73,6 +78,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--host`: The host name specified via `--host`
  * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
  * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
+ * - `--plugin-isolation <none|strict>`: Isolation preset for external plugins.
  *
  * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
@@ -167,12 +173,23 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     }
   }
 
+  // Parse isolation preset: --plugin-isolation <none|strict>
+  let pluginIsolation: CliOptions['pluginIsolation'];
+  const isolationIdx = argv.indexOf('--plugin-isolation');
+  if (isolationIdx >= 0) {
+    const v = String(argv[isolationIdx + 1] || '').toLowerCase();
+    if (v === 'none' || v === 'strict') {
+      pluginIsolation = v;
+    }
+  }
+
   return {
     docsHost,
     logging,
     isHttp,
     http,
-    toolModules
+    toolModules,
+    pluginIsolation
   };
 };
 
