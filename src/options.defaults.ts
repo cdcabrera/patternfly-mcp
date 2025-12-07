@@ -1,13 +1,16 @@
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
+import { type ToolModule } from './server.toolsUser';
 
 /**
- * Application defaults, not user-configurable
+ * Application defaults, not all fields are user-configurable
  *
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
  * @property contextPath - Current working directory.
+ * @property contextUrl - Current working directory URL.
  * @property docsHost - Flag indicating whether to use the docs-host.
  * @property docsPath - Path to the documentation directory.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
@@ -15,24 +18,30 @@ import packageJson from '../package.json';
  * @property llmsFilesPath - Path to the LLMs files directory.
  * @property {LoggingOptions} logging - Logging options.
  * @property name - Name of the package.
+ * @property nodeVersion - Node.js major version.
+ * @property pluginIsolation - Isolation preset for external plugins.
+ * @property {PluginHostOptions} pluginHost - Plugin host options.
  * @property repoName - Name of the repository.
  * @property pfExternal - PatternFly external docs URL.
  * @property pfExternalDesignComponents - PatternFly design guidelines' components' URL.
  * @property pfExternalExamplesComponents - PatternFly examples' core components' URL.
  * @property pfExternalExamplesLayouts - PatternFly examples' core layouts' URL.
- * @property pfExternalExamplesCharts - PatternFly examples' charts' components' URL.'
+ * @property pfExternalExamplesCharts - PatternFly examples' charts' components' URL.
  * @property pfExternalExamplesTable - PatternFly examples' table components' URL.
  * @property pfExternalChartsDesign - PatternFly charts' design guidelines URL.
  * @property pfExternalDesignLayouts - PatternFly design guidelines' layouts' URL.
  * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
+ * @property {ToolModule|ToolModule[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
+ *     registered with the server.
  * @property separator - Default string delimiter.
  * @property urlRegex - Regular expression pattern for URL matching.
  * @property version - Version of the package.
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
+  contextUrl: string;
   docsHost: boolean;
   docsPath: string;
   http: HttpOptions;
@@ -40,6 +49,9 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   llmsFilesPath: string;
   logging: TLogOptions;
   name: string;
+  nodeVersion: number;
+  pluginIsolation: 'none' | 'strict';
+  pluginHost: PluginHostOptions;
   pfExternal: string;
   pfExternalDesignComponents: string;
   pfExternalExamplesComponents: string;
@@ -53,6 +65,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   separator: string;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
+  toolModules: ToolModule | ToolModule[];
   urlRegex: RegExp;
   version: string;
 }
@@ -61,10 +74,12 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  * Overrides for default options.
  */
 type DefaultOptionsOverrides = Partial<
-  Omit<DefaultOptions, 'http' | 'logging'>
+  Omit<DefaultOptions, 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
+  pluginIsolation?: 'none' | 'strict' | undefined;
+  toolModules?: ToolModule | ToolModule[] | undefined;
 };
 
 /**
@@ -109,6 +124,21 @@ interface HttpOptions {
   allowedHosts: string[];
 }
 
+// type ToolPlugin = string | McpToolCreator | ToolCreator | AppToolPlugin;
+
+/**
+ * Tools Host options (pure data). Centralized defaults live here.
+ *
+ * @property loadTimeoutMs Timeout for child spawn + hello/load/manifest (ms).
+ * @property invokeTimeoutMs Timeout per external tool invocation (ms).
+ * @property gracePeriodMs Grace period for external tool invocations (ms).
+ */
+interface PluginHostOptions {
+  loadTimeoutMs: number;
+  invokeTimeoutMs: number;
+  gracePeriodMs: number;
+}
+
 /**
  * Logging session options, non-configurable by the user.
  *
@@ -139,6 +169,15 @@ const HTTP_OPTIONS: HttpOptions = {
   host: '127.0.0.1',
   allowedOrigins: [],
   allowedHosts: []
+};
+
+/**
+ * Default plugin host options.
+ */
+const PLUGIN_HOST_OPTIONS: PluginHostOptions = {
+  loadTimeoutMs: 5000,
+  invokeTimeoutMs: 10000,
+  gracePeriodMs: 2000
 };
 
 /**
@@ -254,19 +293,36 @@ const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/accessibility`;
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL}/design-guidelines/charts`;
 
 /**
+ * Get the current Node.js major version.
+ */
+const getNodeMajorVersion = () => {
+  const major = Number.parseInt(process.versions.node.split('.')[0] || '0', 10);
+
+  if (Number.isFinite(major)) {
+    return major;
+  }
+
+  return 0;
+};
+
+/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @type {DefaultOptions} Default options object.
  */
 const DEFAULT_OPTIONS: DefaultOptions = {
   docsHost: false,
-  contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
-  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
+  contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
+  contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
+  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(resolve(process.cwd()), 'documentation'),
   isHttp: false,
   http: HTTP_OPTIONS,
-  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
+  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(resolve(process.cwd()), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
+  nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
+  pluginIsolation: 'none',
+  pluginHost: PLUGIN_HOST_OPTIONS,
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
@@ -279,6 +335,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
   toolMemoOptions: TOOL_MEMO_OPTIONS,
+  toolModules: [],
   separator: DEFAULT_SEPARATOR,
   urlRegex: URL_REGEX,
   version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version
@@ -299,9 +356,13 @@ export {
   PF_EXTERNAL_ACCESSIBILITY,
   LOG_BASENAME,
   DEFAULT_OPTIONS,
+  getNodeMajorVersion,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type HttpOptions,
   type LoggingOptions,
-  type LoggingSession
+  type LoggingSession,
+  type PluginHostOptions
+  // type ToolModule
+  // type ToolPlugin
 };
