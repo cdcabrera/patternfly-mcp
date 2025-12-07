@@ -27,10 +27,10 @@ type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
 /**
  * Type guard for AppToolPlugin
  *
- * @param v - Value to check
+ * @param valueToCheck - Value to check
  */
-const isPlugin = (v: unknown): v is AppToolPlugin =>
-  isPlainObject(v) && (typeof (v as AppToolPlugin).createCreators === 'function' || typeof (v as AppToolPlugin).createTools === 'function');
+const isPlugin = (valueToCheck: unknown): valueToCheck is AppToolPlugin =>
+  isPlainObject(valueToCheck) && (typeof (valueToCheck as AppToolPlugin).createCreators === 'function' || typeof (valueToCheck as AppToolPlugin).createTools === 'function');
 
 /**
  * Built-in tool creators (single source of truth for built-ins order).
@@ -53,11 +53,11 @@ const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   try {
     const creators = plugin.createCreators?.();
 
-    if (Array.isArray(creators) && creators.every(fn => typeof fn === 'function')) {
+    if (Array.isArray(creators) && creators.every(candidateFunction => typeof candidateFunction === 'function')) {
       return creators as McpToolCreator[];
     }
-  } catch (e) {
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed during probe`, e);
+  } catch (error) {
+    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed during probe`, error);
   }
 
   return [];
@@ -75,9 +75,9 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
 
   try {
     probe = plugin.createTools?.() || [];
-  } catch (e) {
+  } catch (error) {
     // Probing without options may fail for some plugins; just log and continue
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createTools() probe failed (will still be attempted at runtime)`, e);
+    log.warn(`Plugin '${plugin.name || 'unknown'}' createTools() probe failed (will still be attempted at runtime)`, error);
   }
 
   const count = Array.isArray(probe) ? probe.length : 0;
@@ -86,7 +86,7 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   // and try to return the first tool; this keeps behavior permissive.
   const size = Math.max(1, count);
 
-  const creators: McpToolCreator[] = Array.from({ length: size }).map((_, index) => (options?: GlobalOptions) => {
+  const creators: McpToolCreator[] = Array.from({ length: size }).map((_unused, index) => (options?: GlobalOptions) => {
     const tools = plugin.createTools?.(options) || [];
     const tool = tools[index] ?? tools[0];
 
@@ -126,19 +126,19 @@ const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
  * - `AppToolPlugin` object
  * - `McpToolCreator[]`
  *
- * @param mod - Imported module
+ * @param moduleExports - Imported module
  */
-const normalizeToCreators = (mod: any): McpToolCreator[] => {
-  const candidates: any[] = [mod?.default, mod].filter(Boolean);
+const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
+  const candidates: any[] = [moduleExports?.default, moduleExports].filter(Boolean);
 
-  for (const c of candidates) {
+  for (const candidate of candidates) {
     // Case: already a tool creator
-    if (typeof c === 'function') {
+    if (typeof candidate === 'function') {
       try {
-        const maybeTuple = (c as McpToolCreator)();
+        const maybeTuple = (candidate as McpToolCreator)();
 
         if (Array.isArray(maybeTuple) && typeof maybeTuple[0] === 'string') {
-          return [c as McpToolCreator];
+          return [candidate as McpToolCreator];
         }
       } catch {
         // ignore and continue probing
@@ -146,9 +146,9 @@ const normalizeToCreators = (mod: any): McpToolCreator[] => {
     }
 
     // Case: plugin factory function
-    if (typeof c === 'function') {
+    if (typeof candidate === 'function') {
       try {
-        const maybePlugin = (c as AppToolPluginFactory)();
+        const maybePlugin = (candidate as AppToolPluginFactory)();
 
         if (isPlugin(maybePlugin)) {
           const creators = pluginToCreators(maybePlugin);
@@ -163,8 +163,8 @@ const normalizeToCreators = (mod: any): McpToolCreator[] => {
     }
 
     // Case: plugin object
-    if (isPlugin(c)) {
-      const creators = pluginToCreators(c as AppToolPlugin);
+    if (isPlugin(candidate)) {
+      const creators = pluginToCreators(candidate as AppToolPlugin);
 
       if (creators.length) {
         return creators;
@@ -172,8 +172,8 @@ const normalizeToCreators = (mod: any): McpToolCreator[] => {
     }
 
     // Case: array of tool creators
-    if (Array.isArray(c) && c.every(fn => typeof fn === 'function')) {
-      return c as McpToolCreator[];
+    if (Array.isArray(candidate) && candidate.every(candidateFunction => typeof candidateFunction === 'function')) {
+      return candidate as McpToolCreator[];
     }
   }
 
@@ -188,26 +188,26 @@ const normalizeToCreators = (mod: any): McpToolCreator[] => {
 const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToolCreator[]> => {
   const creators: McpToolCreator[] = [];
 
-  for (const p of paths) {
-    const spec = String(p).trim();
+  for (const modulePath of paths) {
+    const moduleSpecifier = String(modulePath).trim();
 
-    if (!spec) {
+    if (!moduleSpecifier) {
       continue;
     }
 
     try {
-      const mod = await import(spec);
-      const list = normalizeToCreators(mod);
+      const importedModule = await import(moduleSpecifier);
+      const normalizedCreators = normalizeToCreators(importedModule);
 
-      if (!list.length) {
-        log.warn(`No tool creators found in module: ${spec}`);
+      if (!normalizedCreators.length) {
+        log.warn(`No tool creators found in module: ${moduleSpecifier}`);
       } else {
-        creators.push(...list);
+        creators.push(...normalizedCreators);
       }
-    } catch (e) {
-      log.warn(`Failed to import tool module: ${spec}`);
-      if (e) {
-        log.warn(String(e));
+    } catch (error) {
+      log.warn(`Failed to import tool module: ${moduleSpecifier}`);
+      if (error) {
+        log.warn(String(error));
       }
     }
   }
@@ -222,10 +222,10 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
  * @param modulePaths - Optional array of module specs/paths to import
  */
 const composeToolCreators = async (modulePaths?: string[]): Promise<McpToolCreator[]> => {
-  const builtin = getBuiltinToolCreators();
-  const external = await loadToolCreatorsFromModules(modulePaths || []);
+  const builtinCreators = getBuiltinToolCreators();
+  const externalCreators = await loadToolCreatorsFromModules(modulePaths || []);
 
-  return [...builtin, ...external];
+  return [...builtinCreators, ...externalCreators];
 };
 
 export {
