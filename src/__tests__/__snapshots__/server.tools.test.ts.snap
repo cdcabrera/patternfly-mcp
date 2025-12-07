@@ -1,0 +1,34 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`composeTools should handle IPC errors gracefully: warn 1`] = `
+[
+  [
+    "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
+  ],
+  [
+    "Error: Failed to resolve Tools Host entry '#toolsHost' from package imports: TypeError: {(intermediate value)}.resolve is not a function",
+  ],
+]
+`;
+
+exports[`composeTools should handle spawn errors gracefully: warn 1`] = `
+[
+  [
+    "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
+  ],
+  [
+    "Error: Failed to resolve Tools Host entry '#toolsHost' from package imports: TypeError: {(intermediate value)}.resolve is not a function",
+  ],
+]
+`;
+
+exports[`composeTools should log warnings and errors from load: warn 1`] = `
+[
+  [
+    "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
+  ],
+  [
+    "Error: Failed to resolve Tools Host entry '#toolsHost' from package imports: TypeError: {(intermediate value)}.resolve is not a function",
+  ],
+]
+`;
