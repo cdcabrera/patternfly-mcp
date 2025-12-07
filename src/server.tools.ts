@@ -3,7 +3,7 @@ import { type McpTool, type McpToolCreator } from './server';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
-import { log } from './logger';
+import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
 
 /**
@@ -12,7 +12,7 @@ import { isPlainObject } from './server.helpers';
  * Implementation note:
  * - Some plugins may expose `createCreators(options)` and return `McpToolCreator[]` directly.
  * - Others may expose `createTools(options)` and return `McpTool[]`. We adapt those into creators
- *   via `pluginToolsToCreators()` with a light probe (calling with no options) to determine arity.
+ *   via `pluginToolsToCreators()` with a light check (calling with no options) to determine viability.
  *
  * @property [name] - An optional name for the plugin.
  * @property [createCreators] - Optionally, generate an array of tool creators based on the
@@ -70,40 +70,55 @@ const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
 
 /**
  * Adapt a plugin that exposes `createTools()` into one tool creator per tool.
- * We do a light probe (call with no options) to determine arity and then
+ * We do a light check (call with no options) to determine viability, then
  * build index-aware creators that re-call with runtime options.
  *
  * @param {AppToolPlugin} plugin - Plugin instance
  * @returns {McpToolCreator[]} Array of tool creators
+ *
+ * @throws {Error} If the plugin does not expose `createTools()` or returns an empty array.
  */
 const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
-  let probe: McpTool[] = [];
+  let checkedTools: McpTool[] = [];
 
   try {
-    probe = plugin.createTools?.() || [];
+    checkedTools = plugin.createTools?.() ?? [];
   } catch (error) {
-    // Probing without options may fail for some plugins; just log and continue
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createTools() failed (will still be attempted at runtime)`, error);
+    // Checking without options may fail for some plugins; just log and continue
+    log.warn(
+      `Plugin '${plugin.name || 'unknown'}' createTools() check failed (will still be attempted at runtime)`,
+      error
+    );
   }
 
-  const count = Array.isArray(probe) ? probe.length : 0;
+  const makeCreatorAt = (toolIndex: number): McpToolCreator => {
+    return (options?: GlobalOptions) => {
+      const toolsAtRuntime = plugin.createTools?.(options) ?? [];
+      const selectedTool = toolsAtRuntime[toolIndex] ?? toolsAtRuntime[0];
 
-  // If probe yielded nothing expose a single creator that invokes createTools at runtime
-  const size = Math.max(1, count);
+      if (!selectedTool) {
+        throw new Error(
+          `Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${toolIndex}`
+        );
+      }
+
+      return selectedTool;
+    };
+  };
+
+  // If the check yielded nothing, still expose a single creator that will
+  // try to return the first tool at runtime (permissive behavior).
+  if (checkedTools.length === 0) {
+    return [makeCreatorAt(0)];
+  }
+
   const creators: McpToolCreator[] = [];
 
-  creators.length = size;
-
-  return creators.map((_empty, index) => (options?: GlobalOptions) => {
-    const tools = plugin.createTools?.(options) || [];
-    const tool = tools[index] || tools[0];
-
-    if (!tool) {
-      throw new Error(`Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${index}`);
-    }
-
-    return tool;
+  checkedTools.forEach((_tool, index) => {
+    creators.push(makeCreatorAt(index));
   });
+
+  return creators;
 };
 
 /**
@@ -215,16 +230,7 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
       }
     } catch (error) {
       log.warn(`Failed to import tool module: ${moduleSpecifier}`);
-
-      if (error instanceof Error) {
-        log.warn(error.stack || error.message);
-      } else {
-        try {
-          log.warn(`Non-Error thrown: ${JSON.stringify(error)}`);
-        } catch {
-          log.warn(String(error));
-        }
-      }
+      log.warn(formatUnknownError(error));
     }
   }
 
