@@ -5,6 +5,10 @@ import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
+import { spawn } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
+import { once, send, makeId, type ToolDescriptor, type IpcResponse } from './server.toolsIpc';
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -231,27 +235,136 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
   return creators;
 };
 
+// --- Phase 5 additions: Tools Host spawning and proxy creators ---
+
+const pluginLoadTimeoutMs = 5000;
+const pluginInvokeTimeoutMs = 10000;
+
+const computeFsReadAllowlist = (specs: string[]): string[] => {
+  const list = new Set<string>();
+  try { list.add(resolve(process.cwd())); } catch {}
+  const req = createRequire(import.meta.url);
+
+  for (const spec of specs) {
+    try {
+      const resolved = req.resolve(spec, { paths: [process.cwd()] as any });
+      list.add(dirname(resolved));
+    } catch {
+      try { list.add(resolve(process.cwd(), spec)); } catch {}
+    }
+  }
+  return [...list];
+};
+
+type HostHandle = {
+  child: import('node:child_process').ChildProcess;
+  tools: ToolDescriptor[];
+};
+
+const spawnToolsHost = async (
+  specs: string[],
+  isolation: 'none' | 'strict'
+): Promise<HostHandle> => {
+  const nodeArgs: string[] = [];
+  if (isolation === 'strict') {
+    nodeArgs.push('--experimental-permission');
+    const allow = computeFsReadAllowlist(specs);
+    if (allow.length) nodeArgs.push(`--allow-fs-read=${allow.join(',')}`);
+    // Deny network and fs write by omission
+  }
+
+  const req = createRequire(import.meta.url);
+  const entry = req.resolve('./server.toolsHost');
+
+  const child = spawn(process.execPath, [...nodeArgs, entry], {
+    stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+  });
+
+  // hello
+  send(child, { t: 'hello', id: makeId() });
+  await once(child as unknown as NodeJS.Process, (m: any): m is IpcResponse => m?.t === 'hello:ack', pluginLoadTimeoutMs);
+
+  // load
+  const loadId = makeId();
+  send(child, { t: 'load', id: loadId, specs });
+  await once(child as any, (m: any): m is IpcResponse => m?.t === 'load:ack' && m.id === loadId, pluginLoadTimeoutMs);
+
+  // manifest
+  const manId = makeId();
+  send(child, { t: 'manifest:get', id: manId });
+  const manifest = await once(child as any, (m: any): m is IpcResponse => m?.t === 'manifest:result' && m.id === manId, pluginLoadTimeoutMs);
+
+  return { child, tools: (manifest as any).tools as ToolDescriptor[] };
+};
+
+const makeProxyCreators = (handle: HostHandle): McpToolCreator[] => {
+  return handle.tools.map((tool): McpToolCreator => () => {
+    const name = tool.name;
+    const schema = { description: tool.description, inputSchema: tool.inputSchema } as any;
+
+    const handler = async (args: unknown) => {
+      const reqId = makeId();
+      send(handle.child, { t: 'invoke', id: reqId, toolId: tool.id, args });
+
+      const resp = await once(
+        handle.child as unknown as NodeJS.Process,
+        (m: any): m is IpcResponse => m?.t === 'invoke:result' && m.id === reqId,
+        pluginInvokeTimeoutMs
+      );
+
+      if ('ok' in resp && (resp as any).ok === false) {
+        const err = new Error((resp as any).error?.message || 'Tool invocation failed');
+        (err as any).stack = (resp as any).error?.stack;
+        (err as any).code = (resp as any).error?.code;
+        throw err;
+      }
+
+      return (resp as any).result;
+    };
+
+    return [name, schema, handler];
+  });
+};
+
 /**
  * Compose built-in creators with any externally loaded creators.
  *
- * @param modulePaths - Optional array of module specs/paths to import
- * @param nodeMajor - Node major version, used to determine if external modules should be skipped
+ * For Node >= 22, external plugins are executed out-of-process via a Tools Host.
+ * For Node < 22, externals are skipped with a warning and only built-ins are returned.
+ *
+ * @param modulePaths - Optional array of external module specs/paths to import
+ * @param nodeMajor - Node major version, used for version gating
+ * @param isolation - Isolation preset ('none' | 'strict') applied to Tools Host permissions
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
-const composeToolCreators = async (modulePaths: string[], nodeMajor: number): Promise<McpToolCreator[]> => {
+const composeToolCreators = async (
+  modulePaths: string[],
+  nodeMajor: number,
+  isolation: 'none' | 'strict' = 'none'
+): Promise<McpToolCreator[]> => {
   const builtinCreators = getBuiltinToolCreators();
 
-  if (Array.isArray(modulePaths) && modulePaths.length > 0 && nodeMajor < 22) {
-    try {
-      log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
-    } catch {}
-
+  if (!Array.isArray(modulePaths) || modulePaths.length === 0) {
     return builtinCreators;
   }
 
-  const externalCreators = await loadToolCreatorsFromModules(modulePaths || []);
+  if (nodeMajor < 22) {
+    try {
+      log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
+    } catch {}
+    return builtinCreators;
+  }
 
-  return [...builtinCreators, ...externalCreators];
+  // Node >= 22: spawn Tools Host and proxy externals
+  try {
+    const host = await spawnToolsHost(modulePaths, isolation);
+    const proxies = makeProxyCreators(host);
+    return [...builtinCreators, ...proxies];
+  } catch (error) {
+    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins.');
+    log.warn(formatUnknownError(error));
+    return builtinCreators;
+  }
 };
 
 export {

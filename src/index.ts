@@ -66,7 +66,11 @@ const main = async (
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () => {
-      const toolCreators = await composeToolCreators(mergedOptions.toolModules, mergedOptions.nodeVersion);
+      const toolCreators = await composeToolCreators(
+        mergedOptions.toolModules,
+        mergedOptions.nodeVersion,
+        mergedOptions.pluginIsolation
+      );
 
       // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
       return runServer.memo(mergedOptions, {
