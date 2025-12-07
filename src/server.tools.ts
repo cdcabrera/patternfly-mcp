@@ -17,7 +17,6 @@ import {
   isManifestResult,
   isInvokeResult,
   type ToolDescriptor
-  // type IpcResponse
 } from './server.toolsIpc';
 import { getOptions, getSessionOptions } from './options.context';
 
