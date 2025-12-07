@@ -8,6 +8,7 @@ import {
   type ServerOnLogHandler,
   type ServerLogEvent
 } from './server';
+import { createMcpTool, type ToolConfig, type MultiToolConfig } from './server.toolsCreator';
 
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
@@ -65,8 +66,10 @@ const main = async (
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () =>
-      // `runServer` doesn't require it, but `memo` does for "uniqueness", pass in the merged options for a hashable argument
-      runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
+      // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
+      await runServer.memo(mergedOptions, {
+        allowProcessExit: updatedAllowProcessExit
+      }));
   } catch (error) {
     console.error('Failed to start server:', error);
 
@@ -79,6 +82,7 @@ const main = async (
 };
 
 export {
+  createMcpTool,
   main,
   main as start,
   type CliOptions,
@@ -87,5 +91,7 @@ export {
   type ServerInstance,
   type ServerLogEvent,
   type ServerOnLog,
-  type ServerOnLogHandler
+  type ServerOnLogHandler,
+  type ToolConfig,
+  type MultiToolConfig
 };

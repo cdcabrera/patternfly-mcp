@@ -67,6 +67,12 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
+
+  // We handle plugin isolation here to account for both CLI and programmatic usage.
+  const requestedPluginIsolation = options?.pluginIsolation;
+  const defaultPluginIsolation = Array.isArray(base.toolModules) && base.toolModules.length > 0 ? 'strict' : 'none';
+  const pluginIsolation = requestedPluginIsolation ?? defaultPluginIsolation;
+
   const merged: GlobalOptions = {
     ...base,
     logging: {
@@ -76,6 +82,7 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
       protocol: baseLogging.protocol,
       transport: baseLogging.transport
     },
+    pluginIsolation,
     resourceMemoOptions: DEFAULT_OPTIONS.resourceMemoOptions,
     toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions
   };

@@ -19,6 +19,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 ## Prerequisites
 
 - Node.js 20.0.0 or higher
+  - Note: External tool plugins require Node.js ≥ 22 at runtime. On Node < 22, the server starts with built‑in tools only and logs a one‑time warning.
 - NPM (or another Node package manager)
 
 ## Installation
@@ -82,6 +83,121 @@ The MCP server can communicate over **stdio** (default) or **HTTP** transport. I
 Returned content format:
 - For each entry in urlList, the server loads its content, prefixes it with a header like: `# Documentation from <resolved-path-or-url>` and joins multiple entries using a separator: `\n\n---\n\n`.
 - If an entry fails to load, an inline error message is included for that entry.
+
+### External tools (Plugins)
+
+Add external tools at startup. External tools run out‑of‑process in a separate Tools Host (Node ≥ 22). Built‑in tools are always in‑process and register first.
+
+- Node version gate
+  - Node < 22 → external tools are skipped with a single startup warning; built‑ins still register.
+  - Node ≥ 22 → external tools run out‑of‑process via the Tools Host.
+
+- CLI
+  - `--tool <spec>` Add one or more external tools. Repeat the flag or pass a comma‑separated list.
+    - Examples: `--tool @acme/my-plugin`, `--tool ./plugins/my-tools.js`, `--tool ./a.js,./b.js`
+  - `--plugin-isolation <none|strict>` Tools Host permission preset.
+    - Defaults: `strict` when any `--tool` is provided; otherwise `none`.
+
+- Behavior
+  - External tools run in a single Tools Host child process.
+  - In `strict` isolation (default with externals): network and fs write are denied; fs reads are allow‑listed to your project and resolved plugin directories.
+
+- Supported `--tool` inputs
+  - ESM packages (installed in node_modules)
+  - Local ESM files (paths are normalized to `file://` URLs internally)
+
+- Not supported as `--tool` inputs
+  - Raw TypeScript sources (`.ts`) — the Tools Host does not install a TS loader
+  - Remote `http(s):` or `data:` URLs — these will fail to load and appear in startup warnings/errors
+
+- Troubleshooting
+  - If external tools don't appear, verify you're running on Node ≥ 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
+  - Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
+  - If `tools/list` fails or `tools/call` rejects due to argument validation (e.g., messages about `safeParseAsync is not a function`), ensure your `inputSchema` is either a valid JSON Schema object or a Zod schema. Plain JSON Schema objects are automatically converted, but malformed schemas may cause issues. See the [Input Schema Format](#input-schema-format) section for details.
+
+### Authoring external tools with `createMcpTool`
+
+Export an ESM module using `createMcpTool`. The server adapts single or multiple tool definitions automatically.
+
+Single tool:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'hello',
+  description: 'Say hello',
+  inputSchema: {
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    required: ['name']
+  },
+  async handler({ name }) {
+    return `Hello, ${name}!`;
+  }
+});
+```
+
+Multiple tools:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool([
+  { name: 'hi', description: 'Greets', inputSchema: { type: 'object' }, handler: () => 'hi' },
+  { name: 'bye', description: 'Farewell', inputSchema: { type: 'object' }, handler: () => 'bye' }
+]);
+```
+
+Named group:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'my-plugin',
+  tools: [
+    { name: 'alpha', description: 'A', inputSchema: { type: 'object' }, handler: () => 'A' },
+    { name: 'beta', description: 'B', inputSchema: { type: 'object' }, handler: () => 'B' }
+  ]
+});
+```
+
+Notes
+- External tools must be ESM modules (packages or ESM files). The Tools Host imports your module via `import()`.
+- The `handler` receives `args` per your `inputSchema`. A reserved `options?` parameter may be added in a future release; it is not currently passed.
+
+### Input Schema Format
+
+The `inputSchema` property accepts either **plain JSON Schema objects** or **Zod schemas**. Both formats are automatically converted to the format required by the MCP SDK.
+
+**JSON Schema (recommended for simplicity):**
+```ts
+inputSchema: {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    age: { type: 'number' }
+  },
+  required: ['name']
+}
+```
+
+**Zod Schema (for advanced validation):**
+```ts
+import { z } from 'zod';
+
+inputSchema: {
+  name: z.string(),
+  age: z.number().optional()
+}
+```
+
+**Important:** The MCP SDK expects Zod-compatible schemas internally. Plain JSON Schema objects are automatically converted to equivalent Zod schemas when tools are registered. This conversion handles common cases like:
+- `{ type: 'object', additionalProperties: true }` → `z.object({}).passthrough()`
+- Simple object schemas → `z.object({...})`
+
+If you encounter validation errors, ensure your JSON Schema follows standard JSON Schema format, or use Zod schemas directly for more control.
 
 ## Logging
 
@@ -333,7 +449,68 @@ npx @modelcontextprotocol/inspector-cli \
 ## Environment variables
 
 - DOC_MCP_FETCH_TIMEOUT_MS: Milliseconds to wait before aborting an HTTP fetch (default: 15000)
-- DOC_MCP_CLEAR_COOLDOWN_MS: Default cooldown value used in internal cache configuration. The current public API does not expose a `clearCache` tool.
+
+## External tools (plugins)
+
+You can load external MCP tool modules at runtime using a single CLI flag or via programmatic options. Modules must be ESM-importable (absolute/relative path or package spec).
+
+CLI examples (single `--tool` flag):
+
+```bash
+# Single module
+npm run start:dev -- --tool ./dist/my-tool.js
+
+# Multiple modules (repeatable)
+npm run start:dev -- --tool ./dist/t1.js --tool ./dist/t2.js
+
+# Multiple modules (comma-separated)
+npm run start:dev -- --tool ./dist/t1.js,./dist/t2.js
+```
+
+Programmatic usage:
+
+```ts
+import { main } from '@patternfly/patternfly-mcp';
+
+await main({
+  toolModules: [
+    new URL('./dist/t1.js', import.meta.url).toString(),
+    './dist/t2.js'
+  ]
+});
+```
+
+Tools provided via `--tool`/`toolModules` are appended after the built-in tools.
+
+### Authoring MCP external tools
+> Note: External MCP tools require using `Node ≥ 22` to run the server and ESM modules. TypeScript formatted tools are not directly supported.
+> If you do use TypeScript, you can use the `createMcpTool` helper to define your tools as pure ESM modules.
+
+For `tools-as-plugin` authors, we recommend using the unified helper to define your tools as pure ESM modules:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'hello',
+  description: 'Say hello',
+  inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+  async handler({ name }) {
+    return { content: `Hello, ${name}!` };
+  }
+});
+```
+
+Multiple tools in one module:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool([
+  { name: 'hello', description: 'Hi', inputSchema: {}, handler: () => 'hi' },
+  { name: 'bye', description: 'Bye', inputSchema: {}, handler: () => 'bye' }
+]);
+```
 
 ## Programmatic usage (advanced)
 
