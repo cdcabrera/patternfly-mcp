@@ -43,6 +43,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   logging: TLogOptions;
   name: string;
   nodeVersion: number;
+
   /**
    * Isolation preset for external tool plugins.
    * 'none' → no special permission hardening (Phase 5 still runs out-of-process),
@@ -293,7 +294,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
   nodeVersion: getNodeMajorVersion(),
-  pluginIsolation: 'strict',
+  pluginIsolation: 'none',
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,

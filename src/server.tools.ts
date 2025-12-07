@@ -239,15 +239,16 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
 const composeToolCreators = async (modulePaths: string[], nodeMajor: number): Promise<McpToolCreator[]> => {
+  const builtinCreators = getBuiltinToolCreators();
+
   if (Array.isArray(modulePaths) && modulePaths.length > 0 && nodeMajor < 22) {
     try {
       log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
     } catch {}
 
-    return [];
+    return builtinCreators;
   }
 
-  const builtinCreators = getBuiltinToolCreators();
   const externalCreators = await loadToolCreatorsFromModules(modulePaths || []);
 
   return [...builtinCreators, ...externalCreators];

@@ -1,7 +1,6 @@
 import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
 import { composeToolCreators } from './server.tools';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
-import { log } from './logger';
 import {
   runServer,
   type ServerInstance,
