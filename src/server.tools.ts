@@ -1,3 +1,6 @@
+import { spawn } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 import { type GlobalOptions } from './options';
 import { type McpTool, type McpToolCreator } from './server';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
@@ -5,9 +8,6 @@ import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
-import { spawn } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { createRequire } from 'node:module';
 import { once, send, makeId, type ToolDescriptor, type IpcResponse } from './server.toolsIpc';
 
 /**
@@ -242,17 +242,20 @@ const pluginInvokeTimeoutMs = 10000;
 
 const computeFsReadAllowlist = (specs: string[]): string[] => {
   const list = new Set<string>();
+
   try { list.add(resolve(process.cwd())); } catch {}
   const req = createRequire(import.meta.url);
 
   for (const spec of specs) {
     try {
       const resolved = req.resolve(spec, { paths: [process.cwd()] as any });
+
       list.add(dirname(resolved));
     } catch {
       try { list.add(resolve(process.cwd(), spec)); } catch {}
     }
   }
+
   return [...list];
 };
 
@@ -266,10 +269,12 @@ const spawnToolsHost = async (
   isolation: 'none' | 'strict'
 ): Promise<HostHandle> => {
   const nodeArgs: string[] = [];
+
   if (isolation === 'strict') {
     nodeArgs.push('--experimental-permission');
     const allow = computeFsReadAllowlist(specs);
-    if (allow.length) nodeArgs.push(`--allow-fs-read=${allow.join(',')}`);
+
+    if (allow.length) { nodeArgs.push(`--allow-fs-read=${allow.join(',')}`); }
     // Deny network and fs write by omission
   }
 
@@ -286,45 +291,47 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
+
   send(child, { t: 'load', id: loadId, specs });
   await once(child as any, (m: any): m is IpcResponse => m?.t === 'load:ack' && m.id === loadId, pluginLoadTimeoutMs);
 
   // manifest
   const manId = makeId();
+
   send(child, { t: 'manifest:get', id: manId });
   const manifest = await once(child as any, (m: any): m is IpcResponse => m?.t === 'manifest:result' && m.id === manId, pluginLoadTimeoutMs);
 
   return { child, tools: (manifest as any).tools as ToolDescriptor[] };
 };
 
-const makeProxyCreators = (handle: HostHandle): McpToolCreator[] => {
-  return handle.tools.map((tool): McpToolCreator => () => {
-    const name = tool.name;
-    const schema = { description: tool.description, inputSchema: tool.inputSchema } as any;
+const makeProxyCreators = (handle: HostHandle): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
+  const name = tool.name;
+  const schema = { description: tool.description, inputSchema: tool.inputSchema } as any;
 
-    const handler = async (args: unknown) => {
-      const reqId = makeId();
-      send(handle.child, { t: 'invoke', id: reqId, toolId: tool.id, args });
+  const handler = async (args: unknown) => {
+    const reqId = makeId();
 
-      const resp = await once(
-        handle.child as unknown as NodeJS.Process,
-        (m: any): m is IpcResponse => m?.t === 'invoke:result' && m.id === reqId,
-        pluginInvokeTimeoutMs
-      );
+    send(handle.child, { t: 'invoke', id: reqId, toolId: tool.id, args });
 
-      if ('ok' in resp && (resp as any).ok === false) {
-        const err = new Error((resp as any).error?.message || 'Tool invocation failed');
-        (err as any).stack = (resp as any).error?.stack;
-        (err as any).code = (resp as any).error?.code;
-        throw err;
-      }
+    const resp = await once(
+      handle.child as unknown as NodeJS.Process,
+      (m: any): m is IpcResponse => m?.t === 'invoke:result' && m.id === reqId,
+      pluginInvokeTimeoutMs
+    );
 
-      return (resp as any).result;
-    };
+    if ('ok' in resp && (resp as any).ok === false) {
+      const err = new Error((resp as any).error?.message || 'Tool invocation failed');
 
-    return [name, schema, handler];
-  });
-};
+      (err as any).stack = (resp as any).error?.stack;
+      (err as any).code = (resp as any).error?.code;
+      throw err;
+    }
+
+    return (resp as any).result;
+  };
+
+  return [name, schema, handler];
+});
 
 /**
  * Compose built-in creators with any externally loaded creators.
@@ -352,6 +359,7 @@ const composeToolCreators = async (
     try {
       log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
     } catch {}
+
     return builtinCreators;
   }
 
@@ -359,10 +367,12 @@ const composeToolCreators = async (
   try {
     const host = await spawnToolsHost(modulePaths, isolation);
     const proxies = makeProxyCreators(host);
+
     return [...builtinCreators, ...proxies];
   } catch (error) {
     log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins.');
     log.warn(formatUnknownError(error));
+
     return builtinCreators;
   }
 };

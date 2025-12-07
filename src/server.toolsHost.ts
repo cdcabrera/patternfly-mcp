@@ -32,14 +32,17 @@ process.on('message', async (msg: IpcRequest) => {
       case 'load': {
         const warnings: string[] = [];
         const errors: string[] = [];
+
         for (const spec of msg.specs || []) {
           try {
             const mod = await import(spec);
             const creators = normalizeToCreators(mod);
+
             for (const create of creators) {
               try {
                 const tool = create();
                 const toolId = makeId();
+
                 toolMap.set(toolId, tool as ToolTuple);
                 descriptors.push({
                   id: toolId,
@@ -67,6 +70,7 @@ process.on('message', async (msg: IpcRequest) => {
       }
       case 'invoke': {
         const tool = toolMap.get(msg.toolId);
+
         if (!tool) {
           process.send?.({
             t: 'invoke:result',
@@ -79,7 +83,7 @@ process.on('message', async (msg: IpcRequest) => {
         const handler = tool[2];
         let settled = false;
         const timer = setTimeout(() => {
-          if (settled) return;
+          if (settled) { return; }
           settled = true;
           process.send?.({
             t: 'invoke:result',
@@ -88,8 +92,10 @@ process.on('message', async (msg: IpcRequest) => {
             error: { message: 'Invoke timeout' }
           });
         }, pluginInvokeTimeoutMs);
+
         try {
           const result = await Promise.resolve(handler(msg.args));
+
           if (!settled) {
             settled = true;
             clearTimeout(timer);

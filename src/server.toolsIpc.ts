@@ -1,11 +1,11 @@
 // IPC protocol types and small helpers for Parent <-> Tools Host
 
 export type IpcRequest =
-  | { t: 'hello'; id: string }
-  | { t: 'load'; id: string; specs: string[] }
-  | { t: 'manifest:get'; id: string }
-  | { t: 'invoke'; id: string; toolId: string; args: unknown }
-  | { t: 'shutdown'; id: string };
+  | { t: 'hello'; id: string } |
+  { t: 'load'; id: string; specs: string[] } |
+  { t: 'manifest:get'; id: string } |
+  { t: 'invoke'; id: string; toolId: string; args: unknown } |
+  { t: 'shutdown'; id: string };
 
 export type SerializedError = { message: string; stack?: string; code?: string };
 
@@ -18,17 +18,17 @@ export type ToolDescriptor = {
 };
 
 export type IpcResponse =
-  | { t: 'hello:ack'; id: string }
-  | { t: 'load:ack'; id: string; warnings: string[]; errors: string[] }
-  | { t: 'manifest:result'; id: string; tools: ToolDescriptor[] }
-  | { t: 'invoke:result'; id: string; ok: true; result: unknown }
-  | { t: 'invoke:result'; id: string; ok: false; error: SerializedError }
-  | { t: 'shutdown:ack'; id: string };
+  | { t: 'hello:ack'; id: string } |
+  { t: 'load:ack'; id: string; warnings: string[]; errors: string[] } |
+  { t: 'manifest:result'; id: string; tools: ToolDescriptor[] } |
+  { t: 'invoke:result'; id: string; ok: true; result: unknown } |
+  { t: 'invoke:result'; id: string; ok: false; error: SerializedError } |
+  { t: 'shutdown:ack'; id: string };
 
 export const send = (
   proc: NodeJS.Process | import('node:child_process').ChildProcess,
   msg: IpcRequest
-): boolean => !!proc.send?.(msg);
+): boolean => Boolean(proc.send?.(msg));
 
 export const once = <T extends IpcResponse>(
   proc: NodeJS.Process,
@@ -43,7 +43,7 @@ export const once = <T extends IpcResponse>(
     clearTimeout(timer as any);
   };
   const onMessage = (m: any) => {
-    if (done) return;
+    if (done) { return; }
     if (matcher(m)) {
       done = true;
       cleanup();
@@ -51,17 +51,18 @@ export const once = <T extends IpcResponse>(
     }
   };
   const onExit = (code?: number, signal?: string) => {
-    if (done) return;
+    if (done) { return; }
     done = true;
     cleanup();
     reject(new Error(`Tools Host exited before response (code=${code}, signal=${signal || 'none'})`));
   };
   const timer = setTimeout(() => {
-    if (done) return;
+    if (done) { return; }
     done = true;
     cleanup();
     reject(new Error('Timed out waiting for IPC response'));
   }, timeoutMs);
+
   proc.on('message', onMessage);
   proc.on('exit', onExit);
   proc.on('disconnect', onExit);
