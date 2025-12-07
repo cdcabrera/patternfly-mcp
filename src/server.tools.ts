@@ -13,30 +13,25 @@ import { isPlainObject } from './server.helpers';
  * - Some plugins may expose `createCreators(options)` and return `McpToolCreator[]` directly.
  * - Others may expose `createTools(options)` and return `McpTool[]`. We adapt those into creators
  *   via `pluginToolsToCreators()` with a light probe (calling with no options) to determine arity.
+ *
+ * @property [name] - An optional name for the plugin.
+ * @property [createCreators] - Optionally, generate an array of tool creators based on the
+ *     provided global options. Tool creators are preferred over tools to avoid "double-construction".
+ * @property [createTools] - Optionally, generate an array of tools based on the provided global
+ *     options. Tools will be adapted to creators if necessary.
  */
 type AppToolPlugin = {
   name?: string;
-  // Optional: prefer creators if available to avoid double-construction
   createCreators?: (options?: GlobalOptions) => McpToolCreator[];
-  // Optional: tools array (we'll adapt each to a creator)
   createTools?: (options?: GlobalOptions) => McpTool[];
 };
 
 type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
 
 /**
- * Type guard for AppToolPlugin
+ * Built-in tool creators.
  *
- * @param valueToCheck - Value to check
- */
-const isPlugin = (valueToCheck: unknown): valueToCheck is AppToolPlugin =>
-  isPlainObject(valueToCheck) && (typeof (valueToCheck as AppToolPlugin).createCreators === 'function' || typeof (valueToCheck as AppToolPlugin).createTools === 'function');
-
-/**
- * Built-in tool creators (single source of truth for built-ins order).
- */
-/**
- * Return the built-in tool creators in their canonical order.
+ * @returns Array of built-in tool creators
  */
 const getBuiltinToolCreators = (): McpToolCreator[] => [
   usePatternFlyDocsTool,
@@ -45,19 +40,29 @@ const getBuiltinToolCreators = (): McpToolCreator[] => [
 ];
 
 /**
+ * Is the value a recognized plugin shape.
+ *
+ * @param value - Value to check
+ * @returns `true` if the value is a recognized plugin shape.
+ */
+const isPlugin = (value: unknown): value is AppToolPlugin =>
+  isPlainObject(value) && (typeof value.createCreators === 'function' || typeof value.createTools === 'function');
+
+/**
  * Adapt a plugin that exposes `createCreators()` into an array of tool creators.
  *
- * @param plugin - Plugin instance
+ * @param {AppToolPlugin} plugin - Plugin instance
+ * @returns {McpToolCreator[]} Array of tool creators
  */
 const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   try {
     const creators = plugin.createCreators?.();
 
-    if (Array.isArray(creators) && creators.every(candidateFunction => typeof candidateFunction === 'function')) {
+    if (Array.isArray(creators) && creators.every(creator => typeof creator === 'function')) {
       return creators as McpToolCreator[];
     }
   } catch (error) {
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed during probe`, error);
+    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed`, error);
   }
 
   return [];
@@ -68,7 +73,8 @@ const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
  * We do a light probe (call with no options) to determine arity and then
  * build index-aware creators that re-call with runtime options.
  *
- * @param plugin - Plugin instance
+ * @param {AppToolPlugin} plugin - Plugin instance
+ * @returns {McpToolCreator[]} Array of tool creators
  */
 const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   let probe: McpTool[] = [];
@@ -77,18 +83,20 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
     probe = plugin.createTools?.() || [];
   } catch (error) {
     // Probing without options may fail for some plugins; just log and continue
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createTools() probe failed (will still be attempted at runtime)`, error);
+    log.warn(`Plugin '${plugin.name || 'unknown'}' createTools() failed (will still be attempted at runtime)`, error);
   }
 
   const count = Array.isArray(probe) ? probe.length : 0;
 
-  // If probe yielded nothing, we still expose a single creator that will invoke createTools at runtime
-  // and try to return the first tool; this keeps behavior permissive.
+  // If probe yielded nothing expose a single creator that invokes createTools at runtime
   const size = Math.max(1, count);
+  const creators: McpToolCreator[] = [];
 
-  const creators: McpToolCreator[] = Array.from({ length: size }).map((_unused, index) => (options?: GlobalOptions) => {
+  creators.length = size;
+
+  return creators.map((_empty, index) => (options?: GlobalOptions) => {
     const tools = plugin.createTools?.(options) || [];
-    const tool = tools[index] ?? tools[0];
+    const tool = tools[index] || tools[0];
 
     if (!tool) {
       throw new Error(`Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${index}`);
@@ -96,14 +104,13 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
 
     return tool;
   });
-
-  return creators;
 };
 
 /**
  * Convert any recognized plugin shape to `McpToolCreator[]`.
  *
- * @param plugin - Plugin instance
+ * @param {AppToolPlugin} plugin - Plugin instance
+ * @returns {McpToolCreator[]} Array of tool creators
  */
 const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
   // Prefer creators when available
@@ -120,16 +127,17 @@ const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
 /**
  * Normalize a dynamically imported module into an array of tool creators.
  *
- * Recognized shapes (default export or named):
+ * Recognized shapes, default export or named:
  * - `McpToolCreator` function
  * - `AppToolPluginFactory` (returns plugin)
  * - `AppToolPlugin` object
  * - `McpToolCreator[]`
  *
  * @param moduleExports - Imported module
+ * @returns {McpToolCreator[]} Array of tool creators
  */
 const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
-  const candidates: any[] = [moduleExports?.default, moduleExports].filter(Boolean);
+  const candidates: unknown[] = [moduleExports?.default, moduleExports].filter(Boolean);
 
   for (const candidate of candidates) {
     // Case: already a tool creator
@@ -141,7 +149,7 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
           return [candidate as McpToolCreator];
         }
       } catch {
-        // ignore and continue probing
+        // ignore and continue
       }
     }
 
@@ -158,7 +166,7 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
           }
         }
       } catch {
-        // ignore and continue probing
+        // ignore and continue
       }
     }
 
@@ -184,6 +192,7 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
  * Dynamic import a list of module specs/paths and normalize each into creators.
  *
  * @param paths - Array of module specs/paths to import
+ * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
 const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToolCreator[]> => {
   const creators: McpToolCreator[] = [];
@@ -206,8 +215,15 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
       }
     } catch (error) {
       log.warn(`Failed to import tool module: ${moduleSpecifier}`);
-      if (error) {
-        log.warn(String(error));
+
+      if (error instanceof Error) {
+        log.warn(error.stack || error.message);
+      } else {
+        try {
+          log.warn(`Non-Error thrown: ${JSON.stringify(error)}`);
+        } catch {
+          log.warn(String(error));
+        }
       }
     }
   }
@@ -217,9 +233,9 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
 
 /**
  * Compose built-in creators with any externally loaded creators.
- * Phase 1 use is internal/testing only; wiring comes in Phase 2.
  *
  * @param modulePaths - Optional array of module specs/paths to import
+ * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
 const composeToolCreators = async (modulePaths?: string[]): Promise<McpToolCreator[]> => {
   const builtinCreators = getBuiltinToolCreators();
@@ -229,12 +245,14 @@ const composeToolCreators = async (modulePaths?: string[]): Promise<McpToolCreat
 };
 
 export {
-  getBuiltinToolCreators,
-  normalizeToCreators,
-  loadToolCreatorsFromModules,
   composeToolCreators,
+  getBuiltinToolCreators,
+  isPlugin,
+  loadToolCreatorsFromModules,
+  normalizeToCreators,
+  pluginCreatorsToCreators,
+  pluginToCreators,
+  pluginToolsToCreators,
   type AppToolPlugin,
-  type AppToolPluginFactory,
-  type McpTool,
-  type McpToolCreator
+  type AppToolPluginFactory
 };
