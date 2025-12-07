@@ -27,6 +27,8 @@ import packageJson from '../package.json';
  * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
+ * @property toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
+ *     registered with the server.
  * @property separator - Default string delimiter.
  * @property urlRegex - Regular expression pattern for URL matching.
  * @property version - Version of the package.
@@ -53,6 +55,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   separator: string;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
+  toolModules: string[];
   urlRegex: RegExp;
   version: string;
 }
@@ -61,10 +64,11 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  * Overrides for default options.
  */
 type DefaultOptionsOverrides = Partial<
-  Omit<DefaultOptions, 'http' | 'logging'>
+  Omit<DefaultOptions, 'http' | 'logging' | 'toolModules'>
 > & {
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
+  toolModules?: string[];
 };
 
 /**
@@ -279,6 +283,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
   toolMemoOptions: TOOL_MEMO_OPTIONS,
+  toolModules: [],
   separator: DEFAULT_SEPARATOR,
   urlRegex: URL_REGEX,
   version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version

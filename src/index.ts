@@ -23,8 +23,6 @@ import {
  */
 type PfMcpOptions = DefaultOptionsOverrides & {
   mode?: 'cli' | 'programmatic' | 'test';
-  // Programmatic external tool modules (ESM specs or paths)
-  toolModules?: string[];
 };
 
 /**
@@ -68,13 +66,7 @@ const main = async (
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () => {
-      // Resolve external tool modules from CLI + programmatic
-      const moduleSpecs = [
-        ...(cliOptions.toolModules || []),
-        ...(pfMcpOptions.toolModules || [])
-      ];
-
-      const toolCreators = await composeToolCreators(moduleSpecs);
+      const toolCreators = await composeToolCreators(mergedOptions.toolModules);
 
       // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
       return runServer.memo(mergedOptions, {

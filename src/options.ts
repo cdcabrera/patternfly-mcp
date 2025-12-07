@@ -22,8 +22,7 @@ type CliOptions = {
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
-  // External tool module specs (paths or package specs) supplied via CLI
-  toolModules?: string[];
+  toolModules: string[];
 };
 
 /**
@@ -163,7 +162,8 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
         .map(value => value.trim())
         .filter(Boolean)
         .forEach(addSpec);
-      argIndex += 1; // consume the value
+
+      argIndex += 1;
     }
   }
 
@@ -172,7 +172,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     logging,
     isHttp,
     http,
-    ...(toolModules.length ? { toolModules } : {})
+    toolModules
   };
 };
 
