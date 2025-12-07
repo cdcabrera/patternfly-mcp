@@ -156,30 +156,25 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
 
   for (const candidate of candidates) {
     if (typeof candidate === 'function') {
-      // Case: already a tool creator
-      try {
-        const maybeTuple = (candidate as McpToolCreator)();
+      let result: unknown;
 
-        if (Array.isArray(maybeTuple) && typeof maybeTuple[0] === 'string') {
-          return [candidate as McpToolCreator];
-        }
-      } catch {
-        // ignore and continue
+      try {
+        // Invoke once without options to inspect the shape
+        result = (candidate as () => unknown)();
+      } catch {}
+
+      // Case: already a tool creator (tuple check)
+      if (Array.isArray(result) && typeof result[0] === 'string') {
+        return [candidate as McpToolCreator];
       }
 
-      // Case: plugin factory function
-      try {
-        const maybePlugin = (candidate as AppToolPluginFactory)();
+      // Case: plugin factory that returned a plugin object
+      if (isPlugin(result)) {
+        const creators = pluginToCreators(result as AppToolPlugin);
 
-        if (isPlugin(maybePlugin)) {
-          const creators = pluginToCreators(maybePlugin);
-
-          if (creators.length) {
-            return creators;
-          }
+        if (creators.length) {
+          return creators;
         }
-      } catch {
-        // ignore and continue
       }
     }
 
