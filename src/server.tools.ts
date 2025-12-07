@@ -235,9 +235,18 @@ const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToo
  * Compose built-in creators with any externally loaded creators.
  *
  * @param modulePaths - Optional array of module specs/paths to import
+ * @param nodeMajor - Node major version, used to determine if external modules should be skipped
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
-const composeToolCreators = async (modulePaths?: string[]): Promise<McpToolCreator[]> => {
+const composeToolCreators = async (modulePaths: string[], nodeMajor: number): Promise<McpToolCreator[]> => {
+  if (Array.isArray(modulePaths) && modulePaths.length > 0 && nodeMajor < 22) {
+    try {
+      log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
+    } catch {}
+
+    return [];
+  }
+
   const builtinCreators = getBuiltinToolCreators();
   const externalCreators = await loadToolCreatorsFromModules(modulePaths || []);
 

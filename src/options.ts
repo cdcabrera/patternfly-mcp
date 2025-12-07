@@ -23,11 +23,12 @@ type CliOptions = {
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
   toolModules: string[];
+
   /**
    * Isolation preset for external plugins (CLI-provided). If omitted, defaults
    * to 'strict' when external tools are requested, otherwise 'none'.
    */
-  pluginIsolation?: 'none' | 'strict';
+  pluginIsolation: 'none' | 'strict' | undefined;
 };
 
 /**
@@ -174,12 +175,16 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   // Parse isolation preset: --plugin-isolation <none|strict>
-  let pluginIsolation: CliOptions['pluginIsolation'];
-  const isolationIdx = argv.indexOf('--plugin-isolation');
-  if (isolationIdx >= 0) {
-    const v = String(argv[isolationIdx + 1] || '').toLowerCase();
-    if (v === 'none' || v === 'strict') {
-      pluginIsolation = v;
+  let pluginIsolation: CliOptions['pluginIsolation'];// = DEFAULT_OPTIONS.pluginIsolation;
+  const isolationIndex = argv.indexOf('--plugin-isolation');
+
+  if (isolationIndex >= 0) {
+    const val = String(argv[isolationIndex + 1] || '').toLowerCase();
+
+    switch (val) {
+      case 'none':
+      case 'strict':
+        pluginIsolation = val;
     }
   }
 

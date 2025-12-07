@@ -42,12 +42,13 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   llmsFilesPath: string;
   logging: TLogOptions;
   name: string;
+  nodeVersion: number;
   /**
    * Isolation preset for external tool plugins.
    * 'none' → no special permission hardening (Phase 5 still runs out-of-process),
    * 'strict' → hardened (Node ≥ 22 Permission Model in Phase 5).
    */
-  pluginIsolation?: 'none' | 'strict';
+  pluginIsolation: 'none' | 'strict';
   pfExternal: string;
   pfExternalDesignComponents: string;
   pfExternalExamplesComponents: string;
@@ -70,10 +71,11 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  * Overrides for default options.
  */
 type DefaultOptionsOverrides = Partial<
-  Omit<DefaultOptions, 'http' | 'logging' | 'toolModules'>
+  Omit<DefaultOptions, 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
+  pluginIsolation?: 'none' | 'strict' | undefined;
   toolModules?: string[];
 };
 
@@ -264,6 +266,19 @@ const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/accessibility`;
 const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL}/design-guidelines/charts`;
 
 /**
+ * Get the current Node.js major version.
+ */
+const getNodeMajorVersion = () => {
+  const major = Number.parseInt(process.versions.node.split('.')[0] || '0', 10);
+
+  if (Number.isFinite(major)) {
+    return major;
+  }
+
+  return 0;
+};
+
+/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @type {DefaultOptions} Default options object.
@@ -277,8 +292,8 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
-  // Base default is 'none'; main() will elevate to 'strict' when externals are present
-  pluginIsolation: 'none',
+  nodeVersion: getNodeMajorVersion(),
+  pluginIsolation: 'strict',
   pfExternal: PF_EXTERNAL,
   pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
   pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
@@ -312,6 +327,7 @@ export {
   PF_EXTERNAL_ACCESSIBILITY,
   LOG_BASENAME,
   DEFAULT_OPTIONS,
+  getNodeMajorVersion,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type HttpOptions,

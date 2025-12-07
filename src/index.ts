@@ -67,30 +67,10 @@ const main = async (
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () => {
-      // Compute isolation defaulting: if externals requested and not explicitly set, use 'strict'
-      const hasExternals = (mergedOptions.toolModules?.length || 0) > 0;
-      const resolvedIsolation = mergedOptions.pluginIsolation ?? (hasExternals ? 'strict' : 'none');
-
-      // Apply effective options (including resolved pluginIsolation) to context/memo
-      const effectiveOptions = setOptions({ ...mergedOptions, pluginIsolation: resolvedIsolation });
-
-      // Node runtime version gate for external tool plugins
-      const nodeMajor = parseInt(process.versions.node.split('.')[0] || '0', 10);
-      let externalSpecs = effectiveOptions.toolModules || [];
-
-      if (externalSpecs.length > 0 && Number.isFinite(nodeMajor) && nodeMajor < 22) {
-        // Warn once at startup and skip externals; continue with built-ins only
-        try {
-          log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
-        } catch {}
-
-        externalSpecs = [];
-      }
-
-      const toolCreators = await composeToolCreators(externalSpecs);
+      const toolCreators = await composeToolCreators(mergedOptions.toolModules, mergedOptions.nodeVersion);
 
       // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
-      return runServer.memo(effectiveOptions, {
+      return runServer.memo(mergedOptions, {
         allowProcessExit: updatedAllowProcessExit,
         tools: toolCreators
       });
