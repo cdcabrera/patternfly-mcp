@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 import { type GlobalOptions } from './options';
@@ -228,7 +228,7 @@ const computeFsReadAllowlist = (specs: string[]): string[] => {
 
   for (const moduleSpec of specs) {
     try {
-      const resolvedPath = req.resolve(moduleSpec, { paths: [process.cwd()] as any });
+      const resolvedPath = req.resolve(moduleSpec, { paths: [process.cwd()] });
 
       directories.add(dirname(resolvedPath));
     } catch {
@@ -245,7 +245,7 @@ const computeFsReadAllowlist = (specs: string[]): string[] => {
  * Handle for a spawned Tools Host process.
  */
 type HostHandle = {
-  child: import('node:child_process').ChildProcess;
+  child: ChildProcess;
   tools: ToolDescriptor[];
 };
 
@@ -253,6 +253,27 @@ type HostHandle = {
  * Map of active Tools Hosts per session.
  */
 const activeHostsBySession = new Map<string, HostHandle>();
+
+/**
+ * Log warnings and errors from Tools' load.
+ *
+ * @param warningsErrors
+ * @param warningsErrors.warnings
+ * @param warningsErrors.errors
+ */
+const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[], errors?: string[] } = {}) => {
+  if (Array.isArray(warnings) && warnings.length > 0) {
+    const warningMessage = warnings.map(warning => `  - ${warning}`);
+
+    log.warn(`Tools load warnings (${warnings.length})\n${warningMessage.join('\n')}`);
+  }
+
+  if (Array.isArray(errors) && errors.length > 0) {
+    const errorMessage = errors.map(error => `  - ${error}`);
+
+    log.warn(`Tools load errors (${errors.length})\n${errorMessage.join('\n')}`);
+  }
+};
 
 /**
  * Spawn a tools host process and return its handle.
@@ -282,7 +303,7 @@ const spawnToolsHost = async (
   const req = createRequire(import.meta.url);
   const entry = req.resolve('./server.toolsHost');
 
-  const child: any = spawn(process.execPath, [...nodeArgs, entry], {
+  const child: ChildProcess = spawn(process.execPath, [...nodeArgs, entry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
 
@@ -294,7 +315,9 @@ const spawnToolsHost = async (
   const loadId = makeId();
 
   send(child, { t: 'load', id: loadId, specs, invokeTimeoutMs });
-  await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
+  const loadAck = await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
+
+  logWarningsErrors(loadAck);
 
   // manifest
   const manifestRequestId = makeId();
@@ -417,6 +440,8 @@ const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
 
   const child = handle.child;
   let resolved = false;
+  let forceKillPrimary: NodeJS.Timeout | undefined;
+  let forceKillFallback: NodeJS.Timeout | undefined;
 
   await new Promise<void>(resolve => {
     const resolveOnce = () => {
@@ -428,8 +453,13 @@ const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
       child.off('exit', resolveOnce);
       child.off('disconnect', resolveOnce);
 
-      clearTimeout(forceKillPrimary);
-      clearTimeout(forceKillFallback);
+      if (forceKillPrimary) {
+        clearTimeout(forceKillPrimary);
+      }
+
+      if (forceKillFallback) {
+        clearTimeout(forceKillFallback);
+      }
 
       activeHostsBySession.delete(sessionId);
       resolve();
@@ -450,13 +480,11 @@ const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
     };
 
     // Primary grace period
-    const forceKillPrimary = setTimeout(shutdownChild, gracePeriodMs);
-
+    forceKillPrimary = setTimeout(shutdownChild, gracePeriodMs);
     forceKillPrimary?.unref?.();
 
     // Fallback grace period
-    const forceKillFallback = setTimeout(shutdownChild, fallbackGracePeriodMs);
-
+    forceKillFallback = setTimeout(shutdownChild, fallbackGracePeriodMs);
     forceKillFallback?.unref?.();
 
     child.once('exit', resolveOnce);
@@ -468,6 +496,7 @@ export {
   composeToolCreators,
   getBuiltinToolCreators,
   isPlugin,
+  logWarningsErrors,
   normalizeToCreators,
   pluginCreatorsToCreators,
   pluginToCreators,

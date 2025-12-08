@@ -1,3 +1,4 @@
+import { type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 
 type IpcRequest =
@@ -37,7 +38,7 @@ const makeId = () => randomUUID();
  * @param {IpcRequest} request
  */
 const send = (
-  processRef: NodeJS.Process | import('node:child_process').ChildProcess,
+  processRef: NodeJS.Process | ChildProcess,
   request: IpcRequest
 ): boolean => Boolean(processRef.send?.(request));
 
@@ -49,7 +50,7 @@ const send = (
  * @param timeoutMs
  */
 const awaitIpc = <T extends IpcResponse>(
-  processRef: NodeJS.Process | import('node:child_process').ChildProcess,
+  processRef: NodeJS.Process | ChildProcess,
   matcher: (message: any) => message is T,
   timeoutMs: number
 ): Promise<T> => new Promise((resolve, reject) => {

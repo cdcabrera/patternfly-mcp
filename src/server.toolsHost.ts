@@ -124,7 +124,7 @@ const requestHello = (request: HelloRequest) => {
  * @param warningsErrors.warnings - List of warnings generated during tool loading.
  * @param warningsErrors.errors - List of errors generated during tool loading.
  */
-const requestLoad = async (
+const requestLoad = (
   request: LoadRequest,
   { warnings = [], errors = [] }: { warnings?: string[]; errors?: string[] } = {}
 ) => {
@@ -256,7 +256,7 @@ const setHandlers = () => {
     state = {
       toolMap: loaded.toolMap,
       descriptors: loaded.descriptors,
-      invokeTimeoutMs: state.invokeTimeoutMs
+      invokeTimeoutMs: loaded.invokeTimeoutMs
     };
 
     requestLoad(request, { warnings: loaded.warnings, errors: loaded.errors });
