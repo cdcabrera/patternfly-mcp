@@ -146,8 +146,6 @@ const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
  * @returns {McpToolCreator[]} Array of tool creators
  */
 const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
-  // Prefer creators when available
-
   const creators = pluginCreatorsToCreators(plugin);
 
   if (creators.length) {

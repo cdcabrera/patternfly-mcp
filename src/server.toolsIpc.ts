@@ -1,4 +1,4 @@
-// IPC protocol types and small helpers for Parent <-> Tools Host
+import { randomUUID } from 'node:crypto';
 
 type IpcRequest =
   | { t: 'hello'; id: string } |
@@ -25,13 +25,29 @@ type IpcResponse =
   { t: 'invoke:result'; id: string; ok: false; error: SerializedError } |
   { t: 'shutdown:ack'; id: string };
 
-const makeId = () => Math.random().toString(36).slice(2);
+/**
+ * Generate a unique ID for IPC messages.
+ */
+const makeId = () => randomUUID();
 
+/**
+ * Send an IPC message to the provided process.
+ *
+ * @param processRef
+ * @param {IpcRequest} request
+ */
 const send = (
   processRef: NodeJS.Process | import('node:child_process').ChildProcess,
   request: IpcRequest
 ): boolean => Boolean(processRef.send?.(request));
 
+/**
+ * Await an IPC response from the provided process.
+ *
+ * @param processRef
+ * @param matcher
+ * @param timeoutMs
+ */
 const awaitIpc = <T extends IpcResponse>(
   processRef: NodeJS.Process | import('node:child_process').ChildProcess,
   matcher: (message: any) => message is T,
@@ -85,7 +101,11 @@ const awaitIpc = <T extends IpcResponse>(
   processRef.on('disconnect', onExit);
 });
 
-// IPC message type guards
+/**
+ * Check if a message is a "hello" response. IPC message type guards.
+ *
+ * @param message
+ */
 const isHelloAck = (message: any): message is { t: 'hello:ack'; id: string } => {
   if (!message || message.t !== 'hello:ack') {
     return false;
@@ -94,6 +114,17 @@ const isHelloAck = (message: any): message is { t: 'hello:ack'; id: string } => 
   return typeof message.id === 'string';
 };
 
+/**
+ * Check if a message is a "load" response. IPC message type guards.
+ *
+ * Checks
+ * - If a given message is a valid load acknowledgment (`load:ack`) with expected id
+ * - That the message contains the proper structure, including the required fields and
+ *     correct types for `warnings` and `errors`.
+ *
+ * @param expectedId - Expected identifier to match against the message `id` field.
+ * @returns Function that takes a message and determines if it conforms to the expected structure and values.
+ */
 const isLoadAck = (expectedId: string) => (message: any): message is {
   t: 'load:ack'; id: string; warnings: string[]; errors: string[]
 } => {
@@ -107,6 +138,11 @@ const isLoadAck = (expectedId: string) => (message: any): message is {
   return hasWarnings && hasErrors;
 };
 
+/**
+ * Check if a message is a "manifest" response. IPC message type guards.
+ *
+ * @param expectedId
+ */
 const isManifestResult = (expectedId: string) => (message: any): message is {
   t: 'manifest:result'; id: string; tools: ToolDescriptor[]
 } => {
@@ -117,6 +153,11 @@ const isManifestResult = (expectedId: string) => (message: any): message is {
   return Array.isArray(message.tools);
 };
 
+/**
+ * Check if a message is an "invoke" response. IPC message type guards.
+ *
+ * @param expectedId
+ */
 const isInvokeResult = (expectedId: string) => (message: any): message is
   { t: 'invoke:result'; id: string; ok: true; result: unknown } |
   { t: 'invoke:result'; id: string; ok: false; error: SerializedError } => {

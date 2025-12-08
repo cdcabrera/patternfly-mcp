@@ -1,6 +1,7 @@
 import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
 import { normalizeToCreators } from './server.tools';
-import type { McpTool } from './server';
+import { type McpTool } from './server';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * SubType of IpcRequest for "hello" requests.
@@ -27,24 +28,21 @@ type InvokeRequest = Extract<IpcRequest, { t: 'invoke' }>;
  */
 type ShutdownRequest = Extract<IpcRequest, { t: 'shutdown' }>;
 
-/*
-// NEEDS TO BE UPDATED HANGING OUT IN THE GLOBAL SPACE IS BAD: This is a global map of all tools loaded by the host process.
-const toolMap = new Map<string, McpTool>();
-
-// NEEDS TO BE UPDATED HANGING OUT IN THE GLOBAL SPACE IS BAD
-const descriptors: ToolDescriptor[] = [];
-
-// NEEDS TO BE UPDATED HANGING OUT IN THE GLOBAL SPACE IS BAD
-let pluginInvokeTimeoutMs = 10000;
-*/
-// Centralized, resettable host state (no ad-hoc globals)
+/**
+ * State object for the tools host.
+ */
 type HostState = {
   toolMap: Map<string, McpTool>;
   descriptors: ToolDescriptor[];
   invokeTimeoutMs: number;
 };
 
-const createHostState = (invokeTimeoutMs = 10000): HostState => ({
+/**
+ * Create a new host state object.
+ *
+ * @param invokeTimeoutMs
+ */
+const createHostState = (invokeTimeoutMs = DEFAULT_OPTIONS.pluginHost.invokeTimeoutMs): HostState => ({
   toolMap: new Map<string, McpTool>(),
   descriptors: [],
   invokeTimeoutMs
@@ -73,7 +71,7 @@ const serializeError = (errorValue: unknown) => {
 const performLoad = async (request: LoadRequest): Promise<HostState & { warnings: string[]; errors: string[] }> => {
   const nextInvokeTimeout = typeof request?.invokeTimeoutMs === 'number' && Number.isFinite(request.invokeTimeoutMs) && request.invokeTimeoutMs > 0
     ? request.invokeTimeoutMs
-    : 10000;
+    : DEFAULT_OPTIONS.pluginHost.invokeTimeoutMs;
 
   const state = createHostState(nextInvokeTimeout);
   const warnings: string[] = [];
@@ -126,7 +124,10 @@ const requestHello = (request: HelloRequest) => {
  * @param warningsErrors.warnings - List of warnings generated during tool loading.
  * @param warningsErrors.errors - List of errors generated during tool loading.
  */
-const requestLoad = async (request: LoadRequest, { warnings = [], errors = [] }: { warnings: string[]; errors: string[] } = {}) => {
+const requestLoad = async (
+  request: LoadRequest,
+  { warnings = [], errors = [] }: { warnings?: string[]; errors?: string[] } = {}
+) => {
   process.send?.({ t: 'load:ack', id: request.id, warnings, errors });
 };
 
@@ -250,13 +251,15 @@ const setHandlers = () => {
    * @param {LoadRequest} request
    */
   const onRequestLoad = async (request: LoadRequest) => {
-    const next = await performLoad(request);
+    const loaded = await performLoad(request);
 
-    const { warnings, errors, ...newState } = next;
+    state = {
+      toolMap: loaded.toolMap,
+      descriptors: loaded.descriptors,
+      invokeTimeoutMs: state.invokeTimeoutMs
+    };
 
-    state = newState as HostState;
-
-    return { warnings, errors };
+    requestLoad(request, { warnings: loaded.warnings, errors: loaded.errors });
   };
 
   /**
@@ -284,7 +287,7 @@ const setHandlers = () => {
           break;
 
         case 'load':
-          requestLoad(request, await onRequestLoad(request));
+          await onRequestLoad(request);
           break;
 
         case 'manifest:get':
@@ -321,13 +324,33 @@ const setHandlers = () => {
    * Handle process disconnects.
    */
   process.on('disconnect', handlerDisconnect);
+
+  // Expose the router for bootstrapping.
+  return handlerMessage;
 };
 
-// Would prefer this is called when we determine there are actually tools to load
 /**
- * Initialize the IPC handlers.
+ * Lazy initialize for IPC (Inter-Process Communication) handlers.
+ *
+ * This is a one-shot process: the first message received will remove itself then
+ * trigger the real handler setup.
+ *
+ * @param {IpcRequest} first
  */
-setHandlers();
+const bootstrapMessage = async (first: IpcRequest) => {
+  // Detach bootstrap to avoid duplicate delivery
+  process.off('message', bootstrapMessage);
+
+  // Install real handlers and get a reference to the router
+  const route = setHandlers();
+
+  // Route the very first message through the same code path the real handler uses
+  await route(first);
+};
+
+if (process.send) {
+  process.on('message', bootstrapMessage);
+}
 
 export {
   setHandlers,
