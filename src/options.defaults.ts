@@ -310,7 +310,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
-  nodeVersion: getNodeMajorVersion(),
+  nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
   pluginIsolation: 'none',
   pluginHost: PLUGIN_HOST_OPTIONS,
   pfExternal: PF_EXTERNAL,
