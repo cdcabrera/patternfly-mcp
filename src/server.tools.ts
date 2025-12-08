@@ -263,15 +263,15 @@ const activeHostsBySession = new Map<string, HostHandle>();
  */
 const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[], errors?: string[] } = {}) => {
   if (Array.isArray(warnings) && warnings.length > 0) {
-    const warningMessage = warnings.map(warning => `  - ${warning}`);
+    const lines = warnings.map(warning => `  - ${String(warning)}`);
 
-    log.warn(`Tools load warnings (${warnings.length})\n${warningMessage.join('\n')}`);
+    log.warn(`Tools load warnings (${warnings.length})\n${lines.join('\n')}`);
   }
 
   if (Array.isArray(errors) && errors.length > 0) {
-    const errorMessage = errors.map(error => `  - ${error}`);
+    const lines = errors.map(error => `  - ${String(error)}`);
 
-    log.warn(`Tools load errors (${errors.length})\n${errorMessage.join('\n')}`);
+    log.warn(`Tools load errors (${errors.length})\n${lines.join('\n')}`);
   }
 };
 
@@ -374,8 +374,10 @@ const makeProxyCreators = (handle: HostHandle, options: GlobalOptions = getOptio
 /**
  * Compose built-in creators with any externally loaded creators.
  *
- * For Node >= 22, external plugins are executed out-of-process via a Tools Host.
- * For Node < 22, externals are skipped with a warning and only built-ins are returned.
+ * - Node.js version policy:
+ *    - Node >= 22, external plugins are executed out-of-process via a Tools Host.
+ *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
+ * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
  *
  * @param modulePaths - Optional array of external module specs/paths to import
  * @param nodeMajor - Node major version, used for version gating
@@ -407,6 +409,23 @@ const composeToolCreators = async (
     const { sessionId } = getSessionOptions();
 
     activeHostsBySession.set(sessionId, host);
+
+    // Clean up on exit or disconnect
+    const onChildExitOrDisconnect = () => {
+      const current = activeHostsBySession.get(sessionId);
+
+      // Remove only if this exact child is still the active one for the session
+      if (current && current.child === host.child) {
+        activeHostsBySession.delete(sessionId);
+      }
+
+      // Clean up listeners; we only need to act once
+      host.child.off('exit', onChildExitOrDisconnect);
+      host.child.off('disconnect', onChildExitOrDisconnect);
+    };
+
+    host.child.once('exit', onChildExitOrDisconnect);
+    host.child.once('disconnect', onChildExitOrDisconnect);
 
     return [...builtinCreators, ...proxies];
   } catch (error) {
