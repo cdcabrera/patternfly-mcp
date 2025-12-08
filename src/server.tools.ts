@@ -215,45 +215,10 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
 };
 
 /**
- * Dynamic import a list of module specs/paths and normalize each into creators.
+ * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
  *
- * @param paths - Array of module specs/paths to import
- * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
+ * @param specs
  */
-const loadToolCreatorsFromModules = async (paths: string[] = []): Promise<McpToolCreator[]> => {
-  const creators: McpToolCreator[] = [];
-
-  for (const modulePath of paths) {
-    const moduleSpecifier = String(modulePath).trim();
-
-    if (!moduleSpecifier) {
-      continue;
-    }
-
-    try {
-      const importedModule = await import(moduleSpecifier);
-      const normalizedCreators = normalizeToCreators(importedModule);
-
-      if (!normalizedCreators.length) {
-        log.warn(`No tool creators found in module: ${moduleSpecifier}`);
-      } else {
-        creators.push(...normalizedCreators);
-      }
-    } catch (error) {
-      log.warn(`Failed to import tool module: ${moduleSpecifier}`);
-      log.warn(formatUnknownError(error));
-    }
-  }
-
-  return creators;
-};
-
-// --- Phase 5 additions: Tools Host spawning and proxy creators ---
-
-// Read timeouts from options at call sites (pure data)
-const getPluginLoadTimeout = () => Math.max(1, getOptions().pluginHost.loadTimeoutMs);
-const getPluginInvokeTimeout = () => Math.max(1, getOptions().pluginHost.invokeTimeoutMs);
-
 const computeFsReadAllowlist = (specs: string[]): string[] => {
   const directories = new Set<string>();
 
@@ -278,6 +243,9 @@ const computeFsReadAllowlist = (specs: string[]): string[] => {
   return [...directories];
 };
 
+/**
+ * Handle for a spawned Tools Host process.
+ */
 type HostHandle = {
   child: import('node:child_process').ChildProcess;
   tools: ToolDescriptor[];
@@ -293,11 +261,14 @@ const activeHostsBySession = new Map<string, HostHandle>();
  *
  * @param specs
  * @param isolation
+ * @param {GlobalOptions} options
  */
 const spawnToolsHost = async (
   specs: string[],
-  isolation: 'none' | 'strict'
+  isolation: 'none' | 'strict',
+  options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
+  const { loadTimeoutMs, invokeTimeoutMs } = options.pluginHost || {};
   const nodeArgs: string[] = [];
 
   if (isolation === 'strict') {
@@ -319,19 +290,19 @@ const spawnToolsHost = async (
 
   // hello
   send(child, { t: 'hello', id: makeId() });
-  await awaitIpc(child, isHelloAck, getPluginLoadTimeout());
+  await awaitIpc(child, isHelloAck, loadTimeoutMs);
 
   // load
   const loadId = makeId();
 
-  send(child, { t: 'load', id: loadId, specs, invokeTimeoutMs: getPluginInvokeTimeout() });
-  await awaitIpc(child, isLoadAck(loadId), getPluginLoadTimeout());
+  send(child, { t: 'load', id: loadId, specs, invokeTimeoutMs });
+  await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
 
   // manifest
   const manifestRequestId = makeId();
 
   send(child, { t: 'manifest:get', id: manifestRequestId });
-  const manifest = await awaitIpc(child, isManifestResult(manifestRequestId), getPluginLoadTimeout());
+  const manifest = await awaitIpc(child, isManifestResult(manifestRequestId), loadTimeoutMs);
 
   return { child, tools: manifest.tools as ToolDescriptor[] };
 };
@@ -341,11 +312,17 @@ const spawnToolsHost = async (
  * loaded Tools Host.
  *
  * @param {HostHandle} handle
+ * @param {GlobalOptions} options
  */
-const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
-  handle.tools.map((tool): McpToolCreator => () => {
+const makeProxyCreators = (handle: HostHandle, options: GlobalOptions = getOptions()): McpToolCreator[] => {
+  const { invokeTimeoutMs } = options.pluginHost || {};
+
+  return handle.tools.map((tool): McpToolCreator => () => {
     const name = tool.name;
-    const schema = { description: tool.description, inputSchema: tool.inputSchema };
+    const schema = {
+      description: tool.description,
+      inputSchema: tool.inputSchema
+    };
 
     const handler = async (args: unknown) => {
       const requestId = makeId();
@@ -355,7 +332,7 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
       const response = await awaitIpc(
         handle.child,
         isInvokeResult(requestId),
-        getPluginInvokeTimeout()
+        invokeTimeoutMs
       );
 
       if ('ok' in response && response.ok === false) {
@@ -371,6 +348,7 @@ const makeProxyCreators = (handle: HostHandle): McpToolCreator[] =>
 
     return [name, schema, handler];
   });
+};
 
 /**
  * Compose built-in creators with any externally loaded creators.
@@ -492,7 +470,6 @@ export {
   composeToolCreators,
   getBuiltinToolCreators,
   isPlugin,
-  loadToolCreatorsFromModules,
   normalizeToCreators,
   pluginCreatorsToCreators,
   pluginToCreators,
