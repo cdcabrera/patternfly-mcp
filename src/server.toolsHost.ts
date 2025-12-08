@@ -27,6 +27,7 @@ type InvokeRequest = Extract<IpcRequest, { t: 'invoke' }>;
  */
 type ShutdownRequest = Extract<IpcRequest, { t: 'shutdown' }>;
 
+/*
 // NEEDS TO BE UPDATED HANGING OUT IN THE GLOBAL SPACE IS BAD: This is a global map of all tools loaded by the host process.
 const toolMap = new Map<string, McpTool>();
 
@@ -35,6 +36,19 @@ const descriptors: ToolDescriptor[] = [];
 
 // NEEDS TO BE UPDATED HANGING OUT IN THE GLOBAL SPACE IS BAD
 let pluginInvokeTimeoutMs = 10000;
+*/
+// Centralized, resettable host state (no ad-hoc globals)
+type HostState = {
+  toolMap: Map<string, McpTool>;
+  descriptors: ToolDescriptor[];
+  invokeTimeoutMs: number;
+};
+
+const createHostState = (invokeTimeoutMs = 10000): HostState => ({
+  toolMap: new Map<string, McpTool>(),
+  descriptors: [],
+  invokeTimeoutMs
+});
 
 /**
  * Serialize an error value into a structured object.
@@ -51,27 +65,17 @@ const serializeError = (errorValue: unknown) => {
 };
 
 /**
- * Acknowledge a hello request.
+ * Perform tool loading and return a new state object.
  *
- * @param request
+ * @param {LoadRequest} request
+ * @returns {HostState & { warnings: string[]; errors: string[] }} - New state object with updated tools and warnings/errors.
  */
-const requestHello = (request: HelloRequest) => {
-  process.send?.({ t: 'hello:ack', id: request.id });
-};
+const performLoad = async (request: LoadRequest): Promise<HostState & { warnings: string[]; errors: string[] }> => {
+  const nextInvokeTimeout = typeof request?.invokeTimeoutMs === 'number' && Number.isFinite(request.invokeTimeoutMs) && request.invokeTimeoutMs > 0
+    ? request.invokeTimeoutMs
+    : 10000;
 
-/**
- * Load tools from the provided list of module specifiers.
- *
- * @param request
- */
-const requestLoad = async (request: LoadRequest) => {
-  // Optional per-call timeout provided by parent
-  const maybeInvokeTimeout = request?.invokeTimeoutMs;
-
-  if (typeof maybeInvokeTimeout === 'number' && Number.isFinite(maybeInvokeTimeout) && maybeInvokeTimeout > 0) {
-    pluginInvokeTimeoutMs = maybeInvokeTimeout;
-  }
-
+  const state = createHostState(nextInvokeTimeout);
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -85,8 +89,8 @@ const requestLoad = async (request: LoadRequest) => {
           const tool = create();
           const toolId = makeId();
 
-          toolMap.set(toolId, tool as McpTool);
-          descriptors.push({
+          state.toolMap.set(toolId, tool as McpTool);
+          state.descriptors.push({
             id: toolId,
             name: tool[0],
             description: tool[1]?.description || '',
@@ -94,9 +98,7 @@ const requestLoad = async (request: LoadRequest) => {
             source: spec
           });
         } catch (error) {
-          warnings.push(
-            `Creator realization failed at ${spec}: ${String((error as Error).message || error)}`
-          );
+          warnings.push(`Creator realization failed at ${spec}: ${String((error as Error).message || error)}`);
         }
       }
     } catch (error) {
@@ -104,25 +106,48 @@ const requestLoad = async (request: LoadRequest) => {
     }
   }
 
+  return { ...state, warnings, errors };
+};
+
+/**
+ * Acknowledge a hello request.
+ *
+ * @param request
+ */
+const requestHello = (request: HelloRequest) => {
+  process.send?.({ t: 'hello:ack', id: request.id });
+};
+
+/**
+ * Load tools from the provided list of module specifiers.
+ *
+ * @param {LoadRequest} request
+ * @param warningsErrors
+ * @param warningsErrors.warnings - List of warnings generated during tool loading.
+ * @param warningsErrors.errors - List of errors generated during tool loading.
+ */
+const requestLoad = async (request: LoadRequest, { warnings = [], errors = [] }: { warnings: string[]; errors: string[] } = {}) => {
   process.send?.({ t: 'load:ack', id: request.id, warnings, errors });
 };
 
 /**
  * Respond to a manifest request with a list of available tools.
  *
- * @param request
+ * @param {HostState} state
+ * @param {ManifestGetRequest} request
  */
-const requestManifestGet = (request: ManifestGetRequest) => {
-  process.send?.({ t: 'manifest:result', id: request.id, tools: descriptors });
+const requestManifestGet = (state: HostState, request: ManifestGetRequest) => {
+  process.send?.({ t: 'manifest:result', id: request.id, tools: state.descriptors });
 };
 
 /**
  * Handle tool invocation requests.
  *
- * @param request
+ * @param {HostState} state
+ * @param {InvokeRequest} request
  */
-const requestInvoke = async (request: InvokeRequest) => {
-  const tool = toolMap.get(request.toolId);
+const requestInvoke = async (state: HostState, request: InvokeRequest) => {
+  const tool = state.toolMap.get(request.toolId);
 
   if (!tool) {
     process.send?.({
@@ -151,7 +176,7 @@ const requestInvoke = async (request: InvokeRequest) => {
       ok: false,
       error: { message: 'Invoke timeout' }
     });
-  }, pluginInvokeTimeoutMs);
+  }, state.invokeTimeoutMs);
 
   timer?.unref?.();
 
@@ -213,71 +238,99 @@ const requestFallback = (request: IpcRequest, error: Error) => {
 };
 
 /**
- * Handle incoming IPC (Inter-Process Communication) messages.
- *
- * Process the request and execute the corresponding handler function for each type. A fallback handler
- * is triggered on error.
- *
- * @param {IpcRequest} request - The IPC request object containing the type of request and associated data.
- * @throws {Error} - Any error, pass the request through the fallback handler.
- *
- * @remarks
- * Supported request types:
- * - 'hello': Trigger the `requestHello` handler.
- * - 'load': Trigger the `requestLoad` handler.
- * - 'manifest:get': Trigger the `requestManifestGet` handler.
- * - 'invoke': Trigger the asynchronous `requestInvoke` handler.
- * - 'shutdown': Trigger the `requestShutdown` handler.
+ * Initializes and sets up handlers for incoming IPC (Inter-Process Communication) messages.
  */
-const handlerMessage = async (request: IpcRequest) => {
-  try {
-    switch (request.t) {
-      case 'hello':
-        requestHello(request);
-        break;
+const setHandlers = () => {
+  let state: HostState = createHostState();
 
-      case 'load':
-        requestLoad(request);
-        break;
+  /**
+   * Load tools from the provided list of module specifiers. Splits out warnings/errors
+   * before updating state.
+   *
+   * @param {LoadRequest} request
+   */
+  const onRequestLoad = async (request: LoadRequest) => {
+    const next = await performLoad(request);
 
-      case 'manifest:get':
-        requestManifestGet(request);
-        break;
+    const { warnings, errors, ...newState } = next;
 
-      case 'invoke': {
-        await requestInvoke(request);
-        break;
+    state = newState as HostState;
+
+    return { warnings, errors };
+  };
+
+  /**
+   * Handle incoming IPC (Inter-Process Communication) messages.
+   *
+   * Process the request and execute the corresponding handler function for each type. A fallback handler
+   * is triggered on error.
+   *
+   * @param {IpcRequest} request - The IPC request object containing the type of request and associated data.
+   * @throws {Error} - Any error, pass the request through the fallback handler.
+   *
+   * @remarks
+   * Supported request types:
+   * - 'hello': Trigger the `requestHello` handler.
+   * - 'load': Trigger the `requestLoad` handler.
+   * - 'manifest:get': Trigger the `requestManifestGet` handler.
+   * - 'invoke': Trigger the asynchronous `requestInvoke` handler.
+   * - 'shutdown': Trigger the `requestShutdown` handler.
+   */
+  const handlerMessage = async (request: IpcRequest) => {
+    try {
+      switch (request.t) {
+        case 'hello':
+          requestHello(request);
+          break;
+
+        case 'load':
+          requestLoad(request, await onRequestLoad(request));
+          break;
+
+        case 'manifest:get':
+          requestManifestGet(state, request);
+          break;
+
+        case 'invoke': {
+          await requestInvoke(state, request);
+          break;
+        }
+        case 'shutdown': {
+          requestShutdown(request);
+          break;
+        }
       }
-      case 'shutdown': {
-        requestShutdown(request);
-        break;
-      }
+    } catch (error) {
+      requestFallback(request, error as Error);
     }
-  } catch (error) {
-    requestFallback(request, error as Error);
-  }
+  };
+
+  /**
+   * Listen for incoming IPC messages.
+   */
+  process.on('message', handlerMessage);
+
+  /**
+   * Handle process disconnects.
+   */
+  const handlerDisconnect = () => {
+    process.exit(0);
+  };
+
+  /**
+   * Handle process disconnects.
+   */
+  process.on('disconnect', handlerDisconnect);
 };
 
+// Would prefer this is called when we determine there are actually tools to load
 /**
- * Listen for incoming IPC messages.
+ * Initialize the IPC handlers.
  */
-process.on('message', handlerMessage);
-
-/**
- * Handle process disconnects.
- */
-const handlerDisconnect = () => {
-  process.exit(0);
-};
-
-/**
- * Handle process disconnects.
- */
-process.on('disconnect', handlerDisconnect);
+setHandlers();
 
 export {
-  handlerMessage,
-  handlerDisconnect,
+  setHandlers,
   requestHello,
   requestLoad,
   requestManifestGet,
