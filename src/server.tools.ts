@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { createRequire } from 'node:module';
 import { type GlobalOptions } from './options';
 import { type McpTool, type McpToolCreator } from './server';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
@@ -216,25 +216,20 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
  * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
  *
  * @param specs
+ * @param {GlobalOptions} options
  */
-const computeFsReadAllowlist = (specs: string[]): string[] => {
+const computeFsReadAllowlist = (specs: string[], options = getOptions()): string[] => {
   const directories = new Set<string>();
 
-  try {
-    directories.add(resolve(process.cwd()));
-  } catch {}
-
-  const req = createRequire(import.meta.url);
+  directories.add(options.contextPath);
 
   for (const moduleSpec of specs) {
     try {
-      const resolvedPath = req.resolve(moduleSpec, { paths: [process.cwd()] });
+      const resolvedPath = resolve(options.contextPath, moduleSpec);
 
       directories.add(dirname(resolvedPath));
-    } catch {
-      try {
-        directories.add(resolve(process.cwd(), moduleSpec));
-      } catch {}
+    } catch (error) {
+      log.debug(`Failed to resolve module spec; skipping from allowlist ${formatUnknownError(error)}`);
     }
   }
 
@@ -300,8 +295,13 @@ const spawnToolsHost = async (
     // Deny network and fs write by omission
   }
 
-  const req = createRequire(import.meta.url);
-  const entry = req.resolve('./server.toolsHost');
+  let entry = './server.toolsHost';
+
+  try {
+    entry = resolve(entry);
+  } catch (error) {
+    log.debug(`Failed to resolve Tools Host entry point; ${formatUnknownError(error)}`);
+  }
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, entry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']

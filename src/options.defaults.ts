@@ -1,4 +1,4 @@
-import { basename, join } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import packageJson from '../package.json';
 
 /**
@@ -303,11 +303,11 @@ const getNodeMajorVersion = () => {
  */
 const DEFAULT_OPTIONS: DefaultOptions = {
   docsHost: false,
-  contextPath: (process.env.NODE_ENV === 'local' && '/') || process.cwd(),
-  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(process.cwd(), 'documentation'),
+  contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
+  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(resolve(process.cwd()), 'documentation'),
   isHttp: false,
   http: HTTP_OPTIONS,
-  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(process.cwd(), 'llms-files'),
+  llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(resolve(process.cwd()), 'llms-files'),
   logging: LOGGING_OPTIONS,
   name: packageJson.name,
   nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
