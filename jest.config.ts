@@ -1,5 +1,9 @@
 const baseConfig = {
   extensionsToTreatAsEsm: ['.ts'],
+  injectGlobals: true,
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1'
+  },
   preset: 'ts-jest',
   testEnvironment: 'node',
   testTimeout: 30000,
@@ -21,7 +25,19 @@ export default {
       roots: ['src'],
       testMatch: ['<rootDir>/src/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/jest.setupTests.ts'],
-      ...baseConfig
+      ...baseConfig,
+      transform: {
+        '^.+\\.(ts|tsx)$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: {
+              module: 'ES2022',
+              target: 'ES2022'
+            }
+          }
+        ]
+      }
     },
     {
       displayName: 'e2e',
