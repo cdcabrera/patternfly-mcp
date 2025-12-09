@@ -39,7 +39,16 @@ export default {
               ignoreCodes: [1343]
             },
             astTransformers: {
-              before: ['ts-jest-mock-import-meta']
+              before: [
+                {
+                  path: 'ts-jest-mock-import-meta',
+                  options: {
+                    metaObjectReplacement: {
+                      url: 'file:///mock/import-meta-url'
+                    }
+                  }
+                }
+              ]
             }
           }
         ]
