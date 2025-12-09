@@ -337,7 +337,7 @@ npx @modelcontextprotocol/inspector-cli \
 
 ## External tools (plugins)
 
-You can load external tool modules at runtime using a single CLI flag or via programmatic options. Modules must be ESM-importable (absolute/relative path or package spec).
+You can load external MCP tool modules at runtime using a single CLI flag or via programmatic options. Modules must be ESM-importable (absolute/relative path or package spec).
 
 CLI examples (single `--tool` flag):
 
@@ -366,6 +366,36 @@ await main({
 ```
 
 Tools provided via `--tool`/`toolModules` are appended after the built-in tools.
+
+### Authoring MCP external tools
+> Note: External MCP tools require using `Node ≥ 22` to run the server and ESM modules. TypeScript formatted tools are not directly supported.
+> If you do use TypeScript, you can use the `createMcpTool` helper to define your tools as pure ESM modules.
+
+For `tools-as-plugin` authors, we recommend using the unified helper to define your tools as pure ESM modules:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'hello',
+  description: 'Say hello',
+  inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+  async handler({ name }) {
+    return { content: `Hello, ${name}!` };
+  }
+});
+```
+
+Multiple tools in one module:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool([
+  { name: 'hello', description: 'Hi', inputSchema: {}, handler: () => 'hi' },
+  { name: 'bye', description: 'Bye', inputSchema: {}, handler: () => 'bye' }
+]);
+```
 
 ## Programmatic usage (advanced)
 
