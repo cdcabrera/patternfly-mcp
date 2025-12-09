@@ -1,13 +1,12 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, resolve } from 'node:path';
-import { type GlobalOptions } from './options';
-import { type McpTool, type McpToolCreator } from './server';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { type AppSession, type GlobalOptions } from './options';
+import { type McpToolCreator } from './server';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { log, formatUnknownError } from './logger';
-import { isPlainObject } from './server.helpers';
 import {
   awaitIpc,
   send,
@@ -21,222 +20,6 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 
 /**
- * AppToolPlugin — "tools as plugins" surface.
- *
- * Implementation note:
- * - Some plugins may expose `createCreators(options)` and return `McpToolCreator[]` directly.
- * - Others may expose `createTools(options)` and return `McpTool[]`. We adapt those into creators
- *   via `pluginToolsToCreators()` with a light check (calling with no options) to determine viability.
- *
- * @property [name] - An optional name for the plugin.
- * @property [createCreators] - Optionally, generate an array of tool creators based on the
- *     provided global options. Tool creators are preferred over tools to avoid "double-construction".
- * @property [createTools] - Optionally, generate an array of tools based on the provided global
- *     options. Tools will be adapted to creators if necessary.
- */
-type AppToolPlugin = {
-  name?: string;
-  createCreators?: (options?: GlobalOptions) => McpToolCreator[];
-  createTools?: (options?: GlobalOptions) => McpTool[];
-};
-
-/**
- * Plugin factory signature.
- */
-type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
-
-/**
- * Built-in tool creators.
- *
- * @returns Array of built-in tool creators
- */
-const getBuiltinToolCreators = (): McpToolCreator[] => [
-  usePatternFlyDocsTool,
-  fetchDocsTool,
-  componentSchemasTool
-];
-
-/**
- * Is the value a recognized plugin shape.
- *
- * @param value - Value to check
- * @returns `true` if the value is a recognized plugin shape.
- */
-const isPlugin = (value: unknown): value is AppToolPlugin =>
-  isPlainObject(value) && (typeof value.createCreators === 'function' || typeof value.createTools === 'function');
-
-/**
- * Adapt a plugin that exposes `createCreators()` into an array of tool creators.
- *
- * @param {AppToolPlugin} plugin - Plugin instance
- * @returns {McpToolCreator[]} Array of tool creators
- */
-const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
-  try {
-    const creators = plugin.createCreators?.();
-
-    if (Array.isArray(creators) && creators.every(creator => typeof creator === 'function')) {
-      return creators as McpToolCreator[];
-    }
-  } catch (error) {
-    log.warn(`Plugin '${plugin.name || 'unknown'}' createCreators() failed`);
-    log.warn(formatUnknownError(error));
-  }
-
-  return [];
-};
-
-/**
- * Adapt a plugin that exposes `createTools()` into creators.
- *
- * If no tools are discovered during an initial check, a single creator is
- * returned that will attempt to resolve the first tool at registration time
- * and throw if none are available.
- *
- * @param {AppToolPlugin} plugin - Plugin instance
- * @returns {McpToolCreator[]} Array of tool creators
- *
- * @throws {Error} If the tool remains missing at registration time.
- */
-const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
-  let checkedTools: McpTool[] = [];
-
-  try {
-    checkedTools = plugin.createTools?.() ?? [];
-  } catch (error) {
-    // Checking without options may fail for some plugins; just log and continue
-    log.warn(
-      `Plugin '${plugin.name || 'unknown'}' createTools() check failed (will still be attempted at runtime)`
-    );
-    log.warn(formatUnknownError(error));
-  }
-
-  const makeCreatorAt = (toolIndex: number): McpToolCreator => (options?: GlobalOptions) => {
-    const toolsAtRuntime = plugin.createTools?.(options) ?? [];
-    const selectedTool = toolsAtRuntime[toolIndex] ?? toolsAtRuntime[0];
-
-    if (!selectedTool) {
-      throw new Error(
-        `Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${toolIndex}`
-      );
-    }
-
-    return selectedTool;
-  };
-
-  // If the check yielded nothing, still expose a single creator that will
-  // try to return the first tool at runtime (permissive behavior).
-  if (checkedTools.length === 0) {
-    return [makeCreatorAt(0)];
-  }
-
-  const creators: McpToolCreator[] = [];
-
-  checkedTools.forEach((_tool, index) => {
-    creators.push(makeCreatorAt(index));
-  });
-
-  return creators;
-};
-
-/**
- * Convert any recognized plugin shape to `McpToolCreator[]`.
- *
- * @param {AppToolPlugin} plugin - Plugin instance
- * @returns {McpToolCreator[]} Array of tool creators
- */
-const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
-  const creators = pluginCreatorsToCreators(plugin);
-
-  if (creators.length) {
-    return creators;
-  }
-
-  return pluginToolsToCreators(plugin);
-};
-
-/**
- * Normalize a dynamically imported module into an array of tool creators.
- *
- * Recognized shapes, default export or named:
- * - `McpToolCreator` function
- * - `AppToolPluginFactory` (returns plugin)
- * - `AppToolPlugin` object
- * - `McpToolCreator[]`
- *
- * @param moduleExports - Imported module
- * @returns {McpToolCreator[]} Array of tool creators
- */
-const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
-  const candidates: unknown[] = [moduleExports?.default, moduleExports].filter(Boolean);
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'function') {
-      let result: unknown;
-
-      try {
-        // Invoke once without options to inspect the shape
-        result = (candidate as () => unknown)();
-      } catch {}
-
-      // Case: already a tool creator (tuple check)
-      if (Array.isArray(result) && typeof result[0] === 'string') {
-        return [candidate as McpToolCreator];
-      }
-
-      // Case: plugin factory that returned a plugin object
-      if (isPlugin(result)) {
-        const creators = pluginToCreators(result as AppToolPlugin);
-
-        if (creators.length) {
-          return creators;
-        }
-      }
-    }
-
-    // Case: plugin object
-    if (isPlugin(candidate)) {
-      const creators = pluginToCreators(candidate as AppToolPlugin);
-
-      if (creators.length) {
-        return creators;
-      }
-    }
-
-    // Case: array of tool creators
-    if (Array.isArray(candidate) && candidate.every(candidateFunction => typeof candidateFunction === 'function')) {
-      return candidate as McpToolCreator[];
-    }
-  }
-
-  return [];
-};
-
-/**
- * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
- *
- * @param specs
- * @param {GlobalOptions} options
- */
-const computeFsReadAllowlist = (specs: string[], options = getOptions()): string[] => {
-  const directories = new Set<string>();
-
-  directories.add(options.contextPath);
-
-  for (const moduleSpec of specs) {
-    try {
-      const resolvedPath = resolve(options.contextPath, moduleSpec);
-
-      directories.add(dirname(resolvedPath));
-    } catch (error) {
-      log.debug(`Failed to resolve module spec; skipping from allowlist ${formatUnknownError(error)}`);
-    }
-  }
-
-  return [...directories];
-};
-
-/**
  * Handle for a spawned Tools Host process.
  */
 type HostHandle = {
@@ -248,6 +31,50 @@ type HostHandle = {
  * Map of active Tools Hosts per session.
  */
 const activeHostsBySession = new Map<string, HostHandle>();
+
+/**
+ * Built-in tools.
+ *
+ * @returns Array of built-in tools
+ */
+const getBuiltinTools = (): McpToolCreator[] => [
+  usePatternFlyDocsTool,
+  fetchDocsTool,
+  componentSchemasTool
+];
+
+/**
+ * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
+ *
+ * @param {GlobalOptions} options
+ */
+const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: GlobalOptions = getOptions()): string[] => {
+  const directories = new Set<string>();
+
+  directories.add(contextPath);
+
+  for (const moduleSpec of toolModules) {
+    try {
+      const url = import.meta.resolve(moduleSpec, contextUrl);
+
+      if (url.startsWith('file:')) {
+        const resolvedPath = fileURLToPath(url);
+
+        directories.add(dirname(resolvedPath));
+      }
+    } catch {
+      try {
+        const resolvedPath = resolve(contextPath, moduleSpec);
+
+        directories.add(dirname(resolvedPath));
+      } catch (error) {
+        log.debug(`Failed to resolve module spec; skipping ${moduleSpec} from allowlist ${formatUnknownError(error)}`);
+      }
+    }
+  }
+
+  return [...directories];
+};
 
 /**
  * Log warnings and errors from Tools' load.
@@ -271,39 +98,70 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
 };
 
 /**
+ * Normalize tool modules to URLs.
+ *
+ * @param {GlobalOptions} options
+ * @returns Updated array of normalized tool modules
+ */
+const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] => {
+  const isFilePath = (str: string) =>
+    str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+
+  const isUrlLike = (str: string) =>
+    /^(file:|https?:|data:|node:)/i.test(str);
+
+  return toolModules.map(tool => {
+    if (isUrlLike(tool)) {
+      return tool;
+    }
+
+    // pass through URLs and node: imports
+    if (isFilePath(tool)) {
+      const abs = isAbsolute(tool) ? tool : resolve(contextPath, tool);
+
+      return pathToFileURL(abs).href;
+    }
+
+    return tool; // package name
+  });
+};
+
+// NOTE: THE ENTRY PATH AS-IS MAY BREAK AFTER COMPILE, THAT FILE WILL NOT EXIST.
+/**
  * Spawn a tools host process and return its handle.
  *
- * @param specs
- * @param isolation
+ * @param entry - Entry point for the child process
  * @param {GlobalOptions} options
  */
 const spawnToolsHost = async (
-  specs: string[],
-  isolation: 'none' | 'strict',
-  options: GlobalOptions = getOptions()
+  entry = './server.toolsHost',
+  { pluginIsolation, pluginHost }: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
-  const { loadTimeoutMs, invokeTimeoutMs } = options.pluginHost || {};
+  const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
+  let updatedEntry = entry;
 
-  if (isolation === 'strict') {
+  // Deny network and fs write by omission
+  if (pluginIsolation === 'strict') {
     nodeArgs.push('--experimental-permission');
-    const allow = computeFsReadAllowlist(specs);
+    const allow = computeFsReadAllowlist();
 
     if (allow.length) {
       nodeArgs.push(`--allow-fs-read=${allow.join(',')}`);
     }
-    // Deny network and fs write by omission
   }
-
-  let entry = './server.toolsHost';
 
   try {
-    entry = resolve(entry);
+    const entryUrl = import.meta.resolve(updatedEntry, import.meta.url);
+
+    updatedEntry = fileURLToPath(entryUrl);
   } catch (error) {
-    log.debug(`Failed to resolve Tools Host entry point; ${formatUnknownError(error)}`);
+    updatedEntry = resolve(updatedEntry);
+
+    log.debug(`Failed to resolve Tools Host entry point, using fallback instead; ${formatUnknownError(error)}`);
   }
 
-  const child: ChildProcess = spawn(process.execPath, [...nodeArgs, entry], {
+  const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
 
@@ -313,8 +171,9 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
+  const normalizedToolModules = normalizeToolModules();
 
-  send(child, { t: 'load', id: loadId, specs, invokeTimeoutMs });
+  send(child, { t: 'load', id: loadId, specs: normalizedToolModules, invokeTimeoutMs });
   const loadAck = await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
 
   logWarningsErrors(loadAck);
@@ -335,106 +194,40 @@ const spawnToolsHost = async (
  * @param {HostHandle} handle
  * @param {GlobalOptions} options
  */
-const makeProxyCreators = (handle: HostHandle, options: GlobalOptions = getOptions()): McpToolCreator[] => {
-  const { invokeTimeoutMs } = options.pluginHost || {};
+const makeProxyCreators = (
+  handle: HostHandle,
+  { pluginHost }: GlobalOptions = getOptions()
+): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
+  const name = tool.name;
+  const schema = {
+    description: tool.description,
+    inputSchema: tool.inputSchema
+  };
 
-  return handle.tools.map((tool): McpToolCreator => () => {
-    const name = tool.name;
-    const schema = {
-      description: tool.description,
-      inputSchema: tool.inputSchema
-    };
+  const handler = async (args: unknown) => {
+    const requestId = makeId();
 
-    const handler = async (args: unknown) => {
-      const requestId = makeId();
+    send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
 
-      send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
+    const response = await awaitIpc(
+      handle.child,
+      isInvokeResult(requestId),
+      pluginHost.invokeTimeoutMs
+    );
 
-      const response = await awaitIpc(
-        handle.child,
-        isInvokeResult(requestId),
-        invokeTimeoutMs
-      );
+    if ('ok' in response && response.ok === false) {
+      const invocationError: any = new Error(response.error?.message || 'Tool invocation failed');
 
-      if ('ok' in response && response.ok === false) {
-        const invocationError: any = new Error(response.error?.message || 'Tool invocation failed');
+      invocationError.stack = response.error?.stack;
+      invocationError.code = response.error?.code;
+      throw invocationError;
+    }
 
-        invocationError.stack = response.error?.stack;
-        invocationError.code = response.error?.code;
-        throw invocationError;
-      }
+    return response.result;
+  };
 
-      return response.result;
-    };
-
-    return [name, schema, handler];
-  });
-};
-
-/**
- * Compose built-in creators with any externally loaded creators.
- *
- * - Node.js version policy:
- *    - Node >= 22, external plugins are executed out-of-process via a Tools Host.
- *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
- * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
- *
- * @param modulePaths - Optional array of external module specs/paths to import
- * @param nodeMajor - Node major version, used for version gating
- * @param isolation - Isolation preset ('none' | 'strict') applied to Tools Host permissions
- * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
- */
-const composeToolCreators = async (
-  modulePaths: string[] = getOptions().toolModules,
-  nodeMajor: number = getOptions().nodeVersion,
-  isolation: 'none' | 'strict' = getOptions().pluginIsolation
-): Promise<McpToolCreator[]> => {
-  const builtinCreators = getBuiltinToolCreators();
-
-  if (!Array.isArray(modulePaths) || modulePaths.length === 0) {
-    return builtinCreators;
-  }
-
-  if (nodeMajor < 22) {
-    log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
-
-    return builtinCreators;
-  }
-
-  try {
-    const host = await spawnToolsHost(modulePaths, isolation);
-    const proxies = makeProxyCreators(host);
-
-    // Associate the spawned host with the current session
-    const { sessionId } = getSessionOptions();
-
-    activeHostsBySession.set(sessionId, host);
-
-    // Clean up on exit or disconnect
-    const onChildExitOrDisconnect = () => {
-      const current = activeHostsBySession.get(sessionId);
-
-      // Remove only if this exact child is still the active one for the session
-      if (current && current.child === host.child) {
-        activeHostsBySession.delete(sessionId);
-      }
-
-      // Clean up listeners; we only need to act once
-      host.child.off('exit', onChildExitOrDisconnect);
-      host.child.off('disconnect', onChildExitOrDisconnect);
-    };
-
-    host.child.once('exit', onChildExitOrDisconnect);
-    host.child.once('disconnect', onChildExitOrDisconnect);
-
-    return [...builtinCreators, ...proxies];
-  } catch (error) {
-    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins.');
-    log.warn(formatUnknownError(error));
-
-    return builtinCreators;
-  }
-};
+  return [name, schema, handler];
+});
 
 /**
  * Best-effort Tools Host shutdown for the current session.
@@ -443,17 +236,20 @@ const composeToolCreators = async (
  * - Single fallback kill at grace + 200 ms to avoid racing simultaneous kills
  *
  * @param {GlobalOptions} options
- *  * @param [options.pluginHost.gracePeriodMs]
+ * @param options.pluginHost
+ * @param {AppSession} sessionOptions
+ * @param sessionOptions.sessionId
  */
-const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
-  const { sessionId } = getSessionOptions();
+const sendToolsHostShutdown = async (
+  { pluginHost }: GlobalOptions = getOptions(),
+  { sessionId }: AppSession = getSessionOptions()
+): Promise<void> => {
   const handle = activeHostsBySession.get(sessionId);
 
   if (!handle) {
     return;
   }
 
-  const { pluginHost } = options || {};
   const gracePeriodMs = (Number.isInteger(pluginHost?.gracePeriodMs) && pluginHost.gracePeriodMs) || 0;
   const fallbackGracePeriodMs = gracePeriodMs + 200;
 
@@ -511,16 +307,73 @@ const sendToolsHostShutdown = async (options = getOptions()): Promise<void> => {
   });
 };
 
+/**
+ * Compose built-in creators with any externally loaded creators.
+ *
+ * - Node.js version policy:
+ *    - Node >= 22, external plugins are executed out-of-process via a Tools Host.
+ *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
+ * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
+ *
+ * @param {GlobalOptions} options
+ * @param options.toolModules
+ * @param options.nodeVersion
+ * @param {AppSession} sessionOptions
+ * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
+ */
+const composeTools = async (
+  { toolModules, nodeVersion }: GlobalOptions = getOptions(),
+  { sessionId }: AppSession = getSessionOptions()
+): Promise<McpToolCreator[]> => {
+  const builtinCreators = getBuiltinTools();
+
+  if (!Array.isArray(toolModules) || toolModules.length === 0) {
+    return builtinCreators;
+  }
+
+  if (nodeVersion < 22) {
+    log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
+
+    return builtinCreators;
+  }
+
+  try {
+    const host = await spawnToolsHost();
+    const proxies = makeProxyCreators(host);
+
+    // Associate the spawned host with the current session
+    activeHostsBySession.set(sessionId, host);
+
+    // Clean up on exit or disconnect
+    const onChildExitOrDisconnect = () => {
+      const current = activeHostsBySession.get(sessionId);
+
+      // Remove only if this exact child is still the active one for the session
+      if (current && current.child === host.child) {
+        activeHostsBySession.delete(sessionId);
+      }
+
+      // Clean up listeners; we only need to act once
+      host.child.off('exit', onChildExitOrDisconnect);
+      host.child.off('disconnect', onChildExitOrDisconnect);
+    };
+
+    host.child.once('exit', onChildExitOrDisconnect);
+    host.child.once('disconnect', onChildExitOrDisconnect);
+
+    return [...builtinCreators, ...proxies];
+  } catch (error) {
+    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins.');
+    log.warn(formatUnknownError(error));
+
+    return builtinCreators;
+  }
+};
+
 export {
-  composeToolCreators,
-  getBuiltinToolCreators,
-  isPlugin,
+  composeTools,
+  getBuiltinTools,
   logWarningsErrors,
-  normalizeToCreators,
-  pluginCreatorsToCreators,
-  pluginToCreators,
-  pluginToolsToCreators,
-  sendToolsHostShutdown,
-  type AppToolPlugin,
-  type AppToolPluginFactory
+  normalizeToolModules,
+  sendToolsHostShutdown
 };

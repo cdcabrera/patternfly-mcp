@@ -1,5 +1,5 @@
 import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
-import { normalizeToCreators } from './server.tools';
+import { normalizeToCreators } from './server.toolsCreator';
 import { type McpTool } from './server';
 import { DEFAULT_OPTIONS } from './options.defaults';
 

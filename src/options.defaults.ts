@@ -1,5 +1,6 @@
 import { basename, join, resolve } from 'node:path';
 import packageJson from '../package.json';
+import {pathToFileURL} from "node:url";
 
 /**
  * Application defaults, not user-configurable
@@ -8,6 +9,7 @@ import packageJson from '../package.json';
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
  * @property contextPath - Current working directory.
+ * @property contextUrl - Current working directory URL.
  * @property docsHost - Flag indicating whether to use the docs-host.
  * @property docsPath - Path to the documentation directory.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
@@ -15,6 +17,9 @@ import packageJson from '../package.json';
  * @property llmsFilesPath - Path to the LLMs files directory.
  * @property {LoggingOptions} logging - Logging options.
  * @property name - Name of the package.
+ * @property nodeVersion - Node.js major version.
+ * @property pluginIsolation - Isolation preset for external plugins.
+ * @property {PluginHostOptions} pluginHost - Plugin host options.
  * @property repoName - Name of the repository.
  * @property pfExternal - PatternFly external docs URL.
  * @property pfExternalDesignComponents - PatternFly design guidelines' components' URL.
@@ -35,6 +40,7 @@ import packageJson from '../package.json';
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
+  contextUrl: string;
   docsHost: boolean;
   docsPath: string;
   http: HttpOptions;
@@ -304,6 +310,7 @@ const getNodeMajorVersion = () => {
 const DEFAULT_OPTIONS: DefaultOptions = {
   docsHost: false,
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
+  contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(resolve(process.cwd()), 'documentation'),
   isHttp: false,
   http: HTTP_OPTIONS,
