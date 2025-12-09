@@ -1,10 +1,11 @@
 const baseConfig = {
   extensionsToTreatAsEsm: ['.ts'],
-  injectGlobals: true,
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
-  },
+  // injectGlobals: true,
+  // moduleNameMapper: {
+  //  '^(\\.{1,2}/.*)\\.js$': '$1'
+  // },
   preset: 'ts-jest',
+  // preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   testTimeout: 30000,
   transform: {
@@ -30,10 +31,11 @@ export default {
         '^.+\\.(ts|tsx)$': [
           'ts-jest',
           {
-            useESM: true,
-            tsconfig: {
-              module: 'ES2022',
-              target: 'ES2022'
+            diagnostics: {
+              ignoreCodes: [1343]
+            },
+            astTransformers: {
+              before: ['ts-jest-mock-import-meta']
             }
           }
         ]
