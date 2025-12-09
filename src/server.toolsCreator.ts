@@ -2,7 +2,6 @@ import { type McpTool, type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
 import { type GlobalOptions } from './options';
-import {unknown} from "zod";
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -201,12 +200,35 @@ type ToolConfig<TArgs = unknown, TResult = unknown> = {
 type MultiToolConfig = { name?: string; tools: ToolConfig[] };
 
 /**
- * Implementation — returns a single creator for a single tool, or an AppToolPlugin for multi-tools.
+ * Returns a single creator for a single tool, or an AppToolPlugin for multi-tools.
  *
- * Notes:
- * - We accept `(args, options?)` in author handlers for forward-compat, but our runtime currently
+ * @Notes:
+ * We accept `(args, options?)` in author handlers for forward-compat, but our runtime currently
  * invokes handlers with `(args)` only. The `options` param is provided to keep the authoring
  * surface future-proof without changing runtime behavior.
+ *
+ * @example Single tool
+ * export default createMcpTool({
+ *   name: 'hello',
+ *   description: 'Say hello',
+ *   inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+ *   async handler({ name }) { return `Hello, ${name}!`; }
+ * });
+ *
+ * @example Multiple tools
+ * export default createMcpTool([
+ *   { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
+ *   { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
+ * ]);
+ *
+ * @example Multiple tools with a shared name
+ * export default createMcpTool({
+ *   name: 'my-plugin',
+ *   tools: [
+ *     { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
+ *     { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
+ *   ]
+ * });
  *
  * @param config
  */
@@ -224,6 +246,7 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
         for (const tool of tools) {
           if (!tool || typeof tool.handler !== 'function' || typeof tool.name !== 'string') {
+            log.warn(`Skipping invalid tool: ${tool}`);
             continue;
           }
 
@@ -254,6 +277,7 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
         for (const tool of multi.tools) {
           if (!tool || typeof tool.handler !== 'function' || typeof tool.name !== 'string') {
+            log.warn(`Skipping invalid tool: ${tool}`);
             continue;
           }
 
