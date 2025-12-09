@@ -25,7 +25,7 @@
     "release": "changelog --non-cc --link-url https://github.com/patternfly/patternfly-mcp.git",
     "start": "node dist/cli.js --log-stderr",
     "start:dev": "tsx watch src/cli.ts --verbose --log-stderr",
-    "test": "jest --selectProjects unit --roots=src/",
+    "test": "npm run test:lint && npm run test:types && jest --selectProjects unit --roots=src/",
     "test:dev": "npm test -- --watchAll",
     "test:integration": "npm run build && NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects e2e --roots=tests/",
     "test:integration-dev": "npm run test:integration -- --watchAll",
