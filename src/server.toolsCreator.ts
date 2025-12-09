@@ -184,12 +184,160 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
   return [];
 };
 
+/**
+ * Author-facing tool config. The handler may be async or sync.
+ *
+ * @template TArgs The type of arguments expected by the tool (optional).
+ * @template TResult The type of result returned by the tool (optional).
+ *
+ * @property name - Name of the tool
+ * @property description - Description of the tool
+ * @property inputSchema - JSON Schema describing the arguments expected by the tool
+ * @property {(args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult} handler - Tool handler
+ *     - `args` are returned by the tool's `inputSchema`'
+ *     - `options` are currently unused and reserved for future use.
+ */
+type ToolConfig<TArgs = unknown, TResult = unknown> = {
+  name: string;
+  description: string;
+  inputSchema: any; // JSON Schema
+  handler: (args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult;
+};
+
+/**
+ * Author-facing multi-tool config.
+ *
+ * @property [name] - Optional name for the group of tools
+ * @property {ToolConfig} tools - Array of tool configs
+ */
+type MultiToolConfig = {
+  name?: string | undefined;
+  tools: ToolConfig[]
+};
+
+/**
+ * Create an AppToolPlugin from a multi-tool config.
+ *
+ * @param {MultiToolConfig} options - Multi-tool config object
+ * @returns {AppToolPlugin} AppToolPlugin instance
+ */
+const createMcpToolFromMultiToolConfig = ({ name, tools }: MultiToolConfig): AppToolPlugin => (
+  {
+    ...(typeof name === 'string' && name ? { name } : {}),
+    createCreators: () => {
+      const creators: McpToolCreator[] = [];
+
+      for (const tool of tools) {
+        if (!tool || typeof tool.handler !== 'function' || typeof tool.name !== 'string') {
+          log.warn(`Skipping invalid tool at index ${tools.indexOf(tool)} ${tool.name || ''}`);
+          continue;
+        }
+
+        const creator: McpToolCreator = () => {
+          const name = tool.name;
+          const schema = { description: tool.description, inputSchema: tool.inputSchema };
+          const handler = async (args: unknown) => await Promise.resolve(tool.handler(args));
+
+          return [name, schema, handler];
+        };
+
+        creators.push(creator);
+      }
+
+      return creators;
+    }
+  }
+);
+
+/**
+ * Create a single tool creator from a single tool config.
+ *
+ * @param {ToolConfig} config - Tool config object
+ * @returns {McpToolCreator} McpToolCreator function
+ */
+const createMcpToolFromSingleConfig = (config: ToolConfig): McpToolCreator => () => {
+  const name = config.name;
+  const schema = { description: config.description, inputSchema: config.inputSchema };
+  const handler = async (args: unknown) => await Promise.resolve(config.handler(args));
+
+  return [name, schema, handler];
+};
+
+/**
+ * Returns a single creator for a single tool, or an AppToolPlugin for multi-tools.
+ *
+ * Supports three types of configurations:
+ * 1. Single-tool configuration: Accepts a single `ToolConfig` object and returns a tool based on the
+ *    specified configuration.
+ * 2. Multi-tool configuration as an array: Accepts an array of `ToolConfig` objects to create a group of tools.
+ * 3. Multi-tool configuration as an object: Accepts a `MultiToolConfig` object, which includes multiple
+ *    tools and optionally a group name, to create a set of tools with an associated name.
+ *
+ * @example Single tool
+ * export default createMcpTool({
+ *   name: 'hello',
+ *   description: 'Say hello',
+ *   inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
+ *   async handler({ name }) { return `Hello, ${name}!`; }
+ * });
+ *
+ * @example Multiple tools
+ * export default createMcpTool([
+ *   { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
+ *   { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
+ * ]);
+ *
+ * @example Multiple tools with a shared name
+ * export default createMcpTool({
+ *   name: 'my-plugin',
+ *   tools: [
+ *     { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
+ *     { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
+ *   ]
+ * });
+ *
+ * @template TArgs The type of arguments expected by the tool (optional).
+ * @template TResult The type of result returned by the tool (optional).
+ * @param {ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig} config The configuration for creating the tool(s). It can be:
+ *   - A single tool configuration object (`ToolConfig`).
+ *   - An array of tool configuration objects (`ToolConfig[]`) for creating multiple tools.
+ *   - A multi-tool configuration object (`MultiToolConfig`) containing an optional name and an array of tools.
+ * @returns {McpToolCreator | AppToolPlugin} A tool creator or application tool plugin instance based on the provided configuration.
+ */
+const createMcpTool = <TArgs = unknown, TResult = unknown>(
+  config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig
+): McpToolCreator | AppToolPlugin => {
+  // Multi-tool: array of ToolConfig
+  if (Array.isArray(config)) {
+    const tools = config as ToolConfig[];
+
+    return createMcpToolFromMultiToolConfig({ tools });
+  }
+
+  // Multi-tool: { tools: ToolConfig[], name? }
+  if (isPlainObject(config) && Array.isArray((config as MultiToolConfig).tools)) {
+    const { name, tools } = config as MultiToolConfig;
+
+    return createMcpToolFromMultiToolConfig({ name, tools });
+  }
+
+  const single = config as ToolConfig;
+
+  // Single-tool: ToolConfig
+  return createMcpToolFromSingleConfig(single);
+};
+
 export {
+  createMcpTool,
+  createMcpToolFromMultiToolConfig,
+  createMcpToolFromSingleConfig,
   isPlugin,
   normalizeToCreators,
   pluginCreatorsToCreators,
   pluginToCreators,
   pluginToolsToCreators,
   type AppToolPlugin,
-  type AppToolPluginFactory
+  type AppToolPluginFactory,
+  type MultiToolConfig,
+  type ToolConfig
 };

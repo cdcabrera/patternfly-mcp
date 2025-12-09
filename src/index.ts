@@ -9,6 +9,7 @@ import {
   type ServerOnLogHandler,
   type ServerLogEvent
 } from './server';
+import { createMcpTool, type ToolConfig, type MultiToolConfig } from './server.toolsCreator';
 
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
@@ -86,6 +87,7 @@ const main = async (
 };
 
 export {
+  createMcpTool,
   main,
   main as start,
   type CliOptions,
@@ -94,5 +96,7 @@ export {
   type ServerInstance,
   type ServerLogEvent,
   type ServerOnLog,
-  type ServerOnLogHandler
+  type ServerOnLogHandler,
+  type ToolConfig,
+  type MultiToolConfig
 };
