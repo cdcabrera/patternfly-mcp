@@ -1,6 +1,6 @@
 import { basename, join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
-import {pathToFileURL} from "node:url";
 
 /**
  * Application defaults, not user-configurable

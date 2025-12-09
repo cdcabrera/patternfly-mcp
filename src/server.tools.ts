@@ -33,6 +33,24 @@ type HostHandle = {
 const activeHostsBySession = new Map<string, HostHandle>();
 
 /**
+ * Check if a string looks like a file path.
+ *
+ * @param str
+ * @returns Confirmation that the string looks like a file path.
+ */
+const isFilePath = (str: string): boolean =>
+  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+
+/**
+ * Check if a string looks like a URL.
+ *
+ * @param str
+ * @returns Confirmation that the string looks like a URL.
+ */
+const isUrlLike = (str: string) =>
+  /^(file:|https?:|data:|node:)/i.test(str);
+
+/**
  * Built-in tools.
  *
  * @returns Array of built-in tools
@@ -63,12 +81,14 @@ const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: Global
         directories.add(dirname(resolvedPath));
       }
     } catch {
-      try {
-        const resolvedPath = resolve(contextPath, moduleSpec);
+      if (isFilePath(moduleSpec)) {
+        try {
+          const resolvedPath = resolve(contextPath, moduleSpec);
 
-        directories.add(dirname(resolvedPath));
-      } catch (error) {
-        log.debug(`Failed to resolve module spec; skipping ${moduleSpec} from allowlist ${formatUnknownError(error)}`);
+          directories.add(dirname(resolvedPath));
+        } catch (error) {
+          log.debug(`Failed to resolve module spec; skipping ${moduleSpec} ${formatUnknownError(error)}`);
+        }
       }
     }
   }
@@ -100,16 +120,13 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
 /**
  * Normalize tool modules to URLs.
  *
+ * Check a variety of formats just to normalize. Attempting to pass
+ * `http` or `data` formats will log an error.
+ *
  * @param {GlobalOptions} options
  * @returns Updated array of normalized tool modules
  */
 const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] => {
-  const isFilePath = (str: string) =>
-    str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
-
-  const isUrlLike = (str: string) =>
-    /^(file:|https?:|data:|node:)/i.test(str);
-
   return toolModules.map(tool => {
     if (isUrlLike(tool)) {
       return tool;
