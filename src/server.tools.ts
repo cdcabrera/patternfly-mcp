@@ -126,8 +126,8 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
  * @param {GlobalOptions} options
  * @returns Updated array of normalized tool modules
  */
-const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] => {
-  return toolModules.map(tool => {
+const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
+  toolModules.map(tool => {
     if (isUrlLike(tool)) {
       return tool;
     }
@@ -141,7 +141,6 @@ const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getO
 
     return tool; // package name
   });
-};
 
 // NOTE: THE ENTRY PATH AS-IS MAY BREAK AFTER COMPILE, THAT FILE WILL NOT EXIST.
 /**
