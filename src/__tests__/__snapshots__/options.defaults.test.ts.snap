@@ -4,6 +4,7 @@ exports[`options defaults should return specific properties 1`] = `
 {
   "DEFAULT_OPTIONS": {
     "contextPath": "/",
+    "contextUrl": "file:///",
     "docsHost": false,
     "docsPath": "/documentation",
     "http": {

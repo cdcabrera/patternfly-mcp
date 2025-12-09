@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`server.toolsIpc should return specific properties 1`] = `
+{
+  "awaitIpc": [Function],
+  "isHelloAck": [Function],
+  "isInvokeResult": [Function],
+  "isLoadAck": [Function],
+  "isManifestResult": [Function],
+  "makeId": [Function],
+  "send": [Function],
+}
+`;

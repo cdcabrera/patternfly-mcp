@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`server.toolsCreator should return specific properties 1`] = `
+{
+  "isPlugin": [Function],
+  "normalizeToCreators": [Function],
+  "pluginCreatorsToCreators": [Function],
+  "pluginToCreators": [Function],
+  "pluginToolsToCreators": [Function],
+}
+`;
