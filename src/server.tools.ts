@@ -37,6 +37,18 @@ type HostHandle = {
 const activeHostsBySession = new Map<string, HostHandle>();
 
 /**
+ * Map of pending Tools Host spawn promises per session.
+ * Used for lazy spawning to prevent concurrent spawns.
+ */
+const pendingHostSpawnsBySession = new Map<string, Promise<HostHandle>>();
+
+/**
+ * Cache of tool descriptors by tool modules configuration.
+ * Used to avoid re-spawning just to get descriptors.
+ */
+const toolDescriptorsCache = new Map<string, ToolDescriptor[]>();
+
+/**
  * Check if a string looks like a file path.
  *
  * @param str
@@ -419,6 +431,12 @@ const normalizeInputSchema = (inputSchema: unknown): unknown => {
   return inputSchema;
 };
 
+/**
+ * Create tool creators that proxy to an existing tools host handle.
+ *
+ * @param {HostHandle} handle
+ * @param {GlobalOptions} options
+ */
 const makeProxyCreators = (
   handle: HostHandle,
   { pluginHost }: GlobalOptions = getOptions()
@@ -455,6 +473,113 @@ const makeProxyCreators = (
 
   return [name, schema, handler];
 });
+
+/**
+ * Create lazy tool creators that spawn the tools host on first invocation.
+ * Uses a promise-based lock to ensure only one spawn happens even with concurrent calls.
+ *
+ * @param {ToolDescriptor[]} toolDescriptors - Tool descriptors from a previous manifest (if available)
+ * @param {GlobalOptions} options
+ * @param {AppSession} sessionOptions
+ */
+const makeLazyProxyCreators = (
+  toolDescriptors: ToolDescriptor[],
+  options: GlobalOptions = getOptions(),
+  { sessionId }: AppSession = getSessionOptions()
+): McpToolCreator[] => {
+  // Create a shared promise for spawning the host (prevents concurrent spawns)
+  let spawnPromise: Promise<HostHandle> | undefined = pendingHostSpawnsBySession.get(sessionId);
+
+  if (!spawnPromise) {
+    spawnPromise = (async () => {
+      try {
+        const host = await spawnToolsHost(options);
+        const proxies = makeProxyCreators(host, options);
+
+        // Associate the spawned host with the current session
+        activeHostsBySession.set(sessionId, host);
+
+        // Clean up on exit or disconnect
+        const onChildExitOrDisconnect = () => {
+          const current = activeHostsBySession.get(sessionId);
+
+          // Remove only if this exact child is still the active one for the session
+          if (current && current.child === host.child) {
+            try {
+              // Close child stderr to avoid leaks
+              host.closeStderr?.();
+            } catch {}
+            activeHostsBySession.delete(sessionId);
+            pendingHostSpawnsBySession.delete(sessionId);
+          }
+
+          // Clean up listeners; we only need to act once
+          host.child.off('exit', onChildExitOrDisconnect);
+          host.child.off('disconnect', onChildExitOrDisconnect);
+        };
+
+        host.child.once('exit', onChildExitOrDisconnect);
+        host.child.once('disconnect', onChildExitOrDisconnect);
+
+        // Update tool descriptors with actual tools from spawned host
+        // This ensures we have the correct tool IDs
+        const actualTools = host.tools;
+
+        // Store the promise for reuse
+        pendingHostSpawnsBySession.set(sessionId, spawnPromise!);
+
+        return host;
+      } catch (error) {
+        // Remove failed promise so we can retry
+        pendingHostSpawnsBySession.delete(sessionId);
+        throw error;
+      }
+    })();
+
+    pendingHostSpawnsBySession.set(sessionId, spawnPromise);
+  }
+
+  // Create lazy creators that spawn on first use
+  return toolDescriptors.map((toolDescriptor): McpToolCreator => () => {
+    const name = toolDescriptor.name;
+    // Normalize the schema in case it's a plain JSON Schema that was serialized through IPC
+    const normalizedSchema = normalizeInputSchema(toolDescriptor.inputSchema);
+    const schema = {
+      description: toolDescriptor.description,
+      inputSchema: normalizedSchema
+    };
+
+    const handler = async (args: unknown) => {
+      // Lazy spawn: wait for host to be ready (or use existing)
+      const host = await spawnPromise!;
+
+      // Find the actual tool ID from the spawned host (descriptors may have been updated)
+      const actualTool = host.tools.find(t => t.name === name) || toolDescriptor;
+
+      const requestId = makeId();
+
+      send(host.child, { t: 'invoke', id: requestId, toolId: actualTool.id, args });
+
+      const response = await awaitIpc(
+        host.child,
+        isInvokeResult(requestId),
+        options.pluginHost.invokeTimeoutMs
+      );
+
+      if ('ok' in response && response.ok === false) {
+        const invocationError: any = new Error(response.error?.message || 'Tool invocation failed');
+
+        invocationError.stack = response.error?.stack;
+        invocationError.code = response.error?.code;
+        throw invocationError;
+      }
+
+      return response.result;
+    };
+
+    return [name, schema, handler];
+  });
+};
 
 /**
  * Best-effort Tools Host shutdown for the current session.
@@ -540,12 +665,98 @@ const sendToolsHostShutdown = async (
 };
 
 /**
+ * Get tool descriptors, using cache if available.
+ * For lazy spawning, we cache descriptors to avoid re-spawning just for metadata.
+ * 
+ * Strategy: We need descriptors for tool registration, but we want to defer
+ * the actual host spawn until first tool invocation. So we:
+ * 1. Check cache first (from previous server starts)
+ * 2. Check if host already exists for this session (reuse it)
+ * 3. Otherwise, spawn temporarily to get descriptors, then keep it alive for reuse
+ *
+ * @param {GlobalOptions} options
+ * @param {AppSession} sessionOptions
+ * @returns {Promise<ToolDescriptor[]>} Tool descriptors
+ */
+const getToolDescriptorsLazy = async (
+  options: GlobalOptions = getOptions(),
+  { sessionId }: AppSession = getSessionOptions()
+): Promise<ToolDescriptor[]> => {
+  // Create cache key from tool modules (sorted for consistency)
+  const cacheKey = JSON.stringify([...options.toolModules].sort());
+
+  // Check cache first (from previous server starts with same tool modules)
+  const cached = toolDescriptorsCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Check if there's already a host for this session (from a previous spawn)
+  // If so, reuse it instead of spawning a new one
+  const existingHost = activeHostsBySession.get(sessionId);
+  if (existingHost) {
+    const descriptors = existingHost.tools;
+    toolDescriptorsCache.set(cacheKey, descriptors);
+    return descriptors;
+  }
+
+  // Check if there's a pending spawn for this session
+  const pendingSpawn = pendingHostSpawnsBySession.get(sessionId);
+  if (pendingSpawn) {
+    const host = await pendingSpawn;
+    const descriptors = host.tools;
+    toolDescriptorsCache.set(cacheKey, descriptors);
+    return descriptors;
+  }
+
+  // Spawn a host to get tool descriptors
+  // We'll keep this host alive and reuse it for actual tool invocations
+  // This way we only spawn once, not twice
+  const host = await spawnToolsHost(options);
+
+  // Associate the spawned host with the current session
+  activeHostsBySession.set(sessionId, host);
+
+  // Set up cleanup handlers
+  const onChildExitOrDisconnect = () => {
+    const current = activeHostsBySession.get(sessionId);
+
+    if (current && current.child === host.child) {
+      try {
+        host.closeStderr?.();
+      } catch {}
+      activeHostsBySession.delete(sessionId);
+      pendingHostSpawnsBySession.delete(sessionId);
+    }
+
+    host.child.off('exit', onChildExitOrDisconnect);
+    host.child.off('disconnect', onChildExitOrDisconnect);
+  };
+
+  host.child.once('exit', onChildExitOrDisconnect);
+  host.child.once('disconnect', onChildExitOrDisconnect);
+
+  // Get descriptors and cache them
+  const descriptors = host.tools;
+  toolDescriptorsCache.set(cacheKey, descriptors);
+
+  // Store the host promise for lazy proxy creators to reuse
+  const hostPromise = Promise.resolve(host);
+  pendingHostSpawnsBySession.set(sessionId, hostPromise);
+
+  return descriptors;
+};
+
+/**
  * Compose built-in creators with any externally loaded creators.
  *
  * - Node.js version policy:
  *    - Node >= 22, external plugins are executed out-of-process via a Tools Host.
  *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
  * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
+ * - **Lazy spawning**: Tools host is spawned on first tool invocation, not at server startup
+ *   - Tool descriptors are fetched via a temporary spawn (cached) for registration
+ *   - Actual host is spawned lazily on first tool call and kept alive for subsequent calls
  *
  * @param {GlobalOptions} options
  * @param options.toolModules
@@ -554,7 +765,7 @@ const sendToolsHostShutdown = async (
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
 const composeTools = async (
-  { toolModules, nodeVersion }: GlobalOptions = getOptions(),
+  { toolModules, nodeVersion, ...options }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
   const builtinCreators = getBuiltinTools();
@@ -570,36 +781,20 @@ const composeTools = async (
   }
 
   try {
-    const host = await spawnToolsHost();
-    const proxies = makeProxyCreators(host);
+    // Lazy spawning: Get tool descriptors (spawns host, keeps it alive for reuse)
+    // The host spawned here will be reused for actual tool invocations
+    // This avoids double-spawning while still getting descriptors for registration
+    const fullOptions = getOptions();
+    const sessionOptions = getSessionOptions();
+    const toolDescriptors = await getToolDescriptorsLazy(fullOptions, sessionOptions);
+    
+    // Create lazy creators that will reuse the already-spawned host
+    // The host is already in activeHostsBySession and pendingHostSpawnsBySession
+    const lazyProxies = makeLazyProxyCreators(toolDescriptors, fullOptions, sessionOptions);
 
-    // Associate the spawned host with the current session
-    activeHostsBySession.set(sessionId, host);
-
-    // Clean up on exit or disconnect
-    const onChildExitOrDisconnect = () => {
-      const current = activeHostsBySession.get(sessionId);
-
-      // Remove only if this exact child is still the active one for the session
-      if (current && current.child === host.child) {
-        try {
-          // Close child stderr to avoid leaks
-          host.closeStderr?.();
-        } catch {}
-        activeHostsBySession.delete(sessionId);
-      }
-
-      // Clean up listeners; we only need to act once
-      host.child.off('exit', onChildExitOrDisconnect);
-      host.child.off('disconnect', onChildExitOrDisconnect);
-    };
-
-    host.child.once('exit', onChildExitOrDisconnect);
-    host.child.once('disconnect', onChildExitOrDisconnect);
-
-    return [...builtinCreators, ...proxies];
+    return [...builtinCreators, ...lazyProxies];
   } catch (error) {
-    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins.');
+    log.warn('Failed to get tool descriptors; skipping externals and continuing with built-ins.');
     log.warn(formatUnknownError(error));
 
     return builtinCreators;
