@@ -1,6 +1,8 @@
 /**
  *  Requires: npm run build prior to running Jest.
  */
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   startServer,
   type StdioTransportClient,
@@ -170,5 +172,43 @@ describe('Logging', () => {
     expect(CLIENT.logs()).toMatchSnapshot();
 
     await CLIENT.stop();
+  });
+});
+
+describe('Tools', () => {
+  let CLIENT: StdioTransportClient;
+
+  beforeEach(async () => {
+    const abs = resolve(process.cwd(), 'tests/__fixtures__/tool.echo.js');
+    const url = pathToFileURL(abs).href; // file:///...
+    // console.log('url', url);
+
+    CLIENT = await startServer({ args: ['--log-stderr', '--verbose', '--plugin-isolation', 'none', '--tool', url] });
+    // CLIENT = await startServer({ args: ['--tool', 'tests/__fixtures__/tool.echo.js'] });
+  });
+
+  afterEach(async () => CLIENT.stop());
+
+  it('should access a new tool', async () => {
+    const req = {
+      method: 'tools/list',
+      params: {
+        // name: 'echo_plugin_tool',
+        // arguments: { lorem: 'ipsum', dolor: 'sit amet' }
+      }
+    };
+
+    const resp = await CLIENT.send(req);
+    const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
+
+    expect(names).toMatchSnapshot();
+    // expect(names).toContain('echo_plugin_tool');
+
+    expect(CLIENT.logs()).toMatchSnapshot();
+
+    // const resp = await CLIENT.send(req);
+    // const text = resp?.result?.content?.[0]?.text || '';
+
+    // expect(text).toMatchSnapshot();
   });
 });
