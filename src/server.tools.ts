@@ -156,24 +156,26 @@ const spawnToolsHost = async (
   const nodeArgs: string[] = [];
   let updatedEntry: string;
 
-  // Deny network and fs write by omission
-  if (pluginIsolation === 'strict') {
-    nodeArgs.push('--experimental-permission');
-    const allow = computeFsReadAllowlist();
-
-    if (allow.length) {
-      nodeArgs.push(`--allow-fs-read=${allow.join(',')}`);
-    }
-  }
-
   try {
     const entryUrl = import.meta.resolve('#toolsHost');
 
     updatedEntry = fileURLToPath(entryUrl);
   } catch (error) {
+    log.debug(`Failed to resolve Tools Host entry: ${formatUnknownError(error)}`);
+
     throw new Error(
       `Failed to resolve Tools Host entry '#toolsHost' from package imports: ${formatUnknownError(error)}`
     );
+  }
+
+  // Deny network and fs write by omission
+  if (pluginIsolation === 'strict') {
+    nodeArgs.push('--experimental-permission');
+    const allowDirs = new Set<string>(computeFsReadAllowlist());
+
+    allowDirs.add(dirname(updatedEntry));
+
+    nodeArgs.push(`--allow-fs-read=${[...allowDirs].join(',')}`);
   }
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {

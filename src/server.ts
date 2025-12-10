@@ -7,7 +7,7 @@ import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
-import { sendToolsHostShutdown } from './server.tools';
+import {composeTools, sendToolsHostShutdown} from './server.tools';
 import { type GlobalOptions } from './options';
 import {
   getOptions,
@@ -82,11 +82,7 @@ interface ServerInstance {
  * @returns Server instance
  */
 const runServer = async (options: ServerOptions = getOptions(), {
-  tools = [
-    usePatternFlyDocsTool,
-    fetchDocsTool,
-    componentSchemasTool
-  ],
+  tools = [],
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
@@ -146,6 +142,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     const subUnsub = createServerLogger.memo(server);
 
+    const updatedTools = await composeTools();
+
     if (subUnsub) {
       const { subscribe, unsubscribe } = subUnsub;
 
@@ -156,7 +154,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
       onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
     }
 
-    tools.forEach(toolCreator => {
+    updatedTools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
 
       log.info(`Registered tool: ${name}`);
