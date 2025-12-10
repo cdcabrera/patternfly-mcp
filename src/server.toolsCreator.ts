@@ -240,7 +240,6 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
     const tools = config as ToolConfig[];
 
     return {
-      name: undefined,
       createCreators: () => {
         const creators: McpToolCreator[] = [];
 
@@ -263,7 +262,7 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
         return creators;
       }
-    } as unknown as AppToolPlugin;
+    } satisfies AppToolPlugin;
   }
 
   // Multi-tool: { tools: ToolConfig[], name? }
@@ -271,7 +270,7 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
     const multi = config as MultiToolConfig;
 
     return {
-      name: multi.name,
+      ...(typeof multi.name === 'string' && multi.name ? { name: multi.name } : {}),
       createCreators: () => {
         const creators: McpToolCreator[] = [];
 
@@ -294,19 +293,21 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
         return creators;
       }
-    } as AppToolPlugin;
+    } satisfies AppToolPlugin;
   }
 
   // Single-tool: ToolConfig
   const single = config as ToolConfig;
 
-  return (() => {
+  const creator: McpToolCreator = () => {
     const name = single.name;
     const schema = { description: single.description, inputSchema: single.inputSchema };
     const handler = async (args: unknown) => await Promise.resolve(single.handler(args));
 
     return [name, schema, handler];
-  }) as McpToolCreator;
+  };
+
+  return creator;
 };
 
 export {
