@@ -113,6 +113,7 @@ Add external tools at startup. External tools run out‑of‑process in a separa
 - Troubleshooting
   - If external tools don’t appear, verify you’re running on Node ≥ 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
   - Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
+  - If `tools/list` fails or `tools/call` rejects due to argument validation (e.g., messages about schema/type), ensure you are using the latest `@modelcontextprotocol/sdk`. If the issue persists, you may need to define your tool arguments with a Zod schema ([zod](https://github.com/colinhacks/zod)) and pass it to the registry.
 
 ### Authoring external tools with `createMcpTool`
 
@@ -165,6 +166,7 @@ export default createMcpTool({
 Notes
 - External tools must be ESM modules (packages or ESM files). The Tools Host imports your module via `import()`.
 - The `handler` receives `args` per your JSON Schema. A reserved `options?` parameter may be added in a future release; it is not currently passed.
+- If your tool's `inputSchema` does not validate at runtime with your MCP client/SDK, consider authoring the schema with Zod ([zod](https://github.com/colinhacks/zod)) and passing a Zod schema instead.
 
 ## Logging
 

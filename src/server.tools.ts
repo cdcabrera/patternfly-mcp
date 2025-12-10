@@ -25,6 +25,7 @@ import { getOptions, getSessionOptions } from './options.context';
 type HostHandle = {
   child: ChildProcess;
   tools: ToolDescriptor[];
+  closeStderr?: () => void;
 };
 
 /**
@@ -117,6 +118,72 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
   }
 };
 
+const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) => {
+  const childPid = child.pid;
+  const promoted = new Set<string>();
+
+  const debugHandler = chunk => {
+    const raw = String(chunk);
+
+    if (!raw || !raw.trim()) {
+      return;
+    }
+
+    // Split multi-line chunks so each line is tagged
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+
+    for (const line of lines) {
+      const tagged = `[tools-host pid=${childPid} sid=${sessionId}] ${line}`;
+
+      // Pattern: Node 22+ permission denial (FileSystemRead)
+      const fsMatch = line.match(/ERR_ACCESS_DENIED.*FileSystemRead.*resource:\s*'([^']+)'/);
+
+      if (fsMatch) {
+        const resource = fsMatch[1];
+        const key = `fs-deny:${resource}`;
+
+        if (!promoted.has(key)) {
+          promoted.add(key);
+          log.warn(
+            `Tools Host denied fs read: ${resource}. In strict mode, add its directory to --allow-fs-read.\nOptionally, you can disable strict mode entirely with pluginIsolation: 'none'.`
+          );
+        } else {
+          log.debug(tagged);
+        }
+        continue;
+      }
+
+      // Pattern: ESM/CJS import issues
+      if (
+        /ERR_MODULE_NOT_FOUND/.test(line) ||
+        /Cannot use import statement outside a module/.test(line) ||
+        /ERR_UNKNOWN_FILE_EXTENSION/.test(line)
+      ) {
+        const key = `esm:${line}`;
+
+        if (!promoted.has(key)) {
+          promoted.add(key);
+          log.warn('Tools Host import error. Ensure external tools are ESM (no raw .ts) and resolvable.\nFor local files, prefer a file:// URL.');
+        } else {
+          log.debug(tagged);
+        }
+        continue;
+      }
+
+      // Default: debug-level passthrough
+      log.debug(tagged);
+    }
+  };
+
+  child.stderr?.on('data', debugHandler);
+
+  return () => {
+    try {
+      child.stderr?.off('data', debugHandler);
+    } catch {}
+  };
+};
+
 /**
  * Normalize tool modules to URLs.
  *
@@ -203,13 +270,7 @@ const spawnToolsHost = async (
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
 
-  child.stderr?.on('data', chunk => {
-    const msg = String(chunk);
-
-    if (msg.trim()) {
-      log.debug(`[Tools Host stderr] ${msg}`);
-    }
-  });
+  const closeStderr = debugChild(child);
 
   // hello
   send(child, { t: 'hello', id: makeId() });
@@ -230,7 +291,7 @@ const spawnToolsHost = async (
   send(child, { t: 'manifest:get', id: manifestRequestId });
   const manifest = await awaitIpc(child, isManifestResult(manifestRequestId), loadTimeoutMs);
 
-  return { child, tools: manifest.tools as ToolDescriptor[] };
+  return { child, tools: manifest.tools as ToolDescriptor[], closeStderr };
 };
 
 /**
@@ -280,6 +341,7 @@ const makeProxyCreators = (
  * Policy:
  * - Primary grace defaults to 0 ms (internal-only, from DEFAULT_OPTIONS.pluginHost.gracePeriodMs)
  * - Single fallback kill at grace + 200 ms to avoid racing simultaneous kills
+ * - Close logging for child(ren) stderr
  *
  * @param {GlobalOptions} options
  * @param options.pluginHost
@@ -321,6 +383,10 @@ const sendToolsHostShutdown = async (
       if (forceKillFallback) {
         clearTimeout(forceKillFallback);
       }
+
+      try {
+        handle.closeStderr?.();
+      } catch {}
 
       activeHostsBySession.delete(sessionId);
       resolve();
@@ -396,6 +462,10 @@ const composeTools = async (
 
       // Remove only if this exact child is still the active one for the session
       if (current && current.child === host.child) {
+        try {
+          // Close child stderr to avoid leaks
+          host.closeStderr?.();
+        } catch {}
         activeHostsBySession.delete(sessionId);
       }
 

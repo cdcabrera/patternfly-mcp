@@ -140,8 +140,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
       }
     );
 
+    // Setup server logging.
     const subUnsub = createServerLogger.memo(server);
 
+    // Register tools after logging is set up.
     const updatedTools = await composeTools();
 
     if (subUnsub) {
