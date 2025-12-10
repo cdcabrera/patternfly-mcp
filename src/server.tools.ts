@@ -154,8 +154,7 @@ const spawnToolsHost = async (
 ): Promise<HostHandle> => {
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
-  // let updatedEntry = ;
-  let updatedEntry = '';
+  let updatedEntry: string;
 
   // Deny network and fs write by omission
   if (pluginIsolation === 'strict') {
