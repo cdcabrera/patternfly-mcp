@@ -201,8 +201,8 @@ describe('Tools', () => {
     const resp = await CLIENT.send(req);
     const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
 
-    expect(resp).toMatchSnapshot();
-    // expect(names).toContain('echo_plugin_tool');
+    // expect(resp).toMatchSnapshot();
+    expect(names).toContain('echo_plugin_tool');
 
     expect(CLIENT.logs()).toMatchSnapshot();
 
@@ -210,5 +210,27 @@ describe('Tools', () => {
     // const text = resp?.result?.content?.[0]?.text || '';
 
     // expect(text).toMatchSnapshot();
+  });
+
+  it('should interact with the new tool', async () => {
+    const req = {
+      method: 'tools/call',
+      params: {
+        name: 'echo_plugin_tool',
+        arguments: {
+          type: 'echo'
+        }
+        // arguments: { lorem: 'ipsum', dolor: 'sit amet' }
+      }
+    };
+
+    const resp = await CLIENT.send(req);
+    // const text = resp?.result?.content?.[0]?.text || '';
+
+    // const resp = await CLIENT.send(req);
+    // const text = resp?.result?.content?.[0]?.text || '';
+
+    // expect(text).toMatchSnapshot();
+    expect(resp).toMatchSnapshot();
   });
 });

@@ -438,9 +438,7 @@ exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`]
 }
 `;
 
-exports[`Tools should access a new tool 1`] = `[]`;
-
-exports[`Tools should access a new tool 2`] = `
+exports[`Tools should access a new tool 1`] = `
 [
   "[INFO]: Registered tool: usePatternFlyDocs
 ",
@@ -453,4 +451,20 @@ exports[`Tools should access a new tool 2`] = `
   "[INFO]: @patternfly/patternfly-mcp server running on stdio transport
 ",
 ]
+`;
+
+exports[`Tools should interact with the new tool 1`] = `
+{
+  "id": null,
+  "jsonrpc": "2.0",
+  "result": {
+    "content": [
+      {
+        "text": "v3Schema.safeParseAsync is not a function",
+        "type": "text",
+      },
+    ],
+    "isError": true,
+  },
+}
 `;
