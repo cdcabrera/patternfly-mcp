@@ -340,7 +340,7 @@ const setHandlers = () => {
  *
  * @param {IpcRequest} first
  */
-const bootstrapMessage = async (first: IpcRequest) => {
+const bootstrapMessage = (first: IpcRequest) => {
   // Detach bootstrap to avoid duplicate delivery
   process.off('message', bootstrapMessage);
 
@@ -348,7 +348,8 @@ const bootstrapMessage = async (first: IpcRequest) => {
   const route = setHandlers();
 
   // Route the very first message through the same code path the real handler uses
-  await route(first);
+  // Use void to fire-and-forget async operations to avoid blocking
+  void route(first);
 };
 
 if (process.send) {

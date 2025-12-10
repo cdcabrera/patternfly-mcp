@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { type AppSession, type GlobalOptions } from './options';
@@ -241,14 +242,13 @@ const spawnToolsHost = async (
   if (pluginIsolation === 'strict') {
     nodeArgs.push('--experimental-permission');
 
-    // 1) Gather directories (project, plugin modules, and the host entry’s dir)
+    // 1) Gather directories (project, plugin modules, and the host entry's dir)
     const allowSet = new Set<string>(computeFsReadAllowlist());
 
     allowSet.add(dirname(updatedEntry));
 
     // 2) Normalize to real absolute paths to avoid symlink mismatches
-    const { realpathSync } = await import('node:fs');
-
+    // Using top-level import instead of dynamic import for better performance
     const allowList = [...allowSet]
       .map(dir => {
         try {
@@ -268,6 +268,9 @@ const spawnToolsHost = async (
     log.debug(`Tools Host allow-fs-read flags: ${allowList.map(dir => `--allow-fs-read=${dir}`).join(' ')}`);
   }
 
+  // Pre-compute normalized tool modules before spawning to reduce latency
+  const normalizedToolModules = normalizeToolModules();
+
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
   });
@@ -280,7 +283,6 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
-  const normalizedToolModules = normalizeToolModules();
 
   send(child, { t: 'load', id: loadId, specs: normalizedToolModules, invokeTimeoutMs });
   const loadAck = await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
