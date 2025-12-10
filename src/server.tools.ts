@@ -122,7 +122,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
   const childPid = child.pid;
   const promoted = new Set<string>();
 
-  const debugHandler = chunk => {
+  const debugHandler = (chunk: Buffer | string) => {
     const raw = String(chunk);
 
     if (!raw || !raw.trim()) {
