@@ -458,13 +458,11 @@ exports[`Tools should interact with the new tool 1`] = `
   "id": null,
   "jsonrpc": "2.0",
   "result": {
-    "content": [
-      {
-        "text": "v3Schema.safeParseAsync is not a function",
-        "type": "text",
-      },
-    ],
-    "isError": true,
+    "args": {
+      "type": "echo",
+    },
+    "content": [],
+    "ok": true,
   },
 }
 `;
