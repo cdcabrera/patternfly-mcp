@@ -7,7 +7,7 @@ import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
-import {composeTools, sendToolsHostShutdown} from './server.tools';
+import { composeTools, sendToolsHostShutdown } from './server.tools';
 import { type GlobalOptions } from './options';
 import {
   getOptions,
