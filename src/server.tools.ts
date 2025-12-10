@@ -142,20 +142,20 @@ const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getO
     return tool; // package name
   });
 
-// NOTE: THE ENTRY PATH AS-IS MAY BREAK AFTER COMPILE, THAT FILE WILL NOT EXIST.
 /**
  * Spawn a tools host process and return its handle.
  *
- * @param entry - Entry point for the child process
+ * - See `package.json` import path for entry parameter.
+ *
  * @param {GlobalOptions} options
  */
 const spawnToolsHost = async (
-  entry = './server.toolsHost',
   { pluginIsolation, pluginHost }: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
-  let updatedEntry = entry;
+  // let updatedEntry = ;
+  let updatedEntry = '';
 
   // Deny network and fs write by omission
   if (pluginIsolation === 'strict') {
@@ -168,13 +168,13 @@ const spawnToolsHost = async (
   }
 
   try {
-    const entryUrl = import.meta.resolve(updatedEntry, import.meta.url);
+    const entryUrl = import.meta.resolve('#toolsHost');
 
     updatedEntry = fileURLToPath(entryUrl);
   } catch (error) {
-    updatedEntry = resolve(updatedEntry);
-
-    log.debug(`Failed to resolve Tools Host entry point, using fallback instead; ${formatUnknownError(error)}`);
+    throw new Error(
+      `Failed to resolve Tools Host entry '#toolsHost' from package imports: ${formatUnknownError(error)}`
+    );
   }
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {

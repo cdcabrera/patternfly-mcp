@@ -4,6 +4,9 @@
   "description": "PatternFly documentation MCP server built with Node.js and TypeScript",
   "main": "dist/index.js",
   "type": "module",
+  "imports": {
+    "#toolsHost": "./dist/server.toolsHost.js"
+  },
   "exports": {
     ".": "./dist/index.js"
   },
@@ -19,7 +22,7 @@
     "mcp-config-example.json"
   ],
   "scripts": {
-    "build": "npm run build:clean; npm run test:types; pkgroll",
+    "build": "npm run build:clean; npm run test:types; pkgroll --minify",
     "build:clean": "rm -rf dist",
     "build:watch": "npm run build -- --watch",
     "release": "changelog --non-cc --link-url https://github.com/patternfly/patternfly-mcp.git",
