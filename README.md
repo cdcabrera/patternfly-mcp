@@ -19,6 +19,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 ## Prerequisites
 
 - Node.js 20.0.0 or higher
+  - Note: External tool plugins require Node.js ≥ 22 at runtime. On Node < 22, the server starts with built‑in tools only and logs a one‑time warning.
 - NPM (or another Node package manager)
 
 ## Installation
@@ -82,6 +83,89 @@ The MCP server can communicate over **stdio** (default) or **HTTP** transport. I
 Returned content format:
 - For each entry in urlList, the server loads its content, prefixes it with a header like: `# Documentation from <resolved-path-or-url>` and joins multiple entries using a separator: `\n\n---\n\n`.
 - If an entry fails to load, an inline error message is included for that entry.
+
+### External tools (Plugins)
+
+Add external tools at startup. External tools run out‑of‑process in a separate Tools Host (Node ≥ 22). Built‑in tools are always in‑process and register first.
+
+- Node version gate
+  - Node < 22 → external tools are skipped with a single startup warning; built‑ins still register.
+  - Node ≥ 22 → external tools run out‑of‑process via the Tools Host.
+
+- CLI
+  - `--tool <spec>` Add one or more external tools. Repeat the flag or pass a comma‑separated list.
+    - Examples: `--tool @acme/my-plugin`, `--tool ./plugins/my-tools.js`, `--tool ./a.js,./b.js`
+  - `--plugin-isolation <none|strict>` Tools Host permission preset.
+    - Defaults: `strict` when any `--tool` is provided; otherwise `none`.
+
+- Behavior
+  - Built‑in tools are always in‑process and register first.
+  - External tools run in a single Tools Host child process.
+  - In `strict` isolation (default with externals): network and fs write are denied; fs reads are allow‑listed to your project and resolved plugin directories.
+
+- Supported `--tool` inputs
+  - ESM packages (installed in node_modules)
+  - Local ESM files (paths are normalized to `file://` URLs internally)
+
+- Not supported as `--tool` inputs
+  - Raw TypeScript sources (`.ts`) — the Tools Host does not install a TS loader
+  - Remote `http(s):` or `data:` URLs — these will fail to load and appear in startup warnings/errors
+
+- Troubleshooting
+  - On Node < 22, you’ll see a warning and only built‑ins will be available.
+  - Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
+
+### Authoring external tools with `createMcpTool`
+
+Export an ESM module using `createMcpTool`. The server adapts single or multiple tool definitions automatically.
+
+Single tool:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'hello',
+  description: 'Say hello',
+  inputSchema: {
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    required: ['name']
+  },
+  async handler({ name }) {
+    return `Hello, ${name}!`;
+  }
+});
+```
+
+Multiple tools:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool([
+  { name: 'hi', description: 'Greets', inputSchema: { type: 'object' }, handler: () => 'hi' },
+  { name: 'bye', description: 'Farewell', inputSchema: { type: 'object' }, handler: () => 'bye' }
+]);
+```
+
+Named group:
+
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'my-plugin',
+  tools: [
+    { name: 'alpha', description: 'A', inputSchema: { type: 'object' }, handler: () => 'A' },
+    { name: 'beta', description: 'B', inputSchema: { type: 'object' }, handler: () => 'B' }
+  ]
+});
+```
+
+Notes
+- External tools must be ESM modules (packages or ESM files). The Tools Host imports your module via `import()`.
+- The `handler` receives `args` per your JSON Schema. A reserved `options?` parameter may be added in a future release; it is not currently passed.
 
 ## Logging
 
