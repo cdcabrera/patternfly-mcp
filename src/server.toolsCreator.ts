@@ -186,6 +186,16 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
 
 /**
  * Author-facing tool config. The handler may be async or sync.
+ *
+ * @template TArgs The type of arguments expected by the tool (optional).
+ * @template TResult The type of result returned by the tool (optional).
+ *
+ * @property name - Name of the tool
+ * @property description - Description of the tool
+ * @property inputSchema - JSON Schema describing the arguments expected by the tool
+ * @property {(args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult} handler - Tool handler
+ *     - `args` are returned by the tool's `inputSchema`'
+ *     - `options` are currently unused and reserved for future use.
  */
 type ToolConfig<TArgs = unknown, TResult = unknown> = {
   name: string;
@@ -196,8 +206,14 @@ type ToolConfig<TArgs = unknown, TResult = unknown> = {
 
 /**
  * Author-facing multi-tool config.
+ *
+ * @property [name] - Optional name for the group of tools
+ * @property {ToolConfig} tools - Array of tool configs
  */
-type MultiToolConfig = { name?: string | undefined; tools: ToolConfig[] };
+type MultiToolConfig = {
+  name?: string | undefined;
+  tools: ToolConfig[]
+};
 
 /**
  * Create an AppToolPlugin from a multi-tool config.
