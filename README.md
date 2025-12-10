@@ -99,7 +99,6 @@ Add external tools at startup. External tools run out‑of‑process in a separa
     - Defaults: `strict` when any `--tool` is provided; otherwise `none`.
 
 - Behavior
-  - Built‑in tools are always in‑process and register first.
   - External tools run in a single Tools Host child process.
   - In `strict` isolation (default with externals): network and fs write are denied; fs reads are allow‑listed to your project and resolved plugin directories.
 
@@ -112,7 +111,7 @@ Add external tools at startup. External tools run out‑of‑process in a separa
   - Remote `http(s):` or `data:` URLs — these will fail to load and appear in startup warnings/errors
 
 - Troubleshooting
-  - On Node < 22, you’ll see a warning and only built‑ins will be available.
+  - If external tools don’t appear, verify you’re running on Node ≥ 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
   - Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
 
 ### Authoring external tools with `createMcpTool`
