@@ -183,7 +183,7 @@ describe('Tools', () => {
     const url = pathToFileURL(abs).href; // file:///...
     // console.log('url', url);
 
-    CLIENT = await startServer({ args: ['--log-stderr', '--verbose', '--plugin-isolation', 'none', '--tool', url] });
+    CLIENT = await startServer({ args: ['--log-stderr', '--verbose', '--plugin-isolation', 'strict', '--tool', url] });
     // CLIENT = await startServer({ args: ['--tool', 'tests/__fixtures__/tool.echo.js'] });
   });
 

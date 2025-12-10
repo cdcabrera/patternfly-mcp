@@ -175,11 +175,23 @@ const spawnToolsHost = async (
 
     allowDirs.add(dirname(updatedEntry));
 
-    nodeArgs.push(`--allow-fs-read=${[...allowDirs].join(',')}`);
+    const allowArg = `--allow-fs-read=${[...allowDirs].join(',')}`;
+
+    nodeArgs.push(allowArg);
+
+    log.debug(`Tools Host allow-fs-read: ${allowArg}`);
   }
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+  });
+
+  child.stderr?.on('data', chunk => {
+    const msg = String(chunk);
+
+    if (msg.trim()) {
+      log.debug(`[Tools Host stderr] ${msg}`);
+    }
   });
 
   // hello
