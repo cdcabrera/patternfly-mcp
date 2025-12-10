@@ -79,7 +79,10 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
 
   for (const spec of request.specs || []) {
     try {
-      const mod = await import(spec);
+      // review the plugin @rollup/plugin-dynamic-import-vars
+      // const mod = await import(spec);
+      const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
+      const mod = await dynamicImport(spec);
       const creators = normalizeToCreators(mod);
 
       for (const create of creators) {
