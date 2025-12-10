@@ -111,9 +111,9 @@ Add external tools at startup. External tools run out‑of‑process in a separa
   - Remote `http(s):` or `data:` URLs — these will fail to load and appear in startup warnings/errors
 
 - Troubleshooting
-  - If external tools don’t appear, verify you’re running on Node ≥ 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
+  - If external tools don't appear, verify you're running on Node ≥ 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
   - Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
-  - If `tools/list` fails or `tools/call` rejects due to argument validation (e.g., messages about schema/type), ensure you are using the latest `@modelcontextprotocol/sdk`. If the issue persists, you may need to define your tool arguments with a Zod schema ([zod](https://github.com/colinhacks/zod)) and pass it to the registry.
+  - If `tools/list` fails or `tools/call` rejects due to argument validation (e.g., messages about `safeParseAsync is not a function`), ensure your `inputSchema` is either a valid JSON Schema object or a Zod schema. Plain JSON Schema objects are automatically converted, but malformed schemas may cause issues. See the [Input Schema Format](#input-schema-format) section for details.
 
 ### Authoring external tools with `createMcpTool`
 
@@ -165,8 +165,39 @@ export default createMcpTool({
 
 Notes
 - External tools must be ESM modules (packages or ESM files). The Tools Host imports your module via `import()`.
-- The `handler` receives `args` per your JSON Schema. A reserved `options?` parameter may be added in a future release; it is not currently passed.
-- If your tool's `inputSchema` does not validate at runtime with your MCP client/SDK, consider authoring the schema with Zod ([zod](https://github.com/colinhacks/zod)) and passing a Zod schema instead.
+- The `handler` receives `args` per your `inputSchema`. A reserved `options?` parameter may be added in a future release; it is not currently passed.
+
+### Input Schema Format
+
+The `inputSchema` property accepts either **plain JSON Schema objects** or **Zod schemas**. Both formats are automatically converted to the format required by the MCP SDK.
+
+**JSON Schema (recommended for simplicity):**
+```ts
+inputSchema: {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    age: { type: 'number' }
+  },
+  required: ['name']
+}
+```
+
+**Zod Schema (for advanced validation):**
+```ts
+import { z } from 'zod';
+
+inputSchema: {
+  name: z.string(),
+  age: z.number().optional()
+}
+```
+
+**Important:** The MCP SDK expects Zod-compatible schemas internally. Plain JSON Schema objects are automatically converted to equivalent Zod schemas when tools are registered. This conversion handles common cases like:
+- `{ type: 'object', additionalProperties: true }` → `z.object({}).passthrough()`
+- Simple object schemas → `z.object({...})`
+
+If you encounter validation errors, ensure your JSON Schema follows standard JSON Schema format, or use Zod schemas directly for more control.
 
 ## Logging
 
