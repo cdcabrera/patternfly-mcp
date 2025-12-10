@@ -183,7 +183,7 @@ describe('Tools', () => {
     const url = pathToFileURL(abs).href; // file:///...
     // console.log('url', url);
 
-    CLIENT = await startServer({ args: ['--log-stderr', '--verbose', '--plugin-isolation', 'strict', '--tool', url] });
+    CLIENT = await startServer({ args: ['--log-stderr', '--plugin-isolation', 'strict', '--tool', url] });
     // CLIENT = await startServer({ args: ['--tool', 'tests/__fixtures__/tool.echo.js'] });
   });
 
@@ -201,7 +201,7 @@ describe('Tools', () => {
     const resp = await CLIENT.send(req);
     const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
 
-    expect(names).toMatchSnapshot();
+    expect(resp).toMatchSnapshot();
     // expect(names).toContain('echo_plugin_tool');
 
     expect(CLIENT.logs()).toMatchSnapshot();

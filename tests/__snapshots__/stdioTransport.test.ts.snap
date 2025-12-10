@@ -442,18 +442,6 @@ exports[`Tools should access a new tool 1`] = `[]`;
 
 exports[`Tools should access a new tool 2`] = `
 [
-  "[DEBUG]: Server memo: {
-  "type": "memo promise",
-  "cache": [
-    "af7dd1dd8af7c87f95efa87ecbfa5d271c562a87",
-    {},
-    null,
-    null,
-    null,
-    null
-  ]
-}
-",
   "[INFO]: Registered tool: usePatternFlyDocs
 ",
   "[INFO]: Registered tool: fetchDocs

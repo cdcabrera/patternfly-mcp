@@ -171,15 +171,32 @@ const spawnToolsHost = async (
   // Deny network and fs write by omission
   if (pluginIsolation === 'strict') {
     nodeArgs.push('--experimental-permission');
-    const allowDirs = new Set<string>(computeFsReadAllowlist());
 
-    allowDirs.add(dirname(updatedEntry));
+    // 1) Gather directories (project, plugin modules, and the host entry’s dir)
+    const allowSet = new Set<string>(computeFsReadAllowlist());
 
-    const allowArg = `--allow-fs-read=${[...allowDirs].join(',')}`;
+    allowSet.add(dirname(updatedEntry));
 
-    nodeArgs.push(allowArg);
+    // 2) Normalize to real absolute paths to avoid symlink mismatches
+    const { realpathSync } = await import('node:fs');
 
-    log.debug(`Tools Host allow-fs-read: ${allowArg}`);
+    const allowList = [...allowSet]
+      .map(dir => {
+        try {
+          return realpathSync(dir);
+        } catch {
+          return dir;
+        }
+      })
+      .filter(Boolean);
+
+    // 3) Pass one --allow-fs-read per directory (more robust than a single comma-separated flag)
+    for (const dir of allowList) {
+      nodeArgs.push(`--allow-fs-read=${dir}`);
+    }
+
+    // Optional debug to verify exactly what the child gets
+    log.debug(`Tools Host allow-fs-read flags: ${allowList.map(dir => `--allow-fs-read=${dir}`).join(' ')}`);
   }
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
