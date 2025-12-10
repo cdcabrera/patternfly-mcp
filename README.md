@@ -416,7 +416,6 @@ npx @modelcontextprotocol/inspector-cli \
 ## Environment variables
 
 - DOC_MCP_FETCH_TIMEOUT_MS: Milliseconds to wait before aborting an HTTP fetch (default: 15000)
-- DOC_MCP_CLEAR_COOLDOWN_MS: Default cooldown value used in internal cache configuration. The current public API does not expose a `clearCache` tool.
 
 ## External tools (plugins)
 
