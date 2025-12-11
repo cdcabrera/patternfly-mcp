@@ -16,6 +16,7 @@ import {
   runWithSession
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { isZodRawShape, isZodSchema } from './server.schema';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
 
@@ -169,8 +170,14 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     updatedTools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
+      const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
 
       log.info(`Registered tool: ${name}`);
+
+      if (!isZod) {
+        log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. Zod raw shapes are preferred. Kneel before Zod.`);
+      }
+
       server?.registerTool(name, schema, (args = {}) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => await callback(args))));
