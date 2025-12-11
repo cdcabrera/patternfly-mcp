@@ -87,7 +87,16 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
     toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions
   };
 
-  const frozen = freezeObject(structuredClone(merged));
+  // AFTER
+  const originalToolModules = Array.isArray(merged.toolModules) ? merged.toolModules : [];
+
+  // Avoid cloning functions in toolModules
+  const mergedCloneSafe = { ...merged, toolModules: [] as unknown[] };
+  const cloned = structuredClone(mergedCloneSafe);
+
+  // Restore the non‑cloneable array reference
+  const restored: GlobalOptions = { ...cloned, toolModules: originalToolModules } as GlobalOptions;
+  const frozen = freezeObject(restored);
 
   optionsContext.enterWith(frozen);
 
@@ -130,7 +139,11 @@ const runWithOptions = async <TReturn>(
   options: GlobalOptions,
   callback: () => TReturn | Promise<TReturn>
 ) => {
-  const frozen = freezeObject(structuredClone(options));
+  const originalToolModules = Array.isArray((options as any).toolModules) ? (options as any).toolModules : [];
+  const optionsCloneSafe = { ...(options as any), toolModules: [] as unknown[] };
+  const cloned = structuredClone(optionsCloneSafe);
+  const restored = { ...cloned, toolModules: originalToolModules } as GlobalOptions;
+  const frozen = freezeObject(restored);
 
   return optionsContext.run(frozen, callback);
 };

@@ -6,6 +6,7 @@ import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
 import { normalizeInputSchema } from './server.schema';
+import { isPlugin, pluginToCreators } from './server.toolsCreator';
 import {
   awaitIpc,
   send,
@@ -50,6 +51,10 @@ const isFilePath = (str: string): boolean =>
 const isUrlLike = (str: string) =>
   /^(file:|https?:|data:|node:)/i.test(str);
 
+const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
+
+const isInlineCreator = (module: unknown): module is McpToolCreator => typeof module === 'function';
+
 /**
  * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
  *
@@ -60,7 +65,7 @@ const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: Global
 
   directories.add(contextPath);
 
-  for (const moduleSpec of toolModules) {
+  for (const moduleSpec of (toolModules || []).filter(isStringToolModule)) {
     try {
       const url = import.meta.resolve(moduleSpec, contextUrl);
 
@@ -188,7 +193,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  * @returns Updated array of normalized tool modules
  */
 const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
-  toolModules.map(tool => {
+  toolModules.filter(isStringToolModule).map(tool => {
     if (isUrlLike(tool)) {
       return tool;
     }
@@ -416,6 +421,45 @@ const sendToolsHostShutdown = async (
   });
 };
 
+// Inline schema normalization wrapper
+const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator => options => {
+  const [name, schema, cb] = creator(options);
+  const original = schema?.inputSchema;
+  const normalized = normalizeInputSchema(original);
+
+  if (normalized !== original) {
+    log.info(`Inline tool "${name}" input schema converted from JSON→Zod`);
+  }
+
+  return [name, { ...schema, inputSchema: normalized }, cb];
+};
+
+const getToolName = (creator: McpToolCreator): string | undefined => {
+  try {
+    return creator()?.[0];
+  } catch {
+    return undefined;
+  }
+};
+
+const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string>): McpToolCreator | null => {
+  const name = getToolName(creator);
+
+  if (!name) {
+    return creator;
+  }
+
+  if (usedNames.has(name)) {
+    log.warn(`Skipping inline tool "${name}" because a tool with the same name is already provided (built-in or earlier).`);
+
+    return null;
+  }
+
+  usedNames.add(name);
+
+  return creator;
+};
+
 /**
  * Compose built-in creators with any externally loaded creators.
  *
@@ -431,22 +475,76 @@ const sendToolsHostShutdown = async (
  * @param {AppSession} [sessionOptions]
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
-const composeTools = async (builtinCreators: McpToolCreator[],
+const composeTools = async (
+  builtinCreators: McpToolCreator[],
   { toolModules, nodeVersion }: GlobalOptions = getOptions(),
-  { sessionId }: AppSession = getSessionOptions()): Promise<McpToolCreator[]> => {
+  { sessionId }: AppSession = getSessionOptions()
+): Promise<McpToolCreator[]> => {
+  const result: McpToolCreator[] = [];
+
+  // 1) Seed with built-ins and reserve names
+  const usedNames = new Set<string>(builtinCreators.map(creator => getToolName(creator)).filter(Boolean) as string[]);
+
+  result.push(...builtinCreators);
+
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
-    return builtinCreators;
+    return result;
+  }
+
+  // 2) Partition modules
+  const inlineModules: McpToolCreator[] = [];
+  const fileSpecs: string[] = [];
+
+  for (const mod of toolModules) {
+    if (isStringToolModule(mod)) {
+      fileSpecs.push(mod);
+    } else if (isInlineCreator(mod)) {
+      inlineModules.push(mod);
+    } else if (isPlugin(mod)) {
+      inlineModules.push(...pluginToCreators(mod));
+    } else {
+      log.warn(`Unknown tool module type: ${typeof mod}`);
+    }
+  }
+
+  // 3) Normalize + name-guard inline creators
+  for (const creator of inlineModules) {
+    const normalized = wrapCreatorWithNormalization(creator as McpToolCreator);
+    const guarded = wrapCreatorWithNameGuard(normalized, usedNames);
+
+    if (guarded) {
+      result.push(guarded);
+    }
+  }
+
+  // 4) Load file-based via Tools Host (Node gate applies only here)
+  if (fileSpecs.length === 0) {
+    return result;
   }
 
   if (nodeVersion < 22) {
-    log.warn('External tool plugins require Node >= 22; skipping externals and continuing with built-ins.');
+    log.warn('External tool plugins require Node >= 22; skipping file-based tools.');
 
-    return builtinCreators;
+    return result;
   }
 
   try {
     const host = await spawnToolsHost();
-    const proxies = makeProxyCreators(host);
+
+    // Filter manifest by reserved names BEFORE proxying
+    const filteredTools = host.tools.filter(tool => {
+      if (usedNames.has(tool.name)) {
+        log.warn(`Skipping plugin tool "${tool.name}" – name already used by built-in/inline tool.`);
+
+        return false;
+      }
+      usedNames.add(tool.name);
+
+      return true;
+    });
+
+    const filteredHandle = { ...host, tools: filteredTools } as HostHandle;
+    const proxies = makeProxyCreators(filteredHandle);
 
     // Associate the spawned host with the current session
     activeHostsBySession.set(sessionId, host);
@@ -455,16 +553,12 @@ const composeTools = async (builtinCreators: McpToolCreator[],
     const onChildExitOrDisconnect = () => {
       const current = activeHostsBySession.get(sessionId);
 
-      // Remove only if this exact child is still the active one for the session
       if (current && current.child === host.child) {
         try {
-          // Close child stderr to avoid leaks
           host.closeStderr?.();
         } catch {}
         activeHostsBySession.delete(sessionId);
       }
-
-      // Clean up listeners; we only need to act once
       host.child.off('exit', onChildExitOrDisconnect);
       host.child.off('disconnect', onChildExitOrDisconnect);
     };
@@ -472,12 +566,12 @@ const composeTools = async (builtinCreators: McpToolCreator[],
     host.child.once('exit', onChildExitOrDisconnect);
     host.child.once('disconnect', onChildExitOrDisconnect);
 
-    return [...builtinCreators, ...proxies];
+    return [...result, ...proxies];
   } catch (error) {
-    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins.');
+    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins/inline.');
     log.warn(formatUnknownError(error));
 
-    return builtinCreators;
+    return result;
   }
 };
 
