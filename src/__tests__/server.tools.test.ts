@@ -1,11 +1,11 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import {
   composeTools,
-  getBuiltinTools,
   logWarningsErrors,
   normalizeToolModules,
   sendToolsHostShutdown
 } from '../server.tools';
+import { builtinTools } from '../server';
 import { log } from '../logger';
 import { getOptions, getSessionOptions } from '../options.context';
 import { send, awaitIpc, type IpcResponse } from '../server.toolsIpc';
@@ -51,24 +51,6 @@ const MockGetSessionOptions = getSessionOptions as jest.MockedFunction<typeof ge
 const MockSpawn = spawn as jest.MockedFunction<typeof spawn>;
 const MockSend = send as jest.MockedFunction<typeof send>;
 const MockAwaitIpc = awaitIpc as jest.MockedFunction<typeof awaitIpc>;
-
-describe('getBuiltinTools', () => {
-  it('should return array of built-in tool creators', () => {
-    const tools = getBuiltinTools();
-
-    expect(Array.isArray(tools)).toBe(true);
-    expect(tools.length).toBeGreaterThan(0);
-    expect(tools.every(tool => typeof tool === 'function')).toBe(true);
-  });
-
-  it('should return consistent tool creators', () => {
-    const tools1 = getBuiltinTools();
-    const tools2 = getBuiltinTools();
-
-    expect(tools1.length).toBe(tools2.length);
-    expect(tools1).toEqual(tools2);
-  });
-});
 
 describe('logWarningsErrors', () => {
   beforeEach(() => {
@@ -444,7 +426,7 @@ describe('composeTools', () => {
       pluginHost: DEFAULT_OPTIONS.pluginHost
     } as any);
 
-    const result = await composeTools();
+    const result = await composeTools(builtinTools);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
@@ -476,7 +458,7 @@ describe('composeTools', () => {
       pluginHost: DEFAULT_OPTIONS.pluginHost
     } as any);
 
-    const result = await composeTools();
+    const result = await composeTools(builtinTools);
 
     expect(Array.isArray(result)).toBe(true);
     expect(MockLog.warn).toHaveBeenCalledWith(
@@ -495,7 +477,7 @@ describe('composeTools', () => {
       pluginIsolation: undefined
     } as any);
 
-    const result = await composeTools();
+    const result = await composeTools(builtinTools);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
@@ -517,7 +499,7 @@ describe('composeTools', () => {
       pluginHost: DEFAULT_OPTIONS.pluginHost
     } as any);
 
-    const result = await composeTools();
+    const result = await composeTools(builtinTools);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
@@ -537,7 +519,7 @@ describe('composeTools', () => {
       pluginHost: DEFAULT_OPTIONS.pluginHost
     } as any);
 
-    const result = await composeTools();
+    const result = await composeTools(builtinTools);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
@@ -556,7 +538,7 @@ describe('composeTools', () => {
       pluginIsolation: 'strict'
     } as any);
 
-    await composeTools();
+    await composeTools(builtinTools);
 
     expect(MockSpawn).toHaveBeenCalled();
     const spawnCall = MockSpawn.mock.calls[0];
@@ -577,7 +559,7 @@ describe('composeTools', () => {
       pluginHost: DEFAULT_OPTIONS.pluginHost
     } as any);
 
-    await composeTools();
+    await composeTools(builtinTools);
 
     expect(MockSend).toHaveBeenCalledWith(
       expect.any(Object),
@@ -624,7 +606,7 @@ describe('composeTools', () => {
       pluginHost: DEFAULT_OPTIONS.pluginHost
     } as any);
 
-    await composeTools();
+    await composeTools(builtinTools);
 
     expect(MockLog.warn).toHaveBeenCalledWith(
       expect.stringContaining('Tools load warnings (2)')
@@ -646,7 +628,7 @@ describe('composeTools', () => {
     // Reset mocks to track calls in this test
     mockChild.once.mockClear();
 
-    await composeTools();
+    await composeTools(builtinTools);
 
     // The cleanup handlers should be registered
     expect(mockChild.once).toHaveBeenCalled();

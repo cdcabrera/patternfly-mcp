@@ -4,9 +4,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
-import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
-import { fetchDocsTool } from './tool.fetchDocs';
-import { componentSchemasTool } from './tool.componentSchemas';
 import { log, formatUnknownError } from './logger';
 import { normalizeInputSchema } from './server.schema';
 import {
@@ -52,17 +49,6 @@ const isFilePath = (str: string): boolean =>
  */
 const isUrlLike = (str: string) =>
   /^(file:|https?:|data:|node:)/i.test(str);
-
-/**
- * Built-in tools.
- *
- * @returns Array of built-in tools
- */
-const getBuiltinTools = (): McpToolCreator[] => [
-  usePatternFlyDocsTool,
-  fetchDocsTool,
-  componentSchemasTool
-];
 
 /**
  * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
@@ -120,6 +106,12 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
   }
 };
 
+/**
+ * Debug a child process' stderr output.
+ *
+ * @param child - Child process to debug
+ * @param {AppSession} sessionOptions
+ */
 const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) => {
   const childPid = child.pid;
   const promoted = new Set<string>();
@@ -432,18 +424,16 @@ const sendToolsHostShutdown = async (
  *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
  * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
  *
- * @param {GlobalOptions} options
+ * @param builtinCreators - Built-in tool creators
+ * @param {GlobalOptions} [options]
  * @param options.toolModules
  * @param options.nodeVersion
- * @param {AppSession} sessionOptions
+ * @param {AppSession} [sessionOptions]
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
-const composeTools = async (
+const composeTools = async (builtinCreators: McpToolCreator[],
   { toolModules, nodeVersion }: GlobalOptions = getOptions(),
-  { sessionId }: AppSession = getSessionOptions()
-): Promise<McpToolCreator[]> => {
-  const builtinCreators = getBuiltinTools();
-
+  { sessionId }: AppSession = getSessionOptions()): Promise<McpToolCreator[]> => {
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
     return builtinCreators;
   }
@@ -493,8 +483,13 @@ const composeTools = async (
 
 export {
   composeTools,
-  getBuiltinTools,
+  computeFsReadAllowlist,
+  debugChild,
+  isFilePath,
+  isUrlLike,
   logWarningsErrors,
+  makeProxyCreators,
   normalizeToolModules,
-  sendToolsHostShutdown
+  sendToolsHostShutdown,
+  spawnToolsHost
 };

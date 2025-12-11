@@ -72,6 +72,17 @@ interface ServerInstance {
 }
 
 /**
+ * Built-in tools.
+ *
+ * Array of built-in tools
+ */
+const builtinTools: McpToolCreator[] = [
+  usePatternFlyDocsTool,
+  fetchDocsTool,
+  componentSchemasTool
+];
+
+/**
  * Create and run a server with shutdown, register tool and errors.
  *
  * @param [options] Server options
@@ -82,7 +93,7 @@ interface ServerInstance {
  * @returns Server instance
  */
 const runServer = async (options: ServerOptions = getOptions(), {
-  tools = [],
+  tools = builtinTools,
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
@@ -143,8 +154,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
     // Setup server logging.
     const subUnsub = createServerLogger.memo(server);
 
-    // Register tools after logging is set up.
-    const updatedTools = await composeTools();
+    // Combine built-in tools with custom ones after logging is set up.
+    const updatedTools = await composeTools(tools);
 
     if (subUnsub) {
       const { subscribe, unsubscribe } = subUnsub;
@@ -247,6 +258,7 @@ runServer.memo = memo(
 
 export {
   runServer,
+  builtinTools,
   type McpTool,
   type McpToolCreator,
   type ServerInstance,
