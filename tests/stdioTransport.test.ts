@@ -89,7 +89,7 @@ describe('PatternFly MCP, STDIO', () => {
       }
     } as RpcRequest;
 
-    const response = await CLIENT?.send(req);
+    const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
     expect(text.startsWith('# Documentation from')).toBe(true);
@@ -180,11 +180,9 @@ describe('Tools', () => {
 
   beforeEach(async () => {
     const abs = resolve(process.cwd(), 'tests/__fixtures__/tool.echo.js');
-    const url = pathToFileURL(abs).href; // file:///...
-    // console.log('url', url);
+    const url = pathToFileURL(abs).href;
 
     CLIENT = await startServer({ args: ['--log-stderr', '--plugin-isolation', 'strict', '--tool', url] });
-    // CLIENT = await startServer({ args: ['--tool', 'tests/__fixtures__/tool.echo.js'] });
   });
 
   afterEach(async () => CLIENT.stop());
@@ -192,24 +190,14 @@ describe('Tools', () => {
   it('should access a new tool', async () => {
     const req = {
       method: 'tools/list',
-      params: {
-        // name: 'echo_plugin_tool',
-        // arguments: { lorem: 'ipsum', dolor: 'sit amet' }
-      }
+      params: {}
     };
 
     const resp = await CLIENT.send(req);
     const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
 
-    // expect(resp).toMatchSnapshot();
     expect(names).toContain('echo_plugin_tool');
-
     expect(CLIENT.logs()).toMatchSnapshot();
-
-    // const resp = await CLIENT.send(req);
-    // const text = resp?.result?.content?.[0]?.text || '';
-
-    // expect(text).toMatchSnapshot();
   });
 
   it('should interact with the new tool', async () => {
@@ -218,19 +206,15 @@ describe('Tools', () => {
       params: {
         name: 'echo_plugin_tool',
         arguments: {
-          type: 'echo'
+          type: 'echo',
+          lorem: 'ipsum',
+          dolor: 'sit amet'
         }
-        // arguments: { lorem: 'ipsum', dolor: 'sit amet' }
       }
     };
 
     const resp = await CLIENT.send(req);
-    // const text = resp?.result?.content?.[0]?.text || '';
 
-    // const resp = await CLIENT.send(req);
-    // const text = resp?.result?.content?.[0]?.text || '';
-
-    // expect(text).toMatchSnapshot();
-    expect(resp).toMatchSnapshot();
+    expect(resp?.result?.args).toMatchSnapshot();
   });
 });

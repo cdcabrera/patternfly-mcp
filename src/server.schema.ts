@@ -51,8 +51,8 @@ const isZodRawShape = (value: unknown): boolean => {
 
 /**
  * Convert a plain JSON Schema object to a Zod schema.
- * For simple cases, converts to appropriate Zod schemas.
- * For complex cases, falls back to z.any() to accept any input.
+ * - For simple cases, converts to appropriate Zod schemas.
+ * - For complex cases, falls back to z.any() to accept any input.
  *
  * @param jsonSchema - Plain JSON Schema object
  * @returns Zod schema equivalent
@@ -68,12 +68,6 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
   if (schema.type === 'object') {
     // If additionalProperties is true, allow any properties
     if (schema.additionalProperties === true || schema.additionalProperties === undefined) {
-      // If there are no required properties, use passthrough to allow any object
-      if (!schema.properties || (isPlainObject(schema.properties) && Object.keys(schema.properties).length === 0)) {
-        return z.object({}).passthrough();
-      }
-
-      // If there are properties, we'd need to convert them, but for now use passthrough
       // This is a simplified conversion - full JSON Schema to Zod conversion would be more complex
       return z.object({}).passthrough();
     }

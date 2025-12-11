@@ -455,14 +455,8 @@ exports[`Tools should access a new tool 1`] = `
 
 exports[`Tools should interact with the new tool 1`] = `
 {
-  "id": null,
-  "jsonrpc": "2.0",
-  "result": {
-    "args": {
-      "type": "echo",
-    },
-    "content": [],
-    "ok": true,
-  },
+  "dolor": "sit amet",
+  "lorem": "ipsum",
+  "type": "echo",
 }
 `;
