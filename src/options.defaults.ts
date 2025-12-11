@@ -80,7 +80,7 @@ type DefaultOptionsOverrides = Partial<
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
-  toolModules?: ToolModule[];
+  toolModules?: ToolModule[] | undefined;
 };
 
 /**
