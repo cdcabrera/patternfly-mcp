@@ -93,7 +93,7 @@ Add external tools at startup. External tools run out‑of‑process in a separa
   - Node >= 22 → external tools run out‑of‑process via the Tools Host.
 
 - CLI
-  - `--tool <spec>` Add one or more external tools. Repeat the flag or pass a comma‑separated list.
+  - `--tool <plugin>` Add one or more external tools. Repeat the flag or pass a comma‑separated list.
     - Examples: `--tool @acme/my-plugin`, `--tool ./plugins/my-tools.js`, `--tool ./a.js,./b.js`
   - `--plugin-isolation <none|strict>` Tools Host permission preset.
     - Defaults: `strict` when any `--tool` is provided; otherwise `none`.
@@ -162,7 +162,7 @@ async function main() {
     // Add one or more in‑process tools directly. Default tools will be registered first.
     toolModules: [
       // You can pass:
-      //  - a string module spec (package or file) for external plugins (Tools Host, Node ≥ 22), or
+      //  - a string module (package or file) for external plugins (Tools Host, Node ≥ 22), or
       //  - a creator function returned by createMcpTool(...) for in‑process tools.
       echoTool
     ]
@@ -536,7 +536,7 @@ npx @modelcontextprotocol/inspector-cli \
 
 ## External tools (plugins)
 
-You can load external MCP tool modules at runtime using a single CLI flag or via programmatic options. Modules must be ESM-importable (absolute/relative path or package spec).
+You can load external MCP tool modules at runtime using a single CLI flag or via programmatic options. Modules must be ESM-importable (absolute/relative path or package).
 
 CLI examples (single `--tool` flag):
 
