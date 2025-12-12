@@ -56,6 +56,9 @@ type ServerOnLogHandler = (entry: ServerLogEvent) => void;
 
 /**
  * Subscribes a handler function to server logs. Automatically unsubscribed on server shutdown.
+ *
+ * @param {ServerOnLogHandler} handler - The function responsible for handling server log events.
+ * @returns A cleanup function that unregisters the logging handler when called.
  */
 type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
 

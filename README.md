@@ -129,10 +129,10 @@ Tools as plugins can be
 #### Example
 ```typescript
 // app.ts
-import { start, createMcpTool } from '@patternfly/patternfly-mcp';
+import { start, createMcpTool, type PfMcpInstance, type PfMcpLogEvent, type PfMcpToolCreator } from '@patternfly/patternfly-mcp';
 
 // Define a simple inline MCP tool. `createMcpTool` is a convenience wrapper to help you start writing a MCP tool.
-const echoTool = createMcpTool({
+const echoTool: PfMcpToolCreator = createMcpTool({
   // The unique name of the tool, used in the `tools/list` response, related to the MCP client.
   // A MCP client can help Models use this, so make it informative and clear.
   name: 'echoAMessage',
@@ -150,25 +150,27 @@ const echoTool = createMcpTool({
     required: ['message'] // Required properties, in this case `message`
   },
 
-  // The async handler. The Model calls the handler per the inputSchema and inputs the `message`. The handler
-  // parses the `message` for the Model and returns it. The Model receives the parsed `message` and uses it.
+  // The handler, async or sync. The Model calls the handler per the client and inputSchema and inputs the
+  // `message`. The handler parses the `message` and returns it. The Model receives the parsed `message`
+  // and uses it.
   handler: async (args: { message: string }) => ({ text: `You said: ${args.message}` })
 });
 
 async function main() {
   // Start the server.
-  const server = await start({
+  const server: PfMcpInstance = await start({
     // Add one or more in‑process tools directly. Default tools will be registered first.
     toolModules: [
       // You can pass an ESM module that exports tools, or a direct creator tuple.
       // Here we pass the tool creator module object directly for convenience
       echoTool
-    ],
-    logging: { level: 'info', stderr: true },
+    ]
+    // Optional: enable all logging through stderr and/or protocol.
+    // logging: { level: 'info', stderr: true },
   });
 
-  // Optional: observe server logs in‑process
-  server.onLog(event => {
+  // Optional: observe refined server logs in‑process
+  server.onLog((event: PfMcpLogEvent) => {
     // A good habit to get into is avoiding `console.log` and `console.info` in production paths, they pollute stdio
     // communication and can create noise. Use `console.error`, `console.warn`, or `process.stderr.write` instead.
     if (event.level !== 'debug') {
@@ -178,8 +180,8 @@ async function main() {
     }
   });
 
-  // Stop the server.
-  await server.stop();
+  // Stop the server after 10 seconds.
+  setTimeout(async () => server.stop(), 10000);
 }
 
 // Run the program.

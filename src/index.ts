@@ -6,7 +6,8 @@ import {
   type ServerSettings,
   type ServerOnLog,
   type ServerOnLogHandler,
-  type ServerLogEvent
+  type ServerLogEvent,
+  type McpToolCreator
 } from './server';
 import { createMcpTool, type ToolConfig, type MultiToolConfig } from './server.toolsCreator';
 
@@ -37,12 +38,62 @@ type PfMcpOptions = DefaultOptionsOverrides & {
 type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 
 /**
+ * Server instance with shutdown capability
+ *
+ * @alias ServerInstance
+ * @property stop - Stops the server, gracefully.
+ * @property isRunning - Indicates whether the server is running.
+ * @property onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
+ */
+type PfMcpInstance = ServerInstance;
+
+/**
+ * Subscribes a handler function, `PfMcpOnLogHandler`, to server logs. Automatically unsubscribed on server shutdown.
+ *
+ * @alias ServerOnLog
+ * @param {PfMcpOnLogHandler} handler - The function responsible for handling server log events.
+ * @returns A cleanup function that unregisters the logging handler when called.
+ */
+type PfMcpOnLog = ServerOnLog;
+
+/**
+ * The handler function passed by `onLog`, `PfMcpOnLog`, to subscribe to server logs. Automatically unsubscribed on server shutdown.
+ *
+ * @alias ServerOnLogHandler
+ * @param {PfMcpLogEvent} entry
+ */
+type PfMcpOnLogHandler = ServerOnLogHandler;
+
+/**
+ * The log event passed to the `onLog` handler, `PfMcpOnLogHandler`.
+ *
+ * @alias ServerLogEvent
+ * @property level - Severity level of the event.
+ * @property msg - Optional Message providing context or description of the event.
+ * @property args - Optional additional arguments associated with the event.
+ * @property fields - Optional key-value pairs for metadata associated with the event.
+ * @property time - Event timestamp in epoch milliseconds.
+ * @property source - Name of the module or subsystem generating the event, if available.
+ * @property transport - Transport configuration used for this event.
+ */
+type PfMcpLogEvent = ServerLogEvent;
+
+/**
+ * An MCP tool "wrapper", or "creator", from `createMcpTool`.
+ *
+ * Passed back to `toolModules` in `PfMcpOptions` to register a tool.
+ *
+ * @alias McpToolCreator
+ */
+type PfMcpToolCreator = McpToolCreator;
+
+/**
  * Main function - CLI entry point with optional programmatic overrides
  *
  * @param [pfMcpOptions] - User configurable options
  * @param [pfMcpSettings] - MCP server settings
  *
- * @returns {Promise<ServerInstance>} Server-instance with shutdown capability
+ * @returns {Promise<PfMcpInstance>} Server-instance with shutdown capability
  *
  * @throws {Error} If the server fails to start or any error occurs during initialization,
  *     and `allowProcessExit` is set to `false`, the error will be thrown rather than exiting
@@ -51,7 +102,7 @@ type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 const main = async (
   pfMcpOptions: PfMcpOptions = {},
   pfMcpSettings: PfMcpSettings = {}
-): Promise<ServerInstance> => {
+): Promise<PfMcpInstance> => {
   const { mode, ...options } = pfMcpOptions;
   const { allowProcessExit } = pfMcpSettings;
 
@@ -88,10 +139,11 @@ export {
   type CliOptions,
   type PfMcpOptions,
   type PfMcpSettings,
-  type ServerInstance,
-  type ServerLogEvent,
-  type ServerOnLog,
-  type ServerOnLogHandler,
+  type PfMcpInstance,
+  type PfMcpLogEvent,
+  type PfMcpOnLog,
+  type PfMcpOnLogHandler,
+  type PfMcpToolCreator,
   type ToolConfig,
   type MultiToolConfig
 };
