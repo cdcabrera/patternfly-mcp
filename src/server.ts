@@ -108,18 +108,18 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let onLogSetup: ServerOnLog = () => () => {};
 
   const stopServer = async () => {
-    log.info(`\n${options.name} server shutting down... `);
+    log.debug(`${options.name} attempting shutdown.`);
 
     if (server && running) {
       log.info(`${options.name} shutting down...`);
 
       if (httpHandle) {
-        log.info('...closing HTTP transport');
+        log.debug('...closing HTTP transport');
         await httpHandle.close();
         httpHandle = null;
       }
 
-      log.info('...closing Server');
+      log.debug('...closing Server');
       await server?.close();
       running = false;
 
@@ -167,6 +167,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
       // Setup server logging for external handlers
       onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
     }
+
+    log.info(`Logging activated.`);
 
     updatedTools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
@@ -217,6 +219,9 @@ const runServer = async (options: ServerOptions = getOptions(), {
     },
 
     onLog(handler: ServerOnLogHandler): () => void {
+      // Simple one-off log event to notify the handler of the server startup.
+      handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging.transport } as LogEvent);
+
       return onLogSetup(handler);
     }
   };
