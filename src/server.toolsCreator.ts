@@ -1,7 +1,9 @@
 import { type McpTool, type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
+import { memo } from './server.caching';
 import { type GlobalOptions } from './options';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -10,6 +12,8 @@ import { type GlobalOptions } from './options';
  * - Some plugins may expose `createCreators(options)` and return `McpToolCreator[]` directly.
  * - Others may expose `createTools(options)` and return `McpTool[]`. We adapt those into creators
  *   via `pluginToolsToCreators()` with a light check (calling with no options) to determine viability.
+ *
+ * @internal
  *
  * @property [name] - An optional name for the plugin.
  * @property [createCreators] - Optionally, generate an array of tool creators based on the
@@ -25,6 +29,8 @@ type AppToolPlugin = {
 
 /**
  * Plugin factory signature.
+ *
+ * @internal
  */
 type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
 
@@ -71,6 +77,23 @@ const pluginCreatorsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
  * @throws {Error} If the tool remains missing at registration time.
  */
 const pluginToolsToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
+  /*
+  const makeCreatorAt = (toolIndex: number): McpToolCreator => (options?: GlobalOptions) => {
+    const toolsAtRuntime = plugin.createTools?.(options) ?? [];
+    const selectedTool = toolsAtRuntime[toolIndex] ?? toolsAtRuntime[0];
+
+    if (!selectedTool) {
+      throw new Error(
+        `Plugin '${plugin.name || 'unknown'}' did not provide a tool at index ${toolIndex}`
+      );
+    }
+
+    return selectedTool;
+  };
+
+  return [makeCreatorAt(0)];
+  */
+
   let checkedTools: McpTool[] = [];
 
   try {
@@ -145,15 +168,19 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
   for (const candidate of candidates) {
     if (typeof candidate === 'function') {
       let result: unknown;
+      // let probed = false;
 
       try {
         // Invoke once without options to inspect the shape
         result = (candidate as () => unknown)();
+        // probed = true;
       } catch {}
 
       // Case: already a tool creator (tuple check)
       if (Array.isArray(result) && typeof result[0] === 'string') {
         return [candidate as McpToolCreator];
+        // const cachedTuple = result as McpTool; // [name, schema, handler]
+        // return [() => cachedTuple];
       }
 
       // Case: plugin factory that returned a plugin object
@@ -183,6 +210,8 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
 
   return [];
 };
+
+// normalizeToCreators.memo = memo(normalizeToCreators, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
  * Author-facing tool config. The handler may be async or sync.

@@ -120,11 +120,11 @@ Add external tools at startup. External tools run out‑of‑process in a separa
 You can embed the MCP server inside another Node/TypeScript application and register tools programmatically.
 
 Tools as plugins can be
-  - Inline creators, or an array/list of inline creators, provided through the convenience wrapper `createMcpTool`
-  - Local file paths and local file URLs
-  - Local NPM package names
+  - Inline creators, or an array/list of inline creators, provided through the convenience wrapper `createMcpTool`, i.e. `createMcpTool({ name: 'echoAMessage', ... })` or `createMcpTool([{ name: 'echoAMessage', ... }])`.
+  - Local file paths and local file URLs, i.e. `a string representing a local file path or file URL starting with file://`
+  - Local NPM package names, i.e. `a string representing a local NPM package name like @loremIpsum/my-plugin`
 
-> Note: Consuming external files and packages is targeted for the near future.
+> Note: Consuming remote/external files, such as YML, and NPM packages is targeted for the near future.
 
 #### Example
 ```typescript

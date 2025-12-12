@@ -2,7 +2,6 @@ import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
 import { type McpToolCreator } from './server';
-import { type AppToolPlugin } from './server.toolsCreator';
 
 /**
  * Application defaults, not user-configurable
@@ -125,7 +124,7 @@ interface HttpOptions {
   allowedHosts: string[];
 }
 
-type ToolModule = string | McpToolCreator | AppToolPlugin;
+type ToolModule = string | McpToolCreator;
 
 /**
  * Tools Host options (pure data). Centralized defaults live here.
