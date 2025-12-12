@@ -168,8 +168,6 @@ const runServer = async (options: ServerOptions = getOptions(), {
       onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
     }
 
-    log.info(`Logging activated.`);
-
     updatedTools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
       const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
