@@ -222,7 +222,7 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
  *     - `args` are returned by the tool's `inputSchema`'
  *     - `options` are currently unused and reserved for future use.
  */
-type ToolConfig<TArgs = unknown, TResult = unknown> = {
+type ToolConfig<TArgs = any, TResult = any> = {
   name: string;
   description: string;
   inputSchema: any; // JSON Schema or Zod schema

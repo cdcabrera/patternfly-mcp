@@ -428,7 +428,7 @@ const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator =
   const normalized = normalizeInputSchema(original);
 
   if (normalized !== original) {
-    log.info(`Inline tool "${name}" input schema converted from JSON→Zod`);
+    log.info(`Tool "${name}" input schema converted from JSON→Zod`);
   }
 
   return [name, { ...schema, inputSchema: normalized }, cb];
