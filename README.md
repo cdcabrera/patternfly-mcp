@@ -121,8 +121,8 @@ You can embed the MCP server inside another Node/TypeScript application and regi
 
 Tools as plugins can be
   - Inline creators, or an array/list of inline creators, provided through the convenience wrapper `createMcpTool`, i.e. `createMcpTool({ name: 'echoAMessage', ... })` or `createMcpTool([{ name: 'echoAMessage', ... }])`.
-  - Local file paths and local file URLs, i.e. `a string representing a local file path or file URL starting with file://`
-  - Local NPM package names, i.e. `a string representing a local NPM package name like @loremIpsum/my-plugin`
+  - Local file paths and local file URLs (Node >= 22 required), i.e. `a string representing a local file path or file URL starting with file://`
+  - Local NPM package names (Node >= 22 required), i.e. `a string representing a local NPM package name like @loremIpsum/my-plugin`
 
 > Note: Consuming remote/external files, such as YML, and NPM packages is targeted for the near future.
 
@@ -161,8 +161,9 @@ async function main() {
   const server: PfMcpInstance = await start({
     // Add one or more in‑process tools directly. Default tools will be registered first.
     toolModules: [
-      // You can pass an ESM module that exports tools, or a direct creator tuple.
-      // Here we pass the tool creator module object directly for convenience
+      // You can pass:
+      //  - a string module spec (package or file) for external plugins (Tools Host, Node ≥ 22), or
+      //  - a creator function returned by createMcpTool(...) for in‑process tools.
       echoTool
     ]
     // Optional: enable all logging through stderr and/or protocol.

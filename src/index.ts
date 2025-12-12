@@ -14,8 +14,6 @@ import { createMcpTool, type ToolConfig, type MultiToolConfig } from './server.t
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
  *
- * @interface
- *
  * @property {('cli' | 'programmatic' | 'test')} [mode] - Optional string property that specifies the mode of operation.
  *     Defaults to `'programmatic'`.
  *     - `'cli'`: Functionality is being executed in a cli context. Allows process exits.
@@ -41,9 +39,6 @@ type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
  * Server instance with shutdown capability
  *
  * @alias ServerInstance
- * @property stop - Stops the server, gracefully.
- * @property isRunning - Indicates whether the server is running.
- * @property onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
  */
 type PfMcpInstance = ServerInstance;
 
@@ -51,8 +46,6 @@ type PfMcpInstance = ServerInstance;
  * Subscribes a handler function, `PfMcpOnLogHandler`, to server logs. Automatically unsubscribed on server shutdown.
  *
  * @alias ServerOnLog
- * @param {PfMcpOnLogHandler} handler - The function responsible for handling server log events.
- * @returns A cleanup function that unregisters the logging handler when called.
  */
 type PfMcpOnLog = ServerOnLog;
 
@@ -60,7 +53,6 @@ type PfMcpOnLog = ServerOnLog;
  * The handler function passed by `onLog`, `PfMcpOnLog`, to subscribe to server logs. Automatically unsubscribed on server shutdown.
  *
  * @alias ServerOnLogHandler
- * @param {PfMcpLogEvent} entry
  */
 type PfMcpOnLogHandler = ServerOnLogHandler;
 
@@ -68,13 +60,6 @@ type PfMcpOnLogHandler = ServerOnLogHandler;
  * The log event passed to the `onLog` handler, `PfMcpOnLogHandler`.
  *
  * @alias ServerLogEvent
- * @property level - Severity level of the event.
- * @property msg - Optional Message providing context or description of the event.
- * @property args - Optional additional arguments associated with the event.
- * @property fields - Optional key-value pairs for metadata associated with the event.
- * @property time - Event timestamp in epoch milliseconds.
- * @property source - Name of the module or subsystem generating the event, if available.
- * @property transport - Transport configuration used for this event.
  */
 type PfMcpLogEvent = ServerLogEvent;
 
