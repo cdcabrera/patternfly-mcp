@@ -434,13 +434,7 @@ const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator =
   return [name, { ...schema, inputSchema: normalized }, cb];
 };
 
-const getToolName = (creator: McpToolCreator): string | undefined => {
-  try {
-    return creator()?.[0];
-  } catch {
-    return undefined;
-  }
-};
+const getToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
 
 const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string>): McpToolCreator | null => {
   const name = getToolName(creator);
