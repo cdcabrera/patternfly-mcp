@@ -195,7 +195,7 @@ main().catch((err) => {
 #### Development notes
 - Built‑in tools are always registered first.
 - Consuming the MCP server comes with a not-so-obvious limitation, avoiding `console.log` and `console.info`.
-  - In `stdio` server run mode `console.log` and `console.info` can actually creating unnecessary noise between server and client, and potentially the Model. Instead, use `console.error`, `console.warn`, or `process.stderr.write`.
+  - In `stdio` server run mode `console.log` and `console.info` can create unnecessary noise between server and client, and potentially the Model. Instead, use `console.error`, `console.warn`, or `process.stderr.write`.
   - In `http` server run mode `console.log` and `console.info` can be used, but it's still recommended you get in the habit of avoiding their use.
 
 ### Authoring external tools with `createMcpTool`
