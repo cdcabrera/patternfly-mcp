@@ -19,7 +19,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 ## Prerequisites
 
 - Node.js 20.0.0 or higher
-  - Note: External tool plugins require Node.js ≥ 22 at runtime. On Node < 22, the server starts with built‑in tools only and logs a one‑time warning.
+  - Note: External tool plugins require Node.js >= 22 at runtime. On Node < 22, the server starts with built‑in tools only and logs a one‑time warning.
 - NPM (or another Node package manager)
 
 ## Installation
@@ -86,11 +86,11 @@ Returned content format:
 
 ### External tools (Plugins)
 
-Add external tools at startup. External tools run out‑of‑process in a separate Tools Host (Node ≥ 22). Built‑in tools are always in‑process and register first.
+Add external tools at startup. External tools run out‑of‑process in a separate Tools Host (Node >= 22). Built‑in tools are always in‑process and register first.
 
 - Node version gate
   - Node < 22 → external tools are skipped with a single startup warning; built‑ins still register.
-  - Node ≥ 22 → external tools run out‑of‑process via the Tools Host.
+  - Node >= 22 → external tools run out‑of‑process via the Tools Host.
 
 - CLI
   - `--tool <spec>` Add one or more external tools. Repeat the flag or pass a comma‑separated list.
@@ -111,9 +111,90 @@ Add external tools at startup. External tools run out‑of‑process in a separa
   - Remote `http(s):` or `data:` URLs — these will fail to load and appear in startup warnings/errors
 
 - Troubleshooting
-  - If external tools don't appear, verify you're running on Node ≥ 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
+  - If external tools don't appear, verify you're running on Node >= 22 (see Node version gate above) and check startup `load:ack` warnings/errors.
   - Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
   - If `tools/list` fails or `tools/call` rejects due to argument validation (e.g., messages about `safeParseAsync is not a function`), ensure your `inputSchema` is either a valid JSON Schema object or a Zod schema. Plain JSON Schema objects are automatically converted, but malformed schemas may cause issues. See the [Input Schema Format](#input-schema-format) section for details.
+
+### Embedding the server (Programmatic API)
+
+You can embed the MCP server inside another Node/TypeScript application and register tools programmatically.
+
+Tools as plugins can be
+  - Inline creators, or an array/list of inline creators, provided through the convenience wrapper `createMcpTool`
+  - Local file paths and local file URLs
+  - Local NPM package names
+
+> Note: Consuming external files and packages is targeted for the near future.
+
+#### Example
+```typescript
+// app.ts
+import { start, createMcpTool } from '@patternfly/patternfly-mcp';
+
+// Define a simple inline MCP tool. `createMcpTool` is a convenience wrapper to help you start writing a MCP tool.
+const echoTool = createMcpTool({
+  // The unique name of the tool, used in the `tools/list` response, related to the MCP client.
+  // A MCP client can help Models use this, so make it informative and clear.
+  name: 'echoAMessage',
+  
+  // A short description of the tool, used in the `tools/list` response, related to the MCP client.
+  // A MCP client can help Models can use this, so make it informative and clear.
+  description: 'Echo back the provided user message.',
+  
+  // The input schema defines the shape of interacting with your handler, related to the Model.
+  // In this scenario the `args` object has a `string` `message` property intended to be passed back
+  // towards the tool `handler` when the Model calls it.
+  inputSchema: {
+    type: 'object', // Type of the input schema, in this case the object
+    properties: { message: { type: 'string' } }, // The properties, with types, to pass back to the handler
+    required: ['message'] // Required properties, in this case `message`
+  },
+
+  // The async handler. The Model calls the handler per the inputSchema and inputs the `message`. The handler
+  // parses the `message` for the Model and returns it. The Model receives the parsed `message` and uses it.
+  handler: async (args: { message: string }) => ({ text: `You said: ${args.message}` })
+});
+
+async function main() {
+  // Start the server.
+  const server = await start({
+    // Add one or more in‑process tools directly. Default tools will be registered first.
+    toolModules: [
+      // You can pass an ESM module that exports tools, or a direct creator tuple.
+      // Here we pass the tool creator module object directly for convenience
+      echoTool
+    ],
+    logging: { level: 'info', stderr: true },
+  });
+
+  // Optional: observe server logs in‑process
+  server.onLog(event => {
+    // A good habit to get into is avoiding `console.log` and `console.info` in production paths, they pollute stdio
+    // communication and can create noise. Use `console.error`, `console.warn`, or `process.stderr.write` instead.
+    if (event.level !== 'debug') {
+      // process.stderr.write(`[${event.level}] ${event.msg || ''}\n`);
+      // console.error(`[${event.level}] ${event.msg || ''}`);
+      console.warn(`[${event.level}] ${event.msg || ''}`);
+    }
+  });
+
+  // Stop the server.
+  await server.stop();
+}
+
+// Run the program.
+main().catch((err) => {
+  // In programmatic mode, unhandled errors throw unless allowProcessExit=true
+  console.error(err);
+  process.exit(1);
+});
+```
+
+#### Development notes
+- Built‑in tools are always registered first.
+- Consuming the MCP server comes with a not-so-obvious limitation, avoiding `console.log` and `console.info`.
+  - In `stdio` server run mode `console.log` and `console.info` can actually creating unnecessary noise between server and client, and potentially the Model. Instead, use `console.error`, `console.warn`, or `process.stderr.write`.
+  - In `http` server run mode `console.log` and `console.info` can be used, but it's still recommended you get in the habit of avoiding their use.
 
 ### Authoring external tools with `createMcpTool`
 
@@ -483,7 +564,7 @@ await main({
 Tools provided via `--tool`/`toolModules` are appended after the built-in tools.
 
 ### Authoring MCP external tools
-> Note: External MCP tools require using `Node ≥ 22` to run the server and ESM modules. TypeScript formatted tools are not directly supported.
+> Note: External MCP tools require using `Node >= 22` to run the server and ESM modules. TypeScript formatted tools are not directly supported.
 > If you do use TypeScript, you can use the `createMcpTool` helper to define your tools as pure ESM modules.
 
 For `tools-as-plugin` authors, we recommend using the unified helper to define your tools as pure ESM modules:

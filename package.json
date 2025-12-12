@@ -8,7 +8,10 @@
     "#toolsHost": "./dist/server.toolsHost.js"
   },
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "bin": {
     "patternfly-mcp": "dist/cli.js",
