@@ -221,7 +221,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     onLog(handler: ServerOnLogHandler): () => void {
       // Simple one-off log event to notify the handler of the server startup.
-      handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging.transport } as LogEvent);
+      handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging?.transport } as LogEvent);
 
       return onLogSetup(handler);
     }

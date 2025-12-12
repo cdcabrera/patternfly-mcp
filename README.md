@@ -256,7 +256,7 @@ Notes
 The `inputSchema` property accepts either **plain JSON Schema objects** or **Zod schemas**. Both formats are automatically converted to the format required by the MCP SDK.
 
 **JSON Schema (recommended for simplicity):**
-```ts
+```
 inputSchema: {
   type: 'object',
   properties: {
@@ -268,7 +268,7 @@ inputSchema: {
 ```
 
 **Zod Schema (for advanced validation):**
-```ts
+```
 import { z } from 'zod';
 
 inputSchema: {
