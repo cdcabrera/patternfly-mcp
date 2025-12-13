@@ -129,10 +129,10 @@ Tools as plugins can be
 #### Example
 ```typescript
 // app.ts
-import { start, createMcpTool, type PfMcpInstance, type PfMcpLogEvent, type PfMcpToolCreator } from '@patternfly/patternfly-mcp';
+import { start, createMcpTool, type PfMcpInstance, type PfMcpLogEvent, type ToolCreator } from '@patternfly/patternfly-mcp';
 
 // Define a simple inline MCP tool. `createMcpTool` is a convenience wrapper to help you start writing a MCP tool.
-const echoTool: PfMcpToolCreator = createMcpTool({
+const echoTool: ToolCreator = createMcpTool({
   // The unique name of the tool, used in the `tools/list` response, related to the MCP client.
   // A MCP client can help Models use this, so make it informative and clear.
   name: 'echoAMessage',
