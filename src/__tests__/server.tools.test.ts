@@ -510,7 +510,7 @@ describe('composeTools', () => {
 
     expect(Array.isArray(result)).toBe(true);
     expect(MockLog.warn).toHaveBeenCalledWith(
-      'External tool plugins require Node >= 22; skipping externals and continuing with built-ins.'
+      'External tool plugins require Node >= 22; skipping file-based tools.'
     );
     expect(MockSpawn).not.toHaveBeenCalled();
   });
@@ -553,9 +553,7 @@ describe('composeTools', () => {
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
-    expect(MockLog.warn).toHaveBeenCalledWith(
-      'Failed to start Tools Host; skipping externals and continuing with built-ins.'
-    );
+    expect(MockLog.warn.mock.calls).toMatchSnapshot('warn');
   });
 
   it('should handle IPC errors gracefully', async () => {
@@ -574,9 +572,7 @@ describe('composeTools', () => {
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
-    expect(MockLog.warn).toHaveBeenCalledWith(
-      'Failed to start Tools Host; skipping externals and continuing with built-ins.'
-    );
+    expect(MockLog.warn.mock.calls).toMatchSnapshot('warn');
   });
 
   it('should use strict isolation when pluginIsolation is strict', async () => {
@@ -657,12 +653,7 @@ describe('composeTools', () => {
     await composeTools(builtinTools);
 
     // Verify warnings and errors were logged
-    expect(MockLog.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Tools load warnings (2)')
-    );
-    expect(MockLog.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Tools load errors (1)')
-    );
+    expect(MockLog.warn.mock.calls).toMatchSnapshot('warn');
   });
 
   it('should clean up host on child exit', async () => {
