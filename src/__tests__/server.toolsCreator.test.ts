@@ -259,7 +259,7 @@ describe('pluginToolsToCreators', () => {
     const tool1: McpTool = ['Tool1', { description: 'Tool 1', inputSchema: {} }, jest.fn()];
     const tool2: McpTool = ['Tool2', { description: 'Tool 2', inputSchema: {} }, jest.fn()];
     const plugin: AppToolPlugin = {
-      createTools: (options?: GlobalOptions) => (options?.docsHost ? [tool1] : [tool2])
+      createTools: (options?: any) => (options?.docsHost ? [tool1] : [tool2])
     };
 
     const creators = pluginToolsToCreators(plugin);
