@@ -16,10 +16,17 @@ type ToolCreator = McpToolCreator;
 /**
  * Author-facing "tools as plugins" surface.
  *
- * @alias AppToolPlugin
+ * A tool plugin is a flexible type that supports either a single string identifier,
+ * a specific tool creator, or multiple tool creators.
+ *
+ * - A `file path` or `file URL` string, that refers to the name or identifier of a predefined tool.
+ * - An `McpToolCreator`, a function that creates the tool.
+ * - An array of `McpToolCreator` functions.
  */
+type ToolPlugin = string | McpToolCreator | AppToolPlugin;
+// type ToolPlugin = string | ToolCreator | AppToolPlugin;
+// type ToolPlugin = string | McpToolCreator | McpToolCreator[];
 // type ToolPlugin = AppToolPlugin;
-type ToolPlugin = string | McpToolCreator | ToolCreator | AppToolPlugin;
 // type ToolPlugin = {
 //  name?: string;
 //  createCreators?: (options?: GlobalOptions) => McpToolCreator[];
@@ -197,7 +204,8 @@ const createMcpToolFromMultiToolConfig = ({ name, tools }: MultiToolConfig): App
  */
 const createMcpTool = <TArgs = unknown, TResult = unknown>(
   config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig
-): ToolCreator | ToolPlugin | AppToolPlugin => {
+): ToolPlugin => {
+// ): ToolCreator | ToolPlugin | AppToolPlugin => {
   // Multi-tool: array of ToolConfig
   if (Array.isArray(config)) {
     const tools = config as ToolConfig[];
