@@ -18,7 +18,7 @@ import {
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 
-type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any>];
+type McpTool = [string, { description: string; inputSchema: any }, (args: any) => (Promise<any> | any)];
 
 type McpToolCreator = (options?: GlobalOptions) => McpTool;
 
