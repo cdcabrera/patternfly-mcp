@@ -6,10 +6,10 @@ import {
   type ServerSettings,
   type ServerOnLog,
   type ServerOnLogHandler,
-  type ServerLogEvent,
-  type McpToolCreator
+  type ServerLogEvent
 } from './server';
-import { createMcpTool, type ToolConfig, type MultiToolConfig } from './server.toolsCreator';
+import { createMcpTool, type ToolCreator, type ToolPlugin, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
+// import { createMcpTool, type ToolCreator, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
 
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
@@ -62,15 +62,6 @@ type PfMcpOnLogHandler = ServerOnLogHandler;
  * @alias ServerLogEvent
  */
 type PfMcpLogEvent = ServerLogEvent;
-
-/**
- * An MCP tool "wrapper", or "creator", from `createMcpTool`.
- *
- * Passed back to `toolModules` in `PfMcpOptions` to register a tool.
- *
- * @alias McpToolCreator
- */
-type PfMcpToolCreator = McpToolCreator;
 
 /**
  * Main function - CLI entry point with optional programmatic overrides
@@ -128,7 +119,8 @@ export {
   type PfMcpLogEvent,
   type PfMcpOnLog,
   type PfMcpOnLogHandler,
-  type PfMcpToolCreator,
+  type ToolCreator,
+  type ToolPlugin,
   type ToolConfig,
   type MultiToolConfig
 };

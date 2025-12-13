@@ -1,7 +1,11 @@
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
-import { type McpToolCreator } from './server';
+import { type ToolPlugin } from './server.toolsUser';
+// import { type McpToolCreator } from './server';
+// import { type ToolCreator, type ToolPlugin } from './server.toolsUser';
+// import { type AppToolPlugin } from './server.toolsCreator';
+// import type {AppToolPlugin} from "./server.toolsCreator";
 
 /**
  * Application defaults, not user-configurable
@@ -33,7 +37,7 @@ import { type McpToolCreator } from './server';
  * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
- * @property {ToolModule[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
+ * @property {ToolPlugin[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
  *     registered with the server.
  * @property separator - Default string delimiter.
  * @property urlRegex - Regular expression pattern for URL matching.
@@ -65,7 +69,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   separator: string;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
-  toolModules: ToolModule[];
+  toolModules: ToolPlugin[];
   urlRegex: RegExp;
   version: string;
 }
@@ -79,7 +83,7 @@ type DefaultOptionsOverrides = Partial<
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
-  toolModules?: ToolModule[] | undefined;
+  toolModules?: ToolPlugin[] | undefined;
 };
 
 /**
@@ -124,7 +128,7 @@ interface HttpOptions {
   allowedHosts: string[];
 }
 
-type ToolModule = string | McpToolCreator;
+// type ToolPlugin = string | McpToolCreator | ToolCreator | AppToolPlugin;
 
 /**
  * Tools Host options (pure data). Centralized defaults live here.
@@ -362,6 +366,7 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type LoggingSession,
-  type PluginHostOptions,
-  type ToolModule
+  type PluginHostOptions
+  // type ToolModule
+  // type ToolPlugin
 };
