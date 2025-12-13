@@ -1,7 +1,10 @@
 import { type McpTool, type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
 import { isPlainObject } from './server.helpers';
+// import { type ToolOptions } from './options.tools';
 import { type GlobalOptions } from './options';
+
+// type AppOptions = GlobalOptions | ToolOptions | undefined;
 
 /**
  * AppToolPlugin — "tools as plugins" surface.
@@ -19,8 +22,8 @@ import { type GlobalOptions } from './options';
  */
 type AppToolPlugin = {
   name?: string;
-  createCreators?: (options?: GlobalOptions) => McpToolCreator[];
-  createTools?: (options?: GlobalOptions) => McpTool[];
+  createCreators?: (options?: unknown) => McpToolCreator[];
+  createTools?: (options?: unknown) => McpTool[];
 };
 // **
 //  * AppToolPlugin — "tools as plugins" surface.
@@ -34,7 +37,7 @@ type AppToolPlugin = {
  *
  * @internal
  */
-type AppToolPluginFactory = (options?: GlobalOptions) => AppToolPlugin;
+type AppToolPluginFactory = (options?: unknown) => AppToolPlugin;
 
 /**
  * Is the value a recognized plugin shape.
@@ -164,7 +167,7 @@ const pluginToCreators = (plugin: AppToolPlugin): McpToolCreator[] => {
  * @param moduleExports - Imported module
  * @returns {McpToolCreator[]} Array of tool creators
  */
-const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
+const normalizeToCreators = (moduleExports: any, toolOptions?: any): McpToolCreator[] => {
   const candidates: unknown[] = [moduleExports?.default, moduleExports].filter(Boolean);
 
   for (const candidate of candidates) {
@@ -173,14 +176,33 @@ const normalizeToCreators = (moduleExports: any): McpToolCreator[] => {
       // let probed = false;
 
       try {
+        // ORIGINAL
+        // result = (candidate as () => unknown)();
+        // PASSING OPTIONS EARLIER - LETS US STREAMLINE MORE
+        result = (candidate as (options?: unknown) => unknown)(toolOptions);
+
         // Invoke once without options to inspect the shape
-        result = (candidate as () => unknown)();
+        // if (toolOptions === undefined) {
+        //  result = (candidate as () => unknown)();
+        // } else {
+        //  result = (candidate as (options?: unknown) => unknown)(toolOptions);
+        // }
         // probed = true;
       } catch {}
 
       // Case: already a tool creator (tuple check)
       if (Array.isArray(result) && typeof result[0] === 'string') {
-        return [candidate as McpToolCreator];
+        // ORIGINAL
+        // return [candidate as McpToolCreator];
+
+        // CACHED WAY OF HANDLING IT. IF WE USE THIS WE NEED TO APPLY OPTIONS ABOVE
+        const cached = result as McpTool;
+        const wrapped: McpToolCreator = () => cached;
+
+        (wrapped as any).toolName = cached[0];
+
+        return [wrapped];
+        // return [candidate as McpToolCreator];
         // const cachedTuple = result as McpTool; // [name, schema, handler]
         // return [() => cachedTuple];
       }

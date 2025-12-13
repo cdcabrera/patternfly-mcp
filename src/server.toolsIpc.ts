@@ -1,9 +1,10 @@
 import { type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { type ToolOptions } from './options.tools';
 
 type IpcRequest =
   | { t: 'hello'; id: string } |
-  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number } |
+  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number, toolOptions?: ToolOptions } |
   { t: 'manifest:get'; id: string } |
   { t: 'invoke'; id: string; toolId: string; args: unknown } |
   { t: 'shutdown'; id: string };

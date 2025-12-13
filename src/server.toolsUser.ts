@@ -2,6 +2,7 @@ import { isPlainObject } from './server.helpers';
 import { type McpToolCreator } from './server';
 import { type GlobalOptions } from './options';
 import { type AppToolPlugin } from './server.toolsCreator';
+// import { type ToolOptions } from './options.tools';
 // import { type AppToolPlugin } from './server.toolsCreator';
 
 /**
@@ -12,6 +13,7 @@ import { type AppToolPlugin } from './server.toolsCreator';
  * @alias McpToolCreator
  */
 type ToolCreator = McpToolCreator;
+// type ToolCreator = (options?: ToolOptions) => McpTool;
 
 /**
  * Author-facing "tools as plugins" surface.

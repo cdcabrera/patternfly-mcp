@@ -18,6 +18,8 @@ import {
   type ToolDescriptor
 } from './server.toolsIpc';
 import { getOptions, getSessionOptions } from './options.context';
+import { setToolOptions } from './options.tools';
+import { type ToolCreator } from './server.toolsUser';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -216,8 +218,9 @@ const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getO
  * @param {GlobalOptions} options
  */
 const spawnToolsHost = async (
-  { pluginIsolation, pluginHost }: GlobalOptions = getOptions()
+  options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
+  const { pluginIsolation, pluginHost } = options || {};
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
   let updatedEntry: string;
@@ -279,8 +282,9 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
+  const toolOptions = setToolOptions(options);
 
-  send(child, { t: 'load', id: loadId, specs: normalizedToolModules, invokeTimeoutMs });
+  send(child, { t: 'load', id: loadId, specs: normalizedToolModules, invokeTimeoutMs, toolOptions });
   const loadAck = await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
 
   logWarningsErrors(loadAck);

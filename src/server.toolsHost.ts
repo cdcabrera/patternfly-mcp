@@ -1,7 +1,9 @@
 import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
 import { normalizeToCreators } from './server.toolsCreator';
-import { type McpTool } from './server';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { type ToolOptions } from './options.tools';
+import { type McpTool } from './server';
+// import { type GlobalOptions } from './options';
 
 /**
  * SubType of IpcRequest for "hello" requests.
@@ -83,11 +85,13 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
       // const mod = await import(spec);
       const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
       const mod = await dynamicImport(spec);
-      const creators = normalizeToCreators(mod);
+      const toolOptions: ToolOptions | undefined = request.toolOptions;
+      const creators = normalizeToCreators(mod, toolOptions);
 
-      for (const create of creators) {
+      for (const creator of creators) {
         try {
-          const tool = create();
+          const create = creator as (opts?: unknown) => McpTool;
+          const tool = create(toolOptions);
           const toolId = makeId();
 
           state.toolMap.set(toolId, tool as McpTool);

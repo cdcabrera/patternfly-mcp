@@ -9,6 +9,7 @@ import {
   type RpcRequest
 } from './utils/httpTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
+import {ToolCreator} from "../src";
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
@@ -145,6 +146,19 @@ describe('Inline tools over HTTP', () => {
       handler: (args: any) => ({ content: [{ type: 'text', text: JSON.stringify(args) }] })
     });
 
+    const inline2: ToolCreator = options => {
+      console.error('>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<', options);
+
+      return [
+        'inline_polo',
+        {
+          description: 'Polo inline',
+          inputSchema: { type: 'object', additionalProperties: true }
+        },
+        (args: any) => ({ content: [{ type: 'text', text: JSON.stringify(args) }] })
+      ];
+    };
+
     CLIENT = await startServer({ http: { port: 5012 }, logging: { level: 'info' }, isHttp: true }, { allowProcessExit: false });
 
     // Merge inline tool via programmatic options (rely on DEFAULT_OPTIONS merge behavior)
@@ -154,7 +168,8 @@ describe('Inline tools over HTTP', () => {
     }
 
     CLIENT = await startServer(
-      { http: { port: 5013 }, logging: { level: 'info' }, isHttp: true, toolModules: [inline] },
+      // { http: { port: 5013 }, logging: { level: 'info' }, isHttp: true, toolModules: [inline, inline2 as any] },
+      { http: { port: 5013 }, logging: { level: 'info' }, isHttp: true, toolModules: [inline, inline2] },
       { allowProcessExit: false }
     );
 

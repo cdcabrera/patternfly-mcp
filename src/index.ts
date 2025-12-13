@@ -9,6 +9,7 @@ import {
   type ServerLogEvent
 } from './server';
 import { createMcpTool, type ToolCreator, type ToolPlugin, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
+// import { type ToolOptions } from './options.tools';
 // import { createMcpTool, type ToolCreator, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
 
 /**
