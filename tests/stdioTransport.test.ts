@@ -182,7 +182,7 @@ describe('Tools', () => {
     const abs = resolve(process.cwd(), 'tests/__fixtures__/tool.echo.js');
     const url = pathToFileURL(abs).href;
 
-    CLIENT = await startServer({ args: ['--log-stderr', '--plugin-isolation', 'strict', '--tool', url] });
+    CLIENT = await startServer({ args: ['--log-stderr', '--plugin-isolation', 'strict', '--verbose', '--tool', url] });
   });
 
   afterEach(async () => CLIENT.stop());
@@ -195,6 +195,8 @@ describe('Tools', () => {
 
     const resp = await CLIENT.send(req);
     const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
+
+    console.warn('>>>>>>>>>>', names);
 
     expect(names).toContain('echo_plugin_tool');
     expect(CLIENT.logs()).toMatchSnapshot();
@@ -215,6 +217,6 @@ describe('Tools', () => {
 
     const resp = await CLIENT.send(req);
 
-    expect(resp?.result?.args).toMatchSnapshot();
+    expect(resp).toMatchSnapshot();
   });
 });

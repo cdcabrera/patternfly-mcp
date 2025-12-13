@@ -86,7 +86,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
       const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
       const mod = await dynamicImport(spec);
       const toolOptions: ToolOptions | undefined = request.toolOptions;
-      const creators = normalizeToCreators(mod);
+      const creators = normalizeToCreators(mod, toolOptions);
 
       for (const creator of creators) {
         try {
