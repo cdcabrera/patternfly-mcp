@@ -126,6 +126,59 @@ Tools as plugins can be
 
 > Note: Consuming remote/external files, such as YML, and NPM packages is targeted for the near future.
 
+Supported export shapes for external modules (Node >= 22 only):
+
+- Default export: function returning a realized tool tuple. It is called once with ToolOptions and cached. Example shape: `export default function (opts) { return ['name', { description, inputSchema }, handler] }`
+- Default export: function returning an array of creator functions. Example shape: `export default function (opts) { return [() => [...], () => [...]] }`
+- Default export: array of creator functions. Example shape: `export default [ () => ['name', {...}, handler] ]`
+- Fallback: a named export that is an array of creator functions (only used if default export is not present).
+
+Not supported (Phase A+B):
+
+- Directly exporting a bare tuple as the module default (wrap it in a function instead)
+- Plugin objects like `{ createCreators, createTools }`
+
+Performance and determinism note:
+
+- If your default export is a function that returns a tuple, we invoke it once during load with a minimal ToolOptions object and cache the result. Use a creators‑factory (a function returning an array of creators) if you need per‑realization variability by options.
+
+External module examples (Node >= 22):
+
+Function returning a tuple (called once with options):
+
+```js
+// plugins/echo.js
+export default function createEchoTool(opts) {
+  return [
+    'echo_plugin_tool',
+    { description: 'Echo', inputSchema: { additionalProperties: true } },
+    async (args) => ({ content: [{ type: 'text', text: JSON.stringify({ args, opts }) }] })
+  ];
+}
+```
+
+Function returning multiple creators:
+
+```js
+// plugins/multi.js
+const t1 = () => ['one', { description: 'One', inputSchema: {} }, async () => ({})];
+const t2 = () => ['two', { description: 'Two', inputSchema: {} }, async () => ({})];
+
+export default function creators(opts) {
+  // You can use opts to conditionally include creators
+  return [t1, t2];
+}
+```
+
+Array of creators directly:
+
+```js
+// plugins/direct-array.js
+export default [
+  () => ['hello', { description: 'Hello', inputSchema: {} }, async () => ({})]
+];
+```
+
 #### Example
 ```typescript
 // app.ts
