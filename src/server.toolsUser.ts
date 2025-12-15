@@ -50,8 +50,8 @@ type Tool = McpTool;
  */
 type ToolConfig<TArgs = any, TResult = any> = {
   name: string;
-  description: string;
-  inputSchema: any; // JSON Schema or Zod schema
+  description?: string;
+  inputSchema?: any; // JSON Schema or Zod schema
   handler: (args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult;
 };
 
@@ -73,191 +73,47 @@ type MultiToolConfig = {
 };
 
 /**
- * Returns true if the tool config is valid. This is part of user-facing helpers, avoid using internal loggers.
+ * Minimally validate a tool config. Is it a tuple we expect?
  *
  * @param config
  */
-/*
-const isValidToolConfig = (config: ToolConfig) => {
-  const isValid = config && typeof config.handler === 'function' && typeof config.name === 'string' && config.name.trim().length > 0;
-  let err;
-
-  if (!isValid) {
-    err = 'Invalid single tool configuration.';
-    console.warn(`Ignoring invalid tool ${config.name || ''}`);
-  }
-
-  return { ok: isValid, err };
-};
-*/
-
-/**
- * Validate a ToolObjectConfig and return a result with an error message when invalid
- *
- * @param {ToolObjectConfig} config - Object spec to validate
- */
-/*
-const isValidToolConfigObject = (config: ToolObjectConfig) => {
-  if (!isPlainObject(config)) {
-    return { ok: false, msg: 'createMcpTool: spec must be an object' };
-  }
-
-  if (!config.name || typeof config.name !== 'string' || config.name.trim().length === 0) {
-    return { ok: false, msg: 'createMcpTool: name is required (non-empty string)' };
-  }
-
-  if (!config.inputSchema) {
-    return { ok: false, msg: 'createMcpTool: inputSchema is required' };
-  }
-
-  if (typeof config.handler !== 'function') {
-    return { ok: false, msg: `createMcpTool: handler must be a function for tool '${config.name || '<unnamed>'}'` };
-  }
-
-  const allowed = new Set(['kind', 'name', 'description', 'inputSchema', 'handler']);
-  const extraKeys = Object.keys(config).filter(k => !allowed.has(k));
-
-  if (extraKeys.length) {
-    console.warn(`createMcpTool: unknown keys [${extraKeys.join(', ')}]; allowed: [${[...allowed].join(', ')}]`);
-  }
-
-  return { ok: true };
-};
-*/
-
-/**
- * Create a single tool creator from a single tool config.
- *
- * @param {ToolConfig} config - Tool config object
- * @returns {ToolCreator} ToolCreator function
- */
-/*
-const createMcpToolFromSingleConfig = (config: ToolConfig | ToolObjectConfig): ToolCreator => {
-  const checkConfig = isValidToolConfig(config);
-  const checkConfigObj = isValidToolConfigObject(config);
-
-  if (!checkConfig.ok || !checkConfigObj.ok) {
-    throw new Error(`Invalid tool configuration: ${checkConfig.err || ''} ${checkConfigObj.err || ''}`);
-  }
-
-  const creator: ToolCreator = () => [
-    config.name,
-    { description: config.description || '', inputSchema: config.inputSchema || {} },
-    async args => await Promise.resolve(config.handler(args))
-  ];
-
-  (creator as any).toolName = config.name;
-
-  return creator;
-};
-*/
-
-/**
- * Create tool creators from a multi-tool config.
- *
- * Streamlined: returns McpToolCreator[] directly (legacy plugin objects removed).
- *
- * @param {MultiToolConfig} options - Multi-tool config object
- * @returns {ToolCreator[]} Array of tool creators
- */
-/*
-const createMcpToolFromMultiToolConfig = ({ tools }: MultiToolConfig): ToolCreator[] => {
-  const creators: ToolCreator[] = [];
-
-  for (const tool of tools) {
-    const creator = createMcpToolFromSingleConfig(tool);
-
-    if (creator) {
-      creators.push(creator);
-    }
-  }
-
-  return creators;
-};
-*/
-
-// function createMcpTool<TArgs = any, TResult = any>(config: ToolConfig<TArgs, TResult>): ToolCreator;
-// function createMcpTool(config: ToolConfig[]): ToolPlugin;
-// function createMcpTool(config: MultiToolConfig): ToolPlugin;
-
-/**
- * Returns a single creator for a single tool, or a `ToolPlugin` for multi-tools.
- *
- * Supports three types of configurations:
- * 1. Single-tool configuration: Accepts a single `ToolConfig` object and returns a tool based on the
- *    specified configuration.
- * 2. Multi-tool configuration as an array: Accepts an array of `ToolConfig` objects to create a group of tools.
- * 3. Multi-tool configuration as an object: Accepts a `MultiToolConfig` object, which includes multiple
- *    tools and optionally a group name, to create a set of tools with an associated name.
- *
- * @example Single tool
- * export default createMcpTool({
- *   name: 'hello',
- *   description: 'Say hello',
- *   inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
- *   async handler({ name }) { return `Hello, ${name}!`; }
- * });
- *
- * @example Multiple tools
- * export default createMcpTool([
- *   { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
- *   { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
- * ]);
- *
- * @example Multiple tools with a shared name
- * export default createMcpTool({
- *   name: 'my-plugin',
- *   tools: [
- *     { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
- *     { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
- *   ]
- * });
- *
- * @template TArgs The type of arguments expected by the tool (optional).
- * @template TResult The type of result returned by the tool (optional).
- * @param config - The configuration for creating the tool(s). It can be:
- *   - A single tool configuration object (`ToolConfig`).
- *   - An array of tool configuration objects (`ToolConfig[]`) for creating multiple tools.
- * @returns A tool creator or application tool plugin instance based on the provided configuration.
- */
-/*
-const createMcpToolOLD = <TArgs = unknown, TResult = unknown>(
-  config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig | ToolObjectConfig | ToolObjectConfig[]
-): ToolPlugin => {
-// ): ToolCreator | ToolPlugin | AppToolPlugin => {
-  // Multi-tool: array of ToolConfig
-  if (Array.isArray(config)) {
-    return config.map(createMcpToolFromSingleConfig);
-  }
-
-  // LOOKS LIKE A REMAINDER FROM THE OLD PLUGIN CONCEPT? DOES THIS TIE INTO THE NEW PHASES?
-  // Multi-tool: { tools: ToolConfig[], name? }
-  if (isPlainObject(config) && Array.isArray((config as MultiToolConfig).tools)) {
-    const { tools } = config as MultiToolConfig;
-
-    return createMcpToolFromMultiToolConfig({ tools });
-  }
-
-  return createMcpToolFromSingleConfig(config as ToolConfig);
-};
-*/
-
 const isToolTuple = (config: any) => {
   const isArray = Array.isArray(config) && config.length === 3;
 
   return isArray && typeof config[0] === 'string' && typeof config[1] === 'object' && typeof config[2] === 'function';
 };
 
+/**
+ * Minimally validate a tool config. Is it an object we expect?
+ *
+ * @param config
+ */
 const isToolObject = (config: any) => {
   const isObj = isPlainObject(config);
 
   return isObj && typeof config.name === 'string' && typeof config.inputSchema === 'object' && typeof config.handler === 'function';
 };
 
+/**
+ * Minimally validate a tool config.  Is it a function we expect?
+ *
+ * @param config
+ */
 const isToolFunction = (config: any) => typeof config === 'function';
 
+/**
+ * Minimally validate a tool config. Is it a string we expect?
+ *
+ * @param config
+ */
 const isToolFilePackage = (config: any) => typeof config === 'string';
 
+/**
+ * Create a minimally normalized MCP tool configuration array/list.
+ *
+ * @param config
+ * @throws {Error} If the configuration is invalid, an error is thrown.
+ */
 const createMcpTool = <TArgs = unknown, TResult = unknown>(
   config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig | ToolObjectConfig | ToolObjectConfig[]
 ): ToolPlugin => {
@@ -289,13 +145,6 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
   return normalizedConfigs.filter(Boolean);
 };
-
-// Tuple, isArray, index 1 === string, index 2 === schema, index 3 === handler
-// Function that returns a tuple
-// Object with keys, name, description, inputSchema, handler
-// file strings
-// package strings
-// Array of all of the above
 
 export {
   createMcpTool,
