@@ -54,6 +54,18 @@ type ToolConfig<TArgs = any, TResult = any> = {
 };
 
 /**
+ * Phase C — Object spec (code-level declarative) support.
+ * Strict validation; converts to McpToolCreator.
+ */
+type ToolObjectSpec<TArgs = any, TResult = any> = {
+  kind: 'handler';
+  name: string;
+  description?: string;
+  inputSchema?: any;
+  handler: (args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult;
+};
+
+/**
  * Author-facing multi-tool config.
  *
  * @property [name] - Optional name for the group of tools
@@ -78,6 +90,76 @@ const isValidTool = (config: ToolConfig) => {
   }
 
   return isValid;
+};
+
+/**
+ * Narrow and validate ToolObjectSpec
+ */
+/**
+ * Type guard for ToolObjectSpec
+ *
+ * @param {unknown} value - Value to check
+ */
+const isToolObjectSpec = (value: unknown): value is ToolObjectSpec => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const obj = value as { [k: string]: unknown };
+
+  return (obj as any).kind === 'handler' && typeof (obj as any).name === 'string' && typeof (obj as any).handler === 'function';
+};
+
+/**
+ * Validate a ToolObjectSpec and return a result with an error message when invalid
+ *
+ * @param {ToolObjectSpec} spec - Object spec to validate
+ */
+const validateToolObjectSpec = (spec: ToolObjectSpec) => {
+  if (!spec || typeof spec !== 'object') {
+    return { ok: false as const, msg: 'createMcpTool: spec must be an object' };
+  }
+  if (!spec.name || typeof spec.name !== 'string' || spec.name.trim().length === 0) {
+    return { ok: false as const, msg: 'createMcpTool: spec.name is required (non-empty string)' };
+  }
+  if (typeof spec.handler !== 'function') {
+    return { ok: false as const, msg: `createMcpTool: spec.handler must be a function for tool '${spec.name || '<unnamed>'}'` };
+  }
+  const allowed = new Set(['kind', 'name', 'description', 'inputSchema', 'handler']);
+  const unknown = Object.keys(spec as Record<string, unknown>).filter(k => !allowed.has(k));
+
+  if (unknown.length) {
+    // User-facing helper: avoid internal loggers
+    console.warn(`createMcpTool: unknown keys [${unknown.join(', ')}]; allowed: [${[...allowed].join(', ')}]`);
+  }
+
+  return { ok: true as const };
+};
+
+/**
+ * Convert ToolObjectSpec to a ToolCreator
+ */
+/**
+ * Convert a ToolObjectSpec into a McpToolCreator
+ *
+ * @param {ToolObjectSpec} spec - Validated object spec
+ * @returns {ToolCreator}
+ */
+const objectSpecToCreator = (spec: ToolObjectSpec): ToolCreator => {
+  const check = validateToolObjectSpec(spec);
+
+  if (!check.ok) {
+    throw new Error(check.msg);
+  }
+
+  const creator: ToolCreator = () => [
+    spec.name,
+    { description: spec.description || '', inputSchema: spec.inputSchema ?? {} },
+    async (args: unknown) => await Promise.resolve(spec.handler(args))
+  ];
+
+  (creator as any).toolName = spec.name;
+
+  return creator;
 };
 
 /**
@@ -182,11 +264,15 @@ const createMcpToolFromMultiToolConfig = ({ tools }: MultiToolConfig): ToolCreat
  * @returns {ToolCreator | AppToolPlugin} A tool creator or application tool plugin instance based on the provided configuration.
  */
 const createMcpTool = <TArgs = unknown, TResult = unknown>(
-  config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig
+  config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig | ToolObjectSpec | ToolObjectSpec[]
 ): ToolPlugin => {
 // ): ToolCreator | ToolPlugin | AppToolPlugin => {
   // Multi-tool: array of ToolConfig
   if (Array.isArray(config)) {
+    // Phase C: allow array of ToolObjectSpec as well
+    if ((config as unknown[]).every(isToolObjectSpec)) {
+      return (config as ToolObjectSpec[]).map(objectSpecToCreator);
+    }
     const tools = config as ToolConfig[];
 
     return createMcpToolFromMultiToolConfig({ tools });
@@ -197,6 +283,17 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
     const { tools } = config as MultiToolConfig;
 
     return createMcpToolFromMultiToolConfig({ tools });
+  }
+
+  // Phase C: loosely detect an object-spec candidate by discriminator, even if invalid
+  if (isPlainObject(config) && (config as any).kind === 'handler') {
+    // This will run strict validation and throw with a helpful message when invalid
+    return objectSpecToCreator(config as any);
+  }
+
+  // Phase C: single ToolObjectSpec
+  if (isToolObjectSpec(config)) {
+    return objectSpecToCreator(config as ToolObjectSpec);
   }
 
   const single = createMcpToolFromSingleConfig(config as ToolConfig);
@@ -216,5 +313,6 @@ export {
   type MultiToolConfig,
   type ToolCreator,
   type ToolConfig,
-  type ToolPlugin
+  type ToolPlugin,
+  type ToolObjectSpec
 };
