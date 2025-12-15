@@ -13,6 +13,8 @@ import { type GlobalOptions } from './options';
 type ToolCreator = McpToolCreator;
 // type ToolCreator = (options?: ToolOptions) => McpTool;
 
+type Tool = McpTool;
+
 /**
  * Author-facing "tools as plugins" surface.
  *
@@ -23,17 +25,8 @@ type ToolCreator = McpToolCreator;
  * - An `McpToolCreator`, a function that creates the tool.
  * - An array of `McpToolCreator` functions.
  */
-type ToolPlugin = string | McpToolCreator | McpToolCreator[];
-
-type Tool = McpTool;
-// type ToolPlugin = string | ToolCreator | AppToolPlugin;
 // type ToolPlugin = string | McpToolCreator | McpToolCreator[];
-// type ToolPlugin = AppToolPlugin;
-// type ToolPlugin = {
-//  name?: string;
-//  createCreators?: (options?: GlobalOptions) => McpToolCreator[];
-// createTools?: (options?: GlobalOptions) => McpTool[];
-// };
+type ToolPlugin = string | McpToolCreator | McpToolCreator[];
 
 /**
  * Author-facing tool config. The handler may be async or sync.
@@ -50,8 +43,8 @@ type Tool = McpTool;
  */
 type ToolConfig<TArgs = any, TResult = any> = {
   name: string;
-  description?: string;
-  inputSchema?: any; // JSON Schema or Zod schema
+  description: string;
+  inputSchema: any; // JSON Schema or Zod schema
   handler: (args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult;
 };
 
@@ -80,7 +73,17 @@ type MultiToolConfig = {
 const isToolTuple = (config: any) => {
   const isArray = Array.isArray(config) && config.length === 3;
 
-  return isArray && typeof config[0] === 'string' && typeof config[1] === 'object' && typeof config[2] === 'function';
+  return (
+    isArray &&
+    typeof config[0] === 'string' &&
+    isPlainObject(config[1]) &&
+    typeof config[1].description === 'string' &&
+    config[1].description.trim().length > 0 &&
+    config[1].inputSchema !== undefined &&
+    config[1].inputSchema !== null &&
+    typeof config[1].inputSchema === 'object' &&
+    typeof config[2] === 'function'
+  );
 };
 
 /**
@@ -91,7 +94,16 @@ const isToolTuple = (config: any) => {
 const isToolObject = (config: any) => {
   const isObj = isPlainObject(config);
 
-  return isObj && typeof config.name === 'string' && typeof config.inputSchema === 'object' && typeof config.handler === 'function';
+  return (
+    isObj &&
+    typeof config.name === 'string' &&
+    typeof config.handler === 'function' &&
+    typeof config.description === 'string' &&
+    config.description.trim().length > 0 &&
+    config.inputSchema !== undefined &&
+    config.inputSchema !== null &&
+    typeof config.inputSchema === 'object'
+  );
 };
 
 /**
@@ -109,9 +121,37 @@ const isToolFunction = (config: any) => typeof config === 'function';
 const isToolFilePackage = (config: any) => typeof config === 'string';
 
 /**
- * Create a minimally normalized MCP tool configuration array/list.
+ * Author-facing helper for creating an MCP tool configuration list for Patternfly MCP server.
  *
- * @param config
+ * @example A single file path string
+ * export default createMcpTool('./a/file/path.mjs');
+ *
+ * @example A single package string
+ * export default createMcpTool('@my-org/my-tool');
+ *
+ * @example A single tool configuration tuple
+ * export default createMcpTool(['myTool', { description: 'My tool description' }, (args) => { ... }]);
+ *
+ * @example A single tool creator function
+ * export default createMcpTool(() => ['myTool', { description: 'My tool description' }, (args) => { ... }]);
+ *
+ * @example A single tool configuration object
+ * export default createMcpTool({ name: 'myTool', description: 'My tool description', inputSchema: {}, handler: (args) => { ... } });
+ *
+ * @example A multi-tool configuration array/list
+ * export default createMcpTool(['./a/file/path.mjs', { name: 'myTool', description: 'My tool description', inputSchema: {}, handler: (args) => { ... } }]);
+ *
+ * @template TArgs The type of arguments expected by the tool (optional).
+ * @template TResult The type of result returned by the tool (optional).
+ * @param config - The configuration for creating the tool(s). It can be:
+ *   - A single string representing the name of a local ESM predefined tool (`file path string` or `file URL string`). Limited to Node.js 22+
+ *   - A single string representing the name of a local ESM tool package (`package string`). Limited to Node.js 22+
+ *   - A single inline tool configuration tuple (`Tool`).
+ *   - A single inline tool creator function returning a tuple (`ToolCreator`).
+ *   - A single inline tool configuration object (`ToolConfig`).
+ *   - An array of the aforementioned configuration types in any combination.
+ * @returns An array of tool creators to apply to the MCP server `toolModules` option.
+ *
  * @throws {Error} If the configuration is invalid, an error is thrown.
  */
 const createMcpTool = <TArgs = unknown, TResult = unknown>(
@@ -119,28 +159,47 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 ): ToolPlugin => {
   const updatedConfigs = (Array.isArray(config) && config) || (config && [config]) || [];
   const invalidConfigs: any = [];
+  const flattenedConfigs = updatedConfigs.flatMap(item => (Array.isArray(item) && item) || [item]);
 
-  const normalizedConfigs = updatedConfigs.map((config, index) => {
-    if (isToolFilePackage(config) || isToolFunction(config) || isToolTuple(config)) {
+  const normalizedConfigs: (string | ToolCreator)[] = flattenedConfigs.map((config, index) => {
+    if (isToolFilePackage(config) || isToolFunction(config)) {
       return config;
     }
 
-    if (isToolObject(config)) {
-      return {
-        name: config.name,
-        inputSchema: config.inputSchema,
-        description: config.description,
-        handler: config.handler
-      };
+    if (isToolTuple(config)) {
+      const updatedTuple = config;
+      const creator: ToolCreator = () => updatedTuple;
+
+      (creator as any).toolName = updatedTuple[0];
+
+      return creator;
     }
 
-    invalidConfigs.push([index, config]);
+    if (isToolObject(config)) {
+      const updatedObj = config;
+      const creator: ToolCreator = () => [
+        updatedObj.name,
+        {
+          description: updatedObj.description,
+          inputSchema: updatedObj.inputSchema
+        },
+        updatedObj.handler
+      ];
+
+      (creator as any).toolName = updatedObj.name;
+
+      return creator;
+    }
+
+    invalidConfigs.push({ index, value: config, reason: `Unsupported type '${typeof config}'` });
 
     return undefined;
   });
 
   if (invalidConfigs.length) {
-    throw new Error(`createMcpTool: invalid configuration(s) used.`, { cause: invalidConfigs });
+    const firstInvalid = invalidConfigs[0];
+
+    throw new Error(`createMcpTool: invalid configuration used at index ${firstInvalid.index}: ${firstInvalid.reason}`, { cause: invalidConfigs });
   }
 
   return normalizedConfigs.filter(Boolean);
@@ -152,6 +211,7 @@ export {
   // createMcpToolFromSingleConfig,
   type MultiToolConfig,
   type ToolCreator,
+  type Tool,
   type ToolConfig,
   type ToolPlugin,
   type ToolObjectConfig
