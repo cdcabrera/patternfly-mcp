@@ -1,25 +1,21 @@
-import { createMcpTool } from '../../dist/index.js';
+// Fixture exports a creator function directly; public helpers not required here
 
-const echo_plugin_tool = options => {
-  // console.warn('options', options);
-
-  return [
-    'echo_plugin_tool',
-    {
-      description: 'Echo back the provided args, but with a different description',
-      inputSchema: { additionalProperties: true }
-    },
-    // args => ({ ok: true, args, options })
-    args => ({
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify({ args, options }, null, 2)
-        }
-      ]
-    })
-  ];
-};
+const echo_plugin_tool = options => ([
+  'echo_plugin_tool',
+  {
+    description: 'Echo back the provided args, but with a different description',
+    inputSchema: { additionalProperties: true }
+  },
+  // args => ({ ok: true, args, options })
+  args => ({
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({ args, options }, null, 2)
+      }
+    ]
+  })
+]);
 
 export default echo_plugin_tool;
 

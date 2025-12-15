@@ -1,9 +1,7 @@
 import { isPlainObject } from './server.helpers';
 import { type McpToolCreator } from './server';
 import { type GlobalOptions } from './options';
-import { type AppToolPlugin } from './server.toolsCreator';
 // import { type ToolOptions } from './options.tools';
-// import { type AppToolPlugin } from './server.toolsCreator';
 
 /**
  * An MCP tool "wrapper", or "creator", from `createMcpTool`.
@@ -25,7 +23,7 @@ type ToolCreator = McpToolCreator;
  * - An `McpToolCreator`, a function that creates the tool.
  * - An array of `McpToolCreator` functions.
  */
-type ToolPlugin = string | McpToolCreator | AppToolPlugin;
+type ToolPlugin = string | McpToolCreator | McpToolCreator[];
 // type ToolPlugin = string | ToolCreator | AppToolPlugin;
 // type ToolPlugin = string | McpToolCreator | McpToolCreator[];
 // type ToolPlugin = AppToolPlugin;
@@ -117,47 +115,26 @@ const createMcpToolFromSingleConfig = (config: ToolConfig): ToolCreator | undefi
 };
 
 /**
- * Create a `ToolPlugin` from a multi-tool config.
+ * Create tool creators from a multi-tool config.
+ *
+ * Streamlined: returns McpToolCreator[] directly (legacy plugin objects removed).
  *
  * @param {MultiToolConfig} options - Multi-tool config object
- * @returns {AppToolPlugin} ToolPlugin instance
+ * @returns {ToolCreator[]} Array of tool creators
  */
-const createMcpToolFromMultiToolConfig = ({ name, tools }: MultiToolConfig): AppToolPlugin => (
-  {
-    ...(typeof name === 'string' && name ? { name } : {}),
-    createCreators: () => {
-      const creators: ToolCreator[] = [];
+const createMcpToolFromMultiToolConfig = ({ tools }: MultiToolConfig): ToolCreator[] => {
+  const creators: ToolCreator[] = [];
 
-      for (const tool of tools) {
-        // if (!tool || typeof tool.handler !== 'function' || typeof tool.name !== 'string') {
-        //  log.warn(`Skipping invalid tool at index ${tools.indexOf(tool)} ${tool.name || ''}`);
-        //  continue;
-        // }
-        const creator = createMcpToolFromSingleConfig(tool);
+  for (const tool of tools) {
+    const creator = createMcpToolFromSingleConfig(tool);
 
-        if (creator) {
-          creators.push(creator);
-        }
-
-        /*
-        const creator: ToolCreator = () => {
-          const name = tool.name;
-          // Don't normalize here - schemas will be serialized through IPC and Zod schemas can't be serialized
-          // Normalization happens in makeProxyCreators when registering with MCP SDK
-          const schema = { description: tool.description, inputSchema: tool.inputSchema };
-          const handler = async (args: unknown) => await Promise.resolve(tool.handler(args));
-
-          return [name, schema, handler];
-        };
-
-        creators.push(creator);
-        */
-      }
-
-      return creators;
+    if (creator) {
+      creators.push(creator);
     }
   }
-);
+
+  return creators;
+};
 
 // function createMcpTool<TArgs = any, TResult = any>(config: ToolConfig<TArgs, TResult>): ToolCreator;
 // function createMcpTool(config: ToolConfig[]): ToolPlugin;
@@ -217,9 +194,9 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
   // Multi-tool: { tools: ToolConfig[], name? }
   if (isPlainObject(config) && Array.isArray((config as MultiToolConfig).tools)) {
-    const { name, tools } = config as MultiToolConfig;
+    const { tools } = config as MultiToolConfig;
 
-    return createMcpToolFromMultiToolConfig({ name, tools });
+    return createMcpToolFromMultiToolConfig({ tools });
   }
 
   const single = createMcpToolFromSingleConfig(config as ToolConfig);

@@ -2,14 +2,10 @@
  * Requires: npm run build prior to running Jest.
  */
 // @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
-import { createMcpTool } from '../dist/index.js';
-import {
-  startServer,
-  type HttpTransportClient,
-  type RpcRequest
-} from './utils/httpTransportClient';
+import { createMcpTool, type ToolCreator } from '../dist/index.js';
+import { startServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
-import {ToolCreator} from "../src";
+// Use public types from dist to avoid type identity mismatches between src and dist
 
 describe('PatternFly MCP, HTTP Transport', () => {
   let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
