@@ -1,4 +1,4 @@
-import { normalizeToCreators } from '../server.toolsCreator';
+import { resolveExternalCreators } from '../server.toolsHostCreator';
 import { type McpToolCreator } from '../server';
 
 // Mock dependencies
@@ -16,7 +16,7 @@ jest.mock('../logger', () => ({
 
 // plugin-object adapters removed; tests eliminated
 
-describe('normalizeToCreators (streamlined)', () => {
+describe('resolveExternalCreators (streamlined)', () => {
   it.each([
     {
       description: 'function export returning a realized tuple (cached)',
@@ -85,7 +85,7 @@ describe('normalizeToCreators (streamlined)', () => {
       expectedLength: 0
     }
   ])('should normalize module exports, $description', ({ moduleExports, expectedLength }) => {
-    const result = normalizeToCreators(moduleExports);
+    const result = resolveExternalCreators(moduleExports);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(expectedLength);
@@ -101,7 +101,7 @@ describe('normalizeToCreators (streamlined)', () => {
       named: 'not a creator'
     } as any;
 
-    const result = normalizeToCreators(moduleExports);
+    const result = resolveExternalCreators(moduleExports);
 
     // Should use default export and wrap cached tuple
     expect(result.length).toBe(1);
@@ -119,7 +119,7 @@ describe('normalizeToCreators (streamlined)', () => {
       named: namedCreator
     } as any;
 
-    const result = normalizeToCreators(moduleExports);
+    const result = resolveExternalCreators(moduleExports);
 
     expect(result.length).toBe(1);
     expect(typeof result[0]).toBe('function');
@@ -131,7 +131,7 @@ describe('normalizeToCreators (streamlined)', () => {
       throw new Error('Factory error');
     };
 
-    const result = normalizeToCreators(moduleExports);
+    const result = resolveExternalCreators(moduleExports);
 
     expect(result.length).toBe(0);
   });

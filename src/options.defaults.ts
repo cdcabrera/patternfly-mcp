@@ -1,7 +1,7 @@
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
-import { type ToolPlugin } from './server.toolsUser';
+import { type ToolModule } from './server.toolsUser';
 // import { type McpToolCreator } from './server';
 // import { type ToolCreator, type ToolPlugin } from './server.toolsUser';
 // import { type AppToolPlugin } from './server.toolsCreator';
@@ -69,7 +69,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   separator: string;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
-  toolModules: ToolPlugin[];
+  toolModules: ToolModule | ToolModule[];
   urlRegex: RegExp;
   version: string;
 }
@@ -83,7 +83,7 @@ type DefaultOptionsOverrides = Partial<
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
-  toolModules?: ToolPlugin[] | undefined;
+  toolModules?: ToolModule | ToolModule[] | undefined;
 };
 
 /**

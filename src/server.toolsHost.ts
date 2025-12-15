@@ -1,9 +1,10 @@
 import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
-import { normalizeToCreators } from './server.toolsCreator';
+import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
 import { type McpTool } from './server';
-// import { type GlobalOptions } from './options';
+import { normalizeInputSchema } from './server.schema';
+import { isPlainObject } from './server.helpers';
 
 /**
  * SubType of IpcRequest for "hello" requests.
@@ -83,15 +84,36 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
     try {
       // review the plugin @rollup/plugin-dynamic-import-vars
       // const mod = await import(spec);
+      // Dynamic import for external modules
       const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
-      const mod = await dynamicImport(spec);
+      const module = await dynamicImport(spec);
       const toolOptions: ToolOptions | undefined = request.toolOptions;
-      const creators = normalizeToCreators(mod, toolOptions);
+      const creators = resolveExternalCreators(module, toolOptions);
 
       for (const creator of creators) {
         try {
           const create = creator as (opts?: unknown) => McpTool;
           const tool = create(toolOptions);
+
+          // Normalize input schema in the child (Tools Host)
+          const cfg = (tool[1] ?? {}) as Record<string, unknown>;
+          const normalizedSchema = normalizeInputSchema(cfg.inputSchema);
+
+          // Overwrite tuple's schema so call-time validation matches manifest
+          tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
+
+          // Compute a manifest-safe schema for IPC. Treat the parent’s manifest schema as metadata only
+          let manifestSchema: unknown = undefined;
+
+          // If the original was plain JSON Schema, prefer to send that as-is
+          if (isPlainObject?.(cfg.inputSchema)) {
+            manifestSchema = cfg.inputSchema; // JSON-safe
+          } else {
+            // Otherwise, provide a minimal, permissive JSON Schema to avoid lying about capabilities
+            // You can replace this with a real converter if you add zod-to-json-schema later
+            manifestSchema = { type: 'object', additionalProperties: true };
+          }
+
           const toolId = makeId();
 
           state.toolMap.set(toolId, tool as McpTool);
@@ -99,7 +121,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
             id: toolId,
             name: tool[0],
             description: tool[1]?.description || '',
-            inputSchema: tool[1]?.inputSchema ?? {},
+            inputSchema: manifestSchema,
             source: spec
           });
         } catch (error) {

@@ -91,12 +91,19 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
  */
 const normalizeInputSchema = (inputSchema: unknown): unknown => {
   // If it's already a Zod schema or a ZodRawShapeCompat (object with Zod schemas as values), return as-is
-  if (isZodSchema(inputSchema) || isZodRawShape(inputSchema)) {
+  if (isZodSchema(inputSchema)) {
     return inputSchema;
+  }
+
+  // If it's a Zod raw shape (object of Zod schemas), wrap as a Zod object schema
+  if (isZodRawShape(inputSchema)) {
+    return z.object(inputSchema as Record<string, any>);
   }
 
   // If it's a plain JSON Schema object, convert to Zod
   if (isPlainObject(inputSchema)) {
+    console.error('JSON Schema detected:', inputSchema);
+
     return jsonSchemaToZod(inputSchema);
   }
 

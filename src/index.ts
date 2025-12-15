@@ -8,7 +8,7 @@ import {
   type ServerOnLogHandler,
   type ServerLogEvent
 } from './server';
-import { createMcpTool, type ToolCreator, type ToolPlugin, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
+import { createMcpTool, type ToolCreator, type ToolModule, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
 // import { type ToolOptions } from './options.tools';
 // import { createMcpTool, type ToolCreator, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
 
@@ -121,7 +121,7 @@ export {
   type PfMcpOnLog,
   type PfMcpOnLogHandler,
   type ToolCreator,
-  type ToolPlugin,
+  type ToolModule,
   type ToolConfig,
   type MultiToolConfig
 };

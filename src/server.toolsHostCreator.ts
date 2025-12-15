@@ -2,18 +2,23 @@ import { type McpTool, type McpToolCreator } from './server';
 import { log } from './logger';
 
 /**
- * Normalize dynamic module exports into McpToolCreator[] using a single, options-first call.
- * Supported module export shapes (default or named):
- *  - function returning a realized tool tuple → wraps and caches as a creator (with .toolName)
- *  - function returning an array of creators → returns them directly
- *  - array of creators → returns it directly
- * Any other shape is ignored.
+ * Minimally filter, resolve, then cache tool creators from external module export during the child process.
  *
- * @param {unknown} moduleExports - The dynamic module exports object (may include default export).
- * @param {unknown} [toolOptions] - Options passed to factory functions (ToolOptions in child process).
+ * Supported module export shapes `default` or `named exports`, any other shape is ignored:
+ *  - function returning a realized tool tuple -> wraps and caches as a creator (with .toolName)
+ *  - function returning an array of creators -> returns them directly
+ *  - array of creators -> returns it directly
+ *
+ * It does not:
+ *   - Perform schema normalization.
+ *   - Realize creators beyond the single probe. The probe is only to discover shape and to cache tuple results once.
+ *   - Import modules
+ *
+ * @param moduleExports - The dynamic module exports object (may include default export).
+ * @param [toolOptions] - Options passed to factory functions (ToolOptions in child process).
  * @returns {McpToolCreator[]} A normalized array of tool creators.
  */
-const normalizeToCreators = (moduleExports: unknown, toolOptions?: unknown): McpToolCreator[] => {
+const resolveExternalCreators = (moduleExports: unknown, toolOptions?: unknown): McpToolCreator[] => {
   const mod = moduleExports as any;
   const candidates: unknown[] = [mod?.default, mod].filter(Boolean);
 
@@ -38,7 +43,7 @@ const normalizeToCreators = (moduleExports: unknown, toolOptions?: unknown): Mcp
         if (Array.isArray(result) && result.every(fn => typeof fn === 'function')) {
           return result as McpToolCreator[];
         }
-        // Unsupported function result → fall through and try next candidate
+        // Unsupported function result -> fall through and try next candidate
       } catch {
         // Avoid no-arg probes by design; move to next candidate
         log.debug?.('tool factory threw during options-first call; skipping');
@@ -54,4 +59,4 @@ const normalizeToCreators = (moduleExports: unknown, toolOptions?: unknown): Mcp
   return [];
 };
 
-export { normalizeToCreators };
+export { resolveExternalCreators };

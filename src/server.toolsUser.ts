@@ -1,37 +1,81 @@
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { isPlainObject } from './server.helpers';
-import { type McpToolCreator } from './server';
+import { type McpToolCreator, type McpTool } from './server';
 import { type GlobalOptions } from './options';
-// import { type ToolOptions } from './options.tools';
+import { memo } from './server.caching';
+import { DEFAULT_OPTIONS } from './options.defaults';
+import { formatUnknownError } from './logger';
 
 /**
- * An MCP tool "wrapper", or "creator", from `createMcpTool`.
+ * A normalized tool entry for normalizing values for strings and tool creators.
  *
- * Passed back to `toolModules` in `PfMcpOptions` to register a tool.
+ * @property type - Classification of the entry (file, package, creator, tuple, object, invalid)
+ * @property index - The original input index (for diagnostics)
+ * @property original - The original input value
+ * @property value - The final consumer value (string or creator)
+ * @property toolName - The tool name for tuple/object/function entries
+ * @property normalizedUrl - The normalized file URL for file entries
+ * @property fsReadDir - The directory to include in allowlist for file, or package, entries
+ * @property isUrlLike - File, or package, URL indicator
+ * @property isFilePath - File, or package, path indicator
+ * @property isFileUrl - File, or package, URL indicator
+ * @property error - Error message for invalid entries
+ */
+type NormalizedToolEntry = {
+  type: 'file' | 'package' | 'creator' | 'tuple' | 'object' | 'invalid';
+  index: number;
+  original: unknown;
+  value: string | McpToolCreator;
+  toolName?: string;
+  normalizedUrl?: string;
+  fsReadDir?: string | undefined;
+  isUrlLike?: boolean;
+  isFilePath?: boolean;
+  isFileUrl?: boolean;
+  error?: string;
+};
+
+/**
+ * A file or package tool entry for normalizing values for strings.
+ */
+type FileEntry = Pick<NormalizedToolEntry, 'type' | 'original' | 'value' | 'isUrlLike' | 'isFilePath' | 'isFileUrl' | 'normalizedUrl' | 'fsReadDir' | 'error'>;
+
+/**
+ * A general tool entry for normalizing values for creators.
+ */
+type CreatorEntry = Pick<NormalizedToolEntry, 'type' | 'original' | 'value' | 'toolName'>;
+
+/**
+ * An MCP tool "wrapper", or "creator".
  *
  * @alias McpToolCreator
  */
 type ToolCreator = McpToolCreator;
-// type ToolCreator = (options?: ToolOptions) => McpTool;
+
+/**
+ * An MCP tool. Standalone or returned by `createMcpTool`.
+ *
+ * @alias McpTool
+ */
+type Tool = McpTool;
 
 /**
  * Author-facing "tools as plugins" surface.
  *
- * A tool plugin is a flexible type that supports either a single string identifier,
+ * A tool module is a flexible type that supports either a single string identifier,
  * a specific tool creator, or multiple tool creators.
  *
- * - A `file path` or `file URL` string, that refers to the name or identifier of a predefined tool.
- * - An `McpToolCreator`, a function that creates the tool.
+ * - A `file path` or `file URL` string, that refers to the name or identifier of a local ESM tool package.
+ * - A `package name` string, that refers to the name or identifier of a local ESM tool package.
+ * - An `McpTool`, a tuple of `[toolName, toolConfig, toolHandler]`
+ * - An `McpToolCreator`, a function that returns an `McpTool`.
  * - An array of `McpToolCreator` functions.
  */
-type ToolPlugin = string | McpToolCreator | McpToolCreator[];
-// type ToolPlugin = string | ToolCreator | AppToolPlugin;
-// type ToolPlugin = string | McpToolCreator | McpToolCreator[];
-// type ToolPlugin = AppToolPlugin;
-// type ToolPlugin = {
-//  name?: string;
-//  createCreators?: (options?: GlobalOptions) => McpToolCreator[];
-// createTools?: (options?: GlobalOptions) => McpTool[];
-// };
+type ToolModule = (string | McpTool | McpToolCreator | McpToolCreator[])[] | string | McpTool | McpToolCreator | McpToolCreator[];
+
+// type ToolModule = string | McpTool | McpToolCreator | (string | McpTool | McpToolCreator)[];
+// type ToolModules = string | McpTool | McpToolCreator | McpToolCreator[];
 
 /**
  * Author-facing tool config. The handler may be async or sync.
@@ -65,156 +109,386 @@ type MultiToolConfig = {
 };
 
 /**
- * Returns true if the tool config is valid.
+ * Check if a string looks like a file path.
+ *
+ * @param str
+ * @returns Confirmation that the string looks like a file path.
+ */
+const isFilePath = (str: string): boolean =>
+  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+
+/**
+ * Check if a string looks like a URL.
+ *
+ * @param str
+ * @returns Confirmation that the string looks like a URL.
+ */
+const isUrlLike = (str: string) =>
+  /^(file:|https?:|data:|node:)/i.test(str);
+
+/**
+ * Minimally validate a tool config. Is it a tuple we expect?
  *
  * @param config
  */
-const isValidTool = (config: ToolConfig) => {
-  const isValid = config && typeof config.handler === 'function' && typeof config.name === 'string' && config.name.trim().length > 0;
+const isToolTuple = (config: unknown) => {
+  const isArray = Array.isArray(config) && config.length === 3;
 
-  if (!isValid) {
-    // This is part of user-facing helpers, avoid using internal loggers.
-    console.warn(`Ignoring invalid tool ${config.name || ''}`);
-  }
-
-  return isValid;
+  return (
+    isArray &&
+    typeof config[0] === 'string' &&
+    isPlainObject(config[1]) &&
+    typeof config[1].description === 'string' &&
+    config[1].description.trim().length > 0 &&
+    config[1].inputSchema !== undefined &&
+    config[1].inputSchema !== null &&
+    typeof config[1].inputSchema === 'object' &&
+    typeof config[2] === 'function'
+  );
 };
 
 /**
- * Create a single tool creator from a single tool config.
+ * Minimally validate a tool config. Is it an object we expect?
  *
- * @param {ToolConfig} config - Tool config object
- * @returns {ToolCreator} ToolCreator function
+ * @param config
  */
-const createMcpToolFromSingleConfig = (config: ToolConfig): ToolCreator | undefined => {
-  /*
-  const name = config.name;
-  // Don't normalize here - schemas will be serialized through IPC and Zod schemas can't be serialized
-  // Normalization happens in makeProxyCreators when registering with MCP SDK
-  const schema = { description: config.description, inputSchema: config.inputSchema };
-  const handler = async (args: unknown) => await Promise.resolve(config.handler(args));
+const isToolObject = (config: unknown) => {
+  const isObj = isPlainObject(config);
 
-  return [name, schema, handler];
-  */
+  return (
+    isObj &&
+    typeof config.name === 'string' &&
+    typeof config.handler === 'function' &&
+    typeof config.description === 'string' &&
+    config.description.trim().length > 0 &&
+    config.inputSchema !== undefined &&
+    config.inputSchema !== null &&
+    typeof config.inputSchema === 'object'
+  );
+};
 
-  if (!isValidTool(config)) {
-    return undefined;
-  }
+/**
+ * Minimally validate a tool config.  Is it a function we expect?
+ *
+ * @param config
+ */
+const isToolFunction = (config: unknown) => typeof config === 'function';
 
+/**
+ * Minimally validate a tool config. Is it a string we expect?
+ *
+ * @param config
+ */
+const isToolFilePackage = (config: unknown) => typeof config === 'string';
+
+/**
+ * Normalize a tuple config into a tool creator function.
+ *
+ * @param config
+ */
+const normalizeTuple = (config: McpTool): CreatorEntry => {
+  const updatedTuple = config;
+  const creator: ToolCreator = () => updatedTuple;
+
+  (creator as any).toolName = updatedTuple[0];
+
+  return {
+    original: config,
+    toolName: updatedTuple[0],
+    type: 'tuple',
+    value: creator
+  };
+};
+
+/**
+ * Normalize an object config into a tool creator function.
+ *
+ * @param config
+ */
+const normalizeObject = (config: any): CreatorEntry => {
+  const updatedObj = config;
   const creator: ToolCreator = () => [
-    config.name,
-    { description: config.description, inputSchema: config.inputSchema },
-    // async (args) => config.handler(args)
-    // async (args: unknown) => await Promise.resolve(config.handler(args))
-    async args => await Promise.resolve(config.handler(args))
+    updatedObj.name,
+    {
+      description: updatedObj.description,
+      inputSchema: updatedObj.inputSchema
+    },
+    updatedObj.handler
   ];
 
-  (creator as any).toolName = config.name;
+  (creator as any).toolName = updatedObj.name;
 
-  return creator;
+  return {
+    original: config,
+    toolName: updatedObj.name,
+    type: 'object',
+    value: creator
+  };
 };
 
+const normalizeFunction = (config: any): CreatorEntry => (
+  {
+    original: config,
+    toolName: (config as any).toolName,
+    type: 'creator',
+    value: config
+  }
+);
+
 /**
- * Create tool creators from a multi-tool config.
+ * Normalize a file or package tool config into a file entry.
  *
- * Streamlined: returns McpToolCreator[] directly (legacy plugin objects removed).
- *
- * @param {MultiToolConfig} options - Multi-tool config object
- * @returns {ToolCreator[]} Array of tool creators
+ * @param config - The file, or package, configuration to normalize.
+ * @param options - Optional settings
+ * @param options.contextPath - The context path to use for resolving file paths.
+ * @param options.contextUrl - The context URL to use for resolving file paths.
  */
-const createMcpToolFromMultiToolConfig = ({ tools }: MultiToolConfig): ToolCreator[] => {
-  const creators: ToolCreator[] = [];
+const normalizeFilePackage = (
+  config: string,
+  { contextPath, contextUrl }: { contextPath?: string, contextUrl?: string } = {}
+): FileEntry => {
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
 
-  for (const tool of tools) {
-    const creator = createMcpToolFromSingleConfig(tool);
+  let isFileUrl = config.startsWith('file:');
+  let normalizedUrl = config;
+  let fsReadDir: string | undefined = undefined;
+  let type: NormalizedToolEntry['type'] = 'package'; // default classification for non-file strings
+  let err: string | undefined;
 
-    if (creator) {
-      creators.push(creator);
+  try {
+    // Case 1: already a file URL
+    if (isFileUrl) {
+      // Best-effort derive fsReadDir for allow-listing
+      try {
+        const resolvedPath = fileURLToPath(config);
+
+        fsReadDir = dirname(resolvedPath);
+      } catch {}
+      type = 'file';
+
+      return {
+        ...entry,
+        normalizedUrl,
+        fsReadDir,
+        isFileUrl,
+        original: config,
+        type,
+        value: config
+      };
     }
-  }
 
-  return creators;
+    // Case 2: looks like a filesystem path -> resolve
+    if (entry.isFilePath) {
+      try {
+        if (contextPath !== undefined && contextUrl !== undefined) {
+          const url = import.meta.resolve(config, contextUrl);
+
+          if (url.startsWith('file:')) {
+            const resolvedPath = fileURLToPath(url);
+
+            fsReadDir = dirname(resolvedPath);
+            normalizedUrl = pathToFileURL(resolvedPath).href;
+            isFileUrl = true;
+            type = 'file';
+          }
+        }
+
+        // Fallback if resolve() path failed or not file:
+        if (type !== 'file') {
+          const resolvedPath = isAbsolute(config) ? config : resolve(contextPath as string, config);
+
+          fsReadDir = dirname(resolvedPath);
+          normalizedUrl = pathToFileURL(resolvedPath).href;
+          isFileUrl = true;
+          type = 'file';
+        }
+      } catch (error) {
+        err = `Failed to resolve file path: ${config} ${formatUnknownError(error)}`;
+
+        return {
+          ...entry,
+          normalizedUrl,
+          fsReadDir,
+          isFileUrl,
+          original: config,
+          type: 'invalid',
+          value: config,
+          error: err
+        };
+      }
+
+      // Resolved file OK
+      return {
+        ...entry,
+        normalizedUrl,
+        fsReadDir,
+        isFileUrl,
+        original: config,
+        type,
+        value: config
+      };
+    }
+
+    // Case 3: non-file string -> keep as-is (package name or other URL-like spec)
+    // Note: http(s) module specs are not supported by Node import and will surface as load warnings in the child.
+    return {
+      ...entry,
+      normalizedUrl,
+      fsReadDir,
+      isFileUrl: false,
+      original: config,
+      type: 'package',
+      value: config
+    };
+  } catch (error) {
+    err = `Failed to handle spec: ${config} ${formatUnknownError(error)}`;
+
+    return {
+      ...entry,
+      normalizedUrl,
+      fsReadDir,
+      isFileUrl,
+      original: config,
+      type: 'invalid',
+      value: config,
+      error: err
+    };
+  }
 };
 
-// function createMcpTool<TArgs = any, TResult = any>(config: ToolConfig<TArgs, TResult>): ToolCreator;
-// function createMcpTool(config: ToolConfig[]): ToolPlugin;
-// function createMcpTool(config: MultiToolConfig): ToolPlugin;
+/**
+ * Normalize tool configuration(s) into a normalized tool entry.
+ *
+ * @param config - The configuration(s) to normalize.
+ * @param options - Optional settings
+ * @param options.contextPath - The context path to use for resolving file paths.
+ * @param options.contextUrl - The context URL to use for resolving file paths.
+ * @returns An array of normalized tool entries.
+ */
+const normalizeTools = (config: any, {
+  contextPath = DEFAULT_OPTIONS.contextPath,
+  contextUrl = DEFAULT_OPTIONS.contextUrl
+}: { contextPath?: string, contextUrl?: string } = {}): NormalizedToolEntry[] => {
+  const updatedConfigs = (Array.isArray(config) && config) || (config && [config]) || [];
+  const flattenedConfigs = updatedConfigs.flatMap((item: any) => (Array.isArray(item) && item) || [item]);
+  const normalizedConfigs: NormalizedToolEntry[] = [];
+
+  flattenedConfigs.forEach((config: any, index: number) => {
+    if (isToolFunction(config)) {
+      normalizedConfigs.push({
+        index,
+        ...normalizeFunction(config)
+      });
+
+      return;
+    }
+
+    if (isToolFilePackage(config)) {
+      normalizedConfigs.push({
+        index,
+        ...normalizeFilePackage(config, { contextPath, contextUrl })
+      });
+
+      return;
+    }
+
+    if (isToolTuple(config)) {
+      normalizedConfigs.push({
+        index,
+        ...normalizeTuple(config)
+      });
+
+      return;
+    }
+
+    if (isToolObject(config)) {
+      normalizedConfigs.push({
+        index,
+        ...normalizeObject(config)
+      });
+
+      return;
+    }
+
+    const err = `createMcpTool: invalid configuration used at index ${index}: Unsupported type ${typeof config}`;
+
+    normalizedConfigs.push({
+      index,
+      original: config,
+      type: 'invalid',
+      value: err,
+      error: err
+    });
+  });
+
+  return normalizedConfigs;
+};
 
 /**
- * Returns a single creator for a single tool, or a `ToolPlugin` for multi-tools.
- *
- * Supports three types of configurations:
- * 1. Single-tool configuration: Accepts a single `ToolConfig` object and returns a tool based on the
- *    specified configuration.
- * 2. Multi-tool configuration as an array: Accepts an array of `ToolConfig` objects to create a group of tools.
- * 3. Multi-tool configuration as an object: Accepts a `MultiToolConfig` object, which includes multiple
- *    tools and optionally a group name, to create a set of tools with an associated name.
- *
- * @example Single tool
- * export default createMcpTool({
- *   name: 'hello',
- *   description: 'Say hello',
- *   inputSchema: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] },
- *   async handler({ name }) { return `Hello, ${name}!`; }
- * });
- *
- * @example Multiple tools
- * export default createMcpTool([
- *   { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
- *   { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
- * ]);
- *
- * @example Multiple tools with a shared name
- * export default createMcpTool({
- *   name: 'my-plugin',
- *   tools: [
- *     { name: 'hi', description: 'Hi', inputSchema: { type: 'object' }, handler: () => 'hi' },
- *     { name: 'bye', description: 'Bye', inputSchema: { type: 'object' }, handler: () => 'bye' }
- *   ]
- * });
- *
- * @template TArgs The type of arguments expected by the tool (optional).
- * @template TResult The type of result returned by the tool (optional).
- * @param {ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig} config The configuration for creating the tool(s). It can be:
- *   - A single tool configuration object (`ToolConfig`).
- *   - An array of tool configuration objects (`ToolConfig[]`) for creating multiple tools.
- *   - A multi-tool configuration object (`MultiToolConfig`) containing an optional name and an array of tools.
- * @returns {ToolCreator | AppToolPlugin} A tool creator or application tool plugin instance based on the provided configuration.
+ * Memoize the `normalizeTools` function.
  */
-const createMcpTool = <TArgs = unknown, TResult = unknown>(
-  config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig
-): ToolPlugin => {
-// ): ToolCreator | ToolPlugin | AppToolPlugin => {
-  // Multi-tool: array of ToolConfig
-  if (Array.isArray(config)) {
-    const tools = config as ToolConfig[];
+normalizeTools.memo = memo(normalizeTools, { cacheErrors: false });
 
-    return createMcpToolFromMultiToolConfig({ tools });
+/**
+ * Author-facing helper for creating an MCP tool configuration list for Patternfly MCP server.
+ *
+ * @example A single file path string
+ * export default createMcpTool('./a/file/path.mjs');
+ *
+ * @example A single package string
+ * export default createMcpTool('@my-org/my-tool');
+ *
+ * @example A single tool configuration tuple
+ * export default createMcpTool(['myTool', { description: 'My tool description' }, (args) => { ... }]);
+ *
+ * @example A single tool creator function
+ * export default createMcpTool(() => ['myTool', { description: 'My tool description' }, (args) => { ... }]);
+ *
+ * @example A single tool configuration object
+ * export default createMcpTool({ name: 'myTool', description: 'My tool description', inputSchema: {}, handler: (args) => { ... } });
+ *
+ * @example A multi-tool configuration array/list
+ * export default createMcpTool(['./a/file/path.mjs', { name: 'myTool', description: 'My tool description', inputSchema: {}, handler: (args) => { ... } }]);
+ *
+ * @param config - The configuration for creating the tool(s). It can be:
+ *   - A single string representing the name of a local ESM predefined tool (`file path string` or `file URL string`). Limited to Node.js 22+
+ *   - A single string representing the name of a local ESM tool package (`package string`). Limited to Node.js 22+
+ *   - A single inline tool configuration tuple (`Tool`).
+ *   - A single inline tool creator function returning a tuple (`ToolCreator`).
+ *   - A single inline tool configuration object (`ToolConfig`).
+ *   - An array of the aforementioned configuration types in any combination.
+ * @returns An array of strings and/or tool creators that can be applied to the MCP server `toolModules` option.
+ *
+ * @throws {Error} If a configuration is invalid, an error is thrown on the first invalid entry.
+ */
+const createMcpTool = (config: unknown): ToolModule => {
+  const entries = normalizeTools(config);
+  const err = entries.find(entry => entry.type === 'invalid');
+
+  if (err?.error) {
+    throw new Error(err.error);
   }
 
-  // Multi-tool: { tools: ToolConfig[], name? }
-  if (isPlainObject(config) && Array.isArray((config as MultiToolConfig).tools)) {
-    const { tools } = config as MultiToolConfig;
-
-    return createMcpToolFromMultiToolConfig({ tools });
-  }
-
-  const single = createMcpToolFromSingleConfig(config as ToolConfig);
-
-  // Single-tool: ToolConfig
-  if (single) {
-    return single;
-  }
-
-  throw new Error('Invalid tool configuration. Expected a single ToolConfig or an array of ToolConfigs. Review the documentation for creating tools.');
+  return entries.map(entry => entry.value);
 };
 
 export {
   createMcpTool,
-  createMcpToolFromMultiToolConfig,
-  createMcpToolFromSingleConfig,
+  isFilePath,
+  isUrlLike,
+  isToolFilePackage,
+  isToolFunction,
+  isToolObject,
+  isToolTuple,
+  normalizeFilePackage,
+  normalizeTuple,
+  normalizeObject,
+  normalizeFunction,
+  normalizeTools,
   type MultiToolConfig,
+  type NormalizedToolEntry,
   type ToolCreator,
+  type Tool,
   type ToolConfig,
-  type ToolPlugin
+  type ToolModule
 };

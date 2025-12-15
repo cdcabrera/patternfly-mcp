@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { realpathSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
@@ -18,6 +18,7 @@ import {
 } from './server.toolsIpc';
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
+import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -34,58 +35,32 @@ type HostHandle = {
 const activeHostsBySession = new Map<string, HostHandle>();
 
 /**
- * Check if a string looks like a file path.
+ * Get the tool name from a creator function.
  *
- * @param str
- * @returns Confirmation that the string looks like a file path.
+ * @param creator
  */
-const isFilePath = (str: string): boolean =>
-  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
 
-/**
- * Check if a string looks like a URL.
- *
- * @param str
- * @returns Confirmation that the string looks like a URL.
- */
-const isUrlLike = (str: string) =>
-  /^(file:|https?:|data:|node:)/i.test(str);
+// const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
 
-const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
-
-const isInlineCreator = (module: unknown): module is McpToolCreator => typeof module === 'function';
+// const isInlineCreator = (module: unknown): module is McpToolCreator => typeof module === 'function';
 
 /**
  * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
  *
  * @param {GlobalOptions} options
  */
-const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: GlobalOptions = getOptions()): string[] => {
+const computeFsReadAllowlist = (options: GlobalOptions = getOptions()): string[] => {
   const directories = new Set<string>();
+  const tools = normalizeTools.memo(options.toolModules, options);
 
-  directories.add(contextPath);
+  directories.add(options.contextPath);
 
-  for (const moduleSpec of (toolModules || []).filter(isStringToolModule)) {
-    try {
-      const url = import.meta.resolve(moduleSpec, contextUrl);
-
-      if (url.startsWith('file:')) {
-        const resolvedPath = fileURLToPath(url);
-
-        directories.add(dirname(resolvedPath));
-      }
-    } catch {
-      if (isFilePath(moduleSpec)) {
-        try {
-          const resolvedPath = resolve(contextPath, moduleSpec);
-
-          directories.add(dirname(resolvedPath));
-        } catch (error) {
-          log.debug(`Failed to resolve module spec; skipping ${moduleSpec} ${formatUnknownError(error)}`);
-        }
-      }
+  tools.forEach(tool => {
+    if (tool.fsReadDir) {
+      directories.add(tool.fsReadDir);
     }
-  }
+  });
 
   return [...directories];
 };
@@ -110,6 +85,18 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
     log.warn(`Tools load errors (${errors.length})\n${lines.join('\n')}`);
   }
 };
+
+/**
+ * Get normalized file and package tool modules.
+ *
+ * @param {GlobalOptions} options
+ * @returns Updated array of normalized tool modules
+ */
+const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
+  normalizeTools
+    .memo(toolModules, { contextPath })
+    .filter(tool => tool.type === 'file' || tool.type === 'package')
+    .map(tool => tool.normalizedUrl as string);
 
 /**
  * Debug a child process' stderr output.
@@ -184,31 +171,6 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
 };
 
 /**
- * Normalize tool modules to URLs.
- *
- * Check a variety of formats just to normalize. Attempting to pass
- * `http` or `data` formats will log an error.
- *
- * @param {GlobalOptions} options
- * @returns Updated array of normalized tool modules
- */
-const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
-  toolModules.filter(isStringToolModule).map(tool => {
-    if (isUrlLike(tool)) {
-      return tool;
-    }
-
-    // pass through URLs and node: imports
-    if (isFilePath(tool)) {
-      const abs = isAbsolute(tool) ? tool : resolve(contextPath, tool);
-
-      return pathToFileURL(abs).href;
-    }
-
-    return tool; // package name
-  });
-
-/**
  * Spawn a tools host process and return its handle.
  *
  * - See `package.json` import path for entry parameter.
@@ -270,8 +232,8 @@ const spawnToolsHost = async (
     log.debug(`Tools Host allow-fs-read flags: ${allowList.map(dir => `--allow-fs-read=${dir}`).join(' ')}`);
   }
 
-  // Pre-compute normalized tool modules before spawning to reduce latency
-  const normalizedToolModules = normalizeToolModules();
+  // Pre-compute file and package tool modules before spawning to reduce latency
+  const filePackageToolModules = getFilePackageToolModules();
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
@@ -285,9 +247,11 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
+
+  // Pass a focused set of tool options to the host. Avoid the full options object.
   const toolOptions = setToolOptions(options);
 
-  send(child, { t: 'load', id: loadId, specs: normalizedToolModules, invokeTimeoutMs, toolOptions });
+  send(child, { t: 'load', id: loadId, specs: filePackageToolModules, invokeTimeoutMs, toolOptions });
   const loadAck = await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
 
   logWarningsErrors(loadAck);
@@ -313,11 +277,9 @@ const makeProxyCreators = (
   { pluginHost }: GlobalOptions = getOptions()
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
-  // Normalize the schema in case it's a plain JSON Schema that was serialized through IPC
-  const normalizedSchema = normalizeInputSchema(tool.inputSchema);
   const schema = {
     description: tool.description,
-    inputSchema: normalizedSchema
+    inputSchema: tool.inputSchema
   };
 
   const handler = async (args: unknown) => {
@@ -428,46 +390,13 @@ const sendToolsHostShutdown = async (
   });
 };
 
-// Inline schema normalization wrapper
-const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator => options => {
-  const [name, schema, cb] = creator(options);
-  const original = schema?.inputSchema;
-  const normalized = normalizeInputSchema(original);
-
-  if (normalized !== original) {
-    log.info(`Tool "${name}" input schema converted from JSON→Zod`);
-  }
-
-  return [name, { ...schema, inputSchema: normalized }, cb];
-};
-
-const getToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
-
-const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string>): McpToolCreator | null => {
-  const name = getToolName(creator);
-
-  if (!name) {
-    return creator;
-  }
-
-  if (usedNames.has(name)) {
-    log.warn(`Skipping inline tool "${name}" because a tool with the same name is already provided (built-in or earlier).`);
-
-    return null;
-  }
-
-  usedNames.add(name);
-
-  return creator;
-};
-
 /**
  * Compose built-in creators with any externally loaded creators.
  *
  * - Node.js version policy:
  *    - Node >= 22, external plugins are executed out-of-process via a Tools Host.
  *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
- * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
+ * - Registry is self‑correcting for pre‑load or mid‑run crashes without changing normal shutdown
  *
  * @param builtinCreators - Built-in tool creators
  * @param {GlobalOptions} [options]
@@ -478,46 +407,51 @@ const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string
  */
 const composeTools = async (
   builtinCreators: McpToolCreator[],
-  { toolModules, nodeVersion }: GlobalOptions = getOptions(),
+  options: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
-  const result: McpToolCreator[] = [];
-
-  // 1) Seed with built-ins and reserve names
-  const usedNames = new Set<string>(builtinCreators.map(creator => getToolName(creator)).filter(Boolean) as string[]);
-
-  result.push(...builtinCreators);
+  const { toolModules, nodeVersion } = options;
+  const result: McpToolCreator[] = [...builtinCreators];
+  const usedNames = new Set<string>(builtinCreators.map(creator => getBuiltInToolName(creator)).filter(Boolean) as string[]);
 
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
     return result;
   }
 
-  // 2) Partition modules
-  const inlineModules: McpToolCreator[] = [];
-  const fileSpecs: string[] = [];
+  const filePackageEntries: NormalizedToolEntry[] = [];
+  const tools = normalizeTools.memo(toolModules, options);
 
-  for (const mod of toolModules) {
-    if (isStringToolModule(mod)) {
-      fileSpecs.push(mod);
-    } else if (isInlineCreator(mod)) {
-      inlineModules.push(mod);
-    } else {
-      log.warn(`Unknown tool module type: ${typeof mod}`);
+  tools.forEach(tool => {
+    switch (tool.type) {
+      case 'file':
+      case 'package':
+        filePackageEntries.push(tool);
+        break;
+      case 'invalid':
+        log.warn(tool.error);
+        break;
+      case 'tuple':
+      case 'object':
+      case 'creator': {
+        const toolName = tool.toolName;
+
+        if (toolName && usedNames.has(toolName)) {
+          log.warn(`Skipping inline tool "${toolName}" because a tool with the same name is already provided (built-in or earlier).`);
+          break;
+        }
+
+        if (toolName) {
+          usedNames.add(toolName);
+        }
+
+        result.push(tool.value as McpToolCreator);
+        break;
+      }
     }
-  }
+  });
 
-  // 3) Normalize + name-guard inline creators
-  for (const creator of inlineModules) {
-    const normalized = wrapCreatorWithNormalization(creator as McpToolCreator);
-    const guarded = wrapCreatorWithNameGuard(normalized, usedNames);
-
-    if (guarded) {
-      result.push(guarded);
-    }
-  }
-
-  // 4) Load file-based via Tools Host (Node gate applies only here)
-  if (fileSpecs.length === 0) {
+  // Load file-based via Tools Host (Node.js version gate applies here)
+  if (filePackageEntries.length === 0) {
     return result;
   }
 
@@ -580,11 +514,9 @@ export {
   composeTools,
   computeFsReadAllowlist,
   debugChild,
-  isFilePath,
-  isUrlLike,
+  getBuiltInToolName,
   logWarningsErrors,
   makeProxyCreators,
-  normalizeToolModules,
   sendToolsHostShutdown,
   spawnToolsHost
 };
