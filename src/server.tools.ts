@@ -2,10 +2,10 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { z } from 'zod';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
-import { normalizeInputSchema } from './server.schema';
 import {
   awaitIpc,
   send,
@@ -269,6 +269,9 @@ const spawnToolsHost = async (
  * Ensure tools are in the correct format. Recreate tool creators from a
  * loaded Tools Host.
  *
+ * - The parent process does not validate or actively run the input schema, this is handled by the child process.
+ * - A minimal Zod inputSchema from the parent is required to trigger the MCP SDK parameter validation for tool invocation. This schema is not used, it is a noop.
+ *
  * @param {HostHandle} handle
  * @param {GlobalOptions} options
  */
@@ -279,7 +282,8 @@ const makeProxyCreators = (
   const name = tool.name;
   const schema = {
     description: tool.description,
-    inputSchema: tool.inputSchema
+    inputSchema: z.object({}).passthrough()
+    // inputSchema: z.any()
   };
 
   const handler = async (args: unknown) => {
@@ -294,10 +298,11 @@ const makeProxyCreators = (
     );
 
     if ('ok' in response && response.ok === false) {
-      const invocationError: any = new Error(response.error?.message || 'Tool invocation failed');
+      const invocationError: any = new Error(response.error?.message || 'Tool invocation failed', { cause: response.error?.cause });
 
       invocationError.stack = response.error?.stack;
       invocationError.code = response.error?.code;
+      invocationError.details = response?.error?.details || response?.error?.cause?.details;
       throw invocationError;
     }
 

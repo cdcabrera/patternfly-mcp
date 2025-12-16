@@ -1,4 +1,9 @@
-import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
+import {
+  type IpcRequest,
+  type ToolDescriptor,
+  type SerializedError,
+  makeId
+} from './server.toolsIpc';
 import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
@@ -57,11 +62,13 @@ const createHostState = (invokeTimeoutMs = DEFAULT_OPTIONS.pluginHost.invokeTime
  * @param errorValue
  */
 const serializeError = (errorValue: unknown) => {
-  const err = errorValue as Error | undefined;
+  const err = errorValue as SerializedError | undefined;
 
   return {
-    message: (err && err.message) || String(errorValue),
-    stack: err && err.stack
+    message: err?.message || String(errorValue),
+    stack: err?.stack,
+    code: err?.code,
+    cause: err?.cause
   };
 };
 
@@ -211,7 +218,28 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
   timer?.unref?.();
 
   try {
-    const result = await Promise.resolve(handler(request.args));
+    // Child-side validation using in-memory Zod schema
+    let updatedRequestArgs = request.args;
+    const zodSchema = tool?.[1]?.inputSchema;
+
+    if (zodSchema && typeof zodSchema.safeParseAsync === 'function') {
+      const parsed = await zodSchema.safeParseAsync(updatedRequestArgs);
+
+      if (!parsed.success) {
+        const details = parsed.error?.flatten?.() ?? String(parsed.error);
+
+        const err: SerializedError = new Error('Invalid arguments', { cause: { details } });
+
+        err.code = 'INVALID_ARGS';
+
+        throw err;
+      }
+
+      updatedRequestArgs = parsed.data;
+    }
+
+    // Invoke the tool
+    const result = await Promise.resolve(handler(updatedRequestArgs));
 
     if (!settled) {
       settled = true;

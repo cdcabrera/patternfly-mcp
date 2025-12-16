@@ -178,12 +178,17 @@ const runServer = async (options: ServerOptions = getOptions(), {
       log.info(`Registered tool: ${name}`);
 
       if (!isZod) {
-        log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. Zod raw shapes are preferred. Kneel before Zod.`);
+        log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. MCP SDK requires Zod. Kneel before Zod.`);
       }
 
-      server?.registerTool(name, schema, (args = {}) =>
+      server?.registerTool(name, schema, (args: unknown, ..._args: any) =>
         runWithSession(session, async () =>
-          runWithOptions(options, async () => await callback(args))));
+          runWithOptions(options, async () => {
+            // Track remaining args to account for MCP SDK alterations.
+            log.debug(`Running tool "${name}" with args:`, args, 'Remaining args:', _args);
+
+            return await callback(args);
+          })));
     });
 
     if (enableSigint) {
