@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { z } from 'zod';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
@@ -19,6 +20,7 @@ import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
 import { isPlainObject } from './server.helpers';
+import { normalizeInputSchema } from './server.schema';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -277,9 +279,14 @@ const makeProxyCreators = (
   { pluginHost }: GlobalOptions = getOptions()
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
+  // const normalizedSchema = normalizeInputSchema(tool.inputSchema);
   const schema = {
     description: tool.description,
-    inputSchema: undefined as unknown
+    // inputSchema: normalizedSchema
+    // inputSchema: tool.inputSchema
+    // The parent process does not validate or actively run the input schema, this is handled by the child process
+    // We only pass an inputSchema to trigger the MCP sdk validation process for tool invocation. This is a noop.
+    inputSchema: z.object({}).passthrough() // or z.any()
   };
 
   const handler = async (first: unknown, ..._rest: any[]) => {
