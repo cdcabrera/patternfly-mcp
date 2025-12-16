@@ -18,6 +18,7 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
+import { isPlainObject } from './server.helpers';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -281,10 +282,12 @@ const makeProxyCreators = (
     inputSchema: undefined as unknown
   };
 
-  const handler = async (args: unknown) => {
+  const handler = async (first: unknown, ..._rest: any[]) => {
     const requestId = makeId();
 
-    send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
+    log.debug('Handler args', first, _rest);
+
+    send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args: first });
 
     const response = await awaitIpc(
       handle.child,
@@ -297,6 +300,7 @@ const makeProxyCreators = (
 
       invocationError.stack = response.error?.stack;
       invocationError.code = response.error?.code;
+      invocationError.details = (response as any)?.error?.details ?? (response as any)?.error?.cause?.details;
       throw invocationError;
     }
 
