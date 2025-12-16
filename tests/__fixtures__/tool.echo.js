@@ -4,7 +4,8 @@ const echo_plugin_tool = options => [
   'echo_plugin_tool',
   {
     description: 'Echo back the provided args, but with a different description',
-    inputSchema: { type: 'object', properties: { message: { type: 'string' } }, additionalProperties: true }
+    // inputSchema: { type: 'object', properties: { message: { type: 'string' } }, additionalProperties: true }
+    inputSchema: { additionalProperties: true }
   },
   // args => ({ ok: true, args, options })
   args => ({
