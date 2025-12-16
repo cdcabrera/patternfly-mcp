@@ -1,7 +1,7 @@
-import { createMcpTool, type ToolObjectSpec } from '../server.toolsUser';
+import { createMcpTool } from '../server.toolsUser';
 
-describe('createMcpTool — ToolObjectSpec (Phase C)', () => {
-  const mkSpec = (overrides: Partial<ToolObjectSpec> = {}): ToolObjectSpec => ({
+describe('createMcpTool', () => {
+  const mkSpec = (overrides = {}) => ({
     kind: 'handler',
     name: 'sum',
     description: 'Add two numbers',
@@ -35,7 +35,7 @@ describe('createMcpTool — ToolObjectSpec (Phase C)', () => {
 
   it.each([
     { description: 'missing name', input: mkSpec({ name: '' }) },
-    { description: 'non-function handler', input: { ...mkSpec(), handler: 123 as any } as ToolObjectSpec }
+    { description: 'non-function handler', input: { ...mkSpec(), handler: 123 as any } }
   ])('throws on invalid spec ($description)', ({ input }) => {
     expect(() => createMcpTool(input as any)).toThrow(/createMcpTool:/);
   });

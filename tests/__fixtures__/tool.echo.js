@@ -1,6 +1,6 @@
 // Fixture exports a creator function directly; public helpers not required here
 
-const echo_plugin_tool = options => ([
+const echo_plugin_tool = options => [
   'echo_plugin_tool',
   {
     description: 'Echo back the provided args, but with a different description',
@@ -15,7 +15,7 @@ const echo_plugin_tool = options => ([
       }
     ]
   })
-]);
+];
 
 export default echo_plugin_tool;
 

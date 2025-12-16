@@ -96,7 +96,7 @@ const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions =
   normalizeTools
     .memo(toolModules, { contextPath })
     .filter(tool => tool.type === 'file' || tool.type === 'package')
-    .map(tool => tool.normalizedUrl);
+    .map(tool => tool.normalizedUrl as string);
 
 /**
  * Debug a child process' stderr output.
@@ -432,16 +432,21 @@ const composeTools = async (
       case 'invalid':
         log.warn(tool.error);
         break;
+      case 'tuple':
+      case 'object':
       case 'creator': {
-        const hasName = usedNames.has(tool.toolName);
+        const toolName = tool.toolName;
 
-        if (hasName) {
-          log.warn(`Skipping inline tool "${tool.toolName}" because a tool with the same name is already provided (built-in or earlier).`);
-        } else {
-          usedNames.add(tool.toolName);
-          result.push(tool);
+        if (toolName && usedNames.has(toolName)) {
+          log.warn(`Skipping inline tool "${toolName}" because a tool with the same name is already provided (built-in or earlier).`);
+          break;
         }
 
+        if (toolName) {
+          usedNames.add(toolName);
+        }
+
+        result.push(tool.value as McpToolCreator);
         break;
       }
     }
