@@ -4,12 +4,12 @@ import { type ToolOptions } from './options.tools';
 
 type IpcRequest =
   | { t: 'hello'; id: string } |
-  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number, toolOptions?: ToolOptions } |
+  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number; toolOptions?: ToolOptions } |
   { t: 'manifest:get'; id: string } |
   { t: 'invoke'; id: string; toolId: string; args: unknown } |
   { t: 'shutdown'; id: string };
 
-type SerializedError = { message: string; stack?: string; code?: string };
+type SerializedError = { message: string; stack?: string; code?: string; cause?: unknown };
 
 type ToolDescriptor = {
   id: string;

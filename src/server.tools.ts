@@ -5,7 +5,6 @@ import { dirname } from 'node:path';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
-import { normalizeInputSchema } from './server.schema';
 import {
   awaitIpc,
   send,
@@ -279,7 +278,7 @@ const makeProxyCreators = (
   const name = tool.name;
   const schema = {
     description: tool.description,
-    inputSchema: tool.inputSchema
+    inputSchema: undefined as unknown
   };
 
   const handler = async (args: unknown) => {
@@ -294,7 +293,7 @@ const makeProxyCreators = (
     );
 
     if ('ok' in response && response.ok === false) {
-      const invocationError: any = new Error(response.error?.message || 'Tool invocation failed');
+      const invocationError: any = new Error(response.error?.message || 'Tool invocation failed', { cause: response.error?.cause });
 
       invocationError.stack = response.error?.stack;
       invocationError.code = response.error?.code;
