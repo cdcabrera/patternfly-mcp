@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { realpathSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './server';
 import { log, formatUnknownError } from './logger';
@@ -18,7 +18,7 @@ import {
 } from './server.toolsIpc';
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
-import { createMcpTool, isToolFunction, isToolFilePackage } from './server.toolsUser';
+import { normalizeTools } from './server.toolsUser';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -35,22 +35,11 @@ type HostHandle = {
 const activeHostsBySession = new Map<string, HostHandle>();
 
 /**
- * Check if a string looks like a file path.
+ * Get the tool name from a creator function.
  *
- * @param str
- * @returns Confirmation that the string looks like a file path.
+ * @param creator
  */
-const isFilePath = (str: string): boolean =>
-  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
-
-/**
- * Check if a string looks like a URL.
- *
- * @param str
- * @returns Confirmation that the string looks like a URL.
- */
-const isUrlLike = (str: string) =>
-  /^(file:|https?:|data:|node:)/i.test(str);
+const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
 
 // const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
 
@@ -61,32 +50,17 @@ const isUrlLike = (str: string) =>
  *
  * @param {GlobalOptions} options
  */
-const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: GlobalOptions = getOptions()): string[] => {
+const computeFsReadAllowlist = (options: GlobalOptions = getOptions()): string[] => {
   const directories = new Set<string>();
+  const tools = normalizeTools.memo(options.toolModules, options);
 
-  directories.add(contextPath);
+  directories.add(options.contextPath);
 
-  for (const moduleSpec of (toolModules || []).filter(isToolFilePackage)) {
-    try {
-      const url = import.meta.resolve(moduleSpec, contextUrl);
-
-      if (url.startsWith('file:')) {
-        const resolvedPath = fileURLToPath(url);
-
-        directories.add(dirname(resolvedPath));
-      }
-    } catch {
-      if (isFilePath(moduleSpec)) {
-        try {
-          const resolvedPath = resolve(contextPath, moduleSpec);
-
-          directories.add(dirname(resolvedPath));
-        } catch (error) {
-          log.debug(`Failed to resolve module spec; skipping ${moduleSpec} ${formatUnknownError(error)}`);
-        }
-      }
+  tools.forEach(tool => {
+    if (tool.fsReadDir) {
+      directories.add(tool.fsReadDir);
     }
-  }
+  });
 
   return [...directories];
 };
@@ -111,6 +85,18 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
     log.warn(`Tools load errors (${errors.length})\n${lines.join('\n')}`);
   }
 };
+
+/**
+ * Get normalized file and package tool modules.
+ *
+ * @param {GlobalOptions} options
+ * @returns Updated array of normalized tool modules
+ */
+const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
+  normalizeTools
+    .memo(toolModules, { contextPath })
+    .filter(tool => tool.type === 'file' || tool.type === 'package')
+    .map(tool => tool.normalizedUrl);
 
 /**
  * Debug a child process' stderr output.
@@ -185,31 +171,6 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
 };
 
 /**
- * Normalize tool modules to URLs.
- *
- * Check a variety of formats just to normalize. Attempting to pass
- * `http` or `data` formats will log an error.
- *
- * @param {GlobalOptions} options
- * @returns Updated array of normalized tool modules
- */
-const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
-  createMcpTool(toolModules).filter(isToolFilePackage).map(tool => {
-    if (isUrlLike(tool)) {
-      return tool;
-    }
-
-    // pass through URLs and node: imports
-    if (isFilePath(tool)) {
-      const abs = isAbsolute(tool) ? tool : resolve(contextPath, tool);
-
-      return pathToFileURL(abs).href;
-    }
-
-    return tool; // package name
-  });
-
-/**
  * Spawn a tools host process and return its handle.
  *
  * - See `package.json` import path for entry parameter.
@@ -271,8 +232,8 @@ const spawnToolsHost = async (
     log.debug(`Tools Host allow-fs-read flags: ${allowList.map(dir => `--allow-fs-read=${dir}`).join(' ')}`);
   }
 
-  // Pre-compute normalized tool modules before spawning to reduce latency
-  const normalizedToolModules = normalizeToolModules();
+  // Pre-compute file and package tool modules before spawning to reduce latency
+  const filePackageToolModules = getFilePackageToolModules();
 
   const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
     stdio: ['ignore', 'pipe', 'pipe', 'ipc']
@@ -286,9 +247,11 @@ const spawnToolsHost = async (
 
   // load
   const loadId = makeId();
+
+  // Pass a focused set of tool options to the host. Avoid the full options object.
   const toolOptions = setToolOptions(options);
 
-  send(child, { t: 'load', id: loadId, specs: normalizedToolModules, invokeTimeoutMs, toolOptions });
+  send(child, { t: 'load', id: loadId, specs: filePackageToolModules, invokeTimeoutMs, toolOptions });
   const loadAck = await awaitIpc(child, isLoadAck(loadId), loadTimeoutMs);
 
   logWarningsErrors(loadAck);
@@ -430,6 +393,7 @@ const sendToolsHostShutdown = async (
 };
 
 // Inline schema normalization wrapper
+/*
 const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator => options => {
   const [name, schema, cb] = creator(options);
   const original = schema?.inputSchema;
@@ -441,9 +405,9 @@ const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator =
 
   return [name, { ...schema, inputSchema: normalized }, cb];
 };
+ */
 
-const getToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
-
+/*
 const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string>): McpToolCreator | null => {
   const updatedCreator = wrapCreatorWithNormalization(creator as McpToolCreator);
 
@@ -463,6 +427,7 @@ const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string
 
   return updatedCreator;
 };
+*/
 
 /**
  * Compose built-in creators with any externally loaded creators.
@@ -481,72 +446,46 @@ const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string
  */
 const composeTools = async (
   builtinCreators: McpToolCreator[],
-  { toolModules, nodeVersion }: GlobalOptions = getOptions(),
+  options: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
+  const { toolModules, nodeVersion } = options;
   const result: McpToolCreator[] = [...builtinCreators];
-  const usedNames = new Set<string>(builtinCreators.map(creator => getToolName(creator)).filter(Boolean) as string[]);
+  const usedNames = new Set<string>(builtinCreators.map(creator => getBuiltInToolName(creator)).filter(Boolean) as string[]);
 
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
     return result;
   }
 
-  // const inlineModules: McpToolCreator[] = [];
-  const fileSpecs: string[] = [];
-  const flatModules: any[] = createMcpTool(toolModules);
+  const filePackageConfigs: string[] = [];
+  const tools = normalizeTools.memo(toolModules, options);
 
-  for (const mod of flatModules) {
-    if (isToolFilePackage(mod)) {
-      fileSpecs.push(mod);
-    } else if (isToolFunction(mod)) {
-      // inlineModules.push(mod);
-      const guarded = wrapCreatorWithNameGuard(mod, usedNames);
+  tools.forEach(tool => {
+    switch (tool.type) {
+      case 'file':
+      case 'package':
+        filePackageConfigs.push(tool);
+        break;
+      case 'invalid':
+        log.warn(tool.error);
+        break;
+      case 'creator': {
+        const hasName = usedNames.has(tool.toolName);
 
-      if (guarded) {
-        result.push(guarded);
+        if (hasName) {
+          log.warn(`Skipping inline tool "${tool.toolName}" because a tool with the same name is already provided (built-in or earlier).`);
+        } else {
+          usedNames.add(tool.toolName);
+          result.push(tool);
+        }
+
+        break;
       }
-    } else {
-      log.warn(`Unknown tool module type: ${typeof mod}`);
     }
-  }
+  });
 
-  // 2) Partition modules
-  // const inlineModules: McpToolCreator[] = [];
-  // const fileSpecs: string[] = [];
-  //
-  // for (const mod of toolModules) {
-  // 2) Flatten one level to tolerate nested arrays from createMcpTool
-  /*
-  const flatModules: unknown[] = toolModules.flat ? toolModules.flat() : ([] as unknown[]).concat(...toolModules as any);
-
-  // 3) Partition modules
-  const inlineModules: McpToolCreator[] = [];
-  const fileSpecs: string[] = [];
-
-  for (const mod of flatModules) {
-    if (isStringToolModule(mod)) {
-      fileSpecs.push(mod);
-    } else if (isInlineCreator(mod)) {
-      inlineModules.push(mod);
-    } else {
-      log.warn(`Unknown tool module type: ${typeof mod}`);
-    }
-  }
-  */
-
-  // 4) Normalize + name-guard inline creators
-  /*
-  for (const creator of inlineModules) {
-    const guarded = wrapCreatorWithNameGuard(creator, usedNames);
-
-    if (guarded) {
-      result.push(guarded);
-    }
-  }
-  */
-
-  // 5) Load file-based via Tools Host (Node gate applies only here)
-  if (fileSpecs.length === 0) {
+  // Load file-based via Tools Host (Node.js version gate applies here)
+  if (filePackageConfigs.length === 0) {
     return result;
   }
 
@@ -609,11 +548,9 @@ export {
   composeTools,
   computeFsReadAllowlist,
   debugChild,
-  isFilePath,
-  isUrlLike,
+  getBuiltInToolName,
   logWarningsErrors,
   makeProxyCreators,
-  normalizeToolModules,
   sendToolsHostShutdown,
   spawnToolsHost
 };

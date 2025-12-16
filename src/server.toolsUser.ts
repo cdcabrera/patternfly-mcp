@@ -1,7 +1,48 @@
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import { isPlainObject } from './server.helpers';
 import { type McpToolCreator, type McpTool } from './server';
 import { type GlobalOptions } from './options';
+import { memo } from './server.caching';
+import { DEFAULT_OPTIONS } from './options.defaults';
+import { formatUnknownError } from './logger';
 // import { type ToolOptions } from './options.tools';
+
+type NormalizedToolEntry = {
+  // classification
+  type: 'file' | 'package' | 'creator' | 'tuple' | 'object' | 'invalid';
+  // original input and position (for diagnostics)
+  index: number;
+  original: unknown;
+
+  // final consumer value (what the public normalizer exposes)
+  value: string | McpToolCreator; // string for externals, creator for inline
+
+  // derived metadata (avoid re-looping)
+  toolName?: string; // derived from tuple/object or creator.toolName
+
+  // File, package values
+  normalizedUrl?: string; // file:// URL for local paths (if sourceKind file)
+  absPath?: string; // absolute file path (if resolved)
+  fsReadDir?: string | undefined; // directory to include in allowlist (if resolved file)
+  isUrlLike?: boolean; // cached predicate
+  isFilePath?: boolean; // cached predicate
+  isFileUrl?: boolean;
+
+  // health and provenance
+  // warnings?: string[];
+  error?: string; // present only when we choose to continue in permissive modes
+};
+
+/**
+ * A file or package tool entry, with normalized values.
+ */
+type FileCreator = Pick<NormalizedToolEntry, 'type' | 'original' | 'value' | 'isUrlLike' | 'isFilePath' | 'isFileUrl' | 'normalizedUrl' | 'fsReadDir' | 'error'>;
+
+/**
+ * A general tool entry, with normalized values.
+ */
+type PartialCreator = Pick<NormalizedToolEntry, 'type' | 'original' | 'value' | 'toolName'>;
 
 /**
  * An MCP tool "wrapper", or "creator", from `createMcpTool`.
@@ -11,6 +52,19 @@ import { type GlobalOptions } from './options';
  * @alias McpToolCreator
  */
 type ToolCreator = McpToolCreator;
+
+/*
+type FileCreator = {
+  fsReadDir?: string | undefined;
+  isUrlLike?: boolean;
+  isFilePath?: boolean;
+  isFileUrl: boolean;
+  normalizedUrl: string;
+  original: string;
+  type: 'file' | 'package';
+  value: string;
+};
+*/
 // type ToolCreator = (options?: ToolOptions) => McpTool;
 
 type Tool = McpTool;
@@ -64,6 +118,24 @@ type MultiToolConfig = {
   name?: string | undefined;
   tools: ToolConfig[]
 };
+
+/**
+ * Check if a string looks like a file path.
+ *
+ * @param str
+ * @returns Confirmation that the string looks like a file path.
+ */
+const isFilePath = (str: string): boolean =>
+  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+
+/**
+ * Check if a string looks like a URL.
+ *
+ * @param str
+ * @returns Confirmation that the string looks like a URL.
+ */
+const isUrlLike = (str: string) =>
+  /^(file:|https?:|data:|node:)/i.test(str);
 
 /**
  * Minimally validate a tool config. Is it a tuple we expect?
@@ -120,6 +192,168 @@ const isToolFunction = (config: any) => typeof config === 'function';
  */
 const isToolFilePackage = (config: any) => typeof config === 'string';
 
+/**
+ * Normalize a tuple config into a tool creator function.
+ *
+ * @param config
+ */
+const tupleToCreator = (config: McpTool): PartialCreator => {
+  const updatedTuple = config;
+  const creator: ToolCreator = () => updatedTuple;
+
+  (creator as any).toolName = updatedTuple[0];
+
+  return {
+    original: config,
+    toolName: updatedTuple[0],
+    type: 'tuple',
+    value: creator
+  };
+};
+
+/**
+ * Normalize an object config into a tool creator function.
+ *
+ * @param config
+ */
+const objectToCreator = (config: any): PartialCreator => {
+  const updatedObj = config;
+  const creator: ToolCreator = () => [
+    updatedObj.name,
+    {
+      description: updatedObj.description,
+      inputSchema: updatedObj.inputSchema
+    },
+    updatedObj.handler
+  ];
+
+  (creator as any).toolName = updatedObj.name;
+
+  return {
+    original: config,
+    toolName: updatedObj.name,
+    type: 'object',
+    value: creator
+  };
+};
+
+const functionToCreator = (config: any): PartialCreator => (
+  {
+    original: config,
+    toolName: (config as any).toolName,
+    type: 'creator',
+    value: config
+  }
+);
+
+const filePackageToCreator = (config: string, { contextPath, contextUrl }:{ contextPath?: string, contextUrl?: string } = {}): FileCreator => {
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  let isFileUrl = config.startsWith('file:');
+  let normalizedUrl = config;
+  let fsReadDir = undefined;
+  let isError = true;
+  let err = `Failed to resolve file path; ${config}`;
+
+  if (entry.isFilePath && contextPath !== undefined && contextUrl !== undefined) {
+    try {
+      const url = import.meta.resolve(config, contextUrl);
+
+      if (url.startsWith('file:')) {
+        const resolvedPath = fileURLToPath(url);
+
+        fsReadDir = dirname(resolvedPath);
+        normalizedUrl = pathToFileURL(resolvedPath).href;
+        isFileUrl = normalizedUrl.startsWith('file:');
+        isError = false;
+      }
+    } catch {
+      try {
+        const resolvedPath = isAbsolute(config) ? config : resolve(contextPath, config);
+
+        fsReadDir = dirname(resolvedPath);
+        normalizedUrl = pathToFileURL(resolvedPath).href;
+        isFileUrl = normalizedUrl.startsWith('file:');
+        isError = false;
+      } catch (error) {
+        err = `Failed to resolve file path: ${config} ${formatUnknownError(error)}`;
+      }
+    }
+
+    // normalizedUrl = pathToFileURL(abs).href;
+    // fsReadDir = dirname(abs);
+    // isFileUrl = normalizedUrl.startsWith('file:');
+  }
+
+  return {
+    ...entry,
+    normalizedUrl,
+    fsReadDir,
+    isFileUrl,
+    original: config,
+    type: (isError && 'invalid') || (isFileUrl && 'file') || 'package',
+    value: config,
+    error: err
+  };
+};
+
+const normalizeTools = (config: any, {
+  contextPath = DEFAULT_OPTIONS.contextPath,
+  contextUrl = DEFAULT_OPTIONS.contextUrl
+}: { contextPath?: string, contextUrl?: string } = {}): NormalizedToolEntry[] => {
+  const updatedConfigs = (Array.isArray(config) && config) || (config && [config]) || [];
+  const flattenedConfigs = updatedConfigs.flatMap((item: any) => (Array.isArray(item) && item) || [item]);
+  const normalizedConfigs: NormalizedToolEntry[] = [];
+
+  flattenedConfigs.forEach((config: any, index: number) => {
+    if (isToolFunction(config)) {
+      normalizedConfigs.push({
+        index,
+        ...functionToCreator(config)
+      });
+    }
+
+    if (isToolFilePackage(config)) {
+      normalizedConfigs.push({
+        index,
+        ...filePackageToCreator(config, { contextPath, contextUrl })
+      });
+    }
+
+    if (isToolTuple(config)) {
+      normalizedConfigs.push({
+        index,
+        ...tupleToCreator(config)
+      });
+    }
+
+    if (isToolObject(config)) {
+      normalizedConfigs.push({
+        index,
+        ...objectToCreator(config)
+      });
+    }
+
+    const err = `createMcpTool: invalid configuration used at index ${index}: Unsupported type ${typeof config}`;
+
+    normalizedConfigs.push({
+      index,
+      original: config,
+      type: 'invalid',
+      value: err,
+      // value: () => {
+      //  throw new Error(`Unsupported type ${typeof config}`, { cause: [config] });
+      // },
+      error: err
+    });
+
+    return undefined;
+  });
+
+  return normalizedConfigs;
+};
+
+normalizeTools.memo = memo(normalizeTools, { cacheErrors: false });
+
 /*
 const toolWrapper = (config: any, name: string, type: 'string' | 'func' | 'tuple' | 'obj'): McpToolCreator => {
   const wrapper = () => config;
@@ -165,55 +399,15 @@ const toolWrapper = (config: any, name: string, type: 'string' | 'func' | 'tuple
  *
  * @throws {Error} If the configuration is invalid, an error is thrown.
  */
-const createMcpTool = <TArgs = unknown, TResult = unknown>(
-  config: ToolConfig<TArgs, TResult> | ToolConfig[] | MultiToolConfig | ToolObjectConfig | ToolObjectConfig[]
-): ToolPlugin => {
-  const updatedConfigs = (Array.isArray(config) && config) || (config && [config]) || [];
-  const invalidConfigs: any = [];
-  const flattenedConfigs = updatedConfigs.flatMap(item => (Array.isArray(item) && item) || [item]);
+const createMcpTool = (config: unknown): Array<string | ToolCreator> => {
+  const entries = normalizeTools(config);
+  const err = entries.find(entry => entry.type === 'invalid');
 
-  const normalizedConfigs: (string | ToolCreator)[] = flattenedConfigs.map((config, index) => {
-    if (isToolFilePackage(config) || isToolFunction(config)) {
-      return config;
-    }
-
-    if (isToolTuple(config)) {
-      const updatedTuple = config;
-      const creator: ToolCreator = () => updatedTuple;
-
-      (creator as any).toolName = updatedTuple[0];
-
-      return creator;
-    }
-
-    if (isToolObject(config)) {
-      const updatedObj = config;
-      const creator: ToolCreator = () => [
-        updatedObj.name,
-        {
-          description: updatedObj.description,
-          inputSchema: updatedObj.inputSchema
-        },
-        updatedObj.handler
-      ];
-
-      (creator as any).toolName = updatedObj.name;
-
-      return creator;
-    }
-
-    invalidConfigs.push({ index, value: config, reason: `Unsupported type '${typeof config}'` });
-
-    return undefined;
-  });
-
-  if (invalidConfigs.length) {
-    const firstInvalid = invalidConfigs[0];
-
-    throw new Error(`createMcpTool: invalid configuration used at index ${firstInvalid.index}: ${firstInvalid.reason}`, { cause: invalidConfigs });
+  if (err?.error) {
+    throw new Error(err.error);
   }
 
-  return normalizedConfigs.filter(Boolean);
+  return entries.map(entry => entry.value);
 };
 
 export {
@@ -222,8 +416,7 @@ export {
   isToolFunction,
   isToolObject,
   isToolTuple,
-  // createMcpToolFromMultiToolConfig,
-  // createMcpToolFromSingleConfig,
+  normalizeTools,
   type MultiToolConfig,
   type ToolCreator,
   type Tool,
