@@ -182,12 +182,15 @@ const runServer = async (options: ServerOptions = getOptions(), {
         log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. Zod raw shapes are preferred. Kneel before Zod.`);
       }
 
-      server?.registerTool(name, schema, (first: any = {}, _second?: any) =>
+      server?.registerTool(name, schema, (..._args: any) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
+            // log.debug(`Running tool "${name}" with args: ${JSON.stringify(first)}, rest: ${JSON.stringify(_rest)}`);
+
             // If the first parameter is a wrapper containing the real user args under `arguments` extract it;
             // otherwise treat the first parameter as the args object.
-            const userArgs = isPlainObject(first) && 'arguments' in first ? first.arguments : first;
+            // const userArgs = isPlainObject(first) && 'arguments' in first ? first.arguments : first;
+            const userArgs = _args.find((arg: unknown) => isPlainObject(arg) && ('arguments' in arg)) || _args;
 
             return await callback(userArgs);
           })));
