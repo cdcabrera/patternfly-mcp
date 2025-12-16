@@ -277,11 +277,9 @@ const makeProxyCreators = (
   { pluginHost }: GlobalOptions = getOptions()
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
-  // Normalize the schema in case it's a plain JSON Schema that was serialized through IPC
-  const normalizedSchema = normalizeInputSchema(tool.inputSchema);
   const schema = {
     description: tool.description,
-    inputSchema: normalizedSchema
+    inputSchema: tool.inputSchema
   };
 
   const handler = async (args: unknown) => {

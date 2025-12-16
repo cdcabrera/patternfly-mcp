@@ -3,7 +3,7 @@ import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
 import { type McpTool } from './server';
-// import { type GlobalOptions } from './options';
+import { normalizeInputSchema } from './server.schema';
 
 /**
  * SubType of IpcRequest for "hello" requests.
@@ -93,6 +93,14 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
         try {
           const create = creator as (opts?: unknown) => McpTool;
           const tool = create(toolOptions);
+
+          // Normalize input schema in the child (Tools Host)
+          const cfg = (tool[1] ?? {}) as Record<string, unknown>;
+          const normalizedSchema = normalizeInputSchema(cfg.inputSchema);
+
+          // Overwrite tuple's schema so call-time validation matches manifest
+          tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
+
           const toolId = makeId();
 
           state.toolMap.set(toolId, tool as McpTool);
@@ -100,7 +108,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
             id: toolId,
             name: tool[0],
             description: tool[1]?.description || '',
-            inputSchema: tool[1]?.inputSchema ?? {},
+            inputSchema: normalizedSchema,
             source: spec
           });
         } catch (error) {
