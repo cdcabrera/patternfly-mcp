@@ -208,6 +208,7 @@ describe('Tools', () => {
       params: {
         name: 'echo_plugin_tool',
         arguments: {
+          message: 'Hello, world!',
           type: 'echo',
           lorem: 'ipsum',
           dolor: 'sit amet'
@@ -217,6 +218,7 @@ describe('Tools', () => {
 
     const resp = await CLIENT.send(req);
 
-    expect(resp).toMatchSnapshot();
+    expect(resp?.result?.content).toMatchSnapshot();
+    expect(CLIENT.logs()).toMatchSnapshot('log');
   });
 });

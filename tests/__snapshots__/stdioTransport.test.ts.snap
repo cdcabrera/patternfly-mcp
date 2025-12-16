@@ -460,3 +460,34 @@ exports[`Tools should interact with the new tool 1`] = `
   "type": "echo",
 }
 `;
+
+exports[`Tools should interact with the new tool: log 1`] = `
+[
+  "[DEBUG]: Tools Host allow-fs-read flags: --allow-fs-read=/Users/code/Documents/git-work/forked/patternfly-mcp --allow-fs-read=/Users/code/Documents/git-work/forked/patternfly-mcp/tests/__fixtures__ --allow-fs-read=/Users/code/Documents/git-work/forked/patternfly-mcp/dist
+",
+  "[DEBUG]: Server memo: {
+  "type": "memo promise",
+  "cache": [
+    "cbe980804641e67fd26bb612b90d85ce5de8c473",
+    {},
+    null,
+    null,
+    null,
+    null
+  ]
+}
+",
+  "[DEBUG]: [tools-host pid=31101 sid=28a8b79b-c4f7-41b7-92ce-0fee847d594f] JSON Schema detected: { additionalProperties: [33mtrue[39m }
+",
+  "[INFO]: Registered tool: usePatternFlyDocs
+",
+  "[INFO]: Registered tool: fetchDocs
+",
+  "[INFO]: Registered tool: componentSchemas
+",
+  "[INFO]: Registered tool: echo_plugin_tool
+",
+  "[INFO]: @patternfly/patternfly-mcp server running on stdio transport
+",
+]
+`;
