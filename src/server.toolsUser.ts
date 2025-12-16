@@ -120,6 +120,17 @@ const isToolFunction = (config: any) => typeof config === 'function';
  */
 const isToolFilePackage = (config: any) => typeof config === 'string';
 
+/*
+const toolWrapper = (config: any, name: string, type: 'string' | 'func' | 'tuple' | 'obj'): McpToolCreator => {
+  const wrapper = () => config;
+
+  wrapper.toolType = name;
+  wrapper.toolName = type;
+
+  return wrapper;
+};
+ */
+
 /**
  * Author-facing helper for creating an MCP tool configuration list for Patternfly MCP server.
  *
@@ -207,6 +218,10 @@ const createMcpTool = <TArgs = unknown, TResult = unknown>(
 
 export {
   createMcpTool,
+  isToolFilePackage,
+  isToolFunction,
+  isToolObject,
+  isToolTuple,
   // createMcpToolFromMultiToolConfig,
   // createMcpToolFromSingleConfig,
   type MultiToolConfig,

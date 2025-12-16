@@ -18,6 +18,7 @@ import {
 } from './server.toolsIpc';
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
+import { createMcpTool, isToolFunction, isToolFilePackage } from './server.toolsUser';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -51,9 +52,9 @@ const isFilePath = (str: string): boolean =>
 const isUrlLike = (str: string) =>
   /^(file:|https?:|data:|node:)/i.test(str);
 
-const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
+// const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
 
-const isInlineCreator = (module: unknown): module is McpToolCreator => typeof module === 'function';
+// const isInlineCreator = (module: unknown): module is McpToolCreator => typeof module === 'function';
 
 /**
  * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
@@ -65,7 +66,7 @@ const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: Global
 
   directories.add(contextPath);
 
-  for (const moduleSpec of (toolModules || []).filter(isStringToolModule)) {
+  for (const moduleSpec of (toolModules || []).filter(isToolFilePackage)) {
     try {
       const url = import.meta.resolve(moduleSpec, contextUrl);
 
@@ -193,7 +194,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  * @returns Updated array of normalized tool modules
  */
 const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
-  toolModules.filter(isStringToolModule).map(tool => {
+  toolModules.filter(isToolFilePackage).map(tool => {
     if (isUrlLike(tool)) {
       return tool;
     }
@@ -444,10 +445,12 @@ const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator =
 const getToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
 
 const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string>): McpToolCreator | null => {
-  const name = getToolName(creator);
+  const updatedCreator = wrapCreatorWithNormalization(creator as McpToolCreator);
+
+  const name = getToolName(updatedCreator);
 
   if (!name) {
-    return creator;
+    return updatedCreator;
   }
 
   if (usedNames.has(name)) {
@@ -458,7 +461,7 @@ const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string
 
   usedNames.add(name);
 
-  return creator;
+  return updatedCreator;
 };
 
 /**
@@ -481,15 +484,30 @@ const composeTools = async (
   { toolModules, nodeVersion }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
-  const result: McpToolCreator[] = [];
-
-  // 1) Seed with built-ins and reserve names
+  const result: McpToolCreator[] = [...builtinCreators];
   const usedNames = new Set<string>(builtinCreators.map(creator => getToolName(creator)).filter(Boolean) as string[]);
-
-  result.push(...builtinCreators);
 
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
     return result;
+  }
+
+  // const inlineModules: McpToolCreator[] = [];
+  const fileSpecs: string[] = [];
+  const flatModules: any[] = createMcpTool(toolModules);
+
+  for (const mod of flatModules) {
+    if (isToolFilePackage(mod)) {
+      fileSpecs.push(mod);
+    } else if (isToolFunction(mod)) {
+      // inlineModules.push(mod);
+      const guarded = wrapCreatorWithNameGuard(mod, usedNames);
+
+      if (guarded) {
+        result.push(guarded);
+      }
+    } else {
+      log.warn(`Unknown tool module type: ${typeof mod}`);
+    }
   }
 
   // 2) Partition modules
@@ -498,6 +516,7 @@ const composeTools = async (
   //
   // for (const mod of toolModules) {
   // 2) Flatten one level to tolerate nested arrays from createMcpTool
+  /*
   const flatModules: unknown[] = toolModules.flat ? toolModules.flat() : ([] as unknown[]).concat(...toolModules as any);
 
   // 3) Partition modules
@@ -513,16 +532,18 @@ const composeTools = async (
       log.warn(`Unknown tool module type: ${typeof mod}`);
     }
   }
+  */
 
   // 4) Normalize + name-guard inline creators
+  /*
   for (const creator of inlineModules) {
-    const normalized = wrapCreatorWithNormalization(creator as McpToolCreator);
-    const guarded = wrapCreatorWithNameGuard(normalized, usedNames);
+    const guarded = wrapCreatorWithNameGuard(creator, usedNames);
 
     if (guarded) {
       result.push(guarded);
     }
   }
+  */
 
   // 5) Load file-based via Tools Host (Node gate applies only here)
   if (fileSpecs.length === 0) {
