@@ -1,5 +1,5 @@
 import { type IpcRequest, type ToolDescriptor, makeId } from './server.toolsIpc';
-import { normalizeToCreators } from './server.toolsCreator';
+import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
 import { type McpTool } from './server';
@@ -83,10 +83,11 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
     try {
       // review the plugin @rollup/plugin-dynamic-import-vars
       // const mod = await import(spec);
+      // Dynamic import for external modules
       const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
-      const mod = await dynamicImport(spec);
+      const module = await dynamicImport(spec);
       const toolOptions: ToolOptions | undefined = request.toolOptions;
-      const creators = normalizeToCreators(mod, toolOptions);
+      const creators = resolveExternalCreators(module, toolOptions);
 
       for (const creator of creators) {
         try {
