@@ -17,7 +17,6 @@ import {
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
-import { isPlainObject } from './server.helpers';
 
 type McpTool = [string, { description: string; inputSchema: any }, (args: any) => Promise<any> | any];
 
@@ -179,20 +178,16 @@ const runServer = async (options: ServerOptions = getOptions(), {
       log.info(`Registered tool: ${name}`);
 
       if (!isZod) {
-        log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. Zod raw shapes are preferred. Kneel before Zod.`);
+        log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. MCP SDK requires Zod. Kneel before Zod.`);
       }
 
-      server?.registerTool(name, schema, (..._args: any) =>
+      server?.registerTool(name, schema, (args: unknown, ..._args: any) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
-            // log.debug(`Running tool "${name}" with args: ${JSON.stringify(first)}, rest: ${JSON.stringify(_rest)}`);
+            // Track remaining args to account for MCP SDK alterations.
+            log.debug(`Running tool "${name}" with args:`, args, 'Remaining args:', _args);
 
-            // If the first parameter is a wrapper containing the real user args under `arguments` extract it;
-            // otherwise treat the first parameter as the args object.
-            // const userArgs = isPlainObject(first) && 'arguments' in first ? first.arguments : first;
-            const userArgs = _args.find((arg: unknown) => isPlainObject(arg) && ('arguments' in arg)) || _args;
-
-            return await callback(userArgs);
+            return await callback(args);
           })));
     });
 

@@ -19,8 +19,6 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
-import { isPlainObject } from './server.helpers';
-import { normalizeInputSchema } from './server.schema';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -271,6 +269,9 @@ const spawnToolsHost = async (
  * Ensure tools are in the correct format. Recreate tool creators from a
  * loaded Tools Host.
  *
+ * - The parent process does not validate or actively run the input schema, this is handled by the child process.
+ * - A minimal Zod inputSchema from the parent is required to trigger the MCP SDK parameter validation for tool invocation. This schema is not used, it is a noop.
+ *
  * @param {HostHandle} handle
  * @param {GlobalOptions} options
  */
@@ -279,22 +280,16 @@ const makeProxyCreators = (
   { pluginHost }: GlobalOptions = getOptions()
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
-  // const normalizedSchema = normalizeInputSchema(tool.inputSchema);
   const schema = {
     description: tool.description,
-    // inputSchema: normalizedSchema
-    // inputSchema: tool.inputSchema
-    // The parent process does not validate or actively run the input schema, this is handled by the child process
-    // We only pass an inputSchema to trigger the MCP sdk validation process for tool invocation. This is a noop.
-    inputSchema: z.object({}).passthrough() // or z.any()
+    inputSchema: z.object({}).passthrough()
+    // inputSchema: z.any()
   };
 
-  const handler = async (first: unknown, ..._rest: any[]) => {
+  const handler = async (args: unknown) => {
     const requestId = makeId();
 
-    log.debug('Handler args', first, _rest);
-
-    send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args: first });
+    send(handle.child, { t: 'invoke', id: requestId, toolId: tool.id, args });
 
     const response = await awaitIpc(
       handle.child,
@@ -307,7 +302,7 @@ const makeProxyCreators = (
 
       invocationError.stack = response.error?.stack;
       invocationError.code = response.error?.code;
-      invocationError.details = (response as any)?.error?.details ?? (response as any)?.error?.cause?.details;
+      invocationError.details = response?.error?.details || response?.error?.cause?.details;
       throw invocationError;
     }
 
