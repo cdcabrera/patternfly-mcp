@@ -18,7 +18,7 @@ import {
 } from './server.toolsIpc';
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
-import { normalizeTools } from './server.toolsUser';
+import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -392,50 +392,13 @@ const sendToolsHostShutdown = async (
   });
 };
 
-// Inline schema normalization wrapper
-/*
-const wrapCreatorWithNormalization = (creator: McpToolCreator): McpToolCreator => options => {
-  const [name, schema, cb] = creator(options);
-  const original = schema?.inputSchema;
-  const normalized = normalizeInputSchema(original);
-
-  if (normalized !== original) {
-    log.info(`Tool "${name}" input schema converted from JSON→Zod`);
-  }
-
-  return [name, { ...schema, inputSchema: normalized }, cb];
-};
- */
-
-/*
-const wrapCreatorWithNameGuard = (creator: McpToolCreator, usedNames: Set<string>): McpToolCreator | null => {
-  const updatedCreator = wrapCreatorWithNormalization(creator as McpToolCreator);
-
-  const name = getToolName(updatedCreator);
-
-  if (!name) {
-    return updatedCreator;
-  }
-
-  if (usedNames.has(name)) {
-    log.warn(`Skipping inline tool "${name}" because a tool with the same name is already provided (built-in or earlier).`);
-
-    return null;
-  }
-
-  usedNames.add(name);
-
-  return updatedCreator;
-};
-*/
-
 /**
  * Compose built-in creators with any externally loaded creators.
  *
  * - Node.js version policy:
  *    - Node >= 22, external plugins are executed out-of-process via a Tools Host.
  *    - Node < 22, externals are skipped with a warning and only built-ins are returned.
- * - Registry is self‑healing for pre‑load or mid‑run crashes without changing normal shutdown
+ * - Registry is self‑correcting for pre‑load or mid‑run crashes without changing normal shutdown
  *
  * @param builtinCreators - Built-in tool creators
  * @param {GlobalOptions} [options]
@@ -457,14 +420,14 @@ const composeTools = async (
     return result;
   }
 
-  const filePackageConfigs: string[] = [];
+  const filePackageEntries: NormalizedToolEntry[] = [];
   const tools = normalizeTools.memo(toolModules, options);
 
   tools.forEach(tool => {
     switch (tool.type) {
       case 'file':
       case 'package':
-        filePackageConfigs.push(tool);
+        filePackageEntries.push(tool);
         break;
       case 'invalid':
         log.warn(tool.error);
@@ -485,7 +448,7 @@ const composeTools = async (
   });
 
   // Load file-based via Tools Host (Node.js version gate applies here)
-  if (filePackageConfigs.length === 0) {
+  if (filePackageEntries.length === 0) {
     return result;
   }
 
