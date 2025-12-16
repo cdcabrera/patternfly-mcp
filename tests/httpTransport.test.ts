@@ -2,7 +2,7 @@
  * Requires: npm run build prior to running Jest.
  */
 // @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
-import { createMcpTool, type ToolCreator } from '../dist/index.js';
+import { createMcpTool, type ToolCreator, type ToolPlugin } from '../dist/index.js';
 import { startServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
 // Use public types from dist to avoid type identity mismatches between src and dist
