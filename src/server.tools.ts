@@ -493,10 +493,18 @@ const composeTools = async (
   }
 
   // 2) Partition modules
+  // const inlineModules: McpToolCreator[] = [];
+  // const fileSpecs: string[] = [];
+  //
+  // for (const mod of toolModules) {
+  // 2) Flatten one level to tolerate nested arrays from createMcpTool
+  const flatModules: unknown[] = toolModules.flat ? toolModules.flat() : ([] as unknown[]).concat(...toolModules as any);
+
+  // 3) Partition modules
   const inlineModules: McpToolCreator[] = [];
   const fileSpecs: string[] = [];
 
-  for (const mod of toolModules) {
+  for (const mod of flatModules) {
     if (isStringToolModule(mod)) {
       fileSpecs.push(mod);
     } else if (isInlineCreator(mod)) {
@@ -506,7 +514,7 @@ const composeTools = async (
     }
   }
 
-  // 3) Normalize + name-guard inline creators
+  // 4) Normalize + name-guard inline creators
   for (const creator of inlineModules) {
     const normalized = wrapCreatorWithNormalization(creator as McpToolCreator);
     const guarded = wrapCreatorWithNameGuard(normalized, usedNames);
@@ -516,7 +524,7 @@ const composeTools = async (
     }
   }
 
-  // 4) Load file-based via Tools Host (Node gate applies only here)
+  // 5) Load file-based via Tools Host (Node gate applies only here)
   if (fileSpecs.length === 0) {
     return result;
   }
