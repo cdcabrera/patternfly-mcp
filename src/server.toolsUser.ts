@@ -232,6 +232,14 @@ const normalizeFunction = (config: any): CreatorEntry => (
   }
 );
 
+/**
+ * Normalize a file or package tool config into a file entry.
+ *
+ * @param config - The file, or package, configuration to normalize.
+ * @param options - Optional settings
+ * @param options.contextPath - The context path to use for resolving file paths.
+ * @param options.contextUrl - The context URL to use for resolving file paths.
+ */
 const normalizeFilePackage = (
   config: string,
   { contextPath, contextUrl }: { contextPath?: string, contextUrl?: string } = {}

@@ -142,7 +142,7 @@ describe('Inline tools over HTTP', () => {
       handler: (args: any) => ({ content: [{ type: 'text', text: JSON.stringify(args) }] })
     });
 
-    const inline2: ToolCreator = options => {
+    const inline2: ToolCreator = (options: any) => {
       console.error('>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<', options);
 
       return [
