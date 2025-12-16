@@ -63,7 +63,7 @@ type Tool = McpTool;
 /**
  * Author-facing "tools as plugins" surface.
  *
- * A tool plugin is a flexible type that supports either a single string identifier,
+ * A tool module is a flexible type that supports either a single string identifier,
  * a specific tool creator, or multiple tool creators.
  *
  * - A `file path` or `file URL` string, that refers to the name or identifier of a local ESM tool package.
@@ -72,7 +72,10 @@ type Tool = McpTool;
  * - An `McpToolCreator`, a function that returns an `McpTool`.
  * - An array of `McpToolCreator` functions.
  */
-type ToolPlugin = (string | McpTool | McpToolCreator | McpToolCreator[])[] | string | McpTool | McpToolCreator | McpToolCreator[];
+type ToolModule = (string | McpTool | McpToolCreator | McpToolCreator[])[] | string | McpTool | McpToolCreator | McpToolCreator[];
+
+// type ToolModule = string | McpTool | McpToolCreator | (string | McpTool | McpToolCreator)[];
+// type ToolModules = string | McpTool | McpToolCreator | McpToolCreator[];
 
 /**
  * Author-facing tool config. The handler may be async or sync.
@@ -458,8 +461,7 @@ normalizeTools.memo = memo(normalizeTools, { cacheErrors: false });
  *
  * @throws {Error} If a configuration is invalid, an error is thrown on the first invalid entry.
  */
-// const createMcpTool = (config: unknown): (string | ToolCreator)[] => {
-const createMcpTool = (config: unknown): ToolPlugin => {
+const createMcpTool = (config: unknown): ToolModule => {
   const entries = normalizeTools(config);
   const err = entries.find(entry => entry.type === 'invalid');
 
@@ -488,5 +490,5 @@ export {
   type ToolCreator,
   type Tool,
   type ToolConfig,
-  type ToolPlugin
+  type ToolModule
 };
