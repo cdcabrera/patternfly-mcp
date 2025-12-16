@@ -194,7 +194,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  * @returns Updated array of normalized tool modules
  */
 const normalizeToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
-  toolModules.filter(isToolFilePackage).map(tool => {
+  createMcpTool(toolModules).filter(isToolFilePackage).map(tool => {
     if (isUrlLike(tool)) {
       return tool;
     }
