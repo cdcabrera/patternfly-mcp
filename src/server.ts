@@ -181,7 +181,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
         log.warn(`Tool "${name}" has a non‑Zod inputSchema. This may fail at runtime. MCP SDK requires Zod. Kneel before Zod.`);
       }
 
-      server?.registerTool(name, schema, (args: unknown, ..._args: any) =>
+      server?.registerTool(name, schema, (args: unknown, ..._args: unknown[]) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
             // Track remaining args to account for MCP SDK alterations.

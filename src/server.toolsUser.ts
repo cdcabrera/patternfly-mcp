@@ -90,10 +90,10 @@ type ToolModule = (string | McpTool | McpToolCreator | McpToolCreator[])[] | str
  *     - `args` are returned by the tool's `inputSchema`'
  *     - `options` are currently unused and reserved for future use.
  */
-type ToolConfig<TArgs = any, TResult = any> = {
+type ToolConfig<TArgs = unknown, TResult = unknown> = {
   name: string;
   description: string;
-  inputSchema: any; // JSON Schema or Zod schema
+  inputSchema: unknown;
   handler: (args: TArgs, options?: GlobalOptions) => Promise<TResult> | TResult;
 };
 
@@ -205,22 +205,23 @@ const normalizeTuple = (config: McpTool): CreatorEntry => {
  *
  * @param config
  */
-const normalizeObject = (config: any): CreatorEntry => {
-  const updatedObj = config;
+const normalizeObject = (config: unknown): CreatorEntry => {
+  const updatedObj = config as Record<string, unknown>;
+  const toolName = String(updatedObj.name);
   const creator: ToolCreator = () => [
-    updatedObj.name,
+    toolName,
     {
-      description: updatedObj.description,
+      description: String(updatedObj.description || ''),
       inputSchema: updatedObj.inputSchema
     },
-    updatedObj.handler
+    updatedObj.handler as (args: unknown) => unknown
   ];
 
-  (creator as any).toolName = updatedObj.name;
+  (creator as any).toolName = toolName;
 
   return {
     original: config,
-    toolName: updatedObj.name,
+    toolName,
     type: 'object',
     value: creator
   };

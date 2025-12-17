@@ -39,7 +39,7 @@ const activeHostsBySession = new Map<string, HostHandle>();
  *
  * @param creator
  */
-const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (creator as any)?.toolName;
+const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (creator as McpToolCreator & { toolName?: string })?.toolName;
 
 // const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
 
@@ -280,10 +280,11 @@ const makeProxyCreators = (
   { pluginHost }: GlobalOptions = getOptions()
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
+
+  // Note: inputSchema here is an SDK-compat Zod instance to ensure the MCP SDK calls handler
   const schema = {
     description: tool.description,
     inputSchema: z.object({}).passthrough()
-    // inputSchema: z.any()
   };
 
   const handler = async (args: unknown) => {
@@ -298,11 +299,20 @@ const makeProxyCreators = (
     );
 
     if ('ok' in response && response.ok === false) {
-      const invocationError: any = new Error(response.error?.message || 'Tool invocation failed', { cause: response.error?.cause });
+      const invocationError = new Error(response.error?.message || 'Tool invocation failed', { cause: response.error?.cause }) as Error & {
+        code?: string;
+        details?: unknown;
+      };
 
-      invocationError.stack = response.error?.stack;
-      invocationError.code = response.error?.code;
-      invocationError.details = response?.error?.details || response?.error?.cause?.details;
+      if (response.error?.stack) {
+        invocationError.stack = response.error.stack;
+      }
+
+      if (response.error?.code) {
+        invocationError.code = response.error?.code;
+      }
+
+      invocationError.details = response.error?.details || (response as any).error?.cause?.details;
       throw invocationError;
     }
 

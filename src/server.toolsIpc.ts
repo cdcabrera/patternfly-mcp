@@ -9,7 +9,7 @@ type IpcRequest =
   { t: 'invoke'; id: string; toolId: string; args: unknown } |
   { t: 'shutdown'; id: string };
 
-type SerializedError = { message: string; stack?: string; code?: string; cause?: unknown };
+type SerializedError = { message: string; stack?: string; code?: string; cause?: unknown; details?: unknown };
 
 type ToolDescriptor = {
   id: string;

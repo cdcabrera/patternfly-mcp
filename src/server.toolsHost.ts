@@ -68,6 +68,7 @@ const serializeError = (errorValue: unknown) => {
     message: err?.message || String(errorValue),
     stack: err?.stack,
     code: err?.code,
+    details: err?.details,
     cause: err?.cause
   };
 };
@@ -220,7 +221,7 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
   try {
     // Child-side validation using in-memory Zod schema
     let updatedRequestArgs = request.args;
-    const zodSchema = tool?.[1]?.inputSchema;
+    const zodSchema: any = tool?.[1]?.inputSchema;
 
     if (zodSchema && typeof zodSchema.safeParseAsync === 'function') {
       const parsed = await zodSchema.safeParseAsync(updatedRequestArgs);
