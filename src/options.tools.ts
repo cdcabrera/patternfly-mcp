@@ -18,7 +18,8 @@ type ToolOptions = {
 /**
  * Return a refined set of options from global options for tools.
  *
- * @param {GlobalOptions} options
+ * @param {GlobalOptions} options - Minimal set of options required for tools.
+ * @returns {ToolOptions}
  */
 const setToolOptions = (options: GlobalOptions): ToolOptions => ({
   serverName: options.name,

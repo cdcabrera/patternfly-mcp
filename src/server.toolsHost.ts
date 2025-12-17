@@ -49,6 +49,7 @@ type HostState = {
  * Create a new host state object.
  *
  * @param invokeTimeoutMs
+ * @returns {HostState}
  */
 const createHostState = (invokeTimeoutMs = DEFAULT_OPTIONS.pluginHost.invokeTimeoutMs): HostState => ({
   toolMap: new Map<string, McpTool>(),
@@ -59,7 +60,8 @@ const createHostState = (invokeTimeoutMs = DEFAULT_OPTIONS.pluginHost.invokeTime
 /**
  * Serialize an error value into a structured object.
  *
- * @param errorValue
+ * @param errorValue - Error-like value to serialize.
+ * @returns {SerializedError} - Serialized error object.
  */
 const serializeError = (errorValue: unknown) => {
   const err = errorValue as SerializedError | undefined;
@@ -74,10 +76,12 @@ const serializeError = (errorValue: unknown) => {
 };
 
 /**
- * Perform tool loading and return a new state object.
+ * Load external tool creators, realize them, and normalize `inputSchema` in the child.
  *
- * @param {LoadRequest} request
- * @returns {HostState & { warnings: string[]; errors: string[] }} - New state object with updated tools and warnings/errors.
+ * Stores the real Zod schema in memory for runtime validation and sends a JSON-safe schema in descriptors.
+ *
+ * @param {LoadRequest} request - Load request object.
+ * @returns New state object with updated tools/descriptors and warnings/errors.
  */
 const performLoad = async (request: LoadRequest): Promise<HostState & { warnings: string[]; errors: string[] }> => {
   const nextInvokeTimeout = typeof request?.invokeTimeoutMs === 'number' && Number.isFinite(request.invokeTimeoutMs) && request.invokeTimeoutMs > 0
@@ -118,7 +122,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
             manifestSchema = cfg.inputSchema; // JSON-safe
           } else {
             // Otherwise, provide a minimal, permissive JSON Schema to avoid lying about capabilities
-            // You can replace this with a real converter if you add zod-to-json-schema later
+            // Replace this with a real converter, zod-to-json-schema
             manifestSchema = { type: 'object', additionalProperties: true };
           }
 
@@ -156,7 +160,7 @@ const requestHello = (request: HelloRequest) => {
 /**
  * Load tools from the provided list of module specifiers.
  *
- * @param {LoadRequest} request
+ * @param {LoadRequest} request - Load request object.
  * @param warningsErrors
  * @param warningsErrors.warnings - List of warnings generated during tool loading.
  * @param warningsErrors.errors - List of errors generated during tool loading.
@@ -179,7 +183,11 @@ const requestManifestGet = (state: HostState, request: ManifestGetRequest) => {
 };
 
 /**
- * Handle tool invocation requests.
+ * Invoke a realized tool by id. Validates arguments against the in-memory Zod schema.
+ *
+ * @example
+ * // On validation failure, returns
+ * { ok: false, error: { code: 'INVALID_ARGS', details } }
  *
  * @param {HostState} state
  * @param {InvokeRequest} request
@@ -298,6 +306,8 @@ const requestFallback = (request: IpcRequest, error: Error) => {
 
 /**
  * Initializes and sets up handlers for incoming IPC (Inter-Process Communication) messages.
+ *
+ * @returns Function to remove IPC message listeners.
  */
 const setHandlers = () => {
   let state: HostState = createHostState();

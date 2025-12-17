@@ -130,6 +130,7 @@ const isUrlLike = (str: string) =>
  * Minimally validate a tool config. Is it a tuple we expect?
  *
  * @param config
+ * @returns {boolean}
  */
 const isToolTuple = (config: unknown) => {
   const isArray = Array.isArray(config) && config.length === 3;
@@ -151,6 +152,7 @@ const isToolTuple = (config: unknown) => {
  * Minimally validate a tool config. Is it an object we expect?
  *
  * @param config
+ * @returns {boolean}
  */
 const isToolObject = (config: unknown) => {
   const isObj = isPlainObject(config);
@@ -171,6 +173,7 @@ const isToolObject = (config: unknown) => {
  * Minimally validate a tool config.  Is it a function we expect?
  *
  * @param config
+ * @returns {boolean}
  */
 const isToolFunction = (config: unknown) => typeof config === 'function';
 
@@ -185,6 +188,7 @@ const isToolFilePackage = (config: unknown) => typeof config === 'string';
  * Normalize a tuple config into a tool creator function.
  *
  * @param config
+ * @returns {CreatorEntry}
  */
 const normalizeTuple = (config: McpTool): CreatorEntry => {
   const updatedTuple = config;
@@ -204,6 +208,7 @@ const normalizeTuple = (config: McpTool): CreatorEntry => {
  * Normalize an object config into a tool creator function.
  *
  * @param config
+ * @returns {CreatorEntry}
  */
 const normalizeObject = (config: unknown): CreatorEntry => {
   const updatedObj = config as Record<string, unknown>;
@@ -227,6 +232,12 @@ const normalizeObject = (config: unknown): CreatorEntry => {
   };
 };
 
+/**
+ * Normalize a creator function into a tool creator function.
+ *
+ * @param config
+ * @returns {CreatorEntry}
+ */
 const normalizeFunction = (config: any): CreatorEntry => (
   {
     original: config,
@@ -243,6 +254,7 @@ const normalizeFunction = (config: any): CreatorEntry => (
  * @param options - Optional settings
  * @param options.contextPath - The context path to use for resolving file paths.
  * @param options.contextUrl - The context URL to use for resolving file paths.
+ * @returns {FileEntry}
  */
 const normalizeFilePackage = (
   config: string,

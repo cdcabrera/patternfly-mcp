@@ -9,6 +9,11 @@ import { log } from './logger';
  *  - function returning an array of creators -> returns them directly
  *  - array of creators -> returns it directly
  *
+ * It does:
+ *   - Perform a probe of function exports
+ *   - The probe executes at most once per export
+ *   - Realized tuples are cached to avoid duplicate setup
+ *
  * It does not:
  *   - Perform schema normalization.
  *   - Import modules

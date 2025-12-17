@@ -22,6 +22,10 @@ import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
 
 /**
  * Handle for a spawned Tools Host process.
+ *
+ * @property child - Child process
+ * @property tools - Array of tool descriptors from `tools/list`
+ * @property closeStderr - Optional function to close stderr reader
  */
 type HostHandle = {
   child: ChildProcess;
@@ -37,18 +41,15 @@ const activeHostsBySession = new Map<string, HostHandle>();
 /**
  * Get the tool name from a creator function.
  *
- * @param creator
+ * @param creator - Tool creator function
  */
 const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (creator as McpToolCreator & { toolName?: string })?.toolName;
 
-// const isStringToolModule = (module: unknown): module is string => typeof module === 'string';
-
-// const isInlineCreator = (module: unknown): module is McpToolCreator => typeof module === 'function';
-
 /**
- * Compute the allowlist for the Tools Host's `--allow-fs-read` flag.
+ * Compute the allowlist for the Tools Host.
  *
- * @param {GlobalOptions} options
+ * @param {GlobalOptions} options - Global options.
+ * @returns Array of absolute directories to allow read access.
  */
 const computeFsReadAllowlist = (options: GlobalOptions = getOptions()): string[] => {
   const directories = new Set<string>();
@@ -68,9 +69,9 @@ const computeFsReadAllowlist = (options: GlobalOptions = getOptions()): string[]
 /**
  * Log warnings and errors from Tools' load.
  *
- * @param warningsErrors
- * @param warningsErrors.warnings
- * @param warningsErrors.errors
+ * @param warningsErrors - Object containing warnings and errors
+ * @param warningsErrors.warnings - Log warnings
+ * @param warningsErrors.errors - Log errors
  */
 const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[], errors?: string[] } = {}) => {
   if (Array.isArray(warnings) && warnings.length > 0) {
@@ -89,7 +90,7 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
 /**
  * Get normalized file and package tool modules.
  *
- * @param {GlobalOptions} options
+ * @param {GlobalOptions} options - Global options.
  * @returns Updated array of normalized tool modules
  */
 const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
@@ -102,7 +103,7 @@ const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions =
  * Debug a child process' stderr output.
  *
  * @param child - Child process to debug
- * @param {AppSession} sessionOptions
+ * @param {AppSession} sessionOptions - Session options
  */
 const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) => {
   const childPid = child.pid;
@@ -171,11 +172,15 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
 };
 
 /**
- * Spawn a tools host process and return its handle.
+ * Spawn the Tools Host (child process), load external tools, and return a host handle.
  *
  * - See `package.json` import path for entry parameter.
+ * - Requires Node ≥ 22 for process isolation flags.
+ * - Attaches a stderr reader for debugging if protocol logging is enabled.
+ * - Returns descriptors from `tools/list` and an IPC-capable child.
  *
- * @param {GlobalOptions} options
+ * @param {GlobalOptions} options - Global options.
+ * @returns Host handle used by `makeProxyCreators` and shutdown.
  */
 const spawnToolsHost = async (
   options: GlobalOptions = getOptions()
@@ -266,14 +271,15 @@ const spawnToolsHost = async (
 };
 
 /**
- * Ensure tools are in the correct format. Recreate tool creators from a
- * loaded Tools Host.
+ * Recreate parent-side tool creators that forward invocations to the Tools Host.
+ * - Parent does not perform validation; the child validates with Zod at invoke time.
+ * - A minimal Zod inputSchema from the parent is required to trigger the MCP SDK parameter
+ *    validation for tool invocation. This schema is not used, it is a noop.
+ * - Invocation errors from the child preserve `error.code` and `error.details` for UX.
  *
- * - The parent process does not validate or actively run the input schema, this is handled by the child process.
- * - A minimal Zod inputSchema from the parent is required to trigger the MCP SDK parameter validation for tool invocation. This schema is not used, it is a noop.
- *
- * @param {HostHandle} handle
- * @param {GlobalOptions} options
+ * @param {HostHandle} handle - Tools Host handle.
+ * @param {GlobalOptions} options - Global options.
+ * @returns Array of tool creators
  */
 const makeProxyCreators = (
   handle: HostHandle,
@@ -324,15 +330,15 @@ const makeProxyCreators = (
 
 /**
  * Best-effort Tools Host shutdown for the current session.
+ *
  * Policy:
  * - Primary grace defaults to 0 ms (internal-only, from DEFAULT_OPTIONS.pluginHost.gracePeriodMs)
  * - Single fallback kill at grace + 200 ms to avoid racing simultaneous kills
  * - Close logging for child(ren) stderr
  *
- * @param {GlobalOptions} options
- * @param options.pluginHost
- * @param {AppSession} sessionOptions
- * @param sessionOptions.sessionId
+ * @param {GlobalOptions} options - Global options.
+ * @param {AppSession} sessionOptions - Session options.
+ * @returns {Promise<void>} Promise that resolves when the host is stopped or noop.
  */
 const sendToolsHostShutdown = async (
   { pluginHost }: GlobalOptions = getOptions(),
@@ -414,10 +420,8 @@ const sendToolsHostShutdown = async (
  * - Registry is self‑correcting for pre‑load or mid‑run crashes without changing normal shutdown
  *
  * @param builtinCreators - Built-in tool creators
- * @param {GlobalOptions} [options]
- * @param options.toolModules
- * @param options.nodeVersion
- * @param {AppSession} [sessionOptions]
+ * @param {GlobalOptions} options - Global options.
+ * @param {AppSession} sessionOptions - Session options.
  * @returns {Promise<McpToolCreator[]>} Promise array of tool creators
  */
 const composeTools = async (

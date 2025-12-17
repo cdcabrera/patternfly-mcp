@@ -65,7 +65,7 @@ type PfMcpOnLogHandler = ServerOnLogHandler;
 type PfMcpLogEvent = ServerLogEvent;
 
 /**
- * Main function - CLI entry point with optional programmatic overrides
+ * Main function - Programmatic and CLI entry point with optional overrides
  *
  * @param [pfMcpOptions] - User configurable options
  * @param [pfMcpSettings] - MCP server settings

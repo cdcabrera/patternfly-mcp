@@ -82,12 +82,12 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
 };
 
 /**
- * Normalize an inputSchema to a format compatible with MCP SDK.
+ * Attempt to normalize an `inputSchema` to a Zod schema, compatible with the MCP SDK.
  * - If it's already a Zod schema or ZodRawShapeCompat, return as-is.
  * - If it's a plain JSON Schema, convert it to a Zod schema.
  *
  * @param inputSchema - Input schema (Zod schema, ZodRawShapeCompat, or plain JSON Schema)
- * @returns Normalized schema compatible with MCP SDK
+ * @returns Returns a Zod instance for known inputs (Zod schema, raw shape, or JSON Schema), or the original value otherwise.
  */
 const normalizeInputSchema = (inputSchema: unknown): z.ZodTypeAny | unknown => {
   // If it's already a Zod schema or a ZodRawShapeCompat (object with Zod schemas as values), return as-is

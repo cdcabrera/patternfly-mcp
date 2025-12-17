@@ -87,14 +87,17 @@ const builtinTools: McpToolCreator[] = [
 ];
 
 /**
- * Create and run a server with shutdown, register tool and errors.
+ * Create and run the MCP server, register tools, and return a handle.
+ *
+ *  - Built-in and inline tools are realized in-process
+ *  - External plugins are realized in the Tools Host (child).
  *
  * @param [options] Server options
  * @param [settings] Server settings (tools, signal handling, etc.)
- * @param [settings.tools]
- * @param [settings.enableSigint]
- * @param [settings.allowProcessExit]
- * @returns Server instance
+ * @param [settings.tools] - Built-in tools to register.
+ * @param [settings.enableSigint] - Indicates whether SIGINT signal handling is enabled.
+ * @param [settings.allowProcessExit] - Determines if the process is allowed to exit explicitly, useful for testing.
+ * @returns Server instance with `stop()`, `isRunning()`, and `onLog()` subscription.
  */
 const runServer = async (options: ServerOptions = getOptions(), {
   tools = builtinTools,

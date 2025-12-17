@@ -2,13 +2,9 @@ import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
 import { type ToolModule } from './server.toolsUser';
-// import { type McpToolCreator } from './server';
-// import { type ToolCreator, type ToolPlugin } from './server.toolsUser';
-// import { type AppToolPlugin } from './server.toolsCreator';
-// import type {AppToolPlugin} from "./server.toolsCreator";
 
 /**
- * Application defaults, not user-configurable
+ * Application defaults, not all fields are user-configurable
  *
  * @interface DefaultOptions
  *
@@ -30,14 +26,14 @@ import { type ToolModule } from './server.toolsUser';
  * @property pfExternalDesignComponents - PatternFly design guidelines' components' URL.
  * @property pfExternalExamplesComponents - PatternFly examples' core components' URL.
  * @property pfExternalExamplesLayouts - PatternFly examples' core layouts' URL.
- * @property pfExternalExamplesCharts - PatternFly examples' charts' components' URL.'
+ * @property pfExternalExamplesCharts - PatternFly examples' charts' components' URL.
  * @property pfExternalExamplesTable - PatternFly examples' table components' URL.
  * @property pfExternalChartsDesign - PatternFly charts' design guidelines URL.
  * @property pfExternalDesignLayouts - PatternFly design guidelines' layouts' URL.
  * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
- * @property {ToolPlugin[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
+ * @property {ToolModule|ToolModule[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
  *     registered with the server.
  * @property separator - Default string delimiter.
  * @property urlRegex - Regular expression pattern for URL matching.
