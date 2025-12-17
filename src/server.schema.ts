@@ -66,33 +66,54 @@ const jsonSchemaPropertyToZod = (propertySchema: unknown): z.ZodTypeAny => {
 
   // Handle enum values
   if (Array.isArray(prop.enum) && prop.enum.length > 0) {
-    // Zod enum requires at least one value, and all values must be the same type
     const enumValues = prop.enum as unknown[];
     const firstValue = enumValues[0];
 
-    if (enumValues.every(val => typeof val === typeof firstValue)) {
-      if (typeof firstValue === 'string') {
-        return z.enum(enumValues as [string, ...string[]]);
-      }
-      if (typeof firstValue === 'number') {
-        return z.enum(enumValues as [number, ...number[]]);
-      }
+    // Zod enum only supports string enums
+    if (typeof firstValue === 'string' && enumValues.every(val => typeof val === 'string')) {
+      return z.enum(enumValues as [string, ...string[]]);
     }
-    // Fallback: use union for mixed types or when we can't use z.enum
+
+    // For non-string enums or mixed types, use union of literals
     if (enumValues.length >= 2) {
-      return z.union(enumValues.map(val => {
-        if (typeof val === 'string') return z.literal(val);
-        if (typeof val === 'number') return z.literal(val);
-        if (typeof val === 'boolean') return z.literal(val);
+      const literals = enumValues.map(val => {
+        if (typeof val === 'string') {
+          return z.literal(val);
+        }
+
+        if (typeof val === 'number') {
+          return z.literal(val);
+        }
+
+        if (typeof val === 'boolean') {
+          return z.literal(val);
+        }
+
         return z.any();
-      }) as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+      });
+
+      // TypeScript requires at least 2 elements for union
+      if (literals.length >= 2) {
+        return z.union([literals[0], literals[1], ...literals.slice(2)] as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+      }
     }
+
     // Single enum value - use literal
     if (enumValues.length === 1) {
       const val = enumValues[0];
-      if (typeof val === 'string') return z.literal(val);
-      if (typeof val === 'number') return z.literal(val);
-      if (typeof val === 'boolean') return z.literal(val);
+
+      if (typeof val === 'string') {
+        return z.literal(val);
+      }
+
+      if (typeof val === 'number') {
+        return z.literal(val);
+      }
+
+      if (typeof val === 'boolean') {
+        return z.literal(val);
+      }
+
       return z.any();
     }
   }
@@ -100,7 +121,8 @@ const jsonSchemaPropertyToZod = (propertySchema: unknown): z.ZodTypeAny => {
   // Handle different types
   if (Array.isArray(type)) {
     // Union of types - convert to Zod union
-    const zodTypes = type.map(t => jsonSchemaPropertyToZod({ ...prop, type: t }));
+    const zodTypes = type.map(typeValue => jsonSchemaPropertyToZod({ ...prop, type: typeValue }));
+
     return z.union(zodTypes as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
   }
 
@@ -114,10 +136,13 @@ const jsonSchemaPropertyToZod = (propertySchema: unknown): z.ZodTypeAny => {
       return z.boolean();
     case 'array': {
       const items = prop.items;
+
       if (items) {
         const itemSchema = jsonSchemaPropertyToZod(items);
+
         return z.array(itemSchema);
       }
+
       return z.array(z.any());
     }
     case 'object': {
@@ -162,6 +187,7 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
 
       for (const [key, propSchema] of Object.entries(props)) {
         const zodProp = jsonSchemaPropertyToZod(propSchema);
+
         // Mark as optional if not in required array
         shape[key] = required.includes(key) ? zodProp : zodProp.optional();
       }
@@ -172,6 +198,7 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
       if (additionalProperties === false) {
         return zodObject.strict();
       }
+
       // Default behavior: passthrough (allow additional properties)
       return zodObject.passthrough();
     }
@@ -180,6 +207,7 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
     if (additionalProperties === false) {
       return z.object({}).strict();
     }
+
     // Default: passthrough
     return z.object({}).passthrough();
   }
@@ -209,7 +237,7 @@ const normalizeInputSchema = (inputSchema: unknown): z.ZodTypeAny | unknown => {
 
   // If it's a Zod raw shape (object of Zod schemas), wrap as a Zod object schema
   if (isZodRawShape(inputSchema)) {
-    return z.object(inputSchema as Record<string, any>);
+    return z.object(inputSchema as Record<string, z.ZodTypeAny>);
   }
 
   // If it's a plain JSON Schema object, convert to Zod
