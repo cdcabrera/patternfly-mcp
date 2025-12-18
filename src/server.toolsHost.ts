@@ -8,7 +8,11 @@ import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
 import { type McpTool } from './server';
-import { normalizeInputSchema } from './server.schema';
+import {
+  isZodSchema,
+  normalizeInputSchema,
+  zodToJsonSchema
+} from './server.schema';
 import { isPlainObject } from './server.helpers';
 
 /**
@@ -123,7 +127,12 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
           } else {
             // Otherwise, provide a minimal, permissive JSON Schema to avoid lying about capabilities
             // Replace this with a real converter, zod-to-json-schema
-            manifestSchema = { type: 'object', additionalProperties: true };
+            // manifestSchema = { type: 'object', additionalProperties: true };
+            manifestSchema = zodToJsonSchema(cfg.inputSchema);
+
+            if (!manifestSchema) {
+              manifestSchema = zodToJsonSchema({ type: 'object', additionalProperties: true });
+            }
           }
 
           const toolId = makeId();
@@ -206,7 +215,6 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
     return;
   }
 
-  const handler = tool[2];
   let settled = false;
 
   const timer = setTimeout(() => {
@@ -226,13 +234,17 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
 
   timer?.unref?.();
 
+  const handler = tool[2];
+  const cfg = (tool[1] || {}) as Record<string, unknown>;
+  const schema = cfg.inputSchema;
+
   try {
     // Child-side validation using in-memory Zod schema
     let updatedRequestArgs = request.args;
-    const zodSchema: any = tool?.[1]?.inputSchema;
+    // const zodSchema: any = tool?.[1]?.inputSchema;
 
-    if (zodSchema && typeof zodSchema.safeParseAsync === 'function') {
-      const parsed = await zodSchema.safeParseAsync(updatedRequestArgs);
+    if (isZodSchema(schema)) {
+      const parsed = await (schema as any).safeParseAsync(updatedRequestArgs);
 
       if (!parsed.success) {
         const details = parsed.error?.flatten?.() ?? String(parsed.error);
