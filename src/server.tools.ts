@@ -297,7 +297,7 @@ const makeProxyCreators = (
     zodSchema = jsonSchemaToZod(tool.inputSchema, { failFast: false });
 
     log.debug(
-      `Tool "${name}" has an invalid Zod recreation. Using permissive inputSchema instead.`,
+      `Tool "${name}" from ${tool.source || 'unknown source'} failed strict JSON to Zod reconstruction.`,
       `Review the tool's inputSchema and ensure it is a valid JSON or Zod Schema.`
     );
   }
