@@ -242,6 +242,7 @@ describe('testEcho tool plugin over STDIO', () => {
 
     // Find the testEcho tool to check its schema
     const testEchoTool = tools.find((tool: any) => tool.name === 'testEcho');
+
     expect(testEchoTool).toBeDefined();
     expect(testEchoTool?.description).toContain('Echo back a message');
 
@@ -260,11 +261,13 @@ describe('testEcho tool plugin over STDIO', () => {
     } as RpcRequest;
 
     const res1 = await CLIENT.send(req1);
+
     expect(res1?.result).toBeDefined();
     expect(res1?.result?.content).toBeDefined();
     expect(res1?.result?.content?.[0]?.type).toBe('text');
 
     const response1 = JSON.parse(res1?.result?.content?.[0]?.text || '{}');
+
     expect(response1.echo).toBe('Hello from stdio test');
     expect(response1.received).toBe(true);
     expect(response1.tool).toBe('testEcho');
@@ -287,6 +290,7 @@ describe('testEcho tool plugin over STDIO', () => {
 
     const res2 = await CLIENT.send(req2);
     const response2 = JSON.parse(res2?.result?.content?.[0]?.text || '{}');
+
     expect(response2.echo).toBe('Test without timestamp via stdio');
     expect(response2.received).toBe(true);
     expect(response2.tool).toBe('testEcho');
@@ -307,6 +311,7 @@ describe('testEcho tool plugin over STDIO', () => {
 
     const res3 = await CLIENT.send(req3);
     const response3 = JSON.parse(res3?.result?.content?.[0]?.text || '{}');
+
     expect(response3.echo).toBe('Test with default timestamp via stdio');
     expect(response3.received).toBe(true);
     expect(response3.tool).toBe('testEcho');

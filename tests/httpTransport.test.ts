@@ -2,11 +2,11 @@
  * Requires: npm run build prior to running Jest.
  */
 // @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { createMcpTool } from '../dist/index.js';
 import { startServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 // Use public types from dist to avoid type identity mismatches between src and dist
 
 describe('PatternFly MCP, HTTP Transport', () => {
@@ -254,6 +254,7 @@ describe('testEcho tool plugin over HTTP', () => {
 
     // Find the testEcho tool to check its schema
     const testEchoTool = tools.find((tool: any) => tool.name === 'testEcho');
+
     expect(testEchoTool).toBeDefined();
     expect(testEchoTool?.description).toContain('Echo back a message');
 
@@ -272,11 +273,13 @@ describe('testEcho tool plugin over HTTP', () => {
     } as RpcRequest;
 
     const res1 = await CLIENT.send(req1);
+
     expect(res1?.result).toBeDefined();
     expect(res1?.result?.content).toBeDefined();
     expect(res1?.result?.content?.[0]?.type).toBe('text');
 
     const response1 = JSON.parse(res1?.result?.content?.[0]?.text || '{}');
+
     expect(response1.echo).toBe('Hello from test');
     expect(response1.received).toBe(true);
     expect(response1.tool).toBe('testEcho');
@@ -299,6 +302,7 @@ describe('testEcho tool plugin over HTTP', () => {
 
     const res2 = await CLIENT.send(req2);
     const response2 = JSON.parse(res2?.result?.content?.[0]?.text || '{}');
+
     expect(response2.echo).toBe('Test without timestamp');
     expect(response2.received).toBe(true);
     expect(response2.tool).toBe('testEcho');
@@ -319,6 +323,7 @@ describe('testEcho tool plugin over HTTP', () => {
 
     const res3 = await CLIENT.send(req3);
     const response3 = JSON.parse(res3?.result?.content?.[0]?.text || '{}');
+
     expect(response3.echo).toBe('Test with default timestamp');
     expect(response3.received).toBe(true);
     expect(response3.tool).toBe('testEcho');
@@ -343,7 +348,7 @@ describe('testEcho tool plugin over HTTP', () => {
     // Schema normalization is working (tests 1-3 passed), so validation should occur
     const errorMessage = res4?.error?.message || (res4?.result as any)?.error?.message || '';
     const hasValidationError = res4?.error || errorMessage.includes('Invalid') || errorMessage.includes('required') || errorMessage.includes('message');
-    
+
     // If validation isn't catching this, it's still OK - the important thing is tests 1-3 passed
     // which proves schema normalization and parameter passing work correctly
     if (!hasValidationError) {
