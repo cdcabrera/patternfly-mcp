@@ -110,21 +110,23 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
           // Normalize input schema in the child (Tools Host)
           const cfg = (tool[1] ?? {}) as Record<string, unknown>;
           
-          // SECURITY: Capture original schema BEFORE normalization for manifest
+          // SECURITY: Capture original schema for manifest
+          // Priority: 1) _originalInputSchema (preserved from createMcpTool), 2) cfg.inputSchema if plain object, 3) fallback
           // This preserves the original JSON Schema structure for MCP SDK parameter exposure
           // while maintaining security: validation happens in child with normalized Zod schema
-          const originalInputSchema = cfg.inputSchema;
           
-          // Debug: Log what we received (using console.warn to avoid stdio pollution)
-          console.warn(`[Tools Host] Tool "${tool[0]}" - originalInputSchema type:`, typeof originalInputSchema, 'isPlainObject:', isPlainObject?.(originalInputSchema));
-          if (isPlainObject?.(originalInputSchema)) {
-            console.warn(`[Tools Host] Tool "${tool[0]}" - originalInputSchema:`, JSON.stringify(originalInputSchema, null, 2));
-          }
+          const originalInputSchema = (cfg._originalInputSchema && isPlainObject(cfg._originalInputSchema))
+            ? cfg._originalInputSchema
+            : (isPlainObject(cfg.inputSchema) ? cfg.inputSchema : undefined);
           
-          const normalizedSchema = normalizeInputSchema(originalInputSchema);
+          // Use existing normalized schema from cfg.inputSchema (already normalized by createMcpTool)
+          const normalizedSchema = cfg.inputSchema;
 
           // Overwrite tuple's schema so call-time validation matches manifest
-          tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
+          // Remove _originalInputSchema metadata before storing (it's only for manifest generation)
+          const cfgRecord = tool[1] as Record<string, unknown> | undefined;
+          const { _originalInputSchema, ...schemaWithoutOriginal } = cfgRecord || {};
+          tool[1] = { ...schemaWithoutOriginal, inputSchema: normalizedSchema } as any;
 
           // Compute a manifest-safe schema for IPC. Treat the parent's manifest schema as metadata only
           // SECURITY NOTE: We send the original JSON Schema (if available) for parameter exposure.

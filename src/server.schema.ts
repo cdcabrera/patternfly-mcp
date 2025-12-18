@@ -50,34 +50,157 @@ const isZodRawShape = (value: unknown): boolean => {
 };
 
 /**
+ * Convert a JSON Schema property definition to a Zod schema.
+ * Handles individual property types, enums, and nested structures.
+ *
+ * @param propSchema - JSON Schema property definition
+ * @returns Zod schema for the property
+ */
+const jsonSchemaPropertyToZod = (propSchema: unknown): z.ZodTypeAny => {
+  if (!isPlainObject(propSchema)) {
+    return z.any();
+  }
+
+  const prop = propSchema as Record<string, unknown>;
+  const typeValue = prop.type;
+
+  // Handle enum values
+  if (Array.isArray(prop.enum) && prop.enum.length > 0) {
+    const enumValues = prop.enum;
+
+    // Zod's z.enum() only supports string enums
+    if (enumValues.every(val => typeof val === 'string')) {
+      return z.enum(enumValues as [string, ...string[]]);
+    }
+
+    // For number, boolean, or mixed enums, use union of literals
+    const literalSchemas = enumValues.map(val => z.literal(val));
+    return z.union(literalSchemas as [z.ZodLiteral<unknown>, z.ZodLiteral<unknown>, ...z.ZodLiteral<unknown>[]]);
+  }
+
+  // Handle type unions (array of types)
+  if (Array.isArray(typeValue)) {
+    const unionSchemas = typeValue.map(t => {
+      if (t === 'string') {
+        return z.string();
+      }
+
+      if (t === 'number' || t === 'integer') {
+        return z.number();
+      }
+
+      if (t === 'boolean') {
+        return z.boolean();
+      }
+
+      if (t === 'array') {
+        const items = prop.items;
+        const itemSchema = isPlainObject(items) ? jsonSchemaPropertyToZod(items) : z.any();
+
+        return z.array(itemSchema);
+      }
+
+      if (t === 'object') {
+        return jsonSchemaToZod(prop);
+      }
+
+      if (t === 'null') {
+        return z.null();
+      }
+
+      return z.any();
+    });
+
+    if (unionSchemas.length > 0) {
+      return z.union(unionSchemas as [z.ZodTypeAny, z.ZodTypeAny, ...z.ZodTypeAny[]]);
+    }
+
+    return z.any();
+  }
+
+  // Handle single type
+  if (typeValue === 'string') {
+    return z.string();
+  }
+
+  if (typeValue === 'number' || typeValue === 'integer') {
+    return z.number();
+  }
+
+  if (typeValue === 'boolean') {
+    return z.boolean();
+  }
+
+  if (typeValue === 'array') {
+    const items = prop.items;
+    const itemSchema = isPlainObject(items) ? jsonSchemaPropertyToZod(items) : z.any();
+
+    return z.array(itemSchema);
+  }
+
+  if (typeValue === 'object') {
+    return jsonSchemaToZod(prop);
+  }
+
+  if (typeValue === 'null') {
+    return z.null();
+  }
+
+  // Fallback for unknown types
+  return z.any();
+};
+
+/**
  * Convert a plain JSON Schema object to a Zod schema.
- * - For simple cases, converts to appropriate Zod schemas.
- * - For complex cases, falls back to z.any() to accept any input.
+ * Properly handles properties, required fields, and additionalProperties.
  *
  * @param jsonSchema - Plain JSON Schema object
  * @returns Zod schema equivalent
  */
 const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
-  if (!isPlainObject(jsonSchema)) {
+  // Use lenient check for objects after IPC serialization
+  const isObjectLike = jsonSchema !== null && typeof jsonSchema === 'object' && !Array.isArray(jsonSchema);
+  
+  if (!isObjectLike) {
     return z.any();
   }
 
   const schema = jsonSchema as Record<string, unknown>;
 
-  // Handle object type schemas
-  if (schema.type === 'object') {
-    // If additionalProperties is true, allow any properties
-    if (schema.additionalProperties === true || schema.additionalProperties === undefined) {
-      // This is a simplified conversion - full JSON Schema to Zod conversion would be more complex
-      return z.object({}).passthrough();
+  // Handle object type schemas or schemas with properties (even without explicit type)
+  if (schema.type === 'object' || (schema.properties && !schema.type)) {
+    const properties = schema.properties as Record<string, unknown> | undefined;
+    const required = Array.isArray(schema.required) ? schema.required as string[] : [];
+    const additionalProperties = schema.additionalProperties;
+
+    // If we have properties, convert them
+    if (properties && typeof properties === 'object') {
+      const shape: Record<string, z.ZodTypeAny> = {};
+
+      for (const [key, prop] of Object.entries(properties)) {
+        const propSchema = jsonSchemaPropertyToZod(prop);
+        const isRequired = required.includes(key);
+
+        shape[key] = isRequired ? propSchema : propSchema.optional();
+      }
+
+      // Handle additionalProperties
+      if (additionalProperties === false) {
+        return z.object(shape).strict();
+      }
+
+      return z.object(shape).passthrough();
     }
 
-    // If additionalProperties is false, use strict object
-    return z.object({}).strict();
+    // No properties - empty object
+    if (additionalProperties === false) {
+      return z.object({}).strict();
+    }
+
+    return z.object({}).passthrough();
   }
 
-  // For other types, fall back to z.any()
-  // A full implementation would handle array, string, number, boolean, etc.
+  // For non-object types, fall back to z.any()
   return z.any();
 };
 
@@ -101,8 +224,18 @@ const normalizeInputSchema = (inputSchema: unknown): z.ZodTypeAny | unknown => {
   }
 
   // If it's a plain JSON Schema object, convert to Zod
+  // Use lenient check for objects after IPC serialization
   if (isPlainObject(inputSchema)) {
     return jsonSchemaToZod(inputSchema);
+  }
+
+  // After IPC serialization, objects may not pass isPlainObject check
+  // Use a more lenient check for object-like structures with JSON Schema fields
+  if (inputSchema !== null && typeof inputSchema === 'object' && !Array.isArray(inputSchema)) {
+    const obj = inputSchema as Record<string, unknown>;
+    if ('type' in obj || 'properties' in obj) {
+      return jsonSchemaToZod(inputSchema);
+    }
   }
 
   // Fallback: return as-is (might be undefined or other types)

@@ -300,6 +300,11 @@ const normalizeObject = (config: unknown, allowedKeys = ALLOWED_CONFIG_KEYS): Cr
 
   const updatedName = (name as string)?.trim?.() || undefined;
   const updatedDesc = (description as string)?.trim?.() || undefined;
+  
+  // SECURITY: Preserve original JSON Schema before normalization for manifest
+  // This allows the Tools Host to send the original JSON Schema to the parent
+  // for MCP SDK parameter exposure, while validation uses the normalized Zod schema
+  const originalInputSchema = isPlainObject(inputSchema) ? inputSchema : undefined;
   const updatedSchema = normalizeInputSchema(inputSchema);
   const updatedHandler = typeof handler === 'function' ? handler : undefined;
 
@@ -311,7 +316,10 @@ const normalizeObject = (config: unknown, allowedKeys = ALLOWED_CONFIG_KEYS): Cr
     updatedName as string,
     {
       description: updatedDesc as string,
-      inputSchema: updatedSchema
+      inputSchema: updatedSchema,
+      // Store original JSON Schema as metadata for Tools Host to use in manifest
+      // This is safe because JSON Schema is metadata only, not executable code
+      ...(originalInputSchema && { _originalInputSchema: originalInputSchema })
     },
     updatedHandler as (args: unknown) => unknown | Promise<unknown>
   ];

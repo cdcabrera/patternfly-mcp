@@ -291,11 +291,15 @@ const makeProxyCreators = (
 
   // SECURITY: Validate and convert manifest schema for MCP SDK
   // The manifest schema from child process is JSON Schema (metadata only, not executable)
-  // We validate it's a plain object structure, then convert to Zod for MCP SDK
+  // After IPC serialization, objects may not pass isPlainObject check, so we use a more lenient check
   let inputSchema: z.ZodTypeAny;
   
-  // Validate the manifest schema is a safe plain object (security check)
-  if (isPlainObject(tool.inputSchema)) {
+  // Check if it's an object-like structure (after IPC serialization, it should be)
+  // We check for object type and presence of expected JSON Schema fields
+  const isObjectLike = tool.inputSchema !== null && typeof tool.inputSchema === 'object' && !Array.isArray(tool.inputSchema);
+  const hasJsonSchemaStructure = isObjectLike && ('type' in (tool.inputSchema as Record<string, unknown>) || 'properties' in (tool.inputSchema as Record<string, unknown>));
+  
+  if (isObjectLike && hasJsonSchemaStructure) {
     // Convert the validated JSON Schema to Zod for MCP SDK parameter exposure
     const normalized = normalizeInputSchema(tool.inputSchema);
     
@@ -306,7 +310,7 @@ const makeProxyCreators = (
       inputSchema = z.object({}).passthrough();
     }
   } else {
-    // If manifest schema is not a plain object, use passthrough (security fallback)
+    // If manifest schema is not object-like or doesn't have JSON Schema structure, use passthrough (security fallback)
     inputSchema = z.object({}).passthrough();
   }
 
