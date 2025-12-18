@@ -288,11 +288,32 @@ const makeProxyCreators = (
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
 
-  // Build a Zod Schema from the serialized JSON schema to help broadcast tool invocation parameters.
-  // Needed to broadcast the tool's input schema towards clients/agents.
+  // Rebuild Zod schema from serialized JSON.
+  const zodSchemaStrict = jsonSchemaToZod(tool.inputSchema);
+  let zodSchema = zodSchemaStrict;
+
+  // Rebuild Zod schema again for compatibility.
+  if (!zodSchemaStrict) {
+    zodSchema = jsonSchemaToZod(tool.inputSchema, { failFast: false });
+
+    log.debug(
+      `Tool "${name}" has an invalid Zod recreation. Using permissive inputSchema instead.`,
+      `Review the tool's inputSchema and ensure it is a valid JSON or Zod Schema.`
+    );
+  }
+
+  if (!zodSchema) {
+    log.error(
+      `Tool "${name}" from ${tool.source || 'unknown source'} failed strict and best‑effort JSON to Zod reconstruction.`,
+      `Falling back to permissive schema for SDK broadcast. Review the inputSchema.`
+    );
+  }
+
+  // Broadcast the tool's input schema towards clients/agents. Because Zod is integral to the MCP SDK,
+  // in the unlikely event that the Zod schema is still unavailable, fallback again. All hail Zod!
   const schema = {
     description: tool.description,
-    inputSchema: jsonSchemaToZod(tool.inputSchema)
+    inputSchema: zodSchema || z.looseObject({})
   };
 
   const handler = async (args: unknown) => {

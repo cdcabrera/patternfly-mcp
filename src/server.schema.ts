@@ -55,20 +55,26 @@ const isZodRawShape = (value: unknown): boolean => {
  * - For complex cases, falls back to z.any() to accept any input.
  *
  * @param jsonSchema - Plain JSON Schema object
+ * @param settings - Optional settings
+ * @param settings.failFast - Fail fast on unsupported types, or be nice and attempt to convert. Defaults to true.
  * @returns Zod schema equivalent
  */
-const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
+const jsonSchemaToZod = (
+  jsonSchema: unknown,
+  { failFast = true }: { failFast?: boolean } = {}
+): z.ZodTypeAny | undefined => {
   if (!isPlainObject(jsonSchema)) {
-    return z.any();
+    return failFast ? undefined : z.any();
   }
 
   const schema = jsonSchema as Record<string, unknown>;
 
   try {
     return fromJSONSchema(schema);
-  } catch (error) {
-    // Avoid server logging here, these functions are used in child processes
-    console.error('Failed to convert JSON Schema to Zod schema with `fromJSONSchema`, using permissive fallback methods', error);
+  } catch {
+    if (failFast) {
+      return undefined;
+    }
   }
 
   // Handle object type schemas
@@ -147,10 +153,7 @@ const zodToJsonSchema = (
       unrepresentable,
       ...params
     });
-  } catch (error) {
-    // Avoid server logging here, these functions are used in child processes
-    console.error('Failed to convert Zod schema to JSON Schema', error);
-  }
+  } catch {}
 
   return undefined;
 };

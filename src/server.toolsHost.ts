@@ -9,6 +9,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
 import { type McpTool } from './server';
 import {
+  isZodRawShape,
   isZodSchema,
   normalizeInputSchema,
   zodToJsonSchema
@@ -110,6 +111,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
         try {
           const create = creator as (opts?: unknown) => McpTool;
           const tool = create(toolOptions);
+          const toolName = tool[0] || create.name;
 
           // Normalize input schema in the child (Tools Host)
           const cfg = (tool[1] ?? {}) as Record<string, unknown>;
@@ -122,13 +124,19 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
           let manifestSchema: unknown = undefined;
 
           // If the original was plain JSON Schema, prefer to send that as-is
-          if (isPlainObject?.(cfg.inputSchema)) {
-            manifestSchema = cfg.inputSchema; // JSON-safe
+          if (isPlainObject?.(cfg.inputSchema) && !isZodRawShape(cfg.inputSchema) && !isZodSchema(cfg.inputSchema)) {
+            // JSON-safe
+            manifestSchema = cfg.inputSchema;
           } else {
-            // Otherwise, provide a minimal, permissive JSON Schema to avoid lying about capabilities
-            // Replace this with a real converter, zod-to-json-schema
-            // manifestSchema = { type: 'object', additionalProperties: true };
-            manifestSchema = zodToJsonSchema(cfg.inputSchema) || { type: 'object', additionalProperties: true };
+            // Zod schema, convert to JSON Schema. If conversion fails, send permissive fallback
+            const convertedToJson = zodToJsonSchema(normalizedSchema);
+
+            if (!convertedToJson) {
+              warnings.push('Using permissive Zod schema. Failed to convert Zod to JSON Schema for tool.', toolName);
+              warnings.push(`Permissive JSON schemas may have unintended side-effects. Review ${toolName || ' the tool'}'s inputSchema and ensure it's a valid JSON or Zod Schema.`);
+            }
+
+            manifestSchema = convertedToJson || { type: 'object', additionalProperties: true };
           }
 
           const toolId = makeId();
