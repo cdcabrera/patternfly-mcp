@@ -128,11 +128,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
             // Otherwise, provide a minimal, permissive JSON Schema to avoid lying about capabilities
             // Replace this with a real converter, zod-to-json-schema
             // manifestSchema = { type: 'object', additionalProperties: true };
-            manifestSchema = zodToJsonSchema(cfg.inputSchema);
-
-            if (!manifestSchema) {
-              manifestSchema = zodToJsonSchema({ type: 'object', additionalProperties: true });
-            }
+            manifestSchema = zodToJsonSchema(cfg.inputSchema) || { type: 'object', additionalProperties: true };
           }
 
           const toolId = makeId();
