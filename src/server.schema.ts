@@ -75,6 +75,10 @@ const jsonSchemaToZod = (jsonSchema: unknown): z.ZodTypeAny => {
   if (schema.type === 'object') {
     // If additionalProperties is true, allow any properties
     if (schema.additionalProperties === true || schema.additionalProperties === undefined) {
+      if (z.looseObject) {
+        return z.looseObject({});
+      }
+
       // This is a simplified conversion - full JSON Schema to Zod conversion would be more complex
       return z.object({}).passthrough();
     }

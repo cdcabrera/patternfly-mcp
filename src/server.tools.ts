@@ -19,6 +19,7 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
+import { jsonSchemaToZod } from './server.schema';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -287,10 +288,11 @@ const makeProxyCreators = (
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
 
-  // Note: inputSchema here is an SDK-compat Zod instance to ensure the MCP SDK calls handler
+  // Build a Zod Schema from the serialized JSON schema to help broadcast tool invocation parameters.
+  // Needed to broadcast the tool's input schema towards clients/agents.
   const schema = {
     description: tool.description,
-    inputSchema: z.object({}).passthrough()
+    inputSchema: jsonSchemaToZod(tool.inputSchema)
   };
 
   const handler = async (args: unknown) => {
