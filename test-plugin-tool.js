@@ -22,10 +22,10 @@ export default createMcpTool({
     },
     required: ['message']
   },
-  handler: async (args) => {
+  handler: async args => {
     const { message, includeTimestamp = true } = args;
     const timestamp = includeTimestamp ? new Date().toISOString() : null;
-    
+
     const response = {
       echo: message,
       ...(timestamp && { timestamp }),

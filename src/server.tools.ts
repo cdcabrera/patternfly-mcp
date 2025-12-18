@@ -19,6 +19,8 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
+import { normalizeInputSchema } from './server.schema';
+import { isPlainObject } from './server.helpers';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -287,10 +289,29 @@ const makeProxyCreators = (
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
 
-  // Note: inputSchema here is an SDK-compat Zod instance to ensure the MCP SDK calls handler
+  // Convert manifest schema (JSON Schema) to Zod for MCP SDK
+  // This allows the MCP interface to expose parameters properly
+  let inputSchema: z.ZodTypeAny;
+
+  if (isPlainObject(tool.inputSchema)) {
+    // Manifest contains JSON Schema - convert to Zod
+    const normalized = normalizeInputSchema(tool.inputSchema);
+
+    if (normalized && typeof normalized === 'object' && 'parse' in normalized) {
+      // It's a Zod schema
+      inputSchema = normalized as z.ZodTypeAny;
+    } else {
+      // Fallback to passthrough if conversion failed
+      inputSchema = z.object({}).passthrough();
+    }
+  } else {
+    // Fallback to passthrough for unknown schema types
+    inputSchema = z.object({}).passthrough();
+  }
+
   const schema = {
     description: tool.description,
-    inputSchema: z.object({}).passthrough()
+    inputSchema
   };
 
   const handler = async (args: unknown) => {
