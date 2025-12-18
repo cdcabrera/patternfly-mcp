@@ -109,17 +109,34 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
 
           // Normalize input schema in the child (Tools Host)
           const cfg = (tool[1] ?? {}) as Record<string, unknown>;
-          const normalizedSchema = normalizeInputSchema(cfg.inputSchema);
+          
+          // SECURITY: Capture original schema BEFORE normalization for manifest
+          // This preserves the original JSON Schema structure for MCP SDK parameter exposure
+          // while maintaining security: validation happens in child with normalized Zod schema
+          const originalInputSchema = cfg.inputSchema;
+          
+          // Debug: Log what we received (using console.warn to avoid stdio pollution)
+          console.warn(`[Tools Host] Tool "${tool[0]}" - originalInputSchema type:`, typeof originalInputSchema, 'isPlainObject:', isPlainObject?.(originalInputSchema));
+          if (isPlainObject?.(originalInputSchema)) {
+            console.warn(`[Tools Host] Tool "${tool[0]}" - originalInputSchema:`, JSON.stringify(originalInputSchema, null, 2));
+          }
+          
+          const normalizedSchema = normalizeInputSchema(originalInputSchema);
 
           // Overwrite tuple's schema so call-time validation matches manifest
           tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
 
-          // Compute a manifest-safe schema for IPC. Treat the parent’s manifest schema as metadata only
+          // Compute a manifest-safe schema for IPC. Treat the parent's manifest schema as metadata only
+          // SECURITY NOTE: We send the original JSON Schema (if available) for parameter exposure.
+          // This is safe because:
+          // 1. JSON Schema is metadata only (type definitions), not executable code
+          // 2. Actual validation happens in child process with normalized Zod schema
+          // 3. Parent only uses this for MCP SDK to expose parameters in UI
           let manifestSchema: unknown = undefined;
 
-          // If the original was plain JSON Schema, prefer to send that as-is
-          if (isPlainObject?.(cfg.inputSchema)) {
-            manifestSchema = cfg.inputSchema; // JSON-safe
+          // If the original was plain JSON Schema, send that for parameter exposure
+          if (isPlainObject?.(originalInputSchema)) {
+            manifestSchema = originalInputSchema; // JSON-safe, used only for metadata
           } else {
             // Otherwise, provide a minimal, permissive JSON Schema to avoid lying about capabilities
             // Replace this with a real converter, zod-to-json-schema

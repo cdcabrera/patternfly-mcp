@@ -19,7 +19,8 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, type NormalizedToolEntry } from './server.toolsUser';
-// import { isPlainObject } from './server.helpers';
+import { isPlainObject } from './server.helpers';
+import { normalizeInputSchema, isZodSchema } from './server.schema';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -288,50 +289,30 @@ const makeProxyCreators = (
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
 
-  /*
-  // TEST 3: Simplified schema conversion (basic types only)
-  // Convert manifest JSON Schema to Zod for MCP SDK parameter exposure
+  // SECURITY: Validate and convert manifest schema for MCP SDK
+  // The manifest schema from child process is JSON Schema (metadata only, not executable)
+  // We validate it's a plain object structure, then convert to Zod for MCP SDK
   let inputSchema: z.ZodTypeAny;
-
+  
+  // Validate the manifest schema is a safe plain object (security check)
   if (isPlainObject(tool.inputSchema)) {
-    const schema = tool.inputSchema as Record<string, unknown>;
-    const properties = schema.properties as Record<string, unknown> | undefined;
-    const required = Array.isArray(schema.required) ? schema.required as string[] : [];
-
-    if (properties) {
-      const shape: Record<string, z.ZodTypeAny> = {};
-
-      for (const [key, prop] of Object.entries(properties)) {
-        const propSchema = prop as Record<string, unknown>;
-        const type = propSchema.type;
-
-        if (type === 'string') {
-          shape[key] = z.string();
-        } else if (type === 'number' || type === 'integer') {
-          shape[key] = z.number();
-        } else if (type === 'boolean') {
-          shape[key] = z.boolean();
-        } else {
-          shape[key] = z.any();
-        }
-
-        if (!required.includes(key)) {
-          shape[key] = shape[key].optional();
-        }
-      }
-
-      inputSchema = z.object(shape).passthrough();
+    // Convert the validated JSON Schema to Zod for MCP SDK parameter exposure
+    const normalized = normalizeInputSchema(tool.inputSchema);
+    
+    if (isZodSchema(normalized)) {
+      inputSchema = normalized as z.ZodTypeAny;
     } else {
+      // Fallback if conversion fails
       inputSchema = z.object({}).passthrough();
     }
   } else {
+    // If manifest schema is not a plain object, use passthrough (security fallback)
     inputSchema = z.object({}).passthrough();
-  }*/
+  }
 
   const schema = {
     description: tool.description,
-    // TEST 2: The most basic, attempt zod any first
-    inputSchema: z.any()
+    inputSchema
   };
 
   const handler = async (args: unknown) => {

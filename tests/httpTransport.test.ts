@@ -256,6 +256,26 @@ describe('testEcho tool plugin over HTTP', () => {
     const testEchoTool = tools.find((tool: any) => tool.name === 'testEcho');
     expect(testEchoTool).toBeDefined();
     expect(testEchoTool?.description).toContain('Echo back a message');
+    
+    // TEST 3: Check if simplified schema conversion exposes parameters
+    // Log the schema structure for debugging (using console.warn to avoid stdio pollution in tests)
+    console.warn('testEcho tool schema (from MCP SDK):', JSON.stringify(testEchoTool?.inputSchema, null, 2));
+    
+    // Check if parameters are exposed
+    const hasInputSchema = testEchoTool?.inputSchema !== undefined;
+    const inputSchemaType = typeof testEchoTool?.inputSchema;
+    const hasProperties = testEchoTool?.inputSchema?.properties !== undefined;
+    const propertiesCount = testEchoTool?.inputSchema?.properties ? Object.keys(testEchoTool?.inputSchema.properties).length : 0;
+    const propertyNames = testEchoTool?.inputSchema?.properties ? Object.keys(testEchoTool?.inputSchema.properties) : [];
+    
+    console.warn('Schema check:', { hasInputSchema, inputSchemaType, hasProperties, propertiesCount, propertyNames });
+    
+    // With Test 3 (simplified conversion), we expect properties to be exposed
+    if (propertiesCount > 0) {
+      console.warn(`✅ Parameters ARE exposed in schema: ${propertyNames.join(', ')}`);
+    } else {
+      console.warn('❌ Parameters NOT exposed in schema (properties object is empty)');
+    }
 
     // Test 1: Call with message and includeTimestamp: true
     const req1 = {
