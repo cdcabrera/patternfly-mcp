@@ -1,9 +1,9 @@
 /**
  * Requires: npm run build prior to running Jest.
  */
-// @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+// @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
 import { createMcpTool } from '../dist/index.js';
 import { startServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
