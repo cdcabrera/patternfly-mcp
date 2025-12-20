@@ -3,10 +3,7 @@
 exports[`composeTools should handle IPC errors gracefully: warn 1`] = `
 [
   [
-    "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
-  ],
-  [
-    "Error: Failed to resolve Tools Host entry '#toolsHost' from package imports: TypeError: {(intermediate value)}.resolve is not a function",
+    "Failed to resolve file path: ./test-module.js TypeError: {(intermediate value)}.resolve is not a function",
   ],
 ]
 `;
@@ -14,10 +11,7 @@ exports[`composeTools should handle IPC errors gracefully: warn 1`] = `
 exports[`composeTools should handle spawn errors gracefully: warn 1`] = `
 [
   [
-    "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
-  ],
-  [
-    "Error: Failed to resolve Tools Host entry '#toolsHost' from package imports: TypeError: {(intermediate value)}.resolve is not a function",
+    "Failed to resolve file path: ./test-module.js TypeError: {(intermediate value)}.resolve is not a function",
   ],
 ]
 `;
@@ -25,10 +19,7 @@ exports[`composeTools should handle spawn errors gracefully: warn 1`] = `
 exports[`composeTools should log warnings and errors from load: warn 1`] = `
 [
   [
-    "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
-  ],
-  [
-    "Error: Failed to resolve Tools Host entry '#toolsHost' from package imports: TypeError: {(intermediate value)}.resolve is not a function",
+    "Failed to resolve file path: ./test-module.js TypeError: {(intermediate value)}.resolve is not a function",
   ],
 ]
 `;
