@@ -110,6 +110,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let transport: StdioServerTransport | null = null;
   let httpHandle: HttpServerHandle | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
+  let sigintHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
 
@@ -123,6 +124,11 @@ const runServer = async (options: ServerOptions = getOptions(), {
         log.debug('...closing HTTP transport');
         await httpHandle.close();
         httpHandle = null;
+      }
+
+      if (sigintHandler) {
+        process.off('SIGINT', sigintHandler);
+        sigintHandler = null;
       }
 
       log.debug('...closing Server');
@@ -222,10 +228,11 @@ const runServer = async (options: ServerOptions = getOptions(), {
           })));
     });
 
-    if (enableSigint) {
-      process.on('SIGINT', () => {
+    if (enableSigint && !sigintHandler) {
+      sigintHandler = () => {
         void stopServer();
-      });
+      };
+      process.on('SIGINT', sigintHandler);
     }
 
     if (options.isHttp) {
