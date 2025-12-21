@@ -1,4 +1,5 @@
 import { channel, unsubscribe, subscribe } from 'node:diagnostics_channel';
+import { inspect } from 'node:util';
 import { type LoggingSession } from './options.defaults';
 import { getLoggerOptions } from './options.context';
 
@@ -51,6 +52,21 @@ const logSeverity = (level: unknown): number =>
   LOG_LEVELS.indexOf(level as LogLevel);
 
 /**
+ * Basic string truncate.
+ *
+ * @param str
+ * @param options
+ * @param options.max
+ */
+const truncate = (str: unknown, { max = 250 }: { max?: number } = {}) => {
+  if (typeof str === 'string') {
+    return str.length > max ? str.slice(0, max) + '...[truncated]' : str;
+  }
+
+  return str;
+};
+
+/**
  * Format an unknown value as a string, for logging.
  *
  * @param value
@@ -58,7 +74,17 @@ const logSeverity = (level: unknown): number =>
  */
 const formatUnknownError = (value: unknown): string => {
   if (value instanceof Error) {
-    return value.stack || value.message || String(value);
+    const message = value.stack || value.message;
+
+    if (message) {
+      return message;
+    }
+
+    try {
+      return String(value);
+    } catch {
+      return Object.prototype.toString.call(value);
+    }
   }
 
   if (typeof value === 'string') {
@@ -66,9 +92,13 @@ const formatUnknownError = (value: unknown): string => {
   }
 
   try {
-    return `Non-Error thrown: ${JSON.stringify(value)}`;
+    return `Non-Error thrown: ${truncate(JSON.stringify(value))}`;
   } catch {
-    return String(value);
+    try {
+      return inspect(value, { depth: 3, maxArrayLength: 50, breakLength: 120 });
+    } catch {
+      return Object.prototype.toString.call(value);
+    }
   }
 };
 
@@ -243,6 +273,7 @@ export {
   publish,
   registerStderrSubscriber,
   subscribeToChannel,
+  truncate,
   type LogEvent,
   type LogLevel,
   type Unsubscribe
