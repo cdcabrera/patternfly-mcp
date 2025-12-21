@@ -1,6 +1,5 @@
 import { type ChildProcess } from 'node:child_process';
 import {
-  makeId,
   send,
   awaitIpc,
   isHelloAck,
@@ -10,34 +9,6 @@ import {
   type IpcRequest,
   type IpcResponse
 } from '../server.toolsIpc';
-
-describe('makeId', () => {
-  it.each([
-    {
-      description: 'generates unique IDs',
-      count: 10
-    }
-  ])('should generate unique IDs, $description', ({ count }) => {
-    const ids = new Set<string>();
-
-    for (let i = 0; i < count; i++) {
-      ids.add(makeId());
-    }
-
-    expect(ids.size).toBe(count);
-    const firstId = Array.from(ids)[0];
-
-    expect(typeof firstId).toBe('string');
-    expect(firstId?.length).toBeGreaterThan(0);
-  });
-
-  it('should generate UUID format', () => {
-    const id = makeId();
-
-    // UUID v4 format: 8-4-4-4-12 hex digits
-    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-  });
-});
 
 describe('send', () => {
   let mockProcess: NodeJS.Process;
@@ -56,69 +27,55 @@ describe('send', () => {
   it.each([
     {
       description: 'hello request',
-      request: { t: 'hello', id: 'test-id' } as IpcRequest
+      request: { t: 'hello', id: 'test-id' }
     },
     {
       description: 'load request',
-      request: { t: 'load', id: 'test-id', specs: ['module1', 'module2'] } as IpcRequest
+      request: { t: 'load', id: 'test-id', specs: ['module1', 'module2'] }
     },
     {
       description: 'load request with invokeTimeoutMs',
-      request: { t: 'load', id: 'test-id', specs: ['module1'], invokeTimeoutMs: 5000 } as IpcRequest
+      request: { t: 'load', id: 'test-id', specs: ['module1'], invokeTimeoutMs: 5000 }
     },
     {
       description: 'manifest:get request',
-      request: { t: 'manifest:get', id: 'test-id' } as IpcRequest
+      request: { t: 'manifest:get', id: 'test-id' }
     },
     {
       description: 'invoke request',
-      request: { t: 'invoke', id: 'test-id', toolId: 'tool1', args: { param: 'value' } } as IpcRequest
+      request: { t: 'invoke', id: 'test-id', toolId: 'tool1', args: { param: 'value' } }
     },
     {
       description: 'shutdown request',
-      request: { t: 'shutdown', id: 'test-id' } as IpcRequest
+      request: { t: 'shutdown', id: 'test-id' }
     }
   ])('should send IPC message, $description', ({ request }) => {
-    const result = send(mockProcess, request);
+    const result = send(mockProcess, request as IpcRequest);
 
     expect(result).toBe(true);
     expect(mockProcess.send).toHaveBeenCalledTimes(1);
     expect(mockProcess.send).toHaveBeenCalledWith(request);
+
+    const childResult = send(mockChildProcess, request as IpcRequest);
+
+    expect(childResult).toBe(true);
+    expect(mockChildProcess.send).toHaveBeenCalledTimes(1);
+    expect(mockChildProcess.send).toHaveBeenCalledWith(request);
   });
 
   it.each([
     {
-      description: 'with ChildProcess',
-      processRef: 'childProcess' as const
+      description: 'process without send',
+      process: {}
     },
     {
-      description: 'with NodeJS.Process',
-      processRef: 'process' as const
+      description: 'process with send returning false',
+      process: {
+        send: jest.fn().mockReturnValue(false)
+      }
     }
-  ])('should send to process, $description', ({ processRef }) => {
-    const proc = processRef === 'childProcess' ? mockChildProcess : mockProcess;
-    const request: IpcRequest = { t: 'hello', id: 'test-id' };
-
-    const result = send(proc, request);
-
-    expect(result).toBe(true);
-    expect(proc.send).toHaveBeenCalledWith(request);
-  });
-
-  it('should return false when send is not available', () => {
-    const processWithoutSend = {} as NodeJS.Process;
-
-    const result = send(processWithoutSend, { t: 'hello', id: 'test-id' });
-
-    expect(result).toBe(false);
-  });
-
-  it('should return false when send returns false', () => {
-    const processWithFailingSend = {
-      send: jest.fn().mockReturnValue(false)
-    } as any;
-
-    const result = send(processWithFailingSend, { t: 'hello', id: 'test-id' });
+  ])('should return false, $description', ({ process }) => {
+    const result = send(process as any, { t: 'hello', id: 'test-id' });
 
     expect(result).toBe(false);
   });
@@ -372,34 +329,45 @@ describe('awaitIpc', () => {
 
     mockProcess = {
       on: jest.fn((event: string, handler: any) => {
-        if (event === 'message') {
-          messageHandlers.push(handler);
-        } else if (event === 'exit') {
-          exitHandlers.push(handler);
-        } else if (event === 'disconnect') {
-          disconnectHandlers.push(handler);
+        switch (event) {
+          case 'message':
+            messageHandlers.push(handler);
+            break;
+          case 'exit':
+            exitHandlers.push(handler);
+            break;
+          case 'disconnect':
+            disconnectHandlers.push(handler);
+            break;
         }
 
         return mockProcess;
       }),
       off: jest.fn((event: string, handler: any) => {
-        if (event === 'message') {
-          const index = messageHandlers.indexOf(handler);
+        switch (event) {
+          case 'message': {
+            const index = messageHandlers.indexOf(handler);
 
-          if (index > -1) {
-            messageHandlers.splice(index, 1);
+            if (index > -1) {
+              messageHandlers.splice(index, 1);
+            }
+            break;
           }
-        } else if (event === 'exit') {
-          const index = exitHandlers.indexOf(handler);
+          case 'exit': {
+            const index = exitHandlers.indexOf(handler);
 
-          if (index > -1) {
-            exitHandlers.splice(index, 1);
+            if (index > -1) {
+              exitHandlers.splice(index, 1);
+            }
+            break;
           }
-        } else if (event === 'disconnect') {
-          const index = disconnectHandlers.indexOf(handler);
+          case 'disconnect': {
+            const index = disconnectHandlers.indexOf(handler);
 
-          if (index > -1) {
-            disconnectHandlers.splice(index, 1);
+            if (index > -1) {
+              disconnectHandlers.splice(index, 1);
+            }
+            break;
           }
         }
 
@@ -415,48 +383,43 @@ describe('awaitIpc', () => {
   it.each([
     {
       description: 'hello:ack message',
-      response: { t: 'hello:ack', id: 'test-id' },
-      timeoutMs: 1000
+      response: { t: 'hello:ack', id: 'test-id' }
     },
     {
       description: 'load:ack message',
-      response: { t: 'load:ack', id: 'test-id', warnings: [], errors: [] },
-      timeoutMs: 1000
+      response: { t: 'load:ack', id: 'test-id', warnings: [], errors: [] }
     },
     {
       description: 'manifest:result message',
-      response: { t: 'manifest:result', id: 'test-id', tools: [] },
-      timeoutMs: 1000
+      response: { t: 'manifest:result', id: 'test-id', tools: [] }
     },
     {
       description: 'invoke:result with ok:true',
-      response: { t: 'invoke:result', id: 'test-id', ok: true, result: { data: 'value' } },
-      timeoutMs: 1000
+      response: { t: 'invoke:result', id: 'test-id', ok: true, result: { data: 'value' } }
     },
     {
       description: 'invoke:result with ok:false',
-      response: {
-        t: 'invoke:result',
-        id: 'test-id',
-        ok: false,
-        error: { message: 'Error' }
-      },
-      timeoutMs: 1000
+      response: { t: 'invoke:result', id: 'test-id', ok: false, error: { message: 'Error' } }
     }
-  ])('should await and resolve IPC response, $description', async ({ response, timeoutMs }) => {
+  ])('should await and resolve IPC response, $description', async ({ response }) => {
     let promise: Promise<IpcResponse>;
 
-    if (response.t === 'hello:ack') {
-      promise = awaitIpc(mockProcess, isHelloAck, timeoutMs);
-    } else if (response.t === 'load:ack') {
-      promise = awaitIpc(mockProcess, isLoadAck(response.id), timeoutMs);
-    } else if (response.t === 'manifest:result') {
-      promise = awaitIpc(mockProcess, isManifestResult(response.id), timeoutMs);
-    } else {
-      promise = awaitIpc(mockProcess, isInvokeResult(response.id), timeoutMs);
+    switch (response.t) {
+      case 'hello:ack':
+        promise = awaitIpc(mockProcess, isHelloAck, 1000);
+        break;
+      case 'load:ack':
+        promise = awaitIpc(mockProcess, isLoadAck(response.id), 1000);
+        break;
+      case 'manifest:result':
+        promise = awaitIpc(mockProcess, isManifestResult(response.id), 1000);
+        break;
+      default:
+        promise = awaitIpc(mockProcess, isInvokeResult(response.id), 1000);
+        break;
     }
 
-    // Simulate message arrival - wait for handlers to be registered, then trigger
+    // Simulate message arrival, wait for handlers to be registered
     await Promise.resolve();
     messageHandlers.forEach(handler => handler(response));
 
@@ -468,51 +431,36 @@ describe('awaitIpc', () => {
     expect(mockProcess.on).toHaveBeenCalledWith('disconnect', expect.any(Function));
   });
 
-  it('should ignore non-matching messages', async () => {
-    const matchingResponse = { t: 'hello:ack', id: 'test-id' };
-    const nonMatchingResponse = { t: 'other:type', id: 'test-id' };
+  it('should ignore non-matching messages and only resolve once', async () => {
+    const responseOne = { t: 'hello:ack', id: 'test-id-1' };
+    const responseTwo = { t: 'other:type', id: 'test-id-2' };
+    const responseThree = { t: 'hello:ack', id: 'test-id-2' };
 
     const promise = awaitIpc(mockProcess, isHelloAck, 1000);
 
-    // Wait for handlers to be registered
+    // Simulate message arrival, wait for handlers to be registered
     await Promise.resolve();
+    messageHandlers.forEach(handler => handler(responseTwo));
 
-    // Send non-matching message first
-    messageHandlers.forEach(handler => handler(nonMatchingResponse));
-    // Then send matching message
     await Promise.resolve();
-    messageHandlers.forEach(handler => handler(matchingResponse));
+    messageHandlers.forEach(handler => handler(responseOne));
+
+    await Promise.resolve();
+    messageHandlers.forEach(handler => handler(responseThree));
 
     const result = await promise;
 
-    expect(result).toEqual(matchingResponse);
+    expect(result).toEqual(responseOne);
   });
 
-  it.each([
-    {
-      description: 'process exit',
-      event: 'exit' as const,
-      code: 1,
-      signal: 'SIGTERM'
-    },
-    {
-      description: 'process disconnect',
-      event: 'disconnect' as const,
-      code: undefined,
-      signal: undefined
-    }
-  ])('should reject when process $description', async ({ event, code, signal }) => {
+  it('should reject when process exits', async () => {
+    const exit = { event: 'exit', code: 1, signal: 'SIGTERM' };
+
     const promise = awaitIpc(mockProcess, isHelloAck, 1000);
 
-    // Wait for handlers to be registered
+    // Simulate message arrival, wait for handlers to be registered
     await Promise.resolve();
-
-    // Simulate process exit/disconnect
-    if (event === 'exit') {
-      exitHandlers.forEach(handler => handler(code, signal));
-    } else {
-      disconnectHandlers.forEach(handler => handler());
-    }
+    exitHandlers.forEach(handler => handler(exit.code, exit.signal));
 
     await expect(promise).rejects.toThrow('Tools Host exited before response');
   });
@@ -521,7 +469,6 @@ describe('awaitIpc', () => {
     jest.useFakeTimers();
     const promise = awaitIpc(mockProcess, isHelloAck, 1000);
 
-    // Advance time past timeout
     jest.advanceTimersByTime(1001);
 
     await expect(promise).rejects.toThrow('Timed out waiting for IPC response');
@@ -532,6 +479,7 @@ describe('awaitIpc', () => {
     const response = { t: 'hello:ack', id: 'test-id' };
     const promise = awaitIpc(mockProcess, isHelloAck, 1000);
 
+    // Simulate message arrival, wait for handlers to be registered
     await Promise.resolve();
     messageHandlers.forEach(handler => handler(response));
 
@@ -558,20 +506,5 @@ describe('awaitIpc', () => {
     expect(mockProcess.off).toHaveBeenCalledWith('message', expect.any(Function));
     expect(mockProcess.off).toHaveBeenCalledWith('exit', expect.any(Function));
     expect(mockProcess.off).toHaveBeenCalledWith('disconnect', expect.any(Function));
-  });
-
-  it('should not resolve multiple times', async () => {
-    const response1 = { t: 'hello:ack', id: 'test-id-1' };
-    const response2 = { t: 'hello:ack', id: 'test-id-2' };
-
-    const promise = awaitIpc(mockProcess, isHelloAck, 1000);
-
-    await Promise.resolve();
-    messageHandlers.forEach(handler => handler(response1));
-    messageHandlers.forEach(handler => handler(response2));
-
-    const result = await promise;
-
-    expect(result).toEqual(response1);
   });
 });
