@@ -216,12 +216,14 @@ exports[`subscribeToChannel should attempt to subscribe and unsubscribe from a c
 
 exports[`subscribeToChannel should throw an error attempting to subscribe and unsubscribe from a channel: missing channel name 1`] = `"subscribeToChannel called without a configured logging channelName"`;
 
-exports[`truncate should truncate a string, default 1`] = `"lorem ipsu...[truncated]"`;
+exports[`truncate should truncate a string, default 1`] = `"lorem ipsum...[truncated]"`;
 
 exports[`truncate should truncate a string, null 1`] = `null`;
 
 exports[`truncate should truncate a string, number 1`] = `10000`;
 
-exports[`truncate should truncate a string, object string 1`] = `"{"lorem":"...[truncated]"`;
+exports[`truncate should truncate a string, object string 1`] = `"{"lorem":"i...[truncated]"`;
+
+exports[`truncate should truncate a string, suffix overrides max 1`] = `"...[truncated]"`;
 
 exports[`truncate should truncate a string, undefined 1`] = `undefined`;

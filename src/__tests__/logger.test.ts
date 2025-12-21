@@ -34,30 +34,35 @@ describe('truncate', () => {
     {
       description: 'default',
       value: 'lorem ipsum dolor sit amet',
-      max: 10
+      max: 25
     },
     {
       description: 'object string',
       value: JSON.stringify({ lorem: 'ipsum dolor sit amet' }),
-      max: 10
+      max: 25
+    },
+    {
+      description: 'suffix overrides max',
+      value: 'lorem',
+      max: 5
     },
     {
       description: 'number',
       value: 10_000,
-      max: 10
+      max: 25
     },
     {
       description: 'undefined',
       value: undefined,
-      max: 10
+      max: 25
     },
     {
       description: 'null',
       value: null,
-      max: 10
+      max: 25
     }
   ])(`should truncate a string, $description`, ({ value, max }) => {
-    expect(truncate(value, { max })).toMatchSnapshot();
+    expect(truncate(value as any, { max })).toMatchSnapshot();
   });
 });
 
