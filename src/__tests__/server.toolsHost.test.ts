@@ -12,8 +12,8 @@ import { type McpTool } from '../server';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 
 // Mock dependencies
-jest.mock('../server.toolsCreator', () => ({
-  normalizeToCreators: jest.fn((mod: any) => {
+jest.mock('../server.toolsHostCreator', () => ({
+  resolveExternalCreators: jest.fn((mod: any) => {
     // Default mock: return a simple creator function
     if (mod && typeof mod.default === 'function') {
       return [mod.default];
