@@ -17,6 +17,7 @@ const isCreatorsArray = (value: unknown): value is McpToolCreator[] =>
  */
 const isRealizedToolTuple = (value: unknown): value is McpTool =>
   Array.isArray(value) &&
+  value.length === 3 &&
   typeof value[0] === 'string' &&
   typeof (value as unknown[])[2] === 'function';
 
@@ -100,7 +101,13 @@ const resolveExternalCreators = (
   if (throwOnEmpty) {
     const shapes = observed.length ? ` Observed candidate shapes: ${observed.join(', ')}` : '';
 
-    throw new Error(`No usable tool creators found from module exports.${shapes}`);
+    throw new Error([
+      `No usable tool creators found from module. ${shapes}`,
+      'Expected one of:',
+      '- default export: function -> returns [name, { inputSchema, description? }, handler]',
+      '- default export: function -> returns McpToolCreator[]',
+      '- default export: McpToolCreator[] (or same via named exports).'
+    ].join('\n'));
   }
 
   return [];

@@ -105,7 +105,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
       const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
       const module = await dynamicImport(spec);
       const toolOptions: ToolOptions | undefined = request.toolOptions;
-      const creators = resolveExternalCreators(module, toolOptions);
+      const creators = resolveExternalCreators(module, toolOptions, { throwOnEmpty: true });
 
       for (const creator of creators) {
         try {
@@ -150,7 +150,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
             source: spec
           });
         } catch (error) {
-          warnings.push(`Creator realization failed at ${spec}: ${String((error as Error).message || error)}`);
+          warnings.push(`Tool creator threw while realizing: ${spec}: ${String((error as Error)?.message || error)}`);
         }
       }
     } catch (error) {
