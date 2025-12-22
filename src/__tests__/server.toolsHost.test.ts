@@ -1,4 +1,6 @@
+import { z } from 'zod';
 import {
+  normalizeCreatorSchema,
   requestHello,
   requestLoad,
   requestManifestGet,
@@ -10,6 +12,7 @@ import {
 import { type IpcRequest, type ToolDescriptor } from '../server.toolsIpc';
 import { type McpTool } from '../server';
 import { DEFAULT_OPTIONS } from '../options.defaults';
+import {isZodSchema} from "../server.schema";
 
 // Mock dependencies
 jest.mock('../server.toolsHostCreator', () => ({
@@ -603,5 +606,96 @@ describe('setHandlers', () => {
     expect(mockExit).toHaveBeenCalledWith(0);
 
     delete (process as any).exit;
+  });
+});
+
+describe('normalizeCreatorSchema', () => {
+  it.each([
+    {
+      description: 'with undefined name, schema',
+      creator: () => [
+        undefined,
+        undefined,
+        () => null
+      ]
+    },
+    {
+      description: 'with undefined name',
+      creator: () => [
+        undefined,
+        {
+          description: 'lorem ipsum',
+          inputSchema: { type: 'object', additionalProperties: true }
+        },
+        () => null
+      ]
+    },
+    {
+      description: 'with undefined schema',
+      creator: () => [
+        'lorem ipsum',
+        undefined,
+        () => null
+      ]
+    },
+    {
+      description: 'with partial',
+      creator: () => [
+        'lorem ipsum',
+        {
+          description: 'lorem ipsum',
+          inputSchema: undefined
+        },
+        () => null
+      ]
+    },
+    {
+      description: 'with JSON inputSchema',
+      creator: () => [
+        'lorem ipsum',
+        {
+          description: 'lorem ipsum',
+          inputSchema: { type: 'object', additionalProperties: true }
+        },
+        () => null
+      ]
+    },
+    {
+      description: 'with invalid JSON inputSchema',
+      creator: () => [
+        'lorem ipsum',
+        {
+          description: 'lorem ipsum',
+          inputSchema: { type: 'object', additionalProperties: 'busted' }
+        },
+        () => null
+      ]
+    },
+    {
+      description: 'with valid zod inputSchema',
+      creator: () => [
+        'lorem ipsum',
+        {
+          description: 'lorem ipsum',
+          inputSchema: z.any()
+        },
+        () => null
+      ]
+    }
+  ])('should attempt to normalize a schema, $description', ({ creator }) => {
+    const { normalizedSchema, tool, ...rest } = normalizeCreatorSchema(creator);
+
+    expect({
+      normalizedSchema: `${String(normalizedSchema)}, isZod=${isZodSchema(normalizedSchema)}`,
+      tool: [
+        tool[0],
+        {
+          description: tool[1]?.description,
+          inputSchema: `${String(tool[1]?.inputSchema)}, isZod=${isZodSchema(tool[1]?.inputSchema)}`
+        },
+        tool[2]
+      ],
+      ...rest
+    }).toMatchSnapshot();
   });
 });

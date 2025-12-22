@@ -1,0 +1,142 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with JSON inputSchema 1`] = `
+{
+  "manifestSchema": {
+    "additionalProperties": true,
+    "type": "object",
+  },
+  "normalizedSchema": "[object Object], isZod=true",
+  "tool": [
+    "lorem ipsum",
+    {
+      "description": "lorem ipsum",
+      "inputSchema": "[object Object], isZod=true",
+    },
+    [Function],
+  ],
+  "warnings": [],
+}
+`;
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with invalid JSON inputSchema 1`] = `
+{
+  "manifestSchema": {
+    "additionalProperties": "busted",
+    "type": "object",
+  },
+  "normalizedSchema": "[object Object], isZod=true",
+  "tool": [
+    "lorem ipsum",
+    {
+      "description": "lorem ipsum",
+      "inputSchema": "[object Object], isZod=true",
+    },
+    [Function],
+  ],
+  "warnings": [],
+}
+`;
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with partial 1`] = `
+{
+  "manifestSchema": {
+    "additionalProperties": true,
+    "type": "object",
+  },
+  "normalizedSchema": "undefined, isZod=false",
+  "tool": [
+    "lorem ipsum",
+    {
+      "description": "lorem ipsum",
+      "inputSchema": "undefined, isZod=false",
+    },
+    [Function],
+  ],
+  "warnings": [
+    "Using permissive JSON Schema fallback. Failed to convert Zod to JSON Schema for lorem ipsum.",
+    "Permissive JSON schemas may have unintended side-effects. Review lorem ipsum's inputSchema and ensure it's a valid JSON or Zod schema.",
+  ],
+}
+`;
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with undefined name 1`] = `
+{
+  "manifestSchema": {
+    "additionalProperties": true,
+    "type": "object",
+  },
+  "normalizedSchema": "[object Object], isZod=true",
+  "tool": [
+    undefined,
+    {
+      "description": "lorem ipsum",
+      "inputSchema": "[object Object], isZod=true",
+    },
+    [Function],
+  ],
+  "warnings": [],
+}
+`;
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with undefined name, schema 1`] = `
+{
+  "manifestSchema": {
+    "additionalProperties": true,
+    "type": "object",
+  },
+  "normalizedSchema": "undefined, isZod=false",
+  "tool": [
+    undefined,
+    {
+      "description": undefined,
+      "inputSchema": "undefined, isZod=false",
+    },
+    [Function],
+  ],
+  "warnings": [
+    "Using permissive JSON Schema fallback. Failed to convert Zod to JSON Schema for creator.",
+    "Permissive JSON schemas may have unintended side-effects. Review creator's inputSchema and ensure it's a valid JSON or Zod schema.",
+  ],
+}
+`;
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with undefined schema 1`] = `
+{
+  "manifestSchema": {
+    "additionalProperties": true,
+    "type": "object",
+  },
+  "normalizedSchema": "undefined, isZod=false",
+  "tool": [
+    "lorem ipsum",
+    {
+      "description": undefined,
+      "inputSchema": "undefined, isZod=false",
+    },
+    [Function],
+  ],
+  "warnings": [
+    "Using permissive JSON Schema fallback. Failed to convert Zod to JSON Schema for lorem ipsum.",
+    "Permissive JSON schemas may have unintended side-effects. Review lorem ipsum's inputSchema and ensure it's a valid JSON or Zod schema.",
+  ],
+}
+`;
+
+exports[`normalizeCreatorSchema should attempt to normalize a schema, with valid zod inputSchema 1`] = `
+{
+  "manifestSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+  },
+  "normalizedSchema": "[object Object], isZod=true",
+  "tool": [
+    "lorem ipsum",
+    {
+      "description": "lorem ipsum",
+      "inputSchema": "[object Object], isZod=true",
+    },
+    [Function],
+  ],
+  "warnings": [],
+}
+`;

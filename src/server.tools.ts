@@ -298,7 +298,7 @@ const makeProxyCreators = (
 
     log.debug(
       `Tool "${name}" from ${tool.source || 'unknown source'} failed strict JSON to Zod reconstruction.`,
-      `Review the tool's inputSchema and ensure it is a valid JSON or Zod Schema.`
+      `Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.`
     );
   }
 
