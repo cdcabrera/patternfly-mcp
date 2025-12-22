@@ -7,7 +7,7 @@ import {
 import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { type ToolOptions } from './options.tools';
-import { type McpTool } from './server';
+import { type McpTool, type McpToolCreator } from './server';
 import {
   isZodRawShape,
   isZodSchema,
@@ -81,6 +81,80 @@ const serializeError = (errorValue: unknown) => {
 };
 
 /**
+ * Result of `normalizeCreatorSchema`.
+ *
+ * @property tool - The normalized tool creator function.
+ * @property normalizedSchema - Normalized input schema.
+ * @property manifestSchema - JSON Schema representation of the normalized input schema.
+ * @property warnings - List of warnings generated during normalization.
+ */
+type NormalizeCreatorSchemaResult = {
+  tool: McpTool;
+  normalizedSchema: unknown;
+  manifestSchema: unknown;
+  warnings: string[];
+};
+
+/**
+ * Normalize a tool creator function and its input schema.
+ *
+ * @param creator
+ * @param toolOptions
+ * @returns Object containing the normalized tool and its input schema.
+ */
+const normalizeCreatorSchema = (creator: unknown, toolOptions?: ToolOptions): NormalizeCreatorSchemaResult => {
+  const create = creator as (opts?: unknown) => McpTool;
+
+  // Apply tool options to the creator function
+  const tool = create(toolOptions);
+  const toolName = tool[0] || create.name;
+
+  // Normalize input schema in the child (Tools Host)
+  const cfg = (tool[1] ?? {}) as Record<string, unknown>;
+  const normalizedSchema = normalizeInputSchema(cfg.inputSchema);
+
+  // Overwrite tuple's schema so call-time validation matches manifest
+  tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
+
+  // If the original was plain JSON Schema, prefer to send that as-is
+  if (
+    normalizedSchema !== undefined &&
+    isPlainObject(cfg.inputSchema) &&
+    !isZodRawShape(cfg.inputSchema) &&
+    !isZodSchema(cfg.inputSchema)
+  ) {
+    return {
+      tool,
+      normalizedSchema,
+      manifestSchema: cfg.inputSchema,
+      warnings: []
+    };
+  }
+
+  // Zod schema, convert to JSON Schema. If conversion fails, send permissive fallback
+  const jsonSchemaForManifest = zodToJsonSchema(normalizedSchema);
+  const warnings: string[] = [];
+
+  if (!jsonSchemaForManifest) {
+    const updatedToolName = toolName || 'the tool';
+
+    warnings.push(
+      `Using permissive JSON Schema fallback. Failed to convert Zod to JSON Schema for ${updatedToolName}.`
+    );
+    warnings.push(
+      `Permissive JSON schemas may have unintended side-effects. Review ${updatedToolName}'s inputSchema and ensure it's a valid JSON or Zod schema.`
+    );
+  }
+
+  return {
+    tool,
+    normalizedSchema,
+    manifestSchema: jsonSchemaForManifest || { type: 'object', additionalProperties: true },
+    warnings
+  };
+};
+
+/**
  * Load external tool creators, realize them, and normalize `inputSchema` in the child.
  *
  * Stores the real Zod schema in memory for runtime validation and sends a JSON-safe schema in descriptors.
@@ -96,65 +170,50 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
   const state = createHostState(nextInvokeTimeout);
   const warnings: string[] = [];
   const errors: string[] = [];
+  const toolOptions: ToolOptions | undefined = request.toolOptions;
+  let module: unknown;
 
   for (const spec of request.specs || []) {
+    // Import the module. On fail, move to the next module.
     try {
-      // review the plugin @rollup/plugin-dynamic-import-vars
-      // const mod = await import(spec);
-      // Dynamic import for external modules
       const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
-      const module = await dynamicImport(spec);
-      const toolOptions: ToolOptions | undefined = request.toolOptions;
-      const creators = resolveExternalCreators(module, toolOptions, { throwOnEmpty: true });
 
-      for (const creator of creators) {
-        try {
-          const create = creator as (opts?: unknown) => McpTool;
-          const tool = create(toolOptions);
-          const toolName = tool[0] || create.name;
-
-          // Normalize input schema in the child (Tools Host)
-          const cfg = (tool[1] ?? {}) as Record<string, unknown>;
-          const normalizedSchema = normalizeInputSchema(cfg.inputSchema);
-
-          // Overwrite tuple's schema so call-time validation matches manifest
-          tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
-
-          // Compute a manifest-safe schema for IPC. Treat the parent’s manifest schema as metadata only
-          let manifestSchema: unknown = undefined;
-
-          // If the original was plain JSON Schema, prefer to send that as-is
-          if (isPlainObject?.(cfg.inputSchema) && !isZodRawShape(cfg.inputSchema) && !isZodSchema(cfg.inputSchema)) {
-            // JSON-safe
-            manifestSchema = cfg.inputSchema;
-          } else {
-            // Zod schema, convert to JSON Schema. If conversion fails, send permissive fallback
-            const convertedToJson = zodToJsonSchema(normalizedSchema);
-
-            if (!convertedToJson) {
-              warnings.push('Using permissive Zod schema. Failed to convert Zod to JSON Schema for tool.', toolName);
-              warnings.push(`Permissive JSON schemas may have unintended side-effects. Review ${toolName || ' the tool'}'s inputSchema and ensure it's a valid JSON or Zod Schema.`);
-            }
-
-            manifestSchema = convertedToJson || { type: 'object', additionalProperties: true };
-          }
-
-          const toolId = makeId();
-
-          state.toolMap.set(toolId, tool as McpTool);
-          state.descriptors.push({
-            id: toolId,
-            name: tool[0],
-            description: tool[1]?.description || '',
-            inputSchema: manifestSchema,
-            source: spec
-          });
-        } catch (error) {
-          warnings.push(`Tool creator threw while realizing: ${spec}: ${String((error as Error)?.message || error)}`);
-        }
-      }
+      module = await dynamicImport(spec);
     } catch (error) {
-      errors.push(`Failed import: ${spec}: ${String((error as Error).message || error)}`);
+      errors.push(`Failed import: ${spec}: ${String((error as Error)?.message || error)}`);
+      continue;
+    }
+
+    // Does the module export a creator function? On fail, move to the next module.
+    let creators: McpToolCreator[] = [];
+
+    try {
+      creators = resolveExternalCreators(module, request.toolOptions, { throwOnEmpty: true });
+    } catch (error) {
+      warnings.push(`No usable creators in module ${spec}: ${String((error as Error)?.message || error)}`);
+      continue;
+    }
+
+    // Finally, normalize module schema, convert to JSON for manifest, store, push descriptor
+    for (const creator of creators) {
+      try {
+        const { tool, manifestSchema, warnings: creatorWarnings } = normalizeCreatorSchema(creator, toolOptions);
+
+        warnings.push(...creatorWarnings);
+
+        const toolId = makeId();
+
+        state.toolMap.set(toolId, tool as McpTool);
+        state.descriptors.push({
+          id: toolId,
+          name: tool[0],
+          description: tool[1]?.description || '',
+          inputSchema: manifestSchema,
+          source: spec
+        });
+      } catch (error) {
+        warnings.push(`Tool creator threw while realizing: ${spec}: ${String((error as Error)?.message || error)}`);
+      }
     }
   }
 
@@ -438,11 +497,13 @@ if (process.send) {
 }
 
 export {
-  setHandlers,
+  normalizeCreatorSchema,
+  performLoad,
   requestHello,
   requestLoad,
   requestManifestGet,
   requestInvoke,
   requestShutdown,
-  requestFallback
+  requestFallback,
+  setHandlers
 };

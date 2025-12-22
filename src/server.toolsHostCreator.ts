@@ -7,7 +7,7 @@ import { type McpTool, type McpToolCreator } from './server';
  * @returns `true` if value is an array of functions.
  */
 const isCreatorsArray = (value: unknown): value is McpToolCreator[] =>
-  Array.isArray(value) && value.every(fn => typeof fn === 'function');
+  Array.isArray(value) && value.length > 0 && value.every(fn => typeof fn === 'function');
 
 /**
  * Guard for tool tuple. File-scoped helper.
@@ -46,17 +46,34 @@ type ResolveOptions = {
 /**
  * Minimally filter, resolve, then cache tool creators from external module export during the child process.
  *
- * Supported module export shapes `default` or `named exports`, any other shape is ignored:
- * - function returning a realized tool tuple -> wraps and caches as a creator (with .toolName)
- * - function returning an array of creators -> returns them directly
- * - array of creators -> returns it directly
+ * - Probes function exports at most once with toolOptions and never re-probes without options.
+ * - Supported export shapes:
+ *   - A `default export` that is a function returning a tool tuple -> wraps and caches as a creator (with .toolName)
+ *   - A `default export` that is a function returning an array of functions returning tool tuples -> no unwrapping, returns them directly
+ *   - A `default export` that is an array of functions returning tool tuples -> no unwrapping, returns them directly
  *
- * Probes function exports at most once with toolOptions and never re-probes without options.
+ * @example
+ * // A default export function returning a tool tuple
+ * export default () => ['toolName', { description: 'recommended', inputSchema: { ... } }, handler];
  *
- * @param moduleExports
- * @param toolOptions
- * @param root0
- * @param root0.throwOnEmpty
+ * @example
+ * // A default export function returning an array of tool tuples
+ * const dolorSit = () => ['toolName1', { description: 'recommended', inputSchema: { ... }  }, handler];
+ * const ametConsectetur = () => ['toolName2', { description: 'recommended', inputSchema: { ... }  }, handler];
+ *
+ * export default () => [dolorSit, ametConsectetur];
+ *
+ * @example
+ * // A default export array of functions returning tool tuples
+ * export default [
+ *   () => ['toolName1', { description: 'recommended', inputSchema: { ... }  }, handler],
+ *   () => ['toolName2', { description: 'recommended', inputSchema: { ... }  }, handler]
+ * ];
+ *
+ * @param moduleExports - The module exports object from the child process.
+ * @param toolOptions - Tool options to pass to tool creators.
+ * @param settings - Optional settings.
+ * @param settings.throwOnEmpty - Throw an error if no tool creators are found. Defaults to false.
  */
 const resolveExternalCreators = (
   moduleExports: unknown,
@@ -79,8 +96,12 @@ const resolveExternalCreators = (
         }
 
         if (isCreatorsArray(result)) {
+          observed.push('creators[]');
+
           return result;
         }
+
+        observed.push(Array.isArray(result) ? 'array' : typeof result);
       } catch {
         // Move to next candidate
       }
@@ -104,9 +125,9 @@ const resolveExternalCreators = (
     throw new Error([
       `No usable tool creators found from module. ${shapes}`,
       'Expected one of:',
-      '- default export: function -> returns [name, { inputSchema, description? }, handler]',
-      '- default export: function -> returns McpToolCreator[]',
-      '- default export: McpToolCreator[] (or same via named exports).'
+      '- default export: a tool creator (function that returns [name, { inputSchema, description? }, handler])',
+      '- default export: a function that returns an array of tool creators',
+      '- default export: an array of tool creators'
     ].join('\n'));
   }
 
