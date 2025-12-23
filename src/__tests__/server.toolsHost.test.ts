@@ -9,605 +9,7 @@ import {
   requestFallback,
   setHandlers
 } from '../server.toolsHost';
-import { type IpcRequest, type ToolDescriptor } from '../server.toolsIpc';
-import { type McpTool } from '../server';
-import { DEFAULT_OPTIONS } from '../options.defaults';
-import {isZodSchema} from "../server.schema";
-
-// Mock dependencies
-jest.mock('../server.toolsHostCreator', () => ({
-  resolveExternalCreators: jest.fn((mod: any) => {
-    // Default mock: return a simple creator function
-    if (mod && typeof mod.default === 'function') {
-      return [mod.default];
-    }
-    if (mod && typeof mod === 'function') {
-      return [mod];
-    }
-    if (mod && Array.isArray(mod)) {
-      return mod;
-    }
-
-    return [];
-  })
-}));
-
-jest.mock('../server.toolsIpc', () => {
-  const actual = jest.requireActual('../server.toolsIpc');
-
-  return {
-    ...actual,
-    makeId: jest.fn(() => 'mock-tool-id')
-  };
-});
-
-// Helper function to create host state for testing
-const createTestHostState = (invokeTimeoutMs = DEFAULT_OPTIONS.pluginHost.invokeTimeoutMs) => {
-  const toolMap = new Map<string, McpTool>();
-  const descriptors: ToolDescriptor[] = [];
-
-  return {
-    toolMap,
-    descriptors,
-    invokeTimeoutMs
-  };
-};
-
-describe('requestHello', () => {
-  let mockSend: jest.Mock;
-
-  beforeEach(() => {
-    mockSend = jest.fn();
-    process.send = mockSend;
-  });
-
-  afterEach(() => {
-    delete (process as any).send;
-    jest.clearAllMocks();
-  });
-
-  it.each([
-    {
-      description: 'with valid request',
-      request: { t: 'hello' as const, id: 'test-id-1' }
-    },
-    {
-      description: 'with different id',
-      request: { t: 'hello' as const, id: 'test-id-2' }
-    }
-  ])('should send hello:ack message, $description', ({ request }) => {
-    requestHello(request);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'hello:ack',
-      id: request.id
-    });
-  });
-
-  it('should not throw when process.send is undefined', () => {
-    delete (process as any).send;
-
-    expect(() => {
-      requestHello({ t: 'hello', id: 'test-id' });
-    }).not.toThrow();
-  });
-});
-
-describe('requestLoad', () => {
-  let mockSend: jest.Mock;
-
-  beforeEach(() => {
-    mockSend = jest.fn();
-    process.send = mockSend;
-  });
-
-  afterEach(() => {
-    delete (process as any).send;
-    jest.clearAllMocks();
-  });
-
-  it.each([
-    {
-      description: 'with warnings and errors',
-      request: { t: 'load' as const, id: 'test-id', specs: [] },
-      warnings: ['warning1', 'warning2'],
-      errors: ['error1']
-    },
-    {
-      description: 'with empty warnings and errors',
-      request: { t: 'load' as const, id: 'test-id', specs: [] },
-      warnings: [],
-      errors: []
-    },
-    {
-      description: 'with only warnings',
-      request: { t: 'load' as const, id: 'test-id', specs: [] },
-      warnings: ['warning1'],
-      errors: []
-    },
-    {
-      description: 'with only errors',
-      request: { t: 'load' as const, id: 'test-id', specs: [] },
-      warnings: [],
-      errors: ['error1']
-    },
-    {
-      description: 'with undefined warnings and errors',
-      request: { t: 'load' as const, id: 'test-id', specs: [] },
-      warnings: undefined,
-      errors: undefined
-    }
-  ])('should send load:ack message, $description', ({ request, warnings, errors }) => {
-    const options: { warnings?: string[]; errors?: string[] } = {};
-
-    if (warnings !== undefined) {
-      options.warnings = warnings;
-    }
-    if (errors !== undefined) {
-      options.errors = errors;
-    }
-    requestLoad(request, options);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'load:ack',
-      id: request.id,
-      warnings: warnings || [],
-      errors: errors || []
-    });
-  });
-
-  it('should not throw when process.send is undefined', () => {
-    delete (process as any).send;
-
-    expect(() => {
-      requestLoad({ t: 'load' as const, id: 'test-id', specs: [] }, {});
-    }).not.toThrow();
-  });
-});
-
-describe('requestManifestGet', () => {
-  let mockSend: jest.Mock;
-
-  beforeEach(() => {
-    mockSend = jest.fn();
-    process.send = mockSend;
-  });
-
-  afterEach(() => {
-    delete (process as any).send;
-    jest.clearAllMocks();
-  });
-
-  it.each([
-    {
-      description: 'with empty descriptors',
-      state: createTestHostState(),
-      request: { t: 'manifest:get' as const, id: 'test-id' },
-      expectedTools: []
-    },
-    {
-      description: 'with single tool descriptor',
-      state: (() => {
-        const state = createTestHostState();
-
-        state.descriptors.push({
-          id: 'tool-1',
-          name: 'Tool1',
-          description: 'Description 1',
-          inputSchema: {},
-          source: 'module1'
-        });
-
-        return state;
-      })(),
-      request: { t: 'manifest:get' as const, id: 'test-id' },
-      expectedTools: [
-        {
-          id: 'tool-1',
-          name: 'Tool1',
-          description: 'Description 1',
-          inputSchema: {},
-          source: 'module1'
-        }
-      ]
-    },
-    {
-      description: 'with multiple tool descriptors',
-      state: (() => {
-        const state = createTestHostState();
-
-        state.descriptors.push(
-          {
-            id: 'tool-1',
-            name: 'Tool1',
-            description: 'Description 1',
-            inputSchema: { type: 'object' },
-            source: 'module1'
-          },
-          {
-            id: 'tool-2',
-            name: 'Tool2',
-            description: 'Description 2',
-            inputSchema: {},
-            source: 'module2'
-          }
-        );
-
-        return state;
-      })(),
-      request: { t: 'manifest:get' as const, id: 'test-id' },
-      expectedTools: [
-        {
-          id: 'tool-1',
-          name: 'Tool1',
-          description: 'Description 1',
-          inputSchema: { type: 'object' },
-          source: 'module1'
-        },
-        {
-          id: 'tool-2',
-          name: 'Tool2',
-          description: 'Description 2',
-          inputSchema: {},
-          source: 'module2'
-        }
-      ]
-    }
-  ])('should send manifest:result message, $description', ({ state, request, expectedTools }) => {
-    requestManifestGet(state, request);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'manifest:result',
-      id: request.id,
-      tools: expectedTools
-    });
-  });
-
-  it('should not throw when process.send is undefined', () => {
-    delete (process as any).send;
-
-    expect(() => {
-      requestManifestGet(createTestHostState(), { t: 'manifest:get' as const, id: 'test-id' });
-    }).not.toThrow();
-  });
-});
-
-describe('requestInvoke', () => {
-  let mockSend: jest.Mock;
-  let mockClearTimeout: jest.Mock;
-  let originalSetTimeout: typeof setTimeout;
-  let originalClearTimeout: typeof clearTimeout;
-
-  beforeEach(() => {
-    mockSend = jest.fn();
-    process.send = mockSend;
-    mockClearTimeout = jest.fn();
-    originalSetTimeout = global.setTimeout;
-    originalClearTimeout = global.clearTimeout;
-    global.clearTimeout = mockClearTimeout;
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    delete (process as any).send;
-    global.setTimeout = originalSetTimeout;
-    global.clearTimeout = originalClearTimeout;
-    jest.useRealTimers();
-    jest.clearAllMocks();
-  });
-
-  it.each([
-    {
-      description: 'with successful handler',
-      toolId: 'tool-1',
-      args: { param: 'value' },
-      handlerResult: { data: 'result' },
-      expectedOk: true
-    },
-    {
-      description: 'with handler returning promise',
-      toolId: 'tool-1',
-      args: { param: 'value' },
-      handlerResult: { data: 'async-result' },
-      handlerIsPromise: true,
-      expectedOk: true
-    },
-    {
-      description: 'with handler throwing error',
-      toolId: 'tool-1',
-      args: { param: 'value' },
-      handlerError: new Error('Handler error'),
-      expectedOk: false
-    }
-  ])('should handle tool invocation, $description', async ({ toolId, args, handlerResult, handlerError, handlerIsPromise, expectedOk }) => {
-    const state = createTestHostState(1000);
-    const handler = handlerError
-      ? jest.fn().mockRejectedValue(handlerError)
-      : handlerIsPromise
-        ? jest.fn().mockResolvedValue(handlerResult)
-        : jest.fn().mockReturnValue(handlerResult);
-    const tool: McpTool = ['ToolName', { description: 'Tool description', inputSchema: {} }, handler];
-
-    state.toolMap.set(toolId, tool);
-
-    const request: IpcRequest = { t: 'invoke', id: 'request-id', toolId, args };
-    const promise = requestInvoke(state, request);
-
-    // Wait a bit for async operations
-    await Promise.resolve();
-    await promise;
-
-    if (expectedOk) {
-      expect(mockSend).toHaveBeenCalledWith({
-        t: 'invoke:result',
-        id: 'request-id',
-        ok: true,
-        result: handlerResult
-      });
-    } else {
-      expect(mockSend).toHaveBeenCalledWith({
-        t: 'invoke:result',
-        id: 'request-id',
-        ok: false,
-        error: expect.objectContaining({
-          message: handlerError?.message || expect.any(String)
-        })
-      });
-    }
-  });
-
-  it('should send error when toolId not found', async () => {
-    const state = createTestHostState();
-    const request: IpcRequest = { t: 'invoke', id: 'request-id', toolId: 'unknown-tool', args: {} };
-
-    await requestInvoke(state, request);
-
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'invoke:result',
-      id: 'request-id',
-      ok: false,
-      error: { message: 'Unknown toolId' }
-    });
-  });
-
-  it('should timeout when handler takes too long', async () => {
-    const state = createTestHostState(100);
-    // Create a handler that resolves after timeout would fire
-    let resolveHandler: ((value: any) => void) | undefined;
-    const handlerPromise = new Promise(resolve => {
-      resolveHandler = resolve;
-    });
-    const handler = jest.fn(() => handlerPromise);
-    const tool: McpTool = ['ToolName', { description: 'Tool description', inputSchema: {} }, handler];
-
-    state.toolMap.set('tool-1', tool);
-
-    const request: IpcRequest = { t: 'invoke', id: 'request-id', toolId: 'tool-1', args: {} };
-    const invokePromise = requestInvoke(state, request);
-
-    // Wait for handler to be called and timeout to be set up
-    await Promise.resolve();
-    await Promise.resolve();
-
-    // Advance timers past timeout (100ms) - this should trigger the timeout
-    jest.advanceTimersByTime(101);
-
-    // Wait a bit for timeout message to be sent
-    await Promise.resolve();
-
-    // Verify timeout message was sent
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'invoke:result',
-      id: 'request-id',
-      ok: false,
-      error: { message: 'Invoke timeout' }
-    });
-
-    // Now resolve the handler so the function can complete
-    if (resolveHandler) {
-      resolveHandler('result');
-    }
-
-    // Wait for the function to complete
-    await invokePromise;
-  });
-
-  it('should not send multiple responses', async () => {
-    const state = createTestHostState(100);
-    const handler = jest.fn().mockResolvedValue('result');
-    const tool: McpTool = ['ToolName', { description: 'Tool description', inputSchema: {} }, handler];
-
-    state.toolMap.set('tool-1', tool);
-
-    const request: IpcRequest = { t: 'invoke', id: 'request-id', toolId: 'tool-1', args: {} };
-    const promise = requestInvoke(state, request);
-
-    // Advance timer to trigger timeout
-    jest.advanceTimersByTime(101);
-    // Then resolve handler
-    await Promise.resolve();
-
-    await promise;
-
-    // Should only send one response (timeout)
-    expect(mockSend).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('requestShutdown', () => {
-  let mockSend: jest.Mock;
-  let mockExit: jest.Mock;
-
-  beforeEach(() => {
-    mockSend = jest.fn();
-    mockExit = jest.fn();
-    process.send = mockSend;
-    process.exit = mockExit as any;
-  });
-
-  afterEach(() => {
-    delete (process as any).send;
-    delete (process as any).exit;
-    jest.clearAllMocks();
-  });
-
-  it.each([
-    {
-      description: 'with valid request',
-      request: { t: 'shutdown' as const, id: 'test-id-1' }
-    },
-    {
-      description: 'with different id',
-      request: { t: 'shutdown' as const, id: 'test-id-2' }
-    }
-  ])('should send shutdown:ack and exit, $description', ({ request }) => {
-    requestShutdown(request);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'shutdown:ack',
-      id: request.id
-    });
-    expect(mockExit).toHaveBeenCalledTimes(1);
-    expect(mockExit).toHaveBeenCalledWith(0);
-  });
-});
-
-describe('requestFallback', () => {
-  let mockSend: jest.Mock;
-
-  beforeEach(() => {
-    mockSend = jest.fn();
-    process.send = mockSend;
-  });
-
-  afterEach(() => {
-    delete (process as any).send;
-    jest.clearAllMocks();
-  });
-
-  it.each([
-    {
-      description: 'with request id',
-      request: { t: 'hello' as const, id: 'test-id' } as IpcRequest,
-      error: new Error('Test error')
-    },
-    {
-      description: 'without request id',
-      request: { t: 'load' as const, id: '', specs: [] } as IpcRequest,
-      error: new Error('Test error')
-    },
-    {
-      description: 'with string error',
-      request: { t: 'invoke' as const, id: 'test-id', toolId: 'tool', args: {} } as IpcRequest,
-      error: 'String error'
-    }
-  ])('should send error response, $description', ({ request, error }) => {
-    requestFallback(request, error as Error);
-
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    expect(mockSend).toHaveBeenCalledWith({
-      t: 'invoke:result',
-      id: request.id || 'n/a',
-      ok: false,
-      error: expect.objectContaining({
-        message: expect.any(String)
-      })
-    });
-  });
-
-  it('should not throw when process.send is undefined', () => {
-    delete (process as any).send;
-
-    expect(() => {
-      requestFallback({ t: 'hello', id: 'test-id' }, new Error('Test'));
-    }).not.toThrow();
-  });
-
-  it('should not throw when send throws', () => {
-    mockSend.mockImplementation(() => {
-      throw new Error('Send failed');
-    });
-
-    expect(() => {
-      requestFallback({ t: 'hello', id: 'test-id' }, new Error('Test'));
-    }).not.toThrow();
-  });
-});
-
-describe('setHandlers', () => {
-  let mockOn: jest.Mock;
-  let mockSend: jest.Mock;
-  let messageHandlers: Array<(message: any) => void>;
-  let disconnectHandlers: Array<() => void>;
-
-  beforeEach(() => {
-    messageHandlers = [];
-    disconnectHandlers = [];
-    mockSend = jest.fn();
-    mockOn = jest.fn((event: string, handler: any) => {
-      if (event === 'message') {
-        messageHandlers.push(handler);
-      } else if (event === 'disconnect') {
-        disconnectHandlers.push(handler);
-      }
-
-      return process;
-    });
-
-    process.on = mockOn;
-    process.send = mockSend;
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-    delete (process as any).send;
-  });
-
-  it('should set up message and disconnect handlers', () => {
-    const handler = setHandlers();
-
-    expect(mockOn).toHaveBeenCalledWith('message', expect.any(Function));
-    expect(mockOn).toHaveBeenCalledWith('disconnect', expect.any(Function));
-    expect(typeof handler).toBe('function');
-  });
-
-  it('should handle hello request', async () => {
-    const handler = setHandlers();
-    const request: IpcRequest = { t: 'hello', id: 'test-id' };
-
-    await handler(request);
-
-    expect(mockSend).toHaveBeenCalledWith({ t: 'hello:ack', id: 'test-id' });
-  });
-
-  it('should handle manifest:get request', async () => {
-    const handler = setHandlers();
-    const request: IpcRequest = { t: 'manifest:get', id: 'test-id' };
-
-    await handler(request);
-
-    expect(mockSend).toHaveBeenCalledWith({ t: 'manifest:result', id: 'test-id', tools: [] });
-  });
-
-  it('should handle disconnect', () => {
-    const mockExit = jest.fn();
-
-    process.exit = mockExit as any;
-
-    setHandlers();
-
-    // Trigger disconnect handler
-    disconnectHandlers.forEach(handler => handler());
-
-    expect(mockExit).toHaveBeenCalledWith(0);
-
-    delete (process as any).exit;
-  });
-});
+import { isZodSchema } from '../server.schema';
 
 describe('normalizeCreatorSchema', () => {
   it.each([
@@ -686,16 +88,539 @@ describe('normalizeCreatorSchema', () => {
     const { normalizedSchema, tool, ...rest } = normalizeCreatorSchema(creator);
 
     expect({
-      normalizedSchema: `${String(normalizedSchema)}, isZod=${isZodSchema(normalizedSchema)}`,
+      normalizedSchema: `${normalizedSchema}, isZod=${isZodSchema(normalizedSchema)}`,
       tool: [
         tool[0],
         {
           description: tool[1]?.description,
-          inputSchema: `${String(tool[1]?.inputSchema)}, isZod=${isZodSchema(tool[1]?.inputSchema)}`
+          inputSchema: `${tool[1]?.inputSchema}, isZod=${isZodSchema(tool[1]?.inputSchema)}`
         },
         tool[2]
       ],
       ...rest
     }).toMatchSnapshot();
+  });
+});
+
+describe('requestHello', () => {
+  let mockSend: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    process.send = mockSend;
+  });
+
+  afterEach(() => {
+    delete (process as any).send;
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with valid request',
+      request: { t: 'hello', id: 'test-id-1' }
+    },
+    {
+      description: 'with different id',
+      request: { t: 'hello', id: 'test-id-2' }
+    }
+  ])('should send hello:ack message, $description', ({ request }) => {
+    requestHello(request as any);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls).toMatchSnapshot();
+  });
+
+  it('should not throw when process.send is undefined', () => {
+    delete (process as any).send;
+
+    expect(() => {
+      requestHello({ t: 'hello', id: 'test-id' });
+    }).not.toThrow();
+  });
+});
+
+describe('requestInvoke', () => {
+  let mockSend: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    process.send = mockSend;
+  });
+
+  afterEach(() => {
+    delete (process as any).send;
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'successful handler',
+      handlerResult: { data: 'result' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler returning promise',
+      handlerResult: Promise.resolve({ data: 'async-result' }),
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler throwing error',
+      handlerResult: Promise.reject(new Error('Handler error')),
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler returning error',
+      handlerResult: new Error('Handler error'),
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'mismatched state and request tool IDs',
+      handlerResult: { data: 'result' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-2'
+    },
+    {
+      description: 'handler returning AggregateError',
+      handlerResult: new AggregateError(['Handler error']),
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return an error-like object, with message',
+      handlerResult: { message: 'Handler error' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return an error-like object, with single line stack',
+      handlerResult: { message: 'Handler error', stack: 'Stack trace' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return an error-like object, with name and single line stack',
+      handlerResult: { name: 'Mock ERROR', message: 'Handler error', stack: 'Stack trace' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return an error-like object, with name and multiline line stack',
+      handlerResult: { name: 'Mock', message: 'Handler error', stack: 'Stack trace\nSecond line' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return a DOMException-like object, with name, message and multiline line stack',
+      handlerResult: { name: 'DOMException', message: 'Handler error', stack: 'DOMException: message\n at line x' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return a browser-like ErrorEvent-like object, with name, message and multiline line stack',
+      handlerResult: { name: 'ErrorEvent', message: 'Handler error', stack: 'ErrorEvent: message\n at line x' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler returning undefined',
+      handlerResult: undefined,
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler returning null',
+      handlerResult: null,
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    }
+  ])('should attempt tool invocation, $description', async ({ handlerResult, stateToolId, requestToolId }) => {
+    const mockState = {
+      toolMap: new Map(),
+      descriptors: [
+        {
+          id: stateToolId,
+          name: 'ToolName',
+          description: 'Tool description 1',
+          inputSchema: {},
+          source: 'module1'
+        }
+      ],
+      invokeTimeoutMs: 1000
+    };
+
+    mockState.toolMap.set(
+      stateToolId,
+      [
+        'ToolName',
+        { description: 'Tool description 1', inputSchema: {} },
+        jest.fn().mockImplementation(async () => handlerResult)
+      ]
+    );
+
+    const promise = requestInvoke(mockState as any, { t: 'invoke', id: 'request-id', toolId: requestToolId, args: { param: 'value' } });
+
+    await promise;
+
+    expect(mockSend.mock.calls.length).toBe(1);
+
+    const { error, ...rest } = mockSend.mock.calls[0][0];
+
+    expect({
+      ...((error?.message && { error: error?.message }) || undefined),
+      ...rest
+    }).toMatchSnapshot();
+  });
+
+  it('should timeout when handler takes too long', async () => {
+    jest.useFakeTimers();
+    const stateToolId = 'tool-1';
+    const requestToolId = 'tool-1';
+    const mockState = {
+      toolMap: new Map(),
+      descriptors: [
+        {
+          id: stateToolId,
+          name: 'ToolName',
+          description: 'Tool description 1',
+          inputSchema: {},
+          source: 'module1'
+        }
+      ],
+      invokeTimeoutMs: 100
+    };
+
+    // Create a handler that resolves after timeout would fire
+    const handler = jest.fn(() => new Promise(resolve => {
+      setTimeout(resolve, 101);
+    }));
+
+    mockState.toolMap.set(
+      stateToolId,
+      [
+        'ToolName',
+        { description: 'Tool description 1', inputSchema: {} },
+        handler
+      ]
+    );
+
+    const invokePromise = requestInvoke(mockState, { t: 'invoke', id: 'request-id', toolId: requestToolId, args: {} });
+
+    // Wait for handler to be called, timeout to be set up
+    await Promise.resolve();
+
+    // Advance timers past timeout
+    jest.advanceTimersByTime(102);
+
+    // Wait for the timeout message to be sent
+    await Promise.resolve();
+
+    // Verify timeout message was sent
+    expect(mockSend.mock.calls).toMatchSnapshot();
+
+    // Wait for the function to complete
+    await invokePromise;
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
+});
+
+describe('requestLoad', () => {
+  let mockSend: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    process.send = mockSend;
+  });
+
+  afterEach(() => {
+    delete (process as any).send;
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with warnings and errors',
+      request: { t: 'load', id: 'test-id', specs: [] },
+      warnings: ['warning1', 'warning2'],
+      errors: ['error1']
+    },
+    {
+      description: 'with empty warnings and errors',
+      request: { t: 'load', id: 'test-id', specs: [] },
+      warnings: [],
+      errors: []
+    },
+    {
+      description: 'with only warnings',
+      request: { t: 'load', id: 'test-id', specs: [] },
+      warnings: ['warning1'],
+      errors: []
+    },
+    {
+      description: 'with only errors',
+      request: { t: 'load', id: 'test-id', specs: [] },
+      warnings: [],
+      errors: ['error1']
+    },
+    {
+      description: 'with undefined warnings and errors',
+      request: { t: 'load', id: 'test-id', specs: [] },
+      warnings: undefined,
+      errors: undefined
+    }
+  ])('should send load:ack message, $description', ({ request, warnings, errors }) => {
+    const options: { warnings?: string[]; errors?: string[] } = {};
+
+    if (warnings !== undefined) {
+      options.warnings = warnings;
+    }
+    if (errors !== undefined) {
+      options.errors = errors;
+    }
+    requestLoad(request as any, options);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls).toMatchSnapshot();
+  });
+
+  it('should not throw when process.send is undefined', () => {
+    delete (process as any).send;
+
+    expect(() => {
+      requestLoad({ t: 'load', id: 'test-id', specs: [] }, {});
+    }).not.toThrow();
+  });
+});
+
+describe('requestManifestGet', () => {
+  let mockSend: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    process.send = mockSend;
+  });
+
+  afterEach(() => {
+    delete (process as any).send;
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with empty descriptors',
+      state: {
+        toolMap: new Map(),
+        descriptors: [],
+        invokeTimeoutMs: 1000
+      },
+      request: { t: 'manifest:get', id: 'test-id' }
+    },
+    {
+      description: 'with single tool descriptor',
+      state: {
+        toolMap: new Map(),
+        descriptors: [
+          {
+            id: 'tool-1',
+            name: 'Tool1',
+            description: 'Description 1',
+            inputSchema: {},
+            source: 'module1'
+          }
+        ],
+        invokeTimeoutMs: 1000
+      },
+      request: { t: 'manifest:get', id: 'test-id' }
+    },
+    {
+      description: 'with multiple tool descriptors',
+      state: {
+        toolMap: new Map(),
+        descriptors: [
+          {
+            id: 'tool-1',
+            name: 'Tool1',
+            description: 'Description 1',
+            inputSchema: { type: 'object' },
+            source: 'module1'
+          },
+          {
+            id: 'tool-2',
+            name: 'Tool2',
+            description: 'Description 2',
+            inputSchema: {},
+            source: 'module2'
+          }
+        ],
+        invokeTimeoutMs: 1000
+      },
+      request: { t: 'manifest:get', id: 'test-id' }
+    }
+  ])('should send manifest:result message, $description', ({ state, request }) => {
+    requestManifestGet(state, request as any);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls).toMatchSnapshot();
+  });
+
+  it('should not throw when process.send is undefined', () => {
+    const mockHostState = {
+      toolMap: new Map(),
+      descriptors: [],
+      invokeTimeoutMs: 1000
+    };
+
+    delete (process as any).send;
+
+    expect(() => {
+      requestManifestGet(mockHostState, { t: 'manifest:get', id: 'test-id' });
+    }).not.toThrow();
+  });
+});
+
+describe('requestShutdown', () => {
+  let mockSend: jest.Mock;
+  let mockExit: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    mockExit = jest.fn();
+    process.send = mockSend;
+    process.exit = mockExit as any;
+  });
+
+  afterEach(() => {
+    delete (process as any).send;
+    delete (process as any).exit;
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with valid request',
+      request: { t: 'shutdown', id: 'test-id-1' }
+    },
+    {
+      description: 'with different id',
+      request: { t: 'shutdown', id: 'test-id-2' }
+    }
+  ])('should send shutdown:ack and exit, $description', ({ request }) => {
+    requestShutdown(request as any);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls).toMatchSnapshot();
+    expect(mockExit).toHaveBeenCalledTimes(1);
+    expect(mockExit).toHaveBeenCalledWith(0);
+  });
+});
+
+describe('requestFallback', () => {
+  let mockSend: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    process.send = mockSend;
+  });
+
+  afterEach(() => {
+    delete (process as any).send;
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with request id',
+      request: { t: 'hello', id: 'test-id' },
+      error: new Error('Test error')
+    },
+    {
+      description: 'without request id',
+      request: { t: 'load', id: '', specs: [] },
+      error: new Error('Test error')
+    },
+    {
+      description: 'with string error',
+      request: { t: 'invoke', id: 'test-id', toolId: 'tool', args: {} },
+      error: 'String error'
+    }
+  ])('should send error response, $description', ({ request, error }) => {
+    requestFallback(request as any, error as Error);
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+
+    const { error: err, ...rest } = mockSend.mock.calls[0][0];
+
+    expect({
+      ...rest,
+      error: err?.message
+    }).toMatchSnapshot();
+  });
+
+  it('should not throw when process.send is undefined', () => {
+    delete (process as any).send;
+
+    expect(() => {
+      requestFallback({ t: 'hello', id: 'test-id' }, new Error('Test'));
+    }).not.toThrow();
+  });
+
+  it('should not throw when send throws', () => {
+    mockSend.mockImplementation(() => {
+      throw new Error('Send failed');
+    });
+
+    expect(() => {
+      requestFallback({ t: 'hello', id: 'test-id' }, new Error('Test'));
+    }).not.toThrow();
+  });
+});
+
+describe('setHandlers', () => {
+  let mockOn: jest.Mock;
+  let mockSend: jest.Mock;
+
+  beforeEach(() => {
+    mockSend = jest.fn();
+    mockOn = jest.fn();
+
+    process.on = mockOn;
+    process.send = mockSend;
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    delete (process as any).send;
+  });
+
+  it.each([
+    {
+      description: 'hello',
+      request: { t: 'hello', id: 'test-id' }
+    },
+    {
+      description: 'load',
+      request: { t: 'load', id: 'test-id' }
+    },
+    {
+      description: 'manifest:get',
+      request: { t: 'manifest:get', id: 'test-id' }
+    },
+    {
+      description: 'invoke',
+      request: { t: 'invoke', id: 'test-id' }
+    }
+  ])('should set up message handlers and attempt handle requests, $description', async ({ request }) => {
+    const handler = setHandlers();
+
+    await handler(request as any);
+
+    expect(mockOn).toHaveBeenCalledWith('message', expect.any(Function));
+    expect(mockSend.mock.calls).toMatchSnapshot();
   });
 });
