@@ -1,5 +1,5 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, resolve } from 'node:path';
 import { isPlainObject } from './server.helpers';
 import { type McpToolCreator, type McpTool } from './server';
 import { type GlobalOptions } from './options';
@@ -183,8 +183,13 @@ const sanitizePlainObject = (obj: unknown, allowedKeys: Set<string>) => {
  * @param str
  * @returns Confirmation that the string looks like a file path.
  */
-const isFilePath = (str: string): boolean =>
-  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+const isFilePath = (str: string): boolean => {
+  if (typeof str !== 'string') {
+    return false;
+  }
+
+  return str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str) || extname(str).length >= 2;
+};
 
 /**
  * Check if a string looks like a URL.

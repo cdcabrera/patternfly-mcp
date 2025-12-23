@@ -186,7 +186,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
 const spawnToolsHost = async (
   options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
-  const { pluginIsolation, pluginHost } = options || {};
+  const { nodeVersion, pluginIsolation, pluginHost } = options || {};
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
   let updatedEntry: string;
@@ -210,9 +210,8 @@ const spawnToolsHost = async (
 
   // Deny network and fs write by omission
   if (pluginIsolation === 'strict') {
-    // nodeArgs.push('--experimental-permission');
-    const major = options?.nodeVersion || 0;
-    const permissionFlag = major >= 24 ? '--permission' : '--experimental-permission';
+    // Node 24+ moves to using the "--permission" flag instead of "--experimental-permission"
+    const permissionFlag = nodeVersion >= 24 ? '--permission' : '--experimental-permission';
 
     nodeArgs.push(permissionFlag);
 
