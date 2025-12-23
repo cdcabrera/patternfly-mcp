@@ -196,8 +196,8 @@ describe('Tools', () => {
     const resp = await CLIENT.send(req);
     const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
 
-    expect(names).toContain('echo_plugin_tool');
     expect(CLIENT.logs()).toMatchSnapshot();
+    expect(names).toContain('echo_plugin_tool');
   });
 
   it('should interact with the new tool', async () => {
