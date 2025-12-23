@@ -1,5 +1,5 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, isAbsolute, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, resolve } from 'node:path';
 import { isPlainObject } from './server.helpers';
 import { type McpToolCreator, type McpTool } from './server';
 import { type GlobalOptions } from './options';
@@ -123,12 +123,12 @@ type MultiToolConfig = {
 /**
  * Allowed keys in the tool config objects. Expand as needed.
  */
-const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'handler'] as const);
+const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'handler']);
 
 /**
  * Allowed keys in the tool schema objects. Expand as needed. See related `ToolSchema`.
  */
-const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema'] as const);
+const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
 
 /**
  * Return an object key value.
@@ -183,8 +183,13 @@ const sanitizePlainObject = (obj: unknown, allowedKeys: Set<string>) => {
  * @param str
  * @returns Confirmation that the string looks like a file path.
  */
-const isFilePath = (str: string): boolean =>
-  str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str);
+const isFilePath = (str: string): boolean => {
+  if (typeof str !== 'string') {
+    return false;
+  }
+
+  return str.startsWith('./') || str.startsWith('../') || str.startsWith('/') || /^[A-Za-z]:[\\/]/.test(str) || extname(str).length >= 2;
+};
 
 /**
  * Check if a string looks like a URL.
@@ -275,7 +280,7 @@ const normalizeTuple = (config: unknown): CreatorEntry | undefined => {
     toolName: updatedName as string,
     type: err ? 'invalid' : 'tuple',
     value: creator,
-    error: err
+    ...(err ? { error: err } : {})
   };
 };
 
@@ -329,7 +334,7 @@ const normalizeObject = (config: unknown, allowedKeys = ALLOWED_CONFIG_KEYS): Cr
     toolName: updatedName as string,
     type: err ? 'invalid' : 'object',
     value: creator,
-    error: err
+    ...(err ? { error: err } : {})
   };
 };
 
@@ -342,7 +347,7 @@ normalizeObject.memo = memo(normalizeObject, { cacheErrors: false, keyHash: (...
  * Normalize a creator function into a tool creator function.
  *
  * @param config
- * @returns {CreatorEntry}
+ * @returns A tool creator function, or undefined if the config is invalid.
  */
 const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
   if (typeof config !== 'function') {
@@ -352,7 +357,13 @@ const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
   const originalConfig = config as ToolCreator;
 
   const wrappedConfig: ToolCreator = (opts?: unknown) => {
-    const response = originalConfig.call(null, opts as unknown as GlobalOptions);
+    let response;
+
+    try {
+      response = originalConfig.call(null, opts as unknown as GlobalOptions);
+    } catch (error) {
+      throw new Error(`Tool failed to load: ${formatUnknownError(error)}`);
+    }
 
     // Currently, we only support tuples in creator functions.
     if (normalizeTuple.memo(response)) {
@@ -380,6 +391,118 @@ const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
 normalizeFunction.memo = memo(normalizeFunction, { cacheErrors: false, keyHash: (...args) => args[0] });
 
 /**
+ * Normalize a file URL into a file entry.
+ *
+ * @param config - The file URL to normalize.
+ * @returns - A file entry, or undefined if the config is invalid.
+ */
+const normalizeFileUrl = (config: unknown): FileEntry | undefined => {
+  if (typeof config !== 'string' || !config.startsWith('file:')) {
+    return undefined;
+  }
+
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  const err: string[] = [];
+  const isFileUrl = config.startsWith('file:');
+  const normalizedUrl = config;
+  let fsReadDir: string | undefined = undefined;
+  let type: NormalizedToolEntry['type'] = 'invalid';
+
+  try {
+    const resolvedPath = fileURLToPath(config);
+
+    fsReadDir = dirname(resolvedPath);
+    type = 'file';
+  } catch (error) {
+    err.push(`Failed to resolve file url: ${config}: ${formatUnknownError(error)}`);
+  }
+
+  return {
+    ...entry,
+    normalizedUrl,
+    fsReadDir,
+    isFileUrl,
+    original: config,
+    type,
+    value: config,
+    ...(type === 'invalid' ? { error: err.join('\n') } : {})
+  };
+};
+
+/**
+ * Memoize the `normalizeFileUrl` function.
+ */
+normalizeFileUrl.memo = memo(normalizeFileUrl, { cacheErrors: false, keyHash: (...args) => args[0] });
+
+/**
+ * Normalize a file path into a file entry.
+ *
+ * @param config - The file path to normalize.
+ * @param options - Optional settings
+ * @param options.contextPath - The context path to use for resolving file paths.
+ * @param options.contextUrl - The context URL to use for resolving file paths.
+ * @returns - A file entry, or undefined if the config is invalid.
+ */
+const normalizeFilePath = (
+  config: unknown,
+  { contextPath, contextUrl }: { contextPath?: string, contextUrl?: string } = {}
+): FileEntry | undefined => {
+  if (typeof config !== 'string' || !isFilePath(config)) {
+    return undefined;
+  }
+
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  const err: string[] = [];
+  let isFileUrl = config.startsWith('file:');
+  let normalizedUrl = config;
+  let fsReadDir: string | undefined = undefined;
+  let type: NormalizedToolEntry['type'] = 'invalid';
+
+  try {
+    if (contextUrl !== undefined) {
+      const url = import.meta.resolve(config, contextUrl);
+
+      if (url.startsWith('file:')) {
+        const resolvedPath = fileURLToPath(url);
+
+        fsReadDir = dirname(resolvedPath);
+        normalizedUrl = pathToFileURL(resolvedPath).href;
+        isFileUrl = true;
+        type = 'file';
+      }
+    }
+
+    // Fallback if resolve() path failed or not file:
+    if (type !== 'file') {
+      const resolvedPath = isAbsolute(config) ? config : resolve(contextPath as string, config);
+
+      fsReadDir = dirname(resolvedPath as string);
+      normalizedUrl = pathToFileURL(resolvedPath as string).href;
+      isFileUrl = true;
+      type = 'file';
+    }
+  } catch (error) {
+    err.push(`Failed to resolve file path: ${config}: ${formatUnknownError(error)}`);
+  }
+
+  return {
+    ...entry,
+    normalizedUrl,
+    fsReadDir,
+    isFileUrl,
+    original: config,
+    type,
+    value: config,
+    ...(type === 'invalid' ? { error: err.join('\n') } : {})
+  };
+};
+
+/**
+ * Memoize the `normalizeFilePath` function.
+ */
+normalizeFilePath.memo = memo(normalizeFilePath, { cacheErrors: false, keyHash: (...args) => args[0] });
+
+/**
  * Normalize a file or package tool config into a file entry.
  *
  * @param config - The file, or package, configuration to normalize.
@@ -396,14 +519,30 @@ const normalizeFilePackage = (
     return undefined;
   }
 
-  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  // Case 1: already a file URL -> derive fsReadDir for allow-listing
+  if (normalizeFileUrl.memo(config)) {
+    return normalizeFileUrl.memo(config);
+  }
 
-  let isFileUrl = config.startsWith('file:');
-  let normalizedUrl = config;
-  let fsReadDir: string | undefined = undefined;
-  let type: NormalizedToolEntry['type'] = 'package'; // default classification for non-file strings
-  let err: string | undefined;
+  // Case 2: looks like a filesystem path -> resolve or invalid
+  if (normalizeFilePath.memo(config, { contextPath, contextUrl } as any)) {
+    return normalizeFilePath.memo(config, { contextPath, contextUrl } as any);
+  }
 
+  // Case 3: non-file string -> keep as-is (package name or other URL-like spec)
+  // Note: http(s) module specs are not supported by Node import and will surface as load warnings in the child.
+  return {
+    isUrlLike: isUrlLike(config),
+    isFilePath: isFilePath(config),
+    normalizedUrl: config,
+    fsReadDir: undefined,
+    isFileUrl: false,
+    original: config,
+    type: 'package',
+    value: config
+  };
+
+  /*
   try {
     // Case 1: already a file URL
     if (isFileUrl) {
@@ -503,6 +642,7 @@ const normalizeFilePackage = (
       error: err
     };
   }
+  */
 };
 
 /**
@@ -523,19 +663,15 @@ const normalizeTools = (config: any, {
   contextPath = DEFAULT_OPTIONS.contextPath,
   contextUrl = DEFAULT_OPTIONS.contextUrl
 }: { contextPath?: string, contextUrl?: string } = {}): NormalizedToolEntry[] => {
-  const updatedConfigs = (Array.isArray(config) && config) || (config && [config]) || [];
+  // const updatedConfigs = (normalizeTuple.memo(config) && [config]) || (Array.isArray(config) && config) || (config && [config]) || [];
+  const updatedConfigs = (normalizeTuple.memo(config) && [config]) || (Array.isArray(config) && config) || [config];
   const normalizedConfigs: NormalizedToolEntry[] = [];
 
-  // Flatten nested-arrays of configs and attempt to account for inline tuples. If inline tuples
-  // become an issue, we'll discontinue inline support and require they be returned from
-  // creator functions.
-  const flattenedConfigs = updatedConfigs.flatMap((item: unknown) => {
-    if (Array.isArray(item)) {
-      return normalizeTuple.memo(item) ? [item] : item;
-    }
-
-    return [item];
-  });
+  // Flatten nested-arrays of configs and attempt to account for inline tuples. This will catch
+  // one-off cases where an array will be flattened, broken apart.
+  const flattenedConfigs = updatedConfigs.flatMap((item: unknown) =>
+    (normalizeTuple.memo(item) && [item]) || (Array.isArray(item) && item) || [item]);
+    // (normalizeTuple.memo(item) && [item]) || (Array.isArray(item) && item) || (item && [item]) || [];
 
   flattenedConfigs.forEach((config: unknown, index: number) => {
     if (normalizeFunction.memo(config)) {
@@ -591,7 +727,7 @@ const normalizeTools = (config: any, {
 /**
  * Memoize the `normalizeTools` function.
  */
-normalizeTools.memo = memo(normalizeTools, { cacheErrors: false });
+normalizeTools.memo = memo(normalizeTools, { cacheErrors: false, keyHash: (...args) => args[0] });
 
 /**
  * Author-facing helper for creating an MCP tool configuration list for Patternfly MCP server.
@@ -626,7 +762,7 @@ normalizeTools.memo = memo(normalizeTools, { cacheErrors: false });
  * @throws {Error} If a configuration is invalid, an error is thrown on the first invalid entry.
  */
 const createMcpTool = (config: unknown): ToolModule => {
-  const entries = normalizeTools(config);
+  const entries = normalizeTools.memo(config);
   const err = entries.find(entry => entry.type === 'invalid');
 
   if (err?.error) {
@@ -641,6 +777,8 @@ export {
   isFilePath,
   isUrlLike,
   normalizeFilePackage,
+  normalizeFileUrl,
+  normalizeFilePath,
   normalizeTuple,
   normalizeTupleSchema,
   normalizeObject,

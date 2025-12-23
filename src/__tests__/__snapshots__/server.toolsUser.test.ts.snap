@@ -1,0 +1,520 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`createMcpTool should normalize configs, a creator 1`] = `
+[
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, an object 1`] = `
+[
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, array of creators 1`] = `
+[
+  [Function],
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, mix of package, object, tuple, creator 1`] = `
+[
+  "@scope/pkg",
+  [Function],
+  [Function],
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, nested createMcpTool calls 1`] = `
+[
+  "@scope/pkg1",
+  "@scope/pkg2",
+  "@scope/pkg3",
+  [Function],
+  [Function],
+  "@scope/pkg4",
+  "@scope/pkg5",
+]
+`;
+
+exports[`createMcpTool should normalize configs, single tuple 1`] = `
+[
+  [Function],
+]
+`;
+
+exports[`createMcpTool should throw an error, packages, mix of non-configs 1`] = `"createMcpTool: invalid configuration used at index 3: Unsupported type number"`;
+
+exports[`createMcpTool should throw an error, undefined 1`] = `"createMcpTool: invalid configuration used at index 1: Unsupported type undefined"`;
+
+exports[`normalizeFilePackage handles absolute file path 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": false,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePackage handles file URL 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePackage handles package name string 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": false,
+  "isFileUrl": false,
+  "isUrlLike": false,
+  "normalizedUrl": "/pkg",
+  "original": "/pkg",
+  "type": "package",
+  "value": "/pkg",
+}
+`;
+
+exports[`normalizeFilePackage handles relative file path 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": false,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePath handles absolute file path 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": false,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePath handles file URL 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePath handles package name string 1`] = `undefined`;
+
+exports[`normalizeFilePath handles relative file path 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": false,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFileUrl handles absolute file path 1`] = `undefined`;
+
+exports[`normalizeFileUrl handles file URL 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFileUrl handles package name string 1`] = `undefined`;
+
+exports[`normalizeFileUrl handles relative file path 1`] = `undefined`;
+
+exports[`normalizeFunction should normalize the config, basic 1`] = `
+[
+  "loremIpsum",
+  {
+    "description": "lorem ipsum",
+    "inputSchema": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+  [Function],
+]
+`;
+
+exports[`normalizeFunction should normalize the config, missing handler 1`] = `
+[
+  "dolorSit",
+  {
+    "description": "x",
+  },
+]
+`;
+
+exports[`normalizeFunction should normalize the config, missing schema 1`] = `
+[
+  "dolorSit",
+  {
+    "description": "x",
+  },
+  [Function],
+]
+`;
+
+exports[`normalizeFunction should normalize the config, null 1`] = `null`;
+
+exports[`normalizeFunction should normalize the config, undefined 1`] = `undefined`;
+
+exports[`normalizeFunction should normalize the config, untrimmed name, zod schema, async handler 1`] = `
+[
+  "loremIpsum  ",
+  {
+    "description": "lorem ipsum",
+    "inputSchema": "isZod = true",
+  },
+  [Function],
+]
+`;
+
+exports[`normalizeObject should normalize the config, basic 1`] = `
+{
+  "original": {
+    "description": "lorem ipsum",
+    "handler": [Function],
+    "inputSchema": {
+      "properties": {},
+      "type": "object",
+    },
+    "name": "loremIpsum",
+  },
+  "toolName": "loremIpsum",
+  "type": "object",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeObject should normalize the config, missing handler 1`] = `undefined`;
+
+exports[`normalizeObject should normalize the config, missing schema 1`] = `
+{
+  "error": "Tool "dolorSit" failed to set inputSchema. Provide a Zod schema, a Zod raw shape, or a plain JSON Schema object.",
+  "original": {
+    "description": "x",
+    "handler": [Function],
+    "name": "dolorSit",
+  },
+  "toolName": "dolorSit",
+  "type": "invalid",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeObject should normalize the config, null 1`] = `undefined`;
+
+exports[`normalizeObject should normalize the config, undefined 1`] = `undefined`;
+
+exports[`normalizeObject should normalize the config, untrimmed name, zod schema, async handler 1`] = `
+{
+  "original": {
+    "description": "lorem ipsum",
+    "handler": [Function],
+    "inputSchema": "isZod = true",
+    "name": "loremIpsum",
+  },
+  "toolName": "loremIpsum",
+  "type": "object",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeTools should normalize configs, a creator 1`] = `
+[
+  {
+    "index": 0,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, an object 1`] = `
+[
+  {
+    "index": 0,
+    "original": {
+      "description": "lorem ipsum",
+      "handler": [Function],
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+      },
+      "name": "loremIpsum",
+    },
+    "toolName": "loremIpsum",
+    "type": "object",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, array of creators 1`] = `
+[
+  {
+    "index": 0,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+  {
+    "index": 1,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, mix of non-configs 1`] = `
+[
+  {
+    "error": "createMcpTool: invalid configuration used at index 0: Unsupported type object",
+    "index": 0,
+    "original": null,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 0: Unsupported type object",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 1: Unsupported type undefined",
+    "index": 1,
+    "original": undefined,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 1: Unsupported type undefined",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
+    "index": 2,
+    "original": {
+      "x": 1,
+    },
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 3: Unsupported type number",
+    "index": 3,
+    "original": 1,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 3: Unsupported type number",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 4: Unsupported type number",
+    "index": 4,
+    "original": 2,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 4: Unsupported type number",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 5: Unsupported type number",
+    "index": 5,
+    "original": 3,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 5: Unsupported type number",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 6: Unsupported type object",
+    "index": 6,
+    "original": [Error: lorem ipsum],
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 6: Unsupported type object",
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, mix of package, object, tuple, creator 1`] = `
+[
+  {
+    "fsReadDir": undefined,
+    "index": 0,
+    "isFilePath": false,
+    "isFileUrl": false,
+    "isUrlLike": false,
+    "normalizedUrl": "@scope/pkg",
+    "original": "@scope/pkg",
+    "type": "package",
+    "value": "@scope/pkg",
+  },
+  {
+    "index": 1,
+    "original": {
+      "description": "amet dolor",
+      "handler": [Function],
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+      },
+      "name": "ametDolor",
+    },
+    "toolName": "ametDolor",
+    "type": "object",
+    "value": [Function],
+  },
+  {
+    "index": 2,
+    "original": [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {
+          "properties": {},
+          "type": "object",
+        },
+      },
+      [Function],
+    ],
+    "toolName": "loremIpsum",
+    "type": "tuple",
+    "value": [Function],
+  },
+  {
+    "index": 3,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, single tuple 1`] = `
+[
+  {
+    "index": 0,
+    "original": [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {
+          "properties": {},
+          "type": "object",
+        },
+      },
+      [Function],
+    ],
+    "toolName": "loremIpsum",
+    "type": "tuple",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTuple should normalize the config, basic 1`] = `
+{
+  "original": [
+    "loremIpsum",
+    {
+      "description": "lorem ipsum",
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+      },
+    },
+    [Function],
+  ],
+  "toolName": "loremIpsum",
+  "type": "tuple",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeTuple should normalize the config, missing handler 1`] = `undefined`;
+
+exports[`normalizeTuple should normalize the config, missing schema 1`] = `
+{
+  "error": "Tool "dolorSit" failed to set inputSchema. Provide a Zod schema, a Zod raw shape, or a plain JSON Schema object.",
+  "original": [
+    "dolorSit",
+    {
+      "description": "x",
+    },
+    [Function],
+  ],
+  "toolName": "dolorSit",
+  "type": "invalid",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeTuple should normalize the config, null 1`] = `undefined`;
+
+exports[`normalizeTuple should normalize the config, undefined 1`] = `undefined`;
+
+exports[`normalizeTuple should normalize the config, untrimmed name, zod schema, async handler 1`] = `
+{
+  "original": [
+    "loremIpsum  ",
+    {
+      "description": "lorem ipsum",
+      "inputSchema": "isZod = true",
+    },
+    [Function],
+  ],
+  "toolName": "loremIpsum",
+  "type": "tuple",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeTupleSchema should normalize object, non-object 1`] = `undefined`;
+
+exports[`normalizeTupleSchema should normalize object, object missing inputSchema 1`] = `undefined`;
+
+exports[`normalizeTupleSchema should normalize object, valid JSON schema with description 1`] = `
+{
+  "description": "hello",
+  "inputSchema": "isZod = true",
+}
+`;
+
+exports[`normalizeTupleSchema should normalize object, valid JSON schema without description 1`] = `
+{
+  "inputSchema": "isZod = true",
+}
+`;

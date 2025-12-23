@@ -1,42 +1,497 @@
-import { createMcpTool } from '../server.toolsUser';
+import { pathToFileURL } from 'node:url';
+import { basename, resolve } from 'node:path';
+import { z } from 'zod';
+import {
+  createMcpTool,
+  isFilePath,
+  isUrlLike,
+  normalizeFilePackage,
+  normalizeFilePath,
+  normalizeFileUrl,
+  normalizeTuple,
+  normalizeTupleSchema,
+  normalizeObject,
+  normalizeFunction,
+  normalizeTools,
+  sanitizeDataProp,
+  sanitizePlainObject
+} from '../server.toolsUser';
+import { isZodSchema } from '../server.schema';
+
+describe('sanitizeDataProp', () => {
+  it('returns descriptor for data property and excludes accessors', () => {
+    const obj = { a: 1 };
+
+    Object.defineProperty(obj, 'b', { get: () => 2 });
+    const a = sanitizeDataProp(obj, 'a');
+    const b = sanitizeDataProp(obj, 'b');
+    const cProp = sanitizeDataProp(obj, 'c');
+
+    expect(a?.value).toBe(1);
+    expect(b).toBeUndefined();
+    expect(cProp).toBeUndefined();
+  });
+});
+
+describe('sanitizePlainObject', () => {
+  it('filters to allowed keys and ignores accessors', () => {
+    const allowed = new Set(['x', 'y']);
+    const obj = { x: 1, y: 2, z: 3 };
+
+    Object.defineProperty(obj, 'y', { get: () => 2 });
+    const out = sanitizePlainObject(obj, allowed);
+
+    expect(out).toEqual({ x: 1 });
+    expect(Object.prototype.hasOwnProperty.call(out, 'y')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(out, 'z')).toBe(false);
+  });
+
+  it.each([
+    { description: 'null', obj: null },
+    { description: 'undefined', obj: undefined },
+    { description: 'array', obj: [1, 2, 3] },
+    { description: 'function', obj: () => {} }
+  ])('should return an empty object, $description', ({ obj }) => {
+    expect(sanitizePlainObject(obj, new Set())).toEqual({});
+  });
+});
+
+describe('isFilePath', () => {
+  it.each([
+    { description: 'absolute path', file: '/path/to/file.txt' },
+    { description: 'absolute path ref no extension', file: '/path/to/another/file' },
+    { description: 'min file extension', file: 'path/to/another/file.y' },
+    { description: 'potential multiple extensions', file: 'path/to/another/file.test.js' },
+    { description: 'current dir ref', file: './path/to/another/file.txt' },
+    { description: 'parent dir ref', file: '../path/to/another/file.txt' }
+  ])('should validate $description', ({ file }) => {
+    expect(isFilePath(file)).toBe(true);
+  });
+
+  it.each([
+    { description: 'no file extension or dir ref', file: 'path/to/another/file' }
+  ])('should fail, $description', ({ file }) => {
+    expect(isFilePath(file)).toBe(false);
+  });
+});
+
+describe('isUrlLike', () => {
+  it.each([
+    { description: 'http', url: 'http://example.com' },
+    { description: 'https', url: 'https://example.com' },
+    { description: 'file', url: 'file:///path/to/file.txt' },
+    { description: 'node', url: 'node://path/to/file.txt' },
+    { description: 'data', url: 'data:text/plain;base64,1234567890==' }
+  ])('should validate $description', ({ url }) => {
+    expect(isUrlLike(url)).toBe(true);
+  });
+
+  it.each([
+    { description: 'invalid protocol', url: 'ftp://example.com' },
+    { description: 'random', url: 'random://example.com' },
+    { description: 'null', url: null },
+    { description: 'undefined', url: undefined }
+  ])('should fail, $description', ({ url }) => {
+    expect(isUrlLike(url as any)).toBe(false);
+  });
+});
+
+describe('normalizeTupleSchema', () => {
+  it.each([
+    {
+      description: 'valid JSON schema with description',
+      schema: { description: '  hello  ', inputSchema: { type: 'object', properties: {} } }
+    },
+    {
+      description: 'valid JSON schema without description',
+      schema: { inputSchema: { type: 'object', properties: {} } }
+    },
+    {
+      description: 'non-object',
+      schema: 'nope'
+    },
+    {
+      description: 'object missing inputSchema',
+      schema: { description: 'x' }
+    }
+  ])('should normalize object, $description', ({ schema }) => {
+    const updated = normalizeTupleSchema(schema);
+
+    if (updated?.inputSchema) {
+      updated.inputSchema = `isZod = ${isZodSchema(updated.inputSchema)}`;
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeTupleSchema.memo).toBeDefined();
+  });
+});
+
+describe('normalizeTuple', () => {
+  it.each([
+    {
+      description: 'basic',
+      tuple: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'untrimmed name, zod schema, async handler',
+      tuple: ['loremIpsum  ', { description: 'lorem ipsum', inputSchema: z.any() }, async () => {}]
+    },
+    {
+      description: 'missing schema',
+      tuple: ['dolorSit', { description: 'x' }, async () => {}]
+    },
+    {
+      description: 'missing handler',
+      tuple: ['dolorSit', { description: 'x' }]
+    },
+    {
+      description: 'undefined',
+      tuple: undefined
+    },
+    {
+      description: 'null',
+      tuple: null
+    }
+  ])('should normalize the config, $description', ({ tuple }) => {
+    const updated = normalizeTuple(tuple);
+
+    if ((updated?.original as any)?.[1]?.inputSchema && isZodSchema((updated?.original as any)[1].inputSchema)) {
+      (updated?.original as any)[1].inputSchema = 'isZod = true';
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeTuple.memo).toBeDefined();
+  });
+});
+
+describe('normalizeObject', () => {
+  it.each([
+    {
+      description: 'basic',
+      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+    },
+    {
+      description: 'untrimmed name, zod schema, async handler',
+      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: z.any(), handler: async () => {} }
+    },
+    {
+      description: 'missing schema',
+      obj: { name: 'dolorSit', description: 'x', handler: async () => {} }
+    },
+    {
+      description: 'missing handler',
+      obj: { name: 'dolorSit', description: 'x' }
+    },
+    {
+      description: 'undefined',
+      tuple: undefined
+    },
+    {
+      description: 'null',
+      tuple: null
+    }
+  ])('should normalize the config, $description', ({ obj }) => {
+    const updated = normalizeObject(obj);
+
+    if ((updated?.original as any)?.inputSchema && isZodSchema((updated?.original as any).inputSchema)) {
+      (updated?.original as any).inputSchema = 'isZod = true';
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeObject.memo).toBeDefined();
+  });
+});
+
+describe('normalizeFunction', () => {
+  it.each([
+    {
+      description: 'basic',
+      func: () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'untrimmed name, zod schema, async handler',
+      func: () => ['loremIpsum  ', { description: 'lorem ipsum', inputSchema: z.any() }, async () => {}]
+    },
+    {
+      description: 'missing schema',
+      func: () => ['dolorSit', { description: 'x' }, async () => {}]
+    },
+    {
+      description: 'missing handler',
+      func: () => ['dolorSit', { description: 'x' }]
+    },
+    {
+      description: 'undefined',
+      func: () => undefined
+    },
+    {
+      description: 'null',
+      func: () => null
+    }
+  ])('should normalize the config, $description', ({ func }) => {
+    const out = normalizeFunction(func);
+    const updated = (out?.original as any)?.();
+
+    if (updated?.[1]?.inputSchema && isZodSchema(updated[1].inputSchema)) {
+      updated[1].inputSchema = 'isZod = true';
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should throw a predictable error on unwrap if the function errors', () => {
+    const func = () => {
+      throw new Error('Function error');
+    };
+
+    const updated = normalizeFunction(func);
+
+    expect(() => (updated?.value as any)?.()).toThrow('Tool failed to load:');
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeFunction.memo).toBeDefined();
+  });
+});
+
+describe('normalizeFileUrl', () => {
+  it.each([
+    {
+      description: 'file URL',
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href
+    },
+    {
+      description: 'relative file path',
+      file: './package.json'
+    },
+    {
+      description: 'absolute file path',
+      file: resolve(process.cwd(), 'package.json')
+    },
+    {
+      description: 'package name string',
+      file: '@scope/pkg'
+    }
+  ])('handles $description', ({ file }) => {
+    const updated = normalizeFileUrl(file);
+
+    if (updated) {
+      updated.fsReadDir = '/';
+      updated.normalizedUrl = `/${basename(updated.normalizedUrl as string)}`;
+      updated.original = `/${basename(updated.original as string)}`;
+      updated.value = `/${basename(updated.value as string)}`;
+
+      if (updated.error) {
+        updated.error = 'true';
+      }
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeFileUrl.memo).toBeDefined();
+  });
+});
+
+describe('normalizeFilePath', () => {
+  it.each([
+    {
+      description: 'file URL',
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'relative file path',
+      file: './package.json',
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'absolute file path',
+      file: resolve(process.cwd(), 'package.json'),
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'package name string',
+      file: '@scope/pkg',
+      options: { contextPath: process.cwd() }
+    }
+  ])('handles $description', ({ file, options }) => {
+    const updated = normalizeFilePath(file, options);
+
+    if (updated) {
+      updated.fsReadDir = '/';
+      updated.normalizedUrl = `/${basename(updated.normalizedUrl as string)}`;
+      updated.original = `/${basename(updated.original as string)}`;
+      updated.value = `/${basename(updated.value as string)}`;
+
+      if (updated.error) {
+        updated.error = 'true';
+      }
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeFilePath.memo).toBeDefined();
+  });
+});
+
+describe('normalizeFilePackage', () => {
+  it.each([
+    {
+      description: 'file URL',
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'relative file path',
+      file: './package.json',
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'absolute file path',
+      file: resolve(process.cwd(), 'package.json'),
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'package name string',
+      file: '@scope/pkg',
+      options: { contextPath: process.cwd() }
+    }
+  ])('handles $description', ({ file, options }) => {
+    const updated = normalizeFilePackage(file, options);
+
+    if (updated) {
+      updated.fsReadDir = '/';
+      updated.normalizedUrl = `/${basename(updated.normalizedUrl as string)}`;
+      updated.original = `/${basename(updated.original as string)}`;
+      updated.value = `/${basename(updated.value as string)}`;
+
+      if (updated.error) {
+        updated.error = 'true';
+      }
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeFilePackage.memo).toBeDefined();
+  });
+});
+
+describe('normalizeTools', () => {
+  it.each([
+    {
+      description: 'a creator',
+      config: () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'array of creators',
+      config: [
+        () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'an object',
+      config: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+    },
+    {
+      description: 'mix of package, object, tuple, creator',
+      config: [
+        '@scope/pkg',
+        { name: 'ametDolor', description: 'amet dolor', inputSchema: { type: 'object', properties: {} }, handler: () => {} },
+        ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'single tuple',
+      config: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'mix of non-configs',
+      config: [null, undefined, { x: 1 }, [1, 2, 3], new Error('lorem ipsum')]
+    }
+  ])('should normalize configs, $description', ({ config }) => {
+    const result = normalizeTools(config);
+
+    expect(result).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeTools.memo).toBeDefined();
+  });
+});
 
 describe('createMcpTool', () => {
-  const mkSpec = (overrides = {}) => ({
-    kind: 'handler',
-    name: 'sum',
-    description: 'Add two numbers',
-    inputSchema: {
-      type: 'object',
-      required: ['a', 'b'],
-      properties: { a: { type: 'number' }, b: { type: 'number' } }
+  it.each([
+    {
+      description: 'a creator',
+      config: () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
     },
-    handler: ({ a, b }: any) => a + b,
-    ...overrides
+    {
+      description: 'array of creators',
+      config: [
+        () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'an object',
+      config: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+    },
+    {
+      description: 'mix of package, object, tuple, creator',
+      config: [
+        '@scope/pkg',
+        { name: 'ametDolor', description: 'amet dolor', inputSchema: { type: 'object', properties: {} }, handler: () => {} },
+        ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'single tuple',
+      config: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'nested createMcpTool calls',
+      config: [
+        createMcpTool([createMcpTool('@scope/pkg1'), '@scope/pkg2', '@scope/pkg3']),
+        createMcpTool(createMcpTool(['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}])),
+        createMcpTool(['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]),
+        createMcpTool('@scope/pkg4'),
+        '@scope/pkg5'
+      ]
+    }
+  ])('should normalize configs, $description', ({ config }) => {
+    const result = createMcpTool(config);
+
+    expect(result).toMatchSnapshot();
   });
 
   it.each([
-    { description: 'single spec', input: mkSpec(), expectedCount: 1, firstName: 'sum' },
-    { description: 'array of specs', input: [mkSpec({ name: 'a' }), mkSpec({ name: 'b' })], expectedCount: 2, firstName: 'a' }
-  ])('accepts object specs ($description)', ({ input, expectedCount, firstName }) => {
-    const creators = createMcpTool(input as any) as any[];
-    const arr = Array.isArray(creators) ? creators : [creators];
-
-    expect(arr.length).toBe(expectedCount);
-
-    const first = arr[0];
-
-    expect(typeof first).toBe('function');
-
-    const tuple = first();
-
-    expect(Array.isArray(tuple)).toBe(true);
-    expect(tuple[0]).toBe(firstName);
-  });
-
-  it.each([
-    { description: 'missing name', input: mkSpec({ name: '' }) },
-    { description: 'non-function handler', input: { ...mkSpec(), handler: 123 as any } }
-  ])('throws on invalid spec ($description)', ({ input }) => {
-    expect(() => createMcpTool(input as any)).toThrow(/createMcpTool:/);
+    {
+      description: 'packages, mix of non-configs',
+      config: ['@scope/pkg', '@scope/pkg2', '@scope/pkg3', [1, 2, 3], new Error('lorem ipsum')]
+    },
+    {
+      description: 'undefined',
+      config: ['@scope/pkg', undefined]
+    }
+  ])('should throw an error, $description', ({ config }) => {
+    expect(() => createMcpTool(config)).toThrowErrorMatchingSnapshot();
   });
 });
