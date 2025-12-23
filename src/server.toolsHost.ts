@@ -96,6 +96,46 @@ type NormalizeCreatorSchemaResult = {
 };
 
 /**
+ * Check if a value is an error or an error-like object.
+ *
+ * - Does not check for prototype properties, exotic objects.
+ *
+ * @param value
+ * @returns True if the value is an error-like object, false otherwise.
+ */
+const isErrorLike = (value: unknown) => {
+  if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
+    return false;
+  }
+
+  if (value instanceof Error || value instanceof AggregateError) {
+    return true;
+  }
+
+  const tag = Object.prototype.toString.call(value);
+
+  if (tag === '[object Error]' || tag === '[object AggregateError]') {
+    return true;
+  }
+
+  const val = value as Record<string, unknown>;
+  const message = Object.getOwnPropertyDescriptor(val, 'message')?.value as string | undefined;
+  const hasMessage = typeof message === 'string' && message?.length > 0;
+
+  if (!hasMessage) {
+    return false;
+  }
+
+  const name = Object.getOwnPropertyDescriptor(val, 'name')?.value as string | undefined;
+  const isNameLike = typeof name === 'string' && name.length > 0 && name.toLowerCase().endsWith('error');
+
+  const stack = Object.getOwnPropertyDescriptor(val, 'stack')?.value as string | undefined;
+  const isStackLike = typeof stack === 'string' && stack.includes('\n');
+
+  return isNameLike || isStackLike;
+};
+
+/**
  * Normalize a tool creator function and its input schema.
  *
  * @param creator
@@ -325,7 +365,8 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
     // Invoke the tool
     const result = await Promise.resolve(handler(updatedRequestArgs));
 
-    if (result instanceof Error) {
+    // Some handlers may mistakenly return an Error instance instead of throwing. Normalize it to a failure.
+    if (isErrorLike(result)) {
       const err: SerializedError = new Error('Internal error', { cause: { details: result } });
 
       err.code = 'INTERNAL_ERROR';
