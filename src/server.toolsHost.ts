@@ -325,6 +325,14 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
     // Invoke the tool
     const result = await Promise.resolve(handler(updatedRequestArgs));
 
+    if (result instanceof Error) {
+      const err: SerializedError = new Error('Internal error', { cause: { details: result } });
+
+      err.code = 'INTERNAL_ERROR';
+
+      throw err;
+    }
+
     if (!settled) {
       settled = true;
       clearTimeout(timer);
