@@ -98,7 +98,8 @@ type NormalizeCreatorSchemaResult = {
 /**
  * Check if a value is an error or an error-like object.
  *
- * - Does not check for prototype properties, exotic objects.
+ * - Doesn't check for browser-like entities, `[object ErrorEvent]`. Currently,
+ *    can't foresee this happening ever, but if needed, add accordingly.
  *
  * @param value
  * @returns True if the value is an error-like object, false otherwise.
@@ -114,23 +115,20 @@ const isErrorLike = (value: unknown) => {
 
   const tag = Object.prototype.toString.call(value);
 
-  if (tag === '[object Error]' || tag === '[object AggregateError]') {
+  if (tag === '[object Error]' || tag === '[object AggregateError]' || tag === '[object DOMException]') {
     return true;
   }
 
   const val = value as Record<string, unknown>;
-  const message = Object.getOwnPropertyDescriptor(val, 'message')?.value as string | undefined;
-  const hasMessage = typeof message === 'string' && message?.length > 0;
+  const has = (key: string) =>
+    Object.hasOwn(val, key) && typeof val[key] === 'string' && val[key].length > 0;
 
-  if (!hasMessage) {
+  if (!has('message')) {
     return false;
   }
 
-  const name = Object.getOwnPropertyDescriptor(val, 'name')?.value as string | undefined;
-  const isNameLike = typeof name === 'string' && name.length > 0 && name.toLowerCase().endsWith('error');
-
-  const stack = Object.getOwnPropertyDescriptor(val, 'stack')?.value as string | undefined;
-  const isStackLike = typeof stack === 'string' && stack.includes('\n');
+  const isNameLike = has('name') && (val.name as string).toLowerCase().endsWith('error');
+  const isStackLike = has('stack') && (val.stack as string).includes('\n');
 
   return isNameLike || isStackLike;
 };
