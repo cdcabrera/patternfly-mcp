@@ -210,7 +210,11 @@ const spawnToolsHost = async (
 
   // Deny network and fs write by omission
   if (pluginIsolation === 'strict') {
-    nodeArgs.push('--experimental-permission');
+    // nodeArgs.push('--experimental-permission');
+    const major = options?.nodeVersion || 0;
+    const permissionFlag = major >= 24 ? '--permission' : '--experimental-permission';
+
+    nodeArgs.push(permissionFlag);
 
     // 1) Gather directories (project, plugin modules, and the host entry's dir)
     const allowSet = new Set<string>(computeFsReadAllowlist());
@@ -236,6 +240,7 @@ const spawnToolsHost = async (
 
     // Optional debug to verify exactly what the child gets
     log.debug(`Tools Host allow-fs-read flags: ${allowList.map(dir => `--allow-fs-read=${dir}`).join(' ')}`);
+    log.debug(`Tools Host permission flag: ${permissionFlag}`);
   }
 
   // Pre-compute file and package tool modules before spawning to reduce latency
