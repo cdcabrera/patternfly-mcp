@@ -182,7 +182,7 @@ describe('Tools', () => {
     const abs = resolve(process.cwd(), 'tests/__fixtures__/tool.echo.js');
     const url = pathToFileURL(abs).href;
 
-    CLIENT = await startServer({ args: ['--log-stderr', '--verbose', '--plugin-isolation', 'strict', '--tool', url] });
+    CLIENT = await startServer({ args: ['--log-stderr', '--plugin-isolation', 'strict', '--tool', url] });
   });
 
   afterEach(async () => CLIENT.stop());
