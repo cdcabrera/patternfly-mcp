@@ -190,6 +190,24 @@ exports[`requestHello should send hello:ack message, with valid request 1`] = `
 ]
 `;
 
+exports[`requestInvoke should attempt tool invocation, handler attempting to return a DOMException-like object, with name, message and multiline line stack 1`] = `
+{
+  "error": "Internal error",
+  "id": "request-id",
+  "ok": false,
+  "t": "invoke:result",
+}
+`;
+
+exports[`requestInvoke should attempt tool invocation, handler attempting to return a browser-like ErrorEvent-like object, with name, message and multiline line stack 1`] = `
+{
+  "error": "Internal error",
+  "id": "request-id",
+  "ok": false,
+  "t": "invoke:result",
+}
+`;
+
 exports[`requestInvoke should attempt tool invocation, handler attempting to return an error-like object, with message 1`] = `
 {
   "id": "request-id",

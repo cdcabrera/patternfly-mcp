@@ -215,6 +215,18 @@ describe('requestInvoke', () => {
       requestToolId: 'tool-1'
     },
     {
+      description: 'handler attempting to return a DOMException-like object, with name, message and multiline line stack',
+      handlerResult: { name: 'DOMException', message: 'Handler error', stack: 'DOMException: message\n at line x' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
+      description: 'handler attempting to return a browser-like ErrorEvent-like object, with name, message and multiline line stack',
+      handlerResult: { name: 'ErrorEvent', message: 'Handler error', stack: 'ErrorEvent: message\n at line x' },
+      stateToolId: 'tool-1',
+      requestToolId: 'tool-1'
+    },
+    {
       description: 'handler returning undefined',
       handlerResult: undefined,
       stateToolId: 'tool-1',

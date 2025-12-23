@@ -98,8 +98,9 @@ type NormalizeCreatorSchemaResult = {
 /**
  * Check if a value is an error or an error-like object.
  *
- * - Doesn't check for browser-like entities, `[object ErrorEvent]`. Currently,
- *    can't foresee this happening ever, but if needed, add accordingly.
+ * Handles cross‑realm Error detection via tag checks for `[object Error]`, `[object AggregateError]`,
+ * and `[object DOMException]`. Does not treat `[object ErrorEvent]` as error‑like in the
+ * Node context; add if your runtime can emit `ErrorEvent`.
  *
  * @param value
  * @returns True if the value is an error-like object, false otherwise.
