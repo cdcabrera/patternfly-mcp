@@ -18,4 +18,5 @@ const echo_plugin_tool = options => [
   })
 ];
 
-export { echo_plugin_tool as default, echo_plugin_tool };
+export default echo_plugin_tool;
+// export { echo_plugin_tool as default, echo_plugin_tool };
