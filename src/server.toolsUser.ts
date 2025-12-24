@@ -280,7 +280,7 @@ const normalizeTuple = (config: unknown): CreatorEntry | undefined => {
     toolName: updatedName as string,
     type: err ? 'invalid' : 'tuple',
     value: creator,
-    error: err
+    ...(err ? { error: err } : {})
   };
 };
 
@@ -334,7 +334,7 @@ const normalizeObject = (config: unknown, allowedKeys = ALLOWED_CONFIG_KEYS): Cr
     toolName: updatedName as string,
     type: err ? 'invalid' : 'object',
     value: creator,
-    error: err
+    ...(err ? { error: err } : {})
   };
 };
 
@@ -663,12 +663,13 @@ const normalizeTools = (config: any, {
   contextPath = DEFAULT_OPTIONS.contextPath,
   contextUrl = DEFAULT_OPTIONS.contextUrl
 }: { contextPath?: string, contextUrl?: string } = {}): NormalizedToolEntry[] => {
-  const updatedConfigs = (Array.isArray(config) && config) || (config && [config]) || [];
+  const updatedConfigs = (normalizeTuple.memo(config) && [config]) || (Array.isArray(config) && config) || (config && [config]) || [];
   const normalizedConfigs: NormalizedToolEntry[] = [];
 
   // Flatten nested-arrays of configs and attempt to account for inline tuples. If inline tuples
   // become an issue, we'll discontinue inline support and require they be returned from
   // creator functions.
+  /*
   const flattenedConfigs = updatedConfigs.flatMap((item: unknown) => {
     if (Array.isArray(item)) {
       return normalizeTuple.memo(item) ? [item] : item;
@@ -676,8 +677,9 @@ const normalizeTools = (config: any, {
 
     return [item];
   });
+  */
 
-  flattenedConfigs.forEach((config: unknown, index: number) => {
+  updatedConfigs.forEach((config: unknown, index: number) => {
     if (normalizeFunction.memo(config)) {
       normalizedConfigs.push({
         index,

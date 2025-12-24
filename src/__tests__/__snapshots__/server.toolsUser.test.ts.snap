@@ -162,7 +162,6 @@ exports[`normalizeFunction should normalize the config, untrimmed name, zod sche
 
 exports[`normalizeObject should normalize the config, basic 1`] = `
 {
-  "error": undefined,
   "original": {
     "description": "lorem ipsum",
     "handler": [Function],
@@ -200,7 +199,6 @@ exports[`normalizeObject should normalize the config, undefined 1`] = `undefined
 
 exports[`normalizeObject should normalize the config, untrimmed name, zod schema, async handler 1`] = `
 {
-  "error": undefined,
   "original": {
     "description": "lorem ipsum",
     "handler": [Function],
@@ -213,9 +211,182 @@ exports[`normalizeObject should normalize the config, untrimmed name, zod schema
 }
 `;
 
+exports[`normalizeTools should normalize configs, a creator 1`] = `
+[
+  {
+    "index": 0,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, an object 1`] = `
+[
+  {
+    "index": 0,
+    "original": {
+      "description": "lorem ipsum",
+      "handler": [Function],
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+      },
+      "name": "loremIpsum",
+    },
+    "toolName": "loremIpsum",
+    "type": "object",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, array of creators 1`] = `
+[
+  {
+    "index": 0,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+  {
+    "index": 1,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, mix of non-configs 1`] = `
+[
+  {
+    "error": "createMcpTool: invalid configuration used at index 0: Unsupported type object",
+    "index": 0,
+    "original": null,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 0: Unsupported type object",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 1: Unsupported type undefined",
+    "index": 1,
+    "original": undefined,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 1: Unsupported type undefined",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
+    "index": 2,
+    "original": {
+      "x": 1,
+    },
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 3: Unsupported type object",
+    "index": 3,
+    "original": [
+      1,
+      2,
+      3,
+    ],
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 3: Unsupported type object",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 4: Unsupported type object",
+    "index": 4,
+    "original": [Error: lorem ipsum],
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 4: Unsupported type object",
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, mix of package, object, tuple, creator 1`] = `
+[
+  {
+    "fsReadDir": undefined,
+    "index": 0,
+    "isFilePath": false,
+    "isFileUrl": false,
+    "isUrlLike": false,
+    "normalizedUrl": "@scope/pkg",
+    "original": "@scope/pkg",
+    "type": "package",
+    "value": "@scope/pkg",
+  },
+  {
+    "index": 1,
+    "original": {
+      "description": "amet dolor",
+      "handler": [Function],
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+      },
+      "name": "ametDolor",
+    },
+    "toolName": "ametDolor",
+    "type": "object",
+    "value": [Function],
+  },
+  {
+    "index": 2,
+    "original": [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {
+          "properties": {},
+          "type": "object",
+        },
+      },
+      [Function],
+    ],
+    "toolName": "loremIpsum",
+    "type": "tuple",
+    "value": [Function],
+  },
+  {
+    "index": 3,
+    "original": [Function],
+    "toolName": undefined,
+    "type": "creator",
+    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, single tuple 1`] = `
+[
+  {
+    "index": 0,
+    "original": [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {
+          "properties": {},
+          "type": "object",
+        },
+      },
+      [Function],
+    ],
+    "toolName": "loremIpsum",
+    "type": "tuple",
+    "value": [Function],
+  },
+]
+`;
+
 exports[`normalizeTuple should normalize the config, basic 1`] = `
 {
-  "error": undefined,
   "original": [
     "loremIpsum",
     {
@@ -257,7 +428,6 @@ exports[`normalizeTuple should normalize the config, undefined 1`] = `undefined`
 
 exports[`normalizeTuple should normalize the config, untrimmed name, zod schema, async handler 1`] = `
 {
-  "error": undefined,
   "original": [
     "loremIpsum  ",
     {

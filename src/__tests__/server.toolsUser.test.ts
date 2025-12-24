@@ -392,7 +392,92 @@ describe('normalizeFilePackage', () => {
 });
 
 describe('normalizeTools', () => {
+  it.each([
+    {
+      description: 'a creator',
+      config: () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'array of creators',
+      config: [
+        () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'an object',
+      config: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+    },
+    {
+      description: 'mix of package, object, tuple, creator',
+      config: [
+        '@scope/pkg',
+        { name: 'ametDolor', description: 'amet dolor', inputSchema: { type: 'object', properties: {} }, handler: () => {} },
+        ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'single tuple',
+      config: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'mix of non-configs',
+      config: [null, undefined, { x: 1 }, [1, 2, 3], new Error('lorem ipsum')]
+    }
+  ])('should normalize configs, $description', ({ config }) => {
+    const result = normalizeTools(config);
+
+    expect(result).toMatchSnapshot();
+  });
+
   it('should have a memo property', () => {
     expect(normalizeTools.memo).toBeDefined();
   });
 });
+
+/*
+describe('createMcpTool', () => {
+  it.each([
+    {
+      description: 'a creator',
+      config: () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'array of creators',
+      config: [
+        () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'an object',
+      config: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+    },
+    {
+      description: 'mix of package, object, tuple, creator',
+      config: [
+        '@scope/pkg',
+        { name: 'ametDolor', description: 'amet dolor', inputSchema: { type: 'object', properties: {} }, handler: () => {} },
+        ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
+        () => ['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      ]
+    },
+    {
+      description: 'single tuple',
+      config: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'mix of non-configs',
+      config: [null, undefined, { x: 1 }, [1, 2, 3], new Error('lorem ipsum')]
+    }
+    * /
+  ])('should normalize configs, $description', ({ config }) => {
+    const result = createMcpTool(config);
+
+    expect(result).toMatchSnapshot();
+  });
+});
+
+ */
+
