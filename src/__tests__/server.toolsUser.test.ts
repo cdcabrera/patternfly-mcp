@@ -348,6 +348,44 @@ describe('normalizeFilePath', () => {
 });
 
 describe('normalizeFilePackage', () => {
+  it.each([
+    {
+      description: 'file URL',
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'relative file path',
+      file: './package.json',
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'absolute file path',
+      file: resolve(process.cwd(), 'package.json'),
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'package name string',
+      file: '@scope/pkg',
+      options: { contextPath: process.cwd() }
+    }
+  ])('handles $description', ({ file, options }) => {
+    const updated = normalizeFilePackage(file, options);
+
+    if (updated) {
+      updated.fsReadDir = '/';
+      updated.normalizedUrl = `/${basename(updated.normalizedUrl as string)}`;
+      updated.original = `/${basename(updated.original as string)}`;
+      updated.value = `/${basename(updated.value as string)}`;
+
+      if (updated.error) {
+        updated.error = 'true';
+      }
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
   it('should have a memo property', () => {
     expect(normalizeFilePackage.memo).toBeDefined();
   });
