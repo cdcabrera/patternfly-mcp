@@ -210,6 +210,52 @@ describe('normalizeObject', () => {
 });
 
 describe('normalizeFunction', () => {
+  it.each([
+    {
+      description: 'basic',
+      func: () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'untrimmed name, zod schema, async handler',
+      func: () => ['loremIpsum  ', { description: 'lorem ipsum', inputSchema: z.any() }, async () => {}]
+    },
+    {
+      description: 'missing schema',
+      func: () => ['dolorSit', { description: 'x' }, async () => {}]
+    },
+    {
+      description: 'missing handler',
+      func: () => ['dolorSit', { description: 'x' }]
+    },
+    {
+      description: 'undefined',
+      func: () => undefined
+    },
+    {
+      description: 'null',
+      func: () => null
+    }
+  ])('should normalize the config, $description', ({ func }) => {
+    const out = normalizeFunction(func);
+    const updated = (out?.original as any)?.();
+
+    if (updated?.[1]?.inputSchema && isZodSchema(updated[1].inputSchema)) {
+      updated[1].inputSchema = 'isZod = true';
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should throw a predictable error on unwrap if the function errors', () => {
+    const func = () => {
+      throw new Error('Function error');
+    };
+
+    const updated = normalizeFunction(func);
+
+    expect(() => (updated?.value as any)?.()).toThrow('Tool failed to load:');
+  });
+
   it('should have a memo property', () => {
     expect(normalizeFunction.memo).toBeDefined();
   });

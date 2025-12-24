@@ -357,7 +357,13 @@ const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
   const originalConfig = config as ToolCreator;
 
   const wrappedConfig: ToolCreator = (opts?: unknown) => {
-    const response = originalConfig.call(null, opts as unknown as GlobalOptions);
+    let response;
+
+    try {
+      response = originalConfig.call(null, opts as unknown as GlobalOptions);
+    } catch (error) {
+      throw new Error(`Tool failed to load: ${formatUnknownError(error)}`);
+    }
 
     // Currently, we only support tuples in creator functions.
     if (normalizeTuple.memo(response)) {
@@ -596,7 +602,7 @@ const normalizeTools = (config: any, {
 /**
  * Memoize the `normalizeTools` function.
  */
-normalizeTools.memo = memo(normalizeTools, { cacheErrors: false });
+normalizeTools.memo = memo(normalizeTools, { cacheErrors: false, keyHash: (...args) => args[0] });
 
 /**
  * Author-facing helper for creating an MCP tool configuration list for Patternfly MCP server.

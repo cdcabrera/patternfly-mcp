@@ -1,5 +1,53 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`normalizeFunction should normalize the config, basic 1`] = `
+[
+  "loremIpsum",
+  {
+    "description": "lorem ipsum",
+    "inputSchema": {
+      "properties": {},
+      "type": "object",
+    },
+  },
+  [Function],
+]
+`;
+
+exports[`normalizeFunction should normalize the config, missing handler 1`] = `
+[
+  "dolorSit",
+  {
+    "description": "x",
+  },
+]
+`;
+
+exports[`normalizeFunction should normalize the config, missing schema 1`] = `
+[
+  "dolorSit",
+  {
+    "description": "x",
+  },
+  [Function],
+]
+`;
+
+exports[`normalizeFunction should normalize the config, null 1`] = `null`;
+
+exports[`normalizeFunction should normalize the config, undefined 1`] = `undefined`;
+
+exports[`normalizeFunction should normalize the config, untrimmed name, zod schema, async handler 1`] = `
+[
+  "loremIpsum  ",
+  {
+    "description": "lorem ipsum",
+    "inputSchema": "isZod = true",
+  },
+  [Function],
+]
+`;
+
 exports[`normalizeObject should normalize the config, basic 1`] = `
 {
   "error": undefined,
