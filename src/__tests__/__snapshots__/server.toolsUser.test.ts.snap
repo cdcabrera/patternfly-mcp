@@ -46,10 +46,6 @@ exports[`createMcpTool should normalize configs, single tuple 1`] = `
 ]
 `;
 
-exports[`createMcpTool should throw an error, packages, mix of non-configs 1`] = `"createMcpTool: invalid configuration used at index 3: Unsupported type number"`;
-
-exports[`createMcpTool should throw an error, undefined 1`] = `"createMcpTool: invalid configuration used at index 1: Unsupported type undefined"`;
-
 exports[`normalizeFilePackage handles absolute file path 1`] = `
 {
   "fsReadDir": "/",
@@ -75,6 +71,39 @@ exports[`normalizeFilePackage handles file URL 1`] = `
   "value": "/package.json",
 }
 `;
+
+exports[`normalizeFilePackage handles http URL (not file) 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": false,
+  "isUrlLike": true,
+  "normalizedUrl": "/module.mjs",
+  "original": "/module.mjs",
+  "type": "package",
+  "value": "/module.mjs",
+}
+`;
+
+exports[`normalizeFilePackage handles invalid file URLs, encoding 1`] = `
+{
+  "error": "true",
+  "fsReadDir": "/",
+  "isFilePath": false,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/%E0%A4%A",
+  "original": "/%E0%A4%A",
+  "type": "invalid",
+  "value": "/%E0%A4%A",
+}
+`;
+
+exports[`normalizeFilePackage handles invalid file URLs, hostname 1`] = `undefined`;
+
+exports[`normalizeFilePackage handles null 1`] = `undefined`;
+
+exports[`normalizeFilePackage handles number 1`] = `undefined`;
 
 exports[`normalizeFilePackage handles package name string 1`] = `
 {
@@ -102,6 +131,8 @@ exports[`normalizeFilePackage handles relative file path 1`] = `
 }
 `;
 
+exports[`normalizeFilePackage handles undefined 1`] = `undefined`;
+
 exports[`normalizeFilePath handles absolute file path 1`] = `
 {
   "fsReadDir": "/",
@@ -115,18 +146,7 @@ exports[`normalizeFilePath handles absolute file path 1`] = `
 }
 `;
 
-exports[`normalizeFilePath handles file URL 1`] = `
-{
-  "fsReadDir": "/",
-  "isFilePath": true,
-  "isFileUrl": true,
-  "isUrlLike": true,
-  "normalizedUrl": "/package.json",
-  "original": "/package.json",
-  "type": "file",
-  "value": "/package.json",
-}
-`;
+exports[`normalizeFilePath handles file URL 1`] = `undefined`;
 
 exports[`normalizeFilePath handles package name string 1`] = `undefined`;
 
@@ -157,6 +177,24 @@ exports[`normalizeFileUrl handles file URL 1`] = `
   "value": "/package.json",
 }
 `;
+
+exports[`normalizeFileUrl handles http URL (not file) 1`] = `undefined`;
+
+exports[`normalizeFileUrl handles invalid file URLs, encoding 1`] = `
+{
+  "error": "true",
+  "fsReadDir": "/",
+  "isFilePath": false,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/%E0%A4%A",
+  "original": "/%E0%A4%A",
+  "type": "invalid",
+  "value": "/%E0%A4%A",
+}
+`;
+
+exports[`normalizeFileUrl handles invalid file URLs, hostname 1`] = `undefined`;
 
 exports[`normalizeFileUrl handles package name string 1`] = `undefined`;
 
@@ -265,10 +303,8 @@ exports[`normalizeTools should normalize configs, a creator 1`] = `
 [
   {
     "index": 0,
-    "original": [Function],
     "toolName": undefined,
     "type": "creator",
-    "value": [Function],
   },
 ]
 `;
@@ -277,18 +313,8 @@ exports[`normalizeTools should normalize configs, an object 1`] = `
 [
   {
     "index": 0,
-    "original": {
-      "description": "lorem ipsum",
-      "handler": [Function],
-      "inputSchema": {
-        "properties": {},
-        "type": "object",
-      },
-      "name": "loremIpsum",
-    },
     "toolName": "loremIpsum",
     "type": "object",
-    "value": [Function],
   },
 ]
 `;
@@ -297,17 +323,28 @@ exports[`normalizeTools should normalize configs, array of creators 1`] = `
 [
   {
     "index": 0,
-    "original": [Function],
     "toolName": undefined,
     "type": "creator",
-    "value": [Function],
   },
   {
     "index": 1,
-    "original": [Function],
     "toolName": undefined,
     "type": "creator",
-    "value": [Function],
+  },
+]
+`;
+
+exports[`normalizeTools should normalize configs, invalid file URLs, hostname, encoding 1`] = `
+[
+  {
+    "index": 0,
+    "toolName": undefined,
+    "type": "invalid",
+  },
+  {
+    "index": 1,
+    "toolName": undefined,
+    "type": "invalid",
   },
 ]
 `;
@@ -315,55 +352,24 @@ exports[`normalizeTools should normalize configs, array of creators 1`] = `
 exports[`normalizeTools should normalize configs, mix of non-configs 1`] = `
 [
   {
-    "error": "createMcpTool: invalid configuration used at index 0: Unsupported type object",
     "index": 0,
-    "original": null,
+    "toolName": undefined,
     "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 0: Unsupported type object",
   },
   {
-    "error": "createMcpTool: invalid configuration used at index 1: Unsupported type undefined",
     "index": 1,
-    "original": undefined,
+    "toolName": undefined,
     "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 1: Unsupported type undefined",
   },
   {
-    "error": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
     "index": 2,
-    "original": {
-      "x": 1,
-    },
+    "toolName": undefined,
     "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
   },
   {
-    "error": "createMcpTool: invalid configuration used at index 3: Unsupported type number",
     "index": 3,
-    "original": 1,
+    "toolName": undefined,
     "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 3: Unsupported type number",
-  },
-  {
-    "error": "createMcpTool: invalid configuration used at index 4: Unsupported type number",
-    "index": 4,
-    "original": 2,
-    "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 4: Unsupported type number",
-  },
-  {
-    "error": "createMcpTool: invalid configuration used at index 5: Unsupported type number",
-    "index": 5,
-    "original": 3,
-    "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 5: Unsupported type number",
-  },
-  {
-    "error": "createMcpTool: invalid configuration used at index 6: Unsupported type object",
-    "index": 6,
-    "original": [Error: lorem ipsum],
-    "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 6: Unsupported type object",
   },
 ]
 `;
@@ -371,54 +377,24 @@ exports[`normalizeTools should normalize configs, mix of non-configs 1`] = `
 exports[`normalizeTools should normalize configs, mix of package, object, tuple, creator 1`] = `
 [
   {
-    "fsReadDir": undefined,
     "index": 0,
-    "isFilePath": false,
-    "isFileUrl": false,
-    "isUrlLike": false,
-    "normalizedUrl": "@scope/pkg",
-    "original": "@scope/pkg",
+    "toolName": undefined,
     "type": "package",
-    "value": "@scope/pkg",
   },
   {
     "index": 1,
-    "original": {
-      "description": "amet dolor",
-      "handler": [Function],
-      "inputSchema": {
-        "properties": {},
-        "type": "object",
-      },
-      "name": "ametDolor",
-    },
     "toolName": "ametDolor",
     "type": "object",
-    "value": [Function],
   },
   {
     "index": 2,
-    "original": [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {
-          "properties": {},
-          "type": "object",
-        },
-      },
-      [Function],
-    ],
     "toolName": "loremIpsum",
     "type": "tuple",
-    "value": [Function],
   },
   {
     "index": 3,
-    "original": [Function],
     "toolName": undefined,
     "type": "creator",
-    "value": [Function],
   },
 ]
 `;
@@ -427,20 +403,8 @@ exports[`normalizeTools should normalize configs, single tuple 1`] = `
 [
   {
     "index": 0,
-    "original": [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {
-          "properties": {},
-          "type": "object",
-        },
-      },
-      [Function],
-    ],
     "toolName": "loremIpsum",
     "type": "tuple",
-    "value": [Function],
   },
 ]
 `;

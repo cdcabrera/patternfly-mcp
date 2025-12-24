@@ -267,21 +267,40 @@ describe('normalizeFileUrl', () => {
   it.each([
     {
       description: 'file URL',
-      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
+      expectType: 'file'
     },
     {
       description: 'relative file path',
-      file: './package.json'
+      file: './package.json',
+      expectType: undefined
     },
     {
       description: 'absolute file path',
-      file: resolve(process.cwd(), 'package.json')
+      file: resolve(process.cwd(), 'package.json'),
+      expectType: undefined
     },
     {
       description: 'package name string',
-      file: '@scope/pkg'
+      file: '@scope/pkg',
+      expectType: undefined
+    },
+    {
+      description: 'http URL (not file)',
+      file: 'https://github.com/patternfly/patternfly-mcp/module.mjs',
+      expectType: undefined
+    },
+    {
+      description: 'invalid file URLs, hostname',
+      config: 'file://example.com/etc/hosts',
+      expectType: undefined
+    },
+    {
+      description: 'invalid file URLs, encoding',
+      file: 'file:///foo/%E0%A4%A',
+      expectType: 'invalid'
     }
-  ])('handles $description', ({ file }) => {
+  ])('handles $description', ({ file, expectType }) => {
     const updated = normalizeFileUrl(file);
 
     if (updated) {
@@ -294,7 +313,7 @@ describe('normalizeFileUrl', () => {
         updated.error = 'true';
       }
     }
-
+    expect(updated?.type).toBe(expectType);
     expect(updated).toMatchSnapshot();
   });
 
@@ -308,25 +327,25 @@ describe('normalizeFilePath', () => {
     {
       description: 'file URL',
       file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
-      options: { contextPath: process.cwd() }
+      expectType: undefined
     },
     {
       description: 'relative file path',
       file: './package.json',
-      options: { contextPath: process.cwd() }
+      expectType: 'file'
     },
     {
       description: 'absolute file path',
       file: resolve(process.cwd(), 'package.json'),
-      options: { contextPath: process.cwd() }
+      expectType: 'file'
     },
     {
       description: 'package name string',
       file: '@scope/pkg',
-      options: { contextPath: process.cwd() }
+      expectType: undefined
     }
-  ])('handles $description', ({ file, options }) => {
-    const updated = normalizeFilePath(file, options);
+  ])('handles $description', ({ file, expectType }) => {
+    const updated = normalizeFilePath(file);
 
     if (updated) {
       updated.fsReadDir = '/';
@@ -339,11 +358,23 @@ describe('normalizeFilePath', () => {
       }
     }
 
+    expect(updated?.type).toBe(expectType);
     expect(updated).toMatchSnapshot();
   });
 
   it('should have a memo property', () => {
     expect(normalizeFilePath.memo).toBeDefined();
+  });
+
+  it('should use memoization consistently for contextPath and contextUrl results', () => {
+    const config = './fixtures/tool.mjs';
+
+    const resultOne = normalizeFilePath.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
+    const resultTwo = normalizeFilePath.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+    const resultThree = normalizeFilePath.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+
+    expect(resultTwo).not.toEqual(resultOne);
+    expect(resultThree).toEqual(resultTwo);
   });
 });
 
@@ -352,25 +383,55 @@ describe('normalizeFilePackage', () => {
     {
       description: 'file URL',
       file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
-      options: { contextPath: process.cwd() }
+      expectType: 'file'
     },
     {
       description: 'relative file path',
       file: './package.json',
-      options: { contextPath: process.cwd() }
+      expectType: 'file'
     },
     {
       description: 'absolute file path',
       file: resolve(process.cwd(), 'package.json'),
-      options: { contextPath: process.cwd() }
+      expectType: 'file'
     },
     {
       description: 'package name string',
       file: '@scope/pkg',
-      options: { contextPath: process.cwd() }
+      expectType: 'package'
+    },
+    {
+      description: 'http URL (not file)',
+      file: 'https://github.com/patternfly/patternfly-mcp/module.mjs',
+      expectType: 'package'
+    },
+    {
+      description: 'undefined',
+      file: undefined,
+      expectType: undefined
+    },
+    {
+      description: 'null',
+      file: null,
+      expectType: undefined
+    },
+    {
+      description: 'number',
+      file: 10_000,
+      expectType: undefined
+    },
+    {
+      description: 'invalid file URLs, hostname',
+      config: 'file://example.com/etc/hosts',
+      expectType: undefined
+    },
+    {
+      description: 'invalid file URLs, encoding',
+      file: 'file:///foo/%E0%A4%A',
+      expectType: 'invalid'
     }
-  ])('handles $description', ({ file, options }) => {
-    const updated = normalizeFilePackage(file, options);
+  ])('handles $description', ({ file, expectType }) => {
+    const updated = normalizeFilePackage(file);
 
     if (updated) {
       updated.fsReadDir = '/';
@@ -383,11 +444,23 @@ describe('normalizeFilePackage', () => {
       }
     }
 
+    expect(updated?.type).toBe(expectType);
     expect(updated).toMatchSnapshot();
   });
 
   it('should have a memo property', () => {
     expect(normalizeFilePackage.memo).toBeDefined();
+  });
+
+  it('should use memoization consistently for contextPath and contextUrl results', () => {
+    const config = './fixtures/tool.mjs';
+
+    const resultOne = normalizeFilePackage.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
+    const resultTwo = normalizeFilePackage.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+    const resultThree = normalizeFilePackage.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+
+    expect(resultTwo).not.toEqual(resultOne);
+    expect(resultThree).toEqual(resultTwo);
   });
 });
 
@@ -423,16 +496,41 @@ describe('normalizeTools', () => {
     },
     {
       description: 'mix of non-configs',
-      config: [null, undefined, { x: 1 }, [1, 2, 3], new Error('lorem ipsum')]
+      config: [null, undefined, { x: 1 }, new Error('lorem ipsum')]
+    },
+    {
+      description: 'invalid file URLs, hostname, encoding',
+      config: ['file://example.com/etc/hosts', 'file:///foo/%E0%A4%A']
     }
   ])('should normalize configs, $description', ({ config }) => {
     const result = normalizeTools(config);
+    const configLength = !normalizeTuple(config) && Array.isArray(config) ? config.length : 1;
 
-    expect(result).toMatchSnapshot();
+    expect(result.length).toBe(configLength);
+    expect(result.map(({ index, type, toolName }) => ({ index, type, toolName }))).toMatchSnapshot();
+  });
+
+  it('should flatten when using non-tuple configs (arrays)', () => {
+    const config = [[1, 2, 3], ['lorem', 'ipsum', 'dolor', 'sit']];
+    const result = normalizeTools(config);
+    const configLength = config.flat().length;
+
+    expect(result.length).toBe(configLength);
   });
 
   it('should have a memo property', () => {
     expect(normalizeTools.memo).toBeDefined();
+  });
+
+  it('should use memoization consistently for contextPath and contextUrl results', () => {
+    const config = './fixtures/tool.mjs';
+
+    const resultOne = normalizeTools.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
+    const resultTwo = normalizeTools.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+    const resultThree = normalizeTools.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+
+    expect(resultTwo).not.toEqual(resultOne);
+    expect(resultThree).toEqual(resultTwo);
   });
 });
 
@@ -485,13 +583,28 @@ describe('createMcpTool', () => {
   it.each([
     {
       description: 'packages, mix of non-configs',
-      config: ['@scope/pkg', '@scope/pkg2', '@scope/pkg3', [1, 2, 3], new Error('lorem ipsum')]
+      config: ['@scope/pkg', '@scope/pkg2', '@scope/pkg3', [1, 2, 3], new Error('lorem ipsum')],
+      expectInvalidIndex: 3
     },
     {
       description: 'undefined',
-      config: ['@scope/pkg', undefined]
+      config: ['@scope/pkg', undefined],
+      expectInvalidIndex: 1
     }
-  ])('should throw an error, $description', ({ config }) => {
-    expect(() => createMcpTool(config)).toThrowErrorMatchingSnapshot();
+  ])('should throw an error, $description', ({ config, expectInvalidIndex }) => {
+    expect(() => createMcpTool(config)).toThrow(`createMcpTool: invalid configuration used at index ${expectInvalidIndex}:`);
+  });
+
+  it.each([
+    {
+      description: 'invalid file path, hostname',
+      config: 'file://example.com/etc/hosts'
+    },
+    {
+      description: 'invalid file path, bad encoding',
+      config: 'file:///foo/%E0%A4%A'
+    }
+  ])('should throw an error with invalid file paths, $description', ({ config }) => {
+    expect(() => createMcpTool([config])).toThrow('Failed to resolve file');
   });
 });

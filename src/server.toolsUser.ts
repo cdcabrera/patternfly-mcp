@@ -437,6 +437,8 @@ normalizeFileUrl.memo = memo(normalizeFileUrl, { cacheErrors: false, keyHash: (.
 /**
  * Normalize a file path into a file entry.
  *
+ * File URLs are handled by `normalizeFileUrl`.
+ *
  * @param config - The file path to normalize.
  * @param options - Optional settings
  * @param options.contextPath - The context path to use for resolving file paths.
@@ -445,9 +447,12 @@ normalizeFileUrl.memo = memo(normalizeFileUrl, { cacheErrors: false, keyHash: (.
  */
 const normalizeFilePath = (
   config: unknown,
-  { contextPath, contextUrl }: { contextPath?: string, contextUrl?: string } = {}
+  {
+    contextPath = DEFAULT_OPTIONS.contextPath,
+    contextUrl
+  }: { contextPath?: string, contextUrl?: string } = {}
 ): FileEntry | undefined => {
-  if (typeof config !== 'string' || !isFilePath(config)) {
+  if (typeof config !== 'string' || !isFilePath(config) || isUrlLike(config)) {
     return undefined;
   }
 
@@ -500,10 +505,18 @@ const normalizeFilePath = (
 /**
  * Memoize the `normalizeFilePath` function.
  */
-normalizeFilePath.memo = memo(normalizeFilePath, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeFilePath.memo = memo(normalizeFilePath, {
+  cacheErrors: false,
+  keyHash: (...args) =>
+    JSON.stringify([...args.slice(0, 2)])
+});
 
 /**
  * Normalize a file or package tool config into a file entry.
+ *
+ * - First checks if the config is a file URL. If so, derive fsReadDir for allow-listing.
+ * - Next, checks if the config looks like a filesystem path. If so, resolve.
+ * - Otherwise, keep as-is (package name or other URL-like spec).
  *
  * @param config - The file, or package, configuration to normalize.
  * @param options - Optional settings
@@ -541,114 +554,16 @@ const normalizeFilePackage = (
     type: 'package',
     value: config
   };
-
-  /*
-  try {
-    // Case 1: already a file URL
-    if (isFileUrl) {
-      // Best-effort derive fsReadDir for allow-listing
-      try {
-        const resolvedPath = fileURLToPath(config);
-
-        fsReadDir = dirname(resolvedPath);
-      } catch {}
-      type = 'file';
-
-      return {
-        ...entry,
-        normalizedUrl,
-        fsReadDir,
-        isFileUrl,
-        original: config,
-        type,
-        value: config
-      };
-    }
-
-    // Case 2: looks like a filesystem path -> resolve
-    if (entry.isFilePath) {
-      try {
-        if (contextPath !== undefined && contextUrl !== undefined) {
-          const url = import.meta.resolve(config, contextUrl);
-
-          if (url.startsWith('file:')) {
-            const resolvedPath = fileURLToPath(url);
-
-            fsReadDir = dirname(resolvedPath);
-            normalizedUrl = pathToFileURL(resolvedPath).href;
-            isFileUrl = true;
-            type = 'file';
-          }
-        }
-
-        // Fallback if resolve() path failed or not file:
-        if (type !== 'file') {
-          const resolvedPath = isAbsolute(config) ? config : resolve(contextPath as string, config);
-
-          fsReadDir = dirname(resolvedPath);
-          normalizedUrl = pathToFileURL(resolvedPath).href;
-          isFileUrl = true;
-          type = 'file';
-        }
-      } catch (error) {
-        err = `Failed to resolve file path: ${config} ${formatUnknownError(error)}`;
-
-        return {
-          ...entry,
-          normalizedUrl,
-          fsReadDir,
-          isFileUrl,
-          original: config,
-          type: 'invalid',
-          value: config,
-          error: err
-        };
-      }
-
-      // Resolved file OK
-      return {
-        ...entry,
-        normalizedUrl,
-        fsReadDir,
-        isFileUrl,
-        original: config,
-        type,
-        value: config
-      };
-    }
-
-    // Case 3: non-file string -> keep as-is (package name or other URL-like spec)
-    // Note: http(s) module specs are not supported by Node import and will surface as load warnings in the child.
-    return {
-      ...entry,
-      normalizedUrl,
-      fsReadDir,
-      isFileUrl: false,
-      original: config,
-      type: 'package',
-      value: config
-    };
-  } catch (error) {
-    err = `Failed to handle spec: ${config} ${formatUnknownError(error)}`;
-
-    return {
-      ...entry,
-      normalizedUrl,
-      fsReadDir,
-      isFileUrl,
-      original: config,
-      type: 'invalid',
-      value: config,
-      error: err
-    };
-  }
-  */
 };
 
 /**
  * Memoize the `normalizeFilePackage` function.
  */
-normalizeFilePackage.memo = memo(normalizeFilePackage, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeFilePackage.memo = memo(normalizeFilePackage, {
+  cacheErrors: false,
+  keyHash: (...args) =>
+    JSON.stringify([...args.slice(0, 2)])
+});
 
 /**
  * Normalize tool configuration(s) into a normalized tool entry.
@@ -727,7 +642,11 @@ const normalizeTools = (config: any, {
 /**
  * Memoize the `normalizeTools` function.
  */
-normalizeTools.memo = memo(normalizeTools, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeTools.memo = memo(normalizeTools, {
+  cacheErrors: false,
+  keyHash: (...args) =>
+    JSON.stringify([...args.slice(0, 2)])
+});
 
 /**
  * Author-facing helper for creating an MCP tool configuration list for Patternfly MCP server.
