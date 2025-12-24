@@ -1,5 +1,65 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`normalizeFilePath handles absolute file path 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": false,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePath handles file URL 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFilePath handles package name string 1`] = `undefined`;
+
+exports[`normalizeFilePath handles relative file path 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": false,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFileUrl handles absolute file path 1`] = `undefined`;
+
+exports[`normalizeFileUrl handles file URL 1`] = `
+{
+  "fsReadDir": "/",
+  "isFilePath": true,
+  "isFileUrl": true,
+  "isUrlLike": true,
+  "normalizedUrl": "/package.json",
+  "original": "/package.json",
+  "type": "file",
+  "value": "/package.json",
+}
+`;
+
+exports[`normalizeFileUrl handles package name string 1`] = `undefined`;
+
+exports[`normalizeFileUrl handles relative file path 1`] = `undefined`;
+
 exports[`normalizeFunction should normalize the config, basic 1`] = `
 [
   "loremIpsum",

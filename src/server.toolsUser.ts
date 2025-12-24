@@ -347,7 +347,7 @@ normalizeObject.memo = memo(normalizeObject, { cacheErrors: false, keyHash: (...
  * Normalize a creator function into a tool creator function.
  *
  * @param config
- * @returns {CreatorEntry}
+ * @returns A tool creator function, or undefined if the config is invalid.
  */
 const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
   if (typeof config !== 'function') {
@@ -391,6 +391,118 @@ const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
 normalizeFunction.memo = memo(normalizeFunction, { cacheErrors: false, keyHash: (...args) => args[0] });
 
 /**
+ * Normalize a file URL into a file entry.
+ *
+ * @param config - The file URL to normalize.
+ * @returns - A file entry, or undefined if the config is invalid.
+ */
+const normalizeFileUrl = (config: unknown): FileEntry | undefined => {
+  if (typeof config !== 'string' || !config.startsWith('file:')) {
+    return undefined;
+  }
+
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  const err: string[] = [];
+  const isFileUrl = config.startsWith('file:');
+  const normalizedUrl = config;
+  let fsReadDir: string | undefined = undefined;
+  let type: NormalizedToolEntry['type'] = 'invalid';
+
+  try {
+    const resolvedPath = fileURLToPath(config);
+
+    fsReadDir = dirname(resolvedPath);
+    type = 'file';
+  } catch (error) {
+    err.push(`Failed to resolve file url: ${config}: ${formatUnknownError(error)}`);
+  }
+
+  return {
+    ...entry,
+    normalizedUrl,
+    fsReadDir,
+    isFileUrl,
+    original: config,
+    type,
+    value: config,
+    ...(type === 'invalid' ? { error: err.join('\n') } : {})
+  };
+};
+
+/**
+ * Memoize the `normalizeFileUrl` function.
+ */
+normalizeFileUrl.memo = memo(normalizeFileUrl, { cacheErrors: false, keyHash: (...args) => args[0] });
+
+/**
+ * Normalize a file path into a file entry.
+ *
+ * @param config - The file path to normalize.
+ * @param options - Optional settings
+ * @param options.contextPath - The context path to use for resolving file paths.
+ * @param options.contextUrl - The context URL to use for resolving file paths.
+ * @returns - A file entry, or undefined if the config is invalid.
+ */
+const normalizeFilePath = (
+  config: unknown,
+  { contextPath, contextUrl }: { contextPath?: string, contextUrl?: string } = {}
+): FileEntry | undefined => {
+  if (typeof config !== 'string' || !isFilePath(config)) {
+    return undefined;
+  }
+
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  const err: string[] = [];
+  let isFileUrl = config.startsWith('file:');
+  let normalizedUrl = config;
+  let fsReadDir: string | undefined = undefined;
+  let type: NormalizedToolEntry['type'] = 'invalid';
+
+  try {
+    if (contextUrl !== undefined) {
+      const url = import.meta.resolve(config, contextUrl);
+
+      if (url.startsWith('file:')) {
+        const resolvedPath = fileURLToPath(url);
+
+        fsReadDir = dirname(resolvedPath);
+        normalizedUrl = pathToFileURL(resolvedPath).href;
+        isFileUrl = true;
+        type = 'file';
+      }
+    }
+
+    // Fallback if resolve() path failed or not file:
+    if (type !== 'file') {
+      const resolvedPath = isAbsolute(config) ? config : resolve(contextPath as string, config);
+
+      fsReadDir = dirname(resolvedPath as string);
+      normalizedUrl = pathToFileURL(resolvedPath as string).href;
+      isFileUrl = true;
+      type = 'file';
+    }
+  } catch (error) {
+    err.push(`Failed to resolve file path: ${config}: ${formatUnknownError(error)}`);
+  }
+
+  return {
+    ...entry,
+    normalizedUrl,
+    fsReadDir,
+    isFileUrl,
+    original: config,
+    type,
+    value: config,
+    ...(type === 'invalid' ? { error: err.join('\n') } : {})
+  };
+};
+
+/**
+ * Memoize the `normalizeFilePath` function.
+ */
+normalizeFilePath.memo = memo(normalizeFilePath, { cacheErrors: false, keyHash: (...args) => args[0] });
+
+/**
  * Normalize a file or package tool config into a file entry.
  *
  * @param config - The file, or package, configuration to normalize.
@@ -407,14 +519,30 @@ const normalizeFilePackage = (
     return undefined;
   }
 
-  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isFilePath(config) };
+  // Case 1: already a file URL -> derive fsReadDir for allow-listing
+  if (normalizeFileUrl.memo(config)) {
+    return normalizeFileUrl.memo(config);
+  }
 
-  let isFileUrl = config.startsWith('file:');
-  let normalizedUrl = config;
-  let fsReadDir: string | undefined = undefined;
-  let type: NormalizedToolEntry['type'] = 'package'; // default classification for non-file strings
-  let err: string | undefined;
+  // Case 2: looks like a filesystem path -> resolve or invalid
+  if (normalizeFilePath.memo(config, { contextPath, contextUrl } as any)) {
+    return normalizeFilePath.memo(config, { contextPath, contextUrl } as any);
+  }
 
+  // Case 3: non-file string -> keep as-is (package name or other URL-like spec)
+  // Note: http(s) module specs are not supported by Node import and will surface as load warnings in the child.
+  return {
+    isUrlLike: isUrlLike(config),
+    isFilePath: isFilePath(config),
+    normalizedUrl: config,
+    fsReadDir: undefined,
+    isFileUrl: false,
+    original: config,
+    type: 'package',
+    value: config
+  };
+
+  /*
   try {
     // Case 1: already a file URL
     if (isFileUrl) {
@@ -514,6 +642,7 @@ const normalizeFilePackage = (
       error: err
     };
   }
+  */
 };
 
 /**
@@ -652,6 +781,8 @@ export {
   isFilePath,
   isUrlLike,
   normalizeFilePackage,
+  normalizeFileUrl,
+  normalizeFilePath,
   normalizeTuple,
   normalizeTupleSchema,
   normalizeObject,

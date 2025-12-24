@@ -1,11 +1,13 @@
 import { pathToFileURL } from 'node:url';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { z } from 'zod';
 import {
   createMcpTool,
   isFilePath,
   isUrlLike,
   normalizeFilePackage,
+  normalizeFilePath,
+  normalizeFileUrl,
   normalizeTuple,
   normalizeTupleSchema,
   normalizeObject,
@@ -258,6 +260,90 @@ describe('normalizeFunction', () => {
 
   it('should have a memo property', () => {
     expect(normalizeFunction.memo).toBeDefined();
+  });
+});
+
+describe('normalizeFileUrl', () => {
+  it.each([
+    {
+      description: 'file URL',
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href
+    },
+    {
+      description: 'relative file path',
+      file: './package.json'
+    },
+    {
+      description: 'absolute file path',
+      file: resolve(process.cwd(), 'package.json')
+    },
+    {
+      description: 'package name string',
+      file: '@scope/pkg'
+    }
+  ])('handles $description', ({ file }) => {
+    const updated = normalizeFileUrl(file);
+
+    if (updated) {
+      updated.fsReadDir = '/';
+      updated.normalizedUrl = `/${basename(updated.normalizedUrl as string)}`;
+      updated.original = `/${basename(updated.original as string)}`;
+      updated.value = `/${basename(updated.value as string)}`;
+
+      if (updated.error) {
+        updated.error = 'true';
+      }
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeFileUrl.memo).toBeDefined();
+  });
+});
+
+describe('normalizeFilePath', () => {
+  it.each([
+    {
+      description: 'file URL',
+      file: pathToFileURL(resolve(process.cwd(), 'package.json')).href,
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'relative file path',
+      file: './package.json',
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'absolute file path',
+      file: resolve(process.cwd(), 'package.json'),
+      options: { contextPath: process.cwd() }
+    },
+    {
+      description: 'package name string',
+      file: '@scope/pkg',
+      options: { contextPath: process.cwd() }
+    }
+  ])('handles $description', ({ file, options }) => {
+    const updated = normalizeFilePath(file, options);
+
+    if (updated) {
+      updated.fsReadDir = '/';
+      updated.normalizedUrl = `/${basename(updated.normalizedUrl as string)}`;
+      updated.original = `/${basename(updated.original as string)}`;
+      updated.value = `/${basename(updated.value as string)}`;
+
+      if (updated.error) {
+        updated.error = 'true';
+      }
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
+
+  it('should have a memo property', () => {
+    expect(normalizeFilePath.memo).toBeDefined();
   });
 });
 
