@@ -436,7 +436,6 @@ describe('normalizeTools', () => {
   });
 });
 
-/*
 describe('createMcpTool', () => {
   it.each([
     {
@@ -466,18 +465,23 @@ describe('createMcpTool', () => {
     {
       description: 'single tuple',
       config: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
-    },
-    {
-      description: 'mix of non-configs',
-      config: [null, undefined, { x: 1 }, [1, 2, 3], new Error('lorem ipsum')]
     }
-    * /
   ])('should normalize configs, $description', ({ config }) => {
     const result = createMcpTool(config);
 
     expect(result).toMatchSnapshot();
   });
+
+  it.each([
+    {
+      description: 'package, undefined',
+      config: ['@scope/pkg', undefined]
+    },
+    {
+      description: 'packages, mix of non-configs',
+      config: ['@scope/pkg', '@scope/pkg2', '@scope/pkg3', [1, 2, 3], new Error('lorem ipsum')]
+    }
+  ])('should throw an error, $description', ({ config }) => {
+    expect(() => createMcpTool(config)).toThrowErrorMatchingSnapshot();
+  });
 });
-
- */
-

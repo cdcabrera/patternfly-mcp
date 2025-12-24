@@ -1,5 +1,43 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`createMcpTool should normalize configs, a creator 1`] = `
+[
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, an object 1`] = `
+[
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, array of creators 1`] = `
+[
+  [Function],
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, mix of package, object, tuple, creator 1`] = `
+[
+  "@scope/pkg",
+  [Function],
+  [Function],
+  [Function],
+]
+`;
+
+exports[`createMcpTool should normalize configs, single tuple 1`] = `
+[
+  [Function],
+]
+`;
+
+exports[`createMcpTool should throw an error, package, undefined 1`] = `"createMcpTool: invalid configuration used at index 1: Unsupported type undefined"`;
+
+exports[`createMcpTool should throw an error, packages, mix of non-configs 1`] = `"createMcpTool: invalid configuration used at index 3: Unsupported type object"`;
+
 exports[`normalizeFilePackage handles absolute file path 1`] = `
 {
   "fsReadDir": "/",
