@@ -169,49 +169,44 @@ describe('normalizeTuple', () => {
 });
 
 describe('normalizeObject', () => {
+  it.each([
+    {
+      description: 'basic',
+      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+    },
+    {
+      description: 'untrimmed name, zod schema, async handler',
+      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: z.any(), handler: async () => {} }
+    },
+    {
+      description: 'missing schema',
+      obj: { name: 'dolorSit', description: 'x', handler: async () => {} }
+    },
+    {
+      description: 'missing handler',
+      obj: { name: 'dolorSit', description: 'x' }
+    },
+    {
+      description: 'undefined',
+      tuple: undefined
+    },
+    {
+      description: 'null',
+      tuple: null
+    }
+  ])('should normalize the config, $description', ({ obj }) => {
+    const updated = normalizeObject(obj);
+
+    if ((updated?.original as any)?.inputSchema && isZodSchema((updated?.original as any).inputSchema)) {
+      (updated?.original as any).inputSchema = 'isZod = true';
+    }
+
+    expect(updated).toMatchSnapshot();
+  });
 
   it('should have a memo property', () => {
     expect(normalizeObject.memo).toBeDefined();
   });
-  /*
-  it('returns creator for valid object', () => {
-    const entry = normalizeObject({
-      name: 'sum',
-      description: ' add ',
-      inputSchema: { type: 'object', properties: {} },
-      handler: () => 42
-    })!;
-
-    expect(entry.type).toBe('object');
-    expect(entry.toolName).toBe('sum');
-    const created = (entry.value as any)();
-
-    expect(created[0]).toBe('sum');
-    expect(created[1]).toMatchObject({ description: 'add' });
-    expect(created[1].inputSchema).toBeDefined();
-  });
-
-  it('returns undefined when required fields missing', () => {
-    expect(
-      normalizeObject({ name: 'x', inputSchema: { type: 'object', properties: {} }, handler: () => {} } as any)
-    ).toBeUndefined();
-  });
-
-  it('returns invalid entry when schema normalization fails', () => {
-    const entry = normalizeObject({
-      name: 'bad',
-      description: 'x',
-      inputSchema: { not: 'a schema' },
-      handler: () => {}
-    })!;
-
-    expect(['object', 'invalid']).toContain(entry.type);
-
-    if (entry.type === 'invalid') {
-      expect(entry.error).toMatch(/failed to set inputSchema/i);
-    }
-  });
-  */
 });
 
 describe('normalizeFunction', () => {

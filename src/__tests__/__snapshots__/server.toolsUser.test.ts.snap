@@ -1,5 +1,58 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`normalizeObject should normalize the config, basic 1`] = `
+{
+  "error": undefined,
+  "original": {
+    "description": "lorem ipsum",
+    "handler": [Function],
+    "inputSchema": {
+      "properties": {},
+      "type": "object",
+    },
+    "name": "loremIpsum",
+  },
+  "toolName": "loremIpsum",
+  "type": "object",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeObject should normalize the config, missing handler 1`] = `undefined`;
+
+exports[`normalizeObject should normalize the config, missing schema 1`] = `
+{
+  "error": "Tool "dolorSit" failed to set inputSchema. Provide a Zod schema, a Zod raw shape, or a plain JSON Schema object.",
+  "original": {
+    "description": "x",
+    "handler": [Function],
+    "name": "dolorSit",
+  },
+  "toolName": "dolorSit",
+  "type": "invalid",
+  "value": [Function],
+}
+`;
+
+exports[`normalizeObject should normalize the config, null 1`] = `undefined`;
+
+exports[`normalizeObject should normalize the config, undefined 1`] = `undefined`;
+
+exports[`normalizeObject should normalize the config, untrimmed name, zod schema, async handler 1`] = `
+{
+  "error": undefined,
+  "original": {
+    "description": "lorem ipsum",
+    "handler": [Function],
+    "inputSchema": "isZod = true",
+    "name": "loremIpsum",
+  },
+  "toolName": "loremIpsum",
+  "type": "object",
+  "value": [Function],
+}
+`;
+
 exports[`normalizeTuple should normalize the config, basic 1`] = `
 {
   "error": undefined,
