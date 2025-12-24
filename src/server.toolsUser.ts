@@ -123,12 +123,12 @@ type MultiToolConfig = {
 /**
  * Allowed keys in the tool config objects. Expand as needed.
  */
-const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'handler'] as const);
+const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'handler']);
 
 /**
  * Allowed keys in the tool schema objects. Expand as needed. See related `ToolSchema`.
  */
-const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema'] as const);
+const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
 
 /**
  * Return an object key value.
@@ -663,23 +663,17 @@ const normalizeTools = (config: any, {
   contextPath = DEFAULT_OPTIONS.contextPath,
   contextUrl = DEFAULT_OPTIONS.contextUrl
 }: { contextPath?: string, contextUrl?: string } = {}): NormalizedToolEntry[] => {
-  const updatedConfigs = (normalizeTuple.memo(config) && [config]) || (Array.isArray(config) && config) || (config && [config]) || [];
+  // const updatedConfigs = (normalizeTuple.memo(config) && [config]) || (Array.isArray(config) && config) || (config && [config]) || [];
+  const updatedConfigs = (normalizeTuple.memo(config) && [config]) || (Array.isArray(config) && config) || [config];
   const normalizedConfigs: NormalizedToolEntry[] = [];
 
-  // Flatten nested-arrays of configs and attempt to account for inline tuples. If inline tuples
-  // become an issue, we'll discontinue inline support and require they be returned from
-  // creator functions.
-  /*
-  const flattenedConfigs = updatedConfigs.flatMap((item: unknown) => {
-    if (Array.isArray(item)) {
-      return normalizeTuple.memo(item) ? [item] : item;
-    }
+  // Flatten nested-arrays of configs and attempt to account for inline tuples. This will catch
+  // one-off cases where an array will be flattened, broken apart.
+  const flattenedConfigs = updatedConfigs.flatMap((item: unknown) =>
+    (normalizeTuple.memo(item) && [item]) || (Array.isArray(item) && item) || [item]);
+    // (normalizeTuple.memo(item) && [item]) || (Array.isArray(item) && item) || (item && [item]) || [];
 
-    return [item];
-  });
-  */
-
-  updatedConfigs.forEach((config: unknown, index: number) => {
+  flattenedConfigs.forEach((config: unknown, index: number) => {
     if (normalizeFunction.memo(config)) {
       normalizedConfigs.push({
         index,
@@ -768,7 +762,7 @@ normalizeTools.memo = memo(normalizeTools, { cacheErrors: false, keyHash: (...ar
  * @throws {Error} If a configuration is invalid, an error is thrown on the first invalid entry.
  */
 const createMcpTool = (config: unknown): ToolModule => {
-  const entries = normalizeTools(config);
+  const entries = normalizeTools.memo(config);
   const err = entries.find(entry => entry.type === 'invalid');
 
   if (err?.error) {

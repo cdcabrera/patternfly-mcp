@@ -465,6 +465,16 @@ describe('createMcpTool', () => {
     {
       description: 'single tuple',
       config: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+    },
+    {
+      description: 'nested createMcpTool calls',
+      config: [
+        createMcpTool([createMcpTool('@scope/pkg1'), '@scope/pkg2', '@scope/pkg3']),
+        createMcpTool(createMcpTool(['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}])),
+        createMcpTool(['dolorSit', { description: 'dolor sit', inputSchema: { type: 'object', properties: {} } }, () => {}]),
+        createMcpTool('@scope/pkg4'),
+        '@scope/pkg5'
+      ]
     }
   ])('should normalize configs, $description', ({ config }) => {
     const result = createMcpTool(config);
@@ -474,12 +484,12 @@ describe('createMcpTool', () => {
 
   it.each([
     {
-      description: 'package, undefined',
-      config: ['@scope/pkg', undefined]
-    },
-    {
       description: 'packages, mix of non-configs',
       config: ['@scope/pkg', '@scope/pkg2', '@scope/pkg3', [1, 2, 3], new Error('lorem ipsum')]
+    },
+    {
+      description: 'undefined',
+      config: ['@scope/pkg', undefined]
     }
   ])('should throw an error, $description', ({ config }) => {
     expect(() => createMcpTool(config)).toThrowErrorMatchingSnapshot();

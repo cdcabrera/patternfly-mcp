@@ -28,15 +28,27 @@ exports[`createMcpTool should normalize configs, mix of package, object, tuple, 
 ]
 `;
 
+exports[`createMcpTool should normalize configs, nested createMcpTool calls 1`] = `
+[
+  "@scope/pkg1",
+  "@scope/pkg2",
+  "@scope/pkg3",
+  [Function],
+  [Function],
+  "@scope/pkg4",
+  "@scope/pkg5",
+]
+`;
+
 exports[`createMcpTool should normalize configs, single tuple 1`] = `
 [
   [Function],
 ]
 `;
 
-exports[`createMcpTool should throw an error, package, undefined 1`] = `"createMcpTool: invalid configuration used at index 1: Unsupported type undefined"`;
+exports[`createMcpTool should throw an error, packages, mix of non-configs 1`] = `"createMcpTool: invalid configuration used at index 3: Unsupported type number"`;
 
-exports[`createMcpTool should throw an error, packages, mix of non-configs 1`] = `"createMcpTool: invalid configuration used at index 3: Unsupported type object"`;
+exports[`createMcpTool should throw an error, undefined 1`] = `"createMcpTool: invalid configuration used at index 1: Unsupported type undefined"`;
 
 exports[`normalizeFilePackage handles absolute file path 1`] = `
 {
@@ -326,22 +338,32 @@ exports[`normalizeTools should normalize configs, mix of non-configs 1`] = `
     "value": "createMcpTool: invalid configuration used at index 2: Unsupported type object",
   },
   {
-    "error": "createMcpTool: invalid configuration used at index 3: Unsupported type object",
+    "error": "createMcpTool: invalid configuration used at index 3: Unsupported type number",
     "index": 3,
-    "original": [
-      1,
-      2,
-      3,
-    ],
+    "original": 1,
     "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 3: Unsupported type object",
+    "value": "createMcpTool: invalid configuration used at index 3: Unsupported type number",
   },
   {
-    "error": "createMcpTool: invalid configuration used at index 4: Unsupported type object",
+    "error": "createMcpTool: invalid configuration used at index 4: Unsupported type number",
     "index": 4,
+    "original": 2,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 4: Unsupported type number",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 5: Unsupported type number",
+    "index": 5,
+    "original": 3,
+    "type": "invalid",
+    "value": "createMcpTool: invalid configuration used at index 5: Unsupported type number",
+  },
+  {
+    "error": "createMcpTool: invalid configuration used at index 6: Unsupported type object",
+    "index": 6,
     "original": [Error: lorem ipsum],
     "type": "invalid",
-    "value": "createMcpTool: invalid configuration used at index 4: Unsupported type object",
+    "value": "createMcpTool: invalid configuration used at index 6: Unsupported type object",
   },
 ]
 `;
