@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`logWarningsErrors should log warnings and errors, with both warnings and errors 1`] = `
+[
+  [
+    "Tools load warnings (1)
+  - Warning 1",
+  ],
+  [
+    "Tools load errors (1)
+  - Error 1",
+  ],
+]
+`;
+
+exports[`logWarningsErrors should log warnings and errors, with empty arrays 1`] = `[]`;
+
+exports[`logWarningsErrors should log warnings and errors, with errors only 1`] = `
+[
+  [
+    "Tools load errors (2)
+  - Error 1
+  - Error 2",
+  ],
+]
+`;
+
+exports[`logWarningsErrors should log warnings and errors, with single error 1`] = `
+[
+  [
+    "Tools load errors (1)
+  - Single error",
+  ],
+]
+`;
+
+exports[`logWarningsErrors should log warnings and errors, with single warning 1`] = `
+[
+  [
+    "Tools load warnings (1)
+  - Single warning",
+  ],
+]
+`;
+
+exports[`logWarningsErrors should log warnings and errors, with undefined warnings and errors 1`] = `[]`;
+
+exports[`logWarningsErrors should log warnings and errors, with warnings only 1`] = `
+[
+  [
+    "Tools load warnings (2)
+  - Warning 1
+  - Warning 2",
+  ],
+]
+`;

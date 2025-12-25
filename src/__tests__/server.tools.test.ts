@@ -1,5 +1,18 @@
 import { resolve } from 'node:path';
-import { getBuiltInToolName, computeFsReadAllowlist } from '../server.tools';
+import { log } from '../logger';
+import { getBuiltInToolName, computeFsReadAllowlist, logWarningsErrors } from '../server.tools';
+
+jest.mock('../logger', () => ({
+  log: {
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  },
+  formatUnknownError: jest.fn((error: unknown) => String(error))
+}));
+
+const MockLog = log as jest.MockedObject<typeof log>;
 
 describe('getBuiltInToolName', () => {
   it('should return built-in tool name', () => {
@@ -17,6 +30,54 @@ describe('computeFsReadAllowlist', () => {
     const toolModules = ['@scope/pkg', resolve(process.cwd(), 'package.json')];
 
     expect(computeFsReadAllowlist({ toolModules, contextUrl: 'file://', contextPath: '/' } as any)).toEqual(['/']);
+  });
+});
+
+describe('logWarningsErrors', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with warnings only',
+      warnings: ['Warning 1', 'Warning 2'],
+      errors: []
+    },
+    {
+      description: 'with errors only',
+      warnings: [],
+      errors: ['Error 1', 'Error 2']
+    },
+    {
+      description: 'with both warnings and errors',
+      warnings: ['Warning 1'],
+      errors: ['Error 1']
+    },
+    {
+      description: 'with empty arrays',
+      warnings: [],
+      errors: []
+    },
+    {
+      description: 'with undefined warnings and errors',
+      warnings: undefined,
+      errors: undefined
+    },
+    {
+      description: 'with single warning',
+      warnings: ['Single warning'],
+      errors: []
+    },
+    {
+      description: 'with single error',
+      warnings: [],
+      errors: ['Single error']
+    }
+  ])('should log warnings and errors, $description', ({ warnings, errors }) => {
+    logWarningsErrors({ warnings, errors } as any);
+
+    expect(MockLog.warn.mock.calls).toMatchSnapshot();
   });
 });
 
