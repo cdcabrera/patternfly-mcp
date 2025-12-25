@@ -1,5 +1,14 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`getFilePackageToolModules, should return filtered tool modules 1`] = `
+[
+  "@scope/pkg",
+  "file:///test/module.js",
+  "http://example.com/module.js",
+  "https://example.com/module.js",
+]
+`;
+
 exports[`logWarningsErrors should log warnings and errors, with both warnings and errors 1`] = `
 [
   [

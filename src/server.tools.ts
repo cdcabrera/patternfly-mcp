@@ -560,6 +560,7 @@ export {
   computeFsReadAllowlist,
   debugChild,
   getBuiltInToolName,
+  getFilePackageToolModules,
   logWarningsErrors,
   makeProxyCreators,
   sendToolsHostShutdown,

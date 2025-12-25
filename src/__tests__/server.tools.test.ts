@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { log } from '../logger';
-import { getBuiltInToolName, computeFsReadAllowlist, logWarningsErrors } from '../server.tools';
+import { getBuiltInToolName, computeFsReadAllowlist, logWarningsErrors, getFilePackageToolModules } from '../server.tools';
 
 jest.mock('../logger', () => ({
   log: {
@@ -78,6 +78,22 @@ describe('logWarningsErrors', () => {
     logWarningsErrors({ warnings, errors } as any);
 
     expect(MockLog.warn.mock.calls).toMatchSnapshot();
+  });
+});
+
+describe('getFilePackageToolModules,', () => {
+  it('should return filtered tool modules', () => {
+    const toolModules = [
+      '@scope/pkg',
+      'file:///test/module.js',
+      undefined,
+      'http://example.com/module.js',
+      'https://example.com/module.js'
+    ];
+    const updated = getFilePackageToolModules({ toolModules } as any);
+
+    expect(updated.length).toBe(4);
+    expect(updated).toMatchSnapshot();
   });
 });
 
