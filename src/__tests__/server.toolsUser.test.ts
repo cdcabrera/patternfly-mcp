@@ -371,7 +371,7 @@ describe('normalizeFilePath', () => {
 
     const resultOne = normalizeFilePath.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
     const resultTwo = normalizeFilePath.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
-    const resultThree = normalizeFilePath.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+    const resultThree = normalizeFilePath.memo(config, { contextUrl: 'file:///B/index.mjs', contextPath: '/B' });
 
     expect(resultTwo).not.toEqual(resultOne);
     expect(resultThree).toEqual(resultTwo);
@@ -457,7 +457,7 @@ describe('normalizeFilePackage', () => {
 
     const resultOne = normalizeFilePackage.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
     const resultTwo = normalizeFilePackage.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
-    const resultThree = normalizeFilePackage.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+    const resultThree = normalizeFilePackage.memo(config, { contextUrl: 'file:///B/index.mjs', contextPath: '/B' });
 
     expect(resultTwo).not.toEqual(resultOne);
     expect(resultThree).toEqual(resultTwo);
@@ -527,7 +527,7 @@ describe('normalizeTools', () => {
 
     const resultOne = normalizeTools.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
     const resultTwo = normalizeTools.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
-    const resultThree = normalizeTools.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
+    const resultThree = normalizeTools.memo(config, { contextUrl: 'file:///B/index.mjs', contextPath: '/B' });
 
     expect(resultTwo).not.toEqual(resultOne);
     expect(resultThree).toEqual(resultTwo);

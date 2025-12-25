@@ -232,7 +232,7 @@ const normalizeTupleSchema = (schema: unknown, allowedKeys = ALLOWED_SCHEMA_KEYS
 /**
  * Memoize the `normalizeSchema` function.
  */
-normalizeTupleSchema.memo = memo(normalizeTupleSchema, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeTupleSchema.memo = memo(normalizeTupleSchema, { cacheErrors: false, keyHash: args => args[0] });
 
 /**
  * Normalize a tuple config into a tool creator function.
@@ -287,7 +287,7 @@ const normalizeTuple = (config: unknown): CreatorEntry | undefined => {
 /**
  * Memoize the `normalizeTuple` function.
  */
-normalizeTuple.memo = memo(normalizeTuple, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeTuple.memo = memo(normalizeTuple, { cacheErrors: false, keyHash: args => args[0] });
 
 /**
  * Normalize an object config into a tool creator function.
@@ -341,7 +341,7 @@ const normalizeObject = (config: unknown, allowedKeys = ALLOWED_CONFIG_KEYS): Cr
 /**
  * Memoize the `normalizeObject` function.
  */
-normalizeObject.memo = memo(normalizeObject, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeObject.memo = memo(normalizeObject, { cacheErrors: false, keyHash: args => args[0] });
 
 /**
  * Normalize a creator function into a tool creator function.
@@ -388,7 +388,7 @@ const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
 /**
  * Memoize the `normalizeFunction` function.
  */
-normalizeFunction.memo = memo(normalizeFunction, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeFunction.memo = memo(normalizeFunction, { cacheErrors: false, keyHash: args => args[0] });
 
 /**
  * Normalize a file URL into a file entry.
@@ -432,7 +432,7 @@ const normalizeFileUrl = (config: unknown): FileEntry | undefined => {
 /**
  * Memoize the `normalizeFileUrl` function.
  */
-normalizeFileUrl.memo = memo(normalizeFileUrl, { cacheErrors: false, keyHash: (...args) => args[0] });
+normalizeFileUrl.memo = memo(normalizeFileUrl, { cacheErrors: false, keyHash: args => args[0] });
 
 /**
  * Normalize a file path into a file entry.
@@ -507,8 +507,8 @@ const normalizeFilePath = (
  */
 normalizeFilePath.memo = memo(normalizeFilePath, {
   cacheErrors: false,
-  keyHash: (...args) =>
-    JSON.stringify([...args.slice(0, 2)])
+  keyHash: args =>
+    JSON.stringify([args[0], (args as any)?.[1]?.contextPath, (args as any)?.[1]?.contextUrl])
 });
 
 /**
@@ -561,8 +561,8 @@ const normalizeFilePackage = (
  */
 normalizeFilePackage.memo = memo(normalizeFilePackage, {
   cacheErrors: false,
-  keyHash: (...args) =>
-    JSON.stringify([...args.slice(0, 2)])
+  keyHash: args =>
+    JSON.stringify([args[0], (args as any)?.[1]?.contextPath, (args as any)?.[1]?.contextUrl])
 });
 
 /**
@@ -644,8 +644,8 @@ const normalizeTools = (config: any, {
  */
 normalizeTools.memo = memo(normalizeTools, {
   cacheErrors: false,
-  keyHash: (...args) =>
-    JSON.stringify([...args.slice(0, 2)])
+  keyHash: args =>
+    JSON.stringify([args[0], (args as any)?.[1]?.contextPath, (args as any)?.[1]?.contextUrl])
 });
 
 /**
