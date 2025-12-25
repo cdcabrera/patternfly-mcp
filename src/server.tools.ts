@@ -52,11 +52,11 @@ const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (cre
  * @param {GlobalOptions} options - Global options.
  * @returns Array of absolute directories to allow read access.
  */
-const computeFsReadAllowlist = (options: GlobalOptions = getOptions()): string[] => {
+const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: GlobalOptions = getOptions()): string[] => {
   const directories = new Set<string>();
-  const tools = normalizeTools.memo(options.toolModules, options);
+  const tools = normalizeTools.memo(toolModules, { contextPath, contextUrl });
 
-  directories.add(options.contextPath);
+  directories.add(contextPath);
 
   tools.forEach(tool => {
     if (tool.fsReadDir) {
@@ -94,9 +94,9 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
  * @param {GlobalOptions} options - Global options.
  * @returns Updated array of normalized tool modules
  */
-const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
+const getFilePackageToolModules = ({ contextPath, contextUrl, toolModules }: GlobalOptions = getOptions()): string[] =>
   normalizeTools
-    .memo(toolModules, { contextPath })
+    .memo(toolModules, { contextPath, contextUrl })
     .filter(tool => tool.type === 'file' || tool.type === 'package')
     .map(tool => tool.normalizedUrl as string);
 
@@ -118,33 +118,32 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
     }
 
     // Split multi-line chunks so each line is tagged
-    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
     for (const line of lines) {
       const tagged = `[tools-host pid=${childPid} sid=${sessionId}] ${line}`;
 
-      // Pattern: Node 22+ permission denial (FileSystemRead)
-      const fsMatch = line.match(/ERR_ACCESS_DENIED.*FileSystemRead.*resource:\s*'([^']+)'/);
-
-      if (fsMatch) {
-        const resource = fsMatch[1];
-        const key = `fs-deny:${resource}`;
+      // Pattern: fs read issues
+      if (
+        /ERR_ACCESS_DENIED.*FileSystemRead.*resource:\s*/i.test(line) ||
+        /ERR_ACCESS_DENIED.*Read/i.test(line)
+      ) {
+        const key = `fs-deny:${line}`;
 
         if (!promoted.has(key)) {
           promoted.add(key);
           log.warn(
-            `Tools Host denied fs read: ${resource}. In strict mode, add its directory to --allow-fs-read.\nOptionally, you can disable strict mode entirely with pluginIsolation: 'none'.`
+            `${line}\nTools Host denied fs read. In strict mode, add the resource's directory to --allow-fs-read.\nOptionally, you can disable strict mode entirely with pluginIsolation: 'none'.`
           );
-        } else {
-          log.debug(tagged);
+
+          continue;
         }
-        continue;
       }
 
       // Pattern: ESM/CJS import issues
       if (
         /ERR_MODULE_NOT_FOUND/.test(line) ||
-        /Cannot use import statement outside a module/.test(line) ||
+        /Cannot use import statement outside a module/i.test(line) ||
         /ERR_UNKNOWN_FILE_EXTENSION/.test(line)
       ) {
         const key = `esm:${line}`;
@@ -152,10 +151,9 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
         if (!promoted.has(key)) {
           promoted.add(key);
           log.warn('Tools Host import error. Ensure external tools are ESM (no raw .ts) and resolvable.\nFor local files, prefer a file:// URL.');
-        } else {
-          log.debug(tagged);
+
+          continue;
         }
-        continue;
       }
 
       // Default: debug-level passthrough
@@ -163,12 +161,10 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
     }
   };
 
-  child.stderr?.on('data', debugHandler);
+  child.stderr?.on?.('data', debugHandler);
 
   return () => {
-    try {
-      child.stderr?.off('data', debugHandler);
-    } catch {}
+    child.stderr?.off?.('data', debugHandler);
   };
 };
 
@@ -189,23 +185,22 @@ const spawnToolsHost = async (
   const { nodeVersion, pluginIsolation, pluginHost } = options || {};
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
-  let updatedEntry: string;
+  let updatedEntry: string | undefined = undefined;
 
   try {
     const entryUrl = import.meta.resolve('#toolsHost');
 
     updatedEntry = fileURLToPath(entryUrl);
   } catch (error) {
-    log.debug(`Failed to resolve Tools Host entry: ${formatUnknownError(error)}`);
+    log.debug(`Failed to import.meta.resolve Tools Host entry '#toolsHost': ${formatUnknownError(error)}`);
 
-    // In unit tests, we allow a graceful fallback to enable spawn path assertions
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === 'local') {
       updatedEntry = '/mock/path/to/toolsHost.js';
-    } else {
-      throw new Error(
-        `Failed to resolve Tools Host entry '#toolsHost' from package imports: ${formatUnknownError(error)}`
-      );
     }
+  }
+
+  if (updatedEntry === undefined) {
+    throw new Error(`Failed to resolve Tools Host entry '#toolsHost'.`);
   }
 
   // Deny network and fs write by omission
@@ -453,10 +448,9 @@ const sendToolsHostShutdown = async (
  */
 const composeTools = async (
   builtinCreators: McpToolCreator[],
-  options: GlobalOptions = getOptions(),
+  { toolModules, nodeVersion, contextUrl, contextPath }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
-  const { toolModules, nodeVersion } = options;
   const result: McpToolCreator[] = [...builtinCreators];
   const usedNames = new Set<string>(builtinCreators.map(creator => getBuiltInToolName(creator)).filter(Boolean) as string[]);
 
@@ -465,7 +459,7 @@ const composeTools = async (
   }
 
   const filePackageEntries: NormalizedToolEntry[] = [];
-  const tools = normalizeTools.memo(toolModules, options);
+  const tools = normalizeTools.memo(toolModules, { contextUrl, contextPath });
 
   tools.forEach(tool => {
     switch (tool.type) {
@@ -561,6 +555,7 @@ export {
   computeFsReadAllowlist,
   debugChild,
   getBuiltInToolName,
+  getFilePackageToolModules,
   logWarningsErrors,
   makeProxyCreators,
   sendToolsHostShutdown,

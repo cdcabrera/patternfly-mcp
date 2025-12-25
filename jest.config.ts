@@ -37,12 +37,7 @@ export default {
             astTransformers: {
               before: [
                 {
-                  path: 'ts-jest-mock-import-meta',
-                  options: {
-                    metaObjectReplacement: {
-                      url: 'file:///mock/import-meta-url'
-                    }
-                  }
+                  path: 'ts-jest-mock-import-meta'
                 }
               ]
             }
