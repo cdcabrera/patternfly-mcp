@@ -52,11 +52,11 @@ const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (cre
  * @param {GlobalOptions} options - Global options.
  * @returns Array of absolute directories to allow read access.
  */
-const computeFsReadAllowlist = (options: GlobalOptions = getOptions()): string[] => {
+const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: GlobalOptions = getOptions()): string[] => {
   const directories = new Set<string>();
-  const tools = normalizeTools.memo(options.toolModules, options);
+  const tools = normalizeTools.memo(toolModules, { contextPath, contextUrl });
 
-  directories.add(options.contextPath);
+  directories.add(contextPath);
 
   tools.forEach(tool => {
     if (tool.fsReadDir) {
@@ -94,9 +94,9 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
  * @param {GlobalOptions} options - Global options.
  * @returns Updated array of normalized tool modules
  */
-const getFilePackageToolModules = ({ contextPath, toolModules }: GlobalOptions = getOptions()): string[] =>
+const getFilePackageToolModules = ({ contextPath, contextUrl, toolModules }: GlobalOptions = getOptions()): string[] =>
   normalizeTools
-    .memo(toolModules, { contextPath })
+    .memo(toolModules, { contextPath, contextUrl })
     .filter(tool => tool.type === 'file' || tool.type === 'package')
     .map(tool => tool.normalizedUrl as string);
 
@@ -453,10 +453,9 @@ const sendToolsHostShutdown = async (
  */
 const composeTools = async (
   builtinCreators: McpToolCreator[],
-  options: GlobalOptions = getOptions(),
+  { toolModules, nodeVersion, contextUrl, contextPath }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
-  const { toolModules, nodeVersion } = options;
   const result: McpToolCreator[] = [...builtinCreators];
   const usedNames = new Set<string>(builtinCreators.map(creator => getBuiltInToolName(creator)).filter(Boolean) as string[]);
 
@@ -465,7 +464,7 @@ const composeTools = async (
   }
 
   const filePackageEntries: NormalizedToolEntry[] = [];
-  const tools = normalizeTools.memo(toolModules, options);
+  const tools = normalizeTools.memo(toolModules, { contextUrl, contextPath });
 
   tools.forEach(tool => {
     switch (tool.type) {
