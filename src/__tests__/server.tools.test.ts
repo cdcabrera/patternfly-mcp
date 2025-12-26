@@ -12,7 +12,7 @@ import {
   sendToolsHostShutdown,
   composeTools
 } from '../server.tools';
-import {awaitIpc, makeId, send} from '../server.toolsIpc';
+import { awaitIpc, makeId, send } from '../server.toolsIpc';
 
 jest.mock('node:child_process', () => ({
   spawn: jest.fn()
@@ -225,7 +225,7 @@ describe('spawnToolsHost', () => {
       description: 'with strict pluginIsolation, node 24',
       options: { nodeVersion: 24, pluginIsolation: 'strict' }
     }
-  ])('should exist', async ({ options }) => {
+  ])('attempt to spawn the Tools Host, $description', async ({ options }) => {
     const updatedOptions = { pluginHost: { loadTimeoutMs: 10, invokeTimeoutMs: 10 }, ...options };
     const mockPid = 123;
     const mockTools = [{ name: 'alphaTool' }, { name: 'betaTool' }];

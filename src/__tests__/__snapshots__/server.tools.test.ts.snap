@@ -192,7 +192,7 @@ exports[`logWarningsErrors should log warnings and errors, with warnings only 1`
 ]
 `;
 
-exports[`spawnToolsHost should exist: spawn 1`] = `
+exports[`spawnToolsHost attempt to spawn the Tools Host, with no pluginIsolation, node 24: spawn 1`] = `
 {
   "spawn": [
     [
@@ -213,7 +213,7 @@ exports[`spawnToolsHost should exist: spawn 1`] = `
 }
 `;
 
-exports[`spawnToolsHost should exist: spawn 2`] = `
+exports[`spawnToolsHost attempt to spawn the Tools Host, with strict pluginIsolation, node 22: spawn 1`] = `
 {
   "spawn": [
     [
@@ -237,12 +237,15 @@ exports[`spawnToolsHost should exist: spawn 2`] = `
 }
 `;
 
-exports[`spawnToolsHost should exist: spawn 3`] = `
+exports[`spawnToolsHost attempt to spawn the Tools Host, with strict pluginIsolation, node 24: spawn 1`] = `
 {
   "spawn": [
     [
       "/usr/local/bin/node",
       [
+        "--permission",
+        "--allow-fs-read=/",
+        "--allow-fs-read=/mock/path/to",
         "/mock/path/to/toolsHost.js",
       ],
       {
@@ -258,15 +261,12 @@ exports[`spawnToolsHost should exist: spawn 3`] = `
 }
 `;
 
-exports[`spawnToolsHost should exist: spawn 4`] = `
+exports[`spawnToolsHost attempt to spawn the Tools Host, with undefined pluginIsolation, node 22: spawn 1`] = `
 {
   "spawn": [
     [
       "/usr/local/bin/node",
       [
-        "--permission",
-        "--allow-fs-read=/",
-        "--allow-fs-read=/mock/path/to",
         "/mock/path/to/toolsHost.js",
       ],
       {
