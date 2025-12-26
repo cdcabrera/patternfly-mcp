@@ -83,6 +83,23 @@ exports[`debugChild should attempt to highlight specific messages, generic multi
 }
 `;
 
+exports[`debugChild should attempt to highlight specific messages, generic multiline error with spaces 1`] = `
+{
+  "debug": [
+    [
+      "[tools-host pid=123 sid=1234567890] Lorem ipsum",
+    ],
+    [
+      "[tools-host pid=123 sid=1234567890] dolor sit",
+    ],
+    [
+      "[tools-host pid=123 sid=1234567890] amet",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
 exports[`debugChild should attempt to highlight specific messages, module not found 1`] = `
 {
   "debug": [],

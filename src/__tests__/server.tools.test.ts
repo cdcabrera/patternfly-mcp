@@ -141,6 +141,10 @@ describe('debugChild', () => {
       message: 'Lorem ipsum\ndolor sit\namet'
     },
     {
+      description: 'generic multiline error with spaces',
+      message: 'Lorem ipsum   \n\tdolor sit\n   amet'
+    },
+    {
       description: 'empty string',
       message: ''
     }

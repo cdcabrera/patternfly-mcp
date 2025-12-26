@@ -118,7 +118,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
     }
 
     // Split multi-line chunks so each line is tagged
-    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
     for (const line of lines) {
       const tagged = `[tools-host pid=${childPid} sid=${sessionId}] ${line}`;
