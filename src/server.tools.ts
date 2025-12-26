@@ -185,22 +185,22 @@ const spawnToolsHost = async (
   const { nodeVersion, pluginIsolation, pluginHost } = options || {};
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
-  let updatedEntry: string;
+  let updatedEntry: string | undefined = undefined;
 
   try {
     const entryUrl = import.meta.resolve('#toolsHost');
 
     updatedEntry = fileURLToPath(entryUrl);
   } catch (error) {
-    log.debug(`Failed to resolve Tools Host entry: ${formatUnknownError(error)}`);
+    log.debug(`Failed to import.meta.resolve Tools Host entry '#toolsHost': ${formatUnknownError(error)}`);
 
     if (process.env.NODE_ENV === 'local') {
       updatedEntry = '/mock/path/to/toolsHost.js';
-    } else {
-      throw new Error(
-        `Failed to resolve Tools Host entry '#toolsHost' from package imports: ${formatUnknownError(error)}`
-      );
     }
+  }
+
+  if (updatedEntry === undefined) {
+    throw new Error(`Failed to resolve Tools Host entry '#toolsHost'.`);
   }
 
   // Deny network and fs write by omission

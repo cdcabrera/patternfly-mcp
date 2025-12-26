@@ -250,6 +250,16 @@ describe('spawnToolsHost', () => {
       spawn: MockSpawn.mock.calls
     }).toMatchSnapshot('spawn');
   });
+
+  it('should throw when resolve fails', async () => {
+    process.env.NODE_ENV = '__test__';
+
+    await expect(
+      spawnToolsHost({ nodeVersion: 24, pluginIsolation: 'strict', pluginHost: {} } as any)
+    ).rejects.toThrow(/Failed to resolve Tools Host/);
+
+    process.env.NODE_ENV = 'local';
+  });
 });
 
 describe('makeProxyCreators', () => {
