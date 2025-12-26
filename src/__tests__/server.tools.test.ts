@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { log } from '../logger';
-import { getBuiltInToolName, computeFsReadAllowlist, logWarningsErrors, getFilePackageToolModules } from '../server.tools';
+import { getBuiltInToolName, computeFsReadAllowlist, logWarningsErrors, getFilePackageToolModules, debugChild } from '../server.tools';
 
 jest.mock('../logger', () => ({
   log: {
@@ -94,6 +94,74 @@ describe('getFilePackageToolModules,', () => {
 
     expect(updated.length).toBe(4);
     expect(updated).toMatchSnapshot();
+  });
+});
+
+describe('debugChild', () => {
+  let debugSpy: jest.SpyInstance;
+  let warnSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    debugSpy = jest.spyOn(log, 'debug').mockImplementation(() => {});
+    warnSpy = jest.spyOn(log, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'default',
+      message: 'lorem ipsum dolor sit amet'
+    },
+    {
+      description: 'access denied',
+      message: 'Error [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet'
+    },
+    {
+      description: 'access denied, multiple lines',
+      message: 'Error [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet\nError [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet'
+    },
+    {
+      description: 'access denied, alt messaging',
+      message: 'Error [ERR_ACCESS_DENIED]: fs.readFileSync access is denied by permission model: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet\nError [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet'
+    },
+    {
+      description: 'module not found',
+      message: 'Error [ERR_MODULE_NOT_FOUND]: Cannot find module \'/lorem/ipsum/dolor/sit/amet\' imported from /test/path'
+    },
+    {
+      description: 'module not found, multiple lines',
+      message: 'Error [ERR_MODULE_NOT_FOUND]: Cannot find module \'/lorem/ipsum/dolor/sit/amet\' imported from /test/path\nError [ERR_MODULE_NOT_FOUND]: Cannot find module \'/lorem/ipsum/dolor/sit/amet\' imported from /test/path'
+    },
+    {
+      description: 'empty string',
+      message: ''
+    }
+  ])('should attempt to log child process output, $description', async ({ message }) => {
+    let mockHandler: any;
+    const mockOff = jest.fn();
+    const mockChild = {
+      pid: 123,
+      stderr: {
+        on: (_event: any, handler: any) => mockHandler = handler,
+        off: mockOff
+      }
+    } as any;
+
+    const unsubscribe = debugChild(mockChild, { sessionId: '1234567890' } as any);
+
+    mockHandler(message);
+
+    expect({
+      warn: warnSpy.mock.calls,
+      debug: debugSpy.mock.calls
+    }).toMatchSnapshot();
+
+    unsubscribe();
+    expect(mockOff).toHaveBeenCalledTimes(1);
   });
 });
 

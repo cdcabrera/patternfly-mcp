@@ -1,5 +1,99 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`debugChild should attempt to log child process output, access denied 1`] = `
+{
+  "debug": [],
+  "warn": [
+    [
+      "Error [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet
+Tools Host denied fs read. In strict mode, add the resource's directory to --allow-fs-read.
+Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
+    ],
+  ],
+}
+`;
+
+exports[`debugChild should attempt to log child process output, access denied, alt messaging 1`] = `
+{
+  "debug": [],
+  "warn": [
+    [
+      "Error [ERR_ACCESS_DENIED]: fs.readFileSync access is denied by permission model: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet
+Tools Host denied fs read. In strict mode, add the resource's directory to --allow-fs-read.
+Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
+    ],
+    [
+      "Error [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet
+Tools Host denied fs read. In strict mode, add the resource's directory to --allow-fs-read.
+Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
+    ],
+  ],
+}
+`;
+
+exports[`debugChild should attempt to log child process output, access denied, multiple lines 1`] = `
+{
+  "debug": [
+    [
+      "[tools-host pid=123 sid=1234567890] Error [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet",
+    ],
+  ],
+  "warn": [
+    [
+      "Error [ERR_ACCESS_DENIED]: Access denied: FileSystemRead, resource: /lorem/ipsum/dolor/sit/amet
+Tools Host denied fs read. In strict mode, add the resource's directory to --allow-fs-read.
+Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
+    ],
+  ],
+}
+`;
+
+exports[`debugChild should attempt to log child process output, default 1`] = `
+{
+  "debug": [
+    [
+      "[tools-host pid=123 sid=1234567890] lorem ipsum dolor sit amet",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`debugChild should attempt to log child process output, empty string 1`] = `
+{
+  "debug": [],
+  "warn": [],
+}
+`;
+
+exports[`debugChild should attempt to log child process output, module not found 1`] = `
+{
+  "debug": [],
+  "warn": [
+    [
+      "Tools Host import error. Ensure external tools are ESM (no raw .ts) and resolvable.
+For local files, prefer a file:// URL.",
+    ],
+  ],
+}
+`;
+
+exports[`debugChild should attempt to log child process output, module not found, multiple lines 1`] = `
+{
+  "debug": [
+    [
+      "[tools-host pid=123 sid=1234567890] Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/lorem/ipsum/dolor/sit/amet' imported from /test/path",
+    ],
+  ],
+  "warn": [
+    [
+      "Tools Host import error. Ensure external tools are ESM (no raw .ts) and resolvable.
+For local files, prefer a file:// URL.",
+    ],
+  ],
+}
+`;
+
 exports[`getFilePackageToolModules, should return filtered tool modules 1`] = `
 [
   "@scope/pkg",
