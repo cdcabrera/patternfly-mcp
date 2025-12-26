@@ -191,3 +191,93 @@ exports[`logWarningsErrors should log warnings and errors, with warnings only 1`
   ],
 ]
 `;
+
+exports[`spawnToolsHost should exist: spawn 1`] = `
+{
+  "spawn": [
+    [
+      "/usr/local/bin/node",
+      [
+        "/mock/path/to/toolsHost.js",
+      ],
+      {
+        "stdio": [
+          "ignore",
+          "pipe",
+          "pipe",
+          "ipc",
+        ],
+      },
+    ],
+  ],
+}
+`;
+
+exports[`spawnToolsHost should exist: spawn 2`] = `
+{
+  "spawn": [
+    [
+      "/usr/local/bin/node",
+      [
+        "--experimental-permission",
+        "--allow-fs-read=/",
+        "--allow-fs-read=/mock/path/to",
+        "/mock/path/to/toolsHost.js",
+      ],
+      {
+        "stdio": [
+          "ignore",
+          "pipe",
+          "pipe",
+          "ipc",
+        ],
+      },
+    ],
+  ],
+}
+`;
+
+exports[`spawnToolsHost should exist: spawn 3`] = `
+{
+  "spawn": [
+    [
+      "/usr/local/bin/node",
+      [
+        "/mock/path/to/toolsHost.js",
+      ],
+      {
+        "stdio": [
+          "ignore",
+          "pipe",
+          "pipe",
+          "ipc",
+        ],
+      },
+    ],
+  ],
+}
+`;
+
+exports[`spawnToolsHost should exist: spawn 4`] = `
+{
+  "spawn": [
+    [
+      "/usr/local/bin/node",
+      [
+        "--permission",
+        "--allow-fs-read=/",
+        "--allow-fs-read=/mock/path/to",
+        "/mock/path/to/toolsHost.js",
+      ],
+      {
+        "stdio": [
+          "ignore",
+          "pipe",
+          "pipe",
+          "ipc",
+        ],
+      },
+    ],
+  ],
+}
+`;

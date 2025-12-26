@@ -194,8 +194,7 @@ const spawnToolsHost = async (
   } catch (error) {
     log.debug(`Failed to resolve Tools Host entry: ${formatUnknownError(error)}`);
 
-    // In unit tests, we allow a graceful fallback to enable spawn path assertions
-    if (process.env.NODE_ENV === 'test') {
+    if (process.env.NODE_ENV === 'local') {
       updatedEntry = '/mock/path/to/toolsHost.js';
     } else {
       throw new Error(

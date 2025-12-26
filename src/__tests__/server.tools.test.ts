@@ -1,4 +1,5 @@
 import { resolve } from 'node:path';
+import { spawn } from 'child_process';
 import { log } from '../logger';
 import {
   getBuiltInToolName,
@@ -11,6 +12,11 @@ import {
   sendToolsHostShutdown,
   composeTools
 } from '../server.tools';
+import {awaitIpc, makeId, send} from '../server.toolsIpc';
+
+jest.mock('node:child_process', () => ({
+  spawn: jest.fn()
+}));
 
 jest.mock('../logger', () => ({
   log: {
@@ -20,6 +26,15 @@ jest.mock('../logger', () => ({
     debug: jest.fn()
   },
   formatUnknownError: jest.fn((error: unknown) => String(error))
+}));
+
+jest.mock('../server.toolsIpc', () => ({
+  send: jest.fn(),
+  awaitIpc: jest.fn(),
+  makeId: jest.fn(() => 'id-1'),
+  isHelloAck: jest.fn((msg: any) => msg?.t === 'hello:ack'),
+  isLoadAck: jest.fn((id: string) => (msg: any) => msg?.t === 'load:ack' && msg?.id === id),
+  isManifestResult: jest.fn((id: string) => (msg: any) => msg?.t === 'manifest:result' && msg?.id === id)
 }));
 
 const MockLog = log as jest.MockedObject<typeof log>;
@@ -184,9 +199,56 @@ describe('debugChild', () => {
 });
 
 describe('spawnToolsHost', () => {
-  it('should exist', () => {
-    // placeholder test
-    expect(spawnToolsHost).toBeDefined();
+  const MockSpawn = spawn as unknown as jest.MockedFunction<typeof spawn>;
+  const MockAwaitIpc = awaitIpc as unknown as jest.MockedFunction<typeof awaitIpc>;
+  const MockSend = send as unknown as jest.MockedFunction<typeof send>;
+  const MockMakeId = makeId as unknown as jest.MockedFunction<typeof makeId>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with undefined pluginIsolation, node 22',
+      options: { nodeVersion: 22, pluginIsolation: undefined }
+    },
+    {
+      description: 'with strict pluginIsolation, node 22',
+      options: { nodeVersion: 22, pluginIsolation: 'strict' }
+    },
+    {
+      description: 'with no pluginIsolation, node 24',
+      options: { nodeVersion: 24, pluginIsolation: 'none' }
+    },
+    {
+      description: 'with strict pluginIsolation, node 24',
+      options: { nodeVersion: 24, pluginIsolation: 'strict' }
+    }
+  ])('should exist', async ({ options }) => {
+    const updatedOptions = { pluginHost: { loadTimeoutMs: 10, invokeTimeoutMs: 10 }, ...options };
+    const mockPid = 123;
+    const mockTools = [{ name: 'alphaTool' }, { name: 'betaTool' }];
+
+    MockSpawn.mockReturnValue({
+      pid: mockPid
+    } as any);
+
+    MockAwaitIpc
+      .mockResolvedValueOnce({ t: 'hello:ack', id: 'id-1' } as any)
+      .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
+      .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockTools } as any);
+
+    const result = await spawnToolsHost(updatedOptions as any);
+
+    expect(result.child.pid).toBe(mockPid);
+    expect(result.tools).toEqual(mockTools);
+    expect(MockMakeId).toHaveBeenCalledTimes(3);
+    expect(MockSend).toHaveBeenCalledTimes(3);
+
+    expect({
+      spawn: MockSpawn.mock.calls
+    }).toMatchSnapshot('spawn');
   });
 });
 
