@@ -272,10 +272,12 @@ const spawnToolsHost = async (
 
 /**
  * Recreate parent-side tool creators that forward invocations to the Tools Host.
- * - Parent does not perform validation; the child validates with Zod at invoke time.
+ * - Parent does not perform validation; the child validates with Zod at invocation.
  * - A minimal Zod inputSchema from the parent is required to trigger the MCP SDK parameter
- *    validation for tool invocation. This schema is not used, it is a noop.
- * - Invocation errors from the child preserve `error.code` and `error.details` for UX.
+ *    validation.
+ * - There is an unreachable defensive check in `makeProxyCreators` that ensures the Zod schema
+ *    always returns a value.
+ * - Invocation errors from the child preserve `error.code` and `error.details` for debugging.
  *
  * @param {HostHandle} handle - Tools Host handle.
  * @param {GlobalOptions} options - Global options.
@@ -297,22 +299,27 @@ const makeProxyCreators = (
 
     log.debug(
       `Tool "${name}" from ${tool.source || 'unknown source'} failed strict JSON to Zod reconstruction.`,
-      `Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.`
+      `Using fallback best-effort schema. Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.`,
+      `[ZOD_SCHEMA: defined: ${Boolean(zodSchema)}]`
     );
   }
 
+  // Defensive check only. Currently, unreachable due to `jsonSchemaToZod`'s current return/response. Zod is integral
+  // to the MCP SDK, in the unlikely event that the Zod schema is still unavailable, fallback again. All hail Zod!
   if (!zodSchema) {
+    zodSchema = z.looseObject({});
+
     log.error(
       `Tool "${name}" from ${tool.source || 'unknown source'} failed strict and best‑effort JSON to Zod reconstruction.`,
-      `Falling back to permissive schema for SDK broadcast. Review the inputSchema.`
+      `Falling back to permissive schema for SDK broadcast. Review the inputSchema.`,
+      `[ZOD_SCHEMA: defined: ${Boolean(zodSchema)}]`
     );
   }
 
-  // Broadcast the tool's input schema towards clients/agents. Because Zod is integral to the MCP SDK,
-  // in the unlikely event that the Zod schema is still unavailable, fallback again. All hail Zod!
+  // Broadcast the tool's input schema towards clients/agents.
   const schema = {
     description: tool.description,
-    inputSchema: zodSchema || z.looseObject({})
+    inputSchema: zodSchema
   };
 
   const handler = async (args: unknown) => {

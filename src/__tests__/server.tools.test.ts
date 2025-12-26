@@ -13,6 +13,7 @@ import {
   composeTools
 } from '../server.tools';
 import { awaitIpc, makeId, send } from '../server.toolsIpc';
+import { isZodSchema } from '../server.schema';
 
 jest.mock('node:child_process', () => ({
   spawn: jest.fn()
@@ -33,11 +34,10 @@ jest.mock('../server.toolsIpc', () => ({
   awaitIpc: jest.fn(),
   makeId: jest.fn(() => 'id-1'),
   isHelloAck: jest.fn((msg: any) => msg?.t === 'hello:ack'),
+  isInvokeResult: jest.fn((msg: any) => msg?.t === 'invoke:result'),
   isLoadAck: jest.fn((id: string) => (msg: any) => msg?.t === 'load:ack' && msg?.id === id),
   isManifestResult: jest.fn((id: string) => (msg: any) => msg?.t === 'manifest:result' && msg?.id === id)
 }));
-
-const MockLog = log as jest.MockedObject<typeof log>;
 
 describe('getBuiltInToolName', () => {
   it('should return built-in tool name', () => {
@@ -59,6 +59,8 @@ describe('computeFsReadAllowlist', () => {
 });
 
 describe('logWarningsErrors', () => {
+  const MockLog = jest.mocked(log);
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -199,10 +201,10 @@ describe('debugChild', () => {
 });
 
 describe('spawnToolsHost', () => {
-  const MockSpawn = spawn as unknown as jest.MockedFunction<typeof spawn>;
-  const MockAwaitIpc = awaitIpc as unknown as jest.MockedFunction<typeof awaitIpc>;
-  const MockSend = send as unknown as jest.MockedFunction<typeof send>;
-  const MockMakeId = makeId as unknown as jest.MockedFunction<typeof makeId>;
+  const MockSpawn = jest.mocked(spawn);
+  const MockAwaitIpc = jest.mocked(awaitIpc);
+  const MockSend = jest.mocked(send);
+  const MockMakeId = jest.mocked(makeId);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -263,9 +265,126 @@ describe('spawnToolsHost', () => {
 });
 
 describe('makeProxyCreators', () => {
-  it('should exist', () => {
-    // placeholder test
-    expect(makeProxyCreators).toBeDefined();
+  const MockAwaitIpc = jest.mocked(awaitIpc);
+  const MockSend = jest.mocked(send);
+  const MockMakeId = jest.mocked(makeId);
+  const MockLog = jest.mocked(log);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'no tools',
+      tools: []
+    },
+    {
+      description: 'basic',
+      tools: [
+        {
+          id: 'loremIpsum',
+          name: 'Lorem Ipsum',
+          description: 'Lorem ipsum dolor sit amet',
+          inputSchema: {},
+          source: ''
+        }
+      ]
+    },
+    {
+      description: 'null JSON input schema',
+      tools: [
+        {
+          id: 'loremIpsum',
+          name: 'Lorem Ipsum',
+          description: 'Lorem ipsum dolor sit amet',
+          inputSchema: null,
+          source: ''
+        }
+      ]
+    },
+    {
+      description: 'undefined JSON input schema',
+      tools: [
+        {
+          id: 'loremIpsum',
+          name: 'Lorem Ipsum',
+          description: 'Lorem ipsum dolor sit amet',
+          inputSchema: undefined,
+          source: ''
+        }
+      ]
+    }
+  ])('should attempt to return proxy creators, a function wrapper per tool, $description', ({ tools }) => {
+    const proxies = makeProxyCreators({ tools } as any, { pluginHost: { invokeTimeoutMs: 10 } } as any);
+    const output = proxies.map(proxy => {
+      const [name, { description, inputSchema, ...rest }, handler] = proxy();
+
+      return [
+        name,
+        { description, inputSchema: `isZod = ${isZodSchema(inputSchema)}`, ...rest },
+        handler
+      ];
+    });
+
+    expect({
+      output,
+      debug: MockLog.debug.mock.calls
+    }).toMatchSnapshot();
+  });
+
+  it.each([
+    {
+      description: 'ok false',
+      response: {
+        ok: false,
+        result: { value: 7 }
+      }
+    },
+    {
+      description: 'ok false with error',
+      response: {
+        ok: false,
+        result: { value: 7 },
+        error: { message: 'Error message' }
+      }
+    },
+    {
+      description: 'ok false with full error',
+      response: {
+        ok: false,
+        result: { value: 7 },
+        error: { message: 'Error message', stack: 'line 1\nline 2', code: 'ERR_CODE', cause: { details: 'Details' } }
+      }
+    }
+  ])('should attempt to invoke a creator then throw an error on child response, $description', async ({ response }) => {
+    const tools = [
+      {
+        id: 'loremIpsum',
+        name: 'Lorem Ipsum',
+        description: 'Lorem ipsum dolor sit amet',
+        inputSchema: {},
+        source: ''
+      }
+    ];
+
+    MockMakeId.mockReturnValue('id-1' as any);
+    MockAwaitIpc
+      .mockResolvedValueOnce({ t: 'invoke:result', id: 'id-1', ...response } as any);
+
+    const proxies = makeProxyCreators({ tools } as any, { pluginHost: { invokeTimeoutMs: 10 } } as any);
+    const [_name, _schema, handler]: any = proxies.map(proxy => {
+      const [name, { description, inputSchema, ...rest }, handler] = proxy();
+
+      return [
+        name,
+        { description, inputSchema: `isZod = ${isZodSchema(inputSchema)}`, ...rest },
+        handler
+      ];
+    })[0];
+
+    await expect(handler({ loremIpsum: 7 })).rejects.toMatchSnapshot('handler');
+    expect(MockSend.mock.calls).toMatchSnapshot('send');
   });
 });
 

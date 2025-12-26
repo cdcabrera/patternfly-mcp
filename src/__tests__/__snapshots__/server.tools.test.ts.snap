@@ -192,6 +192,127 @@ exports[`logWarningsErrors should log warnings and errors, with warnings only 1`
 ]
 `;
 
+exports[`makeProxyCreators should attempt to invoke a creator then throw an error on child response, ok false with error: handler 1`] = `[Error: Error message]`;
+
+exports[`makeProxyCreators should attempt to invoke a creator then throw an error on child response, ok false with error: send 1`] = `
+[
+  [
+    undefined,
+    {
+      "args": {
+        "loremIpsum": 7,
+      },
+      "id": "id-1",
+      "t": "invoke",
+      "toolId": "loremIpsum",
+    },
+  ],
+]
+`;
+
+exports[`makeProxyCreators should attempt to invoke a creator then throw an error on child response, ok false with full error: handler 1`] = `[Error: Error message]`;
+
+exports[`makeProxyCreators should attempt to invoke a creator then throw an error on child response, ok false with full error: send 1`] = `
+[
+  [
+    undefined,
+    {
+      "args": {
+        "loremIpsum": 7,
+      },
+      "id": "id-1",
+      "t": "invoke",
+      "toolId": "loremIpsum",
+    },
+  ],
+]
+`;
+
+exports[`makeProxyCreators should attempt to invoke a creator then throw an error on child response, ok false: handler 1`] = `[Error: Tool invocation failed]`;
+
+exports[`makeProxyCreators should attempt to invoke a creator then throw an error on child response, ok false: send 1`] = `
+[
+  [
+    undefined,
+    {
+      "args": {
+        "loremIpsum": 7,
+      },
+      "id": "id-1",
+      "t": "invoke",
+      "toolId": "loremIpsum",
+    },
+  ],
+]
+`;
+
+exports[`makeProxyCreators should attempt to return proxy creators, a function wrapper per tool, basic 1`] = `
+{
+  "debug": [],
+  "output": [
+    [
+      "Lorem Ipsum",
+      {
+        "description": "Lorem ipsum dolor sit amet",
+        "inputSchema": "isZod = true",
+      },
+      [Function],
+    ],
+  ],
+}
+`;
+
+exports[`makeProxyCreators should attempt to return proxy creators, a function wrapper per tool, no tools 1`] = `
+{
+  "debug": [],
+  "output": [],
+}
+`;
+
+exports[`makeProxyCreators should attempt to return proxy creators, a function wrapper per tool, null JSON input schema 1`] = `
+{
+  "debug": [
+    [
+      "Tool "Lorem Ipsum" from unknown source failed strict JSON to Zod reconstruction.",
+      "Using fallback best-effort schema. Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.",
+      "[ZOD_SCHEMA: defined: true]",
+    ],
+  ],
+  "output": [
+    [
+      "Lorem Ipsum",
+      {
+        "description": "Lorem ipsum dolor sit amet",
+        "inputSchema": "isZod = true",
+      },
+      [Function],
+    ],
+  ],
+}
+`;
+
+exports[`makeProxyCreators should attempt to return proxy creators, a function wrapper per tool, undefined JSON input schema 1`] = `
+{
+  "debug": [
+    [
+      "Tool "Lorem Ipsum" from unknown source failed strict JSON to Zod reconstruction.",
+      "Using fallback best-effort schema. Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.",
+      "[ZOD_SCHEMA: defined: true]",
+    ],
+  ],
+  "output": [
+    [
+      "Lorem Ipsum",
+      {
+        "description": "Lorem ipsum dolor sit amet",
+        "inputSchema": "isZod = true",
+      },
+      [Function],
+    ],
+  ],
+}
+`;
+
 exports[`spawnToolsHost attempt to spawn the Tools Host, with no pluginIsolation, node 24: spawn 1`] = `
 {
   "spawn": [
