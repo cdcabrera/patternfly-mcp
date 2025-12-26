@@ -1,6 +1,16 @@
 import { resolve } from 'node:path';
 import { log } from '../logger';
-import { getBuiltInToolName, computeFsReadAllowlist, logWarningsErrors, getFilePackageToolModules, debugChild } from '../server.tools';
+import {
+  getBuiltInToolName,
+  computeFsReadAllowlist,
+  logWarningsErrors,
+  getFilePackageToolModules,
+  debugChild,
+  spawnToolsHost,
+  makeProxyCreators,
+  sendToolsHostShutdown,
+  composeTools
+} from '../server.tools';
 
 jest.mock('../logger', () => ({
   log: {
@@ -170,6 +180,34 @@ describe('debugChild', () => {
 
     unsubscribe();
     expect(mockOff).toHaveBeenCalledWith('data', mockHandler);
+  });
+});
+
+describe('spawnToolsHost', () => {
+  it('should exist', () => {
+    // placeholder test
+    expect(spawnToolsHost).toBeDefined();
+  });
+});
+
+describe('makeProxyCreators', () => {
+  it('should exist', () => {
+    // placeholder test
+    expect(makeProxyCreators).toBeDefined();
+  });
+});
+
+describe('sendToolsHostShutdown', () => {
+  it('should exist', () => {
+    // placeholder test
+    expect(sendToolsHostShutdown).toBeDefined();
+  });
+});
+
+describe('composeTools', () => {
+  it('should exist', () => {
+    // placeholder test
+    expect(composeTools).toBeDefined();
   });
 });
 
