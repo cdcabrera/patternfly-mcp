@@ -137,16 +137,20 @@ describe('debugChild', () => {
       message: 'Error [ERR_MODULE_NOT_FOUND]: Cannot find module \'/lorem/ipsum/dolor/sit/amet\' imported from /test/path\nError [ERR_MODULE_NOT_FOUND]: Cannot find module \'/lorem/ipsum/dolor/sit/amet\' imported from /test/path'
     },
     {
+      description: 'generic multiline error',
+      message: 'Lorem ipsum\ndolor sit\namet'
+    },
+    {
       description: 'empty string',
       message: ''
     }
-  ])('should attempt to log child process output, $description', async ({ message }) => {
+  ])('should attempt to highlight specific messages, $description', async ({ message }) => {
     let mockHandler: any;
     const mockOff = jest.fn();
     const mockChild = {
       pid: 123,
       stderr: {
-        on: (_event: any, handler: any) => mockHandler = handler,
+        on: (_: any, handler: any) => mockHandler = handler,
         off: mockOff
       }
     } as any;
@@ -161,7 +165,7 @@ describe('debugChild', () => {
     }).toMatchSnapshot();
 
     unsubscribe();
-    expect(mockOff).toHaveBeenCalledTimes(1);
+    expect(mockOff).toHaveBeenCalledWith('data', mockHandler);
   });
 });
 

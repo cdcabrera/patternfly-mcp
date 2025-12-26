@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`debugChild should attempt to log child process output, access denied 1`] = `
+exports[`debugChild should attempt to highlight specific messages, access denied 1`] = `
 {
   "debug": [],
   "warn": [
@@ -13,7 +13,7 @@ Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
 }
 `;
 
-exports[`debugChild should attempt to log child process output, access denied, alt messaging 1`] = `
+exports[`debugChild should attempt to highlight specific messages, access denied, alt messaging 1`] = `
 {
   "debug": [],
   "warn": [
@@ -31,7 +31,7 @@ Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
 }
 `;
 
-exports[`debugChild should attempt to log child process output, access denied, multiple lines 1`] = `
+exports[`debugChild should attempt to highlight specific messages, access denied, multiple lines 1`] = `
 {
   "debug": [
     [
@@ -48,7 +48,7 @@ Optionally, you can disable strict mode entirely with pluginIsolation: 'none'.",
 }
 `;
 
-exports[`debugChild should attempt to log child process output, default 1`] = `
+exports[`debugChild should attempt to highlight specific messages, default 1`] = `
 {
   "debug": [
     [
@@ -59,14 +59,31 @@ exports[`debugChild should attempt to log child process output, default 1`] = `
 }
 `;
 
-exports[`debugChild should attempt to log child process output, empty string 1`] = `
+exports[`debugChild should attempt to highlight specific messages, empty string 1`] = `
 {
   "debug": [],
   "warn": [],
 }
 `;
 
-exports[`debugChild should attempt to log child process output, module not found 1`] = `
+exports[`debugChild should attempt to highlight specific messages, generic multiline error 1`] = `
+{
+  "debug": [
+    [
+      "[tools-host pid=123 sid=1234567890] Lorem ipsum",
+    ],
+    [
+      "[tools-host pid=123 sid=1234567890] dolor sit",
+    ],
+    [
+      "[tools-host pid=123 sid=1234567890] amet",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`debugChild should attempt to highlight specific messages, module not found 1`] = `
 {
   "debug": [],
   "warn": [
@@ -78,7 +95,7 @@ For local files, prefer a file:// URL.",
 }
 `;
 
-exports[`debugChild should attempt to log child process output, module not found, multiple lines 1`] = `
+exports[`debugChild should attempt to highlight specific messages, module not found, multiple lines 1`] = `
 {
   "debug": [
     [
