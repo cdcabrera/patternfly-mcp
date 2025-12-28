@@ -461,6 +461,7 @@ const sendToolsHostShutdown = async (
     // Set fallback timeout for force shutdown
     forceKillSecondary = setTimeout(() => {
       sigkillChild(true);
+      shutdownChild();
     }, fallbackGracePeriodMs);
     forceKillSecondary?.unref?.();
 
