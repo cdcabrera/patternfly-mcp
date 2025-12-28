@@ -313,6 +313,23 @@ exports[`makeProxyCreators should attempt to return proxy creators, a function w
 }
 `;
 
+exports[`sendToolsHostShutdown should attempt force shutdown of child and fail NaN`] = `
+[
+  [
+    "Failed to send shutdown signal to Tools Host child process: Error: Mock send failure",
+  ],
+  [
+    "Failed to force-kill Tools Host child process: Error: Mock failed to kill child process",
+  ],
+  [
+    "Failed to close Tools Host stderr reader: Error: Mock close failure 1",
+  ],
+  [
+    "Slow shutdown response. Primary fallback force-killing Tools Host child process.",
+  ],
+]
+`;
+
 exports[`spawnToolsHost attempt to spawn the Tools Host, with no pluginIsolation, node 24: spawn 1`] = `
 {
   "spawn": [

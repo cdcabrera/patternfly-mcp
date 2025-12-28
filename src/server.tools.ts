@@ -288,6 +288,7 @@ const makeProxyCreators = (
   { pluginHost }: GlobalOptions = getOptions()
 ): McpToolCreator[] => handle.tools.map((tool): McpToolCreator => () => {
   const name = tool.name;
+  const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
   // Rebuild Zod schema from serialized JSON.
   const zodSchemaStrict = jsonSchemaToZod(tool.inputSchema);
@@ -330,7 +331,7 @@ const makeProxyCreators = (
     const response = await awaitIpc(
       handle.child,
       isInvokeResult(requestId),
-      pluginHost.invokeTimeoutMs
+      invokeTimeoutMs
     );
 
     if ('ok' in response && response.ok === false) {
@@ -367,7 +368,6 @@ const makeProxyCreators = (
  *
  * @param {GlobalOptions} options - Global options.
  * @param {AppSession} sessionOptions - Session options.
- * @returns {Promise<void>} Promise that resolves when the host is stopped or noop.
  */
 const sendToolsHostShutdown = async (
   { pluginHost }: GlobalOptions = getOptions(),
@@ -379,64 +379,94 @@ const sendToolsHostShutdown = async (
     return;
   }
 
-  const gracePeriodMs = (Number.isInteger(pluginHost?.gracePeriodMs) && pluginHost.gracePeriodMs) || 0;
+  const gracePeriodMs = Math.max(0, Number(pluginHost?.gracePeriodMs) || 0);
   const fallbackGracePeriodMs = gracePeriodMs + 200;
 
   const child = handle.child;
   let resolved = false;
   let forceKillPrimary: NodeJS.Timeout | undefined;
-  let forceKillFallback: NodeJS.Timeout | undefined;
+  let forceKillSecondary: NodeJS.Timeout | undefined;
+  let resolveIt: ((value: PromiseLike<void> | void) => void) | undefined;
 
-  await new Promise<void>(resolve => {
-    const resolveOnce = () => {
-      if (resolved) {
-        return;
-      }
+  // Attempt exit, disconnect, then remove from activeHostsBySession and finally resolve
+  const shutdownChild = () => {
+    if (resolved) {
+      return;
+    }
 
-      resolved = true;
-      child.off('exit', resolveOnce);
-      child.off('disconnect', resolveOnce);
+    resolved = true;
+    child.off('exit', shutdownChild);
+    child.off('disconnect', shutdownChild);
 
-      if (forceKillPrimary) {
-        clearTimeout(forceKillPrimary);
-      }
+    if (forceKillPrimary) {
+      clearTimeout(forceKillPrimary);
+    }
 
-      if (forceKillFallback) {
-        clearTimeout(forceKillFallback);
-      }
-
-      try {
-        handle.closeStderr?.();
-      } catch {}
-
-      activeHostsBySession.delete(sessionId);
-      resolve();
-    };
+    if (forceKillSecondary) {
+      clearTimeout(forceKillSecondary);
+    }
 
     try {
-      send(child, { t: 'shutdown', id: makeId() });
-    } catch {}
+      (handle as any).closeStderr();
+      log.info('Tools Host stderr reader closed.');
+    } catch (error) {
+      log.error(`Failed to close Tools Host stderr reader: ${formatUnknownError(error)}`);
+    }
 
-    const shutdownChild = () => {
-      try {
-        if (!child?.killed) {
-          child.kill('SIGKILL');
-        }
-      } finally {
-        resolveOnce();
+    const confirmHandle = activeHostsBySession.get(sessionId);
+
+    if (confirmHandle?.child === child) {
+      activeHostsBySession.delete(sessionId);
+    }
+
+    resolveIt?.();
+  };
+
+  // Forced shutdown.
+  const sigkillChild = (isSecondaryFallback: boolean = false) => {
+    try {
+      if (!child?.killed) {
+        log.warn(
+          `${
+            (resolved && 'Already attempted shutdown.') || 'Slow shutdown response.'
+          } ${
+            (isSecondaryFallback && 'Secondary') || 'Primary'
+          } fallback force-killing Tools Host child process.`
+        );
+        child.kill('SIGKILL');
       }
-    };
+    } catch (error) {
+      log.error(`Failed to force-kill Tools Host child process: ${formatUnknownError(error)}`);
+    }
+  };
 
-    // Primary grace period
-    forceKillPrimary = setTimeout(shutdownChild, gracePeriodMs);
+  // Start the shutdown process
+  await new Promise<void>(resolve => {
+    resolveIt = resolve;
+    // Send a shutdown signal to child. We try/catch in case the process is already dead, and
+    // since we're still following it up with a graceful shutdown, then force-kill.
+    try {
+      send(child, { t: 'shutdown', id: makeId() });
+    } catch (error) {
+      log.error(`Failed to send shutdown signal to Tools Host child process: ${formatUnknownError(error)}`);
+    }
+
+    // Set primary timeout for force shutdown
+    forceKillPrimary = setTimeout(() => {
+      sigkillChild();
+      shutdownChild();
+    }, gracePeriodMs);
     forceKillPrimary?.unref?.();
 
-    // Fallback grace period
-    forceKillFallback = setTimeout(shutdownChild, fallbackGracePeriodMs);
-    forceKillFallback?.unref?.();
+    // Set fallback timeout for force shutdown
+    forceKillSecondary = setTimeout(() => {
+      sigkillChild(true);
+    }, fallbackGracePeriodMs);
+    forceKillSecondary?.unref?.();
 
-    child.once('exit', resolveOnce);
-    child.once('disconnect', resolveOnce);
+    // Set up exit/disconnect handlers to resolve
+    child.once('exit', shutdownChild);
+    child.once('disconnect', shutdownChild);
   });
 };
 

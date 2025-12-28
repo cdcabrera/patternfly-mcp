@@ -389,9 +389,144 @@ describe('makeProxyCreators', () => {
 });
 
 describe('sendToolsHostShutdown', () => {
-  it('should exist', () => {
-    // placeholder test
-    expect(sendToolsHostShutdown).toBeDefined();
+  const MockLog = jest.mocked(log);
+  const MockSend = jest.mocked(send);
+  let mapGetSpy: jest.SpyInstance;
+  let mapDeleteSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mapGetSpy = jest.spyOn(Map.prototype, 'get');
+    mapDeleteSpy = jest.spyOn(Map.prototype, 'delete');
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    mapGetSpy.mockRestore();
+    mapDeleteSpy.mockRestore();
+  });
+
+  it('should attempt graceful shutdown of child', async () => {
+    const onceHandlers: Record<string, any> = {};
+    const child = {
+      kill: jest.fn(),
+      killed: false,
+      once: jest.fn((event: string, handler: any) => {
+        onceHandlers[event] = handler;
+      }),
+      off: jest.fn(),
+      stderr: {
+        on: jest.fn(),
+        off: jest.fn()
+      }
+    };
+    const handle = { child, closeStderr: jest.fn() };
+    const sessionId = 'test-session-id';
+
+    mapGetSpy.mockReturnValue(handle);
+
+    const promise = sendToolsHostShutdown({ pluginHost: { gracePeriodMs: 10 } } as any, { sessionId } as any);
+
+    onceHandlers['disconnect']();
+
+    await promise;
+
+    expect(MockSend).toHaveBeenCalledTimes(1);
+    expect(child.once).toHaveBeenCalledTimes(2);
+    expect(child.off).toHaveBeenCalledWith('exit', onceHandlers['exit']);
+    expect(child.off).toHaveBeenCalledWith('disconnect', onceHandlers['disconnect']);
+    expect(handle.closeStderr).toHaveBeenCalledTimes(1);
+    expect(mapDeleteSpy).toHaveBeenCalledWith(sessionId);
+
+    jest.advanceTimersByTime(220);
+    expect(child.kill).not.toHaveBeenCalled();
+  });
+
+  it('should attempt force shutdown of child', async () => {
+    const child = {
+      // eslint-disable-next-line func-names
+      kill: jest.fn(function (this: any) {
+        this.killed = true;
+
+        return true;
+      }),
+      killed: false,
+      once: jest.fn(),
+      off: jest.fn(),
+      stderr: {
+        on: jest.fn(),
+        off: jest.fn()
+      }
+    };
+    const handle = { child, closeStderr: jest.fn() };
+    const sessionId = 'test-session-id';
+
+    mapGetSpy.mockReturnValue(handle);
+
+    const promise = sendToolsHostShutdown({ pluginHost: { gracePeriodMs: 10 } } as any, { sessionId } as any);
+
+    jest.advanceTimersByTime(20);
+    await promise;
+
+    jest.advanceTimersByTime(220);
+
+    expect(MockSend).toHaveBeenCalledTimes(1);
+    expect(child.once).toHaveBeenCalledTimes(2);
+    expect(child.kill).toHaveBeenCalledTimes(1);
+    expect(child.kill).toHaveBeenCalledWith('SIGKILL');
+    expect(child.killed).toBe(true);
+    expect(child.off).toHaveBeenCalledTimes(2);
+    expect(handle.closeStderr).toHaveBeenCalledTimes(1);
+    expect(mapDeleteSpy).toHaveBeenCalledWith(sessionId);
+  });
+
+  it('should attempt force shutdown of child and fail', async () => {
+    const child = {
+      kill: jest.fn()
+        .mockImplementationOnce(() => {
+          throw new Error('Mock failed to kill child process');
+        })
+        // eslint-disable-next-line func-names
+        .mockImplementationOnce(function (this: any) {
+          this.killed = true;
+
+          return true;
+        }),
+      killed: false,
+      once: jest.fn(),
+      off: jest.fn(),
+      stderr: {
+        on: jest.fn(),
+        off: jest.fn()
+      }
+    };
+    const handle = {
+      child,
+      closeStderr: jest.fn()
+        .mockImplementationOnce(() => {
+          throw new Error('Mock close failure 1');
+        })
+        .mockImplementationOnce(() => {})
+    };
+    const sessionId = 'test-session-id';
+
+    MockSend.mockImplementationOnce(() => {
+      throw new Error('Mock send failure');
+    });
+
+    mapGetSpy.mockReturnValue(handle);
+
+    const promise = sendToolsHostShutdown({ pluginHost: { gracePeriodMs: 10 } } as any, { sessionId } as any);
+
+    jest.advanceTimersByTime(10);
+    await promise;
+
+    jest.advanceTimersByTime(220);
+
+    expect(child.kill).toHaveBeenCalledWith('SIGKILL');
+    expect(child.killed).toBe(false);
+    expect([...MockLog.error.mock.calls, ...MockLog.warn.mock.calls, ...MockLog.info.mock.calls]).toMatchSnapshot();
   });
 });
 
