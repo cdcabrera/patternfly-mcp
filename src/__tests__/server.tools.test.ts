@@ -609,6 +609,14 @@ describe('composeTools', () => {
       ]
     },
     {
+      description: 'inline and file package creators duplicate builtin creators',
+      nodeVersion: 22,
+      modules: [
+        // { name: 'loremIpsum', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        // 'dolorSitAmet'
+      ]
+    },
+    {
       description: 'inline and file package creators, duplicates',
       nodeVersion: 22,
       modules: [
