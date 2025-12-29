@@ -248,6 +248,38 @@ exports[`composeTools should attempt to setup creators, inline and file package 
 }
 `;
 
+exports[`composeTools should attempt to setup creators, inline and file package creators duplicate builtin creators 1`] = `
+{
+  "log": [],
+  "tools": [
+    [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+    [
+      "dolorSitAmet",
+      {
+        "description": "dolor sit amet",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+    [
+      "consecteturAdipiscingElit",
+      {
+        "description": "consectetur adipiscing elit",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+  ],
+}
+`;
+
 exports[`composeTools should attempt to setup creators, inline and file package creators, duplicates 1`] = `
 {
   "log": [
