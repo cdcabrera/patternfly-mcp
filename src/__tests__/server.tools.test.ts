@@ -46,7 +46,7 @@ describe('getBuiltInToolName', () => {
 
     creator.toolName = toolName;
 
-    expect(getBuiltInToolName(creator as any)).toBe(toolName);
+    expect(getBuiltInToolName(creator as any)).toBe(toolName.toLowerCase());
   });
 });
 
