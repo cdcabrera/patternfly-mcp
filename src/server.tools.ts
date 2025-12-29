@@ -45,7 +45,7 @@ const activeHostsBySession = new Map<string, HostHandle>();
  * @param creator - Tool creator function
  */
 const getBuiltInToolName = (creator: McpToolCreator): string | undefined =>
-  (creator as McpToolCreator & { toolName?: string })?.toolName?.toLowerCase?.();
+  (creator as McpToolCreator & { toolName?: string })?.toolName?.trim?.()?.toLowerCase?.();
 
 /**
  * Compute the allowlist for the Tools Host.
@@ -540,12 +540,14 @@ const composeTools = async (
   const invalidCreators = getInvalidTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
   const inlineCreators: NormalizedToolEntry[] = getInlineTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
 
+  const normalizeToolName = (toolName?: string) => toolName?.trim?.()?.toLowerCase?.();
+
   invalidCreators.forEach(({ error }) => {
     log.warn(error);
   });
 
   const filteredInlineCreators: McpToolCreator[] = inlineCreators.map(tool => {
-    const toolName = tool.toolName?.toLowerCase?.();
+    const toolName = normalizeToolName(tool.toolName);
 
     if (toolName && usedNames.has(toolName)) {
       log.warn(`Skipping inline tool "${toolName}" because a tool with the same name is already provided (built-in or earlier).`);
@@ -603,12 +605,17 @@ const composeTools = async (
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredTools = host.tools.filter(tool => {
-      if (usedNames.has(tool.name)) {
+      const toolName = normalizeToolName(tool.name);
+
+      if (toolName && usedNames.has(toolName)) {
         log.warn(`Skipping plugin tool "${tool.name}" – name already used by built-in/inline tool.`);
 
         return false;
       }
-      usedNames.add(tool.name);
+
+      if (toolName) {
+        usedNames.add(toolName);
+      }
 
       return true;
     });
