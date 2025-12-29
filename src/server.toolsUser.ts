@@ -131,6 +131,42 @@ const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'hand
 const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
 
 /**
+ * Memoization key store.
+ */
+const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
+
+/**
+ * Create a consistent unique key, via symbol, for a given input and context.
+ *
+ * @param input - Input can be an object, function, or primitive value.
+ * @param contextKey - Additional context to help uniqueness.
+ * @returns A unique key, a symbol for objects/functions or string for primitives.
+ */
+const getIdentityKey = (input: unknown, contextKey: string) => {
+  if (!input || (typeof input !== 'function' && typeof input !== 'object')) {
+    return `${String(input)}:${contextKey}`;
+  }
+
+  let contextMap = toolsMemoKeyStore.get(input);
+  let token;
+
+  if (!contextMap) {
+    contextMap = new Map<string, symbol>();
+    toolsMemoKeyStore.set(input, contextMap);
+  }
+
+  token = contextMap.get(contextKey);
+
+  if (!token) {
+    token = Symbol(`tools:${contextKey}`);
+    // token = Symbol(contextKey);
+    contextMap.set(contextKey, token);
+  }
+
+  return token;
+};
+
+/**
  * Return an object key value.
  *
  * @param obj
@@ -645,7 +681,7 @@ const normalizeTools = (config: any, {
 normalizeTools.memo = memo(normalizeTools, {
   cacheErrors: false,
   keyHash: args =>
-    JSON.stringify([args[0], (args as any)?.[1]?.contextPath, (args as any)?.[1]?.contextUrl])
+    getIdentityKey(args[0], `${(args as any)?.[1]?.contextPath}:${(args as any)?.[1]?.contextUrl}`)
 });
 
 /**
