@@ -626,11 +626,9 @@ describe('composeTools', () => {
     };
     const filePackageToolModules: any[] = modules;
     const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, original: tool }));
-
-    const handle = { child: mockChild, closeStderr: jest.fn() };
     const sessionId = 'test-session-id';
 
-    MockSpawn.mockReturnValueOnce(handle as any);
+    MockSpawn.mockReturnValueOnce(mockChild as any);
 
     MockAwaitIpc
       .mockResolvedValueOnce({ t: 'hello:ack', id: 'id-1' } as any)
@@ -639,6 +637,65 @@ describe('composeTools', () => {
 
     const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion, contextUrl: 'file:///test/path', contextPath: '/test/path' };
+    const sessionOptions: any = { sessionId };
+    const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
+
+    expect({
+      tools,
+      log: MockLog.warn.mock.calls
+    }).toMatchSnapshot();
+  });
+
+  it('should attempt to setup handlers for child exit, disconnect', async () => {
+    const onceHandlers: Record<string, any> = {};
+    const mockChild = {
+      pid: 123,
+      once: jest.fn((event: string, handler: any) => {
+        onceHandlers[event] = handler;
+      }),
+      off: jest.fn(),
+      stderr: {
+        on: jest.fn(),
+        off: jest.fn()
+      }
+    };
+    const filePackageToolModules: any[] = ['file:///test/module.js', '@patternfly/woot'];
+    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, original: tool }));
+    const sessionId = 'test-session-id';
+
+    MockSpawn.mockReturnValueOnce(mockChild as any);
+
+    MockAwaitIpc
+      .mockResolvedValueOnce({ t: 'hello:ack', id: 'id-1' } as any)
+      .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
+      .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockFilePackageTools } as any);
+
+    const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
+    const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
+    const sessionOptions: any = { sessionId };
+
+    await composeTools(defaultCreators, globalOptions, sessionOptions);
+
+    onceHandlers['disconnect']();
+
+    expect(mockChild.once).toHaveBeenCalledTimes(2);
+    expect(mockChild.stderr.on).toHaveBeenCalledWith('data', expect.any(Function));
+    expect(mockChild.stderr.off).toHaveBeenCalledWith('data', expect.any(Function));
+    expect(mockChild.off).toHaveBeenCalledWith('exit', onceHandlers['exit']);
+    expect(mockChild.off).toHaveBeenCalledWith('disconnect', onceHandlers['disconnect']);
+  });
+
+  it('should return default creators on tools host error', async () => {
+    const filePackageToolModules: any[] = ['@patternfly/tools'];
+
+    const sessionId = 'test-session-id';
+
+    MockSpawn.mockImplementationOnce(() => {
+      throw new Error('Mock spawn failure');
+    });
+
+    const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
+    const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
     const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
 

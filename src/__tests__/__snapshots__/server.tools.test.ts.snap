@@ -156,6 +156,24 @@ exports[`composeTools should attempt to setup creators, inline duplicate creator
 }
 `;
 
+exports[`composeTools should return default creators on tools host error 1`] = `
+{
+  "log": [
+    [
+      "Failed to start Tools Host; skipping externals and continuing with built-ins/inline.",
+    ],
+    [
+      undefined,
+    ],
+  ],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+  ],
+}
+`;
+
 exports[`debugChild should attempt to highlight specific messages, access denied 1`] = `
 {
   "debug": [],

@@ -564,12 +564,8 @@ const composeTools = async (
     return result;
   }
 
-  console.error('>>>>>>>>>>>>>>>>>>> HOST 001', toolModules);
-
   try {
     const host = await spawnToolsHost();
-
-    console.error('>>>>>>>>>>>>>>>>>>> HOST 002', host.tools, activeHostsBySession);
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredTools = host.tools.filter(tool => {
