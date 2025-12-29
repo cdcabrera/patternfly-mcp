@@ -14,6 +14,7 @@ import {
 } from '../server.tools';
 import { awaitIpc, makeId, send } from '../server.toolsIpc';
 import { isZodSchema } from '../server.schema';
+import { normalizeTools } from '../server.toolsUser';
 
 jest.mock('node:child_process', () => ({
   spawn: jest.fn()
@@ -556,14 +557,16 @@ describe('composeTools', () => {
     {
       description: 'default package creators',
       nodeVersion: 22,
-      modules: []
+      modules: [],
+      expectedModuleCount: 3
     },
     {
       description: 'invalid creator',
       nodeVersion: 22,
       modules: [
         { name: 'dolor', error: 'Creator error message' }
-      ]
+      ],
+      expectedModuleCount: 3
     },
     {
       description: 'inline creators',
@@ -571,7 +574,8 @@ describe('composeTools', () => {
       modules: [
         () => ['lorem', { description: 'ipsum', inputSchema: {} }, () => {}],
         { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
-      ]
+      ],
+      expectedModuleCount: 5
     },
     {
       description: 'inline duplicate creators',
@@ -580,32 +584,38 @@ describe('composeTools', () => {
         () => ['lorem', { description: 'ipsum', inputSchema: {} }, () => {}],
         { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
         { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
-      ]
+      ],
+      expectedModuleCount: 5
     },
     {
       description: 'file package creators',
       nodeVersion: 22,
-      modules: ['file:///test/module.js', '@patternfly/tools']
+      modules: ['file:///test/module.js', '@patternfly/tools'],
+      expectedModuleCount: 5
     },
     {
       description: 'file package duplicate creators',
       nodeVersion: 22,
-      modules: ['file:///test/module.js', '@patternfly/tools', '@patternfly/tools']
+      modules: ['file:///test/module.js', '@patternfly/tools', '@patternfly/tools'],
+      expectedModuleCount: 5
     },
     {
       description: 'file package creators, Node.js 20',
       nodeVersion: 20,
-      modules: ['file:///test/module.js', '@patternfly/tools']
+      modules: ['file:///test/module.js', '@patternfly/tools'],
+      expectedModuleCount: 3
     },
     {
       description: 'file package creators, Node.js 24',
       nodeVersion: 24,
-      modules: ['file:///test/module.js', '@patternfly/tools']
+      modules: ['file:///test/module.js', '@patternfly/tools'],
+      expectedModuleCount: 5
     },
     {
       description: 'file package creators, Node.js undefined',
       nodeVersion: undefined,
-      modules: ['file:///test/module.js', '@patternfly/tools']
+      modules: ['file:///test/module.js', '@patternfly/tools'],
+      expectedModuleCount: 3
     },
     {
       description: 'inline and file package creators',
@@ -615,17 +625,18 @@ describe('composeTools', () => {
         { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools'
-      ]
+      ],
+      expectedModuleCount: 7
     },
-    /*{
+    {
       description: 'inline and file package creators duplicate builtin creators',
       nodeVersion: 22,
       modules: [
-        ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}]
-        // { name: 'loremIpsum', description: 'sit amet', inputSchema: {}, handler: () => {} },
-        // 'dolorSitAmet'
-      ]
-    },*/
+        ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
+        'dolorSitAmet'
+      ],
+      expectedModuleCount: 3
+    },
     {
       description: 'inline and file package creators, duplicates',
       nodeVersion: 22,
@@ -635,7 +646,8 @@ describe('composeTools', () => {
         'file:///test/module.js',
         '@patternfly/tools',
         'DOLOR   '
-      ]
+      ],
+      expectedModuleCount: 6
     },
     {
       description: 'inline and file package creators, duplicates, Node.js 20',
@@ -646,16 +658,19 @@ describe('composeTools', () => {
         'file:///test/module.js',
         '@patternfly/tools',
         'DOLOR   '
-      ]
+      ],
+      expectedModuleCount: 5
     }
-  ])('should attempt to setup creators, $description', async ({ modules, nodeVersion }) => {
+  ])('should attempt to setup creators, $description', async ({ modules, nodeVersion, expectedModuleCount }) => {
     const mockChild = {
       pid: 123,
       once: jest.fn(),
       off: jest.fn()
     };
     const filePackageToolModules: any[] = modules;
-    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, original: tool }));
+    const mockFilePackageTools = filePackageToolModules.filter(tool => typeof tool === 'string')
+      .map(name => ({ name, description: name, inputSchema: {}, source: name }));
+
     const sessionId = 'test-session-id';
 
     MockSpawn.mockReturnValueOnce(mockChild as any);
@@ -670,8 +685,9 @@ describe('composeTools', () => {
     const sessionOptions: any = { sessionId };
     const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
 
+    expect(tools.length).toBe(expectedModuleCount);
     expect({
-      tools,
+      toolsCount: tools.length,
       log: MockLog.warn.mock.calls
     }).toMatchSnapshot();
   });
@@ -690,7 +706,7 @@ describe('composeTools', () => {
       }
     };
     const filePackageToolModules: any[] = ['file:///test/module.js', '@patternfly/woot'];
-    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, original: tool }));
+    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, description: tool, inputSchema: {}, source: tool }));
     const sessionId = 'test-session-id';
 
     MockSpawn.mockReturnValueOnce(mockChild as any);

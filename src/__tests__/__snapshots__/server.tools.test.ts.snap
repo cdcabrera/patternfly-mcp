@@ -3,24 +3,14 @@
 exports[`composeTools should attempt to setup creators, default package creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 3,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, file package creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -31,24 +21,14 @@ exports[`composeTools should attempt to setup creators, file package creators, N
       "External tool plugins require Node >= 22; skipping file-based tools.",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 3,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, file package creators, Node.js 24 1`] = `
 {
   "log": [],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -59,11 +39,7 @@ exports[`composeTools should attempt to setup creators, file package creators, N
       "External tool plugins require Node >= 22; skipping file-based tools.",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 3,
 }
 `;
 
@@ -74,30 +50,28 @@ exports[`composeTools should attempt to setup creators, file package duplicate c
       "Skipping plugin tool "@patternfly/tools" – name already used by built-in/inline tool.",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, inline and file package creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
+  "toolsCount": 7,
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline and file package creators duplicate builtin creators 1`] = `
+{
+  "log": [
+    [
+      "Skipping inline tool "loremipsum" because a tool with the same name is already provided (built-in or earlier).",
+    ],
+    [
+      "Skipping plugin tool "dolorSitAmet" – name already used by built-in/inline tool.",
+    ],
   ],
+  "toolsCount": 3,
 }
 `;
 
@@ -111,16 +85,7 @@ exports[`composeTools should attempt to setup creators, inline and file package 
       "Skipping plugin tool "DOLOR   " – name already used by built-in/inline tool.",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 6,
 }
 `;
 
@@ -131,26 +96,14 @@ exports[`composeTools should attempt to setup creators, inline and file package 
       "External tool plugins require Node >= 22; skipping file-based tools.",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, inline creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -161,13 +114,7 @@ exports[`composeTools should attempt to setup creators, inline duplicate creator
       "Skipping inline tool "dolor" because a tool with the same name is already provided (built-in or earlier).",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -178,11 +125,7 @@ exports[`composeTools should attempt to setup creators, invalid creator 1`] = `
       "createMcpTool: invalid configuration used at index 0: Unsupported type object",
     ],
   ],
-  "tools": [
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 3,
 }
 `;
 
