@@ -255,7 +255,7 @@ exports[`composeTools should attempt to setup creators, inline and file package 
       "Skipping plugin tool "@patternfly/tools" – name already used by built-in/inline tool.",
     ],
     [
-      "Skipping plugin tool "dolor" – name already used by built-in/inline tool.",
+      "Skipping plugin tool "DOLOR   " – name already used by built-in/inline tool.",
     ],
   ],
   "tools": [

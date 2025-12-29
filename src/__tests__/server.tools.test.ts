@@ -616,7 +616,7 @@ describe('composeTools', () => {
         { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools',
-        'dolor'
+        'DOLOR   '
       ]
     },
     {
@@ -627,7 +627,7 @@ describe('composeTools', () => {
         { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools',
-        'dolor'
+        'DOLOR   '
       ]
     }
   ])('should attempt to setup creators, $description', async ({ modules, nodeVersion }) => {
