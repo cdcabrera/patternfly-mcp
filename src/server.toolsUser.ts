@@ -1,6 +1,6 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, extname, isAbsolute, resolve } from 'node:path';
-import { isPlainObject } from './server.helpers';
+import { isPlainObject, isReferenceLike } from './server.helpers';
 import { type McpToolCreator, type McpTool } from './server';
 import { type GlobalOptions } from './options';
 import { memo } from './server.caching';
@@ -131,12 +131,57 @@ const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'hand
 const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
 
 /**
+ * Memoization key store. See `getSetMemoKey`.
+ */
+const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
+
+/**
+ * Quick consistent unique key, via symbol (anything unique-like will work), for a given input
+ * and context.
+ *
+ * Used specifically for helping memoize functions and objects against context. Not used
+ * elsewhere because simple equality checks, without context, in the lower-level functions
+ * are good enough.
+ *
+ * @private
+ * @param input - Input can be an object, function, or primitive value.
+ * @param contextKey - Additional context to help uniqueness.
+ * @returns A unique key, a symbol for objects/functions or string for primitives.
+ */
+const getSetMemoKey = (input: unknown, contextKey: string) => {
+  if (!isReferenceLike(input)) {
+    return `${String(input)}:${contextKey}`;
+  }
+
+  let contextMap = toolsMemoKeyStore.get(input);
+  let token;
+
+  if (!contextMap) {
+    contextMap = new Map<string, symbol>();
+    toolsMemoKeyStore.set(input, contextMap);
+  }
+
+  token = contextMap.get(contextKey);
+
+  if (!token) {
+    token = Symbol(`tools:${contextKey}`);
+    contextMap.set(contextKey, token);
+  }
+
+  return token;
+};
+
+/**
  * Return an object key value.
  *
  * @param obj
  * @param key
  */
 const sanitizeDataProp = (obj: unknown, key: string) => {
+  if (!isReferenceLike(obj)) {
+    return undefined;
+  }
+
   const descriptor = Object.getOwnPropertyDescriptor(obj, key);
   const isDataProp = descriptor !== undefined && 'value' in descriptor;
 
@@ -645,7 +690,7 @@ const normalizeTools = (config: any, {
 normalizeTools.memo = memo(normalizeTools, {
   cacheErrors: false,
   keyHash: args =>
-    JSON.stringify([args[0], (args as any)?.[1]?.contextPath, (args as any)?.[1]?.contextUrl])
+    getSetMemoKey(args[0], `${(args as any)?.[1]?.contextPath}:${(args as any)?.[1]?.contextUrl}`)
 });
 
 /**

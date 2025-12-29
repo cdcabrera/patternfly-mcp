@@ -3,66 +3,14 @@
 exports[`composeTools should attempt to setup creators, default package creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-  ],
+  "toolsCount": 3,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, file package creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -73,66 +21,14 @@ exports[`composeTools should attempt to setup creators, file package creators, N
       "External tool plugins require Node >= 22; skipping file-based tools.",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-  ],
+  "toolsCount": 3,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, file package creators, Node.js 24 1`] = `
 {
   "log": [],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -143,32 +39,7 @@ exports[`composeTools should attempt to setup creators, file package creators, N
       "External tool plugins require Node >= 22; skipping file-based tools.",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-  ],
+  "toolsCount": 3,
 }
 `;
 
@@ -179,72 +50,28 @@ exports[`composeTools should attempt to setup creators, file package duplicate c
       "Skipping plugin tool "@patternfly/tools" – name already used by built-in/inline tool.",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, inline and file package creators 1`] = `
 {
   "log": [],
-  "tools": [
+  "toolsCount": 7,
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline and file package creators duplicate builtin creators 1`] = `
+{
+  "log": [
     [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
+      "Skipping inline tool "loremipsum" because a tool with the same name is already provided (built-in or earlier).",
     ],
     [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
+      "Skipping plugin tool "dolorSitAmet" – name already used by built-in/inline tool.",
     ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
   ],
+  "toolsCount": 3,
 }
 `;
 
@@ -258,37 +85,7 @@ exports[`composeTools should attempt to setup creators, inline and file package 
       "Skipping plugin tool "DOLOR   " – name already used by built-in/inline tool.",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 6,
 }
 `;
 
@@ -299,68 +96,14 @@ exports[`composeTools should attempt to setup creators, inline and file package 
       "External tool plugins require Node >= 22; skipping file-based tools.",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
 exports[`composeTools should attempt to setup creators, inline creators 1`] = `
 {
   "log": [],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -371,34 +114,7 @@ exports[`composeTools should attempt to setup creators, inline duplicate creator
       "Skipping inline tool "dolor" because a tool with the same name is already provided (built-in or earlier).",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [Function],
-    [Function],
-  ],
+  "toolsCount": 5,
 }
 `;
 
@@ -409,32 +125,7 @@ exports[`composeTools should attempt to setup creators, invalid creator 1`] = `
       "createMcpTool: invalid configuration used at index 0: Unsupported type object",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-  ],
+  "toolsCount": 3,
 }
 `;
 
@@ -445,32 +136,7 @@ exports[`composeTools should return default creators on tools host error 1`] = `
       "Failed to start Tools Host; skipping externals and continuing with built-ins/inline. undefined",
     ],
   ],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-  ],
+  "toolsCount": 3,
 }
 `;
 
