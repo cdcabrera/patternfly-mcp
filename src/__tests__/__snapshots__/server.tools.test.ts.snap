@@ -4,30 +4,9 @@ exports[`composeTools should attempt to setup creators, default package creators
 {
   "log": [],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
   ],
 }
 `;
@@ -36,30 +15,9 @@ exports[`composeTools should attempt to setup creators, file package creators 1`
 {
   "log": [],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
   ],
@@ -74,30 +32,9 @@ exports[`composeTools should attempt to setup creators, file package creators, N
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
   ],
 }
 `;
@@ -106,30 +43,9 @@ exports[`composeTools should attempt to setup creators, file package creators, N
 {
   "log": [],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
   ],
@@ -144,30 +60,9 @@ exports[`composeTools should attempt to setup creators, file package creators, N
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
   ],
 }
 `;
@@ -180,30 +75,9 @@ exports[`composeTools should attempt to setup creators, file package duplicate c
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
   ],
@@ -214,68 +88,15 @@ exports[`composeTools should attempt to setup creators, inline and file package 
 {
   "log": [],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
     [Function],
     [Function],
     [Function],
     [Function],
     [Function],
     [Function],
-  ],
-}
-`;
-
-exports[`composeTools should attempt to setup creators, inline and file package creators duplicate builtin creators 1`] = `
-{
-  "log": [],
-  "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
   ],
 }
 `;
@@ -291,30 +112,9 @@ exports[`composeTools should attempt to setup creators, inline and file package 
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
     [Function],
@@ -332,30 +132,9 @@ exports[`composeTools should attempt to setup creators, inline and file package 
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
   ],
@@ -366,30 +145,9 @@ exports[`composeTools should attempt to setup creators, inline creators 1`] = `
 {
   "log": [],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
   ],
@@ -404,30 +162,9 @@ exports[`composeTools should attempt to setup creators, inline duplicate creator
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
     [Function],
     [Function],
   ],
@@ -442,30 +179,9 @@ exports[`composeTools should attempt to setup creators, invalid creator 1`] = `
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
   ],
 }
 `;
@@ -478,30 +194,9 @@ exports[`composeTools should return default creators on tools host error 1`] = `
     ],
   ],
   "tools": [
-    [
-      "loremIpsum",
-      {
-        "description": "lorem ipsum",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "dolorSitAmet",
-      {
-        "description": "dolor sit amet",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
-    [
-      "consecteturAdipiscingElit",
-      {
-        "description": "consectetur adipiscing elit",
-        "inputSchema": {},
-      },
-      [Function],
-    ],
+    [Function],
+    [Function],
+    [Function],
   ],
 }
 `;

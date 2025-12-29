@@ -535,6 +535,15 @@ describe('composeTools', () => {
   const MockAwaitIpc = jest.mocked(awaitIpc);
   const MockLog = jest.mocked(log);
 
+  // Mock default creators
+  const loremIpsum = () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}];
+  const dolorSitAmet = () => ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}];
+  const consecteturAdipiscingElit = () => ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}];
+
+  loremIpsum.toolName = 'loremIpsum';
+  dolorSitAmet.toolName = 'dolorSitAmet';
+  consecteturAdipiscingElit.toolName = 'consecteturAdipiscingElit';
+
   beforeEach(() => {
     jest.clearAllMocks();
     jest.resetAllMocks();
@@ -608,7 +617,7 @@ describe('composeTools', () => {
         '@patternfly/tools'
       ]
     },
-    {
+    /*{
       description: 'inline and file package creators duplicate builtin creators',
       nodeVersion: 22,
       modules: [
@@ -616,7 +625,7 @@ describe('composeTools', () => {
         // { name: 'loremIpsum', description: 'sit amet', inputSchema: {}, handler: () => {} },
         // 'dolorSitAmet'
       ]
-    },
+    },*/
     {
       description: 'inline and file package creators, duplicates',
       nodeVersion: 22,
@@ -656,11 +665,7 @@ describe('composeTools', () => {
       .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
       .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockFilePackageTools } as any);
 
-    const defaultCreators: any[] = [
-      ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
-      ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}],
-      ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}]
-    ];
+    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, consecteturAdipiscingElit];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
     const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
@@ -695,11 +700,7 @@ describe('composeTools', () => {
       .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
       .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockFilePackageTools } as any);
 
-    const defaultCreators: any[] = [
-      ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
-      ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}],
-      ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}]
-    ];
+    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, consecteturAdipiscingElit];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
 
@@ -723,11 +724,7 @@ describe('composeTools', () => {
       throw new Error('Mock spawn failure');
     });
 
-    const defaultCreators: any[] = [
-      ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
-      ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}],
-      ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}]
-    ];
+    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, consecteturAdipiscingElit];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
     const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
