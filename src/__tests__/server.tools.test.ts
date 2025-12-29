@@ -635,7 +635,11 @@ describe('composeTools', () => {
       .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
       .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockFilePackageTools } as any);
 
-    const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
+    const defaultCreators: any[] = [
+      ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
+      ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}],
+      ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}]
+    ];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
     const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
@@ -670,7 +674,11 @@ describe('composeTools', () => {
       .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
       .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockFilePackageTools } as any);
 
-    const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
+    const defaultCreators: any[] = [
+      ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
+      ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}],
+      ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}]
+    ];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
 
@@ -694,7 +702,11 @@ describe('composeTools', () => {
       throw new Error('Mock spawn failure');
     });
 
-    const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
+    const defaultCreators: any[] = [
+      ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
+      ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}],
+      ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}]
+    ];
     const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
     const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
