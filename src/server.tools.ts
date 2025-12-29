@@ -113,6 +113,18 @@ const getInlineTools = ({ contextPath, contextUrl, toolModules }: GlobalOptions 
   normalizeTools.memo(toolModules, { contextPath, contextUrl }).filter(tool => tool.type === 'tuple' || tool.type === 'object' || tool.type === 'creator');
 
 /**
+ * Get normalized "inline" tool modules.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @param options.contextPath - Base path for tool modules
+ * @param options.contextUrl - Base URL for tool modules
+ * @param options.toolModules - Array of tool modules to normalize
+ * @returns - Filtered array of normalized "inline" tool modules
+ */
+const getInvalidTools = ({ contextPath, contextUrl, toolModules }: GlobalOptions = getOptions()): NormalizedToolEntry[] =>
+  normalizeTools.memo(toolModules, { contextPath, contextUrl }).filter(tool => tool.type === 'invalid');
+
+/**
  * Get normalized file and package tool modules.
  *
  * @param {GlobalOptions} options - Global options.
@@ -522,8 +534,13 @@ const composeTools = async (
   }
 
   const filePackageCreators: NormalizedToolEntry[] = getFilePackageTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
-
+  const invalidCreators = getInvalidTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
   const inlineCreators: NormalizedToolEntry[] = getInlineTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
+
+  invalidCreators.forEach(({ error }) => {
+    log.warn(error);
+  });
+
   const filteredInlineCreators: McpToolCreator[] = inlineCreators.map(tool => {
     const toolName = tool.toolName;
 
@@ -617,6 +634,7 @@ export {
   getBuiltInToolName,
   getFilePackageTools,
   getInlineTools,
+  getInvalidTools,
   getFilePackageToolModules,
   logWarningsErrors,
   makeProxyCreators,

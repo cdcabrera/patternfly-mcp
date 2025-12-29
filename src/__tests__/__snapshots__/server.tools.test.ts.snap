@@ -366,6 +366,42 @@ exports[`composeTools should attempt to setup creators, inline duplicate creator
 }
 `;
 
+exports[`composeTools should attempt to setup creators, invalid creator 1`] = `
+{
+  "log": [
+    [
+      "createMcpTool: invalid configuration used at index 0: Unsupported type object",
+    ],
+  ],
+  "tools": [
+    [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+    [
+      "dolorSitAmet",
+      {
+        "description": "dolor sit amet",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+    [
+      "consecteturAdipiscingElit",
+      {
+        "description": "consectetur adipiscing elit",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+  ],
+}
+`;
+
 exports[`composeTools should return default creators on tools host error 1`] = `
 {
   "log": [

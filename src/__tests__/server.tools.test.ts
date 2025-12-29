@@ -550,6 +550,13 @@ describe('composeTools', () => {
       modules: []
     },
     {
+      description: 'invalid creator',
+      nodeVersion: 22,
+      modules: [
+        { name: 'dolor', error: 'Creator error message' }
+      ]
+    },
+    {
       description: 'inline creators',
       nodeVersion: 22,
       modules: [
