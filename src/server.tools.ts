@@ -44,7 +44,8 @@ const activeHostsBySession = new Map<string, HostHandle>();
  *
  * @param creator - Tool creator function
  */
-const getBuiltInToolName = (creator: McpToolCreator): string | undefined => (creator as McpToolCreator & { toolName?: string })?.toolName;
+const getBuiltInToolName = (creator: McpToolCreator): string | undefined =>
+  (creator as McpToolCreator & { toolName?: string })?.toolName?.toLowerCase?.();
 
 /**
  * Compute the allowlist for the Tools Host.
@@ -544,7 +545,7 @@ const composeTools = async (
   });
 
   const filteredInlineCreators: McpToolCreator[] = inlineCreators.map(tool => {
-    const toolName = tool.toolName;
+    const toolName = tool.toolName?.toLowerCase?.();
 
     if (toolName && usedNames.has(toolName)) {
       log.warn(`Skipping inline tool "${toolName}" because a tool with the same name is already provided (built-in or earlier).`);
