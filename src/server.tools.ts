@@ -89,15 +89,40 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
 };
 
 /**
+ * Get normalized "file and package" tool modules.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @param options.contextPath - Base path for tool modules
+ * @param options.contextUrl - Base URL for tool modules
+ * @param options.toolModules - Array of tool modules to normalize
+ * @returns - Filtered array of normalized "file and package" tool modules
+ */
+const getFilePackageTools = ({ contextPath, contextUrl, toolModules }: GlobalOptions = getOptions()): NormalizedToolEntry[] =>
+  normalizeTools.memo(toolModules, { contextPath, contextUrl }).filter(tool => tool.type === 'file' || tool.type === 'package');
+
+/**
+ * Get normalized "inline" tool modules.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @param options.contextPath - Base path for tool modules
+ * @param options.contextUrl - Base URL for tool modules
+ * @param options.toolModules - Array of tool modules to normalize
+ * @returns - Filtered array of normalized "inline" tool modules
+ */
+const getInlineTools = ({ contextPath, contextUrl, toolModules }: GlobalOptions = getOptions()): NormalizedToolEntry[] =>
+  normalizeTools.memo(toolModules, { contextPath, contextUrl }).filter(tool => tool.type === 'tuple' || tool.type === 'object' || tool.type === 'creator');
+
+/**
  * Get normalized file and package tool modules.
  *
  * @param {GlobalOptions} options - Global options.
+ * @param options.contextPath - Base path for tool modules
+ * @param options.contextUrl - Base URL for tool modules
+ * @param options.toolModules - Array of tool modules to normalize
  * @returns Updated array of normalized tool modules
  */
 const getFilePackageToolModules = ({ contextPath, contextUrl, toolModules }: GlobalOptions = getOptions()): string[] =>
-  normalizeTools
-    .memo(toolModules, { contextPath, contextUrl })
-    .filter(tool => tool.type === 'file' || tool.type === 'package')
+  getFilePackageTools({ contextPath, contextUrl, toolModules } as GlobalOptions)
     .map(tool => tool.normalizedUrl as string);
 
 /**
@@ -497,7 +522,7 @@ const composeTools = async (
   }
 
   const filePackageEntries: NormalizedToolEntry[] = [];
-  const tools = normalizeTools.memo(toolModules, { contextUrl, contextPath });
+  const tools = normalizeTools(toolModules, { contextUrl, contextPath });
 
   tools.forEach(tool => {
     switch (tool.type) {
@@ -539,8 +564,12 @@ const composeTools = async (
     return result;
   }
 
+  console.error('>>>>>>>>>>>>>>>>>>> HOST 001', toolModules);
+
   try {
     const host = await spawnToolsHost();
+
+    console.error('>>>>>>>>>>>>>>>>>>> HOST 002', host.tools, activeHostsBySession);
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredTools = host.tools.filter(tool => {
@@ -593,6 +622,8 @@ export {
   computeFsReadAllowlist,
   debugChild,
   getBuiltInToolName,
+  getFilePackageTools,
+  getInlineTools,
   getFilePackageToolModules,
   logWarningsErrors,
   makeProxyCreators,

@@ -1,5 +1,161 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`composeTools should attempt to setup creators, default package creators 1`] = `
+{
+  "log": [],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, file package creators 1`] = `
+{
+  "log": [],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, file package creators, Node.js 20 1`] = `
+{
+  "log": [
+    [
+      "External tool plugins require Node >= 22; skipping file-based tools.",
+    ],
+  ],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, file package creators, Node.js 24 1`] = `
+{
+  "log": [],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, file package duplicate creators 1`] = `
+{
+  "log": [
+    [
+      "Skipping plugin tool "@patternfly/tools" – name already used by built-in/inline tool.",
+    ],
+  ],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline and file package creators 1`] = `
+{
+  "log": [],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+    [Function],
+    [Function],
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline and file package creators, duplicates 1`] = `
+{
+  "log": [
+    [
+      "Skipping plugin tool "@patternfly/tools" – name already used by built-in/inline tool.",
+    ],
+    [
+      "Skipping plugin tool "dolor" – name already used by built-in/inline tool.",
+    ],
+  ],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+    [Function],
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline and file package creators, duplicates, Node.js 20 1`] = `
+{
+  "log": [
+    [
+      "External tool plugins require Node >= 22; skipping file-based tools.",
+    ],
+  ],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline creators 1`] = `
+{
+  "log": [],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+  ],
+}
+`;
+
+exports[`composeTools should attempt to setup creators, inline duplicate creators 1`] = `
+{
+  "log": [
+    [
+      "Skipping inline tool "dolor" because a tool with the same name is already provided (built-in or earlier).",
+    ],
+  ],
+  "tools": [
+    "lorem ipsum",
+    "dolor sit amet",
+    "consectetur adipiscing elit",
+    [Function],
+    [Function],
+  ],
+}
+`;
+
 exports[`debugChild should attempt to highlight specific messages, access denied 1`] = `
 {
   "debug": [],

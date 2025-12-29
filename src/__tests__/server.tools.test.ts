@@ -531,9 +531,121 @@ describe('sendToolsHostShutdown', () => {
 });
 
 describe('composeTools', () => {
-  it('should exist', () => {
-    // placeholder test
-    expect(composeTools).toBeDefined();
+  const MockSpawn = jest.mocked(spawn);
+  const MockAwaitIpc = jest.mocked(awaitIpc);
+  const MockLog = jest.mocked(log);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.resetAllMocks();
+  });
+
+  afterAll(() => {
+  });
+
+  it.each([
+    {
+      description: 'default package creators',
+      nodeVersion: 22,
+      modules: []
+    },
+    {
+      description: 'inline creators',
+      nodeVersion: 22,
+      modules: [
+        () => ['lorem', { description: 'ipsum', inputSchema: {} }, () => {}],
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
+      ]
+    },
+    {
+      description: 'inline duplicate creators',
+      nodeVersion: 22,
+      modules: [
+        () => ['lorem', { description: 'ipsum', inputSchema: {} }, () => {}],
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
+      ]
+    },
+    {
+      description: 'file package creators',
+      nodeVersion: 22,
+      modules: ['file:///test/module.js', '@patternfly/tools']
+    },
+    {
+      description: 'file package duplicate creators',
+      nodeVersion: 22,
+      modules: ['file:///test/module.js', '@patternfly/tools', '@patternfly/tools']
+    },
+    {
+      description: 'file package creators, Node.js 20',
+      nodeVersion: 20,
+      modules: ['file:///test/module.js', '@patternfly/tools']
+    },
+    {
+      description: 'file package creators, Node.js 24',
+      nodeVersion: 24,
+      modules: ['file:///test/module.js', '@patternfly/tools']
+    },
+    {
+      description: 'inline and file package creators',
+      nodeVersion: 22,
+      modules: [
+        () => ['lorem', { description: 'ipsum', inputSchema: {} }, () => {}],
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        'file:///test/module.js',
+        '@patternfly/tools'
+      ]
+    },
+    {
+      description: 'inline and file package creators, duplicates',
+      nodeVersion: 22,
+      modules: [
+        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: {}, handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        'file:///test/module.js',
+        '@patternfly/tools',
+        'dolor'
+      ]
+    },
+    {
+      description: 'inline and file package creators, duplicates, Node.js 20',
+      nodeVersion: 20,
+      modules: [
+        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: {}, handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        'file:///test/module.js',
+        '@patternfly/tools',
+        'dolor'
+      ]
+    }
+  ])('should attempt to setup creators, $description', async ({ modules, nodeVersion }) => {
+    const mockChild = {
+      pid: 123,
+      once: jest.fn(),
+      off: jest.fn()
+    };
+    const filePackageToolModules: any[] = modules;
+    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, original: tool }));
+
+    const handle = { child: mockChild, closeStderr: jest.fn() };
+    const sessionId = 'test-session-id';
+
+    MockSpawn.mockReturnValueOnce(handle as any);
+
+    MockAwaitIpc
+      .mockResolvedValueOnce({ t: 'hello:ack', id: 'id-1' } as any)
+      .mockResolvedValueOnce({ t: 'load:ack', id: 'id-1', warnings: [], errors: [] } as any)
+      .mockResolvedValueOnce({ t: 'manifest:result', id: 'id-1', tools: mockFilePackageTools } as any);
+
+    const defaultCreators: any[] = ['lorem ipsum', 'dolor sit amet', 'consectetur adipiscing elit'];
+    const globalOptions: any = { toolModules: filePackageToolModules, nodeVersion, contextUrl: 'file:///test/path', contextPath: '/test/path' };
+    const sessionOptions: any = { sessionId };
+    const tools = await composeTools(defaultCreators, globalOptions, sessionOptions);
+
+    expect({
+      tools,
+      log: MockLog.warn.mock.calls
+    }).toMatchSnapshot();
   });
 });
 
