@@ -594,6 +594,11 @@ describe('composeTools', () => {
       modules: ['file:///test/module.js', '@patternfly/tools']
     },
     {
+      description: 'file package creators, Node.js undefined',
+      nodeVersion: undefined,
+      modules: ['file:///test/module.js', '@patternfly/tools']
+    },
+    {
       description: 'inline and file package creators',
       nodeVersion: 22,
       modules: [

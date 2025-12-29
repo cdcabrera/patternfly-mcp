@@ -530,6 +530,8 @@ const composeTools = async (
   const usedNames = new Set<string>(builtinCreators.map(creator => getBuiltInToolName(creator)).filter(Boolean) as string[]);
 
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
+    log.info('No external tools loaded.');
+
     return toolCreators;
   }
 
@@ -564,7 +566,7 @@ const composeTools = async (
     return toolCreators;
   }
 
-  if (nodeVersion < 22) {
+  if (!nodeVersion || nodeVersion < 22) {
     log.warn('External tool plugins require Node >= 22; skipping file-based tools.');
 
     return toolCreators;

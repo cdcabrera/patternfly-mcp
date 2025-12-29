@@ -136,6 +136,42 @@ exports[`composeTools should attempt to setup creators, file package creators, N
 }
 `;
 
+exports[`composeTools should attempt to setup creators, file package creators, Node.js undefined 1`] = `
+{
+  "log": [
+    [
+      "External tool plugins require Node >= 22; skipping file-based tools.",
+    ],
+  ],
+  "tools": [
+    [
+      "loremIpsum",
+      {
+        "description": "lorem ipsum",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+    [
+      "dolorSitAmet",
+      {
+        "description": "dolor sit amet",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+    [
+      "consecteturAdipiscingElit",
+      {
+        "description": "consectetur adipiscing elit",
+        "inputSchema": {},
+      },
+      [Function],
+    ],
+  ],
+}
+`;
+
 exports[`composeTools should attempt to setup creators, file package duplicate creators 1`] = `
 {
   "log": [
