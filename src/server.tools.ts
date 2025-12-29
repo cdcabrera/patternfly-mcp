@@ -514,58 +514,72 @@ const composeTools = async (
   { toolModules, nodeVersion, contextUrl, contextPath }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
-  const result: McpToolCreator[] = [...builtinCreators];
+  const toolCreators: McpToolCreator[] = [...builtinCreators];
   const usedNames = new Set<string>(builtinCreators.map(creator => getBuiltInToolName(creator)).filter(Boolean) as string[]);
 
   if (!Array.isArray(toolModules) || toolModules.length === 0) {
-    return result;
+    return toolCreators;
   }
 
-  const filePackageEntries: NormalizedToolEntry[] = [];
-  const tools = normalizeTools(toolModules, { contextUrl, contextPath });
+  const filePackageCreators: NormalizedToolEntry[] = getFilePackageTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
 
-  tools.forEach(tool => {
-    switch (tool.type) {
-      case 'file':
-      case 'package':
-        filePackageEntries.push(tool);
-        break;
-      case 'invalid':
-        log.warn(tool.error);
-        break;
-      case 'tuple':
-      case 'object':
-      case 'creator': {
-        const toolName = tool.toolName;
+  const inlineCreators: NormalizedToolEntry[] = getInlineTools({ toolModules, contextUrl, contextPath } as GlobalOptions);
+  const filteredInlineCreators: McpToolCreator[] = inlineCreators.map(tool => {
+    const toolName = tool.toolName;
 
-        if (toolName && usedNames.has(toolName)) {
-          log.warn(`Skipping inline tool "${toolName}" because a tool with the same name is already provided (built-in or earlier).`);
-          break;
-        }
+    if (toolName && usedNames.has(toolName)) {
+      log.warn(`Skipping inline tool "${toolName}" because a tool with the same name is already provided (built-in or earlier).`);
 
-        if (toolName) {
-          usedNames.add(toolName);
-        }
-
-        result.push(tool.value as McpToolCreator);
-        break;
-      }
+      return undefined;
     }
-  });
+
+    if (toolName) {
+      usedNames.add(toolName);
+    }
+
+    return tool.value as McpToolCreator;
+  }).filter(Boolean) as McpToolCreator[];
+
+  toolCreators.push(...filteredInlineCreators);
 
   // Load file-based via Tools Host (Node.js version gate applies here)
-  if (filePackageEntries.length === 0) {
-    return result;
+  if (filePackageCreators.length === 0) {
+    return toolCreators;
   }
 
   if (nodeVersion < 22) {
     log.warn('External tool plugins require Node >= 22; skipping file-based tools.');
 
-    return result;
+    return toolCreators;
   }
 
+  let host: HostHandle | undefined;
+
+  // Clean up on exit or disconnect
+  const onChildExitOrDisconnect = () => {
+    if (!host) {
+      return;
+    }
+
+    const current = activeHostsBySession.get(sessionId);
+
+    if (current && current.child === host.child) {
+      try {
+        (host as any).closeStderr();
+        log.info('Tools Host stderr reader closed.');
+      } catch (error) {
+        log.error(`Failed to close Tools Host stderr reader: ${formatUnknownError(error)}`);
+      }
+
+      activeHostsBySession.delete(sessionId);
+    }
+
+    host.child.off('exit', onChildExitOrDisconnect);
+    host.child.off('disconnect', onChildExitOrDisconnect);
+  };
+
   try {
-    const host = await spawnToolsHost();
+    host = await spawnToolsHost();
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredTools = host.tools.filter(tool => {
@@ -580,36 +594,19 @@ const composeTools = async (
     });
 
     const filteredHandle = { ...host, tools: filteredTools } as HostHandle;
-    const proxies = makeProxyCreators(filteredHandle);
+    const proxiedCreators = makeProxyCreators(filteredHandle);
 
     // Associate the spawned host with the current session
     activeHostsBySession.set(sessionId, host);
 
-    // Clean up on exit or disconnect
-    const onChildExitOrDisconnect = () => {
-      const current = activeHostsBySession.get(sessionId);
+    host.child.once('exit', onChildExitOrDisconnect);
+    host.child.once('disconnect', onChildExitOrDisconnect);
 
-      if (current && current.child === host.child) {
-        try {
-          host.closeStderr?.();
-        } catch {}
-        activeHostsBySession.delete(sessionId);
-      }
-      host.child.off('exit', onChildExitOrDisconnect);
-      host.child.off('disconnect', onChildExitOrDisconnect);
-    };
-
-    try {
-      host.child.once('exit', onChildExitOrDisconnect);
-      host.child.once('disconnect', onChildExitOrDisconnect);
-    } catch {}
-
-    return [...result, ...proxies];
+    return [...toolCreators, ...proxiedCreators];
   } catch (error) {
-    log.warn('Failed to start Tools Host; skipping externals and continuing with built-ins/inline.');
-    log.warn(formatUnknownError(error));
+    log.warn(`Failed to start Tools Host; skipping externals and continuing with built-ins/inline. ${formatUnknownError(error)}`);
 
-    return result;
+    return toolCreators;
   }
 };
 
