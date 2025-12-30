@@ -1,6 +1,6 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, extname, isAbsolute, resolve } from 'node:path';
-import { isPlainObject } from './server.helpers';
+import { isPlainObject, isReferenceLike } from './server.helpers';
 import { type McpToolCreator, type McpTool } from './server';
 import { type GlobalOptions } from './options';
 import { memo } from './server.caching';
@@ -143,9 +143,7 @@ const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
  * @returns A unique key, a symbol for objects/functions or string for primitives.
  */
 const getSetMemoKey = (input: unknown, contextKey: string) => {
-  const isAllowed = typeof input === 'function' || Array.isArray(input) || isPlainObject(input);
-
-  if (!isAllowed) {
+  if (!isReferenceLike(input)) {
     return `${String(input)}:${contextKey}`;
   }
 
@@ -174,6 +172,10 @@ const getSetMemoKey = (input: unknown, contextKey: string) => {
  * @param key
  */
 const sanitizeDataProp = (obj: unknown, key: string) => {
+  if (!isReferenceLike(obj)) {
+    return undefined;
+  }
+
   const descriptor = Object.getOwnPropertyDescriptor(obj, key);
   const isDataProp = descriptor !== undefined && 'value' in descriptor;
 

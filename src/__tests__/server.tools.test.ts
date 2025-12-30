@@ -52,10 +52,36 @@ describe('getBuiltInToolName', () => {
 });
 
 describe('computeFsReadAllowlist', () => {
-  it('should return a list of allowed paths', () => {
-    const toolModules = ['@scope/pkg', resolve(process.cwd(), 'package.json')];
-
-    expect(computeFsReadAllowlist({ toolModules, contextUrl: 'file://', contextPath: '/' } as any)).toEqual(['/']);
+  it.each([
+    {
+      description: 'with no tool modules',
+      options: {
+        toolModules: [],
+        contextUrl: 'file://',
+        contextPath: '/'
+      },
+      expected: ['/']
+    },
+    {
+      description: 'with tool modules',
+      options: {
+        toolModules: ['@scope/pkg', resolve(process.cwd(), 'package.json')],
+        contextUrl: 'file://',
+        contextPath: '/'
+      },
+      expected: ['/']
+    },
+    {
+      description: 'with missing context path',
+      options: {
+        toolModules: ['@scope/pkg', resolve(process.cwd(), 'package.json')],
+        contextUrl: 'file://',
+        contextPath: undefined
+      },
+      expected: []
+    }
+  ])('should return a list of allowed paths, $description', ({ options, expected }) => {
+    expect(computeFsReadAllowlist(options as any)).toEqual(expected);
   });
 });
 

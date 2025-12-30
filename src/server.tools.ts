@@ -57,7 +57,9 @@ const computeFsReadAllowlist = ({ toolModules, contextPath, contextUrl }: Global
   const directories = new Set<string>();
   const tools = normalizeTools.memo(toolModules, { contextPath, contextUrl });
 
-  directories.add(contextPath);
+  if (contextPath) {
+    directories.add(contextPath);
+  }
 
   tools.forEach(tool => {
     if (tool.fsReadDir) {
