@@ -134,15 +134,40 @@ const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
  * Memoization key store.
  */
 const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
+// const toolsMemoKeyStore: WeakMap<object, Record<string, symbol>> = new WeakMap();
+
+/*
+const getSetMemoKey = (input: unknown, contextKey: string) => {
+  if (!input || (typeof input !== 'function' && typeof input !== 'object')) {
+    return `${String(input)}:${contextKey}`;
+  }
+
+  let contextMap = toolsMemoKeyStore.get(input);
+  let token;
+
+  if (!contextMap) {
+    contextMap = {};
+    toolsMemoKeyStore.set(input, contextMap);
+  }
+
+  token = contextMap[contextKey];
+
+  if (!token) {
+    token = Symbol(`tools:${contextKey}`);
+    contextMap[contextKey] = token;
+  }
+
+  return token;
+};*/
 
 /**
- * Create a consistent unique key, via symbol, for a given input and context.
+ * Quick consistent unique key, via symbol (anything unique-like will work), for a given input and context.
  *
  * @param input - Input can be an object, function, or primitive value.
  * @param contextKey - Additional context to help uniqueness.
  * @returns A unique key, a symbol for objects/functions or string for primitives.
  */
-const getIdentityKey = (input: unknown, contextKey: string) => {
+const getSetMemoKey = (input: unknown, contextKey: string) => {
   if (!input || (typeof input !== 'function' && typeof input !== 'object')) {
     return `${String(input)}:${contextKey}`;
   }
@@ -159,7 +184,6 @@ const getIdentityKey = (input: unknown, contextKey: string) => {
 
   if (!token) {
     token = Symbol(`tools:${contextKey}`);
-    // token = Symbol(contextKey);
     contextMap.set(contextKey, token);
   }
 
@@ -681,7 +705,7 @@ const normalizeTools = (config: any, {
 normalizeTools.memo = memo(normalizeTools, {
   cacheErrors: false,
   keyHash: args =>
-    getIdentityKey(args[0], `${(args as any)?.[1]?.contextPath}:${(args as any)?.[1]?.contextUrl}`)
+    getSetMemoKey(args[0], `${(args as any)?.[1]?.contextPath}:${(args as any)?.[1]?.contextUrl}`)
 });
 
 /**
