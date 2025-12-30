@@ -131,13 +131,19 @@ const ALLOWED_CONFIG_KEYS = new Set(['name', 'description', 'inputSchema', 'hand
 const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
 
 /**
- * Memoization key store.
+ * Memoization key store. See `getSetMemoKey`.
  */
 const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
 
 /**
- * Quick consistent unique key, via symbol (anything unique-like will work), for a given input and context.
+ * Quick consistent unique key, via symbol (anything unique-like will work), for a given input
+ * and context.
  *
+ * Used specifically for helping memoize functions and objects against context. Not used
+ * elsewhere because simple equality checks, without context, in the lower-level functions
+ * are good enough.
+ *
+ * @private
  * @param input - Input can be an object, function, or primitive value.
  * @param contextKey - Additional context to help uniqueness.
  * @returns A unique key, a symbol for objects/functions or string for primitives.
