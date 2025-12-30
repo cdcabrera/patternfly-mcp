@@ -134,31 +134,6 @@ const ALLOWED_SCHEMA_KEYS = new Set(['description', 'inputSchema']);
  * Memoization key store.
  */
 const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
-// const toolsMemoKeyStore: WeakMap<object, Record<string, symbol>> = new WeakMap();
-
-/*
-const getSetMemoKey = (input: unknown, contextKey: string) => {
-  if (!input || (typeof input !== 'function' && typeof input !== 'object')) {
-    return `${String(input)}:${contextKey}`;
-  }
-
-  let contextMap = toolsMemoKeyStore.get(input);
-  let token;
-
-  if (!contextMap) {
-    contextMap = {};
-    toolsMemoKeyStore.set(input, contextMap);
-  }
-
-  token = contextMap[contextKey];
-
-  if (!token) {
-    token = Symbol(`tools:${contextKey}`);
-    contextMap[contextKey] = token;
-  }
-
-  return token;
-};*/
 
 /**
  * Quick consistent unique key, via symbol (anything unique-like will work), for a given input and context.

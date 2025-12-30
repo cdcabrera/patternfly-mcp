@@ -522,15 +522,43 @@ describe('normalizeTools', () => {
     expect(normalizeTools.memo).toBeDefined();
   });
 
-  it('should use memoization consistently for contextPath and contextUrl results', () => {
-    const config = './fixtures/tool.mjs';
-
+  it.each([
+    {
+      description: 'filePackage',
+      config: './fixtures/tool.mjs'
+    },
+    {
+      description: 'inline function',
+      config: () => ['a', { inputSchema: {} }, () => {}]
+    },
+    {
+      description: 'array of inline function',
+      config: [() => ['a', { inputSchema: {} }, () => {}]]
+    },
+    {
+      description: 'inline tuple',
+      config: ['a', { description: 'a', inputSchema: {} }, () => {}]
+    },
+    {
+      description: 'inline object',
+      config: { name: 'a', description: 'a', inputSchema: {}, handler: () => {} }
+    },
+    {
+      description: 'array of inline configurations',
+      config: [
+        './fixtures/tool.mjs',
+        () => ['a', { inputSchema: {} }, () => {}],
+        { name: 'b', description: 'b', inputSchema: {}, handler: () => {} },
+        ['c', { description: 'c', inputSchema: {} }, () => {}]
+      ]
+    }
+  ])('should use memoization consistently with contextPath and contextUrl results, $description', ({ config }) => {
     const resultOne = normalizeTools.memo(config, { contextPath: '/A', contextUrl: 'file:///A/index.mjs' });
     const resultTwo = normalizeTools.memo(config, { contextPath: '/B', contextUrl: 'file:///B/index.mjs' });
     const resultThree = normalizeTools.memo(config, { contextUrl: 'file:///B/index.mjs', contextPath: '/B' });
 
-    expect(resultTwo).not.toEqual(resultOne);
-    expect(resultThree).toEqual(resultTwo);
+    expect(resultTwo).not.toBe(resultOne);
+    expect(resultThree).toBe(resultTwo);
   });
 });
 
