@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { basename, resolve } from 'node:path';
-import { z } from 'zod';
+import {config, z} from 'zod';
 import {
   createMcpTool,
   isFilePath,
@@ -524,8 +524,12 @@ describe('normalizeTools', () => {
 
   it.each([
     {
-      description: 'filePackage',
+      description: 'file',
       config: './fixtures/tool.mjs'
+    },
+    {
+      description: 'package',
+      config: '@scope/pkg'
     },
     {
       description: 'inline function',

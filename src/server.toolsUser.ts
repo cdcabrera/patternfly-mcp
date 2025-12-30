@@ -143,7 +143,9 @@ const toolsMemoKeyStore: WeakMap<object, Map<string, symbol>> = new WeakMap();
  * @returns A unique key, a symbol for objects/functions or string for primitives.
  */
 const getSetMemoKey = (input: unknown, contextKey: string) => {
-  if (!input || (typeof input !== 'function' && typeof input !== 'object')) {
+  const isAllowed = typeof input === 'function' || Array.isArray(input) || isPlainObject(input);
+
+  if (!isAllowed) {
     return `${String(input)}:${contextKey}`;
   }
 
