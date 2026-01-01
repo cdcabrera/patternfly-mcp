@@ -8,9 +8,15 @@ import {
   type ServerOnLogHandler,
   type ServerLogEvent
 } from './server';
-import { createMcpTool, type ToolCreator, type ToolModule, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
-// import { type ToolOptions } from './options.tools';
-// import { createMcpTool, type ToolCreator, type ToolConfig, type MultiToolConfig } from './server.toolsUser';
+import {
+  createMcpTool,
+  type ToolCreator,
+  type ToolModule,
+  type ToolConfig,
+  type ToolMultiConfig,
+  type ToolExternalOptions,
+  type ToolInternalOptions
+} from './server.toolsUser';
 
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
@@ -75,6 +81,38 @@ type PfMcpLogEvent = ServerLogEvent;
  * @throws {Error} If the server fails to start or any error occurs during initialization,
  *     and `allowProcessExit` is set to `false`, the error will be thrown rather than exiting
  *     the process.
+ *
+ * @example Programmatic: A MCP server with STDIO (Standard Input Output) transport.
+ * import { start } from '@patternfly/patternfly-mcp';
+ * const { stop, isRunning } = await start();
+ *
+ * if (isRunning()) {
+ *   stop();
+ * }
+ *
+ * @example Programmatic: A MCP server with HTTP transport.
+ * import { start } from '@patternfly/patternfly-mcp';
+ * const { stop, isRunning } = await start({ http: { port: 8000 } });
+ *
+ * if (isRunning()) {
+ *   stop();
+ * }
+ *
+ * @example Programmatic: A MCP server with inline tool configuration.
+ * import { start, createMcpTool } from '@patternfly/patternfly-mcp';
+ *
+ * const myToolModule = createMcpTool({
+ *   name: 'my-tool',
+ *   description: 'My tool description',
+ *   inputSchema: {},
+ *   handler: async (args) => args
+ * });
+ *
+ * const { stop, isRunning } = await start({ toolModules: [myToolModule] });
+ *
+ * if (isRunning()) {
+ *   stop();
+ * }
  */
 const main = async (
   pfMcpOptions: PfMcpOptions = {},
@@ -94,10 +132,8 @@ const main = async (
 
     // use runWithSession to enable session in listeners
     return await runWithSession(session, async () =>
-      // `runServer` doesn't require options in the memo key, but we pass fully-merged options for stable hashing
-      await runServer.memo(mergedOptions, {
-        allowProcessExit: updatedAllowProcessExit
-      }));
+      // `runServer` doesn't require options in the memo key, but we pass fully merged options for stable hashing
+      await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
   } catch (error) {
     console.error('Failed to start server:', error);
 
@@ -123,5 +159,7 @@ export {
   type ToolCreator,
   type ToolModule,
   type ToolConfig,
-  type MultiToolConfig
+  type ToolMultiConfig,
+  type ToolExternalOptions,
+  type ToolInternalOptions
 };
