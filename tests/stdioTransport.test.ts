@@ -187,7 +187,7 @@ describe('Tools', () => {
 
   afterEach(async () => CLIENT.stop());
 
-  it('should access a new tool', async () => {
+  itSkip(envNodeVersion >= 22)('should access a new tool', async () => {
     const req = {
       method: 'tools/list',
       params: {}
@@ -196,11 +196,22 @@ describe('Tools', () => {
     const resp = await CLIENT.send(req);
     const names = (resp?.result?.tools ?? []).map((tool: any) => tool.name);
 
-    expect(CLIENT.logs()).toMatchSnapshot();
+    expect(CLIENT.logs().join(',')).toContain('Registered tool: echo_plugin_tool');
     expect(names).toContain('echo_plugin_tool');
   });
 
-  it('should interact with the new tool', async () => {
+  itSkip(envNodeVersion <= 20)('should fail to access a new tool', async () => {
+    const req = {
+      method: 'tools/list',
+      params: {}
+    };
+
+    await CLIENT.send(req);
+
+    expect(CLIENT.logs().join(',')).toContain('External tool plugins require Node >= 22; skipping file-based tools.');
+  });
+
+  itSkip(envNodeVersion >= 22)('should interact with the new tool', async () => {
     const req = {
       method: 'tools/call',
       params: {
@@ -216,6 +227,24 @@ describe('Tools', () => {
     const resp: any = await CLIENT.send(req);
 
     expect(resp.result).toMatchSnapshot();
-    // expect(resp.result.content[0].text).toMatchSnapshot();
+    expect(resp.result.isError).toBeUndefined();
+  });
+
+  itSkip(envNodeVersion <= 20)('should fail to interact with the new tool', async () => {
+    const req = {
+      method: 'tools/call',
+      params: {
+        name: 'echo_plugin_tool',
+        arguments: {
+          type: 'echo',
+          lorem: 'ipsum',
+          dolor: 'sit amet'
+        }
+      }
+    };
+
+    const resp: any = await CLIENT.send(req);
+
+    expect(resp.result.isError).toBe(true);
   });
 });
