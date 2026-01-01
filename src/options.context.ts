@@ -61,42 +61,36 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 /**
  * Set and freeze cloned options in the current async context.
  *
+ * @note Look at adding a re-validation helper here, and potentially in `runWithOptions`, that aligns with
+ * CLI options parsing. We need to account for both CLI and programmatic use.
+ *
  * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
-
-  // We handle plugin isolation here to account for both CLI and programmatic usage.
-  const requestedPluginIsolation = options?.pluginIsolation;
-  const defaultPluginIsolation = Array.isArray(base.toolModules) && base.toolModules.length > 0 ? 'strict' : 'none';
-  const pluginIsolation = requestedPluginIsolation ?? defaultPluginIsolation;
+  const basePluginIsolation = ['strict', 'none'].includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
 
   const merged: GlobalOptions = {
     ...base,
     logging: {
-      level: baseLogging.level,
+      level: ['debug', 'info', 'warn', 'error'].includes(baseLogging.level) ? baseLogging.level : DEFAULT_OPTIONS.logging.level,
       logger: baseLogging.logger,
       stderr: baseLogging.stderr,
       protocol: baseLogging.protocol,
-      transport: baseLogging.transport
+      transport: ['stdio', 'mcp'].includes(baseLogging.transport) ? baseLogging.transport : DEFAULT_OPTIONS.logging.transport
     },
-    pluginIsolation,
+    pluginIsolation: basePluginIsolation,
     resourceMemoOptions: DEFAULT_OPTIONS.resourceMemoOptions,
     toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions
   };
 
-  // AFTER
+  // Avoid cloning toolModules
   const originalToolModules = Array.isArray(merged.toolModules) ? merged.toolModules : [];
-
-  // Avoid cloning functions in toolModules
-  const mergedCloneSafe = { ...merged, toolModules: [] as unknown[] };
-  const cloned = structuredClone(mergedCloneSafe);
-
-  // Restore the non‑cloneable array reference
-  const restored: GlobalOptions = { ...cloned, toolModules: originalToolModules } as GlobalOptions;
-  const frozen = freezeObject(restored);
+  const cloned = structuredClone({ ...merged, toolModules: [] as unknown[] });
+  const restoreOriginalToolModules: GlobalOptions = { ...cloned, toolModules: originalToolModules } as GlobalOptions;
+  const frozen = freezeObject(restoreOriginalToolModules);
 
   optionsContext.enterWith(frozen);
 
@@ -139,11 +133,11 @@ const runWithOptions = async <TReturn>(
   options: GlobalOptions,
   callback: () => TReturn | Promise<TReturn>
 ) => {
+  // Avoid cloning toolModules
   const originalToolModules = Array.isArray((options as any).toolModules) ? (options as any).toolModules : [];
-  const optionsCloneSafe = { ...(options as any), toolModules: [] as unknown[] };
-  const cloned = structuredClone(optionsCloneSafe);
-  const restored = { ...cloned, toolModules: originalToolModules } as GlobalOptions;
-  const frozen = freezeObject(restored);
+  const cloned = structuredClone({ ...(options as any), toolModules: [] as unknown[] });
+  const restoreOriginalToolModules = { ...cloned, toolModules: originalToolModules } as GlobalOptions;
+  const frozen = freezeObject(restoreOriginalToolModules);
 
   return optionsContext.run(frozen, callback);
 };

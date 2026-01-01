@@ -79,7 +79,9 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--host`: The host name specified via `--host`
  * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
  * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
- * - `--plugin-isolation <none|strict>`: Isolation preset for external plugins.
+ * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
+ * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
+ *     specification is a local module name or path.
  *
  * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
