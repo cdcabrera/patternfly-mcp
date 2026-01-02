@@ -541,6 +541,13 @@ const composeTools = async (
   { toolModules, nodeVersion, contextUrl, contextPath }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<McpToolCreator[]> => {
+  const existingSession = activeHostsBySession.get(sessionId);
+
+  if (existingSession) {
+    log.warn(`Existing Tools Host session detected ${sessionId}. Shutting down the existing host before creating a new one.`);
+    await sendToolsHostShutdown();
+  }
+
   const toolCreators: McpToolCreator[] = [...builtinCreators];
   const usedNames = getBuiltInToolNames(builtinCreators);
 
