@@ -1,4 +1,4 @@
-import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import { parseCliOptions, parseProgrammaticOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -126,8 +126,12 @@ const main = async (
   const updatedAllowProcessExit = allowProcessExit ?? updatedMode !== 'test';
 
   try {
+    const programmaticOptions = parseProgrammaticOptions(options);
+
+    // console.error('Starting server with options:', programmaticOptions);
+
     const cliOptions = parseCliOptions();
-    const mergedOptions = setOptions({ ...cliOptions, ...options });
+    const mergedOptions = setOptions({ ...cliOptions, ...programmaticOptions });
     const session = getSessionOptions();
 
     // use runWithSession to enable session in listeners

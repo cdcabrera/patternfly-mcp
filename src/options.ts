@@ -200,8 +200,59 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   };
 };
 
+/**
+ * Normalize/sanitize programmatic overrides. A limited subset of options.
+ *
+ * @param options - Programmatic overrides
+ */
+const parseProgrammaticOptions = (options: DefaultOptionsOverrides): DefaultOptionsOverrides => {
+  const { logging, pluginIsolation, toolModules } = { ...options };
+  // const isHttp = Boolean(http);
+  const originalToolModules = toolModules;
+
+  /*
+  let normalizedHttp;
+
+  if (isHttp) {
+    normalizedHttp = {
+      ...http
+      // port: typeof http?.port === 'number' ? http.port : DEFAULT_OPTIONS.http.port,
+      // host: typeof http?.host === 'string' ? http.host : DEFAULT_OPTIONS.http.host,
+      // allowedOrigins:
+      //  Array.isArray(http?.allowedOrigins) && http.allowedOrigins.every(value => typeof value === 'string') ? http.allowedOrigins : DEFAULT_OPTIONS.http.allowedOrigins,
+      // allowedHosts:
+      //   Array.isArray(http?.allowedHosts) && http.allowedHosts.every(value => typeof value === 'string') ? http.allowedHosts : DEFAULT_OPTIONS.http.allowedHosts
+    };
+  }
+  */
+
+  const normalizedLogging = {
+    level: logging?.level && ['debug', 'info', 'warn', 'error'].includes(logging.level) ? logging.level : DEFAULT_OPTIONS.logging.level,
+    logger: typeof logging?.logger === 'string' ? logging?.logger : DEFAULT_OPTIONS.logging.logger,
+    stderr: typeof logging?.stderr === 'boolean' ? logging?.stderr : DEFAULT_OPTIONS.logging.stderr,
+    protocol: typeof logging?.protocol === 'boolean' ? logging?.protocol : DEFAULT_OPTIONS.logging.protocol,
+    transport: logging?.transport && ['stdio', 'mcp'].includes(logging.transport) ? logging.transport : DEFAULT_OPTIONS.logging.transport
+    // level: logging?.level && ['debug', 'info', 'warn', 'error'].includes(logging.level) ? logging.level : DEFAULT_OPTIONS.logging.level,
+    // logger: typeof logging?.logger === 'string' ? logging?.logger : DEFAULT_OPTIONS.logging.logger,
+    // stderr: typeof logging?.stderr === 'boolean' ? logging?.stderr : DEFAULT_OPTIONS.logging.stderr,
+    // protocol: typeof logging?.protocol === 'boolean' ? logging?.protocol : DEFAULT_OPTIONS.logging.protocol,
+    // transport: logging?.transport && ['stdio', 'mcp'].includes(logging.transport) ? logging.transport : DEFAULT_OPTIONS.logging.transport
+  };
+
+  const normalizedPluginIsolation =
+    pluginIsolation && ['none', 'strict'].includes(pluginIsolation) ? pluginIsolation : 'none';// DEFAULT_OPTIONS.pluginIsolation;
+
+  return {
+    // ...((isHttp && { http: normalizedHttp }) || {}),
+    logging: normalizedLogging,
+    pluginIsolation: normalizedPluginIsolation,
+    toolModules: originalToolModules
+  };
+};
+
 export {
   parseCliOptions,
+  parseProgrammaticOptions,
   getArgValue,
   type AppSession,
   type CliOptions,
