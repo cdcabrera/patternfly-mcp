@@ -96,11 +96,11 @@ Add external tools at startup. External tools run out‑of‑process in a separa
   - `--tool <plugin>` Add one or more external tools. Repeat the flag or pass a comma‑separated list.
     - Examples: `--tool @acme/my-plugin`, `--tool ./plugins/my-tools.js`, `--tool ./a.js,./b.js`
   - `--plugin-isolation <none|strict>` Tools Host permission preset.
-    - Defaults: `strict` when any `--tool` is provided; otherwise `none`.
+    - Default: `strict`
 
 - Behavior
   - External tools run in a single Tools Host child process.
-  - In `strict` isolation (default with externals): network and fs write are denied; fs reads are allow‑listed to your project and resolved plugin directories.
+  - In `strict` isolation (default): network and fs write are denied; fs reads are allow‑listed to your project and resolved plugin directories.
 
 - Supported `--tool` inputs
   - ESM packages (installed in node_modules)
