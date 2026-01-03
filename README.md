@@ -98,19 +98,6 @@ Most MCP clients use a JSON configuration to specify how to start this server. B
 }
 ```
 
-#### Docs-host mode
-```json
-{
-  "mcpServers": {
-    "patternfly-docs": {
-      "command": "npx",
-      "args": ["-y", "@patternfly/patternfly-mcp@latest", "--docs-host"],
-      "description": "PatternFly docs (docs-host mode)"
-    }
-  }
-}
-```
-
 #### HTTP transport mode
 ```json
 {
@@ -124,133 +111,39 @@ Most MCP clients use a JSON configuration to specify how to start this server. B
 }
 ```
 
-## Features
-
-### MCP Tool Plugins
-
-You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out‑of‑process in an isolated **Tools Host** (Node.js >= 22) to ensure security and stability.
-
-#### CLI Usage
-- `--tool <path|package>`: Load one or more plugins. You can provide a path to a local file or the name of an installed NPM package.
-  - *Examples*: `--tool @acme/my-plugin`, `--tool ./local-plugins/weather-tool.js`, `--tool ./a.js,./b.js`
-- `--plugin-isolation <none|strict>`: Tools Host permission preset.
-  - **Default**: `strict`. In strict mode, network and filesystem write access are denied; fs reads are allow‑listed to your project and resolved plugin directories.
-
-#### Behavior
-- **Node version gate**: Node < 22 skips loading plugins from external sources with a warning; built‑ins still register.
-- **Supported inputs**: ESM packages (installed in `node_modules`) and local ESM files.
-- **Not supported**: Raw TypeScript sources (`.ts`) or remote `http(s):` URLs.
-
-#### Troubleshooting
-- If plugins don't appear, verify Node version and check logs (enable `--log-stderr`).
-- Startup `load:ack` warnings/errors from tool plugins are logged when stderr/protocol logging is enabled.
-- If `tools/call` rejects with schema errors, ensure `inputSchema` is valid. See [Authoring Tools](#authoring-tools) for details.
-
-### Authoring Tools
-
-We recommend using the `createMcpTool` helper to define tools. It ensures your tools are properly normalized for the server.
-
-#### Terminology
-- **`Tool`**: The low-level tuple format `[name, schema, handler]`.
-- **`Tool Config`**: The authoring object format `{ name, description, inputSchema, handler }`.
-- **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
-- **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
-
-#### Authoring a single Tool Module
-```ts
-import { createMcpTool } from '@patternfly/patternfly-mcp';
-
-export default createMcpTool({
-  name: 'hello',
-  description: 'Say hello',
-  inputSchema: {
-    type: 'object',
-    properties: { name: { type: 'string' } },
-    required: ['name']
-  },
-  async handler({ name }) {
-    return `Hello, ${name}!`;
-  }
-});
-```
-
-#### Authoring multiple tools in one module
-```ts
-import { createMcpTool } from '@patternfly/patternfly-mcp';
-
-export default createMcpTool([
-  { name: 'hi', description: 'Greets', inputSchema: {}, handler: () => 'hi' },
-  { name: 'bye', description: 'Farewell', inputSchema: {}, handler: () => 'bye' }
-]);
-```
-
-#### Input Schema Format
-The `inputSchema` property accepts either **plain JSON Schema objects** or **Zod schemas**. Both formats are automatically converted to the format required by the MCP SDK.
-
-**JSON Schema (recommended):**
-```ts
-inputSchema: {
-  type: 'object',
-  properties: {
-    name: { type: 'string' },
-    age: { type: 'number' }
-  },
-  required: ['name']
-}
-```
-
-**Zod Schema:**
-```ts
-import { z } from 'zod';
-
-inputSchema: {
-  name: z.string(),
-  age: z.number().optional()
-}
-```
-
-### Embedding the Server (Programmatic API)
-
-You can embed the MCP server inside your application using the `start()` function and provide **Tool Modules** directly.
-
-```ts
-import { start, createMcpTool, type PfMcpInstance, type ToolModule } from '@patternfly/patternfly-mcp';
-
-// createMcpTool returns a ToolModule (array)
-const echoTool: ToolModule = createMcpTool({
-  name: 'echoAMessage',
-  description: 'Echo back the provided user message.',
-  inputSchema: {
-    type: 'object',
-    properties: { message: { type: 'string' } },
-    required: ['message']
-  },
-  handler: async (args: { message: string }) => ({ text: `You said: ${args.message}` })
-});
-
-async function main() {
-  const server: PfMcpInstance = await start({
-    toolModules: [
-      ...echoTool // createMcpTool returns an array, spread it here
-    ]
-  });
-
-  // Optional: observe refined server logs in‑process
-  server.onLog((event) => {
-    if (event.level !== 'debug') {
-      console.warn(`[${event.level}] ${event.msg || ''}`);
+#### Docs-host mode
+```json
+{
+  "mcpServers": {
+    "patternfly-docs": {
+      "command": "npx",
+      "args": ["-y", "@patternfly/patternfly-mcp@latest", "--docs-host"],
+      "description": "PatternFly docs (docs-host mode)"
     }
-  });
-
-  // Graceful shutdown
-  process.on('SIGINT', async () => {
-    await server.stop();
-    process.exit(0);
-  });
+  }
 }
-
-main();
 ```
+
+#### Custom local tool
+
+```json
+{
+  "mcpServers": {
+    "patternfly-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@patternfly/patternfly-mcp@latest",
+        "--tool",
+        "./mcp-tools/local-custom-tool.js"
+      ],
+      "description": "PatternFly MCP with a local custom tool"
+    }
+  }
+}
+```
+
+## Features
 
 ### HTTP Transport
 
@@ -280,6 +173,132 @@ Example:
 npx @patternfly/patternfly-mcp --log-stderr --log-level debug
 ```
 
+### MCP Tool Plugins
+
+You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out‑of‑process in an isolated **Tools Host** (Node.js >= 22) to ensure security and stability.
+
+#### CLI Usage
+- `--tool <path|package>`: Load one or more plugins. You can provide a path to a local file or the name of an installed NPM package.
+  - *Examples*: `--tool @acme/my-plugin`, `--tool ./local-plugins/weather-tool.js`, `--tool ./a.js,./b.js`
+- `--plugin-isolation <none|strict>`: Tools Host permission preset.
+  - **Default**: `strict`. In strict mode, network and filesystem write access are denied; fs reads are allow‑listed to your project and resolved plugin directories.
+
+#### Behavior and Limitations
+- **Node version gate**: Node < 22 skips loading plugins from external sources with a warning; built‑ins still register.
+- **Supported inputs**: ESM packages (installed in `node_modules`) and local ESM files with default exports.
+- **Not supported**: Raw TypeScript sources (`.ts`) or remote `http(s):` URLs.
+
+#### Troubleshooting
+- If tool plugins don't appear, verify the Node version and check logs (enable `--log-stderr`).
+- Startup `load:ack` warnings/errors from tool plugins are logged when stderr/protocol logging is enabled.
+- If `tools/call` rejects with schema errors, ensure `inputSchema` is valid. See [Authoring Tools](#authoring-tools) for details.
+- If the tool is having network access issues, you may need to configure `--plugin-isolation none`. This is generally discouraged for security reasons but may be necessary in some cases.
+
+#### Terminology
+- **`Tool`**: The low-level tuple format `[name, schema, handler]`.
+- **`Tool Config`**: The authoring object format `{ name, description, inputSchema, handler }`.
+- **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
+- **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
+
+#### Authoring Tools
+
+We recommend using the `createMcpTool` helper to define tools. It ensures your tools are properly normalized for the server.
+
+##### Authoring a single Tool Module
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool({
+  name: 'hello',
+  description: 'Say hello',
+  inputSchema: {
+    type: 'object',
+    properties: { name: { type: 'string' } },
+    required: ['name']
+  },
+  async handler({ name }) {
+    return `Hello, ${name}!`;
+  }
+});
+```
+
+##### Authoring multiple tools in one module
+```ts
+import { createMcpTool } from '@patternfly/patternfly-mcp';
+
+export default createMcpTool([
+  { name: 'hi', description: 'Greets', inputSchema: {}, handler: () => 'hi' },
+  { name: 'bye', description: 'Farewell', inputSchema: {}, handler: () => 'bye' }
+]);
+```
+
+##### Input Schema Format
+The `inputSchema` property accepts either **plain JSON Schema objects** or **Zod schemas**. Both formats are automatically converted to the format required by the MCP SDK.
+
+**JSON Schema (recommended):**
+```ts
+inputSchema: {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    age: { type: 'number' }
+  },
+  required: ['name']
+}
+```
+
+**Zod Schema:**
+```ts
+import { z } from 'zod';
+
+inputSchema: {
+  name: z.string(),
+  age: z.number().optional()
+}
+```
+
+### Embedding the Server
+
+You can embed the MCP server inside your application using the `start()` function and provide **Tool Modules** directly.
+
+```ts
+import { start, createMcpTool, type PfMcpInstance, type ToolModule } from '@patternfly/patternfly-mcp';
+
+const echoTool: ToolModule = createMcpTool({
+  name: 'echoAMessage',
+  description: 'Echo back the provided user message.',
+  inputSchema: {
+    type: 'object',
+    properties: { message: { type: 'string' } },
+    required: ['message']
+  },
+  handler: async (args: { message: string }) => ({ text: `You said: ${args.message}` })
+});
+
+async function main() {
+  const server: PfMcpInstance = await start({
+    toolModules: [
+      echoTool
+    ]
+  });
+
+  // Optional: observe refined server logs in‑process
+  server.onLog((event) => {
+    if (event.level !== 'debug') {
+      console.warn(`[${event.level}] ${event.msg || ''}`);
+    }
+  });
+
+  // Graceful shutdown
+  process.on('SIGINT', async () => {
+    await server.stop();
+    process.exit(0);
+  });
+}
+
+main();
+```
+
 ## Development and Maintenance
 
 ### Scripts
@@ -303,17 +322,7 @@ npx @modelcontextprotocol/inspector-cli \
   --tool-arg urlList='["documentation/guidelines/README.md"]'
 ```
 
-### Publishing
-1. `npm login`
-2. `npm version patch`
-3. `npm publish`
-
-## License / Resources
-
-### License
-MIT License - see [LICENSE](LICENSE) file for details.
-
-### Resources
+## Resources
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [PatternFly React](https://www.patternfly.org/)
 - [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk)
