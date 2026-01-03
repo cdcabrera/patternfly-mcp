@@ -9,7 +9,7 @@ The Model Context Protocol (MCP) is an open standard that enables AI assistants 
 ## Prerequisites
 
 - Node.js 20.0.0 or higher
-  - **Note**: External tool plugins require Node.js >= 22 at runtime. On Node < 22, the server starts with built‑in tools only and logs a one‑time warning.
+  - **Note**: Loading **Tool Plugins** from an external file or package requires Node.js >= 22 at runtime. On Node < 22, the server starts with built‑in tools only and logs a one‑time warning.
 - NPM (or another Node package manager)
 
 ## Installation
@@ -126,24 +126,24 @@ Most MCP clients use a JSON configuration to specify how to start this server. B
 
 ## Features
 
-### Plugins (Tools-as-Plugins)
+### MCP Tool Plugins
 
-External tools can be added at startup. Plugins run out‑of‑process in a separate **Tools Host** (Node.js >= 22 required) to provide isolation and security.
+You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out‑of‑process in an isolated **Tools Host** (Node.js >= 22) to ensure security and stability.
 
 #### CLI Usage
-- `--tool <plugin>`: Add one or more external tools. Repeat the flag or pass a comma‑separated list.
-  - *Examples*: `--tool @acme/my-plugin`, `--tool ./plugins/my-tools.js`, `--tool ./a.js,./b.js`
+- `--tool <path|package>`: Load one or more plugins. You can provide a path to a local file or the name of an installed NPM package.
+  - *Examples*: `--tool @acme/my-plugin`, `--tool ./local-plugins/weather-tool.js`, `--tool ./a.js,./b.js`
 - `--plugin-isolation <none|strict>`: Tools Host permission preset.
   - **Default**: `strict`. In strict mode, network and filesystem write access are denied; fs reads are allow‑listed to your project and resolved plugin directories.
 
 #### Behavior
-- **Node version gate**: Node < 22 skips external tools with a warning; built‑ins still register.
+- **Node version gate**: Node < 22 skips loading plugins from external sources with a warning; built‑ins still register.
 - **Supported inputs**: ESM packages (installed in `node_modules`) and local ESM files.
 - **Not supported**: Raw TypeScript sources (`.ts`) or remote `http(s):` URLs.
 
 #### Troubleshooting
-- If tools don't appear, verify Node version and check logs (enable `--log-stderr`).
-- Startup `load:ack` warnings/errors from plugins are logged when stderr/protocol logging is enabled.
+- If plugins don't appear, verify Node version and check logs (enable `--log-stderr`).
+- Startup `load:ack` warnings/errors from tool plugins are logged when stderr/protocol logging is enabled.
 - If `tools/call` rejects with schema errors, ensure `inputSchema` is valid. See [Authoring Tools](#authoring-tools) for details.
 
 ### Authoring Tools
@@ -152,11 +152,11 @@ We recommend using the `createMcpTool` helper to define tools. It ensures your t
 
 #### Terminology
 - **`Tool`**: The low-level tuple format `[name, schema, handler]`.
-- **`ToolConfig`**: The authoring object format `{ name, description, inputSchema, handler }`.
-- **`ToolCreator`**: A function wrapper `(options) => Tool`.
-- **`ToolModule`**: The result of `createMcpTool` (a list of creators/strings).
+- **`Tool Config`**: The authoring object format `{ name, description, inputSchema, handler }`.
+- **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
+- **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
 
-#### Authoring a single tool
+#### Authoring a single Tool Module
 ```ts
 import { createMcpTool } from '@patternfly/patternfly-mcp';
 
@@ -174,7 +174,7 @@ export default createMcpTool({
 });
 ```
 
-#### Authoring multiple tools
+#### Authoring multiple tools in one module
 ```ts
 import { createMcpTool } from '@patternfly/patternfly-mcp';
 
@@ -211,7 +211,7 @@ inputSchema: {
 
 ### Embedding the Server (Programmatic API)
 
-You can embed the MCP server inside your application using the `start()` function.
+You can embed the MCP server inside your application using the `start()` function and provide **Tool Modules** directly.
 
 ```ts
 import { start, createMcpTool, type PfMcpInstance, type ToolModule } from '@patternfly/patternfly-mcp';
