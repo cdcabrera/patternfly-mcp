@@ -272,11 +272,21 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 [
   "[INFO]: Server logging enabled.
 ",
+  "[INFO]: No external resources loaded.
+",
   "[INFO]: No external tools loaded.
+",
+  "[INFO]: Registered resource: patternfly-context
+",
+  "[INFO]: Registered resource: patternfly-docs-index
+",
+  "[INFO]: Registered resource: patternfly-docs-template
+",
+  "[INFO]: Registered resource: patternfly-schemas-index
 ",
   "[INFO]: Registered tool: usePatternFlyDocs
 ",
-  "[INFO]: Registered tool: fetchDocs
+  "[INFO]: Registered tool: searchPatternFlyDocs
 ",
   "[INFO]: Registered tool: componentSchemas
 ",
@@ -436,7 +446,7 @@ exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`]
 {
   "toolNames": [
     "componentSchemas",
-    "fetchDocs",
+    "searchPatternFlyDocs",
     "usePatternFlyDocs",
   ],
 }

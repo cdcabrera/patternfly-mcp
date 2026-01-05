@@ -136,7 +136,7 @@ exports[`PatternFly MCP, HTTP Transport should expose expected tools and stable 
 {
   "toolNames": [
     "componentSchemas",
-    "fetchDocs",
+    "searchPatternFlyDocs",
     "usePatternFlyDocs",
   ],
 }
