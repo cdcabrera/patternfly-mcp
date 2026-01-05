@@ -1,10 +1,11 @@
-import { McpServer, type ReadResourceCallback, type ResourceMetadata } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, type ResourceMetadata } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { fetchDocsTool } from './tool.fetchDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
 import { patternFlyContextResource } from './resource.patternFlyContext';
 import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
+import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
@@ -132,7 +133,8 @@ const builtinTools: McpToolCreator[] = [
  */
 const builtinResources: McpResourceCreator[] = [
   patternFlyContextResource,
-  patternFlyDocsIndexResource
+  patternFlyDocsIndexResource,
+  patternFlyDocsTemplateResource
 ];
 
 /**

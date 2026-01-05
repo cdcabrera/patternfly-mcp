@@ -24,7 +24,9 @@ const CONFIG = {
 };
 
 /**
- * Resource creator.
+ * Resource creator for the documentation index.
+ *
+ * @returns {McpResource} The resource definition tuple
  */
 const patternFlyDocsIndexResource = (): McpResource => [
   NAME,

@@ -1,4 +1,3 @@
-// import { getOptions } from './options.context';
 import { type McpResource } from './server';
 
 /**
@@ -21,7 +20,9 @@ const CONFIG = {
 };
 
 /**
- * Resource creator.
+ * Resource creator for context.
+ *
+ * @returns {McpResource} The resource definition tuple
  */
 const patternFlyContextResource = (): McpResource => [
   NAME,

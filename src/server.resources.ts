@@ -1,19 +1,30 @@
 import { type McpResourceCreator } from './server';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
+import { log } from './logger';
 
 /**
  * Compose built-in resource creators.
  *
  * @param builtinCreators - Built-in tool creators
- * @param {GlobalOptions} _options - Global options.
+ * @param {GlobalOptions} options - Global options.
  * @param {AppSession} _sessionOptions - Session options.
  * @returns {Promise<McpResourceCreator[]>} Promise array of tool creators
  */
 const composeResources = async (
   builtinCreators: McpResourceCreator[],
-  _options: GlobalOptions = getOptions(),
+  { resourceModules }: GlobalOptions = getOptions(),
   _sessionOptions: AppSession = getSessionOptions()
-): Promise<McpResourceCreator[]> => [...builtinCreators];
+): Promise<McpResourceCreator[]> => {
+  const resourceCreators: McpResourceCreator[] = [...builtinCreators];
+
+  if (!Array.isArray(resourceModules) || resourceModules.length === 0) {
+    log.info('No external resources loaded.');
+
+    return resourceCreators;
+  }
+
+  return resourceCreators;
+};
 
 export { composeResources };
