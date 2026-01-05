@@ -63,6 +63,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   pfExternalAccessibility: string;
   repoName: string | undefined;
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
+  resourceModules: unknown | unknown[];
   separator: string;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   toolModules: ToolModule | ToolModule[];
@@ -210,11 +211,6 @@ const TOOL_MEMO_OPTIONS = {
     cacheLimit: 10,
     expire: 1 * 60 * 1000, // 1 minute sliding cache
     cacheErrors: false
-  },
-  fetchDocs: {
-    cacheLimit: 15,
-    expire: 1 * 60 * 1000, // 1 minute sliding cache
-    cacheErrors: false
   }
 };
 
@@ -336,6 +332,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
+  resourceModules: [],
   toolMemoOptions: TOOL_MEMO_OPTIONS,
   toolModules: [],
   separator: DEFAULT_SEPARATOR,
