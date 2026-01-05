@@ -12,13 +12,13 @@ import { fuzzySearch } from './server.search';
 type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
 
 /**
- * componentSchemas tool function (tuple pattern)
+ * componentSchemas tool function
  *
  * Creates an MCP tool that retrieves JSON Schema for PatternFly React components.
  * Uses fuzzy search to handle typos and case variations, with related fallback suggestions.
  *
  * @param options - Optional configuration options (defaults to OPTIONS)
- * @returns {McpTool} MCP tool tuple [name, schema, callback]
+ * @returns MCP tool tuple [name, schema, callback]
  */
 const componentSchemasTool = (options = getOptions()): McpTool => {
   const memoGetComponentSchema = memo(

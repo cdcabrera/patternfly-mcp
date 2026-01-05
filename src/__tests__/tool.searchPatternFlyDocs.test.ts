@@ -1,5 +1,5 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { fetchDocsTool } from '../tool.fetchDocs';
+import { searchPatternFlyDocsTool } from '../tool.searchPatternFlyDocs';
 import { processDocsFunction } from '../server.getResources';
 import { isPlainObject } from '../server.helpers';
 
@@ -11,13 +11,13 @@ jest.mock('../server.caching', () => ({
 
 const mockProcessDocs = processDocsFunction as jest.MockedFunction<typeof processDocsFunction>;
 
-describe('fetchDocsTool', () => {
+describe('searchPatternFlyDocsTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('should have a consistent return structure', () => {
-    const tool = fetchDocsTool();
+    const tool = searchPatternFlyDocsTool();
 
     expect({
       name: tool[0],
@@ -65,7 +65,7 @@ describe('fetchDocsTool, callback', () => {
     }
   ])('should parse parameters, $description', async ({ value, urlList }) => {
     mockProcessDocs.mockResolvedValue(value);
-    const [_name, _schema, callback] = fetchDocsTool();
+    const [_name, _schema, callback] = searchPatternFlyDocsTool();
     const result = await callback({ urlList });
 
     expect(mockProcessDocs).toHaveBeenCalledWith(urlList);
@@ -89,7 +89,7 @@ describe('fetchDocsTool, callback', () => {
       urlList: 'not-an-array'
     }
   ])('should handle errors, $description', async ({ error, urlList }) => {
-    const [_name, _schema, callback] = fetchDocsTool();
+    const [_name, _schema, callback] = searchPatternFlyDocsTool();
 
     await expect(callback({ urlList })).rejects.toThrow(McpError);
     await expect(callback({ urlList })).rejects.toThrow(error);
@@ -97,7 +97,7 @@ describe('fetchDocsTool, callback', () => {
 
   it('should handle processing errors', async () => {
     mockProcessDocs.mockRejectedValue(new Error('Network error'));
-    const [_name, _schema, callback] = fetchDocsTool();
+    const [_name, _schema, callback] = searchPatternFlyDocsTool();
 
     await expect(callback({ urlList: ['missing.md'] })).rejects.toThrow(McpError);
     await expect(callback({ urlList: ['missing.md'] })).rejects.toThrow('Failed to fetch documentation');
