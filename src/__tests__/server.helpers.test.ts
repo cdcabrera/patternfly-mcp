@@ -6,7 +6,8 @@ import {
   isPromise,
   isReferenceLike,
   mergeObjects,
-  portValid
+  portValid,
+  stringJoin
 } from '../server.helpers';
 
 describe('freezeObject', () => {
@@ -672,5 +673,39 @@ describe('portValid', () => {
     }
   ])('should validate a port, $description', ({ port, expected }) => {
     expect(portValid(port)).toBe(expected);
+  });
+});
+
+describe('stringJoin', () => {
+  it('should have expected properties', () => {
+    expect(stringJoin.basic).toBeDefined();
+    expect(stringJoin.newline).toBeDefined();
+    expect(stringJoin.filtered).toBeDefined();
+    expect(stringJoin.newlineFiltered).toBeDefined();
+  });
+
+  it.each([
+    {
+      description: 'default',
+      args: ['lorem', 'ipsum', 0, 1, 2, 3, true, false, null, undefined],
+      settings: {}
+    },
+    {
+      description: 'newline',
+      args: ['lorem', 'ipsum', 0, 1, 2, 3, true, false, null, undefined],
+      settings: { sep: '\n' }
+    },
+    {
+      description: 'filtered',
+      args: ['lorem', 'ipsum', 0, 1, 2, 3, true, false, null, undefined],
+      settings: { filterFalsyValues: true }
+    },
+    {
+      description: 'newline filtered',
+      args: ['lorem', 'ipsum', 0, 1, 2, 3, true, false, null, undefined],
+      settings: { sep: '\n', filterFalsyValues: true }
+    }
+  ])('should join values, $description', ({ args, settings }) => {
+    expect(stringJoin(args, settings)).toMatchSnapshot();
   });
 });
