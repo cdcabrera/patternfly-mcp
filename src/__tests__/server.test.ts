@@ -48,6 +48,7 @@ describe('runServer', () => {
     // Mock HTTP transport
     mockClose = jest.fn().mockResolvedValue(undefined);
     mockHttpHandle = {
+      port: 0,
       close: mockClose
     };
 
