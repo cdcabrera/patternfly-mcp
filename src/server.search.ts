@@ -22,7 +22,7 @@ interface ClosestSearchOptions {
 interface FuzzySearchResult {
   item: string;
   distance: number;
-  matchType: 'exact' | 'prefix' | 'suffix' | 'contains' | 'fuzzy';
+  matchType: 'exact' | 'prefix' | 'suffix' | 'contains' | 'fuzzy' | 'all';
 }
 
 /**

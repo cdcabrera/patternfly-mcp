@@ -294,6 +294,51 @@ const generateHash = (anyValue: unknown): string => {
   return hashCode(stringify);
 };
 
+/**
+ * Join an array of values with a separator, optionally filtering out falsy values.
+ *
+ * - `stringJoin.basic` Join argument values with a single space separator
+ * - `stringJoin.newline` Join argument values with a newline separator
+ * - `stringJoin.filtered` Join argument values with a single space separator, filtering out falsy values
+ * - `stringJoin.newlineFiltered` Join argument values with a newline separator, filtering out falsy values
+ *
+ * @param arr - Array of strings to join
+ * @param settings - Join settings
+ * @param settings.sep - Separator to use
+ * @param settings.filterFalsyValues - If `true`, filter out falsy values before joining (default: `false`)
+ * @returns Joined string, with optional separator
+ */
+const stringJoin = (arr: unknown[], { sep = ' ', filterFalsyValues = false } = {}): string =>
+  (filterFalsyValues ? arr.filter(Boolean).join(sep) : arr.join(sep));
+
+/**
+ * Join argument values with a single space separator.
+ *
+ * @param args - Array of values to join
+ */
+stringJoin.basic = (...args: unknown[]) => stringJoin(args);
+
+/**
+ * Join argument values with a newline separator.
+ *
+ * @param args - Array of values to join
+ */
+stringJoin.newline = (...args: unknown[]) => stringJoin(args, { sep: '\n' });
+
+/**
+ * Join argument values with a single space separator, filtering out falsy values.
+ *
+ * @param args - Array of values to join
+ */
+stringJoin.filtered = (...args: unknown[]) => stringJoin(args, { filterFalsyValues: true });
+
+/**
+ * Join argument values with a newline separator, filtering out falsy values.
+ *
+ * @param args - Array of values to join
+ */
+stringJoin.newlineFiltered = (...args: unknown[]) => stringJoin(args, { sep: '\n', filterFalsyValues: true });
+
 export {
   freezeObject,
   generateHash,
@@ -304,5 +349,6 @@ export {
   isPromise,
   isReferenceLike,
   mergeObjects,
-  portValid
+  portValid,
+  stringJoin
 };
