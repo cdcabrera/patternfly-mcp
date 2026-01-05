@@ -427,6 +427,8 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 [
   "[INFO]: Server logging enabled.
 ",
+  "[INFO]: Server stats enabled.
+",
   "[INFO]: No external resources loaded.
 ",
   "[INFO]: No external tools loaded.

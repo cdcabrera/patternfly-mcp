@@ -32,10 +32,11 @@ import { type ToolModule } from './server.toolsUser';
  * @property pfExternalDesignLayouts - PatternFly design guidelines' layouts' URL.
  * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
+ * @property separator - Default string delimiter.
+ * @property {StatsOptions} stats - Stats options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
  * @property {ToolModule|ToolModule[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
  *     registered with the server.
- * @property separator - Default string delimiter.
  * @property urlRegex - Regular expression pattern for URL matching.
  * @property version - Version of the package.
  */
@@ -65,6 +66,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   resourceModules: unknown | unknown[];
   separator: string;
+  stats: StatsOptions;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   toolModules: ToolModule | ToolModule[];
   urlRegex: RegExp;
@@ -149,6 +151,32 @@ interface LoggingSession extends LoggingOptions {
   readonly channelName: string;
 }
 
+type StatsOptions = {
+  reportIntervalMs: {
+    health: number;
+    transport: number;
+  }
+};
+
+type StatsChannels = {
+  readonly health: string;
+  readonly session: string;
+  readonly transport: string;
+  readonly traffic: string;
+};
+
+/**
+ * Stats session options, non-configurable by the user.
+ *
+ * @interface StatsSession
+ * @property publicSessionId Unique identifier for the stats session.
+ * @property channels Channel names for stats.
+ */
+interface StatsSession extends StatsOptions {
+  readonly publicSessionId: string;
+  channels: StatsChannels
+}
+
 /**
  * Base logging options.
  */
@@ -211,6 +239,16 @@ const TOOL_MEMO_OPTIONS = {
     cacheLimit: 10,
     expire: 1 * 60 * 1000, // 1 minute sliding cache
     cacheErrors: false
+  }
+};
+
+/**
+ * Stats options.
+ */
+const STATS_OPTIONS: StatsOptions = {
+  reportIntervalMs: {
+    health: 30_000,
+    transport: 10_000
   }
 };
 
@@ -333,6 +371,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
   resourceModules: [],
+  stats: STATS_OPTIONS,
   toolMemoOptions: TOOL_MEMO_OPTIONS,
   toolModules: [],
   separator: DEFAULT_SEPARATOR,
@@ -361,5 +400,6 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type LoggingSession,
-  type PluginHostOptions
+  type PluginHostOptions,
+  type StatsSession
 };
