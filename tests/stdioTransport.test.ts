@@ -12,7 +12,7 @@ import {
 } from './utils/stdioTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
 
-describe('PatternFly MCP, STDIO', () => {
+describe('Builtin tools, STDIO', () => {
   let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
   let CLIENT: StdioTransportClient;
   let URL_MOCK: string;
@@ -71,18 +71,6 @@ describe('PatternFly MCP, STDIO', () => {
     expect({ toolNames }).toMatchSnapshot();
   });
 
-  it('should expose expected resources and templates', async () => {
-    const resources = await CLIENT.send({ method: 'resources/list' });
-    const updatedResources = resources?.result?.resources || [];
-    const resourceNames = updatedResources.map((resource: any) => resource.uri).sort();
-
-    const templates = await CLIENT.send({ method: 'resources/templates/list' });
-    const updatedTemplates = templates?.result?.resourceTemplates || [];
-    const templateNames = updatedTemplates.map((template: any) => template.uriTemplate).sort();
-
-    expect({ resourceNames, templateNames }).toMatchSnapshot();
-  });
-
   it('should concatenate headers and separator with two local files', async () => {
     const req = {
       jsonrpc: '2.0',
@@ -128,6 +116,113 @@ describe('PatternFly MCP, STDIO', () => {
 
     expect(text.startsWith('# Documentation from')).toBe(true);
     expect(text).toMatchSnapshot();
+  });
+});
+
+describe('Builtin resources, STDIO', () => {
+  let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
+  let CLIENT: StdioTransportClient;
+  let URL_MOCK: string;
+
+  beforeAll(async () => {
+    FETCH_MOCK = await setupFetchMock({
+      port: 5010,
+      routes: [
+        {
+          url: /\/README\.md$/,
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          body: `# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
+
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration`
+        },
+        {
+          url: /.*\.md$/,
+          status: 200,
+          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+          body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
+        }
+      ]
+    });
+
+    URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/`;
+    CLIENT = await startServer();
+  });
+
+  afterAll(async () => {
+    if (CLIENT) {
+      await CLIENT.close();
+    }
+
+    if (FETCH_MOCK) {
+      await FETCH_MOCK.cleanup();
+    }
+  });
+
+  it('should expose expected resources and templates', async () => {
+    const resources = await CLIENT.send({ method: 'resources/list' });
+    const updatedResources = resources?.result?.resources || [];
+    const resourceNames = updatedResources.map((resource: any) => resource.uri).sort();
+
+    const templates = await CLIENT.send({ method: 'resources/templates/list' });
+    const updatedTemplates = templates?.result?.resourceTemplates || [];
+    const templateNames = updatedTemplates.map((template: any) => template.uriTemplate).sort();
+
+    expect({ resourceNames, templateNames }).toMatchSnapshot();
+  });
+
+  it('should read the patternfly-context resource', async () => {
+    const response = await CLIENT.send({
+      method: 'resources/read',
+      params: { uri: 'patternfly://context' }
+    });
+    const content = response?.result.contents[0];
+
+    expect(content.text).toContain('PatternFly is an open-source design system');
+    expect(content.mimeType).toBe('text/markdown');
+  });
+
+  it('should read the patternfly-docs-index', async () => {
+    const response = await CLIENT.send({
+      method: 'resources/read',
+      params: { uri: 'patternfly://docs/index' }
+    });
+    const content = response?.result.contents[0];
+
+    expect(content.uri).toBe('patternfly://docs/index');
+    expect(content.text).toContain('PatternFly Documentation Index');
+  });
+
+  /*
+  it('should read a doc through a template', async () => {
+    const response = await CLIENT.send({
+      method: 'resources/read',
+      params: { uri: 'patternfly://docs/Button' }
+    });
+    const content = response?.result.contents[0];
+
+    expect(content.uri).toBe('patternfly://docs/Button');
+    expect(content.text).toContain('This is a test document for mocking remote HTTP requests');
+  });
+  */
+
+  it('should read the patternfly-schemas-index', async () => {
+    const response = await CLIENT.send({
+      method: 'resources/read',
+      params: { uri: 'patternfly://schemas/index' }
+    });
+    const content = response?.result.contents[0];
+
+    expect(content.uri).toBe('patternfly://schemas/index');
+    expect(content.text).toContain('PatternFly Component Names Index');
   });
 });
 
