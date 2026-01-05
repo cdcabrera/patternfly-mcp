@@ -108,6 +108,7 @@ export const startServer = async (
     throw new Error(`Server failed to start on port ${port}`);
   }
 
+  // const httpClientPort = server.port ?? updatedOptions?.http?.port;
   let httpClientUrl: URL;
 
   try {

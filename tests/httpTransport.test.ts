@@ -99,7 +99,7 @@ describe('Builtin tools, HTTP transport', () => {
   });
 
   it('should concatenate headers and separator with two remote files', async () => {
-    const CLIENT = await startServer({ http: { port: 5002 } });
+    const CLIENT = await startServer({ http: { port: 0 } });
     const req = {
       jsonrpc: '2.0',
       id: 1,
@@ -157,7 +157,7 @@ describe('Builtin resources, HTTP transport', () => {
       excludePorts: [5002]
     });
 
-    CLIENT = await startServer({ http: { port: 5002 }, logging: { level: 'debug', protocol: true } });
+    CLIENT = await startServer({ http: { port: 0 }, logging: { level: 'debug', protocol: true } });
   });
 
   afterAll(async () => {
@@ -240,7 +240,6 @@ describe('Inline tools, HTTP transport', () => {
   it.each([
     {
       description: 'inline tool module',
-      port: 5011,
       toolName: 'inline_module',
       tool: createMcpTool({
         name: 'inline_module',
@@ -251,7 +250,6 @@ describe('Inline tools, HTTP transport', () => {
     },
     {
       description: 'inline tool creator',
-      port: 5012,
       toolName: 'inline_creator',
       tool: (() => {
         const inlineCreator = (_options: any) => [
@@ -270,7 +268,6 @@ describe('Inline tools, HTTP transport', () => {
     },
     {
       description: 'inline object',
-      port: 5013,
       toolName: 'inline_obj',
       tool: {
         name: 'inline_obj',
@@ -281,7 +278,6 @@ describe('Inline tools, HTTP transport', () => {
     },
     {
       description: 'inline tuple',
-      port: 5014,
       toolName: 'inline_tuple',
       tool: [
         'inline_tuple',
@@ -292,10 +288,10 @@ describe('Inline tools, HTTP transport', () => {
         (args: any) => ({ content: [{ type: 'text', text: JSON.stringify(args) }] })
       ]
     }
-  ])('should register and invoke an inline tool module, $description', async ({ port, tool, toolName }) => {
+  ])('should register and invoke an inline tool module, $description', async ({ tool, toolName }) => {
     CLIENT = await startServer(
       {
-        http: { port },
+        http: { port: 0 },
         isHttp: true,
         logging: { level: 'info', protocol: true },
         toolModules: [tool as any]
