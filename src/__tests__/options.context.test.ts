@@ -85,6 +85,7 @@ describe('tool creator options context', () => {
     // Mock server instance
     mockServer = {
       registerTool: jest.fn(),
+      registerResource: jest.fn(),
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined)
     };
