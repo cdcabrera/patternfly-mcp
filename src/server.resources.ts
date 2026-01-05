@@ -6,6 +6,8 @@ import { log } from './logger';
 /**
  * Compose built-in resource creators.
  *
+ * @note This is primarily a placeholder for future external resources.
+ *
  * @param builtinCreators - Built-in tool creators
  * @param {GlobalOptions} options - Global options.
  * @param {AppSession} _sessionOptions - Session options.
