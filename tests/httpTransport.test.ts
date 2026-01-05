@@ -105,7 +105,7 @@ describe('PatternFly MCP, HTTP Transport', () => {
       id: 1,
       method: 'tools/call',
       params: {
-        name: 'fetchDocs',
+        name: 'usePatternFlyDocs',
         arguments: {
           urlList: [
             'https://www.patternfly.org/notARealPath/README.md',

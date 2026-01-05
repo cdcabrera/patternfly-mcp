@@ -100,7 +100,7 @@ describe('PatternFly MCP, STDIO', () => {
       id: 1,
       method: 'tools/call',
       params: {
-        name: 'fetchDocs',
+        name: 'usePatternFlyDocs',
         arguments: {
           urlList: [
             // URL_MOCK
