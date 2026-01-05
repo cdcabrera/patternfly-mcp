@@ -54,17 +54,13 @@ exports[`options defaults should return specific properties: defaults 1`] = `
       "expire": 120000,
     },
   },
+  "resourceModules": [],
   "separator": "
 
 ---
 
 ",
   "toolMemoOptions": {
-    "fetchDocs": {
-      "cacheErrors": false,
-      "cacheLimit": 15,
-      "expire": 60000,
-    },
     "usePatternFlyDocs": {
       "cacheErrors": false,
       "cacheLimit": 10,
