@@ -1,4 +1,4 @@
-import { McpServer, type ResourceMetadata } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, type ResourceTemplate, type ResourceMetadata } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
@@ -51,7 +51,7 @@ type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: stri
  */
 type McpResource = [
   name: string,
-  uriOrTemplate: string,
+  uriOrTemplate: string | ResourceTemplate,
   config: ResourceMetadata,
   handler: (...args: any[]) => any | Promise<any>
 ];
@@ -252,7 +252,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
       log.info(`Registered resource: ${name}`);
 
-      server?.registerResource(name, uri, config, (...args: unknown[]) =>
+      server?.registerResource(name, uri as any, config, (...args: unknown[]) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
             log.debug(

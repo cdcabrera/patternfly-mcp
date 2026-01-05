@@ -1,6 +1,8 @@
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
+import { searchComponents } from './tool.searchPatternFlyDocs';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 
@@ -12,7 +14,7 @@ const NAME = 'patternfly-docs-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{name}';
+const URI_TEMPLATE = new ResourceTemplate('patternfly://docs/{name}', { list: undefined });
 
 /**
  * Resource configuration.
@@ -47,9 +49,17 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       }
 
       let result: string;
+      const { matchedUrls } = searchComponents(name);
+
+      if (matchedUrls.length === 0) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `No documentation found for component: ${name}`
+        );
+      }
 
       try {
-        result = await memoProcess([name as string]);
+        result = await memoProcess(matchedUrls);
       } catch (error) {
         throw new McpError(
           ErrorCode.InternalError,

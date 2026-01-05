@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { componentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
+import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { fuzzySearch } from './server.search';
+import { componentNames } from './tool.searchPatternFlyDocs';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -23,7 +24,7 @@ type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
 const componentSchemasTool = (options = getOptions()): McpTool => {
   const memoGetComponentSchema = memo(
     async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
-    options?.toolMemoOptions?.usePatternFlyDocs // Use the same memo options as fetchDocs
+    options?.toolMemoOptions?.usePatternFlyDocs
   );
 
   const callback = async (args: any = {}) => {

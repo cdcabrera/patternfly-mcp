@@ -1,12 +1,22 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { componentNames } from '@patternfly/patternfly-component-schemas/json';
+import { componentNames as pfComponentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
 import { COMPONENT_DOCS } from './docs.component';
 import { LAYOUT_DOCS } from './docs.layout';
 import { CHART_DOCS } from './docs.chart';
 import { getLocalDocs } from './docs.local';
 import { fuzzySearch } from './server.search';
+import { memo } from './server.caching';
+import { DEFAULT_OPTIONS } from './options.defaults';
+
+/**
+ * List of component names to include in search results.
+ *
+ * @note The "table" component is manually added to the list because it's not currently included
+ * in the component schemas package.
+ */
+const componentNames = [...pfComponentNames, 'Table'].sort((a, b) => a.localeCompare(b));
 
 /**
  * Extract a component name from a documentation URL string
@@ -65,6 +75,48 @@ const buildComponentToDocsMap = (): Map<string, string[]> => {
 };
 
 /**
+ * Memoized version of buildComponentToDocsMap. Use default memo options.
+ */
+buildComponentToDocsMap.memo = memo(buildComponentToDocsMap, DEFAULT_OPTIONS.resourceMemoOptions.default);
+
+/**
+ * Search for PatternFly component documentation URLs using fuzzy search.
+ *
+ * @param searchQuery - Search query string
+ * @returns Object containing search results and matched URLs
+ */
+const searchComponents = (searchQuery: string) => {
+  const componentToDocsMap = buildComponentToDocsMap();
+
+  // Use fuzzy search to handle exact matches and variations
+  const searchResults = fuzzySearch(searchQuery, componentNames, {
+    maxDistance: 3,
+    maxResults: 10,
+    isFuzzyMatch: true,
+    deduplicateByNormalized: true
+  });
+
+  const matchedUrls: string[] = [];
+  const seenUrls = new Set<string>();
+
+  for (const result of searchResults) {
+    const urls = componentToDocsMap.get(result.item) || [];
+
+    for (const url of urls) {
+      if (!seenUrls.has(url)) {
+        matchedUrls.push(url);
+        seenUrls.add(url);
+      }
+    }
+  }
+
+  return {
+    searchResults,
+    matchedUrls
+  };
+};
+
+/**
  * searchPatternFlyDocs tool function
  *
  * Searches for PatternFly component documentation URLs using fuzzy search.
@@ -73,8 +125,6 @@ const buildComponentToDocsMap = (): Map<string, string[]> => {
  * @returns MCP tool tuple [name, schema, callback]
  */
 const searchPatternFlyDocsTool = (): McpTool => {
-  const componentToDocsMap = buildComponentToDocsMap();
-
   const callback = async (args: any = {}) => {
     const { searchQuery } = args;
 
@@ -85,12 +135,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
       );
     }
 
-    const searchResults = fuzzySearch(searchQuery, componentNames, {
-      maxDistance: 3,
-      maxResults: 10,
-      isFuzzyMatch: true,
-      deduplicateByNormalized: true
-    });
+    const { searchResults, matchedUrls } = searchComponents(searchQuery);
 
     if (searchResults.length === 0) {
       return {
@@ -102,20 +147,6 @@ const searchPatternFlyDocsTool = (): McpTool => {
           ].join('\n')
         }]
       };
-    }
-
-    const matchedUrls: string[] = [];
-    const seenUrls = new Set<string>();
-
-    for (const result of searchResults) {
-      const urls = componentToDocsMap.get(result.item) || [];
-
-      for (const url of urls) {
-        if (!seenUrls.has(url)) {
-          matchedUrls.push(url);
-          seenUrls.add(url);
-        }
-      }
     }
 
     // For scenarios where no documentation URLs are available for a component, return a
@@ -167,4 +198,4 @@ const searchPatternFlyDocsTool = (): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool };
+export { searchPatternFlyDocsTool, searchComponents, componentNames };

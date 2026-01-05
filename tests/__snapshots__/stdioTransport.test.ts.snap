@@ -447,10 +447,11 @@ exports[`PatternFly MCP, STDIO should expose expected resources and templates 1`
   "resourceNames": [
     "patternfly://context",
     "patternfly://docs/index",
-    "patternfly://docs/{name}",
     "patternfly://schemas/index",
   ],
-  "templateNames": [],
+  "templateNames": [
+    "patternfly://docs/{name}",
+  ],
 }
 `;
 
