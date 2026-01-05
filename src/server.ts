@@ -18,6 +18,7 @@ import {
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject } from './server.helpers';
+import { createServerStats, type Stats } from './server.stats';
 
 /**
  * A tool registered with the MCP server.
@@ -62,6 +63,18 @@ interface ServerSettings {
 }
 
 /**
+ * Server stats.
+ *
+ * @alias Stats
+ */
+type ServerStats = Stats;
+
+/**
+ * A callback to Promise return server stats.
+ */
+type ServerGetStats = () => Promise<ServerStats>;
+
+/**
  * Server log event.
  */
 type ServerLogEvent = LogEvent;
@@ -86,11 +99,13 @@ type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
  *
  * @property stop - Stops the server, gracefully.
  * @property isRunning - Indicates whether the server is running.
+ * @property {ServerGetStats} getStats - Resolves server stats.
  * @property {ServerOnLog} onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
  */
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
+  getStats: ServerGetStats;
   onLog: ServerOnLog;
 }
 
@@ -116,7 +131,7 @@ const builtinTools: McpToolCreator[] = [
  * @param [settings.tools] - Built-in tools to register.
  * @param [settings.enableSigint] - Indicates whether SIGINT signal handling is enabled.
  * @param [settings.allowProcessExit] - Determines if the process is allowed to exit explicitly, useful for testing.
- * @returns Server instance with `stop()`, `isRunning()`, and `onLog()` subscription.
+ * @returns Server instance with `stop()`, `getStats()` `isRunning()`, and `onLog()` subscription.
  */
 const runServer = async (options: ServerOptions = getOptions(), {
   tools = builtinTools,
@@ -132,6 +147,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let sigintHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
+  let getStatsSetup: ServerGetStats = () => Promise.resolve({} as ServerStats);
 
   const stopServer = async () => {
     log.debug(`${options.name} attempting shutdown.`);
@@ -182,7 +198,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
     );
 
     // Setup server logging.
-    const subUnsub = createServerLogger.memo(server);
+    const loggerSubUnsub = createServerLogger.memo(server);
 
     log.info(`Server logging enabled.`);
 
@@ -194,17 +210,25 @@ const runServer = async (options: ServerOptions = getOptions(), {
       );
     }
 
+    const statsTracker = createServerStats();
+
+    log.info(`Server stats enabled.`);
+
     // Combine built-in tools with custom ones after logging is set up.
     const updatedTools = await composeTools(tools);
 
-    if (subUnsub) {
-      const { subscribe, unsubscribe } = subUnsub;
+    if (loggerSubUnsub) {
+      const { subscribe, unsubscribe } = loggerSubUnsub;
 
       // Track active logging subscriptions to clean up on stop()
       unsubscribeServerLogger = unsubscribe;
 
       // Setup server logging for external handlers
       onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
+    }
+
+    if (statsTracker) {
+      getStatsSetup = () => statsTracker.getStats();
     }
 
     updatedTools.forEach(toolCreator => {
@@ -236,6 +260,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isArgs = ${args !== undefined}`,
               `isRemainingArgs = ${_args?.length > 0}`
             );
+
+            const report = statsTracker.traffic();
             const isContextLikeArgs = isContextLike(args);
 
             // Log potential Zod validation errors triggered by context fail.
@@ -248,7 +274,11 @@ const runServer = async (options: ServerOptions = getOptions(), {
               );
             }
 
-            return await callback(args);
+            const toolResult = await callback(args);
+
+            report({ tool: name });
+
+            return toolResult;
           })));
     });
 
@@ -272,6 +302,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : 'stdio'} transport`);
     running = true;
+    statsTracker.setStats(httpHandle);
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
     throw error;
@@ -284,6 +315,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     isRunning(): boolean {
       return running;
+    },
+
+    async getStats(): Promise<ServerStats> {
+      return await getStatsSetup();
     },
 
     onLog(handler: ServerOnLogHandler): () => void {
@@ -342,5 +377,7 @@ export {
   type ServerOnLog,
   type ServerOnLogHandler,
   type ServerOptions,
-  type ServerSettings
+  type ServerSettings,
+  type ServerStats,
+  type ServerGetStats
 };

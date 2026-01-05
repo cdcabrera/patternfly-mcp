@@ -144,7 +144,7 @@ exports[`PatternFly MCP, HTTP Transport should expose expected tools and stable 
 
 exports[`PatternFly MCP, HTTP Transport should initialize MCP session over HTTP 1`] = `
 {
-  "baseUrl": "http://127.0.0.1:5001",
+  "baseUrl": "http://127.0.0.1:8000",
   "name": "@patternfly/patternfly-mcp",
   "version": "2024-11-05",
 }
