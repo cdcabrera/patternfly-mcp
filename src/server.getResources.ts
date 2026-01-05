@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
+import { normalizeString } from './server.search';
 
 /**
  * Read a local file and return its contents as a string
@@ -18,6 +19,8 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
 
 /**
  * Fetch content from a URL with timeout and error handling
+ *
+ * @note Review expanding fetch to handle more file types like JSON.
  *
  * @param url
  */
@@ -64,58 +67,96 @@ const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptio
 };
 
 /**
+ * Load a file from disk or `URL`, depending on the input type.
+ *
+ * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
+ * @param options - Optional options.
+ */
+const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+  const isUrl = options.urlRegex.test(pathOrUrl);
+  const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
+  let content;
+
+  if (isUrl) {
+    content = await fetchUrlFunction.memo(updatedPathOrUrl);
+  } else {
+    content = await readLocalFileFunction.memo(updatedPathOrUrl);
+  }
+
+  return { content, resolvedPath: updatedPathOrUrl };
+};
+
+/**
+ * Promise queue for `loadFileFetch`. Limit the number of concurrent promises.
+ *
+ * @param queue - List of paths or URLs to load
+ * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ */
+const promiseQueue = async (queue: string[], limit = 5) => {
+  const results = [];
+  const slidingQueue = new Set();
+
+  for (const item of queue) {
+    // Use a sliding window to limit the number of concurrent promises.
+    const promise = loadFileFetch(item).finally(() => slidingQueue.delete(promise));
+
+    results.push(promise);
+    slidingQueue.add(promise);
+
+    if (slidingQueue.size >= limit) {
+      // Silent fail if one promise fails to load, but keep processing the rest.
+      await Promise.race(slidingQueue).catch(() => {});
+    }
+  }
+
+  return Promise.allSettled(results);
+};
+
+/**
  * Normalize inputs, load all in parallel, and return a joined string.
  *
- * @param inputs
- * @param options
+ * @note Remember to limit the number of docs to load to avoid OOM.
+ * @param inputs - List of paths or URLs to load
+ * @param options - Optional options
  */
 const processDocsFunction = async (
   inputs: string[],
   options = getOptions()
 ) => {
-  const seen = new Set<string>();
-  const list = inputs
-    .map(str => String(str).trim())
-    .filter(Boolean)
-    .filter(str => {
-      if (seen.has(str)) {
-        return false;
-      }
-      seen.add(str);
+  const uniqueInputs = new Map(
+    inputs.map(input => [normalizeString.memo(input), input.trim()])
+  );
+  const list = Array.from(uniqueInputs.values()).slice(0, options.maxDocsToLoad).filter(Boolean);
 
-      return true;
-    });
-
-  const loadOne = async (pathOrUrl: string) => {
-    const isUrl = options.urlRegex.test(pathOrUrl);
-    const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
-    let content;
-
-    if (isUrl) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl);
-    } else {
-      content = await readLocalFileFunction.memo(updatedPathOrUrl);
-    }
-
-    return { header: `# Documentation from ${updatedPathOrUrl}`, content };
-  };
-
-  const settled = await Promise.allSettled(list.map(item => loadOne(item)));
-  const parts: string[] = [];
+  const settled = await promiseQueue(list);
+  const docs: { content: string, path: string | undefined, resolvedPath: string | undefined, isSuccess: boolean }[] = [];
 
   settled.forEach((res, index) => {
     const original = list[index];
+    let content;
+    let resolvedPath;
+    const path = original;
+    let isSuccess = false;
 
     if (res.status === 'fulfilled') {
-      const { header, content } = res.value;
+      const { resolvedPath: docResolvedPath, content: docContent } = res.value;
 
-      parts.push(`${header}\n\n${content}`);
+      resolvedPath = docResolvedPath;
+      content = docContent;
+      isSuccess = true;
     } else {
-      parts.push(`❌ Failed to load ${original}: ${res.reason}`);
+      content = `❌ Failed to load ${original}: ${res.reason}`;
     }
+
+    docs.push({
+      content,
+      path,
+      resolvedPath,
+      isSuccess
+    });
   });
 
-  return parts.join(options.separator);
+  return docs;
 };
 
-export { readLocalFileFunction, fetchUrlFunction, resolveLocalPathFunction, processDocsFunction };
+export { fetchUrlFunction, loadFileFetch, processDocsFunction, promiseQueue, readLocalFileFunction, resolveLocalPathFunction };
