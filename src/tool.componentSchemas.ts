@@ -23,7 +23,7 @@ type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
 const componentSchemasTool = (options = getOptions()): McpTool => {
   const memoGetComponentSchema = memo(
     async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
-    options?.toolMemoOptions?.fetchDocs // Use the same memo options as fetchDocs
+    options?.toolMemoOptions?.usePatternFlyDocs // Use the same memo options as fetchDocs
   );
 
   const callback = async (args: any = {}) => {
