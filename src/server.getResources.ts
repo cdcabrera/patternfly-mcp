@@ -19,6 +19,8 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
 /**
  * Fetch content from a URL with timeout and error handling
  *
+ * @note Review expanding fetch to handle more file types like JSON.
+ *
  * @param url
  */
 const fetchUrlFunction = async (url: string) => {
@@ -97,25 +99,38 @@ const processDocsFunction = async (
       content = await readLocalFileFunction.memo(updatedPathOrUrl);
     }
 
-    return { header: `# Documentation from ${updatedPathOrUrl}`, content };
+    return { content, resolvedPath: updatedPathOrUrl };
   };
 
   const settled = await Promise.allSettled(list.map(item => loadOne(item)));
-  const parts: string[] = [];
+  const docs: { content: string, path: string | undefined, resolvedPath: string | undefined, isSuccess: boolean }[] = [];
 
   settled.forEach((res, index) => {
     const original = list[index];
+    let content;
+    let resolvedPath;
+    const path = original;
+    let isSuccess = false;
 
     if (res.status === 'fulfilled') {
-      const { header, content } = res.value;
+      const { resolvedPath: docResolvedPath, content: docContent } = res.value;
 
-      parts.push(`${header}\n\n${content}`);
+      resolvedPath = docResolvedPath;
+      content = docContent;
+      isSuccess = true;
     } else {
-      parts.push(`❌ Failed to load ${original}: ${res.reason}`);
+      content = `❌ Failed to load ${original}: ${res.reason}`;
     }
+
+    docs.push({
+      content,
+      path,
+      resolvedPath,
+      isSuccess
+    });
   });
 
-  return parts.join(options.separator);
+  return docs;
 };
 
 export { readLocalFileFunction, fetchUrlFunction, resolveLocalPathFunction, processDocsFunction };

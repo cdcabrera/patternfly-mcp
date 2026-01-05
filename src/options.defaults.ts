@@ -11,7 +11,7 @@ import { type ToolModule } from './server.toolsUser';
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
- * @property docsHost - Flag indicating whether to use the docs-host.
+ * @property docsHost - `@DISABLED` This flag no longer produces a result.
  * @property docsPath - Path to the documentation directory.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
@@ -43,7 +43,7 @@ import { type ToolModule } from './server.toolsUser';
 interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
   contextUrl: string;
-  docsHost: boolean;
+  docsHost?: boolean;
   docsPath: string;
   http: HttpOptions;
   isHttp: boolean;
@@ -64,6 +64,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   pfExternalAccessibility: string;
   repoName: string | undefined;
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
+  resourceModules: unknown | unknown[];
   separator: string;
   stats: StatsOptions;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
@@ -239,9 +240,9 @@ const TOOL_MEMO_OPTIONS = {
     expire: 1 * 60 * 1000, // 1 minute sliding cache
     cacheErrors: false
   },
-  fetchDocs: {
-    cacheLimit: 15,
-    expire: 1 * 60 * 1000, // 1 minute sliding cache
+  searchPatternFlyDocs: {
+    cacheLimit: 10,
+    expire: 5 * 60 * 1000, // 5 minute sliding cache
     cacheErrors: false
   }
 };
@@ -375,6 +376,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
   stats: STATS_OPTIONS,
+  resourceModules: [],
   toolMemoOptions: TOOL_MEMO_OPTIONS,
   toolModules: [],
   separator: DEFAULT_SEPARATOR,
