@@ -20,7 +20,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     if (!urlList || !Array.isArray(urlList)) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Missing required parameter: urlList (must be an array of strings): ${urlList}`
+        `Missing required parameter: urlList must be an array of strings: ${urlList}`
       );
     }
 
@@ -52,6 +52,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
       **Discovery**:
       - To browse all available documentation, read the "patternfly://docs/index" resource.
+      - To browse all available components, read the "patternfly://schemas/index" resource.
       - To find specific URLs by component name, use the "searchPatternFlyDocs" tool.
 
       **Usage**:

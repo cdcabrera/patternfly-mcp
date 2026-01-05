@@ -81,7 +81,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
     if (!searchQuery || typeof searchQuery !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Missing required parameter: searchQuery (must be a string): ${searchQuery}`
+        `Missing required parameter: searchQuery must be a string: ${searchQuery}`
       );
     }
 
@@ -96,7 +96,10 @@ const searchPatternFlyDocsTool = (): McpTool => {
       return {
         content: [{
           type: 'text',
-          text: `No PatternFly components found matching "${searchQuery}".`
+          text: [
+            `No PatternFly components found matching "${searchQuery}"`,
+            'To browse all available components, read the "patternfly://schemas/index" resource.'
+          ].join('\n')
         }]
       };
     }
@@ -115,14 +118,37 @@ const searchPatternFlyDocsTool = (): McpTool => {
       }
     }
 
-    const urlListText = matchedUrls.slice(0, 10).map((url, i) => `${i + 1}. ${url}`).join('\n');
+    // For scenarios where no documentation URLs are available for a component, return a
+    // message with the first matched component and a list of similar components.
+    if (matchedUrls.length === 0) {
+      const componentList = searchResults
+        .slice(0, 5)
+        .map(result => result.item)
+        .join(', ');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: [
+              `Found components matching "${searchQuery}" but no documentation URLs are available. Matched components: ${componentList}`,
+              'To browse all available documentation, read the "patternfly://docs/index" resource.'
+            ].join('\n')
+          }
+        ]
+      };
+    }
+
+    // Return the first 10 matched URLs as a formatted list
+    const urlListText = matchedUrls
+      .slice(0, 10)
+      .map((url, index) => `${index + 1}. ${url}`)
+      .join('\n');
 
     return {
       content: [{
         type: 'text',
-        text: matchedUrls.length > 0
-          ? `Documentation URLs for "${searchQuery}":\n\n${urlListText}\n\nUse the "usePatternFlyDocs" tool with these URLs to fetch content.`
-          : `Found components matching "${searchQuery}" but no documentation URLs are available.`
+        text: `Documentation URLs for "${searchQuery}":\n\n${urlListText}\n\nUse the "usePatternFlyDocs" tool with these URLs to fetch content.`
       }]
     };
   };

@@ -32,7 +32,7 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
     if (typeof componentName !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Missing required parameter: componentName (must be a string): ${componentName}`
+        `Missing required parameter: componentName must be a string: ${componentName}`
       );
     }
 
