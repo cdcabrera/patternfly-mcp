@@ -122,11 +122,10 @@ describe('Builtin tools, STDIO', () => {
 describe('Builtin resources, STDIO', () => {
   let FETCH_MOCK: Awaited<ReturnType<typeof setupFetchMock>> | undefined;
   let CLIENT: StdioTransportClient;
-  let URL_MOCK: string;
 
   beforeAll(async () => {
     FETCH_MOCK = await setupFetchMock({
-      port: 5010,
+      port: 5011,
       routes: [
         {
           url: /\/README\.md$/,
@@ -153,7 +152,6 @@ describe('Builtin resources, STDIO', () => {
       ]
     });
 
-    URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/`;
     CLIENT = await startServer();
   });
 
@@ -200,19 +198,6 @@ describe('Builtin resources, STDIO', () => {
     expect(content.uri).toBe('patternfly://docs/index');
     expect(content.text).toContain('PatternFly Documentation Index');
   });
-
-  /*
-  it('should read a doc through a template', async () => {
-    const response = await CLIENT.send({
-      method: 'resources/read',
-      params: { uri: 'patternfly://docs/Button' }
-    });
-    const content = response?.result.contents[0];
-
-    expect(content.uri).toBe('patternfly://docs/Button');
-    expect(content.text).toContain('This is a test document for mocking remote HTTP requests');
-  });
-  */
 
   it('should read the patternfly-schemas-index', async () => {
     const response = await CLIENT.send({
