@@ -51,7 +51,7 @@ type McpResource = [
   name: string,
   uriOrTemplate: string,
   config: ResourceMetadata,
-  handler: ReadResourceCallback
+  handler: (...args: any[]) => any | Promise<any>
 ];
 
 /**
@@ -248,15 +248,15 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
       log.info(`Registered resource: ${name}`);
 
-      server?.registerResource(name, uri, config, (..._args: unknown[]) =>
+      server?.registerResource(name, uri, config, (...args: unknown[]) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
             log.debug(
               `Running resource "${name}"`,
-              `isArgs = ${_args?.length > 0}`
+              `isArgs = ${args?.length > 0}`
             );
 
-            return await callback(..._args);
+            return await callback(...args);
           })));
     });
 
