@@ -442,6 +442,18 @@ exports[`PatternFly MCP, STDIO should concatenate headers and separator with two
 This is a test document for mocking remote HTTP requests."
 `;
 
+exports[`PatternFly MCP, STDIO should expose expected resources and templates 1`] = `
+{
+  "resourceNames": [
+    "patternfly://context",
+    "patternfly://docs/index",
+    "patternfly://docs/{name}",
+    "patternfly://schemas/index",
+  ],
+  "templateNames": [],
+}
+`;
+
 exports[`PatternFly MCP, STDIO should expose expected tools and stable shape 1`] = `
 {
   "toolNames": [

@@ -132,6 +132,18 @@ exports[`PatternFly MCP, HTTP Transport should concatenate headers and separator
 This is a test document for mocking remote HTTP requests."
 `;
 
+exports[`PatternFly MCP, HTTP Transport should expose expected resources and templates 1`] = `
+{
+  "resourceNames": [
+    "patternfly://context",
+    "patternfly://docs/index",
+    "patternfly://docs/{name}",
+    "patternfly://schemas/index",
+  ],
+  "templateNames": [],
+}
+`;
+
 exports[`PatternFly MCP, HTTP Transport should expose expected tools and stable shape 1`] = `
 {
   "toolNames": [

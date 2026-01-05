@@ -71,6 +71,18 @@ describe('PatternFly MCP, STDIO', () => {
     expect({ toolNames }).toMatchSnapshot();
   });
 
+  it('should expose expected resources and templates', async () => {
+    const resources = await CLIENT.send({ method: 'resources/list' });
+    const updatedResources = resources?.result?.resources || [];
+    const resourceNames = updatedResources.map((resource: any) => resource.uri).sort();
+
+    const templates = await CLIENT.send({ method: 'resources/templates/list' });
+    const updatedTemplates = templates?.result?.resourceTemplates || [];
+    const templateNames = updatedTemplates.map((template: any) => template.uriTemplate).sort();
+
+    expect({ resourceNames, templateNames }).toMatchSnapshot();
+  });
+
   it('should concatenate headers and separator with two local files', async () => {
     const req = {
       jsonrpc: '2.0',
