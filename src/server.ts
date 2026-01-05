@@ -291,7 +291,12 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isArgs = ${args?.length > 0}`
             );
 
-            return await callback(...args);
+            const timedReport = stat.traffic();
+            const resourceResult = await callback(...args);
+
+            timedReport({ resource: name });
+
+            return resourceResult;
           })));
     });
 
