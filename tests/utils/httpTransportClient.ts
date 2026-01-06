@@ -75,7 +75,7 @@ export const startServer = async (
     docsHost: false,
     ...options,
     http: {
-      port: 5000,
+      port: 8000,
       host: '127.0.0.1',
       allowedOrigins: [],
       allowedHosts: [],

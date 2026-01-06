@@ -36,11 +36,10 @@ describe('Builtin tools, HTTP transport', () => {
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
         }
-      ],
-      excludePorts: [5001]
+      ]
     });
 
-    CLIENT = await startServer({ http: { port: 5001 }, logging: { level: 'debug', protocol: true } });
+    CLIENT = await startServer({ logging: { level: 'debug', protocol: true } });
   });
 
   afterAll(async () => {
