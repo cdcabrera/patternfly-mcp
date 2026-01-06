@@ -84,6 +84,19 @@ interface ServerSettings {
 }
 
 /**
+ * Server stats.
+ *
+ * @interace ServerStats
+ *
+ * @property port - The port the server is bound to. Only available when `HTTP` transport is active.
+ * @property transport - The transport method, `HTTP` or `STDIO`, used by the server.
+ */
+interface ServerStats {
+  port?: number;
+  transport: 'stdio' | 'http';
+}
+
+/**
  * Server log event.
  */
 type ServerLogEvent = LogEvent;
@@ -108,11 +121,13 @@ type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
  *
  * @property stop - Stops the server, gracefully.
  * @property isRunning - Indicates whether the server is running.
+ * @property {ServerStats} getStats - Returns server stats.
  * @property {ServerOnLog} onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
  */
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
+  getStats(): ServerStats;
   onLog: ServerOnLog;
 }
 
@@ -341,6 +356,13 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     isRunning(): boolean {
       return running;
+    },
+
+    getStats(): ServerStats {
+      return {
+        ...(httpHandle?.port ? { port: httpHandle.port } : {}),
+        transport: options.isHttp ? 'http' : 'stdio'
+      };
     },
 
     onLog(handler: ServerOnLogHandler): () => void {

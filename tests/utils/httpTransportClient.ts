@@ -109,11 +109,12 @@ export const startServer = async (
   }
 
   // const httpClientPort = server.port ?? updatedOptions?.http?.port;
+  const { port: httpClientPort } = server.getStats();
   let httpClientUrl: URL;
 
   try {
-    // Construct base URL from options
-    const baseUrl = `http://${host}:${port}/mcp`;
+    // Construct base URL from options, apply port from server stats
+    const baseUrl = `http://${host}:${httpClientPort}/mcp`;
 
     httpClientUrl = new URL(baseUrl);
   } catch (error) {
