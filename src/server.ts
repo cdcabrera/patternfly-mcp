@@ -84,16 +84,46 @@ interface ServerSettings {
 }
 
 /**
+ * Base structure for server telemetry reports.
+ *
+ * @interace ServerReport
+ */
+interface ServerReport {
+  type: 'traffic' | 'health' | 'session' | 'transport';
+  timestamp: string;
+  channelId: string;
+}
+
+/**
+ * Transport-specific telemetry report.
+ *
+ * @interace TransportReport
+ *
+ * @property type - The report type.
+ * @property method - The transport method used by the server.
+ * @property port - The port used by the server.
+ */
+interface TransportReport extends ServerReport {
+  type: 'transport';
+  method: 'stdio' | 'http';
+  port?: number;
+}
+
+/**
  * Server stats.
  *
  * @interace ServerStats
  *
- * @property port - The port the server is bound to. Only available when `HTTP` transport is active.
- * @property transport - The transport method, `HTTP` or `STDIO`, used by the server.
+ * @property timestamp - The timestamp of the server stats.
+ * @property reports - An object containing various server telemetry reports.
  */
 interface ServerStats {
-  port?: number;
-  transport: 'stdio' | 'http';
+  timestamp: string;
+  reports: {
+    transport: TransportReport;
+    health: { channelId: string };
+    traffic: { channelId: string };
+  };
 }
 
 /**
@@ -359,9 +389,28 @@ const runServer = async (options: ServerOptions = getOptions(), {
     },
 
     getStats(): ServerStats {
-      return {
+      const { publicSessionId } = getSessionOptions();
+      const now = new Date().toISOString();
+
+      const transportReport: TransportReport = {
+        type: 'transport',
+        timestamp: now,
+        method: options.isHttp ? 'http' : 'stdio',
         ...(httpHandle?.port ? { port: httpHandle.port } : {}),
-        transport: options.isHttp ? 'http' : 'stdio'
+        channelId: `pf-mcp:stats:transport:${publicSessionId}`
+      };
+
+      return {
+        timestamp: now,
+        reports: {
+          transport: transportReport,
+          health: {
+            channelId: `pf-mcp:stats:health:${publicSessionId}`
+          },
+          traffic: {
+            channelId: `pf-mcp:stats:traffic:${publicSessionId}`
+          }
+        }
       };
     },
 
@@ -423,5 +472,6 @@ export {
   type ServerOnLog,
   type ServerOnLogHandler,
   type ServerOptions,
-  type ServerSettings
+  type ServerSettings,
+  type ServerStats
 };

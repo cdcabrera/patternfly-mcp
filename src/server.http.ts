@@ -206,7 +206,7 @@ const startHttpTransport = async (mcpServer: McpServer, options = getOptions()):
   });
 
   const getPort = () => {
-    const addr = server.address();
+    const addr = server?.address?.();
 
     return (typeof addr !== 'string' && addr?.port) || http.port;
   };

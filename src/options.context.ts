@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } from './options';
 import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession } from './options.defaults';
-import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
+import { mergeObjects, freezeObject, isPlainObject, hashCode } from './server.helpers';
 
 /**
  * AsyncLocalStorage instance for a per-instance session state.
@@ -13,6 +13,14 @@ import { mergeObjects, freezeObject, isPlainObject } from './server.helpers';
 const sessionContext = new AsyncLocalStorage<AppSession>();
 
 /**
+ * Generates a consistent, one-way hash of the sessionId for public exposure.
+ *
+ * @param sessionId
+ */
+const getPublicSessionHash = (sessionId: string): string =>
+  hashCode(sessionId, { algorithm: 'sha256', encoding: 'hex' }).substring(0, 12);
+
+/**
  * Initialize and return session data.
  *
  * @returns {AppSession} Immutable session with a session ID and channel name.
@@ -20,8 +28,9 @@ const sessionContext = new AsyncLocalStorage<AppSession>();
 const initializeSession = (): AppSession => {
   const sessionId = (process.env.NODE_ENV === 'local' && '1234d567-1ce9-123d-1413-a1234e56c789') || randomUUID();
   const channelName = `${LOG_BASENAME}:${sessionId}`;
+  const publicSessionId = getPublicSessionHash(sessionId);
 
-  return freezeObject({ sessionId, channelName });
+  return freezeObject({ sessionId, channelName, publicSessionId });
 };
 
 /**
@@ -145,6 +154,7 @@ const runWithOptions = async <TReturn>(
 export {
   getLoggerOptions,
   getOptions,
+  getPublicSessionHash,
   getSessionOptions,
   initializeSession,
   optionsContext,
