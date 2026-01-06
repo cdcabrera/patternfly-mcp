@@ -6,7 +6,8 @@ import {
   type ServerSettings,
   type ServerOnLog,
   type ServerOnLogHandler,
-  type ServerLogEvent
+  type ServerLogEvent,
+  type ServerStats
 } from './server';
 import {
   createMcpTool,
@@ -69,6 +70,13 @@ type PfMcpOnLogHandler = ServerOnLogHandler;
  * @alias ServerLogEvent
  */
 type PfMcpLogEvent = ServerLogEvent;
+
+/**
+ * Statistics about the server.
+ *
+ * @alias ServerStats
+ */
+type PfMcpStats = ServerStats;
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides
@@ -156,6 +164,7 @@ export {
   type PfMcpLogEvent,
   type PfMcpOnLog,
   type PfMcpOnLogHandler,
+  type PfMcpStats,
   type ToolCreator,
   type ToolModule,
   type ToolConfig,

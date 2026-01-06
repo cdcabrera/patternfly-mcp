@@ -7,6 +7,7 @@ import { portValid } from './server.helpers';
  */
 type AppSession = {
   readonly sessionId: string;
+  readonly publicSessionId: string;
   readonly channelName: string
 };
 

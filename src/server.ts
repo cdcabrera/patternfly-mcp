@@ -84,16 +84,46 @@ interface ServerSettings {
 }
 
 /**
+ * Base structure for server telemetry reports.
+ *
+ * @interace ServerReport
+ */
+interface ServerReport {
+  type: 'traffic' | 'health' | 'session' | 'transport';
+  timestamp: string;
+  channelId: string;
+}
+
+/**
+ * Transport-specific telemetry report.
+ *
+ * @interace TransportReport
+ *
+ * @property type - The report type.
+ * @property method - The transport method used by the server.
+ * @property port - The port used by the server.
+ */
+interface TransportReport extends ServerReport {
+  type: 'transport';
+  method: 'stdio' | 'http';
+  port?: number;
+}
+
+/**
  * Server stats.
  *
  * @interace ServerStats
  *
- * @property port - The port the server is bound to. Only available when `HTTP` transport is active.
- * @property transport - The transport method, `HTTP` or `STDIO`, used by the server.
+ * @property timestamp - The timestamp of the server stats.
+ * @property reports - An object containing various server telemetry reports.
  */
 interface ServerStats {
-  port?: number;
-  transport: 'stdio' | 'http';
+  timestamp: string;
+  reports: {
+    transport: TransportReport;
+    health: { channelId: string };
+    traffic: { channelId: string };
+  };
 }
 
 /**
@@ -183,6 +213,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let sigintHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
+  let getStatsSetup: () => ServerStats;
 
   const stopServer = async () => {
     log.debug(`${options.name} attempting shutdown.`);
@@ -234,7 +265,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
     );
 
     // Setup server logging.
-    const subUnsub = createServerLogger.memo(server);
+    const loggerSubUnsub = createServerLogger.memo(server);
 
     log.info(`Server logging enabled.`);
 
@@ -246,20 +277,28 @@ const runServer = async (options: ServerOptions = getOptions(), {
       );
     }
 
+    const statsTracker = createServerStats.memo(options, httpHandle);
+
+    log.info(`Server stats enabled.`);
+
     // Compose resources after logging is set up.
     const updatedResources = await composeResources(resources);
 
     // Combine built-in tools with custom ones after logging is set up.
     const updatedTools = await composeTools(tools);
 
-    if (subUnsub) {
-      const { subscribe, unsubscribe } = subUnsub;
+    if (loggerSubUnsub) {
+      const { subscribe, unsubscribe } = loggerSubUnsub;
 
       // Track active logging subscriptions to clean up on stop()
       unsubscribeServerLogger = unsubscribe;
 
       // Setup server logging for external handlers
       onLogSetup = (handler: ServerOnLogHandler) => subscribe(handler);
+    }
+
+    if (statsTracker) {
+      getStatsSetup = () => statsTracker.getStats();
     }
 
     updatedResources.forEach(resourceCreator => {
@@ -275,7 +314,12 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isArgs = ${args?.length > 0}`
             );
 
-            return await callback(...args);
+            const startResource = Date.now();
+            const resourceResult = await callback(...args);
+
+            statsTracker.recordTraffic({ resource: name, duration: Date.now() - startResource });
+
+            return resourceResult;
           })));
     });
 
@@ -308,6 +352,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isArgs = ${args !== undefined}`,
               `isRemainingArgs = ${_args?.length > 0}`
             );
+
+            const startTool = Date.now();
             const isContextLikeArgs = isContextLike(args);
 
             // Log potential Zod validation errors triggered by context fail.
@@ -320,7 +366,11 @@ const runServer = async (options: ServerOptions = getOptions(), {
               );
             }
 
-            return await callback(args);
+            const toolResult = await callback(args);
+
+            statsTracker.recordTraffic({ tool: name, duration: Date.now() - startTool });
+
+            return toolResult;
           })));
     });
 
@@ -359,10 +409,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
     },
 
     getStats(): ServerStats {
-      return {
-        ...(httpHandle?.port ? { port: httpHandle.port } : {}),
-        transport: options.isHttp ? 'http' : 'stdio'
-      };
+      return getStatsSetup();
     },
 
     onLog(handler: ServerOnLogHandler): () => void {
@@ -423,5 +470,6 @@ export {
   type ServerOnLog,
   type ServerOnLogHandler,
   type ServerOptions,
-  type ServerSettings
+  type ServerSettings,
+  type ServerStats
 };
