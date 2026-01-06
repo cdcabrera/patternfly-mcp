@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } from './options';
-import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession } from './options.defaults';
+import { DEFAULT_OPTIONS, LOG_BASENAME, type LoggingSession, type StatsSession } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject, hashCode } from './server.helpers';
 
 /**
@@ -128,6 +128,21 @@ const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
   const base = getOptions().logging;
 
   return { ...base, channelName: session.channelName };
+};
+
+/**
+ * Get stat channel options from the current context.
+ *
+ * @param {AppSession} [session] - Session options to use in context.
+ * @returns {StatsSession} Stats options from context.
+ */
+const getStatsOptions = (session = getSessionOptions()): StatsSession => {
+  const sessionHash = session.publicSessionId;
+  const health = `pf-mcp:stats:health:${sessionHash}`;
+  const transport = `pf-mcp:stats:transport:${sessionHash}`;
+  const traffic = `pf-mcp:stats:traffic:${sessionHash}`;
+
+  return { trafficChannel, transportChannel, healthChannel };
 };
 
 /**
