@@ -6,8 +6,7 @@ import {
 import { type HttpServerHandle } from './server.http';
 import { publish, type StatReportType } from './stats';
 import { type ServerStats } from './server';
-import { memo } from './server.caching';
-import { DEFAULT_OPTIONS, type StatsSession } from './options.defaults';
+import { type StatsSession } from './options.defaults';
 
 /**
  * Reports server health metrics (e.g., memory usage and uptime).
@@ -79,7 +78,7 @@ const report = (type: StatReportType) => {
   return {
     start: () => start = Date.now(),
     report: (data: Record<string, unknown>) => {
-      const duration = start - Date.now();
+      const duration = Date.now() - start;
       const updatedData = { ...data, duration: duration > 0 ? duration : 0 };
 
       publish(type, updatedData);
@@ -90,27 +89,21 @@ const report = (type: StatReportType) => {
 /**
  * Creates a telemetry tracker for a server instance.
  *
- * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server (if applicable).
- * @param options - Global server options.
- * @param [statsOptions] - Session-specific stats options.
+ * - Starts the health report timer.
+ *
+ * @param {StatsSession} [statsOptions] - Session-specific stats options.
+ * @param {GlobalOptions} [options] - Global server options.
  * @returns - An object with methods to manage server telemetry:
- *  - `getStats`: Returns the server stats and channel IDs.
+ *  - `getStats`: Resolve server stats and channel IDs.
+ *  - `setStats`: Uses the HTTP server handle and starts the transport report timer.
  *  - `traffic`: Records an event-driven traffic metric (e.g., tool/resource execution).
  *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
-  // const httpPort = options.isHttp && httpHandle?.port ? httpHandle?.port : undefined;
+  // Start the health report
   const healthTimer = healthReport(statsOptions);
   let transportTimer: NodeJS.Timeout;
-
-  // const setGetStats = (httpHandle?: HttpServerHandle | null): (() => ServerStats) => {};
-  // let getStats: () => ServerStats;
-
   let resolveStatsPromise: (value: ServerStats) => void;
-
-  // const statsPromise = async (): Promise<ServerStats> => new Promise(resolve => {
-  //  resolveStatsPromise = resolve;
-  // });
 
   const statsPromise: Promise<ServerStats> = new Promise(resolve => {
     resolveStatsPromise = resolve;
@@ -121,34 +114,22 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
     /**
      * Returns the server stats and channel IDs.
      *
-     * @returns {ServerStats} - Server stats and channel IDs.
+     * @returns {Promise<ServerStats>} - Server stats and channel IDs.
      */
-    // getStats: (httpHandle?: HttpServerHandle | null): ServerStats => {
     getStats: (): Promise<ServerStats> => statsPromise,
 
-    // getStats2: () => {
-    // const httpPort = options.isHttp && httpHandle?.port ? httpHandle?.port : undefined;
-
-    // return statsReport({ httpPort }, statsOptions);
-    //  return getStats();
-    // },
-
+    /**
+     * Uses the HTTP server handle and starts the transport report timer.
+     *
+     * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server if available.
+     */
     setStats: (httpHandle?: HttpServerHandle | null) => {
-      // const httpPort = options.isHttp && typeof httpHandle?.port === 'number' ? httpHandle?.port : undefined;
       const httpPort = options.isHttp ? httpHandle?.port : undefined;
+      const stats = statsReport({ httpPort }, statsOptions);
 
       transportTimer = transportReport({ httpPort }, statsOptions);
 
-      // getStats = () =>;
-      const stats = statsReport({ httpPort }, statsOptions);
-
-      // console.error('createServerStats >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-      // console.error('httpPort', httpPort);
-      // console.error('options', options.isHttp, httpHandle?.port);
-      // console.error('createServerStats >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-
       resolveStatsPromise(stats);
-      // return () => statsReport({ httpPort }, statsOptions);
     },
 
     /**
@@ -174,10 +155,5 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
     }
   };
 };
-
-/**
- * Memoized version of `createServerStats`.
- */
-createServerStats.memo = memo(createServerStats, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 export { createServerStats, healthReport, report, statsReport, transportReport };

@@ -87,7 +87,7 @@ interface ServerSettings {
 /**
  * Base structure for server telemetry reports.
  *
- * @interace ServerReport
+ * @interface ServerReport
  */
 interface ServerReport {
   type: 'traffic' | 'health' | 'session' | 'transport';
@@ -98,7 +98,7 @@ interface ServerReport {
 /**
  * Transport-specific telemetry report.
  *
- * @interace TransportReport
+ * @interface TransportReport
  *
  * @property type - The report type.
  * @property method - The transport method used by the server.
@@ -113,7 +113,7 @@ interface TransportReport extends ServerReport {
 /**
  * Server stats.
  *
- * @interace ServerStats
+ * @interface ServerStats
  *
  * @property timestamp - The timestamp of the server stats.
  * @property reports - An object containing various server telemetry reports.
