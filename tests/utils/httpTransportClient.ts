@@ -109,7 +109,7 @@ export const startServer = async (
   }
 
   // const httpClientPort = server.port ?? updatedOptions?.http?.port;
-  const stats = server.getStats();
+  const stats = await server.getStats();
   const httpClientPort = stats.reports.transport.port;
   let httpClientUrl: URL;
 

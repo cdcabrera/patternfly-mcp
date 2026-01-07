@@ -1,3 +1,4 @@
+import { clearTimeout } from 'node:timers';
 import {
   getOptions,
   getStatsOptions
@@ -33,22 +34,20 @@ const healthReport = (statsOptions: StatsSession) => {
  * @param statsOptions - Session-specific stats options.
  * @returns {ServerStats} - Server stats and channel IDs.
  */
-const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession): ServerStats => (
-  {
-    timestamp: new Date().toISOString(),
-    reports: {
-      transport: {
-        type: 'transport',
-        timestamp: new Date().toISOString(),
-        method: httpPort ? 'http' : 'stdio',
-        ...(httpPort ? { port: httpPort } : {}),
-        channelId: statsOptions.channels.transport
-      },
-      health: { channelId: statsOptions.channels.health },
-      traffic: { channelId: statsOptions.channels.traffic }
-    }
+const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession): ServerStats => ({
+  timestamp: new Date().toISOString(),
+  reports: {
+    transport: {
+      type: 'transport',
+      timestamp: new Date().toISOString(),
+      method: httpPort ? 'http' : 'stdio',
+      ...(httpPort ? { port: httpPort } : {}),
+      channelId: statsOptions.channels.transport
+    },
+    health: { channelId: statsOptions.channels.health },
+    traffic: { channelId: statsOptions.channels.traffic }
   }
-);
+});
 
 /**
  * Reports server transport metrics (e.g., HTTP server port).
@@ -99,10 +98,23 @@ const report = (type: StatReportType) => {
  *  - `traffic`: Records an event-driven traffic metric (e.g., tool/resource execution).
  *  - `unsubscribe`: Cleans up timers and resources.
  */
-const createServerStats = (httpHandle?: HttpServerHandle | null, statsOptions = getStatsOptions(), options = getOptions()) => {
-  const httpPort = (options.isHttp && httpHandle?.port) || undefined;
+const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
+  // const httpPort = options.isHttp && httpHandle?.port ? httpHandle?.port : undefined;
   const healthTimer = healthReport(statsOptions);
-  const transportTimer = transportReport({ httpPort }, statsOptions);
+  let transportTimer: NodeJS.Timeout;
+
+  // const setGetStats = (httpHandle?: HttpServerHandle | null): (() => ServerStats) => {};
+  // let getStats: () => ServerStats;
+
+  let resolveStatsPromise: (value: ServerStats) => void;
+
+  // const statsPromise = async (): Promise<ServerStats> => new Promise(resolve => {
+  //  resolveStatsPromise = resolve;
+  // });
+
+  const statsPromise: Promise<ServerStats> = new Promise(resolve => {
+    resolveStatsPromise = resolve;
+  });
 
   return {
 
@@ -111,7 +123,33 @@ const createServerStats = (httpHandle?: HttpServerHandle | null, statsOptions = 
      *
      * @returns {ServerStats} - Server stats and channel IDs.
      */
-    getStats: (): ServerStats => statsReport({ httpPort }, statsOptions),
+    // getStats: (httpHandle?: HttpServerHandle | null): ServerStats => {
+    getStats: (): Promise<ServerStats> => statsPromise,
+
+    // getStats2: () => {
+    // const httpPort = options.isHttp && httpHandle?.port ? httpHandle?.port : undefined;
+
+    // return statsReport({ httpPort }, statsOptions);
+    //  return getStats();
+    // },
+
+    setStats: (httpHandle?: HttpServerHandle | null) => {
+      // const httpPort = options.isHttp && typeof httpHandle?.port === 'number' ? httpHandle?.port : undefined;
+      const httpPort = options.isHttp ? httpHandle?.port : undefined;
+
+      transportTimer = transportReport({ httpPort }, statsOptions);
+
+      // getStats = () =>;
+      const stats = statsReport({ httpPort }, statsOptions);
+
+      // console.error('createServerStats >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+      // console.error('httpPort', httpPort);
+      // console.error('options', options.isHttp, httpHandle?.port);
+      // console.error('createServerStats >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+
+      resolveStatsPromise(stats);
+      // return () => statsReport({ httpPort }, statsOptions);
+    },
 
     /**
      * Records an event-driven traffic metric (e.g., tool/resource execution).

@@ -158,7 +158,7 @@ type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
-  getStats(): ServerStats;
+  getStats(): Promise<ServerStats>;
   onLog: ServerOnLog;
 }
 
@@ -214,7 +214,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let sigintHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
-  let getStatsSetup: () => ServerStats;
+  let getStatsSetup: () => Promise<ServerStats>;
 
   const stopServer = async () => {
     log.debug(`${options.name} attempting shutdown.`);
@@ -278,7 +278,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
       );
     }
 
-    const statsTracker = createServerStats.memo(httpHandle);
+    const statsTracker = createServerStats();
 
     log.info(`Server stats enabled.`);
 
@@ -395,6 +395,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : 'stdio'} transport`);
     running = true;
+    statsTracker.setStats(httpHandle);
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
     throw error;
@@ -409,8 +410,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
       return running;
     },
 
-    getStats(): ServerStats {
-      return getStatsSetup();
+    async getStats(): Promise<ServerStats> {
+      return await getStatsSetup();
     },
 
     onLog(handler: ServerOnLogHandler): () => void {
