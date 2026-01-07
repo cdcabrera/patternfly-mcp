@@ -9,6 +9,48 @@ import { memo } from './server.caching';
 import { DEFAULT_OPTIONS, type StatsSession } from './options.defaults';
 
 /**
+ * Reports server health metrics (e.g., memory usage and uptime).
+ *
+ * @param statsOptions - Session-specific stats options.
+ * @returns {NodeJS.Timeout} - Timer for the next health report.
+ */
+const healthReport = (statsOptions: StatsSession) => {
+  publish('health', {
+    memory: process.memoryUsage(),
+    uptime: process.uptime()
+  });
+
+  return setTimeout(() => {
+    healthReport(statsOptions);
+  }, statsOptions?.reportIntervalMs.health).unref();
+};
+
+/**
+ * Creates a server stats report object.
+ *
+ * @param params - Report parameters.
+ * @param params.httpPort - HTTP server port if available.
+ * @param statsOptions - Session-specific stats options.
+ * @returns {ServerStats} - Server stats and channel IDs.
+ */
+const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession): ServerStats => (
+  {
+    timestamp: new Date().toISOString(),
+    reports: {
+      transport: {
+        type: 'transport',
+        timestamp: new Date().toISOString(),
+        method: httpPort ? 'http' : 'stdio',
+        ...(httpPort ? { port: httpPort } : {}),
+        channelId: statsOptions.channels.transport
+      },
+      health: { channelId: statsOptions.channels.health },
+      traffic: { channelId: statsOptions.channels.traffic }
+    }
+  }
+);
+
+/**
  * Reports server transport metrics (e.g., HTTP server port).
  *
  * @param params - Report parameters.
@@ -25,23 +67,6 @@ const transportReport = ({ httpPort }: { httpPort?: number | undefined } = {}, s
   return setTimeout(() => {
     transportReport({ httpPort }, statsOptions);
   }, statsOptions?.reportIntervalMs.transport).unref();
-};
-
-/**
- * Reports server health metrics (e.g., memory usage and uptime).
- *
- * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout} - Timer for the next health report.
- */
-const healthReport = (statsOptions: StatsSession) => {
-  publish('health', {
-    memory: process.memoryUsage(),
-    uptime: process.uptime()
-  });
-
-  return setTimeout(() => {
-    healthReport(statsOptions);
-  }, statsOptions?.reportIntervalMs.health).unref();
 };
 
 /**
@@ -69,12 +94,15 @@ const report = (type: StatReportType) => {
  * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server (if applicable).
  * @param options - Global server options.
  * @param [statsOptions] - Session-specific stats options.
+ * @returns - An object with methods to manage server telemetry:
+ *  - `getStats`: Returns the server stats and channel IDs.
+ *  - `traffic`: Records an event-driven traffic metric (e.g., tool/resource execution).
+ *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createServerStats = (httpHandle?: HttpServerHandle | null, statsOptions = getStatsOptions(), options = getOptions()) => {
-  const { channels } = statsOptions;
   const httpPort = (options.isHttp && httpHandle?.port) || undefined;
-  const transportTimer = transportReport({ httpPort }, statsOptions);
   const healthTimer = healthReport(statsOptions);
+  const transportTimer = transportReport({ httpPort }, statsOptions);
 
   return {
 
@@ -83,25 +111,13 @@ const createServerStats = (httpHandle?: HttpServerHandle | null, statsOptions = 
      *
      * @returns {ServerStats} - Server stats and channel IDs.
      */
-    getStats: (): ServerStats => (
-      {
-        timestamp: new Date().toISOString(),
-        reports: {
-          transport: {
-            type: 'transport',
-            timestamp: new Date().toISOString(),
-            method: options.isHttp ? 'http' : 'stdio',
-            ...(httpHandle?.port ? { port: httpHandle.port } : {}),
-            channelId: channels.transport
-          },
-          health: { channelId: channels.health },
-          traffic: { channelId: channels.traffic }
-        }
-      }
-    ),
+    getStats: (): ServerStats => statsReport({ httpPort }, statsOptions),
 
     /**
      * Records an event-driven traffic metric (e.g., tool/resource execution).
+     * - Automatically starts a timer to report traffic duration on the initial function call.
+     *
+     * @returns {() => void} - Function to stop the traffic report.
      */
     traffic: () => {
       const { start, report: trafficReport } = report('traffic');
@@ -110,14 +126,6 @@ const createServerStats = (httpHandle?: HttpServerHandle | null, statsOptions = 
 
       return trafficReport;
     },
-
-    /*
-    reportTraffic: (data: { start: number }) => {
-      const updatedData = { ...data, duration: data.start - Date.now() };
-
-      publish('traffic', updatedData);
-    },
-    */
 
     /**
      * Cleans up timers and resources.
@@ -134,4 +142,4 @@ const createServerStats = (httpHandle?: HttpServerHandle | null, statsOptions = 
  */
 createServerStats.memo = memo(createServerStats, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
-export { createServerStats, report };
+export { createServerStats, healthReport, report, statsReport, transportReport };

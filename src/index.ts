@@ -106,6 +106,21 @@ type PfMcpStats = ServerStats;
  *   stop();
  * }
  *
+ * @example Programmatic: Listening for server stats
+ * import { subscribe, unsubscribe } from 'node:diagnostics_channel';
+ * import { start, createMcpTool } from '@patternfly/patternfly-mcp';
+ *
+ * const { stop, isRunning, getStats } = await start();
+ * const stats = getStats();
+ * const statsChannel = subscribe(stats.health.channelId, (healthStats: PfMcpHealthStats) => {
+ *   stderr.write(`Health uptime: ${healthStats.uptime}\n`);
+ * })
+ *
+ * if (isRunning()) {
+ *   unsubscribe(stats.health.channelId);
+ *   stop();
+ * }
+ *
  * @example Programmatic: A MCP server with inline tool configuration.
  * import { start, createMcpTool } from '@patternfly/patternfly-mcp';
  *
