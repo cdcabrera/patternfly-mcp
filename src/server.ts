@@ -23,6 +23,7 @@ import {
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject } from './server.helpers';
+import { createServerStats } from './server.stats';
 
 /**
  * A tool registered with the MCP server.
@@ -277,7 +278,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
       );
     }
 
-    const statsTracker = createServerStats.memo(options, httpHandle);
+    const statsTracker = createServerStats.memo(httpHandle);
 
     log.info(`Server stats enabled.`);
 
@@ -314,10 +315,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isArgs = ${args?.length > 0}`
             );
 
-            const startResource = Date.now();
+            const report = statsTracker.traffic();
             const resourceResult = await callback(...args);
 
-            statsTracker.recordTraffic({ resource: name, duration: Date.now() - startResource });
+            report({ resource: name });
 
             return resourceResult;
           })));
@@ -353,7 +354,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isRemainingArgs = ${_args?.length > 0}`
             );
 
-            const startTool = Date.now();
+            const report = statsTracker.traffic();
             const isContextLikeArgs = isContextLike(args);
 
             // Log potential Zod validation errors triggered by context fail.
@@ -368,7 +369,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
             const toolResult = await callback(args);
 
-            statsTracker.recordTraffic({ tool: name, duration: Date.now() - startTool });
+            report({ tool: name });
 
             return toolResult;
           })));

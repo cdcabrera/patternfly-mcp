@@ -7,6 +7,9 @@ exports[`runServer should allow server to be stopped, http stop server: diagnost
       "Server logging enabled.",
     ],
     [
+      "Server stats enabled.",
+    ],
+    [
       "No external resources loaded.",
     ],
     [
@@ -54,6 +57,9 @@ exports[`runServer should allow server to be stopped, stdio stop server: diagnos
       "Server logging enabled.",
     ],
     [
+      "Server stats enabled.",
+    ],
+    [
       "No external resources loaded.",
     ],
     [
@@ -99,6 +105,9 @@ exports[`runServer should attempt to run server, create transport, connect, and 
   "events": [
     [
       "Server logging enabled.",
+    ],
+    [
+      "Server stats enabled.",
     ],
     [
       "No external resources loaded.",
@@ -154,6 +163,9 @@ exports[`runServer should attempt to run server, disable SIGINT handler: diagnos
       "Server logging enabled.",
     ],
     [
+      "Server stats enabled.",
+    ],
+    [
       "No external resources loaded.",
     ],
     [
@@ -200,6 +212,9 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
   "events": [
     [
       "Server logging enabled.",
+    ],
+    [
+      "Server stats enabled.",
     ],
     [
       "No external resources loaded.",
@@ -253,6 +268,9 @@ exports[`runServer should attempt to run server, register a tool: diagnostics 1`
   "events": [
     [
       "Server logging enabled.",
+    ],
+    [
+      "Server stats enabled.",
     ],
     [
       "No external resources loaded.",
@@ -317,6 +335,9 @@ exports[`runServer should attempt to run server, register multiple tools: diagno
   "events": [
     [
       "Server logging enabled.",
+    ],
+    [
+      "Server stats enabled.",
     ],
     [
       "No external resources loaded.",
@@ -393,6 +414,9 @@ exports[`runServer should attempt to run server, use custom options: diagnostics
       "Server logging enabled.",
     ],
     [
+      "Server stats enabled.",
+    ],
+    [
       "No external resources loaded.",
     ],
     [
@@ -444,6 +468,9 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
   "events": [
     [
       "Server logging enabled.",
+    ],
+    [
+      "Server stats enabled.",
     ],
     [
       "No external resources loaded.",
@@ -510,6 +537,9 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
   "events": [
     [
       "Server logging enabled.",
+    ],
+    [
+      "Server stats enabled.",
     ],
     [
       "No external resources loaded.",
