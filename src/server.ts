@@ -23,6 +23,7 @@ import {
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject } from './server.helpers';
+import { createServerStats } from './server.stats';
 
 /**
  * A tool registered with the MCP server.
@@ -86,7 +87,7 @@ interface ServerSettings {
 /**
  * Base structure for server telemetry reports.
  *
- * @interace ServerReport
+ * @interface ServerReport
  */
 interface ServerReport {
   type: 'traffic' | 'health' | 'session' | 'transport';
@@ -97,7 +98,7 @@ interface ServerReport {
 /**
  * Transport-specific telemetry report.
  *
- * @interace TransportReport
+ * @interface TransportReport
  *
  * @property type - The report type.
  * @property method - The transport method used by the server.
@@ -112,7 +113,7 @@ interface TransportReport extends ServerReport {
 /**
  * Server stats.
  *
- * @interace ServerStats
+ * @interface ServerStats
  *
  * @property timestamp - The timestamp of the server stats.
  * @property reports - An object containing various server telemetry reports.
@@ -157,7 +158,7 @@ type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
-  getStats(): ServerStats;
+  getStats(): Promise<ServerStats>;
   onLog: ServerOnLog;
 }
 
@@ -213,7 +214,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let sigintHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
-  let getStatsSetup: () => ServerStats;
+  let getStatsSetup: () => Promise<ServerStats>;
 
   const stopServer = async () => {
     log.debug(`${options.name} attempting shutdown.`);
@@ -277,7 +278,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
       );
     }
 
-    const statsTracker = createServerStats.memo(options, httpHandle);
+    const statsTracker = createServerStats();
 
     log.info(`Server stats enabled.`);
 
@@ -314,10 +315,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isArgs = ${args?.length > 0}`
             );
 
-            const startResource = Date.now();
+            const report = statsTracker.traffic();
             const resourceResult = await callback(...args);
 
-            statsTracker.recordTraffic({ resource: name, duration: Date.now() - startResource });
+            report({ resource: name });
 
             return resourceResult;
           })));
@@ -353,7 +354,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isRemainingArgs = ${_args?.length > 0}`
             );
 
-            const startTool = Date.now();
+            const report = statsTracker.traffic();
             const isContextLikeArgs = isContextLike(args);
 
             // Log potential Zod validation errors triggered by context fail.
@@ -368,7 +369,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
             const toolResult = await callback(args);
 
-            statsTracker.recordTraffic({ tool: name, duration: Date.now() - startTool });
+            report({ tool: name });
 
             return toolResult;
           })));
@@ -394,6 +395,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : 'stdio'} transport`);
     running = true;
+    statsTracker.setStats(httpHandle);
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
     throw error;
@@ -408,8 +410,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
       return running;
     },
 
-    getStats(): ServerStats {
-      return getStatsSetup();
+    async getStats(): Promise<ServerStats> {
+      return await getStatsSetup();
     },
 
     onLog(handler: ServerOnLogHandler): () => void {

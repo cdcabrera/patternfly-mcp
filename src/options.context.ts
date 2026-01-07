@@ -133,16 +133,19 @@ const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
 /**
  * Get stat channel options from the current context.
  *
- * @param {AppSession} [session] - Session options to use in context.
+ * @param {AppSession} [options] - Session options to use in context.
  * @returns {StatsSession} Stats options from context.
  */
-const getStatsOptions = (session = getSessionOptions()): StatsSession => {
-  const sessionHash = session.publicSessionId;
-  const health = `pf-mcp:stats:health:${sessionHash}`;
-  const transport = `pf-mcp:stats:transport:${sessionHash}`;
-  const traffic = `pf-mcp:stats:traffic:${sessionHash}`;
+const getStatsOptions = (options = getSessionOptions()): StatsSession => {
+  const base = getOptions().stats;
+  const publicSessionId = options.publicSessionId;
+  const health = `pf-mcp:stats:health:${publicSessionId}`;
+  const session = `pf-mcp:stats:traffic:${publicSessionId}`;
+  const transport = `pf-mcp:stats:transport:${publicSessionId}`;
+  const traffic = `pf-mcp:stats:traffic:${publicSessionId}`;
+  const channels = { health, transport, traffic, session };
 
-  return { trafficChannel, transportChannel, healthChannel };
+  return { ...base, publicSessionId, channels };
 };
 
 /**
@@ -171,6 +174,7 @@ export {
   getOptions,
   getPublicSessionHash,
   getSessionOptions,
+  getStatsOptions,
   initializeSession,
   optionsContext,
   runWithOptions,
