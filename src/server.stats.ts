@@ -3,9 +3,38 @@ import {
   getStatsOptions
 } from './options.context';
 import { type HttpServerHandle } from './server.http';
-import { publish, type StatReportType } from './stats';
-import { type ServerStats } from './server';
+import { publish, type StatReportType, type StatReport } from './stats';
 import { type StatsSession } from './options.defaults';
+
+/**
+ * Transport-specific telemetry report.
+ *
+ * @interface TransportReport
+ */
+interface TransportReport extends StatReport {
+  type: 'transport';
+  method: 'stdio' | 'http';
+  port?: number;
+}
+
+/**
+ * Server stats.
+ *
+ * @interface Stats
+ * @property {string} timestamp - Timestamp of the server stats.
+ * @property reports - Object containing various server telemetry reports.
+ * @property {TransportReport} reports.transport - Transport-specific telemetry report.
+ * @property reports.health - Server health metrics (e.g., memory usage and uptime).
+ * @property reports.traffic - Event-driven traffic metric (e.g., tool/resource execution).
+ */
+interface Stats {
+  timestamp: string;
+  reports: {
+    transport: TransportReport & { channelId: string };
+    health: { channelId: string };
+    traffic: { channelId: string };
+  };
+}
 
 /**
  * Reports server health metrics (e.g., memory usage and uptime).
@@ -30,9 +59,9 @@ const healthReport = (statsOptions: StatsSession) => {
  * @param params - Report parameters.
  * @param params.httpPort - HTTP server port if available.
  * @param statsOptions - Session-specific stats options.
- * @returns {ServerStats} - Server stats and channel IDs.
+ * @returns {Stats} - Server stats and channel IDs.
  */
-const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession): ServerStats => ({
+const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession): Stats => ({
   timestamp: new Date().toISOString(),
   reports: {
     transport: {
@@ -102,9 +131,9 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
   // Start the health report
   const healthTimer = healthReport(statsOptions);
   let transportTimer: NodeJS.Timeout;
-  let resolveStatsPromise: (value: ServerStats) => void;
+  let resolveStatsPromise: (value: Stats) => void;
 
-  const statsPromise: Promise<ServerStats> = new Promise(resolve => {
+  const statsPromise: Promise<Stats> = new Promise(resolve => {
     resolveStatsPromise = resolve;
   });
 
@@ -113,9 +142,9 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
     /**
      * Returns the server stats and channel IDs.
      *
-     * @returns {Promise<ServerStats>} - Server stats and channel IDs.
+     * @returns {Promise<Stats>} - Server stats and channel IDs.
      */
-    getStats: (): Promise<ServerStats> => statsPromise,
+    getStats: (): Promise<Stats> => statsPromise,
 
     /**
      * Uses the HTTP server handle and starts the transport report timer.
@@ -155,4 +184,4 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
   };
 };
 
-export { createServerStats, healthReport, report, statsReport, transportReport };
+export { createServerStats, healthReport, report, statsReport, transportReport, type Stats };

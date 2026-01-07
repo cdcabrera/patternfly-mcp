@@ -23,7 +23,7 @@ import {
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject } from './server.helpers';
-import { createServerStats } from './server.stats';
+import { createServerStats, type Stats } from './server.stats';
 
 /**
  * A tool registered with the MCP server.
@@ -85,47 +85,16 @@ interface ServerSettings {
 }
 
 /**
- * Base structure for server telemetry reports.
- *
- * @interface ServerReport
- */
-interface ServerReport {
-  type: 'traffic' | 'health' | 'session' | 'transport';
-  timestamp: string;
-  channelId: string;
-}
-
-/**
- * Transport-specific telemetry report.
- *
- * @interface TransportReport
- *
- * @property type - The report type.
- * @property method - The transport method used by the server.
- * @property port - The port used by the server.
- */
-interface TransportReport extends ServerReport {
-  type: 'transport';
-  method: 'stdio' | 'http';
-  port?: number;
-}
-
-/**
  * Server stats.
  *
- * @interface ServerStats
- *
- * @property timestamp - The timestamp of the server stats.
- * @property reports - An object containing various server telemetry reports.
+ * @alias Stats
  */
-interface ServerStats {
-  timestamp: string;
-  reports: {
-    transport: TransportReport;
-    health: { channelId: string };
-    traffic: { channelId: string };
-  };
-}
+type ServerStats = Stats;
+
+/**
+ * A callback to Promise return server stats.
+ */
+type ServerGetStats = () => Promise<ServerStats>;
 
 /**
  * Server log event.
@@ -152,13 +121,13 @@ type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
  *
  * @property stop - Stops the server, gracefully.
  * @property isRunning - Indicates whether the server is running.
- * @property {ServerStats} getStats - Returns server stats.
+ * @property {ServerGetStats} getStats - Resolves server stats.
  * @property {ServerOnLog} onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
  */
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
-  getStats(): Promise<ServerStats>;
+  getStats: ServerGetStats;
   onLog: ServerOnLog;
 }
 
@@ -197,7 +166,7 @@ const builtinResources: McpResourceCreator[] = [
  * @param [settings.enableSigint] - Indicates whether SIGINT signal handling is enabled.
  * @param [settings.allowProcessExit] - Determines if the process is allowed to exit explicitly, useful for testing.
  * @param settings.resources
- * @returns Server instance with `stop()`, `isRunning()`, and `onLog()` subscription.
+ * @returns Server instance with `stop()`, `getStats()` `isRunning()`, and `onLog()` subscription.
  */
 const runServer = async (options: ServerOptions = getOptions(), {
   tools = builtinTools,
@@ -214,7 +183,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
   let sigintHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
-  let getStatsSetup: () => Promise<ServerStats>;
+  let getStatsSetup: ServerGetStats = () => Promise.resolve({} as ServerStats);
 
   const stopServer = async () => {
     log.debug(`${options.name} attempting shutdown.`);
@@ -473,5 +442,6 @@ export {
   type ServerOnLogHandler,
   type ServerOptions,
   type ServerSettings,
-  type ServerStats
+  type ServerStats,
+  type ServerGetStats
 };
