@@ -40,7 +40,7 @@ interface Stats {
  * Reports server health metrics (e.g., memory usage and uptime).
  *
  * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout} - Timer for the next health report.
+ * @returns {NodeJS.Timeout} Timer handle for the recurring health report.
  */
 const healthReport = (statsOptions: StatsSession) => {
   publish('health', {
@@ -82,7 +82,7 @@ const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, stats
  * @param params - Report parameters.
  * @param params.httpPort - HTTP server port if available.
  * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout} - Timer for the next transport report.
+ * @returns {NodeJS.Timeout} Timer handle for the recurring transport report.
  */
 const transportReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession) => {
   publish('transport', {
@@ -110,7 +110,7 @@ const transportReport = ({ httpPort }: { httpPort?: number | undefined } = {}, s
 const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
   // Start the health report
   const healthTimer = healthReport(statsOptions);
-  let transportTimer: NodeJS.Timeout;
+  let transportTimer: NodeJS.Timeout | undefined;
   let resolveStatsPromise: (value: Stats) => void;
 
   const statsPromise: Promise<Stats> = new Promise(resolve => {
@@ -132,6 +132,10 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
      * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server if available.
      */
     setStats: (httpHandle?: HttpServerHandle | null) => {
+      if (transportTimer) {
+        clearTimeout(transportTimer);
+      }
+
       const httpPort = options.isHttp ? httpHandle?.port : undefined;
       const stats = statsReport({ httpPort }, statsOptions);
 
@@ -144,7 +148,10 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
      * Cleans up timers and resources.
      */
     unsubscribe: () => {
-      clearTimeout(transportTimer);
+      if (transportTimer) {
+        clearTimeout(transportTimer);
+      }
+
       clearTimeout(healthTimer);
     }
   };

@@ -140,7 +140,7 @@ const getStatsOptions = (options = getSessionOptions()): StatsSession => {
   const base = getOptions().stats;
   const publicSessionId = options.publicSessionId;
   const health = `pf-mcp:stats:health:${publicSessionId}`;
-  const session = `pf-mcp:stats:traffic:${publicSessionId}`;
+  const session = `pf-mcp:stats:session:${publicSessionId}`;
   const transport = `pf-mcp:stats:transport:${publicSessionId}`;
   const traffic = `pf-mcp:stats:traffic:${publicSessionId}`;
   const channels = { health, transport, traffic, session };

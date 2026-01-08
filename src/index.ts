@@ -119,7 +119,7 @@ type PfMcpStats = ServerStats;
  * import { start, createMcpTool } from '@patternfly/patternfly-mcp';
  *
  * const { stop, isRunning, getStats } = await start();
- * const stats = getStats();
+ * const stats = await getStats();
  * const statsChannel = subscribe(stats.health.channelId, (healthStats: PfMcpHealthStats) => {
  *   stderr.write(`Health uptime: ${healthStats.uptime}\n`);
  * })
