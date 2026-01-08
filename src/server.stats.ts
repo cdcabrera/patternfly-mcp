@@ -3,7 +3,7 @@ import {
   getStatsOptions
 } from './options.context';
 import { type HttpServerHandle } from './server.http';
-import { publish, type StatReportType, type StatReport } from './stats';
+import { publish, type StatReport } from './stats';
 import { type StatsSession } from './options.defaults';
 
 /**
@@ -96,25 +96,6 @@ const transportReport = ({ httpPort }: { httpPort?: number | undefined } = {}, s
 };
 
 /**
- * Creates a traffic report object that tracks the duration of a traffic event.
- *
- * @param type
- */
-const report = (type: StatReportType) => {
-  let start: number = 0;
-
-  return {
-    start: () => start = Date.now(),
-    report: (data: Record<string, unknown>) => {
-      const duration = Date.now() - start;
-      const updatedData = { ...data, duration: duration > 0 ? duration : 0 };
-
-      publish(type, updatedData);
-    }
-  };
-};
-
-/**
  * Creates a telemetry tracker for a server instance.
  *
  * - Starts the health report timer.
@@ -124,7 +105,6 @@ const report = (type: StatReportType) => {
  * @returns - An object with methods to manage server telemetry:
  *  - `getStats`: Resolve server stats and channel IDs.
  *  - `setStats`: Uses the HTTP server handle and starts the transport report timer.
- *  - `traffic`: Records an event-driven traffic metric (e.g., tool/resource execution).
  *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
@@ -161,20 +141,6 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
     },
 
     /**
-     * Records an event-driven traffic metric (e.g., tool/resource execution).
-     * - Automatically starts a timer to report traffic duration on the initial function call.
-     *
-     * @returns {() => void} - Function to stop the traffic report.
-     */
-    traffic: () => {
-      const { start, report: trafficReport } = report('traffic');
-
-      start();
-
-      return trafficReport;
-    },
-
-    /**
      * Cleans up timers and resources.
      */
     unsubscribe: () => {
@@ -184,4 +150,4 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
   };
 };
 
-export { createServerStats, healthReport, report, statsReport, transportReport, type Stats };
+export { createServerStats, healthReport, statsReport, transportReport, type Stats };

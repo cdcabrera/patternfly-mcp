@@ -19,6 +19,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject } from './server.helpers';
 import { createServerStats, type Stats } from './server.stats';
+import { stat } from './stats';
 
 /**
  * A tool registered with the MCP server.
@@ -261,7 +262,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
               `isRemainingArgs = ${_args?.length > 0}`
             );
 
-            const report = statsTracker.traffic();
+            const timedReport = stat.traffic();
             const isContextLikeArgs = isContextLike(args);
 
             // Log potential Zod validation errors triggered by context fail.
@@ -276,7 +277,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
             const toolResult = await callback(args);
 
-            report({ tool: name });
+            timedReport({ tool: name });
 
             return toolResult;
           })));
