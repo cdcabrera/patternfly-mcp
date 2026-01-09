@@ -8,10 +8,10 @@ import { log } from './logger';
  *
  * @note This is primarily a placeholder for future external resources.
  *
- * @param builtinCreators - Built-in tool creators
+ * @param builtinCreators - Built-in resource creators
  * @param {GlobalOptions} options - Global options.
  * @param {AppSession} _sessionOptions - Session options.
- * @returns {Promise<McpResourceCreator[]>} Promise array of tool creators
+ * @returns {Promise<McpResourceCreator[]>} Promise array of resource creators
  */
 const composeResources = async (
   builtinCreators: McpResourceCreator[],
