@@ -187,7 +187,14 @@ const searchPatternFlyDocsTool = (): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: 'Search for PatternFly component documentation URLs. Returns URLs only (no content). Use "usePatternFlyDocs" to fetch the actual documentation.',
+      description: `Search for PatternFly component documentation URLs. Returns URLs only (no content).
+      Use "usePatternFlyDocs" to fetch the actual documentation.
+
+      **Discovery**:
+      - To browse all available documentation, read the "patternfly://docs/index" resource.
+
+      **Usage**:
+      Provide a partial or full component name to search.`,
       inputSchema: {
         searchQuery: z.string().describe('Component name to search for (e.g., "button", "table")')
       }
