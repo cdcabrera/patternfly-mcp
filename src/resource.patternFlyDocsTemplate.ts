@@ -54,7 +54,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       if (matchedUrls.length === 0) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No documentation found for component: ${name}`
+          `No documentation found for component: ${name.trim()}`
         );
       }
 

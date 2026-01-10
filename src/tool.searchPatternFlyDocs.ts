@@ -83,13 +83,17 @@ buildComponentToDocsMap.memo = memo(buildComponentToDocsMap, DEFAULT_OPTIONS.res
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
+ * @param names - List of names to search. Defaults to all component names.
  * @returns Object containing search results and matched URLs
+ *   - `exactMatch`: An exact match within fuzzy search results
+ *   - `searchResults`: Fuzzy search results
+ *   - `matchedUrls`: List of unique matched URLs
  */
-const searchComponents = (searchQuery: string) => {
+const searchComponents = (searchQuery: string, names = componentNames) => {
   const componentToDocsMap = buildComponentToDocsMap();
 
   // Use fuzzy search to handle exact matches and variations
-  const searchResults = fuzzySearch(searchQuery, componentNames, {
+  const searchResults = fuzzySearch(searchQuery, names, {
     maxDistance: 3,
     maxResults: 10,
     isFuzzyMatch: true,
@@ -111,10 +115,16 @@ const searchComponents = (searchQuery: string) => {
   }
 
   return {
+    exactMatch: searchResults.find(result => result.matchType === 'exact'),
     searchResults,
     matchedUrls
   };
 };
+
+/**
+ * Memoized version of searchComponents.
+ */
+searchComponents.memo = memo(searchComponents, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
  * searchPatternFlyDocs tool function
@@ -135,7 +145,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
       );
     }
 
-    const { searchResults, matchedUrls } = searchComponents(searchQuery);
+    const { searchResults, matchedUrls } = searchComponents.memo(searchQuery);
 
     if (searchResults.length === 0) {
       return {

@@ -9,6 +9,7 @@ exports[`Builtin resources, STDIO should expose expected resources and templates
   ],
   "templateNames": [
     "patternfly://docs/{name}",
+    "patternfly://schemas/{name}",
   ],
 }
 `;
@@ -440,6 +441,8 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
   "[INFO]: Registered resource: patternfly-docs-template
 ",
   "[INFO]: Registered resource: patternfly-schemas-index
+",
+  "[INFO]: Registered resource: patternfly-schemas-template
 ",
   "[INFO]: Registered tool: usePatternFlyDocs
 ",

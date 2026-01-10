@@ -9,6 +9,7 @@ exports[`Builtin resources, HTTP transport should expose expected resources and 
   ],
   "templateNames": [
     "patternfly://docs/{name}",
+    "patternfly://schemas/{name}",
   ],
 }
 `;
