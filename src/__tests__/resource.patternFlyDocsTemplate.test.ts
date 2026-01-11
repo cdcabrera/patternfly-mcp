@@ -43,30 +43,30 @@ describe('patternFlyDocsTemplateResource, callback', () => {
     {
       description: 'default',
       name: 'Button',
-      matchedUrls: ['components/button.md'],
+      urls: ['components/button.md'],
       result: 'Button documentation content'
     },
     {
       description: 'with multiple matched URLs',
       name: 'Card',
-      matchedUrls: ['components/card.md', 'components/card-examples.md'],
+      urls: ['components/card.md', 'components/card-examples.md'],
       result: 'Card documentation content'
     },
     {
       description: 'with trimmed name',
       name: '  Table  ',
-      matchedUrls: ['components/table.md'],
+      urls: ['components/table.md'],
       result: 'Table documentation content'
     },
     {
       description: 'with lower case name',
       name: 'button',
-      matchedUrls: ['components/button.md'],
+      urls: ['components/button.md'],
       result: 'Button documentation content'
     }
-  ])('should parse parameters and return documentation, $description', async ({ name, matchedUrls, result: mockResult }) => {
-    mockSearchComponents.mockReturnValue({ exactMatch: undefined, matchedUrls, searchResults: [] });
-    mockProcessDocs.mockResolvedValue(mockResult);
+  ])('should parse parameters and return documentation, $description', async ({ name, urls, result: mockResult }) => {
+    mockSearchComponents.mockReturnValue({ exactMatch: undefined, searchResults: [{ urls } as any] });
+    mockProcessDocs.mockResolvedValue({ content: mockResult, isSuccess: true } as any);
 
     const [_name, _uri, _config, callback] = patternFlyDocsTemplateResource();
     const uri = new URL('patternfly://docs/Button');
@@ -74,7 +74,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
     const result = await callback(uri, variables);
 
     expect(mockSearchComponents).toHaveBeenCalledWith(name);
-    expect(mockProcessDocs).toHaveBeenCalledWith(matchedUrls);
+    expect(mockProcessDocs).toHaveBeenCalledWith(urls);
 
     expect(result.contents).toBeDefined();
     expect(Object.keys(result.contents[0])).toEqual(['uri', 'mimeType', 'text']);
@@ -111,7 +111,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
   });
 
   it('should handle documentation loading errors', async () => {
-    mockSearchComponents.mockReturnValue({ exactMatch: undefined, matchedUrls: ['components/button.md'], searchResults: [] });
+    mockSearchComponents.mockReturnValue({ exactMatch: undefined, searchResults: [] });
     mockProcessDocs.mockRejectedValue(new Error('File not found'));
 
     const [_name, _uri, _config, handler] = patternFlyDocsTemplateResource();

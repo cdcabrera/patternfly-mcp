@@ -64,7 +64,7 @@ describe('usePatternFlyDocsTool, callback', () => {
       urlList: ['invalid-url']
     }
   ])('should parse parameters, $description', async ({ value, urlList }) => {
-    mockProcessDocs.mockResolvedValue(value);
+    mockProcessDocs.mockResolvedValue({ content: value } as any);
     const [_name, _schema, callback] = usePatternFlyDocsTool();
     const result = await callback({ urlList });
 

@@ -68,7 +68,7 @@ describe('patternFlySchemasTemplateResource, callback', () => {
   });
 
   it('should handle schema specific errors', async () => {
-    mockSearchComponents.mockReturnValue({ exactMatch: undefined, matchedUrls: [], searchResults: [] });
+    mockSearchComponents.mockReturnValue({ exactMatch: undefined, searchResults: [] });
     mockGetComponentSchema.mockRejectedValue(new Error('Schema not found'));
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();

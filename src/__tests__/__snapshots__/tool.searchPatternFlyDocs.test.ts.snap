@@ -12,13 +12,23 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, default 1`]
 {
   "content": [
     {
-      "text": "Documentation URLs for "Button":
+      "text": "# Search results for "Button"
+## Button
+**Match Type**: exact
+### "usePatternFlyDocs" tool documentation URLs
+  1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
+  2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
+  3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+### Resources
+  - patternfly://docs/Button
+  - patternfly://schemas/Button
 
-1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
-2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
-3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+---
 
-Use the "usePatternFlyDocs" tool with these URLs to fetch content.",
+**Important**:
+  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],
@@ -29,13 +39,23 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with lower 
 {
   "content": [
     {
-      "text": "Documentation URLs for "button":
+      "text": "# Search results for "button"
+## Button
+**Match Type**: exact
+### "usePatternFlyDocs" tool documentation URLs
+  1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
+  2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
+  3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+### Resources
+  - patternfly://docs/Button
+  - patternfly://schemas/Button
 
-1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
-2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
-3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+---
 
-Use the "usePatternFlyDocs" tool with these URLs to fetch content.",
+**Important**:
+  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],
@@ -46,8 +66,13 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with made u
 {
   "content": [
     {
-      "text": "No PatternFly components found matching "lorem ipsum dolor sit amet"
-To browse all available components, read the "patternfly://schemas/index" resource.",
+      "text": "No PatternFly documentation found matching "lorem ipsum dolor sit amet"
+
+---
+
+**Important**:
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],
@@ -58,8 +83,13 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with multip
 {
   "content": [
     {
-      "text": "No PatternFly components found matching "Button Card Table"
-To browse all available components, read the "patternfly://schemas/index" resource.",
+      "text": "No PatternFly documentation found matching "Button Card Table"
+
+---
+
+**Important**:
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],
@@ -70,13 +100,30 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with partia
 {
   "content": [
     {
-      "text": "Documentation URLs for "ton":
+      "text": "# Search results for "ton"
+## Button
+**Match Type**: suffix
+### "usePatternFlyDocs" tool documentation URLs
+  1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
+  2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
+  3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+### Resources
+  - patternfly://docs/Button
+  - patternfly://schemas/Button
+## Text
+**Match Type**: fuzzy
+### "usePatternFlyDocs" tool documentation URLs
+  - No URLs found
+### Resources
+  - patternfly://docs/Text
+  - patternfly://schemas/Text
 
-1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
-2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
-3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+---
 
-Use the "usePatternFlyDocs" tool with these URLs to fetch content.",
+**Important**:
+  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],
@@ -87,13 +134,23 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with trimme
 {
   "content": [
     {
-      "text": "Documentation URLs for " Button  ":
+      "text": "# Search results for " Button  "
+## Button
+**Match Type**: exact
+### "usePatternFlyDocs" tool documentation URLs
+  1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
+  2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
+  3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+### Resources
+  - patternfly://docs/Button
+  - patternfly://schemas/Button
 
-1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
-2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
-3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+---
 
-Use the "usePatternFlyDocs" tool with these URLs to fetch content.",
+**Important**:
+  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],
@@ -104,13 +161,23 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with upper 
 {
   "content": [
     {
-      "text": "Documentation URLs for "BUTTON":
+      "text": "# Search results for "BUTTON"
+## Button
+**Match Type**: exact
+### "usePatternFlyDocs" tool documentation URLs
+  1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
+  2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
+  3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+### Resources
+  - patternfly://docs/Button
+  - patternfly://schemas/Button
 
-1. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components/button/button.md
-2. https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility/button/button.md
-3. https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md
+---
 
-Use the "usePatternFlyDocs" tool with these URLs to fetch content.",
+**Important**:
+  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
+  - To browse all available documentation, read the "patternfly://docs/index" resource.
+  - To browse all available components, read the "patternfly://schemas/index" resource.",
       "type": "text",
     },
   ],

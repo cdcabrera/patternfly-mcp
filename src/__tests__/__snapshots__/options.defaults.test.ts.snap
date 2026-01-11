@@ -67,6 +67,11 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     },
   },
   "toolMemoOptions": {
+    "searchPatternFlyDocs": {
+      "cacheErrors": false,
+      "cacheLimit": 10,
+      "expire": 300000,
+    },
     "usePatternFlyDocs": {
       "cacheErrors": false,
       "cacheLimit": 10,
