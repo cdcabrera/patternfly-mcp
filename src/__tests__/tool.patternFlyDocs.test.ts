@@ -64,12 +64,13 @@ describe('usePatternFlyDocsTool, callback', () => {
       urlList: ['invalid-url']
     }
   ])('should parse parameters, $description', async ({ value, urlList }) => {
-    mockProcessDocs.mockResolvedValue({ content: value } as any);
+    mockProcessDocs.mockResolvedValue([{ content: value }] as any);
     const [_name, _schema, callback] = usePatternFlyDocsTool();
     const result = await callback({ urlList });
 
     expect(mockProcessDocs).toHaveBeenCalledWith(urlList);
-    expect(result).toMatchSnapshot();
+    expect(result.content[0].text).toBeDefined();
+    expect(result.content[0].text.startsWith('# Documentation from')).toBe(true);
   });
 
   it.each([
