@@ -6,7 +6,7 @@ import { COMPONENT_DOCS } from './docs.component';
 import { LAYOUT_DOCS } from './docs.layout';
 import { CHART_DOCS } from './docs.chart';
 import { getLocalDocs } from './docs.local';
-import { fuzzySearch } from './server.search';
+import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 
@@ -77,7 +77,7 @@ const buildComponentToDocsMap = (): Map<string, string[]> => {
 /**
  * Memoized version of buildComponentToDocsMap. Use default memo options.
  */
-buildComponentToDocsMap.memo = memo(buildComponentToDocsMap, DEFAULT_OPTIONS.resourceMemoOptions.default);
+buildComponentToDocsMap.memo = memo(buildComponentToDocsMap);
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
@@ -90,7 +90,7 @@ buildComponentToDocsMap.memo = memo(buildComponentToDocsMap, DEFAULT_OPTIONS.res
  *   - `matchedUrls`: List of unique matched URLs
  */
 const searchComponents = (searchQuery: string, names = componentNames) => {
-  const componentToDocsMap = buildComponentToDocsMap();
+  const componentToDocsMap = buildComponentToDocsMap.memo();
 
   // Use fuzzy search to handle exact matches and variations
   const searchResults = fuzzySearch(searchQuery, names, {
@@ -100,31 +100,36 @@ const searchComponents = (searchQuery: string, names = componentNames) => {
     deduplicateByNormalized: true
   });
 
-  const matchedUrls: string[] = [];
-  const seenUrls = new Set<string>();
-
-  for (const result of searchResults) {
+  const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
     const urls = componentToDocsMap.get(result.item) || [];
+    const matchedUrls = new Set<string>();
 
-    for (const url of urls) {
-      if (!seenUrls.has(url)) {
-        matchedUrls.push(url);
-        seenUrls.add(url);
-      }
-    }
-  }
+    urls.forEach(url => {
+      matchedUrls.add(url);
+    });
+
+    return {
+      ...result,
+      urls: Array.from(matchedUrls),
+      doc: `patternfly://docs/${result.item}`,
+      schema: pfComponentNames.includes(result.item) ? `patternfly://schemas/${result.item}` : undefined
+    };
+  });
+
+  const exactMatch = searchResults.find(result => result.matchType === 'exact');
+  const [extendedExactMatch] = extendResults(exactMatch ? [exactMatch] : []);
+  const extendedSearchResults = extendResults(searchResults);
 
   return {
-    exactMatch: searchResults.find(result => result.matchType === 'exact'),
-    searchResults,
-    matchedUrls
+    exactMatch: extendedExactMatch,
+    searchResults: extendedSearchResults
   };
 };
 
 /**
  * Memoized version of searchComponents.
  */
-searchComponents.memo = memo(searchComponents, DEFAULT_OPTIONS.resourceMemoOptions.default);
+searchComponents.memo = memo(searchComponents, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
 
 /**
  * searchPatternFlyDocs tool function
@@ -145,51 +150,62 @@ const searchPatternFlyDocsTool = (): McpTool => {
       );
     }
 
-    const { searchResults, matchedUrls } = searchComponents.memo(searchQuery);
+    const { searchResults } = searchComponents.memo(searchQuery);
 
     if (searchResults.length === 0) {
       return {
         content: [{
           type: 'text',
           text: [
-            `No PatternFly components found matching "${searchQuery}"`,
-            'To browse all available components, read the "patternfly://schemas/index" resource.'
+            `No PatternFly documentation found matching "${searchQuery}"`,
+            '',
+            '---',
+            '',
+            '**Important**:',
+            '  - To browse all available documentation, read the "patternfly://docs/index" resource.',
+            '  - To browse all available components, read the "patternfly://schemas/index" resource.'
           ].join('\n')
         }]
       };
     }
 
-    // For scenarios where no documentation URLs are available for a component, return a
-    // message with the first matched component and a list of similar components.
-    if (matchedUrls.length === 0) {
-      const componentList = searchResults
-        .slice(0, 5)
-        .map(result => result.item)
-        .join(', ');
+    const results = searchResults.map(result => {
+      const urlList = result.urls.map((url: string) => `  - ${url}`).join('\n');
+      const docRef = result.doc ? `  - ${result.doc}` : undefined;
+      const schemaRef = result.schema ? `  - ${result.schema}` : undefined;
+      let resources;
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: [
-              `Found components matching "${searchQuery}" but no documentation URLs are available. Matched components: ${componentList}`,
-              'To browse all available documentation, read the "patternfly://docs/index" resource.'
-            ].join('\n')
-          }
-        ]
-      };
-    }
+      if (docRef || schemaRef) {
+        resources = [
+          `### Resources`,
+          docRef,
+          schemaRef
+        ].filter(Boolean).join('\n');
+      }
 
-    // Return the first 10 matched URLs as a formatted list
-    const urlListText = matchedUrls
-      .slice(0, 10)
-      .map((url, index) => `${index + 1}. ${url}`)
-      .join('\n');
+      return [
+        `## ${result.item}`,
+        `**Match Type**: ${result.matchType}`,
+        `### "usePatternFlyDocs" tool documentation URLs`,
+        urlList.length ? urlList : '  - No URLs found',
+        resources
+      ].filter(Boolean).join('\n');
+    });
 
     return {
       content: [{
         type: 'text',
-        text: `Documentation URLs for "${searchQuery}":\n\n${urlListText}\n\nUse the "usePatternFlyDocs" tool with these URLs to fetch content.`
+        text: [
+          `# Search results for "${searchQuery}"`,
+          results,
+          '',
+          '---',
+          '',
+          '**Important**:',
+          '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
+          '  - To browse all available documentation, read the "patternfly://docs/index" resource.',
+          '  - To browse all available components, read the "patternfly://schemas/index" resource.'
+        ].join('\n')
       }]
     };
   };
@@ -197,7 +213,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: 'Search for PatternFly component documentation URLs. Returns URLs only (no content). Use "usePatternFlyDocs" to fetch the actual documentation.',
+      description: 'Search for PatternFly component documentation URLs and resource links. Accepts partial strings. Returns URLs and resource links only. Use "usePatternFlyDocs" to fetch the actual documentation.',
       inputSchema: {
         searchQuery: z.string().describe('Component name to search for (e.g., "button", "table")')
       }
