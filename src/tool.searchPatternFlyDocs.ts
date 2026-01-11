@@ -56,9 +56,26 @@ const extractUrl = (docUrl: string): string => {
  *
  * @returns Map of component name -> array of URLs (Design Guidelines + Accessibility)
  */
-const buildComponentToDocsMap = (): Map<string, string[]> => {
+const buildComponentToDocsMap = (): { map: Map<string, string[]>, getKey: (value: string) => string | undefined } => {
   const map = new Map<string, string[]>();
   const allDocs = [...COMPONENT_DOCS, ...LAYOUT_DOCS, ...CHART_DOCS, ...getLocalDocs()];
+  const getKey = (value: string) => {
+    for (const [key, urls] of map) {
+      if (urls.includes(value)) {
+        return key;
+      } else {
+        const results = fuzzySearch(value, urls, {
+          deduplicateByNormalized: true
+        });
+
+        if (results.length) {
+          return key;
+        }
+      }
+    }
+
+    return undefined;
+  };
 
   for (const docUrl of allDocs) {
     const componentName = extractComponentName(docUrl);
@@ -71,7 +88,10 @@ const buildComponentToDocsMap = (): Map<string, string[]> => {
     }
   }
 
-  return map;
+  return {
+    map,
+    getKey
+  };
 };
 
 /**
@@ -90,7 +110,7 @@ buildComponentToDocsMap.memo = memo(buildComponentToDocsMap);
  *   - `matchedUrls`: List of unique matched URLs
  */
 const searchComponents = (searchQuery: string, names = componentNames) => {
-  const componentToDocsMap = buildComponentToDocsMap.memo();
+  const { map: componentToDocsMap } = buildComponentToDocsMap.memo();
 
   // Use fuzzy search to handle exact matches and variations
   const searchResults = fuzzySearch(searchQuery, names, {
