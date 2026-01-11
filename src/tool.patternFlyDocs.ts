@@ -1,17 +1,30 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
+import { getComponentSchema as pfGetComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
-import { buildComponentToDocsMap } from './tool.searchPatternFlyDocs';
-import { log } from './logger';
+import { setComponentToDocsMap } from './tool.searchPatternFlyDocs';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
- * Derive the component schema type from @patternfly/patternfly-component-schemas
+ * Get the component schema from @patternfly/patternfly-component-schemas.
+ *
+ * @param componentName
  */
-type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
+const getComponentSchema = async (componentName: string) => {
+  try {
+    return pfGetComponentSchema(componentName);
+  } catch {}
+
+  return undefined;
+};
+
+/**
+ * Memoized version of getComponentSchema.
+ */
+getComponentSchema.memo = memo(getComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 /**
  * usePatternFlyDocs tool function
@@ -21,11 +34,7 @@ type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
  */
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   const memoProcess = memo(processDocsFunction, options?.toolMemoOptions?.usePatternFlyDocs);
-  const { getKey: getComponentToDocsKey } = buildComponentToDocsMap.memo();
-  const memoGetComponentSchema = memo(
-    async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
-    options?.toolMemoOptions?.usePatternFlyDocs
-  );
+  const { getKey: getComponentToDocsKey } = setComponentToDocsMap.memo();
 
   const callback = async (args: any = {}) => {
     const { urlList } = args;
@@ -37,12 +46,15 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const result = [];
+    const docs = [];
+    const schemasSeen = new Set<string>();
+    const schemaResults = [];
+    const docResults = [];
 
     try {
       const processedDocs = await memoProcess(urlList);
 
-      result.push(processedDocs);
+      docs.push(...processedDocs);
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
@@ -50,34 +62,55 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    try {
-      if (urlList.length === 1) {
-        const componentName = getComponentToDocsKey(urlList[0]);
+    if (docs.length === 0) {
+      const urlListBlock = urlList.map((url: string) => `  - ${url}`).join('\n');
 
-        if (componentName) {
-          const componentSchema = await memoGetComponentSchema(componentName);
+      return {
+        content: [{
+          type: 'text',
+          text: [
+            `No PatternFly documentation found for:`,
+            urlListBlock,
+            '',
+            '---',
+            '',
+            '**Important**:',
+            '  - To browse all available documentation, read the "patternfly://docs/index" resource.',
+            '  - To browse all available components, read the "patternfly://schemas/index" resource.'
+          ].join('\n')
+        }]
+      };
+    }
 
-          result.push(...[
-            result.length ? '' : undefined,
-            result.length ? '---' : undefined,
-            result.length ? '' : undefined,
-            `## Component Schema: ${componentName}`,
+    for (const doc of docs) {
+      const componentName = getComponentToDocsKey(doc.path);
+
+      docResults.push([
+        `# Documentation from ${doc.resolvedPath || doc.path}`,
+        doc.content
+      ].join('\n'));
+
+      if (componentName && !schemasSeen.has(componentName)) {
+        schemasSeen.add(componentName);
+        const componentSchema = await getComponentSchema.memo(componentName);
+
+        if (componentSchema) {
+          schemaResults.push([
+            `# Component Schema for ${componentName}`,
             `This machine-readable JSON schema defines the component's props, types, and validation rules.`,
             '```json',
             JSON.stringify(componentSchema, null, 2),
             '```'
-          ]);
+          ].join('\n'));
         }
       }
-    } catch (error) {
-      log.error(`Failed to get component schema from URL: ${error}`);
     }
 
     return {
       content: [
         {
           type: 'text',
-          text: result.filter(Boolean).join('\n')
+          text: [...docResults, ...schemaResults].join(options.separator)
         }
       ]
     };
@@ -108,4 +141,4 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
  */
 usePatternFlyDocsTool.toolName = 'usePatternFlyDocs';
 
-export { usePatternFlyDocsTool };
+export { usePatternFlyDocsTool, getComponentSchema };

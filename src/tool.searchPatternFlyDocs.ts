@@ -56,10 +56,14 @@ const extractUrl = (docUrl: string): string => {
  *
  * @returns Map of component name -> array of URLs (Design Guidelines + Accessibility)
  */
-const buildComponentToDocsMap = (): { map: Map<string, string[]>, getKey: (value: string) => string | undefined } => {
+const setComponentToDocsMap = () => {
   const map = new Map<string, string[]>();
   const allDocs = [...COMPONENT_DOCS, ...LAYOUT_DOCS, ...CHART_DOCS, ...getLocalDocs()];
-  const getKey = (value: string) => {
+  const getKey = (value?: string | undefined) => {
+    if (!value) {
+      return undefined;
+    }
+
     for (const [key, urls] of map) {
       if (urls.includes(value)) {
         return key;
@@ -95,9 +99,9 @@ const buildComponentToDocsMap = (): { map: Map<string, string[]>, getKey: (value
 };
 
 /**
- * Memoized version of buildComponentToDocsMap. Use default memo options.
+ * Memoized version of componentToDocsMap.
  */
-buildComponentToDocsMap.memo = memo(buildComponentToDocsMap);
+setComponentToDocsMap.memo = memo(setComponentToDocsMap);
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
@@ -110,7 +114,7 @@ buildComponentToDocsMap.memo = memo(buildComponentToDocsMap);
  *   - `matchedUrls`: List of unique matched URLs
  */
 const searchComponents = (searchQuery: string, names = componentNames) => {
-  const { map: componentToDocsMap } = buildComponentToDocsMap.memo();
+  const { map: componentToDocsMap } = setComponentToDocsMap.memo();
 
   // Use fuzzy search to handle exact matches and variations
   const searchResults = fuzzySearch(searchQuery, names, {
@@ -244,4 +248,4 @@ const searchPatternFlyDocsTool = (): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchComponents, componentNames };
+export { searchPatternFlyDocsTool, searchComponents, setComponentToDocsMap, componentNames };
