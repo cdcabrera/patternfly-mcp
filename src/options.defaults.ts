@@ -11,7 +11,7 @@ import { type ToolModule } from './server.toolsUser';
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
- * @property docsHost - Flag indicating whether to use the docs-host.
+ * @property docsHost - `@DISABLED` This flag no longer produces a result.
  * @property docsPath - Path to the documentation directory.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.

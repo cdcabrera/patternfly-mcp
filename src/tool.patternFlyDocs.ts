@@ -119,15 +119,16 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Fetch documentation content for specific PatternFly components or layouts.
+      description: `Fetch documentation and component JSON schemas content for specific PatternFly URLs.
 
       **Discovery**:
         - To find specific URLs by component name, use the "searchPatternFlyDocs" tool.
-        - To browse all available documentation, read the "patternfly://docs/index" resource.
+        - To browse all available documentation URLs, read the "patternfly://docs/index" resource.
         - To browse all available components, read the "patternfly://schemas/index" resource.
 
       **Usage**:
-      Provide a list of URLs discovered via the search tool or available resources to retrieve their full markdown content and related component schemas.`,
+        - Provide a list of URLs discovered through "searchPatternFlyDocs" or available resources to retrieve full PatternFly markdown content and related component JSON schemas.
+      `,
       inputSchema: {
         urlList: z.array(z.string()).describe('The list of urls to fetch the documentation from')
       }
