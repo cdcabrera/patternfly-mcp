@@ -194,7 +194,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
     }
 
     const results = searchResults.map(result => {
-      const urlList = result.urls.map((url: string) => `  - ${url}`).join('\n');
+      const urlList = result.urls.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
       const docRef = result.doc ? `  - ${result.doc}` : undefined;
       const schemaRef = result.schema ? `  - ${result.schema}` : undefined;
       let resources;
@@ -221,7 +221,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
         type: 'text',
         text: [
           `# Search results for "${searchQuery}"`,
-          results,
+          ...results,
           '',
           '---',
           '',

@@ -48,18 +48,26 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
         );
       }
 
-      let result: string;
-      const { matchedUrls } = searchComponents(name);
+      const docResults = [];
+      const docs = [];
+      const { exactMatch, searchResults } = searchComponents(name);
 
-      if (matchedUrls.length === 0) {
+      if (exactMatch === undefined || exactMatch.urls.length === 0) {
+        const suggestions = searchResults.map(result => result.item).slice(0, 3);
+        const suggestionMessage = suggestions.length
+          ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+          : 'No similar components found.';
+
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No documentation found for component: ${name.trim()}`
+          `No documentation found for component "${name.trim()}". ${suggestionMessage}`
         );
       }
 
       try {
-        result = await memoProcess(matchedUrls);
+        const processedDocs = await memoProcess(exactMatch.urls);
+
+        docs.push(...processedDocs);
       } catch (error) {
         throw new McpError(
           ErrorCode.InternalError,
@@ -67,12 +75,19 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
         );
       }
 
+      for (const doc of docs) {
+        docResults.push([
+          `# Documentation from ${doc.resolvedPath || doc.path}`,
+          doc.content
+        ].join('\n'));
+      }
+
       return {
         contents: [
           {
             uri: uri.href,
             mimeType: 'text/markdown',
-            text: result
+            text: docResults.join(options.separator)
           }
         ]
       };

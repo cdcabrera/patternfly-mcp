@@ -63,7 +63,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (docs.length === 0) {
-      const urlListBlock = urlList.map((url: string) => `  - ${url}`).join('\n');
+      const urlListBlock = urlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
 
       return {
         content: [{
