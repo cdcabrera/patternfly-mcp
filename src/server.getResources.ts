@@ -19,6 +19,8 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
 /**
  * Fetch content from a URL with timeout and error handling
  *
+ * @note Review expanding fetch to handle more file types like JSON.
+ *
  * @param url
  */
 const fetchUrlFunction = async (url: string) => {
@@ -98,7 +100,6 @@ const processDocsFunction = async (
     }
 
     return { content, resolvedPath: updatedPathOrUrl };
-    // header: `# Documentation from ${updatedPathOrUrl}`,
   };
 
   const settled = await Promise.allSettled(list.map(item => loadOne(item)));
@@ -106,7 +107,6 @@ const processDocsFunction = async (
 
   settled.forEach((res, index) => {
     const original = list[index];
-    // let header = undefined;
     let content;
     let resolvedPath;
     const path = original;
@@ -115,15 +115,11 @@ const processDocsFunction = async (
     if (res.status === 'fulfilled') {
       const { resolvedPath: docResolvedPath, content: docContent } = res.value;
 
-      // header = docHeader;
       resolvedPath = docResolvedPath;
       content = docContent;
-      // content = `${docHeader}\n\n${docContent}`;
       isSuccess = true;
-      // parts.push(`${header}\n\n${content}`);
     } else {
       content = `❌ Failed to load ${original}: ${res.reason}`;
-      // parts.push(`❌ Failed to load ${original}: ${res.reason}`);
     }
 
     docs.push({
@@ -134,7 +130,6 @@ const processDocsFunction = async (
     });
   });
 
-  // return parts.join(options.separator);
   return docs;
 };
 

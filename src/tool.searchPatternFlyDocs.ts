@@ -19,10 +19,20 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 const componentNames = [...pfComponentNames, 'Table'].sort((a, b) => a.localeCompare(b));
 
 /**
- * Extract a component name from a documentation URL string
+ * Extract a component name from an internal documentation URL string
  *
  * @note This is reliant on the documentation URLs being in the accepted format.
- * If the format changes, this will need to be updated.
+ * If the format changes, this will need to be updated. This is a short-term solution
+ * until we can move the internal links to a new format like:
+ * ```
+ *  {
+ *    name: 'Charts',
+ *    description: 'Colors for Charts',
+ *    type: 'example',
+ *    scope: '@patternfly',
+ *    url: `${PF_EXTERNAL_EXAMPLES_CHARTS}/ChartTheme/examples/ChartTheme.md`
+ *  }
+ * ```
  *
  * @example
  * extractComponentName('[@patternfly/ComponentName - Type](URL)');
@@ -37,7 +47,9 @@ const extractComponentName = (docUrl: string): string | null => {
 };
 
 /**
- * Extract a URL from a Markdown link
+ * Extract a URL from an internal Markdown link.
+ *
+ * @note This is a short-term solution until we can move the internal links to a new format.
  *
  * @example
  * extractUrl('[text](URL)');
@@ -52,7 +64,7 @@ const extractUrl = (docUrl: string): string => {
 };
 
 /**
- * Build a map of component names relative to documentation URLs.
+ * Build a map of component names relative to internal documentation URLs.
  *
  * @returns Map of component name -> array of URLs (Design Guidelines + Accessibility)
  */

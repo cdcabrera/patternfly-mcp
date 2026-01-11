@@ -1,4 +1,4 @@
-import { componentNames } from './tool.searchPatternFlyDocs';
+import { componentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpResource } from './server';
 
 /**

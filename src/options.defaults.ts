@@ -43,7 +43,7 @@ import { type ToolModule } from './server.toolsUser';
 interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
   contextUrl: string;
-  docsHost: boolean;
+  docsHost?: boolean;
   docsPath: string;
   http: HttpOptions;
   isHttp: boolean;
