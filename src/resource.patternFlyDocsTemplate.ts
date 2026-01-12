@@ -78,6 +78,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       for (const doc of docs) {
         docResults.push([
           `# Documentation from ${doc.resolvedPath || doc.path}`,
+          '',
           doc.content
         ].join('\n'));
       }

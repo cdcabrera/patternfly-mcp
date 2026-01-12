@@ -87,6 +87,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
       docResults.push([
         `# Documentation from ${doc.resolvedPath || doc.path}`,
+        '',
         doc.content
       ].join('\n'));
 
