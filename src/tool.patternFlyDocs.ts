@@ -86,7 +86,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       const componentName = getComponentToDocsKey(doc.path);
 
       docResults.push([
-        `# Documentation from ${doc.resolvedPath || doc.path}`,
+        `# Documentation${(componentName && ` for ${componentName}`) || ''} from ${doc.resolvedPath || doc.path || 'unknown'}`,
         '',
         doc.content
       ].join('\n'));
