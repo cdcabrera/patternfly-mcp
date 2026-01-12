@@ -65,8 +65,8 @@ describe('patternFlyDocsTemplateResource, callback', () => {
       result: 'Button documentation content'
     }
   ])('should parse parameters and return documentation, $description', async ({ name, urls, result: mockResult }) => {
-    mockSearchComponents.mockReturnValue({ exactMatch: undefined, searchResults: [{ urls } as any] });
-    mockProcessDocs.mockResolvedValue({ content: mockResult, isSuccess: true } as any);
+    mockSearchComponents.mockReturnValue({ exactMatch: { urls } as any, searchResults: [] });
+    mockProcessDocs.mockResolvedValue([{ content: mockResult, isSuccess: true }] as any);
 
     const [_name, _uri, _config, callback] = patternFlyDocsTemplateResource();
     const uri = new URL('patternfly://docs/Button');
@@ -119,6 +119,6 @@ describe('patternFlyDocsTemplateResource, callback', () => {
     const variables = { name: 'Button' };
 
     await expect(handler(uri, variables)).rejects.toThrow(McpError);
-    await expect(handler(uri, variables)).rejects.toThrow('Failed to fetch documentation');
+    await expect(handler(uri, variables)).rejects.toThrow('No documentation found');
   });
 });
