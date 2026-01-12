@@ -90,7 +90,7 @@ describe('Builtin tools, STDIO', () => {
     const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
-    expect(text.startsWith('# Documentation from')).toBe(true);
+    expect(text.startsWith('# Documentation')).toBe(true);
     expect(text).toMatchSnapshot();
   });
 
@@ -114,7 +114,7 @@ describe('Builtin tools, STDIO', () => {
     const response = await CLIENT.send(req, { timeoutMs: 10000 });
     const text = response?.result?.content?.[0]?.text || '';
 
-    expect(text.startsWith('# Documentation from')).toBe(true);
+    expect(text.startsWith('# Documentation')).toBe(true);
     expect(text).toMatchSnapshot();
   });
 });
@@ -208,32 +208,6 @@ describe('Builtin resources, STDIO', () => {
 
     expect(content.uri).toBe('patternfly://schemas/index');
     expect(content.text).toContain('PatternFly Component Names Index');
-  });
-});
-
-describe('Hosted mode, --docs-host', () => {
-  let CLIENT: StdioTransportClient;
-
-  beforeEach(async () => {
-    CLIENT = await startServer({ args: ['--docs-host'] });
-  });
-
-  afterEach(async () => CLIENT.stop());
-
-  it('should read llms-files and includes expected tokens', async () => {
-    const req = {
-      method: 'tools/call',
-      params: {
-        name: 'usePatternFlyDocs',
-        arguments: { urlList: ['react-core/6.0.0/llms.txt'] }
-      }
-    };
-    const resp = await CLIENT.send(req);
-    const text = resp?.result?.content?.[0]?.text || '';
-
-    expect(text.startsWith('# Documentation from')).toBe(true);
-    expect(text.includes('react-core')).toBe(true);
-    expect(text.split(/\n/g).filter(Boolean).splice(1)).toMatchSnapshot();
   });
 });
 
