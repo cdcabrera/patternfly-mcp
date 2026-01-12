@@ -56,7 +56,7 @@ const patternFlySchemasTemplateResource = (): McpResource => {
         result = await getComponentSchema.memo(exactMatch.item);
       }
 
-      if (exactMatch === undefined || result === undefined) {
+      if (result === undefined) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
