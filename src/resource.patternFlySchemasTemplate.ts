@@ -34,51 +34,49 @@ const CONFIG = {
  *
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlySchemasTemplateResource = (): McpResource => {
-  return [
-    NAME,
-    URI_TEMPLATE,
-    CONFIG,
-    async (uri: URL, variables: Record<string, string>) => {
-      const { name } = variables || {};
+const patternFlySchemasTemplateResource = (): McpResource => [
+  NAME,
+  URI_TEMPLATE,
+  CONFIG,
+  async (uri: URL, variables: Record<string, string>) => {
+    const { name } = variables || {};
 
-      if (!name || typeof name !== 'string') {
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `Missing required parameter: name must be a string: ${name}`
-        );
-      }
-
-      const { exactMatch, searchResults } = searchComponents.memo(name, pfComponentNames);
-      let result: ComponentSchema;
-
-      if (exactMatch) {
-        result = await getComponentSchema.memo(exactMatch.item);
-      }
-
-      if (result === undefined) {
-        const suggestions = searchResults.map(result => result.item).slice(0, 3);
-        const suggestionMessage = suggestions.length
-          ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-          : 'No similar components found.';
-
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `Component "${name.trim()}" not found. ${suggestionMessage}`
-        );
-      }
-
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: 'application/json',
-            text: JSON.stringify(result, null, 2)
-          }
-        ]
-      };
+    if (!name || typeof name !== 'string') {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Missing required parameter: name must be a string: ${name}`
+      );
     }
-  ];
-};
+
+    const { exactMatch, searchResults } = searchComponents.memo(name, pfComponentNames);
+    let result: ComponentSchema;
+
+    if (exactMatch) {
+      result = await getComponentSchema.memo(exactMatch.item);
+    }
+
+    if (result === undefined) {
+      const suggestions = searchResults.map(result => result.item).slice(0, 3);
+      const suggestionMessage = suggestions.length
+        ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+        : 'No similar components found.';
+
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Component "${name.trim()}" not found. ${suggestionMessage}`
+      );
+    }
+
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: 'application/json',
+          text: JSON.stringify(result, null, 2)
+        }
+      ]
+    };
+  }
+];
 
 export { patternFlySchemasTemplateResource, NAME, URI_TEMPLATE, CONFIG };
