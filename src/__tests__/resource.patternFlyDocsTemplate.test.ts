@@ -66,7 +66,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
     }
   ])('should parse parameters and return documentation, $description', async ({ name, urls, result: mockResult }) => {
     mockSearchComponents.mockReturnValue({ exactMatch: { urls } as any, searchResults: [] });
-    mockProcessDocs.mockResolvedValue([{ content: mockResult, isSuccess: true }] as any);
+    mockProcessDocs.mockResolvedValue([{ content: mockResult }] as any);
 
     const [_name, _uri, _config, callback] = patternFlyDocsTemplateResource();
     const uri = new URL('patternfly://docs/Button');
