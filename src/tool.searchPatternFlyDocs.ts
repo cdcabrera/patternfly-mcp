@@ -198,8 +198,8 @@ const searchPatternFlyDocsTool = (): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - To browse all available documentation, read the "patternfly://docs/index" resource.',
-            '  - To browse all available components, read the "patternfly://schemas/index" resource.'
+            '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
+            '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
           ].join('\n')
         }]
       };
@@ -239,8 +239,8 @@ const searchPatternFlyDocsTool = (): McpTool => {
           '',
           '**Important**:',
           '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
-          '  - To browse all available documentation, read the "patternfly://docs/index" resource.',
-          '  - To browse all available components, read the "patternfly://schemas/index" resource.'
+          '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
+          '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
         ].join('\n')
       }]
     };
@@ -251,7 +251,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
     {
       description: `Search for PatternFly documentation URLs and resource links.
 
-      Search returns documentation URLS and resource links (patternfly://docs/ and patternfly://schemas/).
+      Search returns documentation URLs and resource URIs (patternfly://docs/ and patternfly://schemas/).
 
       **Usage**:
         1. Provide a "searchQuery" to find PatternFly documentation URLs and resources. Accepts partial string searches.

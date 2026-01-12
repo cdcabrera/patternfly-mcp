@@ -27,8 +27,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, default 1`]
 
 **Important**:
   - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],
@@ -54,8 +54,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with lower 
 
 **Important**:
   - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],
@@ -71,8 +71,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with made u
 ---
 
 **Important**:
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],
@@ -88,8 +88,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with multip
 ---
 
 **Important**:
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],
@@ -122,8 +122,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with partia
 
 **Important**:
   - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],
@@ -149,8 +149,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with trimme
 
 **Important**:
   - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],
@@ -176,8 +176,8 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with upper 
 
 **Important**:
   - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.
-  - To browse all available documentation, read the "patternfly://docs/index" resource.
-  - To browse all available components, read the "patternfly://schemas/index" resource.",
+  - To browse all available documentation, read the "patternfly://docs/index" URI resource.
+  - To browse all available components, read the "patternfly://schemas/index" URI resource.",
       "type": "text",
     },
   ],

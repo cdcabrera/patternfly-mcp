@@ -15,7 +15,7 @@ exports[`Builtin resources, HTTP transport should expose expected resources and 
 `;
 
 exports[`Builtin tools, HTTP transport should concatenate headers and separator with two local files 1`] = `
-"# Documentation from documentation/guidelines/README.md
+"# Documentation for react from documentation/guidelines/README.md
 
 # PatternFly Guidelines
 
@@ -106,7 +106,7 @@ See [Common Issues](../troubleshooting/common-issues.md) for specific problems.
 
 ---
 
-# Documentation from documentation/components/README.md
+# Documentation for react from documentation/components/README.md
 
 # PatternFly React Components
 

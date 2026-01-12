@@ -5,8 +5,9 @@ import { type McpTool } from './server';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
-import { setComponentToDocsMap } from './tool.searchPatternFlyDocs';
+import { setComponentToDocsMap, searchComponents } from './tool.searchPatternFlyDocs';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { log } from './logger';
 
 /**
  * Get the component schema from @patternfly/patternfly-component-schemas.
@@ -15,7 +16,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
  */
 const getComponentSchema = async (componentName: string) => {
   try {
-    return pfGetComponentSchema(componentName);
+    return await pfGetComponentSchema(componentName);
   } catch {}
 
   return undefined;
@@ -37,13 +38,35 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   const { getKey: getComponentToDocsKey } = setComponentToDocsMap.memo();
 
   const callback = async (args: any = {}) => {
-    const { urlList } = args;
+    const { urlList, name } = args;
+    const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
+    const isName = typeof name === 'string' && name.trim().length > 0;
 
-    if (!urlList || !Array.isArray(urlList)) {
+    if ((isUrlList && isName) || (!isUrlList && !isName)) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Missing required parameter: urlList must be an array of strings: ${urlList}`
+        `Provide either a string "name" OR an array of strings "urlList".`
       );
+    }
+
+    const updatedUrlList = isUrlList ? urlList : [];
+
+    if (name) {
+      const { exactMatch, searchResults } = searchComponents.memo(name);
+
+      if (exactMatch === undefined || exactMatch.urls.length === 0) {
+        const suggestions = searchResults.map(result => result.item).slice(0, 3);
+        const suggestionMessage = suggestions.length
+          ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+          : 'No similar components found.';
+
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Component "${name.trim()}" not found. ${suggestionMessage}`
+        );
+      }
+
+      updatedUrlList.push(...exactMatch.urls);
     }
 
     const docs = [];
@@ -52,7 +75,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const docResults = [];
 
     try {
-      const processedDocs = await memoProcess(urlList);
+      const processedDocs = await memoProcess(updatedUrlList);
 
       docs.push(...processedDocs);
     } catch (error) {
@@ -63,7 +86,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (docs.length === 0) {
-      const urlListBlock = urlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
+      const urlListBlock = updatedUrlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
 
       return {
         content: [{
@@ -75,8 +98,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - To browse all available documentation, read the "patternfly://docs/index" resource.',
-            '  - To browse all available components, read the "patternfly://schemas/index" resource.'
+            '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
+            '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
           ].join('\n')
         }]
       };
@@ -124,14 +147,15 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
       **Discovery**:
         - To find specific URLs by component name, use the "searchPatternFlyDocs" tool.
-        - To browse all available documentation URLs, read the "patternfly://docs/index" resource.
-        - To browse all available components, read the "patternfly://schemas/index" resource.
+        - To browse all available documentation URLs, read the "patternfly://docs/index" URI resource.
+        - To browse all available components, read the "patternfly://schemas/index" URI resource.
 
       **Usage**:
-        - Provide a list of URLs discovered through "searchPatternFlyDocs" or available resources to retrieve full PatternFly markdown content and related component JSON schemas.
+        - Provide either a string "name" OR an array of strings "urlList" of specific PatternFly documentation pages to retrieve full PatternFly markdown content and related component JSON schemas.
       `,
       inputSchema: {
-        urlList: z.array(z.string()).describe('The list of urls to fetch the documentation from')
+        urlList: z.array(z.string()).optional().describe('The list of URLs to fetch the documentation from'),
+        name: z.string().optional().describe('The name of the PatternFly component to fetch documentation for (e.g., "Button", "Table")')
       }
     },
     callback
