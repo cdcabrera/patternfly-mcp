@@ -5,6 +5,7 @@ import { type McpTool } from './server';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
+import { stringJoin } from './server.helpers';
 import { setComponentToDocsMap, searchComponents } from './tool.searchPatternFlyDocs';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { log } from './logger';
@@ -41,6 +42,17 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const { urlList, name } = args;
     const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
     const isName = typeof name === 'string' && name.trim().length > 0;
+    const hasUri = (isName && new RegExp('patternfly://docs/', 'i').test(name)) || (isUrlList && urlList.some(url => new RegExp('patternfly://docs/', 'i').test(url)));
+
+    if (hasUri) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        stringJoin.basic(
+          'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used directly.',
+          'Use a component "name" or provide a "urlList" of raw documentation URLs.'
+        )
+      );
+    }
 
     if ((isUrlList && isName) || (!isUrlList && !isName)) {
       throw new McpError(
@@ -91,7 +103,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       return {
         content: [{
           type: 'text',
-          text: [
+          text: stringJoin.newline(
             `No PatternFly documentation found for:`,
             urlListBlock,
             '',
@@ -100,7 +112,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
             '**Important**:',
             '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
             '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
-          ].join('\n')
+          )
         }]
       };
     }
@@ -108,24 +120,24 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     for (const doc of docs) {
       const componentName = getComponentToDocsKey(doc.path);
 
-      docResults.push([
+      docResults.push(stringJoin.newline(
         `# Documentation${(componentName && ` for ${componentName}`) || ''} from ${doc.resolvedPath || doc.path || 'unknown'}`,
         '',
         doc.content
-      ].join('\n'));
+      ));
 
       if (componentName && !schemasSeen.has(componentName)) {
         schemasSeen.add(componentName);
         const componentSchema = await getComponentSchema.memo(componentName);
 
         if (componentSchema) {
-          schemaResults.push([
+          schemaResults.push(stringJoin.newline(
             `# Component Schema for ${componentName}`,
             `This machine-readable JSON schema defines the component's props, types, and validation rules.`,
             '```json',
             JSON.stringify(componentSchema, null, 2),
             '```'
-          ].join('\n'));
+          ));
         }
       }
     }

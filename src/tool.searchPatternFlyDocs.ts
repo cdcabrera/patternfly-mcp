@@ -8,6 +8,7 @@ import { CHART_DOCS } from './docs.chart';
 import { getLocalDocs } from './docs.local';
 import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
+import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
@@ -144,6 +145,7 @@ const searchComponents = (searchQuery: string, names = componentNames) => {
   });
 
   const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
+    const isSchemasAvailable = pfComponentNames.includes(result.item);
     const urls = componentToDocsMap.get(result.item) || [];
     const matchedUrls = new Set<string>();
 
@@ -153,9 +155,10 @@ const searchComponents = (searchQuery: string, names = componentNames) => {
 
     return {
       ...result,
-      urls: Array.from(matchedUrls),
       doc: `patternfly://docs/${result.item}`,
-      schema: pfComponentNames.includes(result.item) ? `patternfly://schemas/${result.item}` : undefined
+      isSchemasAvailable,
+      schema: isSchemasAvailable ? `patternfly://schemas/${result.item}` : undefined,
+      urls: Array.from(matchedUrls)
     };
   });
 
@@ -199,7 +202,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
       return {
         content: [{
           type: 'text',
-          text: [
+          text: stringJoin.newline(
             `No PatternFly documentation found matching "${searchQuery}"`,
             '',
             '---',
@@ -207,38 +210,33 @@ const searchPatternFlyDocsTool = (): McpTool => {
             '**Important**:',
             '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
             '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
-          ].join('\n')
+          )
         }]
       };
     }
 
     const results = searchResults.map(result => {
       const urlList = result.urls.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
-      const docRef = result.doc ? `  - ${result.doc}` : undefined;
-      const schemaRef = result.schema ? `  - ${result.schema}` : undefined;
-      let resources;
 
-      if (docRef || schemaRef) {
-        resources = [
-          `### Resources`,
-          docRef,
-          schemaRef
-        ].filter(Boolean).join('\n');
-      }
+      const resources = stringJoin.newline(
+        `### Resources metadata`,
+        ` - **Component name**: ${result.item}`,
+        ` - **JSON Schemas**: ${result.isSchemasAvailable ? 'Available' : 'Not available'}`
+      );
 
-      return [
+      return stringJoin.newline(
         `## ${result.item}`,
         `**Match Type**: ${result.matchType}`,
         `### "usePatternFlyDocs" tool documentation URLs`,
         urlList.length ? urlList : '  - No URLs found',
         resources
-      ].filter(Boolean).join('\n');
+      );
     });
 
     return {
       content: [{
         type: 'text',
-        text: [
+        text: stringJoin.newline(
           `# Search results for "${searchQuery}"`,
           ...results,
           '',
@@ -248,7 +246,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
           '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
           '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
           '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
-        ].join('\n')
+        )
       }]
     };
   };
@@ -261,13 +259,10 @@ const searchPatternFlyDocsTool = (): McpTool => {
       **Returns**:
         - Component names matching the search query
         - Documentation URLs for each component
-        - Resource URIs for each component (patternfly://docs/ and patternfly://schemas/))
 
       **Usage**:
-        1. Provide a "searchQuery" to find PatternFly documentation URLs and resource URIs.
-        2. Use the returned content
-           - Use the returned URLs with the "usePatternFlyDocs" tool to fetch full documentation.
-           - Use the returned URIs to fetch available documentation links, component names, and component JSON schemas directly.
+        1. Provide a "searchQuery" to find PatternFly documentation URLs and component names.
+        2. Use the returned component names or URLs with the "usePatternFlyDocs" tool to fetch full documentation and JSON schemas.
       `,
       inputSchema: {
         searchQuery: z.string().describe('Full or partial component name to search for (e.g., "button", "table")')

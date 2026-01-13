@@ -54,7 +54,7 @@ The MCP server tools are focused on being a resource library for PatternFly. Ser
 ### Built-in Tools
 
 #### Tool: searchPatternFlyDocs
-Use this to search for PatternFly documentation URLs and resource links. Accepts partial string matches. From the content, you can select specific URLs to use with `usePatternFlyDocs`
+Use this to search for PatternFly documentation URLs and component names. Accepts partial string matches or `*` to list all available components. From the content, you can select specific URLs and component names to use with `usePatternFlyDocs`
 
 - **Parameters**: `searchQuery`: `string` (required)
 
