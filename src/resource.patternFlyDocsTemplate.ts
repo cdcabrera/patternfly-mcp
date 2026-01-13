@@ -50,7 +50,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 
       const docResults = [];
       const docs = [];
-      const { exactMatch, searchResults } = searchComponents(name);
+      const { exactMatch, searchResults } = searchComponents.memo(name);
 
       if (exactMatch === undefined || exactMatch.urls.length === 0) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);

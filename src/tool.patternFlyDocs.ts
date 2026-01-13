@@ -8,7 +8,6 @@ import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { setComponentToDocsMap, searchComponents } from './tool.searchPatternFlyDocs';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import { log } from './logger';
 
 /**
  * Get the component schema from @patternfly/patternfly-component-schemas.
@@ -42,7 +41,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const { urlList, name } = args;
     const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
     const isName = typeof name === 'string' && name.trim().length > 0;
-    const hasUri = (isName && new RegExp('patternfly://docs/', 'i').test(name)) || (isUrlList && urlList.some(url => new RegExp('patternfly://docs/', 'i').test(url)));
+    const hasUri = (isName && new RegExp('patternfly://', 'i').test(name)) || (isUrlList && urlList.some(url => new RegExp('patternfly://', 'i').test(url)));
 
     if (hasUri) {
       throw new McpError(

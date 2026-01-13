@@ -65,7 +65,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
       result: 'Button documentation content'
     }
   ])('should parse parameters and return documentation, $description', async ({ name, urls, result: mockResult }) => {
-    mockSearchComponents.mockReturnValue({ exactMatch: { urls } as any, searchResults: [] });
+    mockSearchComponents.mockReturnValue({ isSearchWildCardAll: false, exactMatch: { urls } as any, searchResults: [] });
     mockProcessDocs.mockResolvedValue([{ content: mockResult }] as any);
 
     const [_name, _uri, _config, callback] = patternFlyDocsTemplateResource();
@@ -111,7 +111,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
   });
 
   it('should handle documentation loading errors', async () => {
-    mockSearchComponents.mockReturnValue({ exactMatch: undefined, searchResults: [] });
+    mockSearchComponents.mockReturnValue({ isSearchWildCardAll: false, exactMatch: undefined, searchResults: [] });
     mockProcessDocs.mockRejectedValue(new Error('File not found'));
 
     const [_name, _uri, _config, handler] = patternFlyDocsTemplateResource();

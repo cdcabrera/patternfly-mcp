@@ -48,7 +48,7 @@ const patternFlySchemasTemplateResource = (): McpResource => [
       );
     }
 
-    const { exactMatch, searchResults } = searchComponents.memo(name, pfComponentNames);
+    const { exactMatch, searchResults } = searchComponents.memo(name, { names: pfComponentNames });
     let result: ComponentSchema;
 
     if (exactMatch) {

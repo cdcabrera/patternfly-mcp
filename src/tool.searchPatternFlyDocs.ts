@@ -101,7 +101,7 @@ const setComponentToDocsMap = () => {
     return undefined;
   };
 
-  for (const docUrl of allDocs) {
+  allDocs.forEach(docUrl => {
     const componentName = extractComponentName(docUrl);
 
     if (componentName) {
@@ -110,7 +110,7 @@ const setComponentToDocsMap = () => {
 
       map.set(componentName, [...existing, url]);
     }
-  }
+  });
 
   return {
     map,
@@ -127,22 +127,30 @@ setComponentToDocsMap.memo = memo(setComponentToDocsMap);
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
- * @param names - List of names to search. Defaults to all component names.
+ * @param settings - Optional settings object
+ * @param settings.names - List of names to search. Defaults to all component names.
+ * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
+ *   - `isSearchWildCardAll`: Whether the search query matched all components
  *   - `exactMatch`: An exact match within fuzzy search results
  *   - `searchResults`: Fuzzy search results
- *   - `matchedUrls`: List of unique matched URLs
  */
-const searchComponents = (searchQuery: string, names = componentNames) => {
+const searchComponents = (searchQuery: string, { names = componentNames, allowWildCardAll = false } = {}) => {
+  const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
+  const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   const { map: componentToDocsMap } = setComponentToDocsMap.memo();
+  let searchResults: FuzzySearchResult[] = [];
 
-  // Use fuzzy search to handle exact matches and variations
-  const searchResults = fuzzySearch(searchQuery, names, {
-    maxDistance: 3,
-    maxResults: 10,
-    isFuzzyMatch: true,
-    deduplicateByNormalized: true
-  });
+  if (isSearchWildCardAll) {
+    searchResults = componentNames.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+  } else {
+    searchResults = fuzzySearch(searchQuery, names, {
+      maxDistance: 3,
+      maxResults: 10,
+      isFuzzyMatch: true,
+      deduplicateByNormalized: true
+    });
+  }
 
   const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
     const isSchemasAvailable = pfComponentNames.includes(result.item);
@@ -167,6 +175,7 @@ const searchComponents = (searchQuery: string, names = componentNames) => {
   const extendedSearchResults = extendResults(searchResults);
 
   return {
+    isSearchWildCardAll,
     exactMatch: extendedExactMatch,
     searchResults: extendedSearchResults
   };
@@ -189,16 +198,16 @@ const searchPatternFlyDocsTool = (): McpTool => {
   const callback = async (args: any = {}) => {
     const { searchQuery } = args;
 
-    if (!searchQuery || typeof searchQuery !== 'string') {
+    if (typeof searchQuery !== 'string') {
       throw new McpError(
         ErrorCode.InvalidParams,
         `Missing required parameter: searchQuery must be a string: ${searchQuery}`
       );
     }
 
-    const { searchResults } = searchComponents.memo(searchQuery);
+    const { isSearchWildCardAll, searchResults } = searchComponents.memo(searchQuery, { allowWildCardAll: true });
 
-    if (searchResults.length === 0) {
+    if (!isSearchWildCardAll && searchResults.length === 0) {
       return {
         content: [{
           type: 'text',
@@ -208,8 +217,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
-            '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
+            '  - Use a wildcard search all ("*") to find all available components.'
           )
         }]
       };
@@ -218,18 +226,15 @@ const searchPatternFlyDocsTool = (): McpTool => {
     const results = searchResults.map(result => {
       const urlList = result.urls.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
 
-      const resources = stringJoin.newline(
-        `### Resources metadata`,
-        ` - **Component name**: ${result.item}`,
-        ` - **JSON Schemas**: ${result.isSchemasAvailable ? 'Available' : 'Not available'}`
-      );
-
       return stringJoin.newline(
+        '',
         `## ${result.item}`,
         `**Match Type**: ${result.matchType}`,
         `### "usePatternFlyDocs" tool documentation URLs`,
         urlList.length ? urlList : '  - No URLs found',
-        resources
+        `### Resources metadata`,
+        ` - **Component name**: ${result.item}`,
+        ` - **JSON Schemas**: ${result.isSchemasAvailable ? 'Available' : 'Not available'}`
       );
     });
 
@@ -237,15 +242,14 @@ const searchPatternFlyDocsTool = (): McpTool => {
       content: [{
         type: 'text',
         text: stringJoin.newline(
-          `# Search results for "${searchQuery}"`,
+          `# Search results for "${isSearchWildCardAll ? 'all components' : searchQuery}", ${searchResults.length} matches found:`,
           ...results,
           '',
           '---',
           '',
           '**Important**:',
           '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
-          '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
-          '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
+          '  - Use a wildcard search all ("*") to find all available components.'
         )
       }]
     };
@@ -254,7 +258,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: `Search for PatternFly components by name. Supports case-insensitive partial matches.
+      description: `Search for PatternFly components by name. Supports case-insensitive partial and wildcard all ("*") matches.
 
       **Returns**:
         - Component names matching the search query
@@ -265,7 +269,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
         2. Use the returned component names or URLs with the "usePatternFlyDocs" tool to fetch full documentation and JSON schemas.
       `,
       inputSchema: {
-        searchQuery: z.string().describe('Full or partial component name to search for (e.g., "button", "table")')
+        searchQuery: z.string().describe('Full or partial component name to search for (e.g., "button", "table", "*")')
       }
     },
     callback

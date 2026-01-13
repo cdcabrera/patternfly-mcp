@@ -242,7 +242,7 @@ const TOOL_MEMO_OPTIONS = {
   },
   searchPatternFlyDocs: {
     cacheLimit: 10,
-    expire: 5 * 60 * 1000, // 5 minute sliding cache
+    expire: 10 * 60 * 1000, // 10 minute sliding cache
     cacheErrors: false
   }
 };

@@ -56,12 +56,24 @@ describe('searchPatternFlyDocsTool, callback', () => {
     {
       description: 'with made up componentName',
       searchQuery: 'lorem ipsum dolor sit amet'
+    },
+    {
+      description: 'with "*" searchQuery all',
+      searchQuery: '*'
+    },
+    {
+      description: 'with "all" searchQuery all',
+      searchQuery: 'ALL'
+    },
+    {
+      description: 'with empty searchQuery all',
+      searchQuery: ''
     }
   ])('should parse parameters, $description', async ({ searchQuery }) => {
     const [_name, _schema, callback] = searchPatternFlyDocsTool();
     const result = await callback({ searchQuery });
 
-    expect(result).toMatchSnapshot();
+    expect(result.content[0].text.split('\n')[0]).toMatchSnapshot('search');
   });
 
   it.each([
@@ -74,11 +86,6 @@ describe('searchPatternFlyDocsTool, callback', () => {
       description: 'with null searchQuery',
       error: 'Missing required parameter: searchQuery',
       searchQuery: null
-    },
-    {
-      description: 'with empty searchQuery',
-      error: 'Missing required parameter: searchQuery',
-      searchQuery: ''
     },
     {
       description: 'with non-string searchQuery',

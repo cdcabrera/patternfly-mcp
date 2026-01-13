@@ -70,7 +70,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "searchPatternFlyDocs": {
       "cacheErrors": false,
       "cacheLimit": 10,
-      "expire": 300000,
+      "expire": 600000,
     },
     "usePatternFlyDocs": {
       "cacheErrors": false,
