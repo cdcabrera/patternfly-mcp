@@ -143,19 +143,20 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Fetch documentation and component JSON schemas content for specific PatternFly URLs.
+      description: `Fetch documentation and component JSON schemas content for specific PatternFly components and URLs.
 
-      **Discovery**:
-        - To find specific URLs by component name, use the "searchPatternFlyDocs" tool.
-        - To browse all available documentation URLs, read the "patternfly://docs/index" URI resource.
-        - To browse all available components, read the "patternfly://schemas/index" URI resource.
+      **Returns**:
+      - Full markdown documentation content
+      - Component JSON schemas, if available
 
       **Usage**:
-        - Provide either a string "name" OR an array of strings "urlList" of specific PatternFly documentation pages to retrieve full PatternFly markdown content and related component JSON schemas.
+      Provide one of the following:
+      - A known PatternFly component "name"
+      - A URL list of specific PatternFly documentation pages
       `,
       inputSchema: {
         urlList: z.array(z.string()).optional().describe('The list of URLs to fetch the documentation from'),
-        name: z.string().optional().describe('The name of the PatternFly component to fetch documentation for (e.g., "Button", "Table")')
+        name: z.string().optional().describe('The name of the known PatternFly component to fetch documentation for (e.g., "Button", "Table")')
       }
     },
     callback

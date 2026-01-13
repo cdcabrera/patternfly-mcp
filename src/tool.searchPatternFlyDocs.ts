@@ -256,13 +256,18 @@ const searchPatternFlyDocsTool = (): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: `Search for PatternFly documentation URLs and resource links.
+      description: `Search for PatternFly components by name. Supports case-insensitive partial matches.
 
-      Search returns documentation URLs and resource URIs (patternfly://docs/ and patternfly://schemas/).
+      **Returns**:
+        - Component names matching the search query
+        - Documentation URLs for each component
+        - Resource URIs for each component (patternfly://docs/ and patternfly://schemas/))
 
       **Usage**:
-        1. Provide a "searchQuery" to find PatternFly documentation URLs and resources. Accepts partial string searches.
-        2. Use the returned URLs with the "usePatternFlyDocs" tool to fetch full documentation and resource content.
+        1. Provide a "searchQuery" to find PatternFly documentation URLs and resource URIs.
+        2. Use the returned content
+           - Use the returned URLs with the "usePatternFlyDocs" tool to fetch full documentation.
+           - Use the returned URIs to fetch available documentation links, component names, and component JSON schemas directly.
       `,
       inputSchema: {
         searchQuery: z.string().describe('Full or partial component name to search for (e.g., "button", "table")')
