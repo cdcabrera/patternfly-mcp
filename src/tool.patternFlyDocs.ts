@@ -153,10 +153,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Get markdown documentation and component JSON schemas content for PatternFly components and URLs.
+      description: `Get markdown documentation and component JSON schemas for PatternFly components.
 
       **Usage**:
-        1. Input a PatternFly component name OR a URL list of specific PatternFly documentation pages
+        1. Input a component name (e.g., "Button") OR a list of documentation URLs (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
