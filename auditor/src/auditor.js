@@ -126,7 +126,7 @@ async function runHealthChecks(config) {
 
         // Debug: Log tools received during health check
         if (tools.length > 0) {
-          console.log(`   🔧 Health check: Received ${tools.length} tools: ${tools.map(t => t.name).join(', ')}`);
+          console.warn(`   🔧 Health check: Received ${tools.length} tools: ${tools.map(t => t.name).join(', ')}`);
         } else {
           console.warn(`   ⚠️  Health check: No tools returned! Response: ${JSON.stringify(mcpResponse)}`);
         }
@@ -216,7 +216,7 @@ async function initializeModel(config) {
 
   if (modelPath) {
     // Load custom model from volume
-    console.log(`   Loading custom model from: ${modelPath}`);
+    console.warn(`   Loading custom model from: ${modelPath}`);
     try {
       model = await validateAndLoadModel(Llama, modelPath);
     } catch (error) {
@@ -224,7 +224,7 @@ async function initializeModel(config) {
     }
   } else {
     // Use default small model (download if needed)
-    console.log(`   Using default model (Qwen2.5-0.5B)`);
+    console.warn(`   Using default model (Qwen2.5-0.5B)`);
     const defaultModelPath = await getDefaultModel(Llama);
 
     if (!defaultModelPath) {
@@ -343,7 +343,7 @@ async function getDefaultModel(Llama) {
       for (const modelName of preferredModels) {
         const modelPath = join(searchPath, modelName);
         if (existsSync(modelPath)) {
-          console.log(`   ✅ Found model: ${modelPath}`);
+          console.warn(`   ✅ Found model: ${modelPath}`);
           return modelPath;
         }
       }
@@ -358,10 +358,10 @@ async function getDefaultModel(Llama) {
         const ggufFiles = files.filter(f => f.endsWith('.gguf'));
         if (ggufFiles.length > 0) {
           const modelPath = join(searchPath, ggufFiles[0]);
-          console.log(`   ✅ Found model: ${modelPath} (${ggufFiles[0]})`);
+          console.warn(`   ✅ Found model: ${modelPath} (${ggufFiles[0]})`);
           if (ggufFiles.length > 1) {
-            console.log(`   ℹ️  Multiple models found, using: ${ggufFiles[0]}`);
-            console.log(`   ℹ️  Other models: ${ggufFiles.slice(1).join(', ')}`);
+            console.warn(`   ℹ️  Multiple models found, using: ${ggufFiles[0]}`);
+            console.warn(`   ℹ️  Other models: ${ggufFiles.slice(1).join(', ')}`);
           }
           return modelPath;
         }
@@ -386,7 +386,7 @@ async function getDefaultModel(Llama) {
  * Run a single audit run
  */
 async function runAuditRun(runNumber, questions, model, config) {
-  console.log(`\n🔄 Run ${runNumber}/${config.audit.runs}`);
+  console.warn(`\n🔄 Run ${runNumber}/${config.audit.runs}`);
 
   const results = [];
 
@@ -395,7 +395,7 @@ async function runAuditRun(runNumber, questions, model, config) {
     const startTime = Date.now();
 
     try {
-      console.log(`   [${i + 1}/${questions.length}] ${question.id}: ${question.prompt.substring(0, 50)}...`);
+      console.warn(`   [${i + 1}/${questions.length}] ${question.id}: ${question.prompt.substring(0, 50)}...`);
 
       // For PF-MCP questions, call MCP tools first to get actual data
       let toolCalls = [];
@@ -409,9 +409,9 @@ async function runAuditRun(runNumber, questions, model, config) {
           const tools = toolsList?.tools || [];
 
           // Debug: Log tools received
-          console.log(`   🔧 Tools received from MCP: ${tools.length} tools`);
+          console.warn(`   🔧 Tools received from MCP: ${tools.length} tools`);
           if (tools.length > 0) {
-            console.log(`   🔧 Tool names: ${tools.map(t => t.name).join(', ')}`);
+            console.warn(`   🔧 Tool names: ${tools.map(t => t.name).join(', ')}`);
           } else {
             console.warn(`   ⚠️  No tools returned from tools/list! Response: ${JSON.stringify(toolsList)}`);
           }
@@ -420,7 +420,7 @@ async function runAuditRun(runNumber, questions, model, config) {
           if (question.id === 'pf-mcp-1' || question.prompt.includes('tools are available') || question.prompt.includes('resources are available')) {
             // List tools and resources question - use both tools/list and resources/list results
             // Only pass tool/resource names and descriptions - never pass any file paths or code
-            
+
             // Get resources list
             let resourcesList = { resources: [] };
             try {
@@ -1189,21 +1189,21 @@ export async function runAudit(config, abortSignal = null) {
   const strategy = config.interjection?.strategy || 'random';
   const questions = shuffleQuestions(baseline, pfMcp, strategy);
 
-  console.log(`   Loaded ${baseline.length} baseline questions`);
-  console.log(`   Loaded ${pfMcp.length} PF-MCP questions`);
-  console.log(`   Total questions per run: ${questions.length}`);
-  console.log(`   Interjection strategy: ${strategy}`);
+  console.warn(`   Loaded ${baseline.length} baseline questions`);
+  console.warn(`   Loaded ${pfMcp.length} PF-MCP questions`);
+  console.warn(`   Total questions per run: ${questions.length}`);
+  console.warn(`   Interjection strategy: ${strategy}`);
 
   // Run health checks
-  console.log('\n🏥 Running health checks...');
+  console.warn('\n🏥 Running health checks...');
   const healthChecks = await runHealthChecks(config);
   healthChecks.forEach(check => {
     const icon = check.status === 'pass' ? '✅' : '❌';
-    console.log(`   ${icon} ${check.name}: ${check.message}`);
+    console.warn(`   ${icon} ${check.name}: ${check.message}`);
   });
 
   // Initialize model
-  console.log('\n🤖 Initializing model...');
+  console.warn('\n🤖 Initializing model...');
   let model;
   try {
     model = await initializeModel(config);
@@ -1224,7 +1224,7 @@ export async function runAudit(config, abortSignal = null) {
   try {
     for (let run = 1; run <= config.audit.runs; run++) {
       if (checkInterrupt()) {
-        console.log(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
+        console.warn(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
         break;
       }
 
@@ -1246,7 +1246,7 @@ export async function runAudit(config, abortSignal = null) {
         });
 
         if (checkInterrupt()) {
-          console.log(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
+          console.warn(`\n⚠️  Audit interrupted at run ${run}/${config.audit.runs}`);
           break;
         }
       }
@@ -1260,13 +1260,13 @@ export async function runAudit(config, abortSignal = null) {
         console.warn(`   ⚠️  Error closing model: ${error.message}`);
       }
     }
-    
+
     // Cleanup MCP client
     await closeMcpClient();
   }
 
   // Analyze consistency
-  console.log('\n📊 Analyzing consistency...');
+  console.warn('\n📊 Analyzing consistency...');
   const analysis = analyzeConsistency(allResults, questions);
 
   return {

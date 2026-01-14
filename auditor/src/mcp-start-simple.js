@@ -2,7 +2,7 @@
 
 /**
  * Simple MCP Server Starter
- * 
+ *
  * Starts the MCP server using npm scripts and waits for it to be ready.
  * This is a simpler alternative to the full mcp-server.js management script.
  */
@@ -21,7 +21,7 @@ function waitForServer(maxWait = 10000) {
   return new Promise((resolve) => {
     const startTime = Date.now();
     const checkInterval = 500;
-    
+
     const check = async () => {
       try {
         // Use http module instead of fetch for better compatibility
@@ -48,7 +48,7 @@ function waitForServer(maxWait = 10000) {
             resolve(true);
           });
         });
-        
+
         req.on('error', () => {
           // Server not ready yet, check again
           if (Date.now() - startTime < maxWait) {
@@ -57,7 +57,7 @@ function waitForServer(maxWait = 10000) {
             resolve(false);
           }
         });
-        
+
         req.on('timeout', () => {
           req.destroy();
           if (Date.now() - startTime < maxWait) {
@@ -66,7 +66,7 @@ function waitForServer(maxWait = 10000) {
             resolve(false);
           }
         });
-        
+
         // Send a minimal valid JSON-RPC request
         req.write(JSON.stringify({
           jsonrpc: '2.0',
@@ -83,7 +83,7 @@ function waitForServer(maxWait = 10000) {
         }
       }
     };
-    
+
     check();
   });
 }
@@ -92,22 +92,22 @@ function waitForServer(maxWait = 10000) {
  * Kill any existing MCP server processes
  */
 async function killExistingServers() {
-  console.log('🧹 Cleaning up any existing MCP server instances...');
-  
+  console.warn('🧹 Cleaning up any existing MCP server instances...');
+
   // Kill any processes on port 3000 first (most reliable)
   try {
     execSync('lsof -ti:3000 | xargs kill -9 2>/dev/null || true', { stdio: 'ignore' });
   } catch (e) {
     // Ignore errors
   }
-  
+
   // Kill any node processes running the MCP server
   try {
     execSync('pkill -9 -f "node.*dist/index.js.*--http" 2>/dev/null || true', { stdio: 'ignore' });
   } catch (e) {
     // Ignore errors
   }
-  
+
   // Try to stop via PID file
   if (existsSync(PID_FILE)) {
     try {
@@ -129,7 +129,7 @@ async function killExistingServers() {
       // Ignore errors
     }
   }
-  
+
   // Give processes a moment to fully die
   await new Promise(resolve => setTimeout(resolve, 500));
 }
@@ -149,16 +149,16 @@ function isProcessRunning(pid) {
 async function main() {
   // Kill any existing servers first
   await killExistingServers();
-  
-  console.log('🚀 Starting MCP server...');
-  
+
+  console.warn('🚀 Starting MCP server...');
+
   // Check if server is built - use cli.js for proper CLI mode
   const builtServer = join(ROOT_DIR, 'dist', 'cli.js');
   if (!existsSync(builtServer)) {
     console.error('❌ Server not built. Run: npm run build');
     process.exit(1);
   }
-  
+
   // Start server in background
   // Use '0.0.0.0' as host so it's accessible from containers on macOS Podman
   // Use 'pipe' for stdout/stderr so we can filter out expected errors from readiness checks
@@ -168,24 +168,24 @@ async function main() {
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: true  // Run as daemon
   });
-  
+
   // Track if process exited early
   let processExited = false;
   let exitCode = null;
   let exitSignal = null;
   let errorOutput = '';
-  
+
   proc.on('error', (error) => {
     console.error(`❌ Failed to start server process: ${error.message}`);
     processExited = true;
   });
-  
+
   proc.on('exit', (code, signal) => {
     processExited = true;
     exitCode = code;
     exitSignal = signal;
   });
-  
+
   // Forward server output but filter out the expected "Not Acceptable" error from readiness checks
   // Only filter if it's the JSON error response, not other important messages
   proc.stdout.on('data', (data) => {
@@ -201,30 +201,30 @@ async function main() {
       }
     }
   });
-  
+
   proc.stderr.on('data', (data) => {
     // Don't filter stderr - it might contain important error messages including kill status
     const output = data.toString();
     errorOutput += output;
     process.stderr.write(data);
   });
-  
+
   // Keep process reference to prevent early exit
   // The server should stay running because the HTTP server keeps the event loop alive
   // We don't call unref() so the parent process keeps a reference, but detached: true
   // ensures the child can outlive the parent
-  
+
   // Write PID file so server can be stopped via mcp-server.js stop
   try {
     writeFileSync(PID_FILE, proc.pid.toString(), 'utf8');
   } catch (error) {
     console.warn(`⚠️  Failed to write PID file: ${error.message}`);
   }
-  
+
   // Wait for server to be ready
-  console.log('⏳ Waiting for server to be ready...');
+  console.warn('⏳ Waiting for server to be ready...');
   const ready = await waitForServer(20000); // Increased timeout to 20 seconds
-  
+
   // Check if process exited early
   if (processExited) {
     console.error(`❌ MCP server process exited early (code: ${exitCode}, signal: ${exitSignal})`);
@@ -242,9 +242,9 @@ async function main() {
     }
     process.exit(1);
   }
-  
+
   if (ready) {
-    console.log(`✅ MCP server is ready at http://localhost:3000 (PID: ${proc.pid})`);
+    console.warn(`✅ MCP server is ready at http://localhost:3000 (PID: ${proc.pid})`);
     process.exit(0);
   } else {
     console.error('❌ MCP server failed to start within 20 seconds');

@@ -2,7 +2,7 @@
 
 /**
  * MCP Wrapper Script
- * 
+ *
  * Wrapper that starts MCP server, runs auditor, and stops MCP server on exit.
  */
 
@@ -22,7 +22,7 @@ let mcpPid = null;
  */
 async function cleanup() {
   if (mcpPid) {
-    console.log('\n🧹 Cleaning up MCP server...');
+    console.warn('\n🧹 Cleaning up MCP server...');
     try {
       await stopServer();
     } catch (error) {
@@ -50,20 +50,20 @@ process.on('exit', async () => {
  * Main execution
  */
 async function main() {
-  console.log('🔧 MCP Wrapper: Starting MCP server and running auditor\n');
+  console.warn('🔧 MCP Wrapper: Starting MCP server and running auditor\n');
 
   try {
     // Start MCP server
-    console.log('📡 Starting MCP server...');
+    console.warn('📡 Starting MCP server...');
     mcpPid = await startServer();
-    console.log('');
+    console.warn('');
 
     // Wait a moment for server to be fully ready
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Run auditor with remaining args
     const auditorArgs = process.argv.slice(2);
-    console.log('🔍 Running auditor...\n');
+    console.warn('🔍 Running auditor...\n');
 
     const auditorProc = spawn('node', [join(AUDITOR_DIR, 'src', 'index.js'), ...auditorArgs], {
       stdio: 'inherit',

@@ -109,8 +109,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - To browse all available documentation, read the "patternfly://docs/index" URI resource.',
-            '  - To browse all available components, read the "patternfly://schemas/index" URI resource.'
+            '  - To browse all available components use "searchPatternFlyDocs" with a wildcard search all ("*").'
           )
         }]
       };

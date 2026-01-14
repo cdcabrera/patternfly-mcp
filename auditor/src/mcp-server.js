@@ -2,7 +2,7 @@
 
 /**
  * MCP Server Process Management
- * 
+ *
  * Handles starting, stopping, and checking status of the PatternFly MCP server.
  */
 
@@ -47,7 +47,7 @@ function getMcpServerCommand() {
  */
 function isServerRunning(pid) {
   if (!pid) return false;
-  
+
   try {
     // Check if process exists (Unix: signal 0, doesn't kill process)
     process.kill(pid, 0);
@@ -64,7 +64,7 @@ function readPid() {
   if (!existsSync(PID_FILE)) {
     return null;
   }
-  
+
   try {
     const pid = parseInt(readFileSync(PID_FILE, 'utf8').trim(), 10);
     return isNaN(pid) ? null : pid;
@@ -96,7 +96,7 @@ async function startServer() {
   // Check if already running
   const existingPid = readPid();
   if (existingPid && isServerRunning(existingPid)) {
-    console.log(`✅ MCP server is already running (PID: ${existingPid})`);
+    console.warn(`✅ MCP server is already running (PID: ${existingPid})`);
     return existingPid;
   }
 
@@ -106,9 +106,9 @@ async function startServer() {
   }
 
   const { command, args } = getMcpServerCommand();
-  
-  console.log(`🚀 Starting MCP server...`);
-  console.log(`   Command: ${command} ${args.join(' ')}`);
+
+  console.warn(`🚀 Starting MCP server...`);
+  console.warn(`   Command: ${command} ${args.join(' ')}`);
 
   // Wait for server to be ready using health check (more reliable than parsing logs)
   return new Promise((resolve, reject) => {
@@ -153,7 +153,7 @@ async function startServer() {
 
     // Write PID file immediately
     writePid(proc.pid);
-    
+
     const timeout = setTimeout(() => {
       if (!serverReady) {
         if (processExited) {
@@ -174,7 +174,7 @@ async function startServer() {
       return new Promise((resolveHealth) => {
         const startTime = Date.now();
         const checkInterval = 500;
-        
+
         const check = async () => {
           // Check if process exited early
           if (processExited) {
@@ -204,7 +204,7 @@ async function startServer() {
                 resolveHealth(true);
               });
             });
-            
+
             req.on('error', () => {
               // Server not ready yet, check again
               if (Date.now() - startTime < maxWait && !processExited) {
@@ -213,7 +213,7 @@ async function startServer() {
                 resolveHealth(false);
               }
             });
-            
+
             req.on('timeout', () => {
               req.destroy();
               if (Date.now() - startTime < maxWait && !processExited) {
@@ -222,7 +222,7 @@ async function startServer() {
                 resolveHealth(false);
               }
             });
-            
+
             // Send a minimal valid JSON-RPC request
             req.write(JSON.stringify({
               jsonrpc: '2.0',
@@ -239,7 +239,7 @@ async function startServer() {
             }
           }
         };
-        
+
         check();
       });
     };
@@ -251,8 +251,8 @@ async function startServer() {
         clearTimeout(timeout);
         // Detach process so it can continue running
         proc.unref();
-        console.log(`\n✅ MCP server started (PID: ${proc.pid})`);
-        console.log(`   Server running on http://localhost:3000`);
+        console.warn(`\n✅ MCP server started (PID: ${proc.pid})`);
+        console.warn(`   Server running on http://localhost:3000`);
         resolve(proc.pid);
       } else {
         clearTimeout(timeout);
@@ -274,33 +274,33 @@ async function startServer() {
  */
 async function stopServer() {
   const pid = readPid();
-  
+
   if (!pid) {
-    console.log('ℹ️  No MCP server PID file found (server may not be running)');
+    console.warn('ℹ️  No MCP server PID file found (server may not be running)');
     return;
   }
 
   if (!isServerRunning(pid)) {
-    console.log(`ℹ️  MCP server process ${pid} is not running (stale PID file)`);
+    console.warn(`ℹ️  MCP server process ${pid} is not running (stale PID file)`);
     deletePid();
     return;
   }
 
   try {
-    console.log(`🛑 Stopping MCP server (PID: ${pid})...`);
+    console.warn(`🛑 Stopping MCP server (PID: ${pid})...`);
     process.kill(pid, 'SIGTERM');
-    
+
     // Wait a bit for graceful shutdown
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Check if still running
     if (isServerRunning(pid)) {
-      console.log(`⚠️  Process still running, sending SIGKILL...`);
+      console.warn(`⚠️  Process still running, sending SIGKILL...`);
       process.kill(pid, 'SIGKILL');
     }
-    
+
     deletePid();
-    console.log(`✅ MCP server stopped`);
+    console.warn(`✅ MCP server stopped`);
   } catch (error) {
     console.error(`❌ Error stopping MCP server: ${error.message}`);
     deletePid(); // Clean up PID file anyway
@@ -313,18 +313,18 @@ async function stopServer() {
  */
 function checkStatus() {
   const pid = readPid();
-  
+
   if (!pid) {
-    console.log('❌ MCP server is not running (no PID file)');
+    console.warn('❌ MCP server is not running (no PID file)');
     return false;
   }
 
   if (isServerRunning(pid)) {
-    console.log(`✅ MCP server is running (PID: ${pid})`);
-    console.log(`   Server should be available at http://localhost:3000`);
+    console.warn(`✅ MCP server is running (PID: ${pid})`);
+    console.warn(`   Server should be available at http://localhost:3000`);
     return true;
   } else {
-    console.log(`❌ MCP server PID file exists but process is not running (stale PID)`);
+    console.warn(`❌ MCP server PID file exists but process is not running (stale PID)`);
     deletePid();
     return false;
   }
@@ -348,7 +348,7 @@ async function main() {
         checkStatus();
         break;
       default:
-        console.log(`
+        console.warn(`
 MCP Server Management
 
 Usage:

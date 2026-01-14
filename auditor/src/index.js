@@ -2,7 +2,7 @@
 
 /**
  * PatternFly MCP Auditor - Main Entry Point
- * 
+ *
  * Containerized consistency auditor for PatternFly MCP server.
  * Runs consistency tests using an embedded model (node-llama-cpp).
  */
@@ -33,7 +33,7 @@ function parseArgs() {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--config' && args[i + 1]) {
       config.configPath = args[++i];
     } else if (arg === '--mcp-url' && args[i + 1]) {
@@ -57,7 +57,7 @@ function parseArgs() {
  * Print help message
  */
 function printHelp() {
-  console.log(`
+  console.warn(`
 PatternFly MCP Auditor
 
 Usage:
@@ -126,7 +126,7 @@ function mergeConfig(config, cliArgs) {
  * Main execution
  */
 async function main() {
-  console.log('🔍 PatternFly MCP Auditor\n');
+  console.warn('🔍 PatternFly MCP Auditor\n');
 
   // Set up signal handlers for graceful shutdown
   let isShuttingDown = false;
@@ -135,25 +135,25 @@ async function main() {
 
   const handleShutdown = async (signal) => {
     if (isShuttingDown) {
-      console.log('\n⚠️  Force shutdown...');
+      console.warn('\n⚠️  Force shutdown...');
       process.exit(130);
     }
     isShuttingDown = true;
-    console.log(`\n\n⚠️  Received ${signal}. Shutting down gracefully...`);
-    
+    console.warn(`\n\n⚠️  Received ${signal}. Shutting down gracefully...`);
+
     // Signal the audit to stop
     abortController.abort();
-    
+
     if (auditResults) {
-      console.log('💾 Saving partial results...');
+      console.warn('💾 Saving partial results...');
       try {
         await generateReports(auditResults, auditResults.config);
-        console.log('✅ Partial results saved');
+        console.warn('✅ Partial results saved');
       } catch (err) {
         console.error('❌ Failed to save partial results:', err.message);
       }
     }
-    
+
     process.exit(130); // 128 + 2 (SIGINT)
   };
 
@@ -164,7 +164,7 @@ async function main() {
   const cliArgs = parseArgs();
 
   // Load configuration
-  console.log('📋 Loading configuration...');
+  console.warn('📋 Loading configuration...');
   let config = loadConfig(cliArgs.configPath);
   config = mergeConfig(config, cliArgs);
 
@@ -174,22 +174,22 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`   MCP Server: ${config.mcp.url}`);
-  console.log(`   Runs: ${config.audit.runs}`);
-  console.log(`   Baseline Questions: ${config.questions?.baseline?.length || 0}`);
-  console.log(`   PF-MCP Questions: ${config.questions?.['pf-mcp']?.length || 0}\n`);
+  console.warn(`   MCP Server: ${config.mcp.url}`);
+  console.warn(`   Runs: ${config.audit.runs}`);
+  console.warn(`   Baseline Questions: ${config.questions?.baseline?.length || 0}`);
+  console.warn(`   PF-MCP Questions: ${config.questions?.['pf-mcp']?.length || 0}\n`);
 
   try {
     // Run audit
-    console.log('🚀 Starting audit...\n');
+    console.warn('🚀 Starting audit...\n');
     let results;
     try {
       results = await runAudit(config, abortController.signal);
       auditResults = results; // Store for potential shutdown
-      
+
       // Check if we were interrupted
       if (abortController.signal.aborted) {
-        console.log('\n⚠️  Audit was interrupted. Partial results saved above.');
+        console.warn('\n⚠️  Audit was interrupted. Partial results saved above.');
         process.exit(130);
       }
     } catch (error) {
@@ -200,12 +200,12 @@ async function main() {
       }
       // Handle abort errors
       if (error.name === 'AbortError' || abortController.signal.aborted) {
-        console.log('\n⚠️  Audit was interrupted.');
+        console.warn('\n⚠️  Audit was interrupted.');
         if (auditResults) {
-          console.log('💾 Saving partial results...');
+          console.warn('💾 Saving partial results...');
           try {
             await generateReports(auditResults, auditResults.config);
-            console.log('✅ Partial results saved');
+            console.warn('✅ Partial results saved');
           } catch (err) {
             console.error('❌ Failed to save partial results:', err.message);
           }
@@ -216,23 +216,23 @@ async function main() {
     }
 
     // Generate reports
-    console.log('\n📊 Generating reports...');
+    console.warn('\n📊 Generating reports...');
     const reportFiles = await generateReports(results, config);
 
     // Print summary
-    console.log('\n✅ Audit complete!');
+    console.warn('\n✅ Audit complete!');
     const pfMcpScore = (results.analysis.pfMcp?.consistencyScore * 100 || 0).toFixed(1);
     const overallScore = (results.analysis.overall.consistencyScore * 100).toFixed(1);
     const baselineScore = (results.analysis.baseline?.consistencyScore * 100 || 0).toFixed(1);
-    
-    console.log(`\n📊 Consistency Scores:`);
-    console.log(`   🎯 PF-MCP (Primary): ${pfMcpScore}%`);
-    console.log(`   📊 Overall (All): ${overallScore}%`);
-    console.log(`   📈 Baseline: ${baselineScore}%`);
-    console.log(`   Consistent Runs: ${results.analysis.overall.consistentRuns}/${config.audit.runs}`);
-    console.log(`   Reports generated:`);
+
+    console.warn(`\n📊 Consistency Scores:`);
+    console.warn(`   🎯 PF-MCP (Primary): ${pfMcpScore}%`);
+    console.warn(`   📊 Overall (All): ${overallScore}%`);
+    console.warn(`   📈 Baseline: ${baselineScore}%`);
+    console.warn(`   Consistent Runs: ${results.analysis.overall.consistentRuns}/${config.audit.runs}`);
+    console.warn(`   Reports generated:`);
     reportFiles.forEach(file => {
-      console.log(`     - ${file}`);
+      console.warn(`     - ${file}`);
     });
 
     // Clear shutdown handlers since we're done
@@ -241,10 +241,10 @@ async function main() {
 
     // Exit with error code if inconsistencies found
     if (results.analysis.overall.inconsistentRuns > 0) {
-      console.log('\n⚠️  Inconsistencies detected!');
+      console.warn('\n⚠️  Inconsistencies detected!');
       process.exit(1);
     } else {
-      console.log('\n✅ All tests consistent!');
+      console.warn('\n✅ All tests consistent!');
       process.exit(0);
     }
   } catch (error) {
