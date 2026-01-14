@@ -109,7 +109,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - To browse all available components use "searchPatternFlyDocs" with a wildcard search all ("*").'
+            '  - To browse all available components use "searchPatternFlyDocs" with a search all ("*").'
           )
         }]
       };

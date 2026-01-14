@@ -217,7 +217,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - Use a wildcard search all ("*") to find all available components.'
+            '  - Use a search all ("*") to find all available components.'
           )
         }]
       };
@@ -249,7 +249,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
           '',
           '**Important**:',
           '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
-          '  - Use a wildcard search all ("*") to find all available components.'
+          '  - Use a search all ("*") to find all available components.'
         )
       }]
     };
