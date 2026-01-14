@@ -217,7 +217,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
             '---',
             '',
             '**Important**:',
-            '  - Use a wildcard search all ("*") to find all available components.'
+            '  - Use a search all ("*") to find all available components.'
           )
         }]
       };
@@ -249,7 +249,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
           '',
           '**Important**:',
           '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
-          '  - Use a wildcard search all ("*") to find all available components.'
+          '  - Use a search all ("*") to find all available components.'
         )
       }]
     };
@@ -258,15 +258,15 @@ const searchPatternFlyDocsTool = (): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: `Search for PatternFly components by name. Supports case-insensitive partial and wildcard all ("*") matches.
-
-      **Returns**:
-        - Component names matching the search query
-        - Documentation URLs for each component
+      description: `Search PatternFly components and get component names with documentation URLs. Supports case-insensitive partial and all ("*") matches.
 
       **Usage**:
-        1. Provide a "searchQuery" to find PatternFly documentation URLs and component names.
-        2. Use the returned component names or URLs with the "usePatternFlyDocs" tool to fetch full documentation and JSON schemas.
+        1. Input a "searchQuery" to find PatternFly documentation URLs and component names.
+        2. Use the returned component names OR URLs with the "usePatternFlyDocs" tool to get markdown documentation and component JSON schemas.
+
+      **Returns**:
+        - Component names that can be used with "usePatternFlyDocs"
+        - Documentation URLs that can be used with "usePatternFlyDocs"
       `,
       inputSchema: {
         searchQuery: z.string().describe('Full or partial component name to search for (e.g., "button", "table", "*")')
