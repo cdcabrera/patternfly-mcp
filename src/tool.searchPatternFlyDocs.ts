@@ -262,7 +262,7 @@ const searchPatternFlyDocsTool = (): McpTool => {
 
       **Usage**:
         1. Input a "searchQuery" to find PatternFly documentation URLs and component names.
-        2. Use the returned component names OR URLs with the "usePatternFlyDocs" tool to fetch full documentation and JSON schemas.
+        2. Use the returned component names OR URLs with the "usePatternFlyDocs" tool to get markdown documentation and component JSON schemas.
 
       **Returns**:
         - Component names matching the search query
