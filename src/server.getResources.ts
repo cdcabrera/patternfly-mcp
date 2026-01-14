@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
+import { normalizeString } from './server.search';
 
 /**
  * Read a local file and return its contents as a string
@@ -68,25 +69,18 @@ const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptio
 /**
  * Normalize inputs, load all in parallel, and return a joined string.
  *
- * @param inputs
- * @param options
+ * @note Remember to limit the number of docs to load to avoid OOM.
+ * @param inputs - List of paths or URLs to load
+ * @param options - Optional options
  */
 const processDocsFunction = async (
   inputs: string[],
   options = getOptions()
 ) => {
-  const seen = new Set<string>();
-  const list = inputs
-    .map(str => String(str).trim())
-    .filter(Boolean)
-    .filter(str => {
-      if (seen.has(str)) {
-        return false;
-      }
-      seen.add(str);
-
-      return true;
-    });
+  const uniqueInputs = new Map(
+    inputs.map(input => [normalizeString.memo(input), input.trim()])
+  );
+  const list = Array.from(uniqueInputs.values()).slice(0, options.maxDocsToLoad).filter(Boolean);
 
   const loadOne = async (pathOrUrl: string) => {
     const isUrl = options.urlRegex.test(pathOrUrl);

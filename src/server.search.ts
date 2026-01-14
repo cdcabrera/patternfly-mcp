@@ -71,7 +71,7 @@ const normalizeString: NormalizeString = (str: string) => String(str || '')
 /**
  * Memoized version of normalizeString
  */
-normalizeString.memo = memo(normalizeString, { cacheLimit: 25 });
+normalizeString.memo = memo(normalizeString, { cacheLimit: 50 });
 
 /**
  * Find the closest match using fastest-levenshtein's closest function.

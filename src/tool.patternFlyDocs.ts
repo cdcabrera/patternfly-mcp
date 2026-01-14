@@ -8,6 +8,7 @@ import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { setComponentToDocsMap, searchComponents } from './tool.searchPatternFlyDocs';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { log } from './logger';
 
 /**
  * Get the component schema from @patternfly/patternfly-component-schemas.
@@ -60,7 +61,13 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const updatedUrlList = isUrlList ? urlList : [];
+    const updatedUrlList = isUrlList ? urlList.slice(0, options.recommendedMaxDocsToLoad) : [];
+
+    if (isUrlList && urlList.length > options.recommendedMaxDocsToLoad) {
+      log.warn(
+        `usePatternFlyDocs: urlList truncated from ${urlList.length} to ${options.recommendedMaxDocsToLoad} items.`
+      );
+    }
 
     if (name) {
       const { exactMatch, searchResults } = searchComponents.memo(name);
@@ -156,14 +163,14 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       description: `Get markdown documentation and component JSON schemas for PatternFly components.
 
       **Usage**:
-        1. Input a component name (e.g., "Button") OR a list of documentation URLs (typically from searchPatternFlyDocs results).
+        1. Input a component name (e.g., "Button") OR a list of up to ${options.recommendedMaxDocsToLoad} documentation URLs (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
         - Component JSON schemas, if available
       `,
       inputSchema: {
-        urlList: z.array(z.string()).optional().describe('The list of URLs to fetch the documentation from'),
+        urlList: z.array(z.string()).optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad}`),
         name: z.string().optional().describe('The name of a PatternFly component to fetch documentation for (e.g., "Button", "Table")')
       }
     },
