@@ -3,7 +3,7 @@
 audit:
   runs: 5                    # Number of audit runs
   timeout: 30000             # Per-question timeout (ms)
-  
+
 mcp:
   url: "http://localhost:3000"  # MCP server URL (HTTP mode)
   timeout: 10000             # MCP request timeout (ms)
@@ -31,20 +31,20 @@ questions:
     - id: "baseline-5"
       prompt: "What is the purpose of version control systems?"
       category: "technology"
-  
+
   pf-mcp:
     - id: "pf-mcp-1"
       prompt: "What tools and resources are available in the PatternFly MCP server? List all available tools and resources."
       category: "tooling"
       expectedTool: "usePatternFlyDocs"
     - id: "pf-mcp-2"
-      prompt: "How do I use the usePatternFlyDocs tool to fetch PatternFly documentation?"
+      prompt: "How do you use the usePatternFlyDocs tool?"
       category: "tooling"
       expectedTool: "usePatternFlyDocs"
     - id: "pf-mcp-3"
-      prompt: "What is the PatternFly componentSchemas tool and how do I use it to get PatternFly component prop definitions?"
+      prompt: "What is the PatternFly searchPatternFlyDocs tool and how do you use it?"
       category: "tooling"
-      expectedTool: "componentSchemas"
+      expectedTool: "searchPatternFlyDocs"
 
 interjection:
   strategy: "random"         # "random" | "even" | "weighted"

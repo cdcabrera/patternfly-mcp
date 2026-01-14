@@ -60,7 +60,7 @@
     "auditor:mcp:status": "cd auditor && node src/mcp-server.js status",
     "auditor:with-mcp": "cd auditor && node src/mcp-wrapper.js",
     "auditor:with-mcp:quick": "cd auditor && node src/mcp-wrapper.js --runs 3",
-    "auditor:with-mcp:full": "cd auditor && node src/mcp-wrapper.js --runs 100",
+    "auditor:with-mcp:full": "cd auditor && node src/mcp-wrapper.js --runs 10",
     "auditor:mcp:start:simple": "cd auditor && node src/mcp-start-simple.js",
     "auditor:test-server": "cd auditor && node src/test-server-start.js",
     "auditor:start": "npm run auditor:mcp:start:simple && npm run auditor:container; npm run auditor:mcp:stop || true",

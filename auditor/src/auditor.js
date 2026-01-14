@@ -52,13 +52,13 @@ function getDefaultPfMcpQuestions() {
     },
     {
       id: 'pf-mcp-2',
-      prompt: 'How do I use the usePatternFlyDocs tool to fetch PatternFly documentation?',
+      prompt: 'How do you use the usePatternFlyDocs tool to fetch PatternFly documentation?',
       category: 'tooling',
       expectedTool: 'usePatternFlyDocs'
     },
     {
       id: 'pf-mcp-3',
-      prompt: 'What is the PatternFly componentSchemas tool and how do I use it to get PatternFly component prop definitions?',
+      prompt: 'What is the PatternFly searchPatternFlyDocs tool and what can it be used for?',
       category: 'tooling',
       expectedTool: 'componentSchemas'
     }
