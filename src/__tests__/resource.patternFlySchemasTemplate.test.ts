@@ -69,7 +69,12 @@ describe('patternFlySchemasTemplateResource, callback', () => {
   });
 
   it('should handle missing exact match and missing schema errors', async () => {
-    mockSearchComponents.mockReturnValue({ isSearchWildCardAll: false, exactMatch: undefined, searchResults: [] });
+    mockSearchComponents.mockReturnValue({
+      isSearchWildCardAll: false,
+      firstExactMatch: undefined,
+      exactMatches: [],
+      searchResults: []
+    });
     mockGetComponentSchema.mockReturnValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
@@ -83,7 +88,8 @@ describe('patternFlySchemasTemplateResource, callback', () => {
   it('should handle exact match but missing schema errors', async () => {
     mockSearchComponents.mockReturnValue({
       isSearchWildCardAll: false,
-      exactMatch: { item: 'Button', urls: [] } as any,
+      firstExactMatch: undefined,
+      exactMatches: [{ item: 'Button', urls: [] } as any],
       searchResults: []
     });
     mockGetComponentSchema.mockReturnValue(undefined as any);

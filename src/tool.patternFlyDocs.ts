@@ -70,9 +70,9 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (name) {
-      const { exactMatch, searchResults } = searchComponents.memo(name);
+      const { exactMatches, searchResults } = searchComponents.memo(name);
 
-      if (exactMatch === undefined || exactMatch.urls.length === 0) {
+      if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
@@ -84,7 +84,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         );
       }
 
-      updatedUrlList.push(...exactMatch.urls);
+      updatedUrlList.push(...exactMatches.flatMap(match => match.urls));
     }
 
     const docs = [];

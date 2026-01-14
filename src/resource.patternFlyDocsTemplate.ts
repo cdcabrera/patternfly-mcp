@@ -51,9 +51,9 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 
       const docResults = [];
       const docs = [];
-      const { exactMatch, searchResults } = searchComponents.memo(name);
+      const { exactMatches, searchResults } = searchComponents.memo(name);
 
-      if (exactMatch === undefined || exactMatch.urls.length === 0) {
+      if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
@@ -66,7 +66,8 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       }
 
       try {
-        const processedDocs = await memoProcess(exactMatch.urls);
+        const exactMatchesUrls = exactMatches.flatMap(match => match.urls);
+        const processedDocs = await memoProcess(exactMatchesUrls);
 
         docs.push(...processedDocs);
       } catch (error) {

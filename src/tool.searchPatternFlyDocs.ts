@@ -132,7 +132,8 @@ setComponentToDocsMap.memo = memo(setComponentToDocsMap);
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all components
- *   - `exactMatch`: An exact match within fuzzy search results
+ *   - `firstExactMatch`: First exact match within fuzzy search results
+ *   - `exactMatches`: All exact matches within fuzzy search results
  *   - `searchResults`: Fuzzy search results
  */
 const searchComponents = (searchQuery: string, { names = componentNames, allowWildCardAll = false } = {}) => {
@@ -170,13 +171,14 @@ const searchComponents = (searchQuery: string, { names = componentNames, allowWi
     };
   });
 
-  const exactMatch = searchResults.find(result => result.matchType === 'exact');
-  const [extendedExactMatch] = extendResults(exactMatch ? [exactMatch] : []);
+  const exactMatches = searchResults.filter(result => result.matchType === 'exact');
+  const extendedExactMatches = extendResults(exactMatches);
   const extendedSearchResults = extendResults(searchResults);
 
   return {
     isSearchWildCardAll,
-    exactMatch: extendedExactMatch,
+    firstExactMatch: extendedExactMatches[0],
+    exactMatches: extendedExactMatches,
     searchResults: extendedSearchResults
   };
 };

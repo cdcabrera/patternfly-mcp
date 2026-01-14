@@ -48,11 +48,18 @@ const patternFlySchemasTemplateResource = (): McpResource => [
       );
     }
 
-    const { exactMatch, searchResults } = searchComponents.memo(name, { names: pfComponentNames });
+    const { exactMatches, searchResults } = searchComponents.memo(name, { names: pfComponentNames });
     let result: ComponentSchema;
 
-    if (exactMatch) {
-      result = await getComponentSchema.memo(exactMatch.item);
+    if (exactMatches.length > 0) {
+      for (const match of exactMatches) {
+        const schema = await getComponentSchema.memo(match.item);
+
+        if (schema) {
+          result = schema;
+          break;
+        }
+      }
     }
 
     if (result === undefined) {
@@ -60,7 +67,7 @@ const patternFlySchemasTemplateResource = (): McpResource => [
       const suggestionMessage = suggestions.length
         ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
         : 'No similar components found.';
-      const foundNotFound = exactMatch ? 'found but JSON schema not available.' : 'not found.';
+      const foundNotFound = exactMatches.length ? 'found but JSON schema not available.' : 'not found.';
 
       throw new McpError(
         ErrorCode.InvalidParams,
