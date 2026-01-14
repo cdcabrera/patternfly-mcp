@@ -5,7 +5,7 @@ import { processDocsFunction } from './server.getResources';
 import { searchComponents } from './tool.searchPatternFlyDocs';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
-import {stringJoin} from "./server.helpers";
+import { stringJoin } from './server.helpers';
 
 /**
  * Name of the resource template.

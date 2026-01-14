@@ -1,11 +1,12 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
+import { getComponentSchema } from '../tool.patternFlyDocs';
 import { patternFlySchemasTemplateResource } from '../resource.patternFlySchemasTemplate';
 import { searchComponents } from '../tool.searchPatternFlyDocs';
 import { isPlainObject } from '../server.helpers';
 
 // Mock dependencies
 jest.mock('../tool.searchPatternFlyDocs');
+jest.mock('../tool.patternFlyDocs');
 jest.mock('../server.caching', () => ({
   memo: jest.fn(fn => fn)
 }));
@@ -69,7 +70,7 @@ describe('patternFlySchemasTemplateResource, callback', () => {
 
   it('should handle missing exact match and missing schema errors', async () => {
     mockSearchComponents.mockReturnValue({ isSearchWildCardAll: false, exactMatch: undefined, searchResults: [] });
-    mockGetComponentSchema.mockRejectedValue(undefined);
+    mockGetComponentSchema.mockReturnValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');
@@ -85,7 +86,7 @@ describe('patternFlySchemasTemplateResource, callback', () => {
       exactMatch: { item: 'Button', urls: [] } as any,
       searchResults: []
     });
-    mockGetComponentSchema.mockRejectedValue(undefined);
+    mockGetComponentSchema.mockReturnValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');
