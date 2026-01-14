@@ -4,14 +4,7 @@
  */
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import {
-  ResultSchema,
-  // ReadResourceResultSchema,
-  // ListResourcesResultSchema,
-  // ListResourceTemplatesResultSchema,
-  LoggingMessageNotificationSchema,
-  type LoggingLevel
-} from '@modelcontextprotocol/sdk/types.js';
+import { ResultSchema, LoggingMessageNotificationSchema, type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
 import { parseCliOptions } from '../../src/options';
 
 export type { Request as RpcRequest } from '@modelcontextprotocol/sdk/types.js';
