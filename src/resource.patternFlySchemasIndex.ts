@@ -1,5 +1,6 @@
 import { componentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpResource } from './server';
+import { stringJoin } from './server.helpers';
 
 /**
  * Name of the resource.
@@ -33,7 +34,12 @@ const patternFlySchemasIndexResource = (): McpResource => [
     contents: [{
       uri: 'patternfly://schemas/index',
       mimeType: 'text/markdown',
-      text: `# PatternFly Component Names Index\n\n${componentNames.join('\n')}`
+      text: stringJoin.newline(
+        '# PatternFly Component Names Index',
+        '',
+        '',
+        ...componentNames
+      )
     }]
   })
 ];

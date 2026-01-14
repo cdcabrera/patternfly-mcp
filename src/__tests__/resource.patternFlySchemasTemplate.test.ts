@@ -67,15 +67,31 @@ describe('patternFlySchemasTemplateResource, callback', () => {
     await expect(callback(uri, variables)).rejects.toThrow(error);
   });
 
-  it('should handle schema specific errors', async () => {
+  it('should handle missing exact match and missing schema errors', async () => {
     mockSearchComponents.mockReturnValue({ isSearchWildCardAll: false, exactMatch: undefined, searchResults: [] });
-    mockGetComponentSchema.mockRejectedValue(new Error('Schema not found'));
+    mockGetComponentSchema.mockRejectedValue(undefined);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');
     const variables = { name: 'DolorSitAmet' };
 
     await expect(handler(uri, variables)).rejects.toThrow(McpError);
-    await expect(handler(uri, variables)).rejects.toThrow('No similar components found');
+    await expect(handler(uri, variables)).rejects.toThrow('Component "DolorSitAmet" not found');
+  });
+
+  it('should handle exact match but missing schema errors', async () => {
+    mockSearchComponents.mockReturnValue({
+      isSearchWildCardAll: false,
+      exactMatch: { item: 'Button', urls: [] } as any,
+      searchResults: []
+    });
+    mockGetComponentSchema.mockRejectedValue(undefined);
+
+    const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
+    const uri = new URL('patternfly://schemas/DolorSitAmet');
+    const variables = { name: 'Button' };
+
+    await expect(handler(uri, variables)).rejects.toThrow(McpError);
+    await expect(handler(uri, variables)).rejects.toThrow('Component "Button" found');
   });
 });

@@ -5,6 +5,7 @@ import { processDocsFunction } from './server.getResources';
 import { searchComponents } from './tool.searchPatternFlyDocs';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
+import {stringJoin} from "./server.helpers";
 
 /**
  * Name of the resource template.
@@ -76,11 +77,11 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       }
 
       for (const doc of docs) {
-        docResults.push([
+        docResults.push(stringJoin.newline(
           `# Documentation from ${doc.resolvedPath || doc.path}`,
           '',
           doc.content
-        ].join('\n'));
+        ));
       }
 
       return {

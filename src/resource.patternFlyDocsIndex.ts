@@ -3,6 +3,7 @@ import { LAYOUT_DOCS } from './docs.layout';
 import { CHART_DOCS } from './docs.chart';
 import { getLocalDocs } from './docs.local';
 import { type McpResource } from './server';
+import { stringJoin } from './server.helpers';
 
 /**
  * Name of the resource.
@@ -33,7 +34,7 @@ const patternFlyDocsIndexResource = (): McpResource => [
   URI_TEMPLATE,
   CONFIG,
   async () => {
-    const allDocs = [
+    const allDocs = stringJoin.newline(
       '# PatternFly Documentation Index',
       '',
       '## Components',
@@ -47,7 +48,7 @@ const patternFlyDocsIndexResource = (): McpResource => [
       '',
       '## Local Documentation',
       ...getLocalDocs()
-    ].join('\n');
+    );
 
     return {
       contents: [

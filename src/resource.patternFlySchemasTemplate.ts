@@ -60,10 +60,11 @@ const patternFlySchemasTemplateResource = (): McpResource => [
       const suggestionMessage = suggestions.length
         ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
         : 'No similar components found.';
+      const foundNotFound = exactMatch ? 'found but JSON schema not available.' : 'not found.';
 
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Component "${name.trim()}" not found. ${suggestionMessage}`
+        `Component "${name.trim()}" ${foundNotFound} ${suggestionMessage}`
       );
     }
 
