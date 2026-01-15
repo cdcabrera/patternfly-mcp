@@ -170,7 +170,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         - Component JSON schemas, if available
       `,
       inputSchema: {
-        urlList: z.array(z.string()).optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad} at a time`),
+        urlList: z.array(z.string()).max(options.recommendedMaxDocsToLoad).optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad} at a time`),
         name: z.string().optional().describe('The name of a PatternFly component to fetch documentation for (e.g., "Button", "Table")')
       }
     },
