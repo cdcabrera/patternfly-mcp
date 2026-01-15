@@ -164,6 +164,13 @@ const freezeObject = <TBase>(obj: TBase, _seen?: WeakSet<object>): TBase => {
 };
 
 /**
+ * Check if "is an Async function".
+ *
+ * @param obj
+ */
+const isAsync = (obj: unknown) => /^\[object (Async|AsyncFunction)]/.test(Object.prototype.toString.call(obj));
+
+/**
  * Check if "is a Promise", "Promise like".
  *
  * @param obj - Object, or otherwise, to check
@@ -339,16 +346,49 @@ stringJoin.filtered = (...args: unknown[]) => stringJoin(args, { filterFalsyValu
  */
 stringJoin.newlineFiltered = (...args: unknown[]) => stringJoin(args, { sep: '\n', filterFalsyValues: true });
 
+/**
+ * Wrap a function, or another Promise in a timeout, returning a
+ * Promise that either resolves, rejects, or rejects after the timeout.
+ *
+ * @param func - Function or Promise to wrap
+ * @param settings - Timeout settings
+ * @param settings.timeout - Timeout in milliseconds (default: `10_000`)
+ * @param settings.errorMessage - Error message to use if timeout occurs (default: `'Call timed out'`)
+ */
+const timeoutFunction = async <TReturn>(
+  func: Promise<TReturn> | (() => TReturn | Promise<TReturn>),
+  { timeout = 10_000, errorMessage = 'Call timed out' }: { timeout?: number, errorMessage?: string } = {}
+) => {
+  let funcTimer: NodeJS.Timeout | undefined;
+  const timer = () => new Promise<never>((_, reject) => {
+    funcTimer = setTimeout(reject, timeout, new Error(errorMessage));
+    funcTimer?.unref();
+  });
+
+  try {
+    const updatedFunc = async () =>
+      (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as () => TReturn | Promise<TReturn>)());
+
+    return await Promise.race([updatedFunc(), timer()]);
+  } finally {
+    if (funcTimer) {
+      clearTimeout(funcTimer);
+    }
+  }
+};
+
 export {
   freezeObject,
   generateHash,
   hashCode,
   hashNormalizeValue,
+  isAsync,
   isObject,
   isPlainObject,
   isPromise,
   isReferenceLike,
   mergeObjects,
   portValid,
-  stringJoin
+  stringJoin,
+  timeoutFunction
 };

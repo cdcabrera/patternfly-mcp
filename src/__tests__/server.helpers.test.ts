@@ -2,12 +2,14 @@ import {
   freezeObject,
   generateHash,
   hashCode,
+  isAsync,
   isPlainObject,
   isPromise,
   isReferenceLike,
   mergeObjects,
   portValid,
-  stringJoin
+  stringJoin,
+  timeoutFunction
 } from '../server.helpers';
 
 describe('freezeObject', () => {
@@ -366,6 +368,28 @@ describe('hashCode', () => {
   });
 });
 
+describe('isAsync', () => {
+  it.each([
+    {
+      description: 'Promise.resolve',
+      param: Promise.resolve(),
+      value: false
+    },
+    {
+      description: 'async function',
+      param: async () => {},
+      value: true
+    },
+    {
+      description: 'non-promise',
+      param: () => 'lorem',
+      value: false
+    }
+  ])('should determine an async function for $description', ({ param, value }) => {
+    expect(isAsync(param)).toBe(value);
+  });
+});
+
 describe('isPromise', () => {
   it.each([
     {
@@ -707,5 +731,65 @@ describe('stringJoin', () => {
     }
   ])('should join values, $description', ({ args, settings }) => {
     expect(stringJoin(args, settings)).toMatchSnapshot();
+  });
+});
+
+describe('timeoutFunction', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it.each([
+    {
+      description: 'non-promise',
+      func: () => 'lorem ipsum',
+      expected: 'lorem ipsum'
+    },
+    {
+      description: 'async function',
+      func: async () => 'dolor sit',
+      expected: 'dolor sit'
+    },
+    {
+      description: 'promise',
+      func: Promise.resolve('lorem ipsum'),
+      expected: 'lorem ipsum'
+    },
+    {
+      description: 'returned async promise',
+      func: async () => Promise.resolve('dolor ipsum'),
+      expected: 'dolor ipsum'
+    },
+    {
+      description: 'returned promise',
+      func: () => Promise.resolve('lorem amet'),
+      expected: 'lorem amet'
+    }
+  ])('should timeout a function, $description', async ({ func, expected }) => {
+    await expect(timeoutFunction(func)).resolves.toBe(expected);
+  });
+
+  it.each([
+    {
+      description: 'promise',
+      func: Promise.reject(new Error('lorem ipsum')),
+      expected: 'lorem ipsum'
+    },
+    {
+      description: 'returned async promise',
+      func: async () => Promise.reject(new Error('dolor ipsum')),
+      expected: 'dolor ipsum'
+    },
+    {
+      description: 'returned promise',
+      func: () => Promise.reject(new Error('lorem amet')),
+      expected: 'lorem amet'
+    }
+  ])('should timeout a function, $description', async ({ func, expected }) => {
+    await expect(timeoutFunction(func)).rejects.toThrow(expected);
   });
 });

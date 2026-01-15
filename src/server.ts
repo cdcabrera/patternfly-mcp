@@ -23,7 +23,7 @@ import {
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
-import { isPlainObject } from './server.helpers';
+import { isPlainObject, timeoutFunction } from './server.helpers';
 import { createServerStats, type Stats } from './server.stats';
 import { stat } from './stats';
 
@@ -285,6 +285,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
       log.info(`Registered resource: ${name}`);
 
+      // Note: uri is being cast as any to bypass a type mismatch introduced at the MCP SDK level. Rereview when SDK is updated.
       server?.registerResource(name, uri as any, config, (...args: unknown[]) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
@@ -364,7 +365,13 @@ const runServer = async (options: ServerOptions = getOptions(), {
       httpHandle = await startHttpTransport(server, options);
     } else {
       transport = new StdioServerTransport();
-      await server.connect(transport);
+
+      await timeoutFunction(
+        server.connect(transport),
+        {
+          errorMessage: 'Transport connection timed out.'
+        }
+      );
     }
 
     if (!httpHandle && !transport) {
