@@ -2,13 +2,12 @@ import { readFile } from 'node:fs/promises';
 import {
   readLocalFileFunction,
   fetchUrlFunction,
-  resolveLocalPathFunction,
   processDocsFunction,
   promiseQueue,
-  loadFileFetch
+  loadFileFetch,
+  resolveLocalPathFunction
 } from '../server.getResources';
 import { type GlobalOptions } from '../options';
-import { DEFAULT_OPTIONS } from '../options.defaults';
 
 // Mock dependencies
 jest.mock('node:fs/promises');
@@ -90,23 +89,23 @@ describe('fetchUrlFunction', () => {
 describe('resolveLocalPathFunction', () => {
   it.each([
     {
-      description: 'with docsHost true',
-      options: {
-        docsHost: true,
-        llmsFilesPath: '/llms-files'
-      },
-      path: 'react-core/6.0.0/llms.txt'
+      description: 'basic',
+      path: 'lorem-ipsum.md'
     },
     {
-      description: 'with docsHost false',
-      options: {
-        docsHost: false,
-        llmsFilesPath: '/llms-files'
-      },
-      path: 'documentation/README.md'
+      description: 'url, http',
+      path: 'http://example.com/dolor-sit.md'
+    },
+    {
+      description: 'url, https',
+      path: 'https://example.com/dolor-sit.md'
+    },
+    {
+      description: 'url, file',
+      path: 'file://someDirectory/dolor-sit.md'
     }
-  ])('should return a consistent path, $description', ({ path, options }) => {
-    const result = resolveLocalPathFunction(path, options as GlobalOptions);
+  ])('should return a consistent path, $description', ({ path }) => {
+    const result = resolveLocalPathFunction(path);
 
     expect(result).toMatchSnapshot();
   });
@@ -129,14 +128,13 @@ describe('loadFileFetch', () => {
       expectedIsFetch: true
     }
   ])('should attempt to load a file or fetch, $description', async ({ pathUrl, expectedIsFetch }) => {
-    const options = { urlRegex: DEFAULT_OPTIONS.urlRegex };
     const mockFetchCall = jest.fn().mockResolvedValue('content');
     const mockReadCall = jest.fn().mockResolvedValue('content');
 
     readLocalFileFunction.memo = mockReadCall;
     fetchUrlFunction.memo = mockFetchCall;
 
-    const result = await loadFileFetch(pathUrl, options as any);
+    const result = await loadFileFetch(pathUrl);
 
     expect(mockFetchCall).toHaveBeenCalledTimes(expectedIsFetch ? 1 : 0);
     expect(mockReadCall).toHaveBeenCalledTimes(expectedIsFetch ? 0 : 1);

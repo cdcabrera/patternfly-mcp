@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { isAbsolute, normalize, resolve } from 'node:path';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
+import { isUrl } from './server.helpers';
 
 /**
  * Read a local file and return its contents as a string
@@ -54,30 +55,39 @@ const fetchUrlFunction = async (url: string) => {
 fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptions.fetchUrl);
 
 /**
- * Resolve a local path depending on docs host flag
+ * Resolve a local path against a base directory.
+ * Ensures the resolved path stays within the intended base for security.
  *
- * @param relativeOrAbsolute
- * @param options
+ * @param path - Path to resolve. If it's relative, it will be resolved against the base directory.'
+ * @param options - Options
  */
-const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptions()) => {
-  const useHost = Boolean(options?.docsHost);
-  const base = options?.llmsFilesPath;
+const resolveLocalPathFunction = (path: string, options = getOptions()) => {
+  if (isUrl(path)) {
+    return path;
+  }
 
-  return (useHost && join(base, relativeOrAbsolute)) || relativeOrAbsolute;
+  const base = options.contextPath;
+  const resolved = isAbsolute(path) ? normalize(path) : resolve(base, path);
+
+  // Safety check: ensure the resolved path actually starts with the base directory
+  if (!resolved.startsWith(normalize(base))) {
+    throw new Error(`Access denied: path ${path} is outside of base directory ${base}`);
+  }
+
+  return resolved;
 };
 
 /**
  * Load a file from disk or `URL`, depending on the input type.
  *
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
- * @param options - Optional options.
  */
-const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
-  const isUrl = options.urlRegex.test(pathOrUrl);
-  const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
+const loadFileFetch = async (pathOrUrl: string) => {
+  const isUrlStr = isUrl(pathOrUrl);
+  const updatedPathOrUrl = (isUrlStr && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
   let content;
 
-  if (isUrl) {
+  if (isUrlStr) {
     content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else {
     content = await readLocalFileFunction.memo(updatedPathOrUrl);

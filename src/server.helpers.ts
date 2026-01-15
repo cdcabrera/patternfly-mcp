@@ -179,6 +179,21 @@ const isAsync = (obj: unknown) => /^\[object (Async|AsyncFunction)]/.test(Object
 const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.test(Object.prototype.toString.call(obj));
 
 /**
+ * Check if a value is a valid URL.
+ *
+ * @param str
+ */
+const isUrl = (str: unknown) => {
+  try {
+    new URL(str as any);
+
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Generate a hash from a string
  *
  * @param str
@@ -387,6 +402,7 @@ export {
   isPlainObject,
   isPromise,
   isReferenceLike,
+  isUrl,
   mergeObjects,
   portValid,
   stringJoin,
