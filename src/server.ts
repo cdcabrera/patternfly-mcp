@@ -371,8 +371,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
       throw new Error('No transport available');
     }
 
-    log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : 'stdio'} transport`);
     running = true;
+    log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : 'stdio'} transport`);
     statsTracker.setStats(httpHandle);
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
