@@ -67,6 +67,52 @@ const resolveLocalPathFunction = (relativeOrAbsolute: string, options = getOptio
 };
 
 /**
+ * Load a file from disk or `URL`, depending on the input type.
+ *
+ * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
+ * @param options - Optional options.
+ */
+const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+  const isUrl = options.urlRegex.test(pathOrUrl);
+  const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
+  let content;
+
+  if (isUrl) {
+    content = await fetchUrlFunction.memo(updatedPathOrUrl);
+  } else {
+    content = await readLocalFileFunction.memo(updatedPathOrUrl);
+  }
+
+  return { content, resolvedPath: updatedPathOrUrl };
+};
+
+/**
+ * Promise queue for `loadFileFetch`. Limit the number of concurrent promises.
+ *
+ * @param queue - List of paths or URLs to load
+ * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ */
+const promiseQueue = async (queue: string[], limit = 5) => {
+  const results = [];
+  const slidingQueue = new Set();
+
+  for (const item of queue) {
+    // Use a sliding window to limit the number of concurrent promises.
+    const promise = loadFileFetch(item).finally(() => slidingQueue.delete(promise));
+
+    results.push(promise);
+    slidingQueue.add(promise);
+
+    if (slidingQueue.size >= limit) {
+      // Silent fail if one promise fails to load, but keep processing the rest.
+      await Promise.race(slidingQueue).catch(() => {});
+    }
+  }
+
+  return Promise.allSettled(results);
+};
+
+/**
  * Normalize inputs, load all in parallel, and return a joined string.
  *
  * @note Remember to limit the number of docs to load to avoid OOM.
@@ -82,21 +128,7 @@ const processDocsFunction = async (
   );
   const list = Array.from(uniqueInputs.values()).slice(0, options.maxDocsToLoad).filter(Boolean);
 
-  const loadOne = async (pathOrUrl: string) => {
-    const isUrl = options.urlRegex.test(pathOrUrl);
-    const updatedPathOrUrl = (isUrl && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
-    let content;
-
-    if (isUrl) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl);
-    } else {
-      content = await readLocalFileFunction.memo(updatedPathOrUrl);
-    }
-
-    return { content, resolvedPath: updatedPathOrUrl };
-  };
-
-  const settled = await Promise.allSettled(list.map(item => loadOne(item)));
+  const settled = await promiseQueue(list);
   const docs: { content: string, path: string | undefined, resolvedPath: string | undefined, isSuccess: boolean }[] = [];
 
   settled.forEach((res, index) => {
@@ -127,4 +159,4 @@ const processDocsFunction = async (
   return docs;
 };
 
-export { readLocalFileFunction, fetchUrlFunction, resolveLocalPathFunction, processDocsFunction };
+export { fetchUrlFunction, loadFileFetch, processDocsFunction, promiseQueue, readLocalFileFunction, resolveLocalPathFunction };

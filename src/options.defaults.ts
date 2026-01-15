@@ -368,7 +368,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   llmsFilesPath: (process.env.NODE_ENV === 'local' && '/llms-files') || join(resolve(process.cwd()), 'llms-files'),
   logging: LOGGING_OPTIONS,
   maxDocsToLoad: 500,
-  recommendedMaxDocsToLoad: 150,
+  recommendedMaxDocsToLoad: 15,
   name: packageJson.name,
   nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
   pluginIsolation: 'strict',

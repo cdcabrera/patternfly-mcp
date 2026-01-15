@@ -163,14 +163,14 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       description: `Get markdown documentation and component JSON schemas for PatternFly components.
 
       **Usage**:
-        1. Input a component name (e.g., "Button") OR a list of up to ${options.recommendedMaxDocsToLoad} documentation URLs (typically from searchPatternFlyDocs results).
+        1. Input a component name (e.g., "Button") OR a list of up to ${options.recommendedMaxDocsToLoad} documentation URLs at a time (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
         - Component JSON schemas, if available
       `,
       inputSchema: {
-        urlList: z.array(z.string()).optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad}`),
+        urlList: z.array(z.string()).optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad} at a time`),
         name: z.string().optional().describe('The name of a PatternFly component to fetch documentation for (e.g., "Button", "Table")')
       }
     },

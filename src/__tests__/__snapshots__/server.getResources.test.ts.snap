@@ -68,6 +68,29 @@ exports[`processDocsFunction should process local and remote inputs, filter empt
 ]
 `;
 
+exports[`promiseQueue should execute promises in order: allSettled 1`] = `
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "content": "dolor-sit.md",
+      "resolvedPath": "dolor-sit.md",
+    },
+  },
+  {
+    "reason": "https://example.com/remote.md",
+    "status": "rejected",
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "content": "lorem-ipsum.md",
+      "resolvedPath": "lorem-ipsum.md",
+    },
+  },
+]
+`;
+
 exports[`resolveLocalPathFunction should return a consistent path, with docsHost false 1`] = `"documentation/README.md"`;
 
 exports[`resolveLocalPathFunction should return a consistent path, with docsHost true 1`] = `"/llms-files/react-core/6.0.0/llms.txt"`;

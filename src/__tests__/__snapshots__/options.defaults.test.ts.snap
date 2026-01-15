@@ -39,7 +39,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "loadTimeoutMs": 5000,
   },
   "pluginIsolation": "strict",
-  "recommendedMaxDocsToLoad": 150,
+  "recommendedMaxDocsToLoad": 15,
   "repoName": "patternfly-mcp",
   "resourceMemoOptions": {
     "default": {

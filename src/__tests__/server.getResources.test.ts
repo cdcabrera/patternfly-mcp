@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises';
-import { readLocalFileFunction, fetchUrlFunction, resolveLocalPathFunction, processDocsFunction } from '../server.getResources';
+import {
+  readLocalFileFunction,
+  fetchUrlFunction,
+  resolveLocalPathFunction,
+  processDocsFunction,
+  promiseQueue,
+  loadFileFetch
+} from '../server.getResources';
 import { type GlobalOptions } from '../options';
+import { DEFAULT_OPTIONS } from '../options.defaults';
 
 // Mock dependencies
 jest.mock('node:fs/promises');
@@ -101,6 +109,56 @@ describe('resolveLocalPathFunction', () => {
     const result = resolveLocalPathFunction(path, options as GlobalOptions);
 
     expect(result).toMatchSnapshot();
+  });
+});
+
+describe('loadFileFetch', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    {
+      description: 'with local file',
+      pathUrl: 'dolor-sit.md',
+      expectedIsFetch: false
+    },
+    {
+      description: 'with remote URL',
+      pathUrl: 'https://example.com/remote.md',
+      expectedIsFetch: true
+    }
+  ])('should attempt to load a file or fetch, $description', async ({ pathUrl, expectedIsFetch }) => {
+    const options = { urlRegex: DEFAULT_OPTIONS.urlRegex };
+    const mockFetchCall = jest.fn().mockResolvedValue('content');
+    const mockReadCall = jest.fn().mockResolvedValue('content');
+
+    readLocalFileFunction.memo = mockReadCall;
+    fetchUrlFunction.memo = mockFetchCall;
+
+    const result = await loadFileFetch(pathUrl, options as any);
+
+    expect(mockFetchCall).toHaveBeenCalledTimes(expectedIsFetch ? 1 : 0);
+    expect(mockReadCall).toHaveBeenCalledTimes(expectedIsFetch ? 0 : 1);
+    expect(result).toEqual({
+      content: 'content',
+      resolvedPath: expect.any(String)
+    });
+  });
+});
+
+describe('promiseQueue', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should execute promises in order', async () => {
+    readLocalFileFunction.memo = jest.fn().mockImplementation(path => Promise.resolve(path));
+    fetchUrlFunction.memo = jest.fn().mockImplementation(url => Promise.reject(url));
+
+    const pathUrlQueue = ['dolor-sit.md', 'https://example.com/remote.md', 'lorem-ipsum.md'];
+
+    await expect(promiseQueue(pathUrlQueue, 1)).resolves.toMatchSnapshot('allSettled');
   });
 });
 
