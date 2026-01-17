@@ -49,21 +49,24 @@ Git workflow is based on GitHub's fork and pull
 Development pull requests (PRs) should be opened against the default branch.
 
 > If your pull request work contains any of the following warning signs
+>  - has no related issue
 >  - ignores existing code style
->  - out of sync commits (is not rebased against the default branch)
+>  - out of sync commits (not rebased against the default branch)
 >  - poorly structured commits and messages
->  - any one commit relies on other commits to work at all, in the same request beyond "review requested updates"
+>  - any one commit relies on other commits to work (beyond "review requested updates")
 >  - dramatic file restructures that attempt complex behavior
 >  - missing, relaxed, or removed linting, typings, and tests
 >  - overly complex TypeScript generics or generally over-the-top typings
 >  - dramatic unit test snapshot updates
 >  - affects any file not directly associated with the issue being resolved
 >  - affects "many" files
+>  - contains or is a minor grammatical fix
 >
 > You will be asked to either:
+>  - open an issue instead of a PR
 >  - restructure your commits
 >  - break the work into multiple pull requests
->  - close the PR (as a last resort)
+>  - close the PR (typically, a last resort)
 
 #### Pull request commits, messaging
 
@@ -116,7 +119,7 @@ Basic code style guidelines are generally enforced by ESLint, but there are addi
 ### Testing
 Current testing is based on Jest.
 
-> A consideration for Vitest is being made for the near future.
+> A consideration for Vitest is being made for the near future after base functionality is complete.
 
 #### Unit tests
 
