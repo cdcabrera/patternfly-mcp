@@ -1,4 +1,4 @@
-# Development guide
+# Development usage
 
 Complete guide to using the PatternFly MCP Server for development including CLI and programmatic API usage.
 
@@ -12,19 +12,27 @@ Complete guide to using the PatternFly MCP Server for development including CLI 
 
 ### Available options
 
-| Flag                                  | Description                                      | Default              |
-|:--------------------------------------|:-------------------------------------------------|:---------------------|
-| `--http`                              | Enable HTTP transport mode                       | `false` (stdio mode) |
-| `--port <num>`                        | Port for HTTP transport                          | `8080`               |
-| `--host <string>`                     | Host to bind to                                  | `127.0.0.1`          |
-| `--allowed-origins <origins>`         | Comma-separated list of allowed CORS origins     | `none`               |
-| `--allowed-hosts <hosts>`             | Comma-separated list of allowed host headers     | `none`               |
-| `--tool <path>`                       | Path to external Tool Plugin (repeatable)        | `none`               |
-| `--plugin-isolation <none \| strict>` | Isolation preset for external tools-as-plugins   | `strict`             |
-| `--log-stderr`                        | Enable terminal logging                          | `false`              |
-| `--log-protocol`                      | Forward logs to MCP clients                      | `false`              |
-| `--log-level <level>`                 | Set log level (`debug`, `info`, `warn`, `error`) | `info`               |
-| `--verbose`                           | Shortcut for `--log-level debug`                 | `false`              |
+| Flag                                  | Description                                           | Default              |
+|:--------------------------------------|:------------------------------------------------------|:---------------------|
+| `--http`                              | Enable HTTP transport mode                            | `false` (stdio mode) |
+| `--port <num>`                        | Port for HTTP transport                               | `8080`               |
+| `--host <string>`                     | Host to bind to                                       | `127.0.0.1`          |
+| `--allowed-origins <origins>`         | Comma-separated list of allowed CORS origins          | `none`               |
+| `--allowed-hosts <hosts>`             | Comma-separated list of allowed host headers          | `none`               |
+| `--tool <path>`                       | Path to external Tool Plugin (repeatable)             | `none`               |
+| `--plugin-isolation <none \| strict>` | Isolation preset for external tools-as-plugins        | `strict`             |
+| `--log-stderr`                        | Enable terminal logging                               | `false`              |
+| `--log-protocol`                      | Forward logs to MCP clients                           | `false`              |
+| `--log-level <level>`                 | Set log level (`debug`, `info`, `warn`, `error`)      | `info`               |
+| `--verbose`                           | Shortcut for `--log-level debug`                      | `false`              |
+| `--docs-host`                         | **Disabled**, continued use will not break the server | `false`              |
+
+#### Notes
+- **Docs-host mode** - Docs-host mode has been disabled and will be removed in a future release. Its original purpose has been superseded by the move to MCP server resources.
+- **HTTP transport mode** - By default, the server uses `stdio`. Use the `--http` flag to enable HTTP transport.
+- **Logging** - The server uses a `diagnostics_channel`-based logger that keeps STDIO stdout pure by default.
+- **Progammatic API** - The server can also be used programmatically with options. See [Programmatic Usage](#programmatic-usage) for more details.
+- **Tool Plugins** - The server can load external tool plugins at startup. See [Tool Plugins](#tool-plugins) for more details. 
 
 ### Basic use scenarios
 
@@ -70,6 +78,59 @@ npx @modelcontextprotocol/inspector-cli \
 ```
 
 ## Programmatic usage
+
+### Server configuration options
+
+TBD
+
+### Core typings
+
+TBD
+
+### Embedding the Server
+
+You can embed the MCP server inside your application using the `start()` function and provide **Tool Modules** directly.
+
+```ts
+import { start, createMcpTool, type PfMcpInstance, type ToolModule } from '@patternfly/patternfly-mcp';
+
+const echoTool: ToolModule = createMcpTool({
+  name: 'echoAMessage',
+  description: 'Echo back the provided user message.',
+  inputSchema: {
+    type: 'object',
+    properties: { message: { type: 'string' } },
+    required: ['message']
+  },
+  handler: async (args: { message: string }) => ({ text: `You said: ${args.message}` })
+});
+
+const main = async () => {
+  const server: PfMcpInstance = await start({
+    toolModules: [
+      echoTool
+    ]
+  });
+
+  // Optional: observe refined server logs in‑process.
+  // We recommend getting in the habit of avoiding use of console.log and info, they pollute STDOUT.
+  server.onLog((event) => {
+    if (event.level !== 'debug') {
+      console.warn(`[${event.level}] ${event.msg || ''}`);
+    }
+  });
+
+  // Graceful shutdown
+  process.on('SIGINT', async () => {
+    await server.stop();
+    process.exit(0);
+  });
+}
+
+main();
+```
+
+See [examples/](examples/) for more programmatic usage examples.
 
 ## MCP Tool Plugins
 
