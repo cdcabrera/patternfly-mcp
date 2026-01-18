@@ -31,7 +31,7 @@ Complete guide to using the PatternFly MCP Server for development including CLI 
 - **Docs-host mode** - Docs-host mode has been disabled and will be removed in a future release. Its original purpose has been superseded by the move to MCP server resources.
 - **HTTP transport mode** - By default, the server uses `stdio`. Use the `--http` flag to enable HTTP transport.
 - **Logging** - The server uses a `diagnostics_channel`-based logger that keeps STDIO stdout pure by default.
-- **Progammatic API** - The server can also be used programmatically with options. See [Programmatic Usage](#programmatic-usage) for more details.
+- **Programmatic API** - The server can also be used programmatically with options. See [Programmatic Usage](#programmatic-usage) for more details.
 - **Tool Plugins** - The server can load external tool plugins at startup. See [Tool Plugins](#tool-plugins) for more details. 
 
 ### Basic use scenarios
@@ -83,9 +83,83 @@ npx @modelcontextprotocol/inspector-cli \
 
 TBD
 
-### Core typings
+### Server instance
 
-TBD
+The server instance exposes the following methods:
+
+- `isRunning()` - Returns a `boolean`, `true` if the server is running.
+- `onLog(callback)` - Registers a callback for server logs, returns a `PfMcpLogEvent` object.
+- `stop()` - Stops the server.
+- `getStats()` - Returns a `PfMcpStats` object containing server metrics and diagnostic channel IDs.
+
+#### server.isRunning()
+
+Checks if the server is running, returns a `boolean`, `true` if the server is running.
+
+```typescript
+import { start, type PfMcpInstance } from '@patternfly/patternfly-mcp';
+
+const server: PfMcpInstance = await start({ /* options */ });
+
+if (server.isRunning()) {
+  // Server is running
+}
+```
+
+#### server.onLog(callback)
+
+Registers a callback for server logs. The callback receives a `PfMcpLogEvent` object.
+
+```typescript
+import { start, type PfMcpInstance, type PfMcpLogEvent } from '@patternfly/patternfly-mcp';
+
+const server: PfMcpInstance = await start({ /* options */ });
+
+server.onLog((event: PfMcpLogEvent) => {
+  if (event.level !== 'debug') {
+    console.warn(`[${event.level}] ${event.msg || ''}`);
+  }
+});
+```
+
+#### server.stop()
+
+Stops the server.
+
+```typescript
+import { start, type PfMcpInstance } from '@patternfly/patternfly-mcp';
+
+const server: PfMcpInstance = await start({ /* options */ });
+
+process.on('SIGINT', async () => {
+  await server.stop();
+  process.exit(0);
+});
+```
+
+#### server.getStats()
+
+Returns a `PfMcpStats` object containing server metrics, includes diagnostic channel IDs for listening to server activity.
+
+```typescript
+import { channel, unsubscribe, subscribe } from 'node:diagnostics_channel';
+import { start, type PfMcpInstance, type PfMcpStats, type PfMcpStatReport } from '@patternfly/patternfly-mcp';
+
+const server: PfMcpInstance = await start({ /* options */ });
+const stats: PfMcpStats = server.getStats();
+
+const logChannel = channel(stats.health.channelId);
+const logHandler = (event: PfMcpStatReport) => {
+  /* Handle log events, on MCP server close unsubscribe */
+};
+
+const logSubscription = subscribe(logChannel, logHandler);
+
+```
+
+### Typing reference
+
+Reference typings are exported from the package, The full listing can be found in exported from [src/index.ts](src/index.ts).
 
 ### Embedding the Server
 
@@ -203,7 +277,7 @@ inputSchema: {
 }
 ```
 
-See [examples/tool-plugins.ts](examples/tool-plugins.ts) for more examples.
+See [examples/toolPluginHelloWorld.ts](examples/toolPluginHelloWorld.ts) for a basic example.
 
 ## Initial Troubleshooting
 

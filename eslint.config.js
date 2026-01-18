@@ -123,5 +123,15 @@ export default [
       // Allow console usage in tests (spies, debug)
       'no-console': 0
     }
+  },
+  {
+    files: [
+      'docs/**/*.ts',
+      'docs/**/*.js'
+    ],
+    rules: {
+      'import/no-unresolved': 0,
+      'n/no-process-exit': 0
+    }
   }
 ];
