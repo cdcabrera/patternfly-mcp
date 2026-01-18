@@ -123,6 +123,27 @@ Most MCP clients use a JSON configuration to specify how to start this server. B
 }
 ```
 
+### Custom remote tool
+
+```json
+{
+  "mcpServers": {
+    "patternfly-docs": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@patternfly/patternfly-mcp@latest",
+        "--tool",
+        "https://raw.githubusercontent.com/patternfly/patternfly-ai-coding/refs/heads/main/mcp-tools/custom-tool.js",
+        "--tool",
+        "https://raw.githubusercontent.com/patternfly/patternfly-ai-coding/refs/heads/main/mcp-tools/custom-yaml-tool.yml"
+      ],
+      "description": "PatternFly MCP with a remote custom tool"
+    }
+  }
+}
+```
+
 ### HTTP mode with security
 
 ```json

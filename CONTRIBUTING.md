@@ -1,5 +1,20 @@
 # Contributing
-Interested in contributing to the project? Review the following guidelines.
+Interested in contributing to the project? Review the following guidelines and our planned architecture to make sure
+your contribution is aligned with the project's goals and pointed at the correct repository.
+
+## Unsure where to start?
+
+** Have an idea for MCP resources or prompts?**
+1. Review the [project roadmap](./docs/architecture.md) to see what is planned for the future and not currently in development.
+2. Submit an issue in this repository to have your idea reviewed and discussed against the roadmap.
+
+** Have an idea for a new MCP tool? You can do it now!**
+1. Review the [project roadmap](./docs/architecture.md) to see what is planned for the future and not currently in development.
+2. Review our [development guide on tool plugins](./docs/development.md#tool-plugins)
+3. New MCP tools start their journey as PatternFly MCP tool plugins in the [PatternFly AI Coding Support repository](https://github.com/patternfly/patternfly-ai-coding).
+   - Clone the AI Coding Support repository, create your tool plugin, and submit a pull request.
+   - Once your tool is merged, you and other community members can start using it
+   - See our usage guide for how to [use to configure your tool from PatternFly AI Coding Support](./docs/usage.md#custom-remote-tool)
 
 ## Development
 
