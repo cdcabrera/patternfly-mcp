@@ -6,7 +6,7 @@ Complete guide to using the PatternFly MCP Server, tools, resources, configurati
 - [Built-in Tools](#built-in-tools)
 - [Built-in Resources](#built-in-resources)
 - [MCP Client Configuration](#mcp-client-configuration)
-- [Custom MCP Tool Plugins](#custom-mcp-tools)
+- [Custom MCP Tool Plugins](#custom-mcp-tool-plugins)
 
 ## Built-in tools
 
@@ -172,4 +172,4 @@ Most MCP clients use a JSON configuration to specify how to start this server. B
 
 You can extend the server's capabilities by loading custom **Tool Plugins** at startup.
 
-[See development for tool plugins for more information.](./development.md#mcp-tool-plugins)
+[See development documentation for tool plugins.](./development.md#mcp-tool-plugins)

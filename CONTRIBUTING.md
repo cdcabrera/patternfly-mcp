@@ -46,7 +46,7 @@ your contribution is aligned with the project's goals and pointed at the correct
 ### Using Git
 
 #### Workflow
-Git workflow is based on GitHub's fork and pull 
+Git workflow is based on GitHub's fork and pull request workflow.
 
 - Fork the repository
 - Create a branch for your changes
@@ -157,7 +157,7 @@ For detailed information on agent interaction, see [guidelines/README.md](./guid
 #### Customizing developer experience
 
 As developers, we often have our own flavor of working, and that includes working with AI agents. To that point we've added agent guidance
-to allow customization for your work environment through a tool agnostic gitignored directory `./.agent` in the root of the project.
+to allow customization for your work environment through a tool agnostic git-ignored directory `./.agent` in the root of the project.
 
 #### Noting AI Agent contributions
 

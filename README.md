@@ -4,7 +4,7 @@ A Model Context Protocol (MCP) server that provides access to PatternFly rules a
 
 The core concept and architecture for the PatternFly MCP server is centered around being a library resource for all things PatternFly.
 It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development. 
-[You can read me more about how we've constructed the PatternFly MCP server in our MCP Architecture docs](./docs/architecture.md).
+[Read more about our roadmap and how we've structured the server in our architecture docs](./docs/architecture.md).
 
 ## Requirements
 - [Node.js 20+](https://nodejs.org/)
@@ -12,7 +12,7 @@ It is intended to be extensible to meet the needs of different teams and project
 
 ## Quick Start
 
-[The PatternFly MCP Server allows multiple configurations. Review our usage documentation](./docs/usage.md).
+[The PatternFly MCP Server allows multiple configurations. Review our usage documentation](./docs/usage.md#mcp-client-configuration).
 
 ### For integrated use with an IDE
 
@@ -44,7 +44,7 @@ HTTP transport mode
 }
 ```
 
-[See the MCP Server Configuration documentation for more examples.](./docs/usage.md#configuration)
+[See the MCP Server Configuration documentation for more examples.](./docs/usage.md#mcp-client-configuration)
 
 ### For development, advanced usage
 
@@ -88,11 +88,11 @@ async function main() {
 main();
 ```
 
-[See the usage documentation for additional examples, CLI and embedded server options.](./docs/usage.md)
+[See the development documentation for additional examples, CLI and embedded server options.](./docs/development.md)
 
 ## Documentation
 
-For comprehensive usage and in-depth explanations including advanced usage examples, [read the docs](./docs/README.md).
+For comprehensive usage, development, and project state [read the docs](./docs/README.md).
 
 ## Contributing
 

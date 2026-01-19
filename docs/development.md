@@ -159,7 +159,7 @@ const logSubscription = subscribe(logChannel, logHandler);
 
 ### Typing reference
 
-Reference typings are exported from the package, The full listing can be found in exported from [src/index.ts](/src/index.ts).
+Reference typings are exported from the package, The full listing can be found in [src/index.ts](/src/index.ts).
 
 ### Embedding the Server
 
@@ -283,7 +283,7 @@ See [examples/toolPluginHelloWorld.js](examples/toolPluginHelloWorld.js) for a b
 
 ### Tool Plugins
 
-- **Plugins don't appear**: Verify the Node version (requires Node.js >= 22) and check logs (enable `--log-stderr`).
+- **Plugins don't appear**: Verify the Node version (requires >= 20.0.0, >= 22.0.0 for tool plugins) and check logs (enable `--log-stderr`).
 - **Startup warnings/errors**: Startup `load:ack` warnings/errors from tool plugins are logged when stderr/protocol logging is enabled.
 - **Schema errors**: If `tools/call` rejects with schema errors, ensure `inputSchema` is valid. See [Authoring Tools](#authoring-tools) for details.
 - **Network access issues**: If the tool is having network access issues, you may need to configure `--plugin-isolation none`. This is generally discouraged for security reasons but may be necessary in some cases.

@@ -4,7 +4,7 @@
  * This example demonstrates how to embed the PatternFly MCP Server
  * inside your application with custom tools.
  */
-// @ts-expect-error: Cannot find module '@patternfly/patternfly-mcp'
+// @ts-expect-error: Cannot find module '@patternfly/patternfly-mcp' - Remove this line if you're copying this example
 import { start, createMcpTool, type PfMcpInstance, type PfMcpLogEvent, type PfMcpStats, type ToolModule } from '@patternfly/patternfly-mcp';
 
 /**

@@ -5,7 +5,7 @@ PatternFly MCP code examples for tooling plugins and development use cases.
 - **[basicUsage.js](basicUsage.js)** - Basic server startup with stdio transport
 - **[embeddedServer.ts](embeddedServer.ts)** - Embedding the server and using custom inline tools to make your own MCP server
 - **[httpTransport.js](httpTransport.js)** - HTTP transport configuration and usage
-- **[toolPluginHelloWorld.js](toolPlugins.js)** - A basic JS tool plugin example
+- **[toolPluginHelloWorld.js](toolPluginHelloWorld.js)** - A basic JS tool plugin example
 
 
 ## Adding new example guidance
