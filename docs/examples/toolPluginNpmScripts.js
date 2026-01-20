@@ -18,36 +18,19 @@ import { createMcpTool } from '@patternfly/patternfly-mcp';
  */
 const spawnAsync = (command, args, options = {}) => {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      ...options,
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
-
+    const child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
 
-    child.stdout?.on('data', (data) => {
-      stdout += data.toString();
-    });
-
-    child.stderr?.on('data', (data) => {
-      stderr += data.toString();
-    });
+    child.stdout?.on('data', (d) => { stdout += d.toString(); });
+    child.stderr?.on('data', (d) => { stderr += d.toString(); });
 
     child.on('close', (code) => {
       const result = { stdout, stderr, code };
-      if (code === 0) {
-        resolve(result);
-      } else {
-        const error = new Error(stderr || stdout || `Process exited with code ${code}`);
-        Object.assign(error, result);
-        reject(error);
-      }
+      code === 0 ? resolve(result) : reject(Object.assign(new Error(stderr || stdout || `Exit code ${code}`), result));
     });
 
-    child.on('error', (error) => {
-      reject(error);
-    });
+    child.on('error', reject);
   });
 };
 
