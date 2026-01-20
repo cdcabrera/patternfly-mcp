@@ -166,57 +166,29 @@ export default createMcpTool({
       const result = await executeGitStatus(cwd, short, timeout);
 
       // Format the response
-      const lines = [
-        `Git Status Command: ${result.command}`,
-        `Duration: ${result.duration}ms`,
-        `Status: ${result.success ? '✅ Success' : '❌ Failed'}`,
-        ''
-      ];
+      const lines = [];
 
       if (result.success) {
-        lines.push(`Repository Status: ${result.isClean ? '✅ Clean (no changes)' : '⚠️  Has changes'}`);
-
-        if (result.lineCount !== undefined) {
-          lines.push(`Output Lines: ${result.lineCount}`);
-        }
-
-        lines.push('');
-
         if (result.stdout) {
-          lines.push('--- Git Status Output ---');
           lines.push(result.stdout);
-          lines.push('');
         }
 
         if (result.stderr) {
-          lines.push('--- STDERR ---');
           lines.push(result.stderr);
-          lines.push('');
-        }
-
-        if (!result.stdout && !result.stderr) {
-          lines.push('(No output produced)');
         }
       } else {
         lines.push(`Error: ${result.error.message}`);
-        lines.push(`Error Code: ${result.error.code}`);
 
         if (result.error.isTimeout) {
-          lines.push('⚠️  Command execution timed out. Consider increasing the timeout value.');
+          lines.push('Timed out. Consider increasing the timeout value.');
         }
 
-        lines.push('');
-
         if (result.stdout) {
-          lines.push('--- STDOUT (before error) ---');
           lines.push(result.stdout);
-          lines.push('');
         }
 
         if (result.stderr) {
-          lines.push('--- STDERR ---');
           lines.push(result.stderr);
-          lines.push('');
         }
       }
 

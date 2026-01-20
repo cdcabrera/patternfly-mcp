@@ -288,46 +288,27 @@ export default createMcpTool({
         result = await searchFilesByName(pattern, directory, recursive, nameTimeout);
 
         // Format the response for name search
-        const lines = [
-          `File Search (by name): ${pattern}`,
-          `Directory: ${directory || '.'}`,
-          `Recursive: ${recursive !== false ? 'Yes' : 'No'}`,
-          `Duration: ${result.duration}ms`,
-          `Status: ${result.success ? '✅ Success' : '❌ Failed'}`,
-          `Files Found: ${result.fileCount || 0}`,
-          ''
-        ];
+        const lines = [];
 
         if (result.success) {
           if (result.files && result.files.length > 0) {
-            lines.push('--- Matching Files ---');
             result.files.forEach(file => {
-              lines.push(`  ${file}`);
+              lines.push(file);
             });
-            lines.push('');
-          } else {
-            lines.push('(No files found matching the pattern)');
           }
 
           if (result.stderr) {
-            lines.push('--- STDERR ---');
             lines.push(result.stderr);
-            lines.push('');
           }
         } else {
           lines.push(`Error: ${result.error.message}`);
-          lines.push(`Error Code: ${result.error.code}`);
 
           if (result.error.isTimeout) {
-            lines.push('⚠️  Search timed out. Consider increasing the timeout value or narrowing the search scope.');
+            lines.push('Timed out. Consider increasing the timeout value.');
           }
 
-          lines.push('');
-
           if (result.stderr) {
-            lines.push('--- STDERR ---');
             lines.push(result.stderr);
-            lines.push('');
           }
         }
 
@@ -354,21 +335,10 @@ export default createMcpTool({
         );
 
         // Format the response for content search
-        const lines = [
-          `Content Search: ${pattern}`,
-          `Directory: ${directory || '.'}`,
-          `File Patterns: ${filePatterns && filePatterns.length > 0 ? filePatterns.join(', ') : '*'}`,
-          `Recursive: ${recursive !== false ? 'Yes' : 'No'}`,
-          `Case Insensitive: ${caseInsensitive ? 'Yes' : 'No'}`,
-          `Duration: ${result.duration}ms`,
-          `Status: ${result.success ? '✅ Success' : '❌ Failed'}`,
-          `Matches Found: ${result.matchCount || 0}`,
-          ''
-        ];
+        const lines = [];
 
         if (result.success) {
           if (result.matches && result.matches.length > 0) {
-            lines.push('--- Matching Content ---');
             result.matches.forEach(match => {
               const location = showLineNumbers && match.lineNumber
                 ? `${match.file}:${match.lineNumber}`
@@ -376,30 +346,20 @@ export default createMcpTool({
 
               lines.push(`${location}: ${match.content}`);
             });
-            lines.push('');
-          } else {
-            lines.push('(No matches found)');
           }
 
           if (result.stderr) {
-            lines.push('--- STDERR ---');
             lines.push(result.stderr);
-            lines.push('');
           }
         } else {
           lines.push(`Error: ${result.error.message}`);
-          lines.push(`Error Code: ${result.error.code}`);
 
           if (result.error.isTimeout) {
-            lines.push('⚠️  Search timed out. Consider increasing the timeout value or narrowing the search scope.');
+            lines.push('Timed out. Consider increasing the timeout value.');
           }
 
-          lines.push('');
-
           if (result.stderr) {
-            lines.push('--- STDERR ---');
             lines.push(result.stderr);
-            lines.push('');
           }
         }
 

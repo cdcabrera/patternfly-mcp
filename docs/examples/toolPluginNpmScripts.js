@@ -146,50 +146,29 @@ export default createMcpTool({
       const result = await executeNpmScript(scriptName, cwd, timeout);
 
       // Format the response
-      const lines = [
-        `NPM Script: ${result.scriptName}`,
-        `Command: ${result.command}`,
-        `Duration: ${result.duration}ms`,
-        `Status: ${result.success ? '✅ Success' : '❌ Failed'}`,
-        ''
-      ];
+      const lines = [];
 
       if (result.success) {
         if (result.stdout) {
-          lines.push('--- STDOUT ---');
           lines.push(result.stdout);
-          lines.push('');
         }
 
         if (result.stderr) {
-          lines.push('--- STDERR ---');
           lines.push(result.stderr);
-          lines.push('');
-        }
-
-        if (!result.hasOutput) {
-          lines.push('(No output produced)');
         }
       } else {
         lines.push(`Error: ${result.error.message}`);
-        lines.push(`Error Code: ${result.error.code}`);
 
         if (result.error.isTimeout) {
-          lines.push('⚠️  Script execution timed out. Consider increasing the timeout value.');
+          lines.push('Timed out. Consider increasing the timeout value.');
         }
 
-        lines.push('');
-
         if (result.stdout) {
-          lines.push('--- STDOUT (before error) ---');
           lines.push(result.stdout);
-          lines.push('');
         }
 
         if (result.stderr) {
-          lines.push('--- STDERR ---');
           lines.push(result.stderr);
-          lines.push('');
         }
       }
 

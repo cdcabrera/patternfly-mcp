@@ -246,94 +246,35 @@ export default createMcpTool({
       }
 
       // Format the response
-      const lines = [
-        `NPM Registry Query: ${packageName}`,
-        `Query Type: ${queryType || 'info'}`,
-        `Version: ${result.version || version || 'latest'}`,
-        `Duration: ${result.duration}ms`,
-        `Status: ${result.success ? '✅ Success' : '❌ Failed'}`,
-        ''
-      ];
+      const lines = [];
 
       if (result.success) {
         const info = result.packageInfo || {};
         const latest = result.latestVersion || info.version;
 
-        lines.push('--- Package Information ---');
-        lines.push(`Name: ${info.name || packageName}`);
-        lines.push(`Version: ${latest}`);
-        lines.push(`Description: ${info.description || '(No description)'}`);
-        lines.push(`License: ${info.license || '(No license specified)'}`);
-
-        if (info.homepage) {
-          lines.push(`Homepage: ${info.homepage}`);
+        lines.push(`${info.name || packageName}@${latest}`);
+        if (info.description) {
+          lines.push(info.description);
         }
-
-        if (info.repository) {
-          lines.push(`Repository: ${info.repository.type || ''} ${info.repository.url || ''}`.trim());
-        }
-
-        if (info.author) {
-          const authorInfo = typeof info.author === 'string' ? info.author : `${info.author.name || ''} ${info.author.email || ''}`.trim();
-
-          lines.push(`Author: ${authorInfo || '(No author specified)'}`);
-        }
-
-        lines.push('');
 
         if (queryType === 'latest') {
-          lines.push(`Latest Version: ${latest}`);
-          lines.push(`Total Versions: ${result.versionCount || 0}`);
-          lines.push('');
-
           if (result.recentVersions && result.recentVersions.length > 0) {
-            lines.push('--- Recent Versions (last 10) ---');
-            result.recentVersions.forEach(v => {
-              lines.push(`  ${v}`);
-            });
-            lines.push('');
+            lines.push(`Recent versions: ${result.recentVersions.slice(0, 5).join(', ')}`);
           }
         } else {
-          // Full info
-          if (info.distTags && Object.keys(info.distTags).length > 0) {
-            lines.push('--- Distribution Tags ---');
-            Object.entries(info.distTags).forEach(([tag, tagVersion]) => {
-              lines.push(`  ${tag}: ${tagVersion}`);
-            });
-            lines.push('');
-          }
-
           if (info.versions && info.versions.length > 0) {
-            lines.push(`Total Versions: ${info.versions.length}`);
-            lines.push(`Latest 5 Versions: ${info.versions.slice(0, 5).join(', ')}`);
-            lines.push('');
+            lines.push(`Latest versions: ${info.versions.slice(0, 5).join(', ')}`);
           }
-
-          if (info.keywords && info.keywords.length > 0) {
-            lines.push(`Keywords: ${info.keywords.join(', ')}`);
-            lines.push('');
-          }
-
           if (info.dependencies && info.dependencies.length > 0) {
-            lines.push(`Dependencies (${info.dependencies.length}): ${info.dependencies.slice(0, 10).join(', ')}${info.dependencies.length > 10 ? '...' : ''}`);
-            lines.push('');
-          }
-
-          if (info.devDependencies && info.devDependencies.length > 0) {
-            lines.push(`Dev Dependencies (${info.devDependencies.length}): ${info.devDependencies.slice(0, 10).join(', ')}${info.devDependencies.length > 10 ? '...' : ''}`);
-            lines.push('');
+            lines.push(`Dependencies: ${info.dependencies.slice(0, 10).join(', ')}${info.dependencies.length > 10 ? '...' : ''}`);
           }
         }
       } else {
         lines.push(`Error: ${result.error.message}`);
 
-        if (result.error.isNotFound) {
-          lines.push('⚠️  Package not found. Check the package name and try again.');
-        } else if (result.error.isTimeout) {
-          lines.push('⚠️  Request timed out. The NPM registry may be slow or unavailable.');
+        if (result.error.isTimeout) {
+          lines.push('Request timed out.');
         }
-
-        lines.push('');
       }
 
       return {
