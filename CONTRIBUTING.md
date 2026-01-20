@@ -13,7 +13,7 @@ your contribution is aligned with the project's goals.
 
 #### Project setup
 - Fork and clone the repository
-- Open your terminal, or equivalent, in the code base context and verify the following scripts
+- Open your terminal, or equivalent, in the codebase context and run the following commands
    ```bash
    npm install
    npm run build
@@ -24,7 +24,7 @@ your contribution is aligned with the project's goals.
   All tests should pass, and the application should start successfully with confirmation messaging in the terminal.
 
 #### Development workflow
-- Make changes to the code base
+- Make changes to the codebase
 - Run tests to verify your changes do not break existing functionality
 - Commit your changes and push them to your fork
 - Open a pull request
@@ -32,14 +32,14 @@ your contribution is aligned with the project's goals.
 ### Using Git
 
 #### Workflow
-Git workflow is based on GitHub's fork and pull request workflow.
+Our process follows the standard GitHub fork and pull request workflow.
 
 - Fork the repository
 - Create a branch for your changes
 - Submit a pull request towards the main repository default branch
 
 ##### Main repository branches
-- `main` branch is currently a representation of development and stable releases
+- The `main` branch currently represents both development and stable releases
 
 > In the future, a consideration for a `stable` branch may be made against an increase in contributions.
 >    - `main` would be the default branch for development and feature work rebased from `stable` after release.
@@ -71,7 +71,7 @@ Development pull requests (PRs) should be opened against the default branch.
 
 #### Pull request commits, messaging
 
-Your pull request should contain Git commit messaging that follows the use of [conventional commit types](https://www.conventionalcommits.org/)
+Your pull request should contain Git commit messaging that follows [conventional commit types](https://www.conventionalcommits.org/)
 to provide consistent history and help generate [CHANGELOG.md](./CHANGELOG.md) updates.
 
 Commit messages follow two basic guidelines
@@ -103,8 +103,8 @@ before a review.
 Basic code style guidelines are generally enforced by ESLint, but there are additional guidelines.
 
 #### File structure
-- File names are lowerCamelCased and use dot notation, e.g. `server.http.ts`, `server.logger.ts`
-- Directory structure is currently flat, and all relevant files are maintained in the `src` directory.
+- File names use lowerCamelCase and dot notation (e.g., `server.http.ts`, `server.logger.ts`).
+- Directory structure is organized by function, with all relevant files maintained in the `src` directory.
 
 #### Functionality, testing
 - Functions should attempt to maintain a single responsibility.
@@ -142,8 +142,8 @@ For detailed information on agent interaction, see [guidelines/README.md](./guid
 
 #### Customizing developer experience
 
-As developers, we often have our own flavor of working, and that includes working with AI agents. To that point we've added agent guidance
-to allow customization for your work environment through a tool agnostic git-ignored directory `./.agent` in the root of the project.
+As developers, we often have our own preferred workflows, and that includes working with AI agents. To that point, we've added agent guidance
+to allow customization for your work environment through a tool-agnostic git-ignored directory `./.agent` in the root of the project.
 
 #### Noting AI Agent contributions
 

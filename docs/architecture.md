@@ -2,8 +2,7 @@
 
 ## Design and core concepts
 
-The core concept and architecture for the PatternFly MCP server is centered around being a library resource for all things PatternFly.
-It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development.
+The PatternFly MCP server is centered around the concept of a library for all things PatternFly. It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development.
 
 ### The library, PatternFly integration
 
@@ -14,17 +13,17 @@ PatternFly integration is centered around the following current, and future, too
 
 #### Search PatternFly documentation
 
-Search PatternFly documentation is a built-in tool that allows you to search PatternFly documentation and resources integrated into the MCP server.
+A built-in tool for searching PatternFly documentation and resources integrated into the server.
 
 #### Use PatternFly documentation
 
-Use PatternFly documentation is a built-in tool that allows you to read and use PatternFly documentation and resources integrated into the MCP server.
+A built-in tool for reading and using PatternFly documentation and resources integrated into the server.
 
 #### Find and discover PatternFly documentation
 
-Find PatternFly documentation is an evolving "future" built-in tool (still undergoing refinement) that would allow you to find PatternFly documentation and resources not directly integrated into the MCP server.
+An evolving "future" tool (still undergoing refinement) for finding PatternFly documentation and resources not directly integrated into the server.
 
-> This third tool is based on the basic idea that the PatternFly MCP server is a library. And like a library, sometimes you need to use an interlibrary loan to gain access to the resource you need.
+> This tool treats the MCP server as a library. Like a library, sometimes you need an interlibrary loan to gain access to the resource you need.
 >
 > The interlibrary concept is key because it starts to highlight that this third MCP tool could
 > - Help provide updates for all PatternFly MCP server built-in tools, resources, and prompts

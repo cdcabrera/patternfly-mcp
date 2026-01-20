@@ -1,6 +1,6 @@
 # Usage guide
 
-Complete guide to using the PatternFly MCP Server, tools, resources, configuration.
+A comprehensive guide to PatternFly MCP Server tools, resources, and configuration.
 
 **User Guide:**
 - [Built-in Tools](#built-in-tools)
@@ -10,9 +10,9 @@ Complete guide to using the PatternFly MCP Server, tools, resources, configurati
 
 ## Built-in tools
 
-> MCP server tools can be considered the action used to interact with the MCP server.
+> MCP tools represent the actions available to interact with the server.
 
-The MCP core server tools are focused on being a resource library for PatternFly. Server tools are extensible by design and intended to be used in conjunction with the available MCP resources.
+Core server tools provide a resource library for PatternFly. They are extensible by design and intended for use with available MCP resources.
 
 ### Tool: searchPatternFlyDocs
 
@@ -32,7 +32,7 @@ Use this to search for PatternFly documentation URLs and component names. Accept
 
 Fetch full documentation and component JSON schemas for specific PatternFly URLs or component names.
 
-> **Feature**: This tool automatically detects if a URL belongs to a component (or if a "name" is provided) and appends its machine-readable JSON schema (props, types, validation) to the response, providing a fused context of human-readable docs and technical specs.
+> **Feature**: This tool automatically detects if a URL belongs to a component (or if a "name" is provided) and appends its machine-readable JSON schema (props, types, validation) to the response, combining human-readable documentation with technical specifications.
 
 **Parameters:** _Parameters are mutually exclusive. Provide either `name` OR `urlList` not both._
 - `name`: `string` (optional) - The name of the PatternFly component (e.g., "Button", "Modal"). **Recommended** for known component lookups.
@@ -62,7 +62,7 @@ Fetch full documentation and component JSON schemas for specific PatternFly URLs
 
 ## Built-in resources
 
-> MCP server resources can be considered indexed collections of documentation.
+> MCP resources represent indexed collections of documentation.
 
 The server exposes this resource-centric architecture via the `patternfly://` URI scheme:
 
@@ -74,7 +74,7 @@ The server exposes this resource-centric architecture via the `patternfly://` UR
 
 ## MCP client configuration
 
-Most MCP clients use a JSON configuration to specify how to start this server. Below are examples you can adapt to your MCP client.
+Most MCP clients use JSON configuration to specify how the server is started. Below are examples you can adapt for your client.
 
 ### Minimal client config (stdio)
 

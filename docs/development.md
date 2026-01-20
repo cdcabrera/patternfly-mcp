@@ -81,7 +81,7 @@ npx @modelcontextprotocol/inspector-cli \
 
 ### Server configuration options
 
-The `start()` function accepts an optional `PfMcpOptions` object for programmatic configuration. These options allow you to customize the server's behavior, transport, and logging when embedding it in your application.
+The `start()` function accepts an optional `PfMcpOptions` object for programmatic configuration. Use these options to customize behavior, transport, and logging for embedded instances.
 
 | Option                | Type                                     | Description                                                           | Default            |
 |:----------------------|:-----------------------------------------|:----------------------------------------------------------------------|:-------------------|
@@ -105,7 +105,7 @@ import { start, type PfMcpInstance, type PfMcpOptions } from '@patternfly/patter
 
 const options: PfMcpOptions = {
   isHttp: true,
-    http: {
+  http: {
     port: 3000,
     allowedOrigins: ['https://your-app.com']
   },
@@ -194,7 +194,7 @@ const logSubscription = subscribe(logChannel, logHandler);
 
 ### Typing reference
 
-Reference typings are exported from the package, The full listing can be found in [src/index.ts](/src/index.ts).
+Reference typings are exported from the package. The full listing can be found in [src/index.ts](/src/index.ts).
 
 ### Embedding the Server
 
@@ -211,7 +211,9 @@ const echoTool: ToolModule = createMcpTool({
     properties: { message: { type: 'string' } },
     required: ['message']
   },
-  handler: async (args: { message: string }) => ({ text: `You said: ${args.message}` })
+  handler: async (args: { message: string }) => ({
+    content: [{ type: 'text', text: `You said: ${args.message}` }]
+  })
 });
 
 const main = async () => {
@@ -270,7 +272,9 @@ export default createMcpTool({
     required: ['name']
   },
   async handler({ name }) {
-    return `Hello, ${name}!`;
+    return {
+      content: [{ type: 'text', text: `Hello, ${name}!` }]
+    };
   }
 });
 ```
@@ -281,8 +285,8 @@ export default createMcpTool({
 import { createMcpTool } from '@patternfly/patternfly-mcp';
 
 export default createMcpTool([
-  { name: 'hi', description: 'Greets', inputSchema: {}, handler: () => 'hi' },
-  { name: 'bye', description: 'Farewell', inputSchema: {}, handler: () => 'bye' }
+  { name: 'hi', description: 'Greets', inputSchema: {}, handler: () => ({ content: [{ type: 'text', text: 'hi' }] }) },
+  { name: 'bye', description: 'Farewell', inputSchema: {}, handler: () => ({ content: [{ type: 'text', text: 'bye' }] }) }
 ]);
 ```
 
@@ -292,24 +296,24 @@ The `inputSchema` property accepts either **plain JSON Schema objects** or **Zod
 
 **JSON Schema (recommended):**
 ```ts
-inputSchema: {
+const inputSchema = {
   type: 'object',
   properties: {
     name: { type: 'string' },
     age: { type: 'number' }
   },
   required: ['name']
-}
+};
 ```
 
 **Zod Schema:**
 ```ts
 import { z } from 'zod';
 
-inputSchema: {
+const inputSchema = z.object({
   name: z.string(),
   age: z.number().optional()
-}
+});
 ```
 
 See [examples/toolPluginHelloWorld.js](examples/toolPluginHelloWorld.js) for a basic example.

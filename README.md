@@ -2,7 +2,7 @@
 
 A Model Context Protocol (MCP) server that provides access to PatternFly rules and documentation, built with Node.js.
 
-The core concept and architecture for the PatternFly MCP server is centered around being a library resource for all things PatternFly.
+The PatternFly MCP server is a comprehensive library resource for PatternFly.
 It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development. 
 [Read more about our roadmap and how we've structured the server in our architecture docs](./docs/architecture.md).
 
@@ -12,7 +12,7 @@ It is intended to be extensible to meet the needs of different teams and project
 
 ## Quick Start
 
-[The PatternFly MCP Server allows multiple configurations. Review our usage documentation](./docs/usage.md#mcp-client-configuration).
+The PatternFly MCP Server supports multiple configurations; see the [usage documentation](./docs/usage.md#mcp-client-configuration) for details.
 
 ### For integrated use with an IDE
 
@@ -100,6 +100,6 @@ Contributing? Guidelines can be found here [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ### AI agent
 
-If you're using an AI assistant to help with development in this repository, please prompt it to `> review the repo guidelines` first to ensure it follows the project's conventions and practices.
+If you're using an AI assistant to help with development in this repository, please prompt it to `review the repo guidelines` to ensure adherence to project conventions.
 
 Guidelines for developer, agent, interaction can be found in [CONTRIBUTING.md](./CONTRIBUTING.md#ai-agent).
