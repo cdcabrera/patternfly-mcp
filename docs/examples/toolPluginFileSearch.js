@@ -10,11 +10,47 @@
  * - JS support only. TypeScript is only supported for embedding the server.
  * - Requires ESM default export.
  */
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { createMcpTool } from '@patternfly/patternfly-mcp';
 
-const execAsync = promisify(exec);
+/**
+ * Execute a command using spawn with proper argument handling.
+ */
+const spawnAsync = (command, args, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      ...options,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+      const result = { stdout, stderr, code };
+      // find/grep return non-zero if no results found, which is expected
+      if (code === 0 || code === 1) {
+        resolve(result);
+      } else {
+        const error = new Error(stderr || stdout || `Process exited with code ${code}`);
+        Object.assign(error, result);
+        reject(error);
+      }
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+  });
+};
 
 export default createMcpTool({
   name: 'searchFiles',
@@ -64,16 +100,16 @@ export default createMcpTool({
     try {
       if (searchType === 'name') {
         // Search for files by name using find
-        const findCommand = recursive
-          ? `find "${directory}" -type f -name "${pattern}" 2>/dev/null | head -100`
-          : `find "${directory}" -maxdepth 1 -type f -name "${pattern}" 2>/dev/null | head -100`;
+        const findArgs = [directory, '-type', 'f', '-name', pattern];
+        if (!recursive) {
+          findArgs.splice(1, 0, '-maxdepth', '1');
+        }
 
-        const { stdout } = await execAsync(findCommand, {
-          cwd: process.cwd(),
-          encoding: 'utf8'
+        const { stdout } = await spawnAsync('find', findArgs, {
+          cwd: process.cwd()
         });
 
-        const files = stdout.trim().split('\n').filter(Boolean);
+        const files = stdout.trim().split('\n').filter(Boolean).slice(0, 100);
 
         return {
           content: [
@@ -86,20 +122,23 @@ export default createMcpTool({
       } else {
         // Search for content using grep
         const patterns = Array.isArray(filePatterns) ? filePatterns : [filePatterns || '*'];
-        const grepOptions = [];
-        if (recursive) grepOptions.push('-r');
-        if (caseInsensitive) grepOptions.push('-i');
-        if (showLineNumbers) grepOptions.push('-n');
-        grepOptions.push('--include=' + patterns.map(p => `"${p}"`).join(' --include='));
+        const grepArgs = [];
+        if (recursive) grepArgs.push('-r');
+        if (caseInsensitive) grepArgs.push('-i');
+        if (showLineNumbers) grepArgs.push('-n');
 
-        const grepCommand = `grep ${grepOptions.filter(Boolean).join(' ')} "${pattern}" "${directory}" 2>/dev/null | head -200`.trim();
+        // Add --include options for each file pattern
+        for (const pattern of patterns) {
+          grepArgs.push('--include', pattern);
+        }
 
-        const { stdout } = await execAsync(grepCommand, {
-          cwd: process.cwd(),
-          encoding: 'utf8'
+        grepArgs.push(pattern, directory);
+
+        const { stdout } = await spawnAsync('grep', grepArgs, {
+          cwd: process.cwd()
         });
 
-        const matches = stdout.trim().split('\n').filter(Boolean);
+        const matches = stdout.trim().split('\n').filter(Boolean).slice(0, 200);
 
         return {
           content: [

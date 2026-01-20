@@ -10,11 +10,46 @@
  * - JS support only. TypeScript is only supported for embedding the server.
  * - Requires ESM default export.
  */
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { spawn } from 'node:child_process';
 import { createMcpTool } from '@patternfly/patternfly-mcp';
 
-const execAsync = promisify(exec);
+/**
+ * Execute a command using spawn with proper argument handling.
+ */
+const spawnAsync = (command, args, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      ...options,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    child.on('close', (code) => {
+      const result = { stdout, stderr, code };
+      if (code === 0) {
+        resolve(result);
+      } else {
+        const error = new Error(stderr || stdout || `Process exited with code ${code}`);
+        Object.assign(error, result);
+        reject(error);
+      }
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+  });
+};
 
 export default createMcpTool({
   name: 'runNpmScript',
@@ -35,9 +70,8 @@ export default createMcpTool({
   },
   async handler({ scriptName, cwd }) {
     try {
-      const { stdout, stderr } = await execAsync(`npm run ${scriptName}`, {
-        cwd: cwd || process.cwd(),
-        encoding: 'utf8'
+      const { stdout, stderr } = await spawnAsync('npm', ['run', scriptName], {
+        cwd: cwd || process.cwd()
       });
 
       return {
