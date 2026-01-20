@@ -9,7 +9,6 @@
  * - External tool file loading requires Node.js >= 22.
  * - JS support only. TypeScript is only supported for embedding the server.
  * - Requires ESM default export.
- * - This tool executes Git commands, so it requires Git to be installed and accessible in the PATH.
  */
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -17,130 +16,9 @@ import { createMcpTool } from '@patternfly/patternfly-mcp';
 
 const execAsync = promisify(exec);
 
-/**
- * Check if Git is available in the system PATH.
- *
- * @param {string} [cwd] - Current working directory (default: process.cwd())
- * @returns {Promise<{available: boolean, error?: string}>} Availability status
- */
-const checkGitAvailability = async (cwd = process.cwd()) => {
-  try {
-    await execAsync('git --version', {
-      cwd,
-      timeout: 5_000,
-      encoding: 'utf8'
-    });
-
-    return { available: true };
-  } catch (error) {
-    return {
-      available: false,
-      error: 'Git is not available. Please ensure Git is installed and accessible in your PATH.'
-    };
-  }
-};
-
-/**
- * Check if the current directory is a Git repository.
- *
- * @param {string} [cwd] - Current working directory (default: process.cwd())
- * @returns {Promise<{isRepo: boolean, error?: string}>} Repository status
- */
-const checkGitRepository = async (cwd = process.cwd()) => {
-  try {
-    await execAsync('git rev-parse --git-dir', {
-      cwd,
-      timeout: 5_000,
-      encoding: 'utf8'
-    });
-
-    return { isRepo: true };
-  } catch {
-    return {
-      isRepo: false,
-      error: 'Current directory is not a Git repository.'
-    };
-  }
-};
-
-/**
- * Execute git status command with proper error handling and output formatting.
- *
- * @param {string} [cwd] - Current working directory (default: process.cwd())
- * @param {boolean} [short] - Use short format output (default: false)
- * @param {number} [timeout] - Execution timeout in milliseconds (default: 10000 = 10 seconds)
- * @returns {Promise<object>} Object with execution results
- */
-const executeGitStatus = async (cwd = process.cwd(), short = false, timeout = 10_000) => {
-  // Check Git availability
-  const availability = await checkGitAvailability(cwd);
-
-  if (!availability.available) {
-    throw new Error(availability.error || 'Git is not available');
-  }
-
-  // Check if it's a Git repository
-  const repoCheck = await checkGitRepository(cwd);
-
-  if (!repoCheck.isRepo) {
-    throw new Error(repoCheck.error || 'Not a Git repository');
-  }
-
-  // Build the command string
-  const command = short ? 'git status --short' : 'git status';
-  const startTime = Date.now();
-
-  try {
-    const { stdout, stderr } = await execAsync(command, {
-      cwd,
-      timeout,
-      encoding: 'utf8',
-      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
-    });
-
-    const duration = Date.now() - startTime;
-
-    // Parse the status output
-    const statusOutput = stdout.trim();
-    const lines = statusOutput.split('\n');
-    const isClean = statusOutput.includes('nothing to commit') || (short && lines.length === 0);
-
-    return {
-      success: true,
-      command,
-      duration,
-      isClean,
-      stdout: statusOutput || null,
-      stderr: stderr.trim() || null,
-      lineCount: lines.length
-    };
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    const execError = error;
-
-    // Extract error details
-    const errorMessage = execError.message || String(execError);
-    const errorCode = execError.code || 'UNKNOWN';
-    const isTimeout = errorCode === 'TIMEOUT' || errorMessage.includes('timed out');
-
-    return {
-      success: false,
-      command,
-      duration,
-      error: {
-        message: errorMessage,
-        code: errorCode,
-        isTimeout
-      },
-      stdout: execError.stdout?.trim() || null,
-      stderr: execError.stderr?.trim() || null
-    };
-  }
-};
-
 export default createMcpTool({
   name: 'getGitStatus',
-  description: 'Get Git repository status with formatted output. Returns information about working directory, staged files, and recent commits. Useful for AI agents to understand project state before making changes.',
+  description: 'Get Git repository status. Returns information about working directory, staged files, and recent commits.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -152,62 +30,33 @@ export default createMcpTool({
         type: 'boolean',
         description: 'Optional: Use short format output (git status --short). Defaults to false.',
         default: false
-      },
-      timeout: {
-        type: 'number',
-        description: 'Optional: Execution timeout in milliseconds. Defaults to 10000 (10 seconds).',
-        minimum: 1000,
-        maximum: 60_000 // 1 minute max
       }
     }
   },
-  async handler({ cwd, short, timeout }) {
+  async handler({ cwd, short = false }) {
     try {
-      const result = await executeGitStatus(cwd, short, timeout);
-
-      // Format the response
-      const lines = [];
-
-      if (result.success) {
-        if (result.stdout) {
-          lines.push(result.stdout);
-        }
-
-        if (result.stderr) {
-          lines.push(result.stderr);
-        }
-      } else {
-        lines.push(`Error: ${result.error.message}`);
-
-        if (result.error.isTimeout) {
-          lines.push('Timed out. Consider increasing the timeout value.');
-        }
-
-        if (result.stdout) {
-          lines.push(result.stdout);
-        }
-
-        if (result.stderr) {
-          lines.push(result.stderr);
-        }
-      }
+      const command = short ? 'git status --short' : 'git status';
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: cwd || process.cwd(),
+        encoding: 'utf8'
+      });
 
       return {
         content: [
           {
             type: 'text',
-            text: lines.join('\n')
+            text: stdout || stderr || 'No changes.'
           }
         ]
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const output = error.stdout || error.stderr || error.message;
 
       return {
         content: [
           {
             type: 'text',
-            text: `Failed to get Git status:\n\n${errorMessage}`
+            text: output
           }
         ],
         isError: true
