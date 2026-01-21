@@ -24,6 +24,7 @@ type CliOptions = {
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
+  maxSearchLength?: number;
   toolModules: string[];
 
   /**
@@ -76,6 +77,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
  * - `--log-stderr`: Enables terminal logging of channel events
  * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
+ * - `--max-search-length <number>`: The maximum length for search strings.
  * - `--http`: Indicates if the `--http` option is enabled.
  * - `--port`: The port number specified via `--port`
  * - `--host`: The host name specified via `--host`
@@ -108,6 +110,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   const isHttp = argv.includes('--http');
+  const maxSearchLength = getArgValue('--max-search-length', { argv }) as number | undefined;
   const http: Partial<HttpOptions> = {};
 
   if (isHttp) {
@@ -196,6 +199,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     logging,
     isHttp,
     http,
+    ...(maxSearchLength !== undefined ? { maxSearchLength } : {}),
     toolModules,
     pluginIsolation
   };

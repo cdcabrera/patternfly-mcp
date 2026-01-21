@@ -166,7 +166,7 @@ const main = async (
 
   try {
     const cliOptions = parseCliOptions();
-    const mergedOptions = setOptions({ ...cliOptions, ...options });
+    const mergedOptions = setOptions({ ...cliOptions, ...options } as any);
     const session = getSessionOptions();
 
     // use runWithSession to enable session in listeners

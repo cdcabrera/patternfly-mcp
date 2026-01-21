@@ -24,6 +24,7 @@ Complete guide to using the PatternFly MCP Server for development including CLI 
 | `--log-stderr`                        | Enable terminal logging                               | `false`              |
 | `--log-protocol`                      | Forward logs to MCP clients                           | `false`              |
 | `--log-level <level>`                 | Set log level (`debug`, `info`, `warn`, `error`)      | `info`               |
+| `--max-search-length <num>`           | Maximum length for search strings                     | `256`                |
 | `--verbose`                           | Shortcut for `--log-level debug`                      | `false`              |
 | `--docs-host`                         | **Disabled**, continued use will not break the server | `false`              |
 
@@ -95,6 +96,7 @@ The `start()` function accepts an optional `PfMcpOptions` object for programmati
 | `logging.level`       | `'debug' \| 'info' \| 'warn' \| 'error'` | Set the logging level.                                                | `'info'`           |
 | `logging.stderr`      | `boolean`                                | Enable terminal logging to stderr.                                    | `false`            |
 | `logging.protocol`    | `boolean`                                | Forward logs to MCP clients.                                          | `false`            |
+| `maxSearchLength`     | `number`                                 | Maximum length for search strings.                                    | `256`              |
 | `mode`                | `'cli' \| 'programmatic' \| 'test'`      | Specifies the operation mode.                                         | `'programmatic'`   |
 | `docsPath`            | `string`                                 | Path to the documentation directory.                                  | (Internal default) |
 

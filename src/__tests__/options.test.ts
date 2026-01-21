@@ -59,6 +59,10 @@ describe('parseCliOptions', () => {
     {
       description: 'with --allowed-hosts',
       args: ['node', 'script.js', '--http', '--allowed-hosts', 'localhost,127.0.0.1']
+    },
+    {
+      description: 'with --max-search-length flag',
+      args: ['node', 'script.js', '--max-search-length', '128']
     }
   ])('should attempt to parse args $description', ({ args = [] }) => {
     process.argv = args;
