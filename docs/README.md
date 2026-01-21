@@ -7,8 +7,8 @@ Welcome to the PatternFly MCP Server documentation. This guide is organized by u
 - **[Client Configuring](./usage.md)**: Configure the server for your environment.
 
 ### 🛠️ Developer Reference
-- **[CLI Reference](./development.md#cli-options)**: Reference of server options.
-- **[API Reference](./development.md#programmatic-use)**: Using the server as a base library in your own Node.js MCP.
+- **[CLI Reference](./development.md#cli-usage)**: Reference of server options.
+- **[API Reference](./development.md#programmatic-usage)**: Using the server as a base library in your own Node.js MCP.
 - **[Examples](./examples/README.md)**: Standalone snippets for HTTP transport, embedding, and custom tools.
 
 ### 🏗️ Architecture &amp; Design
