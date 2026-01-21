@@ -53,7 +53,7 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
   - Confirm the installed MCP SDK version
   - Research the error
   - Identify conflict scenarios with code
-  - Indentify potential test cases
+  - Identify potential test cases
 
 2. **Test**
   - Run typing, lint, unit and e2e tests
