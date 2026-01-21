@@ -41,11 +41,12 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 - **Sequential Processing**: Ask questions one at a time; process requests in logical order; complete one task before starting another.
 - **Architectural Alignment**: Always confirm changes against the [system architecture and roadmap](../docs/architecture.md) before proceeding with implementation.
 - **Reference-Based Implementation**: Review git history; study existing patterns (e.g., "creator" pattern for tools/resources); maintain code style consistency and follow [standard Git workflows](../CONTRIBUTING.md#using-git).
+- **Commit Messaging Standards**: Follow the conventional commit format: `type(scope): issue/number description (#PR_NUMBER)`. Always include related PR numbers to maintain traceability. Issue numbers are optional.
 - **Validation Required**: Follow checklists; verify requirements; test thoroughly; validate against PatternFly v6 standards. Review [pull request warning signs](../CONTRIBUTING.md#pull-requests) to avoid common pitfalls.
 - **Confirmation Required**: Confirm success; summarize changes; explain impact; verify understanding.
 - **Environment Awareness**: 
   - Server execution requires **Node.js >= 20**.
-  - External tool plugins (`--tool`) require **Node.js >= 22**.
+  - External tool plugins (`--tool`) require **Node.js >= 22** primarily for its robust **Permission Model** (`--experimental-permission`), which enables strict filesystem and network isolation.
   - Always verify environment compatibility when proposing tools using modern Node.js features.
 - **Security Context**:
   - Default to `--plugin-isolation strict`.

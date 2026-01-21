@@ -25,7 +25,7 @@ Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requir
 ## 2. Testing Principles
 
 - **Focus on Behavior**: Test what the user (MCP client) observes. Verify that tools return the expected content and errors. See [functionality and testing](../CONTRIBUTING.md#functionality-testing) guidance.
-- **Pragmatic Typings**: Explicit `any` is allowed and encouraged in tests to avoid over-modeling mocks and stubs.
+- **Pragmatic Typings**: Explicit `any` is allowed in tests to avoid over-modeling mocks and stubs. Avoid "type threading" in tests; do not attempt to perfectly type every mock. Focus on validating observable behavior. Use lightweight local type aliases if needed.
 - **Don't Test Dependencies**: Assume `@patternfly` packages and the MCP SDK work as intended. Test our integration and custom logic.
 - **Reproducers Required**: Every bug fix must include a test case that reproduces the issue and verifies the fix.
 - **Suggestive Failure**: Tools should be tested for "suggestive failure". If a resource is not found, the tool should attempt to suggest the closest match using available metadata or fuzzy matching.
