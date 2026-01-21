@@ -39,9 +39,18 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 ## 2. Core Behavior Standards
 
 - **Sequential Processing**: Ask questions one at a time; process requests in logical order; complete one task before starting another.
+- **Architectural Alignment**: Always confirm changes against the [system architecture and roadmap](../docs/architecture.md) before proceeding with implementation.
 - **Reference-Based Implementation**: Review git history; study existing patterns (e.g., "creator" pattern for tools/resources); maintain code style consistency and follow [standard Git workflows](../CONTRIBUTING.md#using-git).
 - **Validation Required**: Follow checklists; verify requirements; test thoroughly; validate against PatternFly v6 standards. Review [pull request warning signs](../CONTRIBUTING.md#pull-requests) to avoid common pitfalls.
 - **Confirmation Required**: Confirm success; summarize changes; explain impact; verify understanding.
+- **Environment Awareness**: 
+  - Server execution requires **Node.js >= 20**.
+  - External tool plugins (`--tool`) require **Node.js >= 22**.
+  - Always verify environment compatibility when proposing tools using modern Node.js features.
+- **Security Context**:
+  - Default to `--plugin-isolation strict`.
+  - If a tool requires filesystem or network access beyond the sandbox, document the need for `--plugin-isolation none` explicitly.
+  - Warn users when a proposed solution requires disabling isolation.
 - **State Management**: Use `.agent/` directory for local guidance and state; maintain context; preserve session information.
 - **Security Awareness**: Be mindful of path traversal and isolation levels when working with external tools and resource loading.
 
@@ -84,6 +93,10 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 3. **Backward Compatibility**
   - Minimize breaking changes
   - Document when necessary
+
+4. **Architectural Alignment**
+  - Always verify that the proposed solution fits within the project's [long-term architecture and roadmap](../docs/architecture.md).
+  - Consult the roadmap before introducing major features or structural changes.
 
 ## 5. Validation Procedures
 

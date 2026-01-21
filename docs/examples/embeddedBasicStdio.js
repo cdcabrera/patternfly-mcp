@@ -1,5 +1,5 @@
 /**
- * Basic Usage Example
+ * An embedded basic STDIO Transport example.
  *
  * This example demonstrates how to start the PatternFly MCP Server
  * with default stdio transport.

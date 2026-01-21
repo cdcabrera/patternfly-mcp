@@ -245,7 +245,21 @@ See [examples/](examples/) for more programmatic usage examples.
 
 ## MCP Tool Plugins
 
-You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out‑of‑process in an isolated **Tools Host** (Node.js >= 22) to ensure security and stability.
+You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out‑of‑process in an isolated **Tools Host** to ensure security and stability.
+
+### Environmental Requirements
+
+- **Node.js >= 22**: Loading external tool plugins (`--tool`) requires Node.js version 22 or higher due to the use of advanced process isolation and ESM module loading features.
+- **ESM**: Plugins MUST be authored as ECMAScript Modules.
+
+### Security & Isolation
+
+The server provides two isolation modes for external plugins via the `--plugin-isolation` flag:
+
+- **`strict` (Default)**: The plugin runs in a restricted environment with limited access to the system. This is the recommended mode for most tools.
+- **`none`**: The plugin has full access to the system environment, including the filesystem and network, inherited from the host process. Use this mode ONLY if your tool requires specific system access (e.g., executing Git commands or accessing local files outside the sandbox) and you trust the plugin code.
+
+> **Warning**: Disabling isolation (`--plugin-isolation none`) increases the security risk. Always document the reason for requiring this mode in your tool's documentation.
 
 ### Terminology
 

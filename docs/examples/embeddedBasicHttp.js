@@ -1,5 +1,5 @@
 /**
- * An embedded HTTP Transport example.
+ * An embedded basic HTTP Transport example.
  *
  * This example demonstrates how to start the PatternFly MCP Server
  * with HTTP transport and security configuration.

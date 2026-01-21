@@ -2,8 +2,8 @@
 
 PatternFly MCP code examples for tooling plugins and development use cases.
 
-- **[embeddedBasic.js](embeddedBasic.js)** - Embedding a basic server startup with stdio transport
-- **[embeddedHttpTransport.js](embeddedHttpTransport.js)** - Embedding an HTTP transport configuration and usage
+- **[embeddedBasicStdio.js](embeddedBasicStdio.js)** - Embedding a basic STDIO transport configuration and usage
+- **[embeddedBasicHttp.js](embeddedBasicHttp.js)** - Embedding a basic HTTP transport configuration and usage
 - **[embeddedInlineTools.ts](embeddedInlineTools.ts)** - Embedding the server and using custom inline tools to make your own MCP server
 - **[toolPluginGitStatus.js](toolPluginGitStatus.js)** - A custom tool using Git
 - **[toolPluginHelloWorld.js](toolPluginHelloWorld.js)** - A basic JS tool plugin example
@@ -22,4 +22,4 @@ Examples should follow the basic guidelines:
    - `npm run test:lint`
    - `npm run test:types`
    - `npm run test:spell-docs`
-7. Examples are confirmed to be tested and runnable
+7. Examples are tested and can be run without errors

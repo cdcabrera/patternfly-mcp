@@ -28,6 +28,7 @@ Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requir
 - **Pragmatic Typings**: Explicit `any` is allowed and encouraged in tests to avoid over-modeling mocks and stubs.
 - **Don't Test Dependencies**: Assume `@patternfly` packages and the MCP SDK work as intended. Test our integration and custom logic.
 - **Reproducers Required**: Every bug fix must include a test case that reproduces the issue and verifies the fix.
+- **Suggestive Failure**: Tools should be tested for "suggestive failure". If a resource is not found, the tool should attempt to suggest the closest match using available metadata or fuzzy matching.
 
 ## 3. Mocking and Snapshots
 
