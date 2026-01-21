@@ -128,7 +128,7 @@ Use utility classes only when:
   
   /* ❌ Wrong - Hardcoded values or base tokens */
   /* color: #333333; */
-  /* color: var`--pf-t--global--text--color--100); */
+  /* color: var(--pf-t--global--text--color--100); */
   /* margin: 16px; */
 }
 ```
