@@ -11,13 +11,13 @@ This document describes the key project-specific documentation files available f
 
 The following files are located in the project root and provide critical, specialized context for development. When working with AI assistants, providing relevant sections from these files is crucial for getting accurate and project-specific guidance.
 
-### 1. `patternfly-chatbot.txt`
+### patternfly-chatbot.txt
 
 -   **Location**: `../../patternfly-chatbot.txt`
 -   **Purpose**: The primary context file for the PatternFly Chatbot architecture. It contains component hierarchy, implementation patterns, and best practices specific to chatbot development.
 -   **When to Use**: Use as the main reference when building, integrating, or troubleshooting any chatbot features.
 
-### 2. `patternfly-react-component-groups.txt`
+### patternfly-react-component-groups.txt
 
 -   **Location**: `../../patternfly-react-component-groups.txt`
 -   **Purpose**: A comprehensive reference for PatternFly React component groups and specialized libraries. It covers component classifications, dependencies, and advanced composition patterns.

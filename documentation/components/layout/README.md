@@ -142,7 +142,7 @@ For performance-critical applications, use standard React patterns like lazy loa
 
 ## Common Layout Issues
 
-For troubleshooting, see [Common Issues](../../troubleshooting/common-issues.md#layout-issues).
+For troubleshooting, see [Common Issues](../../troubleshooting/common-issues.md#styling-and-layout-issues).
 
 ## Valid PatternFly Page Layout (v6+)
 
