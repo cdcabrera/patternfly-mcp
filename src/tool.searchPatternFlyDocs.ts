@@ -1,135 +1,23 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { componentNames as pfComponentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
-import { getLocalDocs } from './docs.local';
 import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
-
-/**
- * List of component names to include in search results.
- *
- * @note The "table" component is manually added to the list because it's not currently included
- * in the component schemas package.
- */
-const componentNames = [...pfComponentNames, 'Table'].sort((a, b) => a.localeCompare(b));
-
-/**
- * Extract a component name from an internal documentation URL string
- *
- * @note This is reliant on the documentation URLs being in the accepted format.
- * If the format changes, this will need to be updated. This is a short-term solution
- * until we can move the internal links to a new format like:
- * ```
- *  {
- *    name: 'Charts',
- *    description: 'Colors for Charts',
- *    type: 'example',
- *    scope: '@patternfly',
- *    url: `${PF_EXTERNAL_EXAMPLES_CHARTS}/ChartTheme/examples/ChartTheme.md`
- *  }
- * ```
- *
- * @example
- * extractComponentName('[@patternfly/ComponentName - Type](URL)');
- *
- * @param docUrl - Documentation URL string
- * @returns ComponentName or `null` if not found
- */
-const extractComponentName = (docUrl: string): string | null => {
-  // Stop at space or closing bracket, allowing dashes in the name
-  const match = docUrl.match(/\[@patternfly\/([^\s\]]+)/);
-  const name = match && match[1] ? match[1].trim() : null;
-
-  // Filter out known non-component patterns
-  if (name?.startsWith('react-')) {
-    return null;
-  }
-
-  return name;
-};
-
-/**
- * Extract a URL from an internal Markdown link.
- *
- * @note This is a short-term solution until we can move the internal links to a new format.
- *
- * @example
- * extractUrl('[text](URL)');
- *
- * @param docUrl
- * @returns URL or original string if not a Markdown link
- */
-const extractUrl = (docUrl: string): string => {
-  const match = docUrl.match(/]\(([^)]+)\)/);
-
-  return match && match[1] ? match[1] : docUrl;
-};
-
-/**
- * Build a map of component names relative to internal documentation URLs.
- *
- * @returns Map of component name -> array of URLs (Design Guidelines + Accessibility)
- */
-const setComponentToDocsMap = () => {
-  const map = new Map<string, string[]>();
-  const allDocs = [...COMPONENT_DOCS, ...LAYOUT_DOCS, ...CHART_DOCS, ...getLocalDocs()];
-  const getKey = (value?: string | undefined) => {
-    if (!value) {
-      return undefined;
-    }
-
-    for (const [key, urls] of map) {
-      if (urls.includes(value)) {
-        return key;
-      } else {
-        const results = fuzzySearch(value, urls, {
-          deduplicateByNormalized: true
-        });
-
-        if (results.length) {
-          return key;
-        }
-      }
-    }
-
-    return undefined;
-  };
-
-  allDocs.forEach(docUrl => {
-    const componentName = extractComponentName(docUrl);
-
-    if (componentName) {
-      const url = extractUrl(docUrl);
-      const existing = map.get(componentName) || [];
-
-      map.set(componentName, [...existing, url]);
-    }
-  });
-
-  return {
-    map,
-    getKey
-  };
-};
-
-/**
- * Memoized version of componentToDocsMap.
- */
-setComponentToDocsMap.memo = memo(setComponentToDocsMap);
+import {
+  getPatternFlyMcpDocs,
+  getPatternFlyMcpResources, getPatternFlyReactComponentNames
+} from './patternFly.getResources';
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
  * @param settings - Optional settings object
- * @param settings.names - List of names to search. Defaults to all component names.
+ * @param settings.components - Object of multifaceted component names to search.
+ * @param settings.documentation - Object of multifaceted documentation entries to search.
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all components
@@ -137,16 +25,20 @@ setComponentToDocsMap.memo = memo(setComponentToDocsMap);
  *   - `exactMatches`: All exact matches within fuzzy search results
  *   - `searchResults`: Fuzzy search results
  */
-const searchComponents = (searchQuery: string, { names = componentNames, allowWildCardAll = false } = {}) => {
+const searchComponents = (searchQuery: string, {
+  components = getPatternFlyReactComponentNames.memo(),
+  documentation = getPatternFlyMcpDocs.memo(),
+  // resources = getPatternFlyMcpResources.memo(),
+  allowWildCardAll = false
+} = {}) => {
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
-  const { map: componentToDocsMap } = setComponentToDocsMap.memo();
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = componentNames.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = components.allComponentNames.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, names, {
+    searchResults = fuzzySearch(searchQuery, components.allComponentNames, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -155,8 +47,8 @@ const searchComponents = (searchQuery: string, { names = componentNames, allowWi
   }
 
   const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
-    const isSchemasAvailable = pfComponentNames.includes(result.item);
-    const urls = componentToDocsMap.get(result.item) || [];
+    const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
+    const urls = documentation.byNameWithPath[result.item] || [];
     const matchedUrls = new Set<string>();
 
     urls.forEach(url => {
@@ -289,4 +181,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchComponents, setComponentToDocsMap, componentNames };
+export { searchPatternFlyDocsTool, searchComponents };
