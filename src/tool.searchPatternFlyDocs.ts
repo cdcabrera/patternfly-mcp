@@ -2,15 +2,12 @@ import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { componentNames as pfComponentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
-import { getLocalDocs } from './docs.local';
 import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import docsCatalog from './docs.json';
 
 /**
  * List of component names to include in search results.
@@ -18,59 +15,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
  * @note The "table" component is manually added to the list because it's not currently included
  * in the component schemas package.
  */
-const componentNames = [...pfComponentNames, 'Table'].sort((a, b) => a.localeCompare(b));
-
-/**
- * Extract a component name from an internal documentation URL string
- *
- * @note This is reliant on the documentation URLs being in the accepted format.
- * If the format changes, this will need to be updated. This is a short-term solution
- * until we can move the internal links to a new format like:
- * ```
- *  {
- *    name: 'Charts',
- *    description: 'Colors for Charts',
- *    type: 'example',
- *    scope: '@patternfly',
- *    url: `${PF_EXTERNAL_EXAMPLES_CHARTS}/ChartTheme/examples/ChartTheme.md`
- *  }
- * ```
- *
- * @example
- * extractComponentName('[@patternfly/ComponentName - Type](URL)');
- *
- * @param docUrl - Documentation URL string
- * @returns ComponentName or `null` if not found
- */
-const extractComponentName = (docUrl: string): string | null => {
-  // Stop at space or closing bracket, allowing dashes in the name
-  const match = docUrl.match(/\[@patternfly\/([^\s\]]+)/);
-  const name = match && match[1] ? match[1].trim() : null;
-
-  // Filter out known non-component patterns
-  if (name?.startsWith('react-')) {
-    return null;
-  }
-
-  return name;
-};
-
-/**
- * Extract a URL from an internal Markdown link.
- *
- * @note This is a short-term solution until we can move the internal links to a new format.
- *
- * @example
- * extractUrl('[text](URL)');
- *
- * @param docUrl
- * @returns URL or original string if not a Markdown link
- */
-const extractUrl = (docUrl: string): string => {
-  const match = docUrl.match(/]\(([^)]+)\)/);
-
-  return match && match[1] ? match[1] : docUrl;
-};
+const componentNames = Array.from(new Set([...pfComponentNames, 'Table', ...Object.keys(docsCatalog.docs)])).sort((a, b) => a.localeCompare(b));
 
 /**
  * Build a map of component names relative to internal documentation URLs.
@@ -79,7 +24,6 @@ const extractUrl = (docUrl: string): string => {
  */
 const setComponentToDocsMap = () => {
   const map = new Map<string, string[]>();
-  const allDocs = [...COMPONENT_DOCS, ...LAYOUT_DOCS, ...CHART_DOCS, ...getLocalDocs()];
   const getKey = (value?: string | undefined) => {
     if (!value) {
       return undefined;
@@ -102,21 +46,36 @@ const setComponentToDocsMap = () => {
     return undefined;
   };
 
-  allDocs.forEach(docUrl => {
-    const componentName = extractComponentName(docUrl);
-
-    if (componentName) {
-      const url = extractUrl(docUrl);
-      const existing = map.get(componentName) || [];
-
-      map.set(componentName, [...existing, url]);
-    }
+  Object.entries(docsCatalog.docs).forEach(([name, entries]) => {
+    map.set(name, (entries as any[]).map(entry => entry.path));
   });
 
   return {
     map,
     getKey
   };
+};
+
+/**
+ * Find a documentation entry by its path/URL.
+ *
+ * @param path - The documentation path or URL
+ * @returns The entry and its component name, or undefined
+ */
+const findEntryByPath = (path?: string) => {
+  if (!path) {
+    return undefined;
+  }
+
+  for (const [name, entries] of Object.entries(docsCatalog.docs)) {
+    const entry = (entries as any[]).find(docEntry => docEntry.path === path);
+
+    if (entry) {
+      return { ...entry, name };
+    }
+  }
+
+  return undefined;
 };
 
 /**
@@ -289,4 +248,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchComponents, setComponentToDocsMap, componentNames };
+export { searchPatternFlyDocsTool, searchComponents, setComponentToDocsMap, findEntryByPath, componentNames };

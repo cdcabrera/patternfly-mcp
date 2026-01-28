@@ -1,9 +1,42 @@
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
-import { getLocalDocs } from './docs.local';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
+import docsCatalog from './docs.json';
+
+/**
+ * Get documentation links by section from the JSON catalog.
+ *
+ * @param section - The section to filter by
+ */
+const getDocsBySection = (section: string) => {
+  const result: string[] = [];
+
+  Object.entries(docsCatalog.docs).forEach(([name, entries]) => {
+    (entries as any[]).forEach(entry => {
+      if (entry.section === section) {
+        if (section === 'local') {
+          result.push(`[@patternfly/${entry.displayName}](${entry.path})`);
+        } else {
+          let categoryLabel = entry.category;
+
+          if (categoryLabel === 'design-guidelines') {
+            categoryLabel = 'Design Guidelines';
+          } else if (categoryLabel === 'accessibility') {
+            categoryLabel = 'Accessibility';
+          } else if (categoryLabel === 'react') {
+            categoryLabel = 'Examples';
+          } else {
+            // Capitalize first letter of other categories
+            categoryLabel = categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1);
+          }
+
+          result.push(`[@patternfly/${name} - ${categoryLabel}](${entry.path})`);
+        }
+      }
+    });
+  });
+
+  return result;
+};
 
 /**
  * Name of the resource.
@@ -38,16 +71,16 @@ const patternFlyDocsIndexResource = (): McpResource => [
       '# PatternFly Documentation Index',
       '',
       '## Components',
-      ...COMPONENT_DOCS,
+      ...getDocsBySection('components'),
       '',
       '## Layouts',
-      ...LAYOUT_DOCS,
+      ...getDocsBySection('layouts'),
       '',
       '## Charts',
-      ...CHART_DOCS,
+      ...getDocsBySection('charts'),
       '',
       '## Local Documentation',
-      ...getLocalDocs()
+      ...getDocsBySection('local')
     );
 
     return {
