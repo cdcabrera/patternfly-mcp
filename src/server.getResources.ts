@@ -1,10 +1,144 @@
-import { readFile } from 'node:fs/promises';
-import { isAbsolute, normalize, resolve } from 'node:path';
+import { access, readFile } from 'node:fs/promises';
+import { isAbsolute, normalize, resolve, dirname, join, parse } from 'node:path';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl } from './server.helpers';
+import { fuzzySearch } from './server.search';
+
+interface ProcessedDoc {
+  content: string;
+  path: string | undefined;
+  resolvedPath: string | undefined;
+  isSuccess: boolean;
+}
+
+/**
+ * Dependency version normalize. Strips common semver prefixes (^, ~, v, >, >=) and keeps only the major version
+ * for more reliable matching.
+ *
+ * @param str - The version string to normalize
+ * @returns The normalized version string, or an empty string if the input is invalid.
+ */
+const depMajorVersionNormalize = (str: string) =>
+  normalizeString(str).replace(/^[~^v><=]+/, '').split('.')[0] || '';
+
+/**
+ * Match a dependency version against a list of supported versions.
+ *
+ * @Note
+ * - Ignore URLs, paths, and aliases (:/.)
+ * - Ignore Ambiguous Ranges (<) without a greater than or equal operator (>=)
+ * - Fuzzy search against normalized versions semver major versions
+ *
+ * @param value - The dependency version string to match
+ * @param supportedVersions - An array of supported version strings
+ * @returns The matched version string or `undefined` if no match is found.
+ */
+const matchPackageVersion = (value?: string, supportedVersions: string[] = []) => {
+  if (
+    supportedVersions.length === 0 ||
+    typeof value !== 'string' ||
+    value.includes(':') ||
+    value.includes('/') ||
+    value.startsWith('.') ||
+    (value.includes('<') && !value.includes('>=') && !value.includes('<=')) ||
+    (value.includes('>') && !value.includes('>=') && !value.includes('<='))
+  ) {
+    return undefined;
+  }
+
+  let updatedValue: string | undefined = value;
+
+  // Range less than greater than and equal
+  let greaterThanLessThanSet = false;
+
+  if (value.includes('<=') && value.includes('>=')) {
+    greaterThanLessThanSet = true;
+    updatedValue = value.split('<=')[1]?.split('>')[0]?.trim();
+  }
+
+  if (!greaterThanLessThanSet && value.includes('<=') && value.includes('>')) {
+    greaterThanLessThanSet = true;
+    updatedValue = value.split('<=')[1]?.split('>')[0]?.trim();
+  }
+
+  if (!greaterThanLessThanSet && value.includes('>=') && value.includes('<')) {
+    updatedValue = value.split('>=')[1]?.split('<')[0]?.trim();
+  }
+
+  // Inclusive range
+  if (value.includes('-')) {
+    updatedValue = value.split('-')[1]?.trim();
+  }
+
+  if (!updatedValue) {
+    return undefined;
+  }
+
+  if (supportedVersions.indexOf(updatedValue) > -1) {
+    return updatedValue;
+  }
+
+  // Match version value against supported versions using fuzzy search
+  // maxDistance: 0 ensures we only match the exact major version after normalization
+  const versionMatch = fuzzySearch(updatedValue, supportedVersions, {
+    normalizeFn: depMajorVersionNormalize,
+    isFuzzyMatch: true,
+    maxDistance: 0
+  });
+
+  return versionMatch?.[0]?.item;
+};
+
+/**
+ * Sort package versions based on major semver version number, integer.
+ *
+ * @param versions - An array or Set of dependency version strings.
+ * @param settings - Sorting options.
+ * @param settings.isAscending - Sort ascending (true) or descending (false). Defaults to true.
+ * @returns A shallow cloned sorted array of versions.
+ */
+const sortPackageVersions = (versions: Set<string> | string[], { isAscending = true } = {}) => {
+  const updatedVersions = Array.isArray(versions) ? [...versions] : Array.from(versions);
+
+  return updatedVersions.sort((a, b) => {
+    const aNum = parseInt(depMajorVersionNormalize(a), 10);
+    const bNum = parseInt(depMajorVersionNormalize(b), 10);
+
+    return isAscending ? aNum - bNum : bNum - aNum;
+  });
+};
+
+/**
+ * Find the nearest package.json by walking up the directory tree.
+ *
+ * @param startPath - Directory to start searching from
+ */
+const findNearestPackageJson = async (startPath: string) => {
+  let currentDir = startPath?.trim?.();
+
+  if (typeof currentDir !== 'string' || !currentDir.length) {
+    return undefined;
+  }
+
+  const { root } = parse(currentDir);
+
+  while (currentDir !== root) {
+    const pkgPath = join(currentDir, 'package.json');
+
+    try {
+      await access(pkgPath);
+
+      return pkgPath;
+    } catch {
+      currentDir = dirname(currentDir);
+    }
+  }
+
+  return undefined;
+};
 
 /**
  * Read a local file and return its contents as a string
@@ -62,6 +196,20 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptio
  * @param options - Options
  */
 const resolveLocalPathFunction = (path: string, options = getOptions()) => {
+  const documentationPrefix = options.docsPathSlug;
+
+  if (path.startsWith(documentationPrefix)) {
+    const base = options.docsPath;
+    const resolved = resolve(base, path.slice(documentationPrefix.length));
+
+    // Safety check: Ensure the path is within the documentation directory
+    if (!resolved.startsWith(normalize(base))) {
+      throw new Error(`Access denied: path ${path} is outside of documentation directory ${base}`);
+    }
+
+    return resolved;
+  }
+
   if (isUrl(path)) {
     return path;
   }
@@ -83,11 +231,10 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
  */
 const loadFileFetch = async (pathOrUrl: string) => {
-  const isUrlStr = isUrl(pathOrUrl);
-  const updatedPathOrUrl = (isUrlStr && pathOrUrl) || resolveLocalPathFunction(pathOrUrl);
+  const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
   let content;
 
-  if (isUrlStr) {
+  if (isUrl(updatedPathOrUrl)) {
     content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else {
     content = await readLocalFileFunction.memo(updatedPathOrUrl);
@@ -133,11 +280,16 @@ const promiseQueue = async (queue: string[], limit = 5) => {
  * @note Remember to limit the number of docs to load to avoid OOM.
  * @param inputs - List of paths or URLs to load
  * @param options - Optional options
+ * @returns An array of loaded docs with content, path, resolvedPath, and isSuccess properties:
+ *   - `content` is the loaded content string.
+ *   - `path` is the original input path or URL.
+ *   - `resolvedPath` is the resolved path after normalization.
+ *   - `isSuccess` is true if the doc was successfully loaded, false otherwise.
  */
 const processDocsFunction = async (
   inputs: string[],
   options = getOptions()
-) => {
+): Promise<ProcessedDoc[]> => {
   const uniqueInputs = new Map(
     inputs.map(input => [normalizeString.memo(input), input.trim()])
   );
@@ -176,4 +328,21 @@ const processDocsFunction = async (
   return docs;
 };
 
-export { fetchUrlFunction, loadFileFetch, processDocsFunction, promiseQueue, readLocalFileFunction, resolveLocalPathFunction };
+/**
+ * Memoized version of processDocsFunction. Use default memo options.
+ */
+processDocsFunction.memo = memo(processDocsFunction, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
+
+export {
+  depMajorVersionNormalize,
+  fetchUrlFunction,
+  findNearestPackageJson,
+  loadFileFetch,
+  matchPackageVersion,
+  processDocsFunction,
+  promiseQueue,
+  readLocalFileFunction,
+  resolveLocalPathFunction,
+  sortPackageVersions,
+  type ProcessedDoc
+};
