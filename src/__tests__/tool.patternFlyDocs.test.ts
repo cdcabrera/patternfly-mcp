@@ -60,7 +60,7 @@ describe('usePatternFlyDocsTool, callback', () => {
 
     expect(mockProcessDocs).toHaveBeenCalledTimes(1);
     expect(result.content[0].text).toBeDefined();
-    expect(result.content[0].text.startsWith('# Documentation from')).toBe(true);
+    expect(result.content[0].text.startsWith('# ')).toBe(true);
   });
 
   it.each([

@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getPatternFlyMcpDocs should return multiple organized facets: properties 1`] = `
+[
+  "original",
+  "availableVersions",
+  "nameIndex",
+  "bySection",
+  "byCategory",
+  "byGuidance",
+  "byPath",
+  "byNameWithPath",
+  "byNameWithPathGuidance",
+  "byNameWithPathNoGuidance",
+]
+`;
+
+exports[`getPatternFlyMcpResources should return multiple organized facets: properties 1`] = `
+[
+  "nameIndex",
+]
+`;
+
+exports[`getPatternFlyReactComponentNames should return multiple organized facets: properties 1`] = `
+[
+  "nameIndex",
+  "componentNamesWithSchema",
+]
+`;

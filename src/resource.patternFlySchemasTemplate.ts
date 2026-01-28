@@ -1,15 +1,14 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { componentNames as pfComponentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpResource } from './server';
 import { getOptions } from './options.context';
-import { getComponentSchema } from './tool.patternFlyDocs';
-import { searchComponents } from './tool.searchPatternFlyDocs';
+import { getPatternFlyComponentSchema } from './patternFly.getResources';
+import { searchPatternFly } from './tool.searchPatternFlyDocs';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
  */
-type ComponentSchema = Awaited<ReturnType<typeof getComponentSchema>>;
+type ComponentSchema = Awaited<ReturnType<typeof getPatternFlyComponentSchema>>;
 
 /**
  * Name of the resource template.
@@ -57,12 +56,12 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
       );
     }
 
-    const { exactMatches, searchResults } = searchComponents.memo(name, { names: pfComponentNames });
+    const { exactMatches, searchResults } = searchPatternFly.memo(name);
     let result: ComponentSchema | undefined = undefined;
 
     if (exactMatches.length > 0) {
       for (const match of exactMatches) {
-        const schema = await getComponentSchema.memo(match.item);
+        const schema = await getPatternFlyComponentSchema.memo(match.item);
 
         if (schema) {
           result = schema;

@@ -1,32 +1,17 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { getComponentSchema as pfGetComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
 import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
-import { setComponentToDocsMap, searchComponents } from './tool.searchPatternFlyDocs';
-import { DEFAULT_OPTIONS } from './options.defaults';
+import { searchPatternFly } from './tool.searchPatternFlyDocs';
 import { log } from './logger';
-
-/**
- * Get the component schema from @patternfly/patternfly-component-schemas.
- *
- * @param componentName
- */
-const getComponentSchema = async (componentName: string) => {
-  try {
-    return await pfGetComponentSchema(componentName);
-  } catch {}
-
-  return undefined;
-};
-
-/**
- * Memoized version of getComponentSchema.
- */
-getComponentSchema.memo = memo(getComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
+import {
+  getPatternFlyMcpDocs,
+  getPatternFlyComponentSchema,
+  type PatternFlyMcpDocsByPathEntry
+} from './patternFly.getResources';
 
 /**
  * usePatternFlyDocs tool function
@@ -36,7 +21,6 @@ getComponentSchema.memo = memo(getComponentSchema, DEFAULT_OPTIONS.toolMemoOptio
  */
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   const memoProcess = memo(processDocsFunction, options?.toolMemoOptions?.usePatternFlyDocs);
-  const { getKey: getComponentToDocsKey } = setComponentToDocsMap.memo();
 
   const callback = async (args: any = {}) => {
     const { urlList, name } = args;
@@ -77,7 +61,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (name) {
-      const { exactMatches, searchResults } = searchComponents.memo(name);
+      const { exactMatches, searchResults } = searchPatternFly.memo(name);
 
       if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
@@ -130,17 +114,24 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     for (const doc of docs) {
-      const componentName = getComponentToDocsKey(doc.path);
+      let entry = { name: 'Documentation', category: 'unknown' } as PatternFlyMcpDocsByPathEntry;
+
+      if (doc.path) {
+        entry = getPatternFlyMcpDocs.memo().byPath[doc.path] || entry;
+      }
+
+      const componentName = entry.name;
 
       docResults.push(stringJoin.newline(
-        `# Documentation${(componentName && ` for ${componentName}`) || ''} from ${doc.path || 'unknown'}`,
+        `# ${entry.displayName || componentName} [${entry.category}]`,
+        `Source: ${doc.path || 'unknown'}`,
         '',
         doc.content
       ));
 
       if (componentName && !schemasSeen.has(componentName)) {
         schemasSeen.add(componentName);
-        const componentSchema = await getComponentSchema.memo(componentName);
+        const componentSchema = await getPatternFlyComponentSchema.memo(componentName);
 
         if (componentSchema) {
           schemaResults.push(stringJoin.newline(
@@ -190,4 +181,4 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
  */
 usePatternFlyDocsTool.toolName = 'usePatternFlyDocs';
 
-export { usePatternFlyDocsTool, getComponentSchema };
+export { usePatternFlyDocsTool };

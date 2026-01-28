@@ -1,9 +1,50 @@
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
-import { getLocalDocs } from './docs.local';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
+import { memo } from './server.caching';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
+
+/**
+ * Normalize the PatternFly documentation index by category links.
+ *
+ * @returns An object containing normalized category names with associated Markdown links.
+ */
+const normalizePatternFlyDocsIndex = () => {
+  const { byCategory } = getPatternFlyMcpDocs.memo();
+  const byCategoryLinks: { [key: string]: string[] } = {};
+
+  Object.entries(byCategory).forEach(([category, entries]) => {
+    let categoryLabel = category;
+
+    switch (categoryLabel) {
+      case 'design-guidelines':
+        categoryLabel = 'Design Guidelines';
+        break;
+      case 'accessibility':
+        categoryLabel = 'Accessibility';
+        break;
+      case 'react':
+        categoryLabel = 'Examples';
+        break;
+      default:
+        categoryLabel = categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1);
+        break;
+    }
+
+    entries.forEach(entry => {
+      const updatedCategoryLabel = entry.section === 'guidelines' ? 'AI Guidance' : categoryLabel;
+
+      byCategoryLinks[updatedCategoryLabel] ??= [];
+      byCategoryLinks[updatedCategoryLabel]?.push(`[@patternfly/${entry.displayName} - ${updatedCategoryLabel}](${entry.path})`);
+    });
+  });
+
+  return byCategoryLinks;
+};
+
+/**
+ * Memoized version of normalizePatternFlyDocsIndex.
+ */
+normalizePatternFlyDocsIndex.memo = memo(normalizePatternFlyDocsIndex);
 
 /**
  * Name of the resource.
@@ -34,20 +75,13 @@ const patternFlyDocsIndexResource = (): McpResource => [
   URI_TEMPLATE,
   CONFIG,
   async () => {
+    const normalizedIndex = normalizePatternFlyDocsIndex.memo();
+
     const allDocs = stringJoin.newline(
       '# PatternFly Documentation Index',
       '',
-      '## Components',
-      ...COMPONENT_DOCS,
-      '',
-      '## Layouts',
-      ...LAYOUT_DOCS,
-      '',
-      '## Charts',
-      ...CHART_DOCS,
-      '',
-      '## Local Documentation',
-      ...getLocalDocs()
+      ...Object.entries(normalizedIndex).sort(([a], [b]) => a.localeCompare(b)).map(([category, links]) =>
+        stringJoin.newline('', `## ${category}`, '', ...links))
     );
 
     return {
@@ -62,4 +96,4 @@ const patternFlyDocsIndexResource = (): McpResource => [
   }
 ];
 
-export { patternFlyDocsIndexResource, NAME, URI_TEMPLATE, CONFIG };
+export { patternFlyDocsIndexResource, normalizePatternFlyDocsIndex, NAME, URI_TEMPLATE, CONFIG };
