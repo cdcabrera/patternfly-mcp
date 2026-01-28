@@ -6,7 +6,7 @@ import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
-import { setComponentToDocsMap, searchComponents } from './tool.searchPatternFlyDocs';
+import { setComponentToDocsMap, searchComponents, findEntryByPath } from './tool.searchPatternFlyDocs';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { log } from './logger';
 
@@ -130,10 +130,12 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     for (const doc of docs) {
-      const componentName = getComponentToDocsKey(doc.path);
+      const entry = findEntryByPath(doc.path);
+      const componentName = entry?.name || getComponentToDocsKey(doc.path);
 
       docResults.push(stringJoin.newline(
-        `# Documentation${(componentName && ` for ${componentName}`) || ''} from ${doc.path || 'unknown'}`,
+        `# ${entry?.displayName || componentName || 'Documentation'} [${entry?.category || 'unknown'}]`,
+        `Source: ${doc.path || 'unknown'}`,
         '',
         doc.content
       ));

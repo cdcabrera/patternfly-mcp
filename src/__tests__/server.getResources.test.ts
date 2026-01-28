@@ -103,6 +103,10 @@ describe('resolveLocalPathFunction', () => {
     {
       description: 'url, file',
       path: 'file://someDirectory/dolor-sit.md'
+    },
+    {
+      description: 'documentation slug',
+      path: 'documentation:guidelines/README.md'
     }
   ])('should return a consistent path, $description', ({ path }) => {
     const result = resolveLocalPathFunction(path);
@@ -126,6 +130,11 @@ describe('loadFileFetch', () => {
       description: 'with remote URL',
       pathUrl: 'https://example.com/remote.md',
       expectedIsFetch: true
+    },
+    {
+      description: 'with documentation slug',
+      pathUrl: 'documentation:guidelines/README.md',
+      expectedIsFetch: false
     }
   ])('should attempt to load a file or fetch, $description', async ({ pathUrl, expectedIsFetch }) => {
     const mockFetchCall = jest.fn().mockResolvedValue('content');

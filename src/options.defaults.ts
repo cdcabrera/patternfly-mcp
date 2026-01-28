@@ -12,6 +12,7 @@ import { type ToolModule } from './server.toolsUser';
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
  * @property docsPath - Path to the documentation directory.
+ * @property docsPathSlug - Local docs slug. Used for resolving local stored documentation.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
  * @property {LoggingOptions} logging - Logging options.
@@ -32,6 +33,7 @@ import { type ToolModule } from './server.toolsUser';
  * @property pfExternalChartsDesign - PatternFly charts' design guidelines URL.
  * @property pfExternalDesignLayouts - PatternFly design guidelines' layouts' URL.
  * @property pfExternalAccessibility - PatternFly accessibility URL.
+ * @property {PatternFlyOptions} patternflyOptions - PatternFly-specific options.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property separator - Default string delimiter.
  * @property {StatsOptions} stats - Stats options.
@@ -46,6 +48,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
   contextUrl: string;
   docsPath: string;
+  docsPathSlug: string;
   http: HttpOptions;
   isHttp: boolean;
   logging: TLogOptions;
@@ -65,6 +68,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   pfExternalChartsDesign: string;
   pfExternalDesignLayouts: string;
   pfExternalAccessibility: string;
+  patternflyOptions: PatternFlyOptions;
   repoName: string | undefined;
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   resourceModules: unknown | unknown[];
@@ -78,7 +82,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 }
 
 /**
- * Overrides for default options.
+ * Overrides for default options. Exposed to the consumer/user.
  */
 type DefaultOptionsOverrides = Partial<
   Omit<DefaultOptions, 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
@@ -153,6 +157,26 @@ interface PluginHostOptions {
  */
 interface LoggingSession extends LoggingOptions {
   readonly channelName: string;
+}
+
+/**
+ * PatternFly-specific options.
+ *
+ * @property availableVersions List of available PatternFly versions to the MCP server.
+ * @property default Default specific options.
+ * @property default.defaultVersion Default PatternFly version.
+ * @property default.versionWhitelist List of mostly reliable dependencies to scan for when detecting the PatternFly version.
+ * @property default.versionStrategy Strategy to use when multiple PatternFly versions are detected.
+ *    - 'highest': Use the highest major version found.
+ *    - 'lowest': Use the lowest major version found.
+ */
+interface PatternFlyOptions {
+  availableVersions: string[];
+  default: {
+    defaultVersion: string;
+    versionWhitelist: string[];
+    versionStrategy: 'highest' | 'lowest';
+  }
 }
 
 /**
@@ -291,6 +315,21 @@ const XHR_FETCH_OPTIONS: XhrFetchOptions = {
 const LOG_BASENAME = 'pf-mcp:log';
 
 /**
+ * Default PatternFly-specific options.
+ */
+const PATTERNFLY_OPTIONS: PatternFlyOptions = {
+  availableVersions: ['v6'],
+  default: {
+    defaultVersion: 'v6',
+    versionWhitelist: [
+      '@patternfly/react-core',
+      '@patternfly/patternfly'
+    ],
+    versionStrategy: 'highest'
+  }
+};
+
+/**
  * URL regex pattern for detecting external URLs
  */
 const URL_REGEX = /^(https?:)\/\//i;
@@ -386,6 +425,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(resolve(process.cwd()), 'documentation'),
+  docsPathSlug: 'documentation:',
   isHttp: false,
   http: HTTP_OPTIONS,
   logging: LOGGING_OPTIONS,
@@ -405,6 +445,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
   pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
   pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
+  patternflyOptions: PATTERNFLY_OPTIONS,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
   stats: STATS_OPTIONS,
@@ -438,6 +479,7 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type LoggingSession,
+  type PatternFlyOptions,
   type PluginHostOptions,
   type StatsSession,
   type XhrFetchOptions
