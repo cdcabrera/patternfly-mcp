@@ -1,7 +1,7 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { patternFlyDocsTemplateResource } from '../resource.patternFlyDocsTemplate';
 import { processDocsFunction } from '../server.getResources';
-import { searchComponents } from '../tool.searchPatternFlyDocs';
+import { searchPatternFly } from '../tool.searchPatternFlyDocs';
 import { isPlainObject } from '../server.helpers';
 
 // Mock dependencies
@@ -15,7 +15,7 @@ jest.mock('../options.context', () => ({
 }));
 
 const mockProcessDocs = processDocsFunction as jest.MockedFunction<typeof processDocsFunction>;
-const mockSearchComponents = searchComponents as jest.MockedFunction<typeof searchComponents>;
+const mockSearchComponents = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
 
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { getComponentSchema } from '../tool.patternFlyDocs';
+import { getPatternFlyComponentSchema } from '../patternFly.getResources';
 import { patternFlySchemasTemplateResource } from '../resource.patternFlySchemasTemplate';
-import { searchComponents } from '../tool.searchPatternFlyDocs';
+import { searchPatternFly } from '../tool.searchPatternFlyDocs';
 import { isPlainObject } from '../server.helpers';
 
 // Mock dependencies
@@ -14,8 +14,8 @@ jest.mock('../options.context', () => ({
   getOptions: jest.fn(() => ({}))
 }));
 
-const mockGetComponentSchema = getComponentSchema as jest.MockedFunction<typeof getComponentSchema>;
-const mockSearchComponents = searchComponents as jest.MockedFunction<typeof searchComponents>;
+const mockGetComponentSchema = getPatternFlyComponentSchema as jest.MockedFunction<typeof getPatternFlyComponentSchema>;
+const mockSearchComponents = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
 
 describe('patternFlySchemasTemplateResource', () => {
   beforeEach(() => {

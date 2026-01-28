@@ -2,7 +2,7 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
-import { searchComponents } from './tool.searchPatternFlyDocs';
+import { searchPatternFly } from './tool.searchPatternFlyDocs';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
@@ -58,17 +58,17 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 
       const docResults = [];
       const docs = [];
-      const { exactMatches, searchResults } = searchComponents.memo(name);
+      const { exactMatches, searchResults } = searchPatternFly.memo(name);
 
       if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
         const suggestions = searchResults.map(searchResult => searchResult.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-          : 'No similar components found.';
+          : 'No similar resources found.';
 
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No documentation found for component "${name.trim()}". ${suggestionMessage}`
+          `No documentation found for "${name.trim()}". ${suggestionMessage}`
         );
       }
 
@@ -91,7 +91,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       if (docs.length === 0) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          `Component "${name.trim()}" was found, but no documentation URLs are available for it.`
+          `"${name.trim()}" was found, but no documentation URLs are available for it.`
         );
       }
 
