@@ -9,7 +9,7 @@ const baseConfig = {
   testEnvironment: 'node',
   testTimeout: 30000,
   transform: {
-    '^.+\\.(ts|tsx)$': [
+    '^.+\\.(ts|tsx|js|jsx)$': [
       'ts-jest',
       {
         ...tsConfig
@@ -51,7 +51,7 @@ export default {
       testMatch: ['<rootDir>/tests/**/*.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/tests/jest.setupTests.ts'],
       transformIgnorePatterns: [
-        '<rootDir>/dist/'
+        'node_modules/(?!(@patternfly/patternfly-component-schemas)/)'
       ],
       ...baseConfig
     }
