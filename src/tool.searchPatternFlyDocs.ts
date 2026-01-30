@@ -7,7 +7,7 @@ import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import docsCatalog from './docs.json';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
  * List of component names to include in search results.
@@ -17,7 +17,7 @@ import docsCatalog from './docs.json';
  */
 const componentNames = Array.from(new Set([...pfComponentNames, 'Table'])).sort((a, b) => a.localeCompare(b));
 
-const docNames = Array.from(new Set([...Object.keys(docsCatalog.docs)])).sort((a, b) => a.localeCompare(b));
+const docNames = Array.from(new Set([...Object.keys(getPatternFlyMcpDocs().original)])).sort((a, b) => a.localeCompare(b));
 
 const allNames = Array.from(new Set([...componentNames, ...docNames])).sort((a, b) => a.localeCompare(b));
 
@@ -50,7 +50,7 @@ const setComponentToDocsMap = () => {
     return undefined;
   };
 
-  Object.entries(docsCatalog.docs).forEach(([name, entries]) => {
+  Object.entries(getPatternFlyMcpDocs().original).forEach(([name, entries]) => {
     map.set(name, (entries as any[]).map(entry => entry.path));
   });
 
@@ -59,6 +59,11 @@ const setComponentToDocsMap = () => {
     getKey
   };
 };
+
+/**
+ * Memoized version of componentToDocsMap.
+ */
+setComponentToDocsMap.memo = memo(setComponentToDocsMap);
 
 /**
  * Find a documentation entry by its path/URL.
@@ -71,6 +76,13 @@ const findEntryByPath = (path?: string) => {
     return undefined;
   }
 
+  const { byPath } = getPatternFlyMcpDocs();
+  const [name] = byPath[path] || [];
+
+  if (name) {
+    return { ...byPath[path][0], name };
+  }
+
   for (const [name, entries] of Object.entries(docsCatalog.docs)) {
     const entry = (entries as any[]).find(docEntry => docEntry.path === path);
 
@@ -81,11 +93,6 @@ const findEntryByPath = (path?: string) => {
 
   return undefined;
 };
-
-/**
- * Memoized version of componentToDocsMap.
- */
-setComponentToDocsMap.memo = memo(setComponentToDocsMap);
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.

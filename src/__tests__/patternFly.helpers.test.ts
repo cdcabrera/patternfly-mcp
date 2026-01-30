@@ -1,20 +1,10 @@
-import { getSupportedPatternFlyVersions, findPatternFlyVersion } from '../patternfly.helpers';
+import { findClosestPatternFlyVersion } from '../patternFly.helpers';
 // import { getOptions } from '../options.context';
 // import { readLocalFileFunction } from '../server.getResources';
 
-describe('getSupportedPatternFlyVersions', () => {
-  it('should get supported versions from docs.json', () => {
-    expect(getSupportedPatternFlyVersions()).toEqual(['v6']);
-  });
-
-  it('should have a memoized property', () => {
-    expect(getSupportedPatternFlyVersions).toHaveProperty('memo');
-  });
-});
-
-describe('findPatternFlyVersion', () => {
+describe('findClosestPatternFlyVersion', () => {
   it('should exist', () => {
-    expect(findPatternFlyVersion).toBeDefined();
+    expect(findClosestPatternFlyVersion).toBeDefined();
   });
 });
 
