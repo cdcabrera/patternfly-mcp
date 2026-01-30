@@ -24,15 +24,6 @@ import { type ToolModule } from './server.toolsUser';
  * @property pluginIsolation - Isolation preset for external plugins.
  * @property {PluginHostOptions} pluginHost - Plugin host options.
  * @property repoName - Name of the repository.
- * @property pfExternal - PatternFly external docs URL.
- * @property pfExternalDesignComponents - PatternFly design guidelines' components' URL.
- * @property pfExternalExamplesComponents - PatternFly examples' core components' URL.
- * @property pfExternalExamplesLayouts - PatternFly examples' core layouts' URL.
- * @property pfExternalExamplesCharts - PatternFly examples' charts' components' URL.
- * @property pfExternalExamplesTable - PatternFly examples' table components' URL.
- * @property pfExternalChartsDesign - PatternFly charts' design guidelines URL.
- * @property pfExternalDesignLayouts - PatternFly design guidelines' layouts' URL.
- * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property {PatternFlyOptions} patternflyOptions - PatternFly-specific options.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property separator - Default string delimiter.
@@ -59,15 +50,6 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   nodeVersion: number;
   pluginIsolation: 'none' | 'strict';
   pluginHost: PluginHostOptions;
-  pfExternal: string;
-  pfExternalDesignComponents: string;
-  pfExternalExamplesComponents: string;
-  pfExternalExamplesLayouts: string;
-  pfExternalExamplesCharts: string;
-  pfExternalExamplesTable: string;
-  pfExternalChartsDesign: string;
-  pfExternalDesignLayouts: string;
-  pfExternalAccessibility: string;
   patternflyOptions: PatternFlyOptions;
   repoName: string | undefined;
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
@@ -334,68 +316,6 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
  */
 const URL_REGEX = /^(https?:)\/\//i;
 
-const PF_EXTERNAL_EXAMPLES_VERSION = 'v6.4.0';
-
-/**
- * PatternFly examples URL
- */
-const PF_EXTERNAL_EXAMPLES = `https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/${PF_EXTERNAL_EXAMPLES_VERSION}/packages`;
-
-/**
- * PatternFly examples' core components' URL.
- */
-const PF_EXTERNAL_EXAMPLES_REACT_CORE = `${PF_EXTERNAL_EXAMPLES}/react-core/src/components`;
-
-/**
- * PatternFly examples' core layouts' URL.
- */
-const PF_EXTERNAL_EXAMPLES_LAYOUTS = `${PF_EXTERNAL_EXAMPLES}/react-core/src/layouts`;
-
-/**
- * PatternFly examples' table components' URL.
- */
-const PF_EXTERNAL_EXAMPLES_TABLE = `${PF_EXTERNAL_EXAMPLES}/react-table/src/components`;
-
-/**
- * PatternFly charts' components' URL
- */
-const PF_EXTERNAL_EXAMPLES_CHARTS = `${PF_EXTERNAL_EXAMPLES}/react-charts/src/victory/components`;
-
-/**
- * PatternFly docs version to use, commit hash. Tags don't exist, but branches for older versions do.
- *
- * @see @patternfly/documentation-framework@6.30.0
- */
-const PF_EXTERNAL_VERSION = 'fb05713aba75998b5ecf5299ee3c1a259119bd74';
-
-/**
- * PatternFly docs root URL
- */
-const PF_EXTERNAL = `https://raw.githubusercontent.com/patternfly/patternfly-org/${PF_EXTERNAL_VERSION}/packages/documentation-site/patternfly-docs/content`;
-
-/**
- * PatternFly design guidelines' components' URL
- * Updated 2025-11-24: Moved from design-guidelines/components to components
- */
-const PF_EXTERNAL_DESIGN_COMPONENTS = `${PF_EXTERNAL}/design-guidelines/components`;
-
-/**
- * PatternFly design guidelines' layouts' URL
- * Updated 2025-11-24: Moved from design-guidelines/layouts to foundations-and-styles/layouts
- */
-const PF_EXTERNAL_DESIGN_LAYOUTS = `${PF_EXTERNAL}/design-guidelines/layouts`;
-
-/**
- * PatternFly accessibility URL
- * Updated 2025-11-24: Moved from accessibility to components/accessibility
- */
-const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/accessibility`;
-
-/**
- * PatternFly charts' design guidelines URL
- */
-const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL}/design-guidelines/charts`;
-
 /**
  * Get the current Node.js major version.
  *
@@ -436,15 +356,6 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
   pluginIsolation: 'strict',
   pluginHost: PLUGIN_HOST_OPTIONS,
-  pfExternal: PF_EXTERNAL,
-  pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
-  pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
-  pfExternalExamplesLayouts: PF_EXTERNAL_EXAMPLES_LAYOUTS,
-  pfExternalExamplesCharts: PF_EXTERNAL_EXAMPLES_CHARTS,
-  pfExternalExamplesTable: PF_EXTERNAL_EXAMPLES_TABLE,
-  pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
-  pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
-  pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
   patternflyOptions: PATTERNFLY_OPTIONS,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   repoName: basename(process.cwd() || '').trim(),
@@ -459,18 +370,6 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 };
 
 export {
-  PF_EXTERNAL,
-  PF_EXTERNAL_VERSION,
-  PF_EXTERNAL_EXAMPLES,
-  PF_EXTERNAL_EXAMPLES_CHARTS,
-  PF_EXTERNAL_EXAMPLES_REACT_CORE,
-  PF_EXTERNAL_EXAMPLES_LAYOUTS,
-  PF_EXTERNAL_EXAMPLES_TABLE,
-  PF_EXTERNAL_EXAMPLES_VERSION,
-  PF_EXTERNAL_CHARTS_DESIGN,
-  PF_EXTERNAL_DESIGN_COMPONENTS,
-  PF_EXTERNAL_DESIGN_LAYOUTS,
-  PF_EXTERNAL_ACCESSIBILITY,
   LOG_BASENAME,
   DEFAULT_OPTIONS,
   getNodeMajorVersion,
