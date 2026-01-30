@@ -2627,7 +2627,7 @@
         "version": "v6"
       }
     ],
-    "Legend": [
+    "LegendChart": [
       {
         "displayName": "Legend",
         "description": "Design Guidelines for the legend chart.",
@@ -2652,9 +2652,9 @@
     "Charts": [
       {
         "displayName": "react-charts",
-        "description": "Local documentation for react-charts.",
+        "description": "AI guidance for react-charts.",
         "pathSlug": "charts",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:charts/README.md",
@@ -2664,9 +2664,9 @@
     "Chatbot": [
       {
         "displayName": "react-chatbot",
-        "description": "Local documentation for react-chatbot.",
+        "description": "AI guidance for react-chatbot.",
         "pathSlug": "chatbot",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:chatbot/README.md",
@@ -2676,9 +2676,9 @@
     "ComponentGroups": [
       {
         "displayName": "react-component-groups",
-        "description": "Local documentation for react-component-groups.",
+        "description": "AI guidance for react-component-groups.",
         "pathSlug": "component-groups",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:component-groups/README.md",
@@ -2688,9 +2688,9 @@
     "Components": [
       {
         "displayName": "react-components",
-        "description": "Local documentation for react-components.",
+        "description": "AI guidance for react-components.",
         "pathSlug": "components",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:components/README.md",
@@ -2700,9 +2700,9 @@
     "Guidelines": [
       {
         "displayName": "react-guidelines",
-        "description": "Local documentation for react-guidelines.",
+        "description": "AI guidance for react-guidelines.",
         "pathSlug": "guidelines",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:guidelines/README.md",
@@ -2712,9 +2712,9 @@
     "Resources": [
       {
         "displayName": "react-resources",
-        "description": "Local documentation for react-resources.",
+        "description": "AI guidance for react-resources.",
         "pathSlug": "resources",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:resources/README.md",
@@ -2724,9 +2724,9 @@
     "Setup": [
       {
         "displayName": "react-setup",
-        "description": "Local documentation for react-setup.",
+        "description": "AI guidance for react-setup.",
         "pathSlug": "setup",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:setup/README.md",
@@ -2736,9 +2736,9 @@
     "Troubleshooting": [
       {
         "displayName": "react-troubleshooting",
-        "description": "Local documentation for react-troubleshooting.",
+        "description": "AI guidance for react-troubleshooting.",
         "pathSlug": "troubleshooting",
-        "section": "local",
+        "section": "guidance",
         "category": "react",
         "source": "local",
         "path": "documentation:troubleshooting/README.md",
