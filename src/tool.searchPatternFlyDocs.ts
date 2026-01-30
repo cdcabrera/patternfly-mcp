@@ -1,105 +1,23 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { componentNames as pfComponentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
 import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
-
-/**
- * List of component names to include in search results.
- *
- * @note The "table" component is manually added to the list because it's not currently included
- * in the component schemas package.
- */
-const componentNames = Array.from(new Set([...pfComponentNames, 'Table'])).sort((a, b) => a.localeCompare(b));
-
-const docNames = Array.from(new Set([...Object.keys(getPatternFlyMcpDocs().original)])).sort((a, b) => a.localeCompare(b));
-
-const allNames = Array.from(new Set([...componentNames, ...docNames])).sort((a, b) => a.localeCompare(b));
-
-/**
- * Build a map of component names relative to internal documentation URLs.
- *
- * @returns Map of component name -> array of URLs (Design Guidelines + Accessibility)
- */
-const setComponentToDocsMap = () => {
-  const map = new Map<string, string[]>();
-  const getKey = (value?: string | undefined) => {
-    if (!value) {
-      return undefined;
-    }
-
-    for (const [key, urls] of map) {
-      if (urls.includes(value)) {
-        return key;
-      } else {
-        const results = fuzzySearch(value, urls, {
-          deduplicateByNormalized: true
-        });
-
-        if (results.length) {
-          return key;
-        }
-      }
-    }
-
-    return undefined;
-  };
-
-  Object.entries(getPatternFlyMcpDocs().original).forEach(([name, entries]) => {
-    map.set(name, (entries as any[]).map(entry => entry.path));
-  });
-
-  return {
-    map,
-    getKey
-  };
-};
-
-/**
- * Memoized version of componentToDocsMap.
- */
-setComponentToDocsMap.memo = memo(setComponentToDocsMap);
-
-/**
- * Find a documentation entry by its path/URL.
- *
- * @param path - The documentation path or URL
- * @returns The entry and its component name, or undefined
- */
-const findEntryByPath = (path?: string) => {
-  if (!path) {
-    return undefined;
-  }
-
-  const { byPath } = getPatternFlyMcpDocs();
-  const [name] = byPath[path] || [];
-
-  if (name) {
-    return { ...byPath[path][0], name };
-  }
-
-  for (const [name, entries] of Object.entries(docsCatalog.docs)) {
-    const entry = (entries as any[]).find(docEntry => docEntry.path === path);
-
-    if (entry) {
-      return { ...entry, name };
-    }
-  }
-
-  return undefined;
-};
+import {
+  getPatternFlyMcpDocs,
+  getPatternFlyMcpResources, getPatternFlyReactComponentNames
+} from './patternFly.getResources';
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
  * @param settings - Optional settings object
- * @param settings.names - List of names to search. Defaults to all component names.
+ * @param settings.components - Object of multifaceted component names to search.
+ * @param settings.documentation - Object of multifaceted documentation entries to search.
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all components
@@ -107,16 +25,20 @@ const findEntryByPath = (path?: string) => {
  *   - `exactMatches`: All exact matches within fuzzy search results
  *   - `searchResults`: Fuzzy search results
  */
-const searchComponents = (searchQuery: string, { names = componentNames, allowWildCardAll = false } = {}) => {
+const searchComponents = (searchQuery: string, {
+  components = getPatternFlyReactComponentNames.memo(),
+  documentation = getPatternFlyMcpDocs.memo(),
+  // resources = getPatternFlyMcpResources.memo(),
+  allowWildCardAll = false
+} = {}) => {
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
-  const { map: componentToDocsMap } = setComponentToDocsMap.memo();
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = componentNames.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = components.allComponentNames.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, names, {
+    searchResults = fuzzySearch(searchQuery, components.allComponentNames, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -125,8 +47,8 @@ const searchComponents = (searchQuery: string, { names = componentNames, allowWi
   }
 
   const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
-    const isSchemasAvailable = pfComponentNames.includes(result.item);
-    const urls = componentToDocsMap.get(result.item) || [];
+    const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
+    const urls = documentation.byNameWithPath[result.item] || [];
     const matchedUrls = new Set<string>();
 
     urls.forEach(url => {
@@ -259,4 +181,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchComponents, setComponentToDocsMap, findEntryByPath, componentNames };
+export { searchPatternFlyDocsTool, searchComponents };

@@ -2,8 +2,8 @@
   "version": "1",
   "generated": "2026-01-28T16:34:50.003Z",
   "meta": {
-    "totalEntries": 114,
-    "totalDocs": 250,
+    "totalEntries": 107,
+    "totalDocs": 251,
     "source": "patternfly-mcp-internal"
   },
   "docs": {
@@ -2649,96 +2649,82 @@
         "version": "v6"
       }
     ],
-    "Charts": [
+    "Guidelines": [
       {
         "displayName": "react-charts",
         "description": "AI guidance for react-charts.",
         "pathSlug": "charts",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:charts/README.md",
         "version": "v6"
-      }
-    ],
-    "Chatbot": [
+      },
       {
         "displayName": "react-chatbot",
         "description": "AI guidance for react-chatbot.",
         "pathSlug": "chatbot",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:chatbot/README.md",
         "version": "v6"
-      }
-    ],
-    "ComponentGroups": [
+      },
       {
         "displayName": "react-component-groups",
         "description": "AI guidance for react-component-groups.",
         "pathSlug": "component-groups",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:component-groups/README.md",
         "version": "v6"
-      }
-    ],
-    "Components": [
-      {
-        "displayName": "react-components",
-        "description": "AI guidance for react-components.",
-        "pathSlug": "components",
-        "section": "guidance",
-        "category": "react",
-        "source": "local",
-        "path": "documentation:components/README.md",
-        "version": "v6"
-      }
-    ],
-    "Guidelines": [
+      },
       {
         "displayName": "react-guidelines",
         "description": "AI guidance for react-guidelines.",
         "pathSlug": "guidelines",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:guidelines/README.md",
         "version": "v6"
-      }
-    ],
-    "Resources": [
+      },
+      {
+        "displayName": "react-components",
+        "description": "AI guidance for react-components.",
+        "pathSlug": "components",
+        "section": "guidelines",
+        "category": "react",
+        "source": "local",
+        "path": "documentation:components/README.md",
+        "version": "v6"
+      },
       {
         "displayName": "react-resources",
         "description": "AI guidance for react-resources.",
         "pathSlug": "resources",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:resources/README.md",
         "version": "v6"
-      }
-    ],
-    "Setup": [
+      },
       {
         "displayName": "react-setup",
         "description": "AI guidance for react-setup.",
         "pathSlug": "setup",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:setup/README.md",
         "version": "v6"
-      }
-    ],
-    "Troubleshooting": [
+      },
       {
         "displayName": "react-troubleshooting",
         "description": "AI guidance for react-troubleshooting.",
         "pathSlug": "troubleshooting",
-        "section": "guidance",
+        "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:troubleshooting/README.md",

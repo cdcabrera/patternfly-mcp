@@ -32,7 +32,9 @@ const normalizePatternFlyDocsIndex = () => {
     }
 
     entries.forEach(entry => {
-      byCategoryLinks[categoryLabel]?.push(`[@patternfly/${entry.displayName} - ${categoryLabel}](${entry.path})`);
+      const updatedCategoryLabel = entry.section === 'guidelines' ? 'AI Guidance' : categoryLabel;
+
+      byCategoryLinks[categoryLabel]?.push(`[@patternfly/${entry.displayName} - ${updatedCategoryLabel}](${entry.path})`);
     });
   });
 
@@ -78,7 +80,7 @@ const patternFlyDocsIndexResource = (): McpResource => [
     const allDocs = stringJoin.newline(
       '# PatternFly Documentation Index',
       '',
-      ...Object.entries(normalizedIndex).map(([category, links]) =>
+      ...Object.entries(normalizedIndex).sort(([a], [b]) => b.localeCompare(a)).map(([category, links]) =>
         stringJoin.newline(`## ${category}`, '', ...links))
     );
 

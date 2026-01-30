@@ -1,5 +1,7 @@
-import { memo } from './server.caching';
+import { componentNames as pfComponentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import patternFlyDocsCatalog from './docs.json';
+import { memo } from './server.caching';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * PatternFly JSON catalog documentation entries
@@ -16,7 +18,7 @@ type PatternFlyMcpDocEntry = {
 };
 
 /**
- * PatternFly JSON catalog
+ * PatternFly JSON catalog, the original JSON.
  *
  * @interface PatternFlyMcpDocs
  */
@@ -25,41 +27,65 @@ interface PatternFlyMcpDocs {
 }
 
 /**
- * PatternFly JSON catalog by section.
+ * PatternFly JSON catalog by section with an array of entries.
  *
  * @alias PatternFlyMcpDocs
  */
 type PatternFlyMcpDocsBySection = PatternFlyMcpDocs;
 
 /**
- * PatternFly JSON catalog by category.
+ * PatternFly JSON catalog by category with an array of entries.
  *
  * @alias PatternFlyMcpDocs
  */
 type PatternFlyMcpDocsByCategory = PatternFlyMcpDocs;
 
 /**
- * PatternFly JSON catalog by path.
- *
- * @alias PatternFlyMcpDocs
+ * PatternFly JSON catalog by path with an entry plus the name of the entry.
+ */
+type PatternFlyMcpDocsByPathEntry = PatternFlyMcpDocEntry & { name: string };
+
+/**
+ * PatternFly JSON catalog by path with an entry.
  */
 type PatternFlyMcpDocsByPath = {
-  [key: string]: string[];
+  [path: string]: PatternFlyMcpDocsByPathEntry;
 };
 
 /**
- * Get an documentation breakdown by original, section, category, and available version from the JSON catalog.
- *
- * @returns An object containing the original documentation, available versions, section, category, and path breakdowns.
+ * PatternFly JSON catalog by name with a path array.
  */
-const getPatternFlyMcpDocs = () => {
+type PatternFlyMcpDocsByNameWithPath = {
+  [name: string]: string[]
+};
+
+/**
+ * Get a multifaceted documentation breakdown from the JSON catalog.
+ *
+ * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
+ */
+const getPatternFlyMcpDocs = (): {
+  original: PatternFlyMcpDocs,
+  availableVersions: string[],
+  nameIndex: string[],
+  bySection: PatternFlyMcpDocsBySection,
+  byCategory: PatternFlyMcpDocsByCategory,
+  byGuidance: PatternFlyMcpDocsByCategory,
+  byPath: PatternFlyMcpDocsByPath,
+  byNameWithPath: PatternFlyMcpDocsByNameWithPath
+} => {
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const bySection: PatternFlyMcpDocsBySection = {};
   const byCategory: PatternFlyMcpDocsByCategory = {};
+  const byGuidance: PatternFlyMcpDocsByCategory = {};
   const byPath: PatternFlyMcpDocsByPath = {};
+  const byNameWithPath: PatternFlyMcpDocsByNameWithPath = {};
   const availableVersions = new Set<string>();
+  const nameIndex = new Set<string>();
 
   Object.entries(originalDocs).forEach(([name, entries]) => {
+    nameIndex.add(name);
+
     entries.forEach(entry => {
       if (entry.version) {
         availableVersions.add(entry.version);
@@ -73,11 +99,18 @@ const getPatternFlyMcpDocs = () => {
       if (entry.category) {
         byCategory[entry.category] ??= [];
         byCategory[entry.category]?.push(entry);
+
+        if (entry.section === 'guidelines') {
+          byGuidance[entry.category] ??= [];
+          byGuidance[entry.category]?.push(entry);
+        }
       }
 
       if (entry.path) {
-        byPath[entry.path] ??= [];
-        byPath[entry.path]?.push(name);
+        byPath[entry.path] ??= { ...entry, name };
+
+        byNameWithPath[name] ??= [];
+        byNameWithPath[name].push(entry.path);
       }
     });
   });
@@ -85,9 +118,12 @@ const getPatternFlyMcpDocs = () => {
   return {
     original: originalDocs,
     availableVersions: Array.from(availableVersions).sort((a, b) => b.localeCompare(a)),
+    nameIndex: Array.from(nameIndex).sort((a, b) => a.localeCompare(b)),
     bySection,
     byCategory,
-    byPath
+    byGuidance,
+    byPath,
+    byNameWithPath
   };
 };
 
@@ -96,10 +132,70 @@ const getPatternFlyMcpDocs = () => {
  */
 getPatternFlyMcpDocs.memo = memo(getPatternFlyMcpDocs);
 
+/**
+ * A multifaceted list of all PatternFly React component names.
+ *
+ * @note The "table" component is manually added to the `allComponentNames` list because it's not currently included
+ * in the component schemas package.
+ *
+ * @returns A multifaceted React component breakdown.  Use the "memoized" property for performance.
+ */
+const getPatternFlyReactComponentNames = () => ({
+  allComponentNames: Array.from(new Set([...pfComponentNames, 'Table'])).sort((a, b) => a.localeCompare(b)),
+  componentNamesWithSchema: pfComponentNames.sort((a, b) => a.localeCompare(b))
+});
+
+/**
+ * Memoized version of getPatternFlyReactComponentNames.
+ */
+getPatternFlyReactComponentNames.memo = memo(getPatternFlyReactComponentNames);
+
+/**
+ * Get the component schema from @patternfly/patternfly-component-schemas.
+ *
+ * @param componentName -
+ * @returns
+ */
+const getPatternFlyComponentSchema = async (componentName: string) => {
+  try {
+    return await getComponentSchema(componentName);
+  } catch {}
+
+  return undefined;
+};
+
+/**
+ * Memoized version of getComponentSchema.
+ */
+getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
+
+/**
+ * A multifaceted object of all available PatternFly MCP resources.
+ *
+ * @returns A multifaceted resource breakdown.  Use the "memoized" property for performance.
+ */
+const getPatternFlyMcpResources = () => ({
+  index: Array.from(new Set([
+    ...getPatternFlyReactComponentNames.memo().allComponentNames,
+    ...getPatternFlyMcpDocs.memo().nameIndex
+  ])).sort((a, b) => a.localeCompare(b))
+});
+
+/**
+ * Memoized version of getPatternFlyMcpResources.
+ */
+getPatternFlyMcpResources.memo = memo(getPatternFlyMcpResources);
+
 export {
+  getPatternFlyComponentSchema,
   getPatternFlyMcpDocs,
+  getPatternFlyMcpResources,
+  getPatternFlyReactComponentNames,
   type PatternFlyMcpDocEntry,
   type PatternFlyMcpDocs,
   type PatternFlyMcpDocsBySection,
-  type PatternFlyMcpDocsByCategory
+  type PatternFlyMcpDocsByCategory,
+  type PatternFlyMcpDocsByPath,
+  type PatternFlyMcpDocsByPathEntry,
+  type PatternFlyMcpDocsByNameWithPath
 };
