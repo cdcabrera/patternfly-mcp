@@ -170,12 +170,12 @@ const getPatternFlyComponentSchema = async (componentName: string) => {
 getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 /**
- * A multifaceted object of all available PatternFly MCP resources.
+ * A multifaceted object of ALL available PatternFly MCP resources, e.g. component schemas, documentation, and MCP resources.
  *
  * @returns A multifaceted resource breakdown.  Use the "memoized" property for performance.
  */
 const getPatternFlyMcpResources = () => ({
-  index: Array.from(new Set([
+  nameIndex: Array.from(new Set([
     ...getPatternFlyReactComponentNames.memo().allComponentNames,
     ...getPatternFlyMcpDocs.memo().nameIndex
   ])).sort((a, b) => a.localeCompare(b))

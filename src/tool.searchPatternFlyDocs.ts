@@ -8,7 +8,8 @@ import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpDocs,
-  getPatternFlyMcpResources, getPatternFlyReactComponentNames
+  // getPatternFlyMcpResources,
+  getPatternFlyReactComponentNames
 } from './patternFly.getResources';
 
 /**
