@@ -40,13 +40,13 @@
       },
       {
         "displayName": "About Modal",
-        "version": "v5",
         "description": "Design Guidelines for the about modal component (v5).",
         "pathSlug": "about-modal",
         "section": "components",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/v5/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md"
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/v5/packages/documentation-site/patternfly-docs/content/design-guidelines/components/about-modal/about-modal.md",
+        "version": "v5"
       }
     ],
     "Accordion": [
