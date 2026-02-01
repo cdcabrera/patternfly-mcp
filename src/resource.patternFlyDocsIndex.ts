@@ -13,7 +13,6 @@ const normalizePatternFlyDocsIndex = () => {
   const byCategoryLinks: { [key: string]: string[] } = {};
 
   Object.entries(byCategory).forEach(([category, entries]) => {
-    byCategoryLinks[category] ??= [];
     let categoryLabel = category;
 
     switch (categoryLabel) {
@@ -34,7 +33,8 @@ const normalizePatternFlyDocsIndex = () => {
     entries.forEach(entry => {
       const updatedCategoryLabel = entry.section === 'guidelines' ? 'AI Guidance' : categoryLabel;
 
-      byCategoryLinks[categoryLabel]?.push(`[@patternfly/${entry.displayName} - ${updatedCategoryLabel}](${entry.path})`);
+      byCategoryLinks[updatedCategoryLabel] ??= [];
+      byCategoryLinks[updatedCategoryLabel]?.push(`[@patternfly/${entry.displayName} - ${updatedCategoryLabel}](${entry.path})`);
     });
   });
 
@@ -80,8 +80,8 @@ const patternFlyDocsIndexResource = (): McpResource => [
     const allDocs = stringJoin.newline(
       '# PatternFly Documentation Index',
       '',
-      ...Object.entries(normalizedIndex).sort(([a], [b]) => b.localeCompare(a)).map(([category, links]) =>
-        stringJoin.newline(`## ${category}`, '', ...links))
+      ...Object.entries(normalizedIndex).sort(([a], [b]) => a.localeCompare(b)).map(([category, links]) =>
+        stringJoin.newline('', `## ${category}`, '', ...links))
     );
 
     return {

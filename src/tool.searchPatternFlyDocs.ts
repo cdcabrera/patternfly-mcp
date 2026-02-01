@@ -167,7 +167,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         `### "usePatternFlyDocs" tool resource URLs`,
         `#### Documentation URLs`,
         urlList,
-        `#### Agent guidance URLs`,
+        `#### AI guidance URLs`,
         guidanceUrlList,
         `### Resources metadata`,
         ` - **Component name**: ${result.item}`,

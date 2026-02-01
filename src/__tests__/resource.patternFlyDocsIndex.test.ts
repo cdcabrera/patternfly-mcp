@@ -26,6 +26,6 @@ describe('patternFlyDocsIndexResource, callback', () => {
 
     expect(result.contents).toBeDefined();
     expect(Object.keys(result.contents[0])).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0].text).toContain('[@patternfly/react-guidelines](documentation:guidelines/README.md)');
+    expect(result.contents[0].text).toContain('[@patternfly/About Modal - Accessibility]');
   });
 });
