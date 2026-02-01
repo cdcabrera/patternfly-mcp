@@ -37,9 +37,9 @@ const searchPatternFly = (searchQuery: string, {
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = components.allComponentNames.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = components.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, components.allComponentNames, {
+    searchResults = fuzzySearch(searchQuery, components.nameIndex, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,

@@ -141,7 +141,7 @@ getPatternFlyMcpDocs.memo = memo(getPatternFlyMcpDocs);
  * @returns A multifaceted React component breakdown.  Use the "memoized" property for performance.
  */
 const getPatternFlyReactComponentNames = () => ({
-  allComponentNames: Array.from(new Set([...pfComponentNames, 'Table'])).sort((a, b) => a.localeCompare(b)),
+  nameIndex: Array.from(new Set([...pfComponentNames, 'Table'])).sort((a, b) => a.localeCompare(b)),
   componentNamesWithSchema: pfComponentNames.sort((a, b) => a.localeCompare(b))
 });
 
@@ -176,7 +176,7 @@ getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_O
  */
 const getPatternFlyMcpResources = () => ({
   nameIndex: Array.from(new Set([
-    ...getPatternFlyReactComponentNames.memo().allComponentNames,
+    ...getPatternFlyReactComponentNames.memo().nameIndex,
     ...getPatternFlyMcpDocs.memo().nameIndex
   ])).sort((a, b) => a.localeCompare(b))
 });
