@@ -91,7 +91,7 @@ const getPatternFlyMcpDocs = (): {
   Object.entries(originalDocs).forEach(([name, entries]) => {
     nameIndex.add(name);
 
-    entries.forEach((entry, index) => {
+    entries.forEach(entry => {
       if (entry.version) {
         availableVersions.add(entry.version);
       }

@@ -5,7 +5,7 @@ import { type McpTool } from './server';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { fuzzySearch } from './server.search';
-import { componentNames } from './tool.searchPatternFlyDocs';
+import { getPatternFlyReactComponentNames } from './patternFly.getResources';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -26,6 +26,7 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
     async (componentName: string): Promise<ComponentSchema> => getComponentSchema(componentName),
     options?.toolMemoOptions?.usePatternFlyDocs
   );
+  const { componentNamesWithSchema: componentNames } = getPatternFlyReactComponentNames.memo();
 
   const callback = async (args: any = {}) => {
     const { componentName } = args;
