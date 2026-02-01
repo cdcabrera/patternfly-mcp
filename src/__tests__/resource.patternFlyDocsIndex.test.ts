@@ -1,5 +1,51 @@
-import { patternFlyDocsIndexResource } from '../resource.patternFlyDocsIndex';
+import { normalizePatternFlyDocsIndex, patternFlyDocsIndexResource } from '../resource.patternFlyDocsIndex';
 import { isPlainObject } from '../server.helpers';
+
+describe('normalizePatternFlyDocsIndex', () => {
+  it.each([
+    {
+      description: 'empty',
+      categories: {}
+    },
+    {
+      description: 'basic categories',
+      categories: {
+        'design-guidelines': [
+          {
+            displayName: 'Lorem Ipsum',
+            section: 'components',
+            category: 'design-guidelines',
+            path: 'https://www.patternfly.org/v6/components/lorem-ipsum/design-guidelines'
+          }
+        ],
+        accessibility: [
+          {
+            displayName: 'Dolor Sit',
+            section: 'components',
+            category: 'accessibility',
+            path: 'https://www.patternfly.org/v6/components/dolor-sit/accessibility'
+          }
+        ],
+        react: [
+          {
+            displayName: 'Lorem Sit',
+            section: 'components',
+            category: 'react',
+            path: 'https://www.patternfly.org/v6/components/lorem-sit/components'
+          },
+          {
+            displayName: 'Sit Sit',
+            section: 'guidelines',
+            category: 'react',
+            path: 'documentation:components/sit-sit/guidelines.md'
+          }
+        ]
+      }
+    }
+  ])('should normalize categories and apply linking markdown, $description', ({ categories }) => {
+    expect(normalizePatternFlyDocsIndex(categories as any)).toMatchSnapshot('normalized categories');
+  });
+});
 
 describe('patternFlyDocsIndexResource', () => {
   it('should have a consistent return structure', () => {

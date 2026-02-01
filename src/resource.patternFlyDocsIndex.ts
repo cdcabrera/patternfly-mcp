@@ -6,13 +6,13 @@ import { getPatternFlyMcpDocs } from './patternFly.getResources';
 /**
  * Normalize the PatternFly documentation index by category links.
  *
+ * @param categoryIndex - An object organized by categories with entries.
  * @returns An object containing normalized category names with associated Markdown links.
  */
-const normalizePatternFlyDocsIndex = () => {
-  const { byCategory } = getPatternFlyMcpDocs.memo();
-  const byCategoryLinks: { [key: string]: string[] } = {};
+const normalizePatternFlyDocsIndex = (categoryIndex = getPatternFlyMcpDocs.memo().byCategory) => {
+  const categoryLinks: { [key: string]: string[] } = {};
 
-  Object.entries(byCategory).forEach(([category, entries]) => {
+  Object.entries(categoryIndex).forEach(([category, entries]) => {
     let categoryLabel = category;
 
     switch (categoryLabel) {
@@ -33,12 +33,12 @@ const normalizePatternFlyDocsIndex = () => {
     entries.forEach(entry => {
       const updatedCategoryLabel = entry.section === 'guidelines' ? 'AI Guidance' : categoryLabel;
 
-      byCategoryLinks[updatedCategoryLabel] ??= [];
-      byCategoryLinks[updatedCategoryLabel]?.push(`[@patternfly/${entry.displayName} - ${updatedCategoryLabel}](${entry.path})`);
+      categoryLinks[updatedCategoryLabel] ??= [];
+      categoryLinks[updatedCategoryLabel]?.push(`[@patternfly/${entry.displayName} - ${updatedCategoryLabel}](${entry.path})`);
     });
   });
 
-  return byCategoryLinks;
+  return categoryLinks;
 };
 
 /**
