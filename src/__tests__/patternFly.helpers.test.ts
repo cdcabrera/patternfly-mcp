@@ -1,139 +1,204 @@
 import { findClosestPatternFlyVersion } from '../patternFly.helpers';
-// import { getOptions } from '../options.context';
-// import { readLocalFileFunction } from '../server.getResources';
+import { readLocalFileFunction } from '../server.getResources';
 
-describe('findClosestPatternFlyVersion', () => {
-  it('should exist', () => {
-    expect(findClosestPatternFlyVersion).toBeDefined();
-  });
-});
-
-/*
-jest.mock('../options.context');
 jest.mock('../server.getResources', () => ({
-  findNearestPackageJson: jest.fn().mockResolvedValue('/mock/package.json'),
+  ...jest.requireActual('../server.getResources'),
   readLocalFileFunction: {
     memo: jest.fn()
   }
 }));
-jest.mock('node:fs/promises');
 
-const mockGetOptions = getOptions as jest.Mock;
 const mockReadLocalFile = readLocalFileFunction.memo as jest.Mock;
 
-describe('patternfly.helpers', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockGetOptions.mockReturnValue({
-      patternflyOptions: {
-        defaultVersion: 'v6',
-        versionWhitelist: ['@patternfly/react-core', '@patternfly/patternfly']
-      }
-    });
+describe('findClosestPatternFlyVersion', () => {
+  it.each([
+    {
+      description: 'non-existent path',
+      path: '/mock/package.json',
+      expected: 'v6'
+    },
+    {
+      description: 'non-string path',
+      path: 1,
+      expected: 'v6'
+    }
+  ])('should return default version if no package.json is found, $description', async ({ path, expected }) => {
+    const version = await findClosestPatternFlyVersion(path as any);
+
+    expect(version).toBe(expected);
   });
 
-  describe('findPatternFlyVersion', () => {
-    it('should return default version if no package.json is found', async () => {
-      // Mock findNearestPackageJson to return undefined by making access fail
-      // Since findNearestPackageJson is internal, I'll rely on it not finding anything in the test env root
-      const version = await detectPatternFlyVersion('/non/existent/path');
+  /*
+  it.each([
+    {
+      description: 'caret, major',
+      depVersion: '^5.0.0',
+      expected: 'v5'
+    },
+    {
+      description: 'caret, major, minor, patch',
+      depVersion: '^5.5.5',
+      expected: 'v5'
+    },
+    {
+      description: 'tilde, major, minor, patch',
+      depVersion: '~5.5.5',
+      expected: 'v5'
+    },
+    {
+      description: 'less than or equal, major, minor, patch',
+      depVersion: '>=5.5.5',
+      expected: 'v5'
+    },
+    {
+      description: 'greater than or equal, major, minor, patch',
+      depVersion: '<=5.5.5',
+      expected: 'v6'
+    },
+    {
+      description: 'range, greater than less than equal',
+      depVersion: '>=4.0.0 <=5.0.0',
+      expected: 'v5'
+    },
+    {
+      description: 'range, inclusive',
+      depVersion: '4.0.0 - 5.0.0',
+      expected: 'v5'
+    },
+    {
+      description: 'git path',
+      depVersion: 'https://github.com/patternfly/patternfly-mcp.git#v5',
+      expected: 'v6'
+    },
+    {
+      description: 'unknown local path',
+      depVersion: './patternfly-mcp#v5',
+      expected: 'v6'
+    }
+  ])('should attempt to find the closest PatternFly version, $description', async ({ depVersion, expected }) => {
+    mockReadLocalFile.mockResolvedValue(JSON.stringify({
+      dependencies: {
+        '@patternfly/react-core': depVersion
+      }
+    }));
 
-      expect(version).toBe('v6');
-    });
+    // Use the PF MCP package.json so we can override with "mockReadLocalFile"
+    const version = await findClosestPatternFlyVersion(process.cwd());
 
-    it('should detect v6 from @patternfly/react-core', async () => {
-      // This is a bit tricky because findNearestPackageJson is not exported
-      // I'll mock readLocalFileFunction.memo which is used inside detectPatternFlyVersion
+    expect(version).toBe(expected);
+  });
+  */
 
-      // I need to ensure findNearestPackageJson finds something.
-      // I'll use the project root which has a package.json
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        dependencies: {
-          '@patternfly/react-core': '^6.0.0'
-        }
-      }));
+  /*
+  it('should attempt to find the closest PatternFly version with multiple mismatched versions', async () => {
+    mockReadLocalFile.mockResolvedValue(JSON.stringify({
+      dependencies: {
+        '@patternfly/patternfly': '^4.0.0',
+        '@patternfly/react-core': '^5.0.0'
+      }
+    }));
 
-      const version = await detectPatternFlyVersion(process.cwd());
+    // Use the PF MCP package.json so we can override with "mockReadLocalFile"
+    const version = await findClosestPatternFlyVersion(process.cwd());
 
-      expect(version).toBe('v6');
-    });
+    expect(version).toBe('v5');
+  });
+  */
 
-    it('should detect v5 from @patternfly/patternfly', async () => {
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        devDependencies: {
-          '@patternfly/patternfly': '5.1.0'
-        }
-      }));
+  it.each([
+    {
+      description: 'basic',
+      deps: {
+        '@patternfly/react-core': '^5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'greater than or equal, major, minor, patch',
+      deps: {
+        '@patternfly/react-core': '<=4.5.5'
+      },
+      expected: 'v6'
+    },
+    {
+      description: 'range, greater than less than equal',
+      deps: {
+        '@patternfly/react-core': '>=4.0.0 <=5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'range, inclusive',
+      deps: {
+        '@patternfly/react-core': '4.0.0 - 5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'git path',
+      deps: {
+        '@patternfly/react-core': 'https://github.com/patternfly/patternfly-mcp.git#v5'
+      },
+      expected: 'v6'
+    },
+    {
+      description: 'unknown local path',
+      deps: {
+        '@patternfly/react-core': './patternfly-mcp#v5'
+      },
+      expected: 'v6'
+    },
+    {
+      description: 'mismatched versions',
+      deps: {
+        '@patternfly/patternfly': '^4.0.0',
+        '@patternfly/react-core': '^5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'fuzzy match -next',
+      deps: {
+        '@patternfly/react-core-next': '^5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'fuzzy match -rc',
+      deps: {
+        '@patternfly/react-core-rc': '^5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'fuzzy match -alpha',
+      deps: {
+        '@patternfly/patternfly-alpha': '^5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'fuzzy match -beta',
+      deps: {
+        '@patternfly/patternfly-beta': '^5.0.0'
+      },
+      expected: 'v5'
+    },
+    {
+      description: 'wildcard match',
+      deps: {
+        '@patternfly/patternfly': '^5.x.x'
+      },
+      expected: 'v5'
+    }
+  ])('should attempt to match whitelisted packages, $description', async ({ deps, expected }) => {
+    mockReadLocalFile.mockResolvedValue(JSON.stringify({
+      dependencies: { ...deps }
+    }));
 
-      const version = await detectPatternFlyVersion(process.cwd());
+    // Use the PF MCP package.json so we can override with "mockReadLocalFile"
+    const version = await findClosestPatternFlyVersion(process.cwd());
 
-      expect(version).toBe('v5');
-    });
-
-    it('should fuzzy match whitelisted packages (e.g., -next)', async () => {
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        dependencies: { '@patternfly/react-core-next': '^6.0.0' }
-      }));
-
-      const version = await detectPatternFlyVersion(process.cwd());
-
-      expect(version).toBe('v6');
-    });
-
-    it('should ignore unsafe references (URLs, paths)', async () => {
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        dependencies: { '@patternfly/react-core': 'https://github.com/patternfly/patternfly-react#v5' }
-      }));
-
-      const version = await detectPatternFlyVersion(process.cwd());
-
-      expect(version).toBe('v6'); // Falls back to default
-    });
-
-    it('should ignore ambiguous logic ranges (<)', async () => {
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        dependencies: { '@patternfly/react-core': '<6.0.0' }
-      }));
-
-      const version = await detectPatternFlyVersion(process.cwd());
-
-      expect(version).toBe('v6'); // Falls back to default
-    });
-
-    it('should fuzzy match semver wildcards (e.g., 6.0.x)', async () => {
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        dependencies: { '@patternfly/react-core': '6.0.x' }
-      }));
-
-      const version = await detectPatternFlyVersion(process.cwd());
-
-      expect(version).toBe('v6');
-    });
-
-    it('should apply versionStrategy when multiple versions are found', async () => {
-      mockReadLocalFile.mockResolvedValue(JSON.stringify({
-        dependencies: {
-          '@patternfly/react-core': '^6.0.0',
-          '@patternfly/react-table': '^5.0.0'
-        }
-      }));
-
-      mockGetOptions.mockReturnValue({
-        patternflyOptions: {
-          defaultVersion: 'v6',
-          versionWhitelist: ['@patternfly/react-core', '@patternfly/react-table'],
-          versionStrategy: 'highest'
-        }
-      });
-
-      // v5 should be in supported if it's in docs.json (currently only v6 is in docs.json based on previous steps)
-      // Actually, docs.json currently has "v6" only.
-      // If v5 is NOT in docs.json, it won't be in 'supported', so it will be ignored.
-      // To test strategy, I'd need v5 to be in docs.json.
-      const version = await detectPatternFlyVersion(process.cwd());
-
-      expect(version).toBe('v6');
-    });
+    expect(version).toBe(expected);
   });
 });
-*/

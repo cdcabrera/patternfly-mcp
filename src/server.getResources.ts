@@ -27,21 +27,37 @@ const depVersionNormalize = (str: string) =>
 const matchPackageVersion = (value?: string, supportedVersions: string[] = []) => {
   // Simplistic Security & Logic Filter:
   // - Ignore URLs, paths, and aliases (:, /)
-  // - Ignore Ambiguous Ranges (<)
+  // - Ignore Ambiguous Ranges (<) without a greater than or equal operator (>=)
   if (
     supportedVersions.length === 0 ||
     typeof value !== 'string' ||
     value.includes(':') ||
     value.includes('/') ||
     value.startsWith('.') ||
-    value.includes('<')
+    (value.includes('<') && !value.includes('>='))
   ) {
+    return undefined;
+  }
+
+  let updatedValue: string | undefined = value;
+
+  // Range less than greater than and equal
+  if (value.includes('<=') && value.includes('>=')) {
+    updatedValue = value.split('<=')[1]?.trim();
+  }
+
+  // Inclusive range
+  if (value.includes('-')) {
+    updatedValue = value.split('-')[1]?.trim();
+  }
+
+  if (!updatedValue) {
     return undefined;
   }
 
   // Match version value against supported versions using fuzzy search
   // maxDistance: 0 ensures we only match the exact major version after normalization
-  const versionMatch = fuzzySearch(value, supportedVersions, {
+  const versionMatch = fuzzySearch(updatedValue, supportedVersions, {
     normalizeFn: depVersionNormalize,
     isFuzzyMatch: true,
     maxDistance: 0
@@ -75,7 +91,12 @@ const sortPackageVersions = (versions: Set<string> | string[], { isAscending = t
  * @param startPath - Directory to start searching from
  */
 const findNearestPackageJson = async (startPath: string) => {
-  let currentDir = startPath;
+  let currentDir = startPath?.trim?.();
+
+  if (typeof currentDir !== 'string' || !currentDir.length) {
+    return undefined;
+  }
+
   const { root } = parse(currentDir);
 
   while (currentDir !== root) {

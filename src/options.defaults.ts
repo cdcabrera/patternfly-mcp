@@ -144,7 +144,7 @@ interface LoggingSession extends LoggingOptions {
 /**
  * PatternFly-specific options.
  *
- * @property availableVersions List of available PatternFly versions to the MCP server.
+ * @property availableResourceVersions List of intended available PatternFly resource versions to the MCP server.
  * @property default Default specific options.
  * @property default.defaultVersion Default PatternFly version.
  * @property default.versionWhitelist List of mostly reliable dependencies to scan for when detecting the PatternFly version.
@@ -153,7 +153,7 @@ interface LoggingSession extends LoggingOptions {
  *    - 'lowest': Use the lowest major version found.
  */
 interface PatternFlyOptions {
-  availableVersions: string[];
+  availableResourceVersions: string[];
   default: {
     defaultVersion: string;
     versionWhitelist: string[];
@@ -300,7 +300,8 @@ const LOG_BASENAME = 'pf-mcp:log';
  * Default PatternFly-specific options.
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
-  availableVersions: ['v6'],
+  // availableVersions: ['v3', 'v4', 'v5', 'v6'],
+  availableResourceVersions: ['v6'],
   default: {
     defaultVersion: 'v6',
     versionWhitelist: [
