@@ -8,7 +8,7 @@ import { stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpDocs,
-  // getPatternFlyMcpResources,
+  getPatternFlyMcpResources,
   getPatternFlyReactComponentNames
 } from './patternFly.getResources';
 
@@ -19,6 +19,7 @@ import {
  * @param settings - Optional settings object
  * @param settings.components - Object of multifaceted component names to search.
  * @param settings.documentation - Object of multifaceted documentation entries to search.
+ * @param settings.resources - Object of multifaceted resources entries to search, e.g. all component names, documentation and guidance URLs, etc.
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all components
@@ -29,7 +30,7 @@ import {
 const searchPatternFly = (searchQuery: string, {
   components = getPatternFlyReactComponentNames.memo(),
   documentation = getPatternFlyMcpDocs.memo(),
-  // resources = getPatternFlyMcpResources.memo(),
+  resources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false
 } = {}) => {
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
@@ -37,9 +38,9 @@ const searchPatternFly = (searchQuery: string, {
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = components.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = resources.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, components.nameIndex, {
+    searchResults = fuzzySearch(searchQuery, resources.nameIndex, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -49,19 +50,16 @@ const searchPatternFly = (searchQuery: string, {
 
   const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
     const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
-    const urls = documentation.byNameWithPath[result.item] || [];
-    const matchedUrls = new Set<string>();
-
-    urls.forEach(url => {
-      matchedUrls.add(url);
-    });
+    const guidanceUrls = documentation.byNameWithPathGuidance[result.item] || [];
+    const urls = documentation.byNameWithPathNoGuidance[result.item] || [];
 
     return {
       ...result,
       doc: `patternfly://docs/${result.item}`,
       isSchemasAvailable,
       schema: isSchemasAvailable ? `patternfly://schemas/${result.item}` : undefined,
-      urls: Array.from(matchedUrls)
+      urls,
+      guidanceUrls
     };
   });
 
@@ -116,26 +114,39 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         content: [{
           type: 'text',
           text: stringJoin.newline(
-            `No PatternFly documentation found matching "${searchQuery}"`,
+            `No PatternFly resources found matching "${searchQuery}"`,
             '',
             '---',
             '',
             '**Important**:',
-            '  - Use a search all ("*") to find all available components.'
+            '  - Use a search all ("*") to find all available resources.'
           )
         }]
       };
     }
 
     const results = searchResults.map(result => {
-      const urlList = result.urls.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
+      const urlList = result.urls.length
+        ? stringJoin.newline(
+          ...result.urls.map((url: string, index: number) => `  ${index + 1}. ${url}`)
+        )
+        : '  - No documentation URLs found';
+
+      const guidanceUrlList = result.guidanceUrls.length
+        ? stringJoin.newline(
+          ...result.guidanceUrls.map((url: string, index: number) => `  ${index + 1}. ${url}`)
+        )
+        : '  - No guidance URLs found';
 
       return stringJoin.newline(
         '',
         `## ${result.item}`,
         `**Match Type**: ${result.matchType}`,
-        `### "usePatternFlyDocs" tool documentation URLs`,
-        urlList.length ? urlList : '  - No URLs found',
+        `### "usePatternFlyDocs" tool resource URLs`,
+        `#### Documentation URLs`,
+        urlList,
+        `#### Agent guidance URLs`,
+        guidanceUrlList,
         `### Resources metadata`,
         ` - **Component name**: ${result.item}`,
         ` - **JSON Schemas**: ${result.isSchemasAvailable ? 'Available' : 'Not available'}`
@@ -146,14 +157,14 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       content: [{
         type: 'text',
         text: stringJoin.newline(
-          `# Search results for "${isSearchWildCardAll ? 'all components' : searchQuery}", ${searchResults.length} matches found:`,
+          `# Search results for "${isSearchWildCardAll ? 'all resources' : searchQuery}", ${searchResults.length} matches found:`,
           ...results,
           '',
           '---',
           '',
           '**Important**:',
-          '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch documentation content.',
-          '  - Use a search all ("*") to find all available components.'
+          '  - Use the "usePatternFlyDocs" tool with the above URLs to fetch resource content.',
+          '  - Use a search all ("*") to find all available resources.'
         )
       }]
     };
@@ -162,18 +173,18 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: `Search PatternFly components and get component names with documentation URLs. Supports case-insensitive partial and all ("*") matches.
+      description: `Search PatternFly resources and get component names with documentation and guidance URLs. Supports case-insensitive partial and all ("*") matches.
 
       **Usage**:
-        1. Input a "searchQuery" to find PatternFly documentation URLs and component names.
-        2. Use the returned component names OR URLs with the "usePatternFlyDocs" tool to get markdown documentation and component JSON schemas.
+        1. Input a "searchQuery" to find PatternFly documentation and guideline URLs, and component names.
+        2. Use the returned resource names OR URLs with the "usePatternFlyDocs" tool to get markdown documentation, guidelines, and component JSON schemas.
 
       **Returns**:
-        - Component names that can be used with "usePatternFlyDocs"
-        - Documentation URLs that can be used with "usePatternFlyDocs"
+        - Component and resource names that can be used with "usePatternFlyDocs"
+        - Documentation and guideline URLs that can be used with "usePatternFlyDocs"
       `,
       inputSchema: {
-        searchQuery: z.string().max(options.maxSearchLength).describe('Full or partial component name to search for (e.g., "button", "table", "*")')
+        searchQuery: z.string().max(options.maxSearchLength).describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")')
       }
     },
     callback

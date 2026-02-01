@@ -72,7 +72,9 @@ const getPatternFlyMcpDocs = (): {
   byCategory: PatternFlyMcpDocsByCategory,
   byGuidance: PatternFlyMcpDocsByCategory,
   byPath: PatternFlyMcpDocsByPath,
-  byNameWithPath: PatternFlyMcpDocsByNameWithPath
+  byNameWithPath: PatternFlyMcpDocsByNameWithPath,
+  byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath,
+  byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath
 } => {
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const bySection: PatternFlyMcpDocsBySection = {};
@@ -80,13 +82,16 @@ const getPatternFlyMcpDocs = (): {
   const byGuidance: PatternFlyMcpDocsByCategory = {};
   const byPath: PatternFlyMcpDocsByPath = {};
   const byNameWithPath: PatternFlyMcpDocsByNameWithPath = {};
+  const byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath = {};
+  const byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath = {};
   const availableVersions = new Set<string>();
   const nameIndex = new Set<string>();
+  const pathSeen = new Set<string>();
 
   Object.entries(originalDocs).forEach(([name, entries]) => {
     nameIndex.add(name);
 
-    entries.forEach(entry => {
+    entries.forEach((entry, index) => {
       if (entry.version) {
         availableVersions.add(entry.version);
       }
@@ -109,10 +114,34 @@ const getPatternFlyMcpDocs = (): {
       if (entry.path) {
         byPath[entry.path] ??= { ...entry, name };
 
-        byNameWithPath[name] ??= [];
-        byNameWithPath[name].push(entry.path);
+        if (!pathSeen.has(entry.path)) {
+          pathSeen.add(entry.path);
+
+          byNameWithPath[name] ??= [];
+          byNameWithPath[name].push(entry.path);
+
+          if (entry.section === 'guidelines') {
+            byNameWithPathGuidance[name] ??= [];
+            byNameWithPathGuidance[name].push(entry.path);
+          } else {
+            byNameWithPathNoGuidance[name] ??= [];
+            byNameWithPathNoGuidance[name].push(entry.path);
+          }
+        }
       }
     });
+  });
+
+  Object.entries(byNameWithPath).forEach(([_name, paths]) => {
+    paths.sort((a, b) => b.localeCompare(a));
+  });
+
+  Object.entries(byNameWithPathGuidance).forEach(([_name, paths]) => {
+    paths.sort((a, b) => b.localeCompare(a));
+  });
+
+  Object.entries(byNameWithPathNoGuidance).forEach(([_name, paths]) => {
+    paths.sort((a, b) => b.localeCompare(a));
   });
 
   return {
@@ -123,7 +152,9 @@ const getPatternFlyMcpDocs = (): {
     byCategory,
     byGuidance,
     byPath,
-    byNameWithPath
+    byNameWithPath,
+    byNameWithPathGuidance,
+    byNameWithPathNoGuidance
   };
 };
 

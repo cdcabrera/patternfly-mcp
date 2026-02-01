@@ -64,11 +64,11 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
         const suggestions = searchResults.map(searchResult => searchResult.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-          : 'No similar components found.';
+          : 'No similar resources found.';
 
         throw new McpError(
           ErrorCode.InvalidParams,
-          `No documentation found for component "${name.trim()}". ${suggestionMessage}`
+          `No documentation found for "${name.trim()}". ${suggestionMessage}`
         );
       }
 
@@ -91,7 +91,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       if (docs.length === 0) {
         throw new McpError(
           ErrorCode.InvalidParams,
-          `Component "${name.trim()}" was found, but no documentation URLs are available for it.`
+          `"${name.trim()}" was found, but no documentation URLs are available for it.`
         );
       }
 
