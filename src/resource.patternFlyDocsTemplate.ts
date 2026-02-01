@@ -2,7 +2,7 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
-import { searchComponents } from './tool.searchPatternFlyDocs';
+import { searchPatternFly } from './tool.searchPatternFlyDocs';
 import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
@@ -58,7 +58,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 
       const docResults = [];
       const docs = [];
-      const { exactMatches, searchResults } = searchComponents.memo(name);
+      const { exactMatches, searchResults } = searchPatternFly.memo(name);
 
       if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
         const suggestions = searchResults.map(searchResult => searchResult.item).slice(0, 3);

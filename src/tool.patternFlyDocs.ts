@@ -5,7 +5,7 @@ import { getOptions } from './options.context';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
-import { searchComponents } from './tool.searchPatternFlyDocs';
+import { searchPatternFly } from './tool.searchPatternFlyDocs';
 import { log } from './logger';
 import {
   getPatternFlyMcpDocs,
@@ -61,7 +61,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (name) {
-      const { exactMatches, searchResults } = searchComponents.memo(name);
+      const { exactMatches, searchResults } = searchPatternFly.memo(name);
 
       if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);

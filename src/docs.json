@@ -2649,40 +2649,46 @@
         "version": "v6"
       }
     ],
-    "Guidelines": [
+    "Charts": [
       {
-        "displayName": "react-charts",
-        "description": "AI guidance for react-charts.",
+        "displayName": "React Charts",
+        "description": "AI guidance for PatternFly React Charts.",
         "pathSlug": "charts",
         "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:charts/README.md",
         "version": "v6"
-      },
+      }
+    ],
+    "Chatbot": [
       {
-        "displayName": "react-chatbot",
-        "description": "AI guidance for react-chatbot.",
+        "displayName": "React Chatbot",
+        "description": "AI guidance for PatternFly React Chatbot.",
         "pathSlug": "chatbot",
         "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:chatbot/README.md",
         "version": "v6"
-      },
+      }
+    ],
+    "ComponentGroups": [
       {
-        "displayName": "react-component-groups",
-        "description": "AI guidance for react-component-groups.",
+        "displayName": "Component Groups",
+        "description": "AI guidance for PatternFly React Component Groups.",
         "pathSlug": "component-groups",
         "section": "guidelines",
         "category": "react",
         "source": "local",
         "path": "documentation:component-groups/README.md",
         "version": "v6"
-      },
+      }
+    ],
+    "React": [
       {
-        "displayName": "react-guidelines",
-        "description": "AI guidance for react-guidelines.",
+        "displayName": "React Guidelines",
+        "description": "AI guidance for PatternFly React Guidelines.",
         "pathSlug": "guidelines",
         "section": "guidelines",
         "category": "react",
@@ -2691,8 +2697,8 @@
         "version": "v6"
       },
       {
-        "displayName": "react-components",
-        "description": "AI guidance for react-components.",
+        "displayName": "React Components",
+        "description": "AI guidance for PatternFly React Components.",
         "pathSlug": "components",
         "section": "guidelines",
         "category": "react",
@@ -2701,8 +2707,8 @@
         "version": "v6"
       },
       {
-        "displayName": "react-resources",
-        "description": "AI guidance for react-resources.",
+        "displayName": "React Resources",
+        "description": "AI guidance for PatternFly React Resources.",
         "pathSlug": "resources",
         "section": "guidelines",
         "category": "react",
@@ -2711,8 +2717,8 @@
         "version": "v6"
       },
       {
-        "displayName": "react-setup",
-        "description": "AI guidance for react-setup.",
+        "displayName": "React Setup",
+        "description": "AI guidance for PatternFly React Setup.",
         "pathSlug": "setup",
         "section": "guidelines",
         "category": "react",
@@ -2721,8 +2727,8 @@
         "version": "v6"
       },
       {
-        "displayName": "react-troubleshooting",
-        "description": "AI guidance for react-troubleshooting.",
+        "displayName": "React Troubleshooting",
+        "description": "AI guidance for PatternFly React Troubleshooting.",
         "pathSlug": "troubleshooting",
         "section": "guidelines",
         "category": "react",

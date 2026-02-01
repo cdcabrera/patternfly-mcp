@@ -3,7 +3,7 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { getOptions } from './options.context';
 import { getPatternFlyComponentSchema } from './patternFly.getResources';
-import { searchComponents } from './tool.searchPatternFlyDocs';
+import { searchPatternFly } from './tool.searchPatternFlyDocs';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -56,7 +56,7 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
       );
     }
 
-    const { exactMatches, searchResults } = searchComponents.memo(name);
+    const { exactMatches, searchResults } = searchPatternFly.memo(name);
     let result: ComponentSchema | undefined = undefined;
 
     if (exactMatches.length > 0) {

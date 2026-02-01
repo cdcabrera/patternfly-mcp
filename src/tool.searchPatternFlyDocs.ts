@@ -26,7 +26,7 @@ import {
  *   - `exactMatches`: All exact matches within fuzzy search results
  *   - `searchResults`: Fuzzy search results
  */
-const searchComponents = (searchQuery: string, {
+const searchPatternFly = (searchQuery: string, {
   components = getPatternFlyReactComponentNames.memo(),
   documentation = getPatternFlyMcpDocs.memo(),
   // resources = getPatternFlyMcpResources.memo(),
@@ -80,7 +80,7 @@ const searchComponents = (searchQuery: string, {
 /**
  * Memoized version of searchComponents.
  */
-searchComponents.memo = memo(searchComponents, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
+searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
 
 /**
  * searchPatternFlyDocs tool function
@@ -109,7 +109,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const { isSearchWildCardAll, searchResults } = searchComponents.memo(searchQuery, { allowWildCardAll: true });
+    const { isSearchWildCardAll, searchResults } = searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
       return {
@@ -182,4 +182,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchComponents };
+export { searchPatternFlyDocsTool, searchPatternFly };
