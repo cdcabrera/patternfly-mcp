@@ -13,6 +13,27 @@ import {
 } from './patternFly.getResources';
 
 /**
+ * Search result object returned by searchPatternFly.
+ * Includes additional metadata and URLs.
+ *
+ * @interface SearchPatternFlyResult
+ * @extends FuzzySearchResult
+ * @property {string} doc - PatternFly documentation URL
+ * @property {boolean} isSchemasAvailable - Whether JSON schemas are available for the component
+ * @property {string | undefined} schema - JSON schema URL, if available
+ * @property {string[]} urls - List of documentation URLs
+ * @property {string[]} guidanceUrls - List of agent guidance URLs
+ */
+interface SearchPatternFlyResult extends FuzzySearchResult {
+  doc: string;
+  isSchemasAvailable: boolean;
+  schema: string | undefined;
+  urls: string[];
+  guidanceUrls: string[];
+  query: string | undefined;
+}
+
+/**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
@@ -48,7 +69,7 @@ const searchPatternFly = (searchQuery: string, {
     });
   }
 
-  const extendResults = (results: FuzzySearchResult[] = []) => results.map(result => {
+  const extendResults = (results: FuzzySearchResult[] = [], query?: string) => results.map(result => {
     const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
     const guidanceUrls = documentation.byNameWithPathGuidance[result.item] || [];
     const urls = documentation.byNameWithPathNoGuidance[result.item] || [];
@@ -59,13 +80,14 @@ const searchPatternFly = (searchQuery: string, {
       isSchemasAvailable,
       schema: isSchemasAvailable ? `patternfly://schemas/${result.item}` : undefined,
       urls,
-      guidanceUrls
+      guidanceUrls,
+      query
     };
   });
 
   const exactMatches = searchResults.filter(result => result.matchType === 'exact');
-  const extendedExactMatches = extendResults(exactMatches);
-  const extendedSearchResults = extendResults(searchResults);
+  const extendedExactMatches: SearchPatternFlyResult[] = extendResults(exactMatches, searchQuery);
+  const extendedSearchResults: SearchPatternFlyResult[] = extendResults(searchResults, searchQuery);
 
   return {
     isSearchWildCardAll,
@@ -193,4 +215,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchPatternFly };
+export { searchPatternFlyDocsTool, searchPatternFly, type SearchPatternFlyResult };

@@ -22,7 +22,7 @@ interface ClosestSearchOptions {
 interface FuzzySearchResult {
   item: string;
   distance: number;
-  matchType: 'exact' | 'prefix' | 'suffix' | 'contains' | 'fuzzy' | 'all';
+  matchType: 'exact' | 'prefix' | 'suffix' | 'contains' | 'partial' | 'fuzzy' | 'all';
 }
 
 /**
@@ -33,6 +33,7 @@ interface FuzzySearchResult {
  *   - prefix = 1
  *   - suffix = 1
  *   - contains = 2
+ *   - partial = 2
  *   - fuzzy = Levenshtein edit distance
  * - `maxResults` - Maximum number of results to return
  * - `normalizeFn` - Function to normalize strings (default: `normalizeString`)
@@ -47,6 +48,7 @@ interface FuzzySearchOptions {
   isPrefixMatch?: boolean;
   isSuffixMatch?: boolean;
   isContainsMatch?: boolean;
+  isPartialMatch?: boolean;
   isFuzzyMatch?: boolean;
   deduplicateByNormalized?: boolean;
 }
@@ -131,6 +133,7 @@ const findClosest = (
  * @param {boolean} options.isPrefixMatch - Include prefix matches in results (default: `true`)
  * @param {boolean} options.isSuffixMatch - Include suffix matches in results (default: `true`)
  * @param {boolean} options.isContainsMatch - Include contains matches in results (default: `true`)
+ * @param {boolean} options.isPartialMatch - Include partial matches in results (default: `true`)
  * @param {boolean} options.isFuzzyMatch - Allow fuzzy matches even when `maxDistance` is negative or zero.
  * @param {boolean} options.deduplicateByNormalized - If `true`, deduplicate results by normalized value instead of original string.
  * @returns {FuzzySearchResult[]} Array of matching strings with distance and match type
@@ -155,6 +158,7 @@ const fuzzySearch = (
     isPrefixMatch = true,
     isSuffixMatch = true,
     isContainsMatch = true,
+    isPartialMatch = true,
     isFuzzyMatch = false,
     deduplicateByNormalized = false
   }: FuzzySearchOptions = {}
@@ -186,6 +190,9 @@ const fuzzySearch = (
     } else if (normalizedQuery !== '' && normalizedItem.includes(normalizedQuery)) {
       matchType = 'contains';
       editDistance = 2;
+    } else if (normalizedQuery !== '' && normalizedQuery.includes(normalizedItem)) {
+      matchType = 'partial';
+      editDistance = 2;
     } else if (isFuzzyMatch && Math.abs(normalizedItem.length - normalizedQuery.length) <= maxDistance) {
       matchType = 'fuzzy';
       editDistance = distance(normalizedQuery, normalizedItem);
@@ -199,6 +206,7 @@ const fuzzySearch = (
       (matchType === 'prefix' && isPrefixMatch) ||
       (matchType === 'suffix' && isSuffixMatch) ||
       (matchType === 'contains' && isContainsMatch) ||
+      (matchType === 'partial' && isPartialMatch) ||
       (matchType === 'fuzzy' && isFuzzyMatch);
 
     if (editDistance <= maxDistance && isIncluded) {
