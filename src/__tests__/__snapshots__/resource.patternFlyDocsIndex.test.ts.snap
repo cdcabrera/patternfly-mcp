@@ -1,24 +1,5 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`normalizePatternFlyDocsIndex should normalize categories and apply linking markdown, basic categories: normalized categories 1`] = `
-{
-  "AI Guidance": [
-    "[@patternfly/Sit Sit - AI Guidance](documentation:components/sit-sit/guidelines.md)",
-  ],
-  "Accessibility": [
-    "[@patternfly/Dolor Sit - Accessibility](https://www.patternfly.org/v6/components/dolor-sit/accessibility)",
-  ],
-  "Design Guidelines": [
-    "[@patternfly/Lorem Ipsum - Design Guidelines](https://www.patternfly.org/v6/components/lorem-ipsum/design-guidelines)",
-  ],
-  "Examples": [
-    "[@patternfly/Lorem Sit - Examples](https://www.patternfly.org/v6/components/lorem-sit/components)",
-  ],
-}
-`;
-
-exports[`normalizePatternFlyDocsIndex should normalize categories and apply linking markdown, empty: normalized categories 1`] = `{}`;
-
 exports[`patternFlyDocsIndexResource should have a consistent return structure: structure 1`] = `
 {
   "config": true,

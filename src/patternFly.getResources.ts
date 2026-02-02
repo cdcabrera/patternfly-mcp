@@ -2,6 +2,7 @@ import { componentNames as pfComponentNames, getComponentSchema } from '@pattern
 import patternFlyDocsCatalog from './docs.json';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { isPlainObject } from './server.helpers';
 
 /**
  * PatternFly JSON catalog documentation entries
@@ -65,7 +66,11 @@ type PatternFlyMcpDocsByNameWithPath = {
  * @param entry - PatternFly documentation entry
  */
 const setCategoryDisplayLabel = (entry: PatternFlyMcpDocEntry) => {
-  let categoryLabel = entry.category;
+  let categoryLabel = entry?.category || 'Documentation';
+
+  if (!isPlainObject(entry)) {
+    return categoryLabel;
+  }
 
   switch (categoryLabel) {
     case 'design-guidelines':

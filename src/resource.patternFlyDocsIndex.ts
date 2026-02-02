@@ -1,6 +1,5 @@
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
-import { memo } from './server.caching';
 import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**

@@ -4,6 +4,7 @@ exports[`getPatternFlyMcpDocs should return multiple organized facets: propertie
 [
   "original",
   "availableVersions",
+  "markdownIndex",
   "nameIndex",
   "bySection",
   "byCategory",
@@ -12,6 +13,7 @@ exports[`getPatternFlyMcpDocs should return multiple organized facets: propertie
   "byName",
   "byNameWithPath",
   "byNameWithPathGuidance",
+  "byNameWithPathMarkdown",
   "byNameWithPathNoGuidance",
 ]
 `;
@@ -28,3 +30,17 @@ exports[`getPatternFlyReactComponentNames should return multiple organized facet
   "componentNamesWithSchema",
 ]
 `;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, accessibility 1`] = `"Accessibility"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, design 1`] = `"Design Guidelines"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, empty string 1`] = `"Documentation"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, example 1`] = `"Examples"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, guidelines 1`] = `"AI Guidance"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, null 1`] = `"Documentation"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, undefined 1`] = `"Documentation"`;
