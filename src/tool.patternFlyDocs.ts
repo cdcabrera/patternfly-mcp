@@ -5,10 +5,7 @@ import { getOptions } from './options.context';
 import { processDocsFunction, type ProcessedDoc } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { searchPatternFly } from './tool.searchPatternFlyDocs';
-import {
-  getPatternFlyMcpDocs, getPatternFlyComponentSchema,
-  setCategoryDisplayLabel
-} from './patternFly.getResources';
+import { getPatternFlyMcpDocs, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { log } from './logger';
 
 /**
