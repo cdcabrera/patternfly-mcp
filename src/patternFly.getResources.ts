@@ -60,6 +60,32 @@ type PatternFlyMcpDocsByNameWithPath = {
 };
 
 /**
+ * Set the category display label based on the entry's section and category.
+ *
+ * @param entry - PatternFly documentation entry
+ */
+const setCategoryDisplayLabel = (entry: PatternFlyMcpDocEntry) => {
+  let categoryLabel = entry.category;
+
+  switch (categoryLabel) {
+    case 'design-guidelines':
+      categoryLabel = 'Design Guidelines';
+      break;
+    case 'accessibility':
+      categoryLabel = 'Accessibility';
+      break;
+    case 'react':
+      categoryLabel = 'Examples';
+      break;
+    default:
+      categoryLabel = categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1);
+      break;
+  }
+
+  return entry.section === 'guidelines' ? 'AI Guidance' : categoryLabel;
+};
+
+/**
  * Get a multifaceted documentation breakdown from the JSON catalog.
  *
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
@@ -67,13 +93,16 @@ type PatternFlyMcpDocsByNameWithPath = {
 const getPatternFlyMcpDocs = (): {
   original: PatternFlyMcpDocs,
   availableVersions: string[],
+  markdownIndex: string[],
   nameIndex: string[],
   bySection: PatternFlyMcpDocsBySection,
   byCategory: PatternFlyMcpDocsByCategory,
   byGuidance: PatternFlyMcpDocsByCategory,
   byPath: PatternFlyMcpDocsByPath,
+  byName: PatternFlyMcpDocs,
   byNameWithPath: PatternFlyMcpDocsByNameWithPath,
   byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath,
+  byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath,
   byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath
 } => {
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
@@ -81,10 +110,13 @@ const getPatternFlyMcpDocs = (): {
   const byCategory: PatternFlyMcpDocsByCategory = {};
   const byGuidance: PatternFlyMcpDocsByCategory = {};
   const byPath: PatternFlyMcpDocsByPath = {};
+  const byName: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const byNameWithPath: PatternFlyMcpDocsByNameWithPath = {};
   const byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath = {};
+  const byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath = {};
   const byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath = {};
   const availableVersions = new Set<string>();
+  const markdownIndex = new Set<string>();
   const nameIndex = new Set<string>();
   const pathSeen = new Set<string>();
 
@@ -120,6 +152,12 @@ const getPatternFlyMcpDocs = (): {
           byNameWithPath[name] ??= [];
           byNameWithPath[name].push(entry.path);
 
+          const markdownPath = `[@patternfly/${entry.displayName} - ${setCategoryDisplayLabel(entry)}](${entry.path})`;
+
+          byNameWithPathMarkdown[name] ??= [];
+          byNameWithPathMarkdown[name].push(markdownPath);
+          markdownIndex.add(markdownPath);
+
           if (entry.section === 'guidelines') {
             byNameWithPathGuidance[name] ??= [];
             byNameWithPathGuidance[name].push(entry.path);
@@ -140,6 +178,10 @@ const getPatternFlyMcpDocs = (): {
     paths.sort((a, b) => b.localeCompare(a));
   });
 
+  Object.entries(byNameWithPathMarkdown).forEach(([_name, markdownPaths]) => {
+    markdownPaths.sort((a, b) => b.localeCompare(a));
+  });
+
   Object.entries(byNameWithPathNoGuidance).forEach(([_name, paths]) => {
     paths.sort((a, b) => b.localeCompare(a));
   });
@@ -147,13 +189,16 @@ const getPatternFlyMcpDocs = (): {
   return {
     original: originalDocs,
     availableVersions: Array.from(availableVersions).sort((a, b) => b.localeCompare(a)),
+    markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(nameIndex).sort((a, b) => a.localeCompare(b)),
     bySection,
     byCategory,
     byGuidance,
     byPath,
+    byName,
     byNameWithPath,
     byNameWithPathGuidance,
+    byNameWithPathMarkdown,
     byNameWithPathNoGuidance
   };
 };
@@ -222,6 +267,7 @@ export {
   getPatternFlyMcpDocs,
   getPatternFlyMcpResources,
   getPatternFlyReactComponentNames,
+  setCategoryDisplayLabel,
   type PatternFlyMcpDocEntry,
   type PatternFlyMcpDocs,
   type PatternFlyMcpDocsBySection,

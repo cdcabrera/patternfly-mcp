@@ -9,6 +9,7 @@ exports[`getPatternFlyMcpDocs should return multiple organized facets: propertie
   "byCategory",
   "byGuidance",
   "byPath",
+  "byName",
   "byNameWithPath",
   "byNameWithPathGuidance",
   "byNameWithPathNoGuidance",
