@@ -68,7 +68,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
     mockSearchComponents.mockReturnValue({
       isSearchWildCardAll: false,
       firstExactMatch: undefined,
-      exactMatches: [{ urls } as any],
+      exactMatches: [{ urls, guidanceUrls: [] } as any],
       searchResults: []
     });
     mockProcessDocs.mockResolvedValue([{ content: mockResult }] as any);
