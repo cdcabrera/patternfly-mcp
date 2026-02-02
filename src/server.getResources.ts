@@ -7,6 +7,13 @@ import { normalizeString } from './server.search';
 import { isUrl } from './server.helpers';
 import { fuzzySearch } from './server.search';
 
+interface ProcessedDoc {
+  content: string;
+  path: string | undefined;
+  resolvedPath: string | undefined;
+  isSuccess: boolean;
+}
+
 /**
  * Dependency version normalize. Strips common semver prefixes (^, ~, v, >, >=) and keeps only the major version
  * for more reliable matching.
@@ -254,11 +261,16 @@ const promiseQueue = async (queue: string[], limit = 5) => {
  * @note Remember to limit the number of docs to load to avoid OOM.
  * @param inputs - List of paths or URLs to load
  * @param options - Optional options
+ * @returns An array of loaded docs with content, path, resolvedPath, and isSuccess properties:
+ *   - `content` is the loaded content string.
+ *   - `path` is the original input path or URL.
+ *   - `resolvedPath` is the resolved path after normalization.
+ *   - `isSuccess` is true if the doc was successfully loaded, false otherwise.
  */
 const processDocsFunction = async (
   inputs: string[],
   options = getOptions()
-) => {
+): Promise<ProcessedDoc[]> => {
   const uniqueInputs = new Map(
     inputs.map(input => [normalizeString.memo(input), input.trim()])
   );
@@ -297,6 +309,11 @@ const processDocsFunction = async (
   return docs;
 };
 
+/**
+ * Memoized version of processDocsFunction. Use default memo options.
+ */
+processDocsFunction.memo = memo(processDocsFunction, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
+
 export {
   depVersionNormalize,
   fetchUrlFunction,
@@ -307,5 +324,6 @@ export {
   promiseQueue,
   readLocalFileFunction,
   resolveLocalPathFunction,
-  sortPackageVersions
+  sortPackageVersions,
+  type ProcessedDoc
 };

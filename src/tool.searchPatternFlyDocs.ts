@@ -34,6 +34,23 @@ interface SearchPatternFlyResult extends FuzzySearchResult {
 }
 
 /**
+ * Search results object returned by searchPatternFly.
+ * Includes additional metadata and URLs.
+ *
+ * @interface SearchPatternFlyResults
+ * @property {boolean} isSearchWildCardAll - Whether the search query matched all components
+ * @property {SearchPatternFlyResult | undefined} firstExactMatch - First exact match within fuzzy search results
+ * @property {SearchPatternFlyResult[]} exactMatches - All exact matches within fuzzy search results
+ * @property {SearchPatternFlyResult[]} searchResults - Fuzzy search results
+ */
+interface SearchPatternFlyResults {
+  isSearchWildCardAll: boolean,
+  firstExactMatch: SearchPatternFlyResult | undefined,
+  exactMatches: SearchPatternFlyResult[],
+  searchResults: SearchPatternFlyResult[]
+}
+
+/**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
@@ -53,7 +70,7 @@ const searchPatternFly = (searchQuery: string, {
   documentation = getPatternFlyMcpDocs.memo(),
   resources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false
-} = {}) => {
+} = {}): SearchPatternFlyResults => {
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   let searchResults: FuzzySearchResult[] = [];
@@ -215,4 +232,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchPatternFly, type SearchPatternFlyResult };
+export { searchPatternFlyDocsTool, searchPatternFly, type SearchPatternFlyResults, type SearchPatternFlyResult };

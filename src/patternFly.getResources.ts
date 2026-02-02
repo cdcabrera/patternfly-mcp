@@ -65,7 +65,7 @@ type PatternFlyMcpDocsByNameWithPath = {
  *
  * @param entry - PatternFly documentation entry
  */
-const setCategoryDisplayLabel = (entry: PatternFlyMcpDocEntry) => {
+const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
   let categoryLabel = entry?.category || 'Documentation';
 
   if (!isPlainObject(entry)) {

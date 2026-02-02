@@ -2,16 +2,14 @@ import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
 import { getOptions } from './options.context';
-import { processDocsFunction } from './server.getResources';
-import { memo } from './server.caching';
+import { processDocsFunction, type ProcessedDoc } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { searchPatternFly } from './tool.searchPatternFlyDocs';
-import { log } from './logger';
 import {
-  getPatternFlyMcpDocs,
-  getPatternFlyComponentSchema,
-  type PatternFlyMcpDocsByPathEntry
+  getPatternFlyMcpDocs, getPatternFlyComponentSchema,
+  setCategoryDisplayLabel
 } from './patternFly.getResources';
+import { log } from './logger';
 
 /**
  * usePatternFlyDocs tool function
@@ -20,8 +18,6 @@ import {
  * @returns MCP tool tuple [name, schema, callback]
  */
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
-  const memoProcess = memo(processDocsFunction, options?.toolMemoOptions?.usePatternFlyDocs);
-
   const callback = async (args: any = {}) => {
     const { urlList, name } = args;
     const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
@@ -63,7 +59,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     if (name) {
       const { exactMatches, searchResults } = searchPatternFly.memo(name);
 
-      if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0)) {
+      if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0 && match.guidanceUrls.length === 0)) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
@@ -78,13 +74,13 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       updatedUrlList.push(...exactMatches.flatMap(match => match.urls));
     }
 
-    const docs = [];
+    const docs: ProcessedDoc[] = [];
     const schemasSeen = new Set<string>();
     const schemaResults = [];
     const docResults = [];
 
     try {
-      const processedDocs = await memoProcess(updatedUrlList);
+      const processedDocs = await processDocsFunction.memo(updatedUrlList);
 
       docs.push(...processedDocs);
     } catch (error) {
@@ -113,18 +109,18 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       };
     }
 
+    const { byPath } = getPatternFlyMcpDocs.memo();
+
     for (const doc of docs) {
-      let entry = { name: 'Documentation', category: 'unknown' } as PatternFlyMcpDocsByPathEntry;
-
-      if (doc.path) {
-        entry = getPatternFlyMcpDocs.memo().byPath[doc.path] || entry;
-      }
-
-      const componentName = entry.name;
+      const patternFlyEntry = doc?.path ? byPath[doc.path] : undefined;
+      const componentName = patternFlyEntry?.name;
+      const docTitle = patternFlyEntry
+        ? `# Documentation for ${patternFlyEntry.displayName || componentName} [${setCategoryDisplayLabel(patternFlyEntry)}]`
+        : `# Content for ${doc.path}`;
 
       docResults.push(stringJoin.newline(
-        `# ${entry.displayName || componentName} [${entry.category}]`,
-        `Source: ${doc.path || 'unknown'}`,
+        docTitle,
+        `Source: ${doc.path}`,
         '',
         doc.content
       ));
