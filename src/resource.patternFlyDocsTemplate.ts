@@ -2,10 +2,10 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
-import { searchPatternFly } from './tool.searchPatternFlyDocs';
-import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
+import { getOptions } from './options.context';
+import { searchPatternFly } from './patternFly.search';
 
 /**
  * Name of the resource template.

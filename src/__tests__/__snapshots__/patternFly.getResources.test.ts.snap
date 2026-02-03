@@ -6,6 +6,7 @@ exports[`getPatternFlyMcpDocs should return multiple organized facets: propertie
   "availableVersions",
   "markdownIndex",
   "nameIndex",
+  "pathIndex",
   "bySection",
   "byCategory",
   "byGuidance",

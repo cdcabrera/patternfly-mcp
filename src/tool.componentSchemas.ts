@@ -2,9 +2,9 @@ import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { type McpTool } from './server';
-import { getOptions } from './options.context';
 import { memo } from './server.caching';
 import { fuzzySearch } from './server.search';
+import { getOptions } from './options.context';
 import { getPatternFlyReactComponentNames } from './patternFly.getResources';
 
 /**

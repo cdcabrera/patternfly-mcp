@@ -1,12 +1,12 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { patternFlyDocsTemplateResource } from '../resource.patternFlyDocsTemplate';
 import { processDocsFunction } from '../server.getResources';
-import { searchPatternFly } from '../tool.searchPatternFlyDocs';
 import { isPlainObject } from '../server.helpers';
+import { searchPatternFly } from '../patternFly.search';
 
 // Mock dependencies
 jest.mock('../server.getResources');
-jest.mock('../tool.searchPatternFlyDocs');
+jest.mock('../patternFly.search');
 jest.mock('../server.caching', () => ({
   memo: jest.fn(fn => fn)
 }));

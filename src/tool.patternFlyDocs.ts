@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
-import { getOptions } from './options.context';
 import { processDocsFunction, type ProcessedDoc } from './server.getResources';
 import { stringJoin } from './server.helpers';
-import { searchPatternFly } from './tool.searchPatternFlyDocs';
+import { getOptions } from './options.context';
+import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpDocs, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { log } from './logger';
 

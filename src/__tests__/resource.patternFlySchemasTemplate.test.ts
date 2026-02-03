@@ -1,30 +1,25 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getPatternFlyComponentSchema } from '../patternFly.getResources';
 import { patternFlySchemasTemplateResource } from '../resource.patternFlySchemasTemplate';
-import { searchPatternFly } from '../tool.searchPatternFlyDocs';
+import { searchPatternFly } from '../patternFly.search';
 import { isPlainObject } from '../server.helpers';
 
 // Mock dependencies
-jest.mock('../tool.searchPatternFlyDocs', () => ({
-  ...jest.requireActual('../tool.searchPatternFlyDocs'),
-  searchPatternFly: {
-    memo: jest.fn().mockImplementation(() => {})
-  }
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyComponentSchema: Object.assign(
+    jest.fn(),
+    { memo: jest.fn() }
+  )
 }));
-jest.mock('../tool.patternFlyDocs');
+
+jest.mock('../patternFly.search');
 jest.mock('../server.caching', () => ({
   memo: jest.fn(fn => fn)
 }));
 jest.mock('../options.context', () => ({
   getOptions: jest.fn(() => ({}))
 }));
-jest.mock('../patternFly.getResources', () => ({
-  ...jest.requireActual('../patternFly.getResources'),
-  getPatternFlyComponentSchema: {
-    memo: jest.fn().mockImplementation(async () => {})
-  }
-}));
-*/
 
 const mockGetComponentSchema = getPatternFlyComponentSchema as jest.MockedFunction<typeof getPatternFlyComponentSchema>;
 const mockSearchComponents = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
@@ -81,15 +76,12 @@ describe('patternFlySchemasTemplateResource, callback', () => {
   });
 
   it('should handle missing exact match and missing schema errors', async () => {
-    /*
     mockSearchComponents.mockReturnValue({
       isSearchWildCardAll: false,
       firstExactMatch: undefined,
       exactMatches: [],
       searchResults: []
     });
-    */
-    mockGetComponentSchema.mockRejectedValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');
@@ -106,7 +98,7 @@ describe('patternFlySchemasTemplateResource, callback', () => {
       exactMatches: [{ item: 'Button', urls: [] } as any],
       searchResults: []
     });
-    mockGetComponentSchema.mockReturnValue(undefined as any);
+    mockGetComponentSchema.mockRejectedValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');

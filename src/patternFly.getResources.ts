@@ -5,6 +5,11 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { isPlainObject } from './server.helpers';
 
 /**
+ * Derive the component schema type from @patternfly/patternfly-component-schemas
+ */
+type PatternFlyComponentSchema = Awaited<ReturnType<typeof getPatternFlyComponentSchema>>;
+
+/**
  * PatternFly JSON catalog documentation entries
  */
 type PatternFlyMcpDocEntry = {
@@ -236,8 +241,8 @@ getPatternFlyReactComponentNames.memo = memo(getPatternFlyReactComponentNames);
 /**
  * Get the component schema from @patternfly/patternfly-component-schemas.
  *
- * @param componentName -
- * @returns
+ * @param componentName - Name of the component to retrieve the schema for.
+ * @returns {Promise<PatternFlyComponentSchema|undefined>} The component schema, or `undefined` if the component name is not found.
  */
 const getPatternFlyComponentSchema = async (componentName: string) => {
   try {
@@ -275,6 +280,7 @@ export {
   getPatternFlyMcpResources,
   getPatternFlyReactComponentNames,
   setCategoryDisplayLabel,
+  type PatternFlyComponentSchema,
   type PatternFlyMcpDocEntry,
   type PatternFlyMcpDocs,
   type PatternFlyMcpDocsBySection,
