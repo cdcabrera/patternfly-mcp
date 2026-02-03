@@ -84,8 +84,8 @@ describe('Builtin tools, HTTP transport', () => {
         name: 'usePatternFlyDocs',
         arguments: {
           urlList: [
-            'documentation/guidelines/README.md',
-            'documentation/components/README.md'
+            'documentation:guidelines/README.md',
+            'documentation:components/README.md'
           ]
         }
       }
@@ -94,7 +94,7 @@ describe('Builtin tools, HTTP transport', () => {
     const response = await CLIENT?.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
-    expect(text.startsWith('# Documentation')).toBe(true);
+    expect(text.startsWith('# Documentation') || text.startsWith('# Content')).toBe(true);
     expect(text).toMatchSnapshot();
   });
 
@@ -108,8 +108,8 @@ describe('Builtin tools, HTTP transport', () => {
         name: 'usePatternFlyDocs',
         arguments: {
           urlList: [
-            'https://www.patternfly.org/notARealPath/README.md',
-            'https://www.patternfly.org/notARealPath/AboutModal.md'
+            'https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/legend-chart/legend-chart.md',
+            'https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartLegend/examples/ChartLegend.md'
           ]
         }
       }

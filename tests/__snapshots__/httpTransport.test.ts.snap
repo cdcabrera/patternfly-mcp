@@ -15,7 +15,8 @@ exports[`Builtin resources, HTTP transport should expose expected resources and 
 `;
 
 exports[`Builtin tools, HTTP transport should concatenate headers and separator with two local files 1`] = `
-"# Documentation from documentation/guidelines/README.md
+"# Documentation for React Guidelines [AI Guidance]
+Source: documentation:guidelines/README.md
 
 # PatternFly Guidelines
 
@@ -106,7 +107,8 @@ See [Common Issues](../troubleshooting/common-issues.md) for specific problems.
 
 ---
 
-# Documentation from documentation/components/README.md
+# Documentation for React Components [AI Guidance]
+Source: documentation:components/README.md
 
 # PatternFly React Components
 
@@ -123,23 +125,17 @@ You can find documentation on PatternFly's components at [PatternFly All compone
 `;
 
 exports[`Builtin tools, HTTP transport should concatenate headers and separator with two remote files 1`] = `
-"# Documentation from https://www.patternfly.org/notARealPath/README.md
+"# Documentation for Legend [Design Guidelines]
+Source: https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/legend-chart/legend-chart.md
 
-# PatternFly Development Rules
-            This is a generated offline fixture used by the MCP external URLs test.
+# Test Document
 
-            Essential rules and guidelines working with PatternFly applications.
-
-            ## Quick Navigation
-
-            ### 🚀 Setup & Environment
-            - **Setup Rules** - Project initialization requirements
-            - **Quick Start** - Essential setup steps
-            - **Environment Rules** - Development configuration
+This is a test document for mocking remote HTTP requests.
 
 ---
 
-# Documentation from https://www.patternfly.org/notARealPath/AboutModal.md
+# Documentation for Legend [Examples]
+Source: https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartLegend/examples/ChartLegend.md
 
 # Test Document
 

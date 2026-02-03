@@ -234,7 +234,9 @@ const loadFileFetch = async (pathOrUrl: string) => {
   const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
   let content;
 
-  if (isUrl(updatedPathOrUrl)) {
+  if (options.mode === 'test') {
+    content = await aMockLocalUrlFunction(updatedPathOrUrl);
+  } else if (isUrl(updatedPathOrUrl)) {
     content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else {
     content = await readLocalFileFunction.memo(updatedPathOrUrl);
