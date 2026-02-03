@@ -100,6 +100,7 @@ const getPatternFlyMcpDocs = (): {
   availableVersions: string[],
   markdownIndex: string[],
   nameIndex: string[],
+  pathIndex: string[],
   bySection: PatternFlyMcpDocsBySection,
   byCategory: PatternFlyMcpDocsByCategory,
   byGuidance: PatternFlyMcpDocsByCategory,
@@ -123,7 +124,7 @@ const getPatternFlyMcpDocs = (): {
   const availableVersions = new Set<string>();
   const markdownIndex = new Set<string>();
   const nameIndex = new Set<string>();
-  const pathSeen = new Set<string>();
+  const pathIndex = new Set<string>();
 
   Object.entries(originalDocs).forEach(([name, entries]) => {
     nameIndex.add(name);
@@ -151,8 +152,8 @@ const getPatternFlyMcpDocs = (): {
       if (entry.path) {
         byPath[entry.path] ??= { ...entry, name };
 
-        if (!pathSeen.has(entry.path)) {
-          pathSeen.add(entry.path);
+        if (!pathIndex.has(entry.path)) {
+          pathIndex.add(entry.path);
 
           byNameWithPath[name] ??= [];
           byNameWithPath[name].push(entry.path);
@@ -196,6 +197,7 @@ const getPatternFlyMcpDocs = (): {
     availableVersions: Array.from(availableVersions).sort((a, b) => b.localeCompare(a)),
     markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(nameIndex).sort((a, b) => a.localeCompare(b)),
+    pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b)),
     bySection,
     byCategory,
     byGuidance,

@@ -1,11 +1,19 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { searchPatternFlyDocsTool } from '../tool.searchPatternFlyDocs';
+import { searchPatternFlyDocsTool, searchPatternFlyDocumentationPaths } from '../tool.searchPatternFlyDocs';
 import { isPlainObject } from '../server.helpers';
 
 // Mock dependencies
 jest.mock('../server.caching', () => ({
   memo: jest.fn(fn => fn)
 }));
+
+describe('searchPatternFlyDocumentationPaths', () => {
+  it('should return an array of documentation paths', () => {
+    const paths = searchPatternFlyDocumentationPaths('spark', { allowWildCardAll: false });
+
+    expect(paths).toMatchSnapshot();
+  });
+});
 
 describe('searchPatternFlyDocsTool', () => {
   beforeEach(() => {

@@ -27,3 +27,12 @@ exports[`searchPatternFlyDocsTool, callback should parse parameters, with partia
 exports[`searchPatternFlyDocsTool, callback should parse parameters, with trimmed componentName: search 1`] = `"# Search results for " Button  ", 1 matches found:"`;
 
 exports[`searchPatternFlyDocsTool, callback should parse parameters, with upper case componentName: search 1`] = `"# Search results for "BUTTON", 1 matches found:"`;
+
+exports[`searchPatternFlyDocumentationPaths should return an array of documentation paths 1`] = `
+{
+  "exactMatches": [],
+  "firstExactMatch": undefined,
+  "isSearchWildCardAll": false,
+  "searchResults": [],
+}
+`;

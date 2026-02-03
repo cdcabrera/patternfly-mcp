@@ -1,3 +1,4 @@
+import { basename } from 'node:path';
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
@@ -49,6 +50,59 @@ interface SearchPatternFlyResults {
   exactMatches: SearchPatternFlyResult[],
   searchResults: SearchPatternFlyResult[]
 }
+
+const searchPatternFlyDocumentationPaths = (searchQuery: string, {
+  documentation = getPatternFlyMcpDocs.memo(),
+  allowWildCardAll = false
+} = {}) => {
+  const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
+  const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+  let searchResults: FuzzySearchResult[] = [];
+
+  if (isSearchWildCardAll) {
+    searchResults = documentation.pathIndex.map(path => ({ matchType: 'all', distance: 0, item: path } as FuzzySearchResult));
+  } else {
+    searchResults = fuzzySearch(searchQuery, documentation.pathIndex, {
+      maxDistance: 3,
+      maxResults: 10,
+      isFuzzyMatch: true,
+      deduplicateByNormalized: true
+    });
+
+    if (!searchResults.length) {
+      const baseName = basename(searchQuery);
+
+      if (baseName) {
+        const baseSearch = fuzzySearch(baseName, documentation.pathIndex, {
+          maxDistance: 3,
+          maxResults: 10,
+          isFuzzyMatch: true,
+          deduplicateByNormalized: true
+        });
+
+        const suffixMatch = baseSearch.find(searchResult => searchResult.item.endsWith(baseName));
+
+        if (suffixMatch) {
+          searchResults = [suffixMatch];
+        }
+      }
+    }
+  }
+
+  const exactMatches = searchResults.filter(result => result.matchType === 'exact');
+
+  return {
+    isSearchWildCardAll,
+    firstExactMatch: exactMatches[0],
+    exactMatches: exactMatches,
+    searchResults: searchResults
+  };
+};
+
+/**
+ * Memoized version of searchPatternFlyDocumentationPaths.
+ */
+searchPatternFlyDocumentationPaths.memo = memo(searchPatternFlyDocumentationPaths, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
@@ -232,4 +286,4 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
 searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool, searchPatternFly, type SearchPatternFlyResults, type SearchPatternFlyResult };
+export { searchPatternFlyDocsTool, searchPatternFly, searchPatternFlyDocumentationPaths, type SearchPatternFlyResults, type SearchPatternFlyResult };
