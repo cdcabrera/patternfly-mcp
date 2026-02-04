@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import { isAbsolute, normalize, resolve, sep } from 'node:path';
+import { access, readFile } from 'node:fs/promises';
+import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
+import semver from 'semver';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
@@ -13,6 +14,88 @@ interface ProcessedDoc {
   resolvedPath: string | undefined;
   isSuccess: boolean;
 }
+
+/**
+ * Match a dependency version against a list of supported versions.
+ *
+ * @Note
+ * - Ignore URLs
+ * - Attempt to ignore paths, and aliases (:/.).
+ * - Can't use `isPath` here because semver strings can be considered valid paths.
+ * - Semver doesn't support inclusive ranges `1.2.3-3.0.0`.
+ *
+ * @param value - The dependency semver version string to match
+ * @param supportedVersions - An array of supported semver version strings
+ * @param options - Optional options object
+ * @param options.sep - Optional path separator. Defaults to `sep` from `path`.
+ * @returns The matched semver version string or `undefined` if no match is found.
+ */
+const matchPackageVersion = (value: string | undefined, supportedVersions: string[] = [], { sep: separator = sep } = {}) => {
+  if (
+    supportedVersions.length === 0 ||
+    typeof value !== 'string' ||
+    !value.trim() ||
+    value.includes(separator) ||
+    value.startsWith('.') ||
+    isUrl(value)
+  ) {
+    return undefined;
+  }
+
+  const updatedValue = semver.maxSatisfying(supportedVersions, value);
+
+  if (updatedValue) {
+    return updatedValue;
+  }
+
+  // const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version) || undefined).filter(Boolean) as SemVer[];
+  // const coercedVersion = semver.coerce(value);
+  /*
+  const coercedVersion = semver.coerce(value);
+
+  if (coercedVersion) {
+    const semverObj = updatedSupportedVersions.find(({ major }) => major === coercedVersion.major);
+
+    console.log(semverObj, value);
+
+    if (semverObj) {
+      return supportedVersions.find(version => version.includes(`${semverObj.major}`));
+    }
+  }
+  */
+
+  return undefined;
+};
+
+/**
+ * Find the nearest package.json by walking up the directory tree.
+ *
+ * @param startPath - Directory to start searching from
+ * @returns The resolved path to the nearest package.json, or undefined if none is found.
+ */
+const findNearestPackageJson = async (startPath: string) => {
+  let currentDir = startPath?.trim?.();
+
+  if (typeof currentDir !== 'string' || !currentDir.length) {
+    return undefined;
+  }
+
+  const { root } = parse(currentDir);
+
+  while (currentDir !== root) {
+    const pkgPath = join(currentDir, 'package.json');
+
+    try {
+      await access(pkgPath);
+
+      return pkgPath;
+    } catch {
+      currentDir = dirname(currentDir);
+    }
+  }
+
+  return undefined;
+};
 
 /**
  * Read a local file and return its contents as a string
@@ -69,18 +152,20 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptio
  * Ensures the resolved path stays within the intended base for security.
  *
  * @param path - Path to resolve. If it's relative, it will be resolved against the base directory.'
+ * @param settings - Optional settings object.
+ * @param settings.sep - Optional path separator. Defaults to `sep` from `path`.
  * @param options - Options
  * @returns Resolved file or URL path.
  *
  * @throws {Error} - Throws an error if the resolved path is invalid or outside the allowed base directory.
  */
-const resolveLocalPathFunction = (path: string, options = getOptions()) => {
+const resolveLocalPathFunction = (path: string, { sep: separator = sep } = {}, options = getOptions()) => {
   const documentationPrefix = options.docsPathSlug;
 
   // Safety check: Ensure the path is within the allowed directory
-  const assertPathWithinBaseAndReturn = (base: string, resolved: string) => {
+  const confirmThenReturnResolvedBase = (base: string, resolved: string) => {
     const normalizedBase = normalize(base);
-    const refinedBase = normalizedBase.endsWith(sep) ? normalizedBase : `${normalizedBase}${sep}`;
+    const refinedBase = normalizedBase.endsWith(separator) ? normalizedBase : `${normalizedBase}${separator}`;
 
     if (!resolved.startsWith(refinedBase) && resolved !== normalizedBase) {
       throw new Error(`Access denied: path ${path} is outside of allowed directory ${base}`);
@@ -89,15 +174,13 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
     return resolved;
   };
 
-  // Paths starting with the documentation prefix are resolved relative to the documentation path
   if (path.startsWith(documentationPrefix)) {
     const base = options.docsPath;
     const resolved = resolve(base, path.slice(documentationPrefix.length));
 
-    return assertPathWithinBaseAndReturn(base, resolved);
+    return confirmThenReturnResolvedBase(base, resolved);
   }
 
-  // URLs are returned as-is
   if (isUrl(path)) {
     return path;
   }
@@ -105,7 +188,7 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
   const base = options.contextPath;
   const resolved = isAbsolute(path) ? normalize(path) : resolve(base, path);
 
-  return assertPathWithinBaseAndReturn(base, resolved);
+  return confirmThenReturnResolvedBase(base, resolved);
 };
 
 /**
@@ -253,7 +336,9 @@ processDocsFunction.memo = memo(processDocsFunction, DEFAULT_OPTIONS.toolMemoOpt
 
 export {
   fetchUrlFunction,
+  findNearestPackageJson,
   loadFileFetch,
+  matchPackageVersion,
   processDocsFunction,
   promiseQueue,
   readLocalFileFunction,
