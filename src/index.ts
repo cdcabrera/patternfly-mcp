@@ -23,16 +23,8 @@ import {
 
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
- *
- * @property {('cli' | 'programmatic' | 'test')} [mode] - Optional string property that specifies the mode of operation.
- *     Defaults to `'programmatic'`.
- *     - `'cli'`: Functionality is being executed in a cli context. Allows process exits.
- *     - `'programmatic'`: Functionality is invoked programmatically. Allows process exits.
- *     - `'test'`: Functionality is being tested. Does NOT allow process exits.
  */
-type PfMcpOptions = DefaultOptionsOverrides & {
-  mode?: 'cli' | 'programmatic' | 'test';
-};
+type PfMcpOptions = DefaultOptionsOverrides;
 
 /**
  * Additional settings for programmatic control.
@@ -157,21 +149,13 @@ const main = async (
   pfMcpOptions: PfMcpOptions = {},
   pfMcpSettings: PfMcpSettings = {}
 ): Promise<PfMcpInstance> => {
-  const { mode, ...options } = pfMcpOptions;
+  const options = pfMcpOptions;
   const { allowProcessExit } = pfMcpSettings;
-
-  const modes = ['cli', 'programmatic', 'test'];
-  const updatedMode = mode && modes.includes(mode) ? mode : 'programmatic';
-  const updatedAllowProcessExit = allowProcessExit ?? updatedMode !== 'test';
+  const cliOptions = parseCliOptions();
+  const mergedOptions = setOptions({ ...cliOptions, ...options });
+  const updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
 
   try {
-    const cliOptions = parseCliOptions();
-    const finalMode = (cliOptions.mode || updatedMode) as PfMcpOptions['mode'];
-    const mergedOptions = setOptions({
-      ...cliOptions,
-      ...options,
-      mode: finalMode
-    } as DefaultOptionsOverrides);
     const session = getSessionOptions();
 
     // use runWithSession to enable session in listeners

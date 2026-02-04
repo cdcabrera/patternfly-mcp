@@ -15,7 +15,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 // @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
-import { start, type PfMcpOptions, type PfMcpSettings, type ServerLogEvent } from '../../src/index';
+import { start, type PfMcpOptions, type PfMcpSettings, type ServerLogEvent } from '../../dist/index.js';
 
 export type { Request as RpcRequest } from '@modelcontextprotocol/sdk/types.js';
 
@@ -24,6 +24,7 @@ export type StartHttpServerOptions = {
   isHttp?: boolean;
   logging?: Partial<PfMcpOptions['logging']> & { level?: LoggingLevel };
   toolModules?: PfMcpOptions['toolModules'];
+  modeOptions?: PfMcpOptions['modeOptions'];
 };
 
 export type StartHttpServerSettings = PfMcpSettings;

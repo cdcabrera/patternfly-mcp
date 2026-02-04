@@ -1,6 +1,14 @@
-import { DEFAULT_OPTIONS, type DefaultOptions, type DefaultOptionsOverrides, type LoggingOptions, type HttpOptions } from './options.defaults';
+import {
+  DEFAULT_OPTIONS,
+  MODE_LEVELS,
+  type DefaultOptions,
+  type DefaultOptionsOverrides,
+  type LoggingOptions,
+  type HttpOptions,
+  type ModeOptions
+} from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
-import { portValid } from './server.helpers';
+import { isUrl, portValid } from './server.helpers';
 
 /**
  * Session defaults, not user-configurable
@@ -20,7 +28,8 @@ type GlobalOptions = DefaultOptions;
  * Options parsed from CLI arguments
  */
 type CliOptions = {
-  mode?: 'cli' | 'programmatic' | 'test';
+  mode?: DefaultOptions['mode'];
+  modeOptions?: Partial<ModeOptions>;
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
@@ -72,6 +81,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
+ * - `--mode-test-url`: Specifies the base URL for testing mode.
  * - `--log-level <level>`: Specifies the logging level. Valid values are `debug`, `info`, `warn`, and `error`.
  * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
  * - `--log-stderr`: Enables terminal logging of channel events
@@ -90,6 +100,10 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  */
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   const modeIndex = argv.indexOf('--mode');
+  const modeTestUrl = argv.indexOf('--mode-test-url');
+  const modeOptions: ModeOptions = {
+    ...DEFAULT_OPTIONS.modeOptions
+  };
   const levelIndex = argv.indexOf('--log-level');
   const logging: LoggingOptions = {
     ...DEFAULT_OPTIONS.logging,
@@ -97,10 +111,24 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     protocol: argv.includes('--log-protocol')
   };
 
-  const modeValue = modeIndex >= 0 ? argv[modeIndex + 1] : undefined;
-  const mode = ['cli', 'programmatic', 'test'].includes(modeValue as string)
-    ? (modeValue as CliOptions['mode'])
-    : undefined;
+  let mode: CliOptions['mode'] | undefined;
+
+  if (modeIndex >= 0) {
+    const maybeMode = String(argv[modeIndex + 1] || '').toLowerCase();
+
+    if (MODE_LEVELS.includes(maybeMode as DefaultOptions['mode'])) {
+      mode = argv[modeIndex + 1] as DefaultOptions['mode'];
+    }
+  }
+
+  if (modeTestUrl >= 0) {
+    const maybeBaseUrl = String(argv[modeTestUrl + 1] || '').trim();
+
+    if (isUrl(maybeBaseUrl)) {
+      modeOptions.test ??= {};
+      modeOptions.test.baseUrl = maybeBaseUrl;
+    }
+  }
 
   if (argv.includes('--verbose')) {
     logging.level = 'debug';
@@ -198,6 +226,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
 
   return {
     ...(mode ? { mode } : {}),
+    modeOptions,
     logging,
     isHttp,
     http,

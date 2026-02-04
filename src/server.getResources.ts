@@ -6,6 +6,7 @@ import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl } from './server.helpers';
 import { fuzzySearch } from './server.search';
+import { log } from './logger';
 
 interface ProcessedDoc {
   content: string;
@@ -115,6 +116,7 @@ const sortPackageVersions = (versions: Set<string> | string[], { isAscending = t
  * Find the nearest package.json by walking up the directory tree.
  *
  * @param startPath - Directory to start searching from
+ * @returns The resolved path to the nearest package.json, or undefined if none is found.
  */
 const findNearestPackageJson = async (startPath: string) => {
   let currentDir = startPath?.trim?.();
@@ -143,7 +145,8 @@ const findNearestPackageJson = async (startPath: string) => {
 /**
  * Read a local file and return its contents as a string
  *
- * @param filePath
+ * @param filePath - Path to the file to be read.
+ * @returns The file contents as a string.
  */
 const readLocalFileFunction = async (filePath: string) => await readFile(filePath, 'utf-8');
 
@@ -159,6 +162,7 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  *
  * @param url - URL to fetch
  * @param options - Options
+ * @returns The fetched content as a string.
  */
 const fetchUrlFunction = async (url: string, options = getOptions()) => {
   const controller = new AbortController();
@@ -194,6 +198,9 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptio
  *
  * @param path - Path to resolve. If it's relative, it will be resolved against the base directory.'
  * @param options - Options
+ * @returns Resolved file or URL path.
+ *
+ * @throws {Error} - Throws an error if the resolved path is invalid or outside the allowed base directory.
  */
 const resolveLocalPathFunction = (path: string, options = getOptions()) => {
   const documentationPrefix = options.docsPathSlug;
@@ -226,35 +233,46 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
 };
 
 /**
+ * Mock a given path or URL. Used for testing with fixture servers.
+ *
+ * @param pathOrUrl - Input path or URL to be resolved.
+ * @param options - Options
+ * @returns Resolves to the finalized URL or path as a memoized fetchable resource.
+ *
+ * @throws {Error} Throws an error if the given path cannot be resolved in the specified mode and is neither a valid URL nor fetchable.
+ */
+const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) => {
+  const documentationPrefix = options.docsPathSlug;
+  const fixtureUrl = options.modeOptions?.test?.baseUrl;
+  let updatedPathOrUrl = pathOrUrl.startsWith(documentationPrefix) ? pathOrUrl : resolveLocalPathFunction(pathOrUrl);
+
+  log.debug('001', updatedPathOrUrl);
+
+  if (fixtureUrl) {
+    updatedPathOrUrl = join(fixtureUrl, updatedPathOrUrl);
+  } else if (!isUrl(updatedPathOrUrl)) {
+    throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be access in ${options.mode} mode`);
+  }
+
+  log.debug('002', updatedPathOrUrl);
+
+  // In test mode, everything is treated as a fetchable resource to allow mocking
+  return fetchUrlFunction.memo(updatedPathOrUrl);
+};
+
+/**
  * Load a file from disk or `URL`, depending on the input type.
  *
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
+ * @param options - Options
+ * @returns Resolves to an object containing the loaded content and the resolved path.
  */
-const loadFileFetch = async (pathOrUrl: string) => {
-  const options = getOptions();
-  const isDocSlug = pathOrUrl.startsWith(options.docsPathSlug);
-
-  // Resolve the path, but keep the slug intact if we're in test mode
-  // to allow the fetch spy to intercept the logical identifier.
-  let updatedPathOrUrl = options.mode === 'test' && isDocSlug
-    ? pathOrUrl
-    : resolveLocalPathFunction(pathOrUrl);
-
-  // If we are in test mode and a fixture server is provided, route all
-  // resource requests (local or remote) to the fixture server.
-  const fixtureUrl = process.env.MCP_FIXTURE_SERVER_URL;
-
-  if (options.mode === 'test' && fixtureUrl && (isDocSlug || isUrl(updatedPathOrUrl))) {
-    const normalizedPath = updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`;
-
-    updatedPathOrUrl = `${fixtureUrl}${normalizedPath}`;
-  }
-
+const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+  const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
   let content;
 
   if (options.mode === 'test') {
-    // In test mode, everything is treated as a fetchable resource to allow mocking
-    content = await fetchUrlFunction.memo(updatedPathOrUrl);
+    content = await mockPathOrUrlFunction(updatedPathOrUrl);
   } else if (isUrl(updatedPathOrUrl)) {
     content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else {
@@ -269,6 +287,7 @@ const loadFileFetch = async (pathOrUrl: string) => {
  *
  * @param queue - List of paths or URLs to load
  * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ * @returns An array of `PromiseSettledResult` objects, one for each input path or URL.
  */
 const promiseQueue = async (queue: string[], limit = 5) => {
   const results = [];

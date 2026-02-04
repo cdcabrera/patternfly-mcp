@@ -19,6 +19,11 @@ import { type ToolModule } from './server.toolsUser';
  * @property maxDocsToLoad - Maximum number of docs to load.
  * @property maxSearchLength - Maximum length for search strings.
  * @property recommendedMaxDocsToLoad - Recommended maximum number of docs to load.
+ * @property {('cli' | 'programmatic' | 'test')} mode - Specifies the mode of operation.
+ *     Defaults to `'programmatic'`.
+ *     - `'cli'`: Functionality is being executed in a cli context. Allows process exits.
+ *     - `'programmatic'`: Functionality is invoked programmatically. Allows process exits.
+ *     - `'test'`: Functionality is being tested. Does NOT allow process exits.
  * @property name - Name of the package.
  * @property nodeVersion - Node.js major version.
  * @property pluginIsolation - Isolation preset for external plugins.
@@ -47,6 +52,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   maxSearchLength: number;
   recommendedMaxDocsToLoad: number;
   mode: 'cli' | 'programmatic' | 'test';
+  modeOptions: ModeOptions;
   name: string;
   nodeVersion: number;
   pluginIsolation: 'none' | 'strict';
@@ -68,8 +74,10 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
  * Overrides for default options. Exposed to the consumer/user.
  */
 type DefaultOptionsOverrides = Partial<
-  Omit<DefaultOptions, 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
+  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
+  mode?: DefaultOptions['mode'];
+  modeOptions?: Partial<ModeOptions> | undefined;
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
@@ -116,6 +124,21 @@ interface HttpOptions {
   host: string;
   allowedOrigins: string[];
   allowedHosts: string[];
+}
+
+/**
+ * Mode-specific options.
+ *
+ * @interface ModeOptions
+ * @property test Test-specific options.
+ * @property test.baseUrl Base URL for testing.
+ */
+interface ModeOptions {
+  cli?: object | undefined;
+  programmatic?: object | undefined;
+  test?: {
+    baseUrl?: string | undefined;
+  } | undefined;
 }
 
 /**
@@ -227,6 +250,15 @@ const HTTP_OPTIONS: HttpOptions = {
 };
 
 /**
+ * Mode-specific options.
+ */
+const MODE_OPTIONS: ModeOptions = {
+  cli: {},
+  programmatic: {},
+  test: {}
+};
+
+/**
  * Default plugin host options.
  */
 const PLUGIN_HOST_OPTIONS: PluginHostOptions = {
@@ -319,6 +351,16 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
 const URL_REGEX = /^(https?:)\/\//i;
 
 /**
+ * Available operational modes for the MCP server.
+ *
+ * Each mode represents an operational domain:
+ * - `cli`: Command-line interface mode.
+ * - `test`: Testing or debugging mode.
+ * - `programmatic`: Programmatic interaction mode where the application is used as a library or API.
+ */
+const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'test', 'programmatic'];
+
+/**
  * Get the current Node.js major version.
  *
  * @param nodeVersion
@@ -355,6 +397,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   maxSearchLength: 256,
   recommendedMaxDocsToLoad: 15,
   mode: 'programmatic',
+  modeOptions: MODE_OPTIONS,
   name: packageJson.name,
   nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
   pluginIsolation: 'strict',
@@ -375,12 +418,14 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 export {
   LOG_BASENAME,
   DEFAULT_OPTIONS,
+  MODE_LEVELS,
   getNodeMajorVersion,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type HttpOptions,
   type LoggingOptions,
   type LoggingSession,
+  type ModeOptions,
   type PatternFlyOptions,
   type PluginHostOptions,
   type StatsSession,
