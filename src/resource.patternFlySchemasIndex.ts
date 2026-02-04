@@ -1,6 +1,6 @@
-import { componentNames } from '@patternfly/patternfly-component-schemas/json';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
+import { getPatternFlyReactComponentNames } from './patternFly.getResources';
 
 /**
  * Name of the resource.
@@ -30,18 +30,22 @@ const patternFlySchemasIndexResource = (): McpResource => [
   NAME,
   URI_TEMPLATE,
   CONFIG,
-  async () => ({
-    contents: [{
-      uri: 'patternfly://schemas/index',
-      mimeType: 'text/markdown',
-      text: stringJoin.newline(
-        '# PatternFly Component Names Index',
-        '',
-        '',
-        ...componentNames
-      )
-    }]
-  })
+  async () => {
+    const { componentNamesWithSchema } = getPatternFlyReactComponentNames.memo();
+
+    return {
+      contents: [{
+        uri: 'patternfly://schemas/index',
+        mimeType: 'text/markdown',
+        text: stringJoin.newline(
+          '# PatternFly Component Names Index',
+          '',
+          '',
+          ...componentNamesWithSchema
+        )
+      }]
+    };
+  }
 ];
 
 export { patternFlySchemasIndexResource, NAME, URI_TEMPLATE, CONFIG };
