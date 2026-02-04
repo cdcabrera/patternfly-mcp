@@ -6,7 +6,6 @@ import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl } from './server.helpers';
 import { fuzzySearch } from './server.search';
-import { log } from './logger';
 
 interface ProcessedDoc {
   content: string;
@@ -246,15 +245,11 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
   const fixtureUrl = options.modeOptions?.test?.baseUrl;
   let updatedPathOrUrl = pathOrUrl.startsWith(documentationPrefix) ? pathOrUrl : resolveLocalPathFunction(pathOrUrl);
 
-  log.debug('001', updatedPathOrUrl);
-
   if (fixtureUrl) {
-    updatedPathOrUrl = join(fixtureUrl, updatedPathOrUrl);
+    updatedPathOrUrl = `${fixtureUrl}${updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`}`;
   } else if (!isUrl(updatedPathOrUrl)) {
     throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be access in ${options.mode} mode`);
   }
-
-  log.debug('002', updatedPathOrUrl);
 
   // In test mode, everything is treated as a fetchable resource to allow mocking
   return fetchUrlFunction.memo(updatedPathOrUrl);
@@ -268,12 +263,16 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  * @returns Resolves to an object containing the loaded content and the resolved path.
  */
 const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+  if (options.mode === 'test') {
+    const mockContent = await mockPathOrUrlFunction(pathOrUrl);
+
+    return { content: mockContent, resolvedPath: pathOrUrl };
+  }
+
   const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
   let content;
 
-  if (options.mode === 'test') {
-    content = await mockPathOrUrlFunction(updatedPathOrUrl);
-  } else if (isUrl(updatedPathOrUrl)) {
+  if (isUrl(updatedPathOrUrl)) {
     content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else {
     content = await readLocalFileFunction.memo(updatedPathOrUrl);

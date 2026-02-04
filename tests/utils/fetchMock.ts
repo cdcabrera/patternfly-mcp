@@ -289,8 +289,9 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
       // Support wildcards for pattern matching (test against full URL)
       const pattern = route.url.replace(/\*/g, '.*');
       const regex = new RegExp(`^${pattern}$`);
+      const pathnameNoSlash = pathname.startsWith('/') ? pathname.slice(1) : pathname;
 
-      return regex.test(url);
+      return regex.test(url) || regex.test(pathname) || regex.test(pathnameNoSlash);
     });
   };
 

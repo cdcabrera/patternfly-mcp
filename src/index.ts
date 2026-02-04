@@ -152,7 +152,7 @@ const main = async (
   const options = pfMcpOptions;
   const { allowProcessExit } = pfMcpSettings;
   const cliOptions = parseCliOptions();
-  const mergedOptions = setOptions({ ...cliOptions, ...options });
+  const mergedOptions = setOptions({ ...options, ...cliOptions });
   const updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
 
   try {

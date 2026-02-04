@@ -22,18 +22,6 @@ describe('Builtin tools, STDIO', () => {
       port: 5010,
       routes: [
         {
-          url: 'documentation:guidelines/README.md',
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: '# Mocked Guidelines\nThis is mocked content for guidelines.'
-        },
-        {
-          url: 'documentation:components/README.md',
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: '# Mocked Components\nThis is mocked content for components.'
-        },
-        {
           url: /\/README\.md$/,
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
@@ -60,9 +48,10 @@ describe('Builtin tools, STDIO', () => {
 
     URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/`;
     CLIENT = await startServer({
-      env: {
-        MCP_FIXTURE_SERVER_URL: FETCH_MOCK?.fixture?.baseUrl
-      }
+      args: [
+        '--mode-test-url',
+        FETCH_MOCK?.fixture?.baseUrl
+      ]
     });
   });
 
@@ -144,18 +133,6 @@ describe('Builtin resources, STDIO', () => {
       port: 5011,
       routes: [
         {
-          url: 'documentation:guidelines/README.md',
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: '# Mocked Guidelines\nThis is mocked content for guidelines.'
-        },
-        {
-          url: 'documentation:components/README.md',
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: '# Mocked Components\nThis is mocked content for components.'
-        },
-        {
           url: /\/README\.md$/,
           status: 200,
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
@@ -181,9 +158,10 @@ describe('Builtin resources, STDIO', () => {
     });
 
     CLIENT = await startServer({
-      env: {
-        MCP_FIXTURE_SERVER_URL: FETCH_MOCK?.fixture?.baseUrl
-      }
+      args: [
+        '--mode-test-url',
+        FETCH_MOCK?.fixture?.baseUrl
+      ]
     });
   });
 
