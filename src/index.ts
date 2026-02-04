@@ -153,7 +153,7 @@ const main = async (
   const { allowProcessExit } = pfMcpSettings;
   const { mode: cliMode, ...cliOptions } = parseCliOptions();
 
-  // Resequence `mode` because `cli.ts` applies the mode programmatically. Doing this allows us to set mode through `CLI options`.
+  // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
   const mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
   const updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
 
