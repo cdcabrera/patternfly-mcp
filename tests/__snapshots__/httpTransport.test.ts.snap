@@ -18,16 +18,34 @@ exports[`Builtin tools, HTTP transport should concatenate headers and separator 
 "# Documentation for React Guidelines [AI Guidance]
 Source: documentation:guidelines/README.md
 
-# Mocked Guidelines
-This is mocked content for guidelines.
+# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
+
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration
 
 ---
 
 # Documentation for React Components [AI Guidance]
 Source: documentation:components/README.md
 
-# Mocked Components
-This is mocked content for components."
+# PatternFly Development Rules
+            This is a generated offline fixture used by the MCP external URLs test.
+
+            Essential rules and guidelines working with PatternFly applications.
+
+            ## Quick Navigation
+
+            ### 🚀 Setup & Environment
+            - **Setup Rules** - Project initialization requirements
+            - **Quick Start** - Essential setup steps
+            - **Environment Rules** - Development configuration"
 `;
 
 exports[`Builtin tools, HTTP transport should concatenate headers and separator with two remote files 1`] = `
@@ -60,7 +78,7 @@ exports[`Builtin tools, HTTP transport should expose expected tools and stable s
 
 exports[`Builtin tools, HTTP transport should initialize MCP session over HTTP 1`] = `
 {
-  "baseUrl": "http://127.0.0.1:5001",
+  "baseUrl": "http://127.0.0.1:8000",
   "name": "@patternfly/patternfly-mcp",
   "version": "2024-11-05",
 }

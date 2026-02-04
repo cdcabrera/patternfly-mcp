@@ -3,7 +3,7 @@
  * - If typings are needed, use public types from dist to avoid type identity mismatches between src and dist
  */
 // @ts-ignore - dist/index.js isn't necessarily built yet, remember to build before running tests
-import { createMcpTool } from '../src/index';
+import { createMcpTool } from '../dist/index.js';
 import { startServer, type HttpTransportClient, type RpcRequest } from './utils/httpTransportClient';
 import { setupFetchMock } from './utils/fetchMock';
 
@@ -14,18 +14,6 @@ describe('Builtin tools, HTTP transport', () => {
   beforeAll(async () => {
     FETCH_MOCK = await setupFetchMock({
       routes: [
-        {
-          url: 'documentation:guidelines/README.md',
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: '# Mocked Guidelines\nThis is mocked content for guidelines.'
-        },
-        {
-          url: 'documentation:components/README.md',
-          status: 200,
-          headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-          body: '# Mocked Components\nThis is mocked content for components.'
-        },
         {
           url: /\/README\.md$/,
           status: 200,
@@ -48,11 +36,14 @@ describe('Builtin tools, HTTP transport', () => {
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
         }
-      ],
-      excludePorts: [5001]
+      ]
     });
 
-    CLIENT = await startServer({ http: { port: 5001 }, logging: { level: 'debug', protocol: true } });
+    CLIENT = await startServer({
+      isHttp: true,
+      modeOptions: { test: { baseUrl: FETCH_MOCK?.fixture?.baseUrl } },
+      logging: { level: 'debug', protocol: true }
+    });
   });
 
   afterAll(async () => {
@@ -165,11 +156,14 @@ describe('Builtin resources, HTTP transport', () => {
           headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
           body: '# Test Document\n\nThis is a test document for mocking remote HTTP requests.'
         }
-      ],
-      excludePorts: [5002]
+      ]
     });
 
-    CLIENT = await startServer({ http: { port: 5002 }, logging: { level: 'debug', protocol: true } });
+    CLIENT = await startServer({
+      isHttp: true,
+      modeOptions: { test: { baseUrl: FETCH_MOCK?.fixture?.baseUrl } },
+      logging: { level: 'debug', protocol: true }
+    });
   });
 
   afterAll(async () => {
