@@ -1,0 +1,47 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getPatternFlyMcpDocs should return multiple organized facets: properties 1`] = `
+[
+  "original",
+  "availableVersions",
+  "markdownIndex",
+  "nameIndex",
+  "pathIndex",
+  "bySection",
+  "byCategory",
+  "byGuidance",
+  "byPath",
+  "byName",
+  "byNameWithPath",
+  "byNameWithPathGuidance",
+  "byNameWithPathMarkdown",
+  "byNameWithPathNoGuidance",
+]
+`;
+
+exports[`getPatternFlyMcpResources should return multiple organized facets: properties 1`] = `
+[
+  "nameIndex",
+]
+`;
+
+exports[`getPatternFlyReactComponentNames should return multiple organized facets: properties 1`] = `
+[
+  "nameIndex",
+  "componentNamesWithSchema",
+]
+`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, accessibility 1`] = `"Accessibility"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, design 1`] = `"Design Guidelines"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, empty string 1`] = `"Documentation"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, example 1`] = `"Examples"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, guidelines 1`] = `"AI Guidance"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, null 1`] = `"Documentation"`;
+
+exports[`setCategoryDisplayLabel should normalize categories and apply linking markdown, undefined 1`] = `"Documentation"`;
