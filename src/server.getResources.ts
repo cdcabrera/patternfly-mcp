@@ -248,7 +248,7 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
   if (fixtureUrl) {
     updatedPathOrUrl = `${fixtureUrl}${updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`}`;
   } else if (!isUrl(updatedPathOrUrl)) {
-    throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be access in ${options.mode} mode`);
+    throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be accessed in ${options.mode} mode`);
   }
 
   // In test mode, everything is treated as a fetchable resource to allow mocking

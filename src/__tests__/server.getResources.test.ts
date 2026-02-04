@@ -162,7 +162,7 @@ describe('findNearestPackageJson', () => {
     jest.clearAllMocks();
   });
 
-  it('should attemp to find the nearest package.json', async () => {
+  it('should attempt to find the nearest package.json', async () => {
     // Use the PF MCP package.json
     const packagePath = process.cwd();
     const path = await findNearestPackageJson(packagePath);
