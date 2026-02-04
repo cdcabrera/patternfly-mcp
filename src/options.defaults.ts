@@ -76,7 +76,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 type DefaultOptionsOverrides = Partial<
   Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
-  mode?: DefaultOptions['mode'];
+  mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;

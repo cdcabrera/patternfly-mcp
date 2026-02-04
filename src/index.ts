@@ -149,10 +149,11 @@ const main = async (
   pfMcpOptions: PfMcpOptions = {},
   pfMcpSettings: PfMcpSettings = {}
 ): Promise<PfMcpInstance> => {
-  const options = pfMcpOptions;
+  const { mode: programmaticMode, ...options } = pfMcpOptions;
   const { allowProcessExit } = pfMcpSettings;
-  const cliOptions = parseCliOptions();
-  const mergedOptions = setOptions({ ...options, ...cliOptions });
+  const { mode: cliMode, ...cliOptions } = parseCliOptions();
+  // flip the mode sequence to prioritize CLI options over programmatic options, used in e2e tests
+  const mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
   const updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
 
   try {
