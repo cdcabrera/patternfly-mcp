@@ -19,11 +19,8 @@ import { type ToolModule } from './server.toolsUser';
  * @property maxDocsToLoad - Maximum number of docs to load.
  * @property maxSearchLength - Maximum length for search strings.
  * @property recommendedMaxDocsToLoad - Recommended maximum number of docs to load.
- * @property {('cli' | 'programmatic' | 'test')} mode - Specifies the mode of operation.
- *     Defaults to `'programmatic'`.
- *     - `'cli'`: Functionality is being executed in a cli context. Allows process exits.
- *     - `'programmatic'`: Functionality is invoked programmatically. Allows process exits.
- *     - `'test'`: Functionality is being tested. Does NOT allow process exits.
+ * @property {typeof MODE_LEVELS} mode - Specifies the mode of operation.
+ * @property {ModeOptions} modeOptions - Mode-specific options.
  * @property name - Name of the package.
  * @property nodeVersion - Node.js major version.
  * @property {PatternFlyOptions} patternflyOptions - PatternFly-specific options.
@@ -373,10 +370,10 @@ const URL_REGEX = /^(https?:)\/\//i;
  *
  * Each mode represents an operational domain:
  * - `cli`: Command-line interface mode.
- * - `test`: Testing or debugging mode.
  * - `programmatic`: Programmatic interaction mode where the application is used as a library or API.
+ * - `test`: Testing or debugging mode.
  */
-const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'test', 'programmatic'];
+const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 
 const PF_EXTERNAL_EXAMPLES_VERSION = 'v6.4.0';
 
