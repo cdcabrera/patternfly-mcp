@@ -1,9 +1,6 @@
-import { COMPONENT_DOCS } from './docs.component';
-import { LAYOUT_DOCS } from './docs.layout';
-import { CHART_DOCS } from './docs.chart';
-import { getLocalDocs } from './docs.local';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
  * Name of the resource.
@@ -34,20 +31,13 @@ const patternFlyDocsIndexResource = (): McpResource => [
   URI_TEMPLATE,
   CONFIG,
   async () => {
+    const { markdownIndex } = getPatternFlyMcpDocs.memo();
+
     const allDocs = stringJoin.newline(
       '# PatternFly Documentation Index',
       '',
-      '## Components',
-      ...COMPONENT_DOCS,
       '',
-      '## Layouts',
-      ...LAYOUT_DOCS,
-      '',
-      '## Charts',
-      ...CHART_DOCS,
-      '',
-      '## Local Documentation',
-      ...getLocalDocs()
+      ...markdownIndex
     );
 
     return {
