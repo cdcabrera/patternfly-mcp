@@ -20,19 +20,13 @@ import { type ToolModule } from './server.toolsUser';
  * @property maxSearchLength - Maximum length for search strings.
  * @property recommendedMaxDocsToLoad - Recommended maximum number of docs to load.
  * @property {typeof MODE_LEVELS} mode - Specifies the mode of operation.
+ *    - `cli`: Command-line interface mode.
+ *    - `programmatic`: Programmatic interaction mode where the application is used as a library or API.
+ *    - `test`: Testing or debugging mode.
  * @property {ModeOptions} modeOptions - Mode-specific options.
  * @property name - Name of the package.
  * @property nodeVersion - Node.js major version.
  * @property {PatternFlyOptions} patternflyOptions - PatternFly-specific options.
- * @property pfExternal - PatternFly external docs URL.
- * @property pfExternalDesignComponents - PatternFly design guidelines' components' URL.
- * @property pfExternalExamplesComponents - PatternFly examples' core components' URL.
- * @property pfExternalExamplesLayouts - PatternFly examples' core layouts' URL.
- * @property pfExternalExamplesCharts - PatternFly examples' charts' components' URL.
- * @property pfExternalExamplesTable - PatternFly examples' table components' URL.
- * @property pfExternalChartsDesign - PatternFly charts' design guidelines URL.
- * @property pfExternalDesignLayouts - PatternFly design guidelines' layouts' URL.
- * @property pfExternalAccessibility - PatternFly accessibility URL.
  * @property pluginIsolation - Isolation preset for external plugins.
  * @property {PluginHostOptions} pluginHost - Plugin host options.
  * @property repoName - Name of the repository.
@@ -64,15 +58,6 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   patternflyOptions: PatternFlyOptions;
   pluginIsolation: 'none' | 'strict';
   pluginHost: PluginHostOptions;
-  pfExternal: string;
-  pfExternalDesignComponents: string;
-  pfExternalExamplesComponents: string;
-  pfExternalExamplesLayouts: string;
-  pfExternalExamplesCharts: string;
-  pfExternalExamplesTable: string;
-  pfExternalChartsDesign: string;
-  pfExternalDesignLayouts: string;
-  pfExternalAccessibility: string;
   repoName: string | undefined;
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   resourceModules: unknown | unknown[];
@@ -159,9 +144,12 @@ interface ModeOptions {
 /**
  * PatternFly-specific options.
  *
- * @property availableResourceVersions List of intended available PatternFly resource versions to the MCP server.
+ * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
+ * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
+ * @property availableSchemaVersions List of available PatternFly schema versions to the MCP server.
  * @property default Default specific options.
- * @property default.defaultVersion Default PatternFly version.
+ * @property default.latestSemVer Default PatternFly `SemVer` major version (e.g., '6.0.0').
+ * @property default.latestVersion Default PatternFly `tag` major version, used for display and file paths (e.g., 'v6').
  * @property default.versionWhitelist List of mostly reliable dependencies to scan for when detecting the PatternFly version.
  * @property default.versionStrategy Strategy to use when multiple PatternFly versions are detected.
  *    - 'highest': Use the highest major version found.
@@ -169,8 +157,11 @@ interface ModeOptions {
  */
 interface PatternFlyOptions {
   availableResourceVersions: string[];
+  availableSearchVersions: ('current' | 'detected' | 'latest' | 'v3' | 'v4' | 'v5' | 'v6')[];
+  availableSchemaVersions: ('v6')[];
   default: {
-    defaultVersion: string;
+    latestSemVer: string;
+    latestVersion: string;
     versionWhitelist: string[];
     versionStrategy: 'highest' | 'lowest';
   }
@@ -349,8 +340,11 @@ const LOG_BASENAME = 'pf-mcp:log';
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   availableResourceVersions: ['6.0.0'],
+  availableSearchVersions: ['current', 'latest', 'v6'],
+  availableSchemaVersions: ['v6'],
   default: {
-    defaultVersion: '6.0.0',
+    latestSemVer: '6.0.0',
+    latestVersion: 'v6',
     versionWhitelist: [
       '@patternfly/react-core',
       '@patternfly/patternfly'
@@ -366,75 +360,8 @@ const URL_REGEX = /^(https?:)\/\//i;
 
 /**
  * Available operational modes for the MCP server.
- *
- * Each mode represents an operational domain:
- * - `cli`: Command-line interface mode.
- * - `programmatic`: Programmatic interaction mode where the application is used as a library or API.
- * - `test`: Testing or debugging mode.
  */
 const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
-
-const PF_EXTERNAL_EXAMPLES_VERSION = 'v6.4.0';
-
-/**
- * PatternFly examples URL
- */
-const PF_EXTERNAL_EXAMPLES = `https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/${PF_EXTERNAL_EXAMPLES_VERSION}/packages`;
-
-/**
- * PatternFly examples' core components' URL.
- */
-const PF_EXTERNAL_EXAMPLES_REACT_CORE = `${PF_EXTERNAL_EXAMPLES}/react-core/src/components`;
-
-/**
- * PatternFly examples' core layouts' URL.
- */
-const PF_EXTERNAL_EXAMPLES_LAYOUTS = `${PF_EXTERNAL_EXAMPLES}/react-core/src/layouts`;
-
-/**
- * PatternFly examples' table components' URL.
- */
-const PF_EXTERNAL_EXAMPLES_TABLE = `${PF_EXTERNAL_EXAMPLES}/react-table/src/components`;
-
-/**
- * PatternFly charts' components' URL
- */
-const PF_EXTERNAL_EXAMPLES_CHARTS = `${PF_EXTERNAL_EXAMPLES}/react-charts/src/victory/components`;
-
-/**
- * PatternFly docs version to use, commit hash. Tags don't exist, but branches for older versions do.
- *
- * @see @patternfly/documentation-framework@6.30.0
- */
-const PF_EXTERNAL_VERSION = 'fb05713aba75998b5ecf5299ee3c1a259119bd74';
-
-/**
- * PatternFly docs root URL
- */
-const PF_EXTERNAL = `https://raw.githubusercontent.com/patternfly/patternfly-org/${PF_EXTERNAL_VERSION}/packages/documentation-site/patternfly-docs/content`;
-
-/**
- * PatternFly design guidelines' components' URL
- * Updated 2025-11-24: Moved from design-guidelines/components to components
- */
-const PF_EXTERNAL_DESIGN_COMPONENTS = `${PF_EXTERNAL}/design-guidelines/components`;
-
-/**
- * PatternFly design guidelines' layouts' URL
- * Updated 2025-11-24: Moved from design-guidelines/layouts to foundations-and-styles/layouts
- */
-const PF_EXTERNAL_DESIGN_LAYOUTS = `${PF_EXTERNAL}/design-guidelines/layouts`;
-
-/**
- * PatternFly accessibility URL
- * Updated 2025-11-24: Moved from accessibility to components/accessibility
- */
-const PF_EXTERNAL_ACCESSIBILITY = `${PF_EXTERNAL}/accessibility`;
-
-/**
- * PatternFly charts' design guidelines URL
- */
-const PF_EXTERNAL_CHARTS_DESIGN = `${PF_EXTERNAL}/design-guidelines/charts`;
 
 /**
  * Get the current Node.js major version.
@@ -477,15 +404,6 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   name: packageJson.name,
   nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
   patternflyOptions: PATTERNFLY_OPTIONS,
-  pfExternal: PF_EXTERNAL,
-  pfExternalDesignComponents: PF_EXTERNAL_DESIGN_COMPONENTS,
-  pfExternalExamplesComponents: PF_EXTERNAL_EXAMPLES_REACT_CORE,
-  pfExternalExamplesLayouts: PF_EXTERNAL_EXAMPLES_LAYOUTS,
-  pfExternalExamplesCharts: PF_EXTERNAL_EXAMPLES_CHARTS,
-  pfExternalExamplesTable: PF_EXTERNAL_EXAMPLES_TABLE,
-  pfExternalChartsDesign: PF_EXTERNAL_CHARTS_DESIGN,
-  pfExternalDesignLayouts: PF_EXTERNAL_DESIGN_LAYOUTS,
-  pfExternalAccessibility: PF_EXTERNAL_ACCESSIBILITY,
   pluginIsolation: 'strict',
   pluginHost: PLUGIN_HOST_OPTIONS,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
@@ -504,18 +422,6 @@ export {
   LOG_BASENAME,
   DEFAULT_OPTIONS,
   MODE_LEVELS,
-  PF_EXTERNAL,
-  PF_EXTERNAL_VERSION,
-  PF_EXTERNAL_EXAMPLES,
-  PF_EXTERNAL_EXAMPLES_CHARTS,
-  PF_EXTERNAL_EXAMPLES_REACT_CORE,
-  PF_EXTERNAL_EXAMPLES_LAYOUTS,
-  PF_EXTERNAL_EXAMPLES_TABLE,
-  PF_EXTERNAL_EXAMPLES_VERSION,
-  PF_EXTERNAL_CHARTS_DESIGN,
-  PF_EXTERNAL_DESIGN_COMPONENTS,
-  PF_EXTERNAL_DESIGN_LAYOUTS,
-  PF_EXTERNAL_ACCESSIBILITY,
   getNodeMajorVersion,
   type DefaultOptions,
   type DefaultOptionsOverrides,
