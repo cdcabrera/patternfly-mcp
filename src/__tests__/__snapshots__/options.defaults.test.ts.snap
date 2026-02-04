@@ -5,6 +5,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "contextPath": "/",
   "contextUrl": "file:///",
   "docsPath": "/documentation",
+  "docsPathSlug": "documentation:",
   "http": {
     "allowedHosts": [],
     "allowedOrigins": [],
@@ -21,17 +22,27 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   },
   "maxDocsToLoad": 500,
   "maxSearchLength": 256,
+  "mode": "programmatic",
+  "modeOptions": {
+    "cli": {},
+    "programmatic": {},
+    "test": {},
+  },
   "name": "@patternfly/patternfly-mcp",
   "nodeVersion": 22,
-  "pfExternal": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content",
-  "pfExternalAccessibility": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/accessibility",
-  "pfExternalChartsDesign": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts",
-  "pfExternalDesignComponents": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/components",
-  "pfExternalDesignLayouts": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts",
-  "pfExternalExamplesCharts": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components",
-  "pfExternalExamplesComponents": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components",
-  "pfExternalExamplesLayouts": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts",
-  "pfExternalExamplesTable": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-table/src/components",
+  "patternflyOptions": {
+    "availableResourceVersions": [
+      "v6",
+    ],
+    "default": {
+      "defaultVersion": "v6",
+      "versionStrategy": "highest",
+      "versionWhitelist": [
+        "@patternfly/react-core",
+        "@patternfly/patternfly",
+      ],
+    },
+  },
   "pluginHost": {
     "gracePeriodMs": 2000,
     "invokeTimeoutMs": 10000,
