@@ -20,6 +20,7 @@ type GlobalOptions = DefaultOptions;
  * Options parsed from CLI arguments
  */
 type CliOptions = {
+  mode?: 'cli' | 'programmatic' | 'test';
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
@@ -70,6 +71,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * Parses CLI options and return config options for the application.
  *
  * Available options:
+ * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
  * - `--log-level <level>`: Specifies the logging level. Valid values are `debug`, `info`, `warn`, and `error`.
  * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
  * - `--log-stderr`: Enables terminal logging of channel events
@@ -87,12 +89,18 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * @returns Parsed command-line options.
  */
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
+  const modeIndex = argv.indexOf('--mode');
   const levelIndex = argv.indexOf('--log-level');
   const logging: LoggingOptions = {
     ...DEFAULT_OPTIONS.logging,
     stderr: argv.includes('--log-stderr'),
     protocol: argv.includes('--log-protocol')
   };
+
+  const modeValue = modeIndex >= 0 ? argv[modeIndex + 1] : undefined;
+  const mode = ['cli', 'programmatic', 'test'].includes(modeValue as string)
+    ? (modeValue as CliOptions['mode'])
+    : undefined;
 
   if (argv.includes('--verbose')) {
     logging.level = 'debug';
@@ -189,6 +197,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   return {
+    ...(mode ? { mode } : {}),
     logging,
     isHttp,
     http,

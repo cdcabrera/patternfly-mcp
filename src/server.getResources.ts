@@ -231,11 +231,30 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
  */
 const loadFileFetch = async (pathOrUrl: string) => {
-  const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
+  const options = getOptions();
+  const isDocSlug = pathOrUrl.startsWith(options.docsPathSlug);
+
+  // Resolve the path, but keep the slug intact if we're in test mode
+  // to allow the fetch spy to intercept the logical identifier.
+  let updatedPathOrUrl = options.mode === 'test' && isDocSlug
+    ? pathOrUrl
+    : resolveLocalPathFunction(pathOrUrl);
+
+  // If we are in test mode and a fixture server is provided, route all
+  // resource requests (local or remote) to the fixture server.
+  const fixtureUrl = process.env.MCP_FIXTURE_SERVER_URL;
+
+  if (options.mode === 'test' && fixtureUrl && (isDocSlug || isUrl(updatedPathOrUrl))) {
+    const normalizedPath = updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`;
+
+    updatedPathOrUrl = `${fixtureUrl}${normalizedPath}`;
+  }
+
   let content;
 
   if (options.mode === 'test') {
-    content = await aMockLocalUrlFunction(updatedPathOrUrl);
+    // In test mode, everything is treated as a fetchable resource to allow mocking
+    content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else if (isUrl(updatedPathOrUrl)) {
     content = await fetchUrlFunction.memo(updatedPathOrUrl);
   } else {

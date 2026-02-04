@@ -68,7 +68,7 @@ const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, stats
       type: 'transport',
       timestamp: new Date().toISOString(),
       method: httpPort ? 'http' : 'stdio',
-      ...(httpPort ? { port: httpPort } : {}),
+      ...httpPort ? { port: httpPort } : {},
       channelId: statsOptions.channels.transport
     },
     health: { channelId: statsOptions.channels.health },

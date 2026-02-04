@@ -83,6 +83,7 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
 
   const merged: GlobalOptions = {
     ...base,
+    mode: ['cli', 'programmatic', 'test'].includes(base.mode) ? base.mode : DEFAULT_OPTIONS.mode,
     logging: {
       level: ['debug', 'info', 'warn', 'error'].includes(baseLogging.level) ? baseLogging.level : DEFAULT_OPTIONS.logging.level,
       logger: baseLogging.logger,

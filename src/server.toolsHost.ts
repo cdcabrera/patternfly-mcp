@@ -153,7 +153,7 @@ const normalizeCreatorSchema = (creator: unknown, toolOptions?: ToolOptions): No
   const normalizedSchema = normalizeInputSchema(cfg.inputSchema);
 
   // Overwrite tuple's schema so call-time validation matches manifest
-  tool[1] = { ...(tool[1] || {}), inputSchema: normalizedSchema } as any;
+  tool[1] = { ...tool[1] || {}, inputSchema: normalizedSchema } as any;
 
   // If the original was plain JSON Schema, prefer to send that as-is
   if (

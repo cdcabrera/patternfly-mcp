@@ -166,7 +166,12 @@ const main = async (
 
   try {
     const cliOptions = parseCliOptions();
-    const mergedOptions = setOptions({ ...cliOptions, ...options });
+    const finalMode = (cliOptions.mode || updatedMode) as PfMcpOptions['mode'];
+    const mergedOptions = setOptions({
+      ...cliOptions,
+      ...options,
+      mode: finalMode
+    } as DefaultOptionsOverrides);
     const session = getSessionOptions();
 
     // use runWithSession to enable session in listeners

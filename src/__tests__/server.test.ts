@@ -143,8 +143,8 @@ describe('runServer', () => {
     }
   ])('should attempt to run server, $description', async ({ options, tools, enableSigint, transportMethod }) => {
     const settings = {
-      ...(tools && { tools }),
-      ...(enableSigint !== undefined && { enableSigint }),
+      ...tools && { tools },
+      ...enableSigint !== undefined && { enableSigint },
       allowProcessExit: false // Prevent process.exit in tests
     };
 

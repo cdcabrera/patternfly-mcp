@@ -445,7 +445,7 @@ const normalizeTuple = (config: unknown): CreatorEntry | undefined => {
     toolName: updatedName as string,
     type: err ? 'invalid' : 'tuple',
     value: creator,
-    ...(err ? { error: err } : {})
+    ...err ? { error: err } : {}
   };
 };
 
@@ -499,7 +499,7 @@ const normalizeObject = (config: unknown, allowedKeys = ALLOWED_CONFIG_KEYS): Cr
     toolName: updatedName as string,
     type: err ? 'invalid' : 'object',
     value: creator,
-    ...(err ? { error: err } : {})
+    ...err ? { error: err } : {}
   };
 };
 
@@ -565,7 +565,7 @@ const normalizeFunction = (config: unknown): CreatorEntry | undefined => {
     toolName,
     type: err.length ? 'invalid' : 'creator',
     value: wrappedConfig as ToolCreator,
-    ...(err.length ? { error: err.join('\n') } : {})
+    ...err.length ? { error: err.join('\n') } : {}
   };
 };
 
@@ -609,7 +609,7 @@ const normalizeFileUrl = (config: unknown): FileEntry | undefined => {
     original: config,
     type,
     value: config,
-    ...(type === 'invalid' ? { error: err.join('\n') } : {})
+    ...type === 'invalid' ? { error: err.join('\n') } : {}
   };
 };
 
@@ -682,7 +682,7 @@ const normalizeFilePath = (
     original: config,
     type,
     value: config,
-    ...(type === 'invalid' ? { error: err.join('\n') } : {})
+    ...type === 'invalid' ? { error: err.join('\n') } : {}
   };
 };
 

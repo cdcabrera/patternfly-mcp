@@ -271,7 +271,7 @@ describe('requestInvoke', () => {
     const { error, ...rest } = mockSend.mock.calls[0][0];
 
     expect({
-      ...((error?.message && { error: error?.message }) || undefined),
+      ...(error?.message && { error: error?.message }) || undefined,
       ...rest
     }).toMatchSnapshot();
   });

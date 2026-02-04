@@ -46,6 +46,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   maxDocsToLoad: number;
   maxSearchLength: number;
   recommendedMaxDocsToLoad: number;
+  mode: 'cli' | 'programmatic' | 'test';
   name: string;
   nodeVersion: number;
   pluginIsolation: 'none' | 'strict';
@@ -353,6 +354,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   maxDocsToLoad: 500,
   maxSearchLength: 256,
   recommendedMaxDocsToLoad: 15,
+  mode: 'programmatic',
   name: packageJson.name,
   nodeVersion: (process.env.NODE_ENV === 'local' && 22) || getNodeMajorVersion(),
   pluginIsolation: 'strict',
