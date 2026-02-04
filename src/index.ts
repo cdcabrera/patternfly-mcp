@@ -152,7 +152,8 @@ const main = async (
   const { mode: programmaticMode, ...options } = pfMcpOptions;
   const { allowProcessExit } = pfMcpSettings;
   const { mode: cliMode, ...cliOptions } = parseCliOptions();
-  // flip the mode sequence to prioritize CLI options over programmatic options, used in e2e tests
+
+  // Resequence `mode` because `cli.ts` applies the mode programmatically. Doing this allows us to set mode through `CLI options`.
   const mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
   const updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
 
