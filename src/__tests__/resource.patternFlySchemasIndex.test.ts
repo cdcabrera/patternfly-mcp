@@ -1,11 +1,6 @@
 import { patternFlySchemasIndexResource } from '../resource.patternFlySchemasIndex';
 import { isPlainObject } from '../server.helpers';
 
-// Mock dependencies
-jest.mock('../tool.searchPatternFlyDocs', () => ({
-  componentNames: ['Button', 'Card', 'Table']
-}));
-
 describe('patternFlySchemasIndexResource', () => {
   beforeEach(() => {
     jest.clearAllMocks();
