@@ -9,7 +9,8 @@ import {
   type ServerLogEvent,
   type ServerStatReport,
   type ServerStats,
-  type ServerGetStats
+  type ServerGetStats,
+  type ServerOptions
 } from './server';
 import {
   createMcpTool,
@@ -151,11 +152,25 @@ const main = async (
 ): Promise<PfMcpInstance> => {
   const { mode: programmaticMode, ...options } = pfMcpOptions;
   const { allowProcessExit } = pfMcpSettings;
-  const { mode: cliMode, ...cliOptions } = parseCliOptions();
+  let updatedAllowProcessExit = allowProcessExit ?? true;
+  let mergedOptions: ServerOptions;
 
-  // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
-  const mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
-  const updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
+  try {
+    const { mode: cliMode, ...cliOptions } = parseCliOptions();
+
+    // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
+    mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
+
+    updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
+  } catch (error) {
+    console.error('Set options error, failed to start server:', error);
+
+    if (updatedAllowProcessExit) {
+      process.exit(1);
+    } else {
+      throw error;
+    }
+  }
 
   try {
     const session = getSessionOptions();
