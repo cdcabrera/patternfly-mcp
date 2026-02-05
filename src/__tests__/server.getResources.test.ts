@@ -1,9 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import {
-  depMajorVersionNormalize,
-  matchPackageVersion,
-  sortPackageVersions,
-  findNearestPackageJson,
   readLocalFileFunction,
   fetchUrlFunction,
   processDocsFunction,
@@ -12,7 +8,7 @@ import {
   resolveLocalPathFunction
 } from '../server.getResources';
 import { type GlobalOptions } from '../options';
-import {DEFAULT_OPTIONS} from "../options.defaults";
+import { DEFAULT_OPTIONS } from '../options.defaults';
 
 // Mock dependencies
 jest.mock('node:fs/promises');
@@ -27,150 +23,6 @@ jest.mock('../server.caching', () => ({
 }));
 
 const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
-
-describe('depMajorVersionNormalize', () => {
-  it.each([
-    {
-      description: 'with semver',
-      version: '1.2.3'
-    },
-    {
-      description: 'with semver with leading v',
-      version: 'v1.2.3'
-    },
-    {
-      description: 'with tilde',
-      version: '~1.2.3'
-    },
-    {
-      description: 'with caret',
-      version: '^1.2.3'
-    },
-    {
-      description: 'with greater than',
-      version: '>1.2.3'
-    },
-    {
-      description: 'with less than',
-      version: '<1.2.3'
-    },
-    {
-      description: 'with greater than equal',
-      version: '>=1.2.3'
-    },
-    {
-      description: 'with less than equal',
-      version: '<=1.2.3'
-    }
-  ])('should normalize version: $description', ({ version }) => {
-    const normalizedVersion = depMajorVersionNormalize(version);
-
-    expect(normalizedVersion).toBe('1');
-  });
-});
-
-describe('matchPackageVersion', () => {
-  it.each([
-    {
-      description: 'with semver',
-      version: '1.2.3',
-      expectedIndex: 0
-    },
-    {
-      description: 'with semver with leading v',
-      version: 'v1.2.3',
-      expectedIndex: 0
-    },
-    {
-      description: 'with inclusive range',
-      version: '1.2.3-3.0.0',
-      expectedIndex: 2
-    },
-    {
-      description: 'with greater than and less than equal',
-      version: '>1.2.3 <=v2.0.0',
-      expectedIndex: 1
-    },
-    {
-      description: 'with reversed greater than and less than equal',
-      version: '<=v2.0.0 >1.2.3',
-      expectedIndex: 1
-    },
-    {
-      description: 'with greater than equal and less than',
-      version: '>=1.2.3 <v2.0.0',
-      expectedIndex: 0
-    },
-    {
-      description: 'with reversed greater than equal and less than',
-      version: '<v2.0.0 >=1.2.3',
-      expectedIndex: 0
-    },
-    {
-      description: 'with greater than equal and less than equal',
-      version: '>=v1.2.3 <=3.0.0',
-      expectedIndex: 2
-    },
-    {
-      description: 'with reversed greater than equal and less than equal',
-      version: '<=3.0.0 >=v1.2.3',
-      expectedIndex: 2
-    },
-    {
-      description: 'with greater than and less than',
-      version: '>1.2.3 <2.0.0',
-      expectedIndex: -1
-    },
-    {
-      description: 'with reversed greater than and less than',
-      version: '<2.0.0 >1.2.3',
-      expectedIndex: -1
-    },
-    {
-      description: 'with greater than',
-      version: '>1.2.3',
-      expectedIndex: -1
-    },
-    {
-      description: 'with less than',
-      version: '<2.0.0',
-      expectedIndex: -1
-    },
-    {
-      description: 'unavailable version',
-      version: 'v4',
-      expectedIndex: -1
-    }
-  ])('should match version: $description', ({ version, expectedIndex }) => {
-    const supportedVersions = ['v1.2.3', 'v2.0.0', 'v3'];
-    const result = matchPackageVersion(version, supportedVersions);
-
-    expect(supportedVersions.indexOf(result as any)).toBe(expectedIndex);
-  });
-});
-
-describe('sortPackageVersions', () => {
-  it('should sort versions', () => {
-    const supportedVersions = ['v1.2.3', 'v3', '~0.1.0', '^2.0.0'];
-    const result = sortPackageVersions(supportedVersions);
-
-    expect(result).toEqual(['~0.1.0', 'v1.2.3', '^2.0.0', 'v3']);
-  });
-});
-
-describe('findNearestPackageJson', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should attempt to find the nearest package.json', async () => {
-    // Use the PF MCP package.json
-    const packagePath = process.cwd();
-    const path = await findNearestPackageJson(packagePath);
-
-    expect(path).toBe(`${packagePath}/package.json`);
-  });
-});
 
 describe('readLocalFileFunction', () => {
   beforeEach(() => {

@@ -1,6 +1,5 @@
-import { access, readFile } from 'node:fs/promises';
-import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
-import semver, { type SemVer } from 'semver';
+import { readFile } from 'node:fs/promises';
+import { isAbsolute, normalize, resolve, sep } from 'node:path';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
@@ -14,102 +13,6 @@ interface ProcessedDoc {
   resolvedPath: string | undefined;
   isSuccess: boolean;
 }
-
-/**
- * Dependency version normalize. Strips common semver prefixes (^, ~, v, >, >=) and keeps only the major version
- * for more reliable matching.
- *
- * @param str - The version string to normalize
- * @returns The normalized version string, or an empty string if the input is invalid.
- */
-const depMajorVersionNormalize = (str: string) =>
-  normalizeString(str).replace(/^[~^v><=]+/, '').split('.')[0] || '';
-
-/**
- * Match a dependency version against a list of supported versions.
- *
- * @Note
- * - Ignore URLs, paths, and aliases (:/.)
- * - Ignore Ambiguous Ranges (<) without a greater than or equal operator (>=)
- * - Fuzzy search against normalized versions semver major versions
- *
- * @param value - The dependency version string to match
- * @param supportedVersions - An array of supported version strings
- * @returns The matched version string or `undefined` if no match is found.
- */
-const matchPackageVersion = (value?: string, supportedVersions: string[] = []) => {
-  if (
-    supportedVersions.length === 0 ||
-    typeof value !== 'string' ||
-    isUrl(value) ||
-    value.includes(sep) ||
-    value.includes(':') ||
-    value.startsWith('.')
-  ) {
-    return undefined;
-  }
-
-  const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version) || version).filter(Boolean);
-  const updatedValue = semver.maxSatisfying(supportedVersions, value);
-
-  if (updatedValue) {
-    return updatedValue;
-  }
-
-  const coercedVersion = semver.coerce(value);
-
-  if (coercedVersion) {
-    return updatedSupportedVersions.find(version => semver.major(version) === coercedVersion.major);
-  }
-
-  return undefined;
-};
-
-/**
- * Sort package versions based on major semver version number, integer.
- *
- * @param versions - An array or Set of dependency version strings.
- * @param settings - Sorting options.
- * @param settings.isAscending - Sort ascending (true) or descending (false). Defaults to true.
- * @returns A shallow cloned sorted array of versions.
- */
-const sortPackageVersions = (versions: Set<string> | string[], { isAscending = true } = {}) => {
-  let updatedVersions: Array<string | SemVer> = Array.isArray(versions) ? [...versions] : Array.from(versions);
-
-  updatedVersions = updatedVersions.map(version => semver.coerce(version) || version);
-
-  return isAscending ? semver.sort(updatedVersions) : semver.rsort(updatedVersions);
-};
-
-/**
- * Find the nearest package.json by walking up the directory tree.
- *
- * @param startPath - Directory to start searching from
- * @returns The resolved path to the nearest package.json, or undefined if none is found.
- */
-const findNearestPackageJson = async (startPath: string) => {
-  let currentDir = startPath?.trim?.();
-
-  if (typeof currentDir !== 'string' || !currentDir.length) {
-    return undefined;
-  }
-
-  const { root } = parse(currentDir);
-
-  while (currentDir !== root) {
-    const pkgPath = join(currentDir, 'package.json');
-
-    try {
-      await access(pkgPath);
-
-      return pkgPath;
-    } catch {
-      currentDir = dirname(currentDir);
-    }
-  }
-
-  return undefined;
-};
 
 /**
  * Read a local file and return its contents as a string
@@ -347,15 +250,11 @@ const processDocsFunction = async (
 processDocsFunction.memo = memo(processDocsFunction, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 export {
-  depMajorVersionNormalize,
   fetchUrlFunction,
-  findNearestPackageJson,
   loadFileFetch,
-  matchPackageVersion,
   processDocsFunction,
   promiseQueue,
   readLocalFileFunction,
   resolveLocalPathFunction,
-  sortPackageVersions,
   type ProcessedDoc
 };
