@@ -1,11 +1,12 @@
 import { access, readFile } from 'node:fs/promises';
-import { isAbsolute, normalize, resolve, dirname, join, parse } from 'node:path';
+import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl } from './server.helpers';
 import { fuzzySearch } from './server.search';
+import { log, formatUnknownError } from './logger';
 
 interface ProcessedDoc {
   content: string;
@@ -221,10 +222,12 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
   }
 
   const base = options.contextPath;
+  const normalizedBase = normalize(base);
+  const refinedBase = normalizedBase.endsWith(sep) ? normalizedBase : `${normalizedBase}${sep}`;
   const resolved = isAbsolute(path) ? normalize(path) : resolve(base, path);
 
   // Safety check: ensure the resolved path actually starts with the base directory
-  if (!resolved.startsWith(normalize(base))) {
+  if (!resolved.startsWith(refinedBase) && resolved !== normalizedBase) {
     throw new Error(`Access denied: path ${path} is outside of base directory ${base}`);
   }
 
@@ -306,7 +309,9 @@ const promiseQueue = async (queue: string[], limit = 5) => {
 
     if (activeCount >= limit) {
       // Silent fail if one promise fails to load, but keep processing the rest.
-      await Promise.race(slidingQueue).catch(() => {});
+      await Promise.race(slidingQueue).catch((reason: unknown) => {
+        log.debug(`Failed to load promise from queue: ${formatUnknownError(reason)}`);
+      });
     }
   }
 

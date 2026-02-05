@@ -12,6 +12,7 @@ import {
   resolveLocalPathFunction
 } from '../server.getResources';
 import { type GlobalOptions } from '../options';
+import {DEFAULT_OPTIONS} from "../options.defaults";
 
 // Mock dependencies
 jest.mock('node:fs/promises');
@@ -255,11 +256,40 @@ describe('resolveLocalPathFunction', () => {
     {
       description: 'documentation slug',
       path: 'documentation:guidelines/README.md'
+    },
+    {
+      description: 'relative path with valid navigation',
+      path: './subdir/../file.md'
     }
   ])('should return a consistent path, $description', ({ path }) => {
-    const result = resolveLocalPathFunction(path);
+    const result = resolveLocalPathFunction(path, { ...DEFAULT_OPTIONS, contextPath: '/app/project' });
 
     expect(result).toMatchSnapshot();
+  });
+
+  it.each([
+    {
+      description: 'sibling directory traversal attempt',
+      path: '../patternfly-mcp-secret/config.json',
+      shouldThrow: 'Access denied'
+    },
+    {
+      description: 'absolute path outside base',
+      path: '/etc/passwd',
+      shouldThrow: 'Access denied'
+    },
+    {
+      description: 'documentation traversal attempt',
+      path: 'documentation:../../etc/passwd',
+      shouldThrow: 'Access denied'
+    },
+    {
+      description: 'path matching prefix but not boundary',
+      path: '../project-sibling/file.txt',
+      shouldThrow: 'Access denied'
+    }
+  ])('should return a consistent path or throw, $description', ({ path, shouldThrow }) => {
+    expect(() => resolveLocalPathFunction(path, { ...DEFAULT_OPTIONS, contextPath: '/app/project' })).toThrow(shouldThrow);
   });
 });
 
