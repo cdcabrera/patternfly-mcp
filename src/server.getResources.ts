@@ -205,16 +205,23 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptio
 const resolveLocalPathFunction = (path: string, options = getOptions()) => {
   const documentationPrefix = options.docsPathSlug;
 
+  // Safety check: Ensure the path is within the allowed directory
+  const confirmThenReturnResolvedBase = (base: string, resolved: string) => {
+    const normalizedBase = normalize(base);
+    const refinedBase = normalizedBase.endsWith(sep) ? normalizedBase : `${normalizedBase}${sep}`;
+
+    if (!resolved.startsWith(refinedBase) && resolved !== normalizedBase) {
+      throw new Error(`Access denied: path ${path} is outside of allowed directory ${base}`);
+    }
+
+    return resolved;
+  };
+
   if (path.startsWith(documentationPrefix)) {
     const base = options.docsPath;
     const resolved = resolve(base, path.slice(documentationPrefix.length));
 
-    // Safety check: Ensure the path is within the documentation directory
-    if (!resolved.startsWith(normalize(base))) {
-      throw new Error(`Access denied: path ${path} is outside of documentation directory ${base}`);
-    }
-
-    return resolved;
+    return confirmThenReturnResolvedBase(base, resolved);
   }
 
   if (isUrl(path)) {
@@ -222,16 +229,9 @@ const resolveLocalPathFunction = (path: string, options = getOptions()) => {
   }
 
   const base = options.contextPath;
-  const normalizedBase = normalize(base);
-  const refinedBase = normalizedBase.endsWith(sep) ? normalizedBase : `${normalizedBase}${sep}`;
   const resolved = isAbsolute(path) ? normalize(path) : resolve(base, path);
 
-  // Safety check: ensure the resolved path actually starts with the base directory
-  if (!resolved.startsWith(refinedBase) && resolved !== normalizedBase) {
-    throw new Error(`Access denied: path ${path} is outside of base directory ${base}`);
-  }
-
-  return resolved;
+  return confirmThenReturnResolvedBase(base, resolved);
 };
 
 /**
