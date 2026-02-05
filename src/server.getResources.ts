@@ -1,11 +1,11 @@
 import { access, readFile } from 'node:fs/promises';
 import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
+import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl } from './server.helpers';
-import { fuzzySearch } from './server.search';
 import { log, formatUnknownError } from './logger';
 
 interface ProcessedDoc {
@@ -41,56 +41,28 @@ const matchPackageVersion = (value?: string, supportedVersions: string[] = []) =
   if (
     supportedVersions.length === 0 ||
     typeof value !== 'string' ||
+    isUrl(value) ||
+    value.includes(sep) ||
     value.includes(':') ||
-    value.includes('/') ||
-    value.startsWith('.') ||
-    (value.includes('<') && !value.includes('>=') && !value.includes('<=')) ||
-    (value.includes('>') && !value.includes('>=') && !value.includes('<='))
+    value.startsWith('.')
   ) {
     return undefined;
   }
 
-  let updatedValue: string | undefined = value;
+  const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version) || version).filter(Boolean);
+  const updatedValue = semver.maxSatisfying(supportedVersions, value);
 
-  // Range less than greater than and equal
-  let greaterThanLessThanSet = false;
-
-  if (value.includes('<=') && value.includes('>=')) {
-    greaterThanLessThanSet = true;
-    updatedValue = value.split('<=')[1]?.split('>')[0]?.trim();
-  }
-
-  if (!greaterThanLessThanSet && value.includes('<=') && value.includes('>')) {
-    greaterThanLessThanSet = true;
-    updatedValue = value.split('<=')[1]?.split('>')[0]?.trim();
-  }
-
-  if (!greaterThanLessThanSet && value.includes('>=') && value.includes('<')) {
-    updatedValue = value.split('>=')[1]?.split('<')[0]?.trim();
-  }
-
-  // Inclusive range
-  if (value.includes('-')) {
-    updatedValue = value.split('-')[1]?.trim();
-  }
-
-  if (!updatedValue) {
-    return undefined;
-  }
-
-  if (supportedVersions.indexOf(updatedValue) > -1) {
+  if (updatedValue) {
     return updatedValue;
   }
 
-  // Match version value against supported versions using fuzzy search
-  // maxDistance: 0 ensures we only match the exact major version after normalization
-  const versionMatch = fuzzySearch(updatedValue, supportedVersions, {
-    normalizeFn: depMajorVersionNormalize,
-    isFuzzyMatch: true,
-    maxDistance: 0
-  });
+  const coercedVersion = semver.coerce(value);
 
-  return versionMatch?.[0]?.item;
+  if (coercedVersion) {
+    return updatedSupportedVersions.find(version => semver.major(version) === coercedVersion.major);
+  }
+
+  return undefined;
 };
 
 /**
@@ -102,14 +74,11 @@ const matchPackageVersion = (value?: string, supportedVersions: string[] = []) =
  * @returns A shallow cloned sorted array of versions.
  */
 const sortPackageVersions = (versions: Set<string> | string[], { isAscending = true } = {}) => {
-  const updatedVersions = Array.isArray(versions) ? [...versions] : Array.from(versions);
+  let updatedVersions: Array<string | SemVer> = Array.isArray(versions) ? [...versions] : Array.from(versions);
 
-  return updatedVersions.sort((a, b) => {
-    const aNum = parseInt(depMajorVersionNormalize(a), 10);
-    const bNum = parseInt(depMajorVersionNormalize(b), 10);
+  updatedVersions = updatedVersions.map(version => semver.coerce(version) || version);
 
-    return isAscending ? aNum - bNum : bNum - aNum;
-  });
+  return isAscending ? semver.sort(updatedVersions) : semver.rsort(updatedVersions);
 };
 
 /**
