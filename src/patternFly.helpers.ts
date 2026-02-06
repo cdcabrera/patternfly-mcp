@@ -7,7 +7,6 @@ import {
 } from './server.getResources';
 import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
  * Find the closest PatternFly version used within the project context.
@@ -26,7 +25,7 @@ const findClosestPatternFlyVersion = async (
   contextPathOverride: string | undefined = undefined,
   options = getOptions()
 ): Promise<string> => {
-  const { availableVersions } = getPatternFlyMcpDocs.memo();
+  const availableVersions = options.patternflyOptions.availableResourceVersions;
   const { defaultVersion, versionWhitelist, versionStrategy } = options.patternflyOptions.default;
   const pkgPath = await findNearestPackageJson(contextPathOverride || options.contextPath);
 
@@ -53,7 +52,7 @@ const findClosestPatternFlyVersion = async (
         const versionMatch = matchPackageVersion(allDeps[match.item], availableVersions);
 
         if (versionMatch) {
-          detectedVersions.add(versionMatch);
+          detectedVersions.add(versionMatch as string);
         }
       }
     }
