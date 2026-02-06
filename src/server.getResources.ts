@@ -138,18 +138,20 @@ fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptio
  * Ensures the resolved path stays within the intended base for security.
  *
  * @param path - Path to resolve. If it's relative, it will be resolved against the base directory.'
+ * @param settings - Optional settings object.
+ * @param settings.sep - Optional path separator. Defaults to `sep` from `path`.
  * @param options - Options
  * @returns Resolved file or URL path.
  *
  * @throws {Error} - Throws an error if the resolved path is invalid or outside the allowed base directory.
  */
-const resolveLocalPathFunction = (path: string, options = getOptions()) => {
+const resolveLocalPathFunction = (path: string, { sep: separator = sep } = {}, options = getOptions()) => {
   const documentationPrefix = options.docsPathSlug;
 
   // Safety check: Ensure the path is within the allowed directory
   const confirmThenReturnResolvedBase = (base: string, resolved: string) => {
     const normalizedBase = normalize(base);
-    const refinedBase = normalizedBase.endsWith(sep) ? normalizedBase : `${normalizedBase}${sep}`;
+    const refinedBase = normalizedBase.endsWith(separator) ? normalizedBase : `${normalizedBase}${separator}`;
 
     if (!resolved.startsWith(refinedBase) && resolved !== normalizedBase) {
       throw new Error(`Access denied: path ${path} is outside of allowed directory ${base}`);

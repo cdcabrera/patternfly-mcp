@@ -2,8 +2,7 @@ import { getOptions } from './options.context';
 import {
   findNearestPackageJson,
   matchPackageVersion,
-  readLocalFileFunction,
-  sortPackageVersions
+  readLocalFileFunction
 } from './server.getResources';
 import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';

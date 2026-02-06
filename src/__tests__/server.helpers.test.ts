@@ -6,6 +6,8 @@ import {
   isPlainObject,
   isPromise,
   isReferenceLike,
+  isUrl,
+  isPath,
   mergeObjects,
   portValid,
   stringJoin,
@@ -548,6 +550,60 @@ describe('isReferenceLike', () => {
     }
   ])('should determine a non-primitive for $description', ({ param, value }) => {
     expect(isReferenceLike(param)).toBe(value);
+  });
+});
+
+describe('isUrl', () => {
+  it.each([
+    { description: 'http', url: 'http://example.com' },
+    { description: 'https', url: 'https://example.com' },
+    { description: 'file', url: 'file:///path/to/file.txt' },
+    { description: 'node', url: 'node://path/to/file.txt' },
+    { description: 'data', url: 'data:text/plain;base64,1234567890==' }
+  ])('should validate $description', ({ url }) => {
+    expect(isUrl(url)).toBe(true);
+  });
+
+  it.each([
+    { description: 'invalid protocol', url: 'ftp://example.com' },
+    { description: 'random', url: 'random://example.com' },
+    { description: 'null', url: null },
+    { description: 'undefined', url: undefined }
+  ])('should fail, $description', ({ url }) => {
+    expect(isUrl(url as any)).toBe(false);
+  });
+
+  it.each([
+    { options: { isStrict: true, allowedProtocols: ['http'] }, expected: false },
+    { options: { isStrict: false, allowedProtocols: ['http'] }, expected: true },
+    { options: { isStrict: true, allowedProtocols: ['ftp'] }, expected: true },
+    { options: { isStrict: false, allowedProtocols: ['ftp'] }, expected: true }
+  ])('should handle allowedProtocols and strict options, $description', ({ options, expected }) => {
+    expect(isUrl('ftp://example.com', options)).toBe(expected);
+    expect(isUrl('ftp://example.com', options)).toBe(expected);
+    expect(isUrl('ftp://example.com', options)).toBe(expected);
+    expect(isUrl('ftp://example.com', options)).toBe(expected);
+  });
+});
+
+describe('isPath', () => {
+  it.each([
+    { description: 'absolute path', file: '/path/to/file.txt' },
+    { description: 'absolute path ref no extension', file: '/path/to/another/file' },
+    { description: 'min file extension', file: 'path/to/another/file.y' },
+    { description: 'potential multiple extensions', file: 'path/to/another/file.test.js' },
+    { description: 'current dir ref', file: './path/to/another/file.txt' },
+    { description: 'parent dir ref', file: '../path/to/another/file.txt' },
+    { description: 'file://', file: 'file://path/to/another/file.txt' },
+    { description: 'no file extension or dir ref', file: 'path/to/another/file' },
+    { description: 'Windows drive', file: 'C:/path/to/another/file.txt' }
+  ])('should validate $description', ({ file }) => {
+    expect(isPath(file, { sep: '/' })).toBe(true);
+  });
+
+  it('should handle separators and extensions', () => {
+    expect(isPath('/path/to/file', { sep: '\\' })).toBe(false);
+    expect(isPath('/path/to/file.txt', { sep: '\\' })).toBe(true);
   });
 });
 

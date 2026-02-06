@@ -188,17 +188,24 @@ const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.t
  *
  * @param str - String to check
  * @param [options] - Options
+ * @param [options.allowedProtocols] - List of allowed URL protocols. Default: `['file', 'http', 'https', 'data', 'node']`
  * @param [options.isStrict] - If `true`, only strict URL validation is performed. Default: `true`
- * @param [options.urlLikeRegExp] - RegExp to use for URL-like validation. Default: `/^(file:|https?:|data:|node:)/i`
  * @returns `true` if the string is a valid URL, URL-like.
  */
-const isUrl = (str: unknown, { isStrict = true, urlLikeRegExp = /^(file:|https?:|data:|node:)/i } = {}) => {
+const isUrl = (str: unknown, { allowedProtocols = ['file', 'http', 'https', 'data', 'node'], isStrict = true } = {}) => {
   if (typeof str !== 'string' || !str.trim()) {
     return false;
   }
 
+  const isAllowed = allowedProtocols.some(type => str.toLowerCase().startsWith(`${type}:`));
+
   // Fast check for common URL-like/module schemes
-  if (urlLikeRegExp.test(str) && !isStrict) {
+  if (isStrict && !isAllowed) {
+    return false;
+  }
+
+  // Fast check for common URL-like/module schemes
+  if (!isStrict && isAllowed) {
     return true;
   }
 
@@ -216,9 +223,11 @@ const isUrl = (str: unknown, { isStrict = true, urlLikeRegExp = /^(file:|https?:
  * Check if a value is a valid path.
  *
  * @param str - String to check
+ * @param [options] - Options
+ * @param [options.sep] - Path separator to use. Default: `path.sep`
  * @returns `true` if the string is a valid path.
  */
-const isPath = (str: unknown) => {
+const isPath = (str: unknown, { sep: separator = sep } = {}) => {
   if (typeof str !== 'string' || !str.trim()) {
     return false;
   }
@@ -234,10 +243,10 @@ const isPath = (str: unknown) => {
   }
 
   const hasPathMarkers =
-    str.startsWith(`.${sep}`) ||
-    str.startsWith(`..${sep}`) ||
-    str.startsWith(sep) ||
-    str.includes(sep);
+    str.startsWith(`.${separator}`) ||
+    str.startsWith(`..${separator}`) ||
+    str.startsWith(separator) ||
+    str.includes(separator);
 
   return hasPathMarkers || extname(str).length >= 2;
 };

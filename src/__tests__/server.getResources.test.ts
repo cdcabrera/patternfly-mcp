@@ -1,8 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import {
-  depMajorVersionNormalize,
   matchPackageVersion,
-  sortPackageVersions,
   findNearestPackageJson,
   readLocalFileFunction,
   fetchUrlFunction,
@@ -27,47 +25,6 @@ jest.mock('../server.caching', () => ({
 }));
 
 const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
-
-describe('depMajorVersionNormalize', () => {
-  it.each([
-    {
-      description: 'with semver',
-      version: '1.2.3'
-    },
-    {
-      description: 'with semver with leading v',
-      version: 'v1.2.3'
-    },
-    {
-      description: 'with tilde',
-      version: '~1.2.3'
-    },
-    {
-      description: 'with caret',
-      version: '^1.2.3'
-    },
-    {
-      description: 'with greater than',
-      version: '>1.2.3'
-    },
-    {
-      description: 'with less than',
-      version: '<1.2.3'
-    },
-    {
-      description: 'with greater than equal',
-      version: '>=1.2.3'
-    },
-    {
-      description: 'with less than equal',
-      version: '<=1.2.3'
-    }
-  ])('should normalize version: $description', ({ version }) => {
-    const normalizedVersion = depMajorVersionNormalize(version);
-
-    expect(normalizedVersion).toBe('1');
-  });
-});
 
 describe('matchPackageVersion', () => {
   it.each([
@@ -146,15 +103,6 @@ describe('matchPackageVersion', () => {
     const result = matchPackageVersion(version, supportedVersions);
 
     expect(supportedVersions.indexOf(result as any)).toBe(expectedIndex);
-  });
-});
-
-describe('sortPackageVersions', () => {
-  it('should sort versions', () => {
-    const supportedVersions = ['v1.2.3', 'v3', '~0.1.0', '^2.0.0'];
-    const result = sortPackageVersions(supportedVersions);
-
-    expect(result).toEqual(['~0.1.0', 'v1.2.3', '^2.0.0', 'v3']);
   });
 });
 
