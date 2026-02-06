@@ -1,4 +1,5 @@
 import { createHash, type BinaryToTextEncoding } from 'node:crypto';
+import {extname, sep} from 'node:path';
 
 /**
  * Check if a value is a valid port number.
@@ -193,6 +194,38 @@ const isUrl = (str: unknown) => {
   }
 };
 
+const isPath = (str: unknown) => {
+  if (typeof str !== 'string' || !str.trim()) {
+    return false;
+  }
+
+  // File URLs
+  if (str.startsWith('file://')) {
+    return isUrl(str);
+  }
+
+  // Windows drive letter paths
+  if (/^[A-Za-z]:[\\/]/.test(str)) {
+    return true;
+  }
+
+  // try {
+  //  new URL(str, 'file://');
+
+  //  return true;
+  // } catch {}
+
+  // return str.startsWith(`.${sep}`) || str.startsWith(`..${sep}`) || str.startsWith(sep) || str.includes(sep) || extname(str).length >= 2;
+
+  const hasPathMarkers =
+    str.startsWith(`.${sep}`) ||
+    str.startsWith(`..${sep}`) ||
+    str.startsWith(sep) ||
+    str.includes(sep);
+
+  return hasPathMarkers || extname(str).length >= 2;
+};
+
 /**
  * Generate a hash from a string
  *
@@ -330,8 +363,8 @@ const generateHash = (anyValue: unknown): string => {
  * @param settings.filterFalsyValues - If `true`, filter out falsy values before joining (default: `false`)
  * @returns Joined string, with optional separator
  */
-const stringJoin = (arr: unknown[], { sep = ' ', filterFalsyValues = false } = {}): string =>
-  (filterFalsyValues ? arr.filter(Boolean).join(sep) : arr.join(sep));
+const stringJoin = (arr: unknown[], { sep: separator = ' ', filterFalsyValues = false } = {}): string =>
+  (filterFalsyValues ? arr.filter(Boolean).join(separator) : arr.join(separator));
 
 /**
  * Join argument values with a single space separator.
@@ -399,6 +432,7 @@ export {
   hashNormalizeValue,
   isAsync,
   isObject,
+  isPath,
   isPlainObject,
   isPromise,
   isReferenceLike,

@@ -1,11 +1,11 @@
 import { access, readFile } from 'node:fs/promises';
 import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
-import semver, { type SemVer } from 'semver';
+import semver from 'semver';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isUrl } from './server.helpers';
+import { isPath, isUrl } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
 interface ProcessedDoc {
@@ -14,16 +14,6 @@ interface ProcessedDoc {
   resolvedPath: string | undefined;
   isSuccess: boolean;
 }
-
-/**
- * Dependency version normalize. Strips common semver prefixes (^, ~, v, >, >=) and keeps only the major version
- * for more reliable matching.
- *
- * @param str - The version string to normalize
- * @returns The normalized version string, or an empty string if the input is invalid.
- */
-const depMajorVersionNormalize = (str: string) =>
-  normalizeString(str).replace(/^[~^v><=]+/, '').split('.')[0] || '';
 
 /**
  * Match a dependency version against a list of supported versions.
@@ -42,9 +32,7 @@ const matchPackageVersion = (value?: string, supportedVersions: string[] = []) =
     supportedVersions.length === 0 ||
     typeof value !== 'string' ||
     isUrl(value) ||
-    value.includes(sep) ||
-    value.includes(':') ||
-    value.startsWith('.')
+    isPath(value)
   ) {
     return undefined;
   }
@@ -63,22 +51,6 @@ const matchPackageVersion = (value?: string, supportedVersions: string[] = []) =
   }
 
   return undefined;
-};
-
-/**
- * Sort package versions based on major semver version number, integer.
- *
- * @param versions - An array or Set of dependency version strings.
- * @param settings - Sorting options.
- * @param settings.isAscending - Sort ascending (true) or descending (false). Defaults to true.
- * @returns A shallow cloned sorted array of versions.
- */
-const sortPackageVersions = (versions: Set<string> | string[], { isAscending = true } = {}) => {
-  let updatedVersions: Array<string | SemVer> = Array.isArray(versions) ? [...versions] : Array.from(versions);
-
-  updatedVersions = updatedVersions.map(version => semver.coerce(version) || version);
-
-  return isAscending ? semver.sort(updatedVersions) : semver.rsort(updatedVersions);
 };
 
 /**
@@ -347,7 +319,6 @@ const processDocsFunction = async (
 processDocsFunction.memo = memo(processDocsFunction, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 export {
-  depMajorVersionNormalize,
   fetchUrlFunction,
   findNearestPackageJson,
   loadFileFetch,
@@ -356,6 +327,5 @@ export {
   promiseQueue,
   readLocalFileFunction,
   resolveLocalPathFunction,
-  sortPackageVersions,
   type ProcessedDoc
 };
