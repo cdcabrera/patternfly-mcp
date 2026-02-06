@@ -5,7 +5,7 @@ import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isPath, isUrl } from './server.helpers';
+import { isUrl } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
 interface ProcessedDoc {
@@ -19,36 +19,50 @@ interface ProcessedDoc {
  * Match a dependency version against a list of supported versions.
  *
  * @Note
- * - Ignore URLs, paths, and aliases (:/.)
- * - Ignore Ambiguous Ranges (<) without a greater than or equal operator (>=)
- * - Fuzzy search against normalized versions semver major versions
+ * - Ignore URLs
+ * - Attempt to ignore paths, and aliases (:/.).
+ * - Can't use `isPath` here because semver strings can be considered valid paths.
+ * - Semver doesn't support inclusive ranges `1.2.3-3.0.0`.
  *
- * @param value - The dependency version string to match
- * @param supportedVersions - An array of supported version strings
- * @returns The matched version string or `undefined` if no match is found.
+ * @param value - The dependency semver version string to match
+ * @param supportedVersions - An array of supported semver version strings
+ * @param options - Optional options object
+ * @param options.sep - Optional path separator. Defaults to `sep` from `path`.
+ * @returns The matched semver version string or `undefined` if no match is found.
  */
-const matchPackageVersion = (value?: string, supportedVersions: string[] = []) => {
+const matchPackageVersion = (value: string | undefined, supportedVersions: string[] = [], { sep: separator = sep } = {}) => {
   if (
     supportedVersions.length === 0 ||
     typeof value !== 'string' ||
-    isUrl(value) ||
-    isPath(value)
+    !value.trim() ||
+    value.includes(separator) ||
+    value.startsWith('.') ||
+    isUrl(value)
   ) {
     return undefined;
   }
 
-  const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version) || version).filter(Boolean);
   const updatedValue = semver.maxSatisfying(supportedVersions, value);
 
   if (updatedValue) {
     return updatedValue;
   }
 
+  // const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version) || undefined).filter(Boolean) as SemVer[];
+  // const coercedVersion = semver.coerce(value);
+  /*
   const coercedVersion = semver.coerce(value);
 
   if (coercedVersion) {
-    return updatedSupportedVersions.find(version => semver.major(version) === coercedVersion.major);
+    const semverObj = updatedSupportedVersions.find(({ major }) => major === coercedVersion.major);
+
+    console.log(semverObj, value);
+
+    if (semverObj) {
+      return supportedVersions.find(version => version.includes(`${semverObj.major}`));
+    }
   }
+  */
 
   return undefined;
 };

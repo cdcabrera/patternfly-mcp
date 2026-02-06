@@ -1,3 +1,4 @@
+import semver from 'semver';
 import { getOptions } from './options.context';
 import {
   findNearestPackageJson,
@@ -9,6 +10,9 @@ import { memo } from './server.caching';
 
 /**
  * Find the closest PatternFly version used within the project context.
+ *
+ * @note In the future the available versions of PatternFly will be determined by the available resources.
+ * In the short-term we limit the available versions via `patternflyOptions.availableResourceVersions`.
  *
  * Logic:
  * 1. Locates the nearest package.json.
@@ -64,11 +68,11 @@ const findClosestPatternFlyVersion = async (
       return Array.from(detectedVersions)[0] as string;
     }
 
-    const sorted = sortPackageVersions(detectedVersions);
+    const versionsArray = Array.from(detectedVersions);
 
     return versionStrategy === 'highest'
-      ? (sorted[sorted.length - 1] as string)
-      : (sorted[0] as string);
+      ? semver.maxSatisfying(versionsArray, '*') as string
+      : semver.minSatisfying(versionsArray, '*') as string;
   } catch {
     return defaultVersion;
   }

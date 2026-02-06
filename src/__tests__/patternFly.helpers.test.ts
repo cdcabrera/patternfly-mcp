@@ -34,7 +34,7 @@ describe('findClosestPatternFlyVersion', () => {
       deps: {
         '@patternfly/react-core': '^5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'greater than or equal, major, minor, patch',
@@ -48,14 +48,14 @@ describe('findClosestPatternFlyVersion', () => {
       deps: {
         '@patternfly/react-core': '>=4.0.0 <=5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'range, inclusive',
       deps: {
         '@patternfly/react-core': '4.0.0 - 5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'git path',
@@ -77,42 +77,42 @@ describe('findClosestPatternFlyVersion', () => {
         '@patternfly/patternfly': '^4.0.0',
         '@patternfly/react-core': '^5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'fuzzy match -next',
       deps: {
         '@patternfly/react-core-next': '^5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'fuzzy match -rc',
       deps: {
         '@patternfly/react-core-rc': '^5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'fuzzy match -alpha',
       deps: {
         '@patternfly/patternfly-alpha': '^5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'fuzzy match -beta',
       deps: {
         '@patternfly/patternfly-beta': '^5.0.0'
       },
-      expected: 'v5'
+      expected: 'v6'
     },
     {
       description: 'wildcard match',
       deps: {
         '@patternfly/patternfly': '^5.x.x'
       },
-      expected: 'v5'
+      expected: 'v6'
     }
   ])('should attempt to match whitelisted packages, $description', async ({ deps, expected }) => {
     mockReadLocalFile.mockResolvedValue(JSON.stringify({

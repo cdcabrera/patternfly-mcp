@@ -39,11 +39,6 @@ describe('matchPackageVersion', () => {
       expectedIndex: 0
     },
     {
-      description: 'with inclusive range',
-      version: '1.2.3-3.0.0',
-      expectedIndex: 2
-    },
-    {
       description: 'with greater than and less than equal',
       version: '>1.2.3 <=v2.0.0',
       expectedIndex: 1
@@ -59,21 +54,6 @@ describe('matchPackageVersion', () => {
       expectedIndex: 0
     },
     {
-      description: 'with reversed greater than equal and less than',
-      version: '<v2.0.0 >=1.2.3',
-      expectedIndex: 0
-    },
-    {
-      description: 'with greater than equal and less than equal',
-      version: '>=v1.2.3 <=3.0.0',
-      expectedIndex: 2
-    },
-    {
-      description: 'with reversed greater than equal and less than equal',
-      version: '<=3.0.0 >=v1.2.3',
-      expectedIndex: 2
-    },
-    {
       description: 'with greater than and less than',
       version: '>1.2.3 <2.0.0',
       expectedIndex: -1
@@ -86,12 +66,12 @@ describe('matchPackageVersion', () => {
     {
       description: 'with greater than',
       version: '>1.2.3',
-      expectedIndex: -1
+      expectedIndex: 1
     },
     {
       description: 'with less than',
       version: '<2.0.0',
-      expectedIndex: -1
+      expectedIndex: 0
     },
     {
       description: 'unavailable version',
@@ -99,6 +79,34 @@ describe('matchPackageVersion', () => {
       expectedIndex: -1
     }
   ])('should match version: $description', ({ version, expectedIndex }) => {
+    const supportedVersions = ['v1.2.3', 'v2.0.0', 'v3'];
+    const result = matchPackageVersion(version, supportedVersions);
+
+    expect(supportedVersions.indexOf(result as any)).toBe(expectedIndex);
+  });
+
+  it.each([
+    {
+      description: 'with inclusive range',
+      version: '1.2.3-3.0.0',
+      expectedIndex: -1
+    },
+    {
+      description: 'with greater than equal and less than equal',
+      version: '>=v1.2.3 <=3.0.0',
+      expectedIndex: 1
+    },
+    {
+      description: 'with reversed greater than equal and less than equal',
+      version: '<=3.0.0 >=v1.2.3',
+      expectedIndex: 1
+    },
+    {
+      description: 'with reversed greater than equal and less than',
+      version: '<v2.0.0 >=1.2.3',
+      expectedIndex: 0
+    }
+  ])('should attempt range versions: $description', ({ version, expectedIndex }) => {
     const supportedVersions = ['v1.2.3', 'v2.0.0', 'v3'];
     const result = matchPackageVersion(version, supportedVersions);
 
@@ -210,7 +218,7 @@ describe('resolveLocalPathFunction', () => {
       path: './subdir/../file.md'
     }
   ])('should return a consistent path, $description', ({ path }) => {
-    const result = resolveLocalPathFunction(path, { ...DEFAULT_OPTIONS, contextPath: '/app/project' });
+    const result = resolveLocalPathFunction(path, undefined, { ...DEFAULT_OPTIONS, contextPath: '/app/project' });
 
     expect(result).toMatchSnapshot();
   });
@@ -237,7 +245,7 @@ describe('resolveLocalPathFunction', () => {
       shouldThrow: 'Access denied'
     }
   ])('should return a consistent path or throw, $description', ({ path, shouldThrow }) => {
-    expect(() => resolveLocalPathFunction(path, { ...DEFAULT_OPTIONS, contextPath: '/app/project' })).toThrow(shouldThrow);
+    expect(() => resolveLocalPathFunction(path, undefined, { ...DEFAULT_OPTIONS, contextPath: '/app/project' })).toThrow(shouldThrow);
   });
 });
 
