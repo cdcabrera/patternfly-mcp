@@ -1,6 +1,6 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, extname, isAbsolute, resolve } from 'node:path';
-import { isPath, isPlainObject, isReferenceLike } from './server.helpers';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { isPath, isPlainObject, isReferenceLike, isUrl } from './server.helpers';
 import { type McpTool } from './server';
 import { type GlobalOptions } from './options';
 import { memo } from './server.caching';
@@ -343,15 +343,6 @@ const sanitizeStaticToolName = (obj: unknown) => {
 };
 
 /**
- * Check if a string looks like a URL.
- *
- * @param str
- * @returns Confirmation that the string looks like a URL.
- */
-const isUrlLike = (str: string) =>
-  /^(file:|https?:|data:|node:)/i.test(str);
-
-/**
  * Normalize a tuple object with schema into a Zod schema.
  *
  * @param schema
@@ -571,7 +562,7 @@ const normalizeFileUrl = (config: unknown): FileEntry | undefined => {
     return undefined;
   }
 
-  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isPath(config) };
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrl(config, { isStrict: false }), isFilePath: isPath(config) };
   const err: string[] = [];
   const isFileUrl = config.startsWith('file:');
   const normalizedUrl = config;
@@ -622,11 +613,11 @@ const normalizeFilePath = (
     contextUrl
   }: { contextPath?: string, contextUrl?: string } = {}
 ): FileEntry | undefined => {
-  if (typeof config !== 'string' || !isPath(config) || isUrlLike(config)) {
+  if (typeof config !== 'string' || !isPath(config) || isUrl(config, { isStrict: false })) {
     return undefined;
   }
 
-  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrlLike(config), isFilePath: isPath(config) };
+  const entry: Partial<NormalizedToolEntry> = { isUrlLike: isUrl(config, { isStrict: false }), isFilePath: isPath(config) };
   const err: string[] = [];
   let isFileUrl = config.startsWith('file:');
   let normalizedUrl = config;
@@ -715,7 +706,7 @@ const normalizeFilePackage = (
   // Case 3: non-file string -> keep as-is (package name or other URL-like spec)
   // Note: http(s) module specs are not supported by Node import and will surface as load warnings in the child.
   return {
-    isUrlLike: isUrlLike(config),
+    isUrlLike: isUrl(config, { isStrict: false }),
     isFilePath: isPath(config),
     normalizedUrl: config,
     fsReadDir: undefined,
@@ -905,7 +896,6 @@ const createMcpTool = (config: string | Tool | ToolConfig | ToolCreator | ToolMu
 
 export {
   createMcpTool,
-  isUrlLike,
   normalizeFilePackage,
   normalizeFileUrl,
   normalizeFilePath,

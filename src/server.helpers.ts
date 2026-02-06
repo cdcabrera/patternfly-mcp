@@ -1,5 +1,5 @@
 import { createHash, type BinaryToTextEncoding } from 'node:crypto';
-import {extname, sep} from 'node:path';
+import { extname, sep } from 'node:path';
 
 /**
  * Check if a value is a valid port number.
@@ -180,13 +180,31 @@ const isAsync = (obj: unknown) => /^\[object (Async|AsyncFunction)]/.test(Object
 const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.test(Object.prototype.toString.call(obj));
 
 /**
- * Check if a value is a valid URL.
+ * Check if a value is a valid URL, URL-like.
  *
- * @param str
+ * @note URL-like validation can be updated to support more URL schemes (e.g. `blob:`).
+ * Be aware this helper is used to gate-keep tools-as-plugins. Consider additions carefully
+ * since they may fall outside our use cases.
+ *
+ * @param str - String to check
+ * @param [options] - Options
+ * @param [options.isStrict] - If `true`, only strict URL validation is performed. Default: `true`
+ * @param [options.urlLikeRegExp] - RegExp to use for URL-like validation. Default: `/^(file:|https?:|data:|node:)/i`
+ * @returns `true` if the string is a valid URL, URL-like.
  */
-const isUrl = (str: unknown) => {
+const isUrl = (str: unknown, { isStrict = true, urlLikeRegExp = /^(file:|https?:|data:|node:)/i } = {}) => {
+  if (typeof str !== 'string' || !str.trim()) {
+    return false;
+  }
+
+  // Fast check for common URL-like/module schemes
+  if (urlLikeRegExp.test(str) && !isStrict) {
+    return true;
+  }
+
+  // Strict validation
   try {
-    new URL(str as any);
+    new URL(str);
 
     return true;
   } catch {
@@ -194,6 +212,12 @@ const isUrl = (str: unknown) => {
   }
 };
 
+/**
+ * Check if a value is a valid path.
+ *
+ * @param str - String to check
+ * @returns `true` if the string is a valid path.
+ */
 const isPath = (str: unknown) => {
   if (typeof str !== 'string' || !str.trim()) {
     return false;
@@ -208,14 +232,6 @@ const isPath = (str: unknown) => {
   if (/^[A-Za-z]:[\\/]/.test(str)) {
     return true;
   }
-
-  // try {
-  //  new URL(str, 'file://');
-
-  //  return true;
-  // } catch {}
-
-  // return str.startsWith(`.${sep}`) || str.startsWith(`..${sep}`) || str.startsWith(sep) || str.includes(sep) || extname(str).length >= 2;
 
   const hasPathMarkers =
     str.startsWith(`.${sep}`) ||
