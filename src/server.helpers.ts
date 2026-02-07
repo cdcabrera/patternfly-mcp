@@ -227,14 +227,14 @@ const isUrl = (str: unknown, { allowedProtocols = ['file', 'http', 'https', 'dat
  * @param [options.sep] - Path separator to use. Default: `path.sep`
  * @returns `true` if the string is a valid path.
  */
-const isPath = (str: unknown, { sep: separator = sep } = {}) => {
+const isPath = (str: unknown, { allowedPrefixes = ['.', '..', '/', '\\'], isStrict = true, sep: separator = sep } = {}) => {
   if (typeof str !== 'string' || !str.trim()) {
     return false;
   }
 
   // File URLs
-  if (str.startsWith('file://')) {
-    return isUrl(str);
+  if (str.startsWith('file:')) {
+    return isUrl(str, { isStrict });
   }
 
   // Windows drive letter paths
@@ -242,13 +242,23 @@ const isPath = (str: unknown, { sep: separator = sep } = {}) => {
     return true;
   }
 
-  const hasPathMarkers =
-    str.startsWith(`.${separator}`) ||
-    str.startsWith(`..${separator}`) ||
-    str.startsWith(separator) ||
-    str.includes(separator);
+  const isAllowed = allowedPrefixes.some(prefix => {
+    if (prefix === '.' || prefix === '..') {
+      return str.startsWith(`${prefix}${separator}`);
+    }
 
-  return hasPathMarkers || extname(str).length >= 2;
+    return str.startsWith(prefix);
+  });
+
+  if (isStrict && !isAllowed) {
+    return false;
+  }
+
+  if (!isStrict && isAllowed) {
+    return true;
+  }
+
+  return isAllowed || str.includes(separator) || extname(str).length >= 2;
 };
 
 /**

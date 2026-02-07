@@ -9,11 +9,7 @@ exports[`composeTools should attempt to setup creators, default package creators
 
 exports[`composeTools should attempt to setup creators, file package creators 1`] = `
 {
-  "log": [
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
-    ],
-  ],
+  "log": [],
   "toolsCount": 5,
 }
 `;
@@ -23,9 +19,6 @@ exports[`composeTools should attempt to setup creators, file package creators, N
   "log": [
     [
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
-    ],
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
     ],
     [
       "External tool plugins require Node >= 22; skipping file-based tools.",
@@ -41,9 +34,6 @@ exports[`composeTools should attempt to setup creators, file package creators, N
     [
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
     ],
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
-    ],
   ],
   "toolsCount": 5,
 }
@@ -54,9 +44,6 @@ exports[`composeTools should attempt to setup creators, file package creators, N
   "log": [
     [
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
-    ],
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
     ],
     [
       "External tool plugins require Node >= 22; skipping file-based tools.",
@@ -73,12 +60,6 @@ exports[`composeTools should attempt to setup creators, file package duplicate c
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
     ],
     [
-      "Failed to resolve file path: @patternfly/tools: undefined",
-    ],
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
-    ],
-    [
       "Skipping tool plugin "@patternfly/tools" – name already used by built-in/inline tool.",
     ],
   ],
@@ -91,9 +72,6 @@ exports[`composeTools should attempt to setup creators, inline and file package 
   "log": [
     [
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
-    ],
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
     ],
   ],
   "toolsCount": 7,
@@ -124,9 +102,6 @@ exports[`composeTools should attempt to setup creators, inline and file package 
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
     ],
     [
-      "Failed to resolve file path: @patternfly/tools: undefined",
-    ],
-    [
       "Skipping tool plugin "@patternfly/tools" – name already used by built-in/inline tool.",
     ],
     [
@@ -142,9 +117,6 @@ exports[`composeTools should attempt to setup creators, inline and file package 
   "log": [
     [
       "Existing Tools Host session detected test-session-id. Shutting down the existing host before creating a new one.",
-    ],
-    [
-      "Failed to resolve file path: @patternfly/tools: undefined",
     ],
     [
       "External tool plugins require Node >= 22; skipping file-based tools.",
@@ -203,7 +175,7 @@ exports[`composeTools should return default creators on tools host error 1`] = `
 {
   "log": [
     [
-      "Failed to resolve file path: @patternfly/tools: undefined",
+      "Failed to start Tools Host; skipping externals and continuing with built-ins/inline. undefined",
     ],
   ],
   "toolsCount": 3,
