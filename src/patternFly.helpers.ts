@@ -1,4 +1,4 @@
-import semver from 'semver';
+import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
 import {
   findNearestPackageJson,
@@ -22,7 +22,7 @@ import { memo } from './server.caching';
  *
  * @param contextPathOverride - Optional override for the context path to search for package.json
  * @param options - Global options
- * @returns Matched PatternFly major version alias (e.g., 'v6', 'v5')
+ * @returns Matched PatternFly semver version (e.g., '6.0.0', '5.0.0', '4.0.0')
  */
 const findClosestPatternFlyVersion = async (
   contextPathOverride: string | undefined = undefined,
@@ -33,7 +33,7 @@ const findClosestPatternFlyVersion = async (
   const pkgPath = await findNearestPackageJson(contextPathOverride || options.contextPath);
 
   if (!pkgPath) {
-    return defaultVersion;
+    return semver.coerce(defaultVersion)?.version || defaultVersion;
   }
 
   try {
@@ -42,12 +42,12 @@ const findClosestPatternFlyVersion = async (
     const allDeps = { ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>;
     const depNames = Object.keys(allDeps);
 
-    const detectedVersions = new Set<string>();
+    const detectedVersions = new Set<SemVer>();
 
     for (const pkgName of versionWhitelist) {
       // Allow for variations like -next or -alpha with fuzzySearch maxDistance=2
       const matches = fuzzySearch(pkgName, depNames, {
-        maxDistance: 2,
+        maxDistance: 1,
         isFuzzyMatch: true
       });
 
@@ -55,24 +55,25 @@ const findClosestPatternFlyVersion = async (
         const versionMatch = matchPackageVersion(allDeps[match.item], availableVersions);
 
         if (versionMatch) {
-          detectedVersions.add(versionMatch as string);
+          detectedVersions.add(versionMatch);
         }
       }
     }
 
     if (detectedVersions.size === 0) {
-      return defaultVersion;
+      return semver.coerce(defaultVersion)?.version || defaultVersion;
     }
 
     if (detectedVersions.size === 1) {
-      return Array.from(detectedVersions)[0] as string;
+      return Array.from(detectedVersions)[0]?.version as string;
     }
 
     const versionsArray = Array.from(detectedVersions);
+    const maxVersion = versionStrategy === 'highest'
+      ? semver.maxSatisfying(versionsArray, '*')
+      : semver.minSatisfying(versionsArray, '*');
 
-    return versionStrategy === 'highest'
-      ? semver.maxSatisfying(versionsArray, '*') as string
-      : semver.minSatisfying(versionsArray, '*') as string;
+    return maxVersion?.version || defaultVersion;
   } catch {
     return defaultVersion;
   }

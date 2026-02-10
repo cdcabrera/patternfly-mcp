@@ -1,6 +1,6 @@
 import { access, readFile } from 'node:fs/promises';
 import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
-import semver from 'semver';
+import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
@@ -42,27 +42,12 @@ const matchPackageVersion = (value: string | undefined, supportedVersions: strin
     return undefined;
   }
 
-  const updatedValue = semver.maxSatisfying(supportedVersions, value);
+  const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version)).filter(Boolean) as SemVer[];
+  const updatedValue = semver.maxSatisfying(updatedSupportedVersions, value);
 
   if (updatedValue) {
     return updatedValue;
   }
-
-  // const updatedSupportedVersions = supportedVersions.map(version => semver.coerce(version) || undefined).filter(Boolean) as SemVer[];
-  // const coercedVersion = semver.coerce(value);
-  /*
-  const coercedVersion = semver.coerce(value);
-
-  if (coercedVersion) {
-    const semverObj = updatedSupportedVersions.find(({ major }) => major === coercedVersion.major);
-
-    console.log(semverObj, value);
-
-    if (semverObj) {
-      return supportedVersions.find(version => version.includes(`${semverObj.major}`));
-    }
-  }
-  */
 
   return undefined;
 };
