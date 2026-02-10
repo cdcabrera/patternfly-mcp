@@ -5,7 +5,7 @@ import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isUrl } from './server.helpers';
+import { isUrl, isPath } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
 interface ProcessedDoc {
@@ -27,7 +27,7 @@ interface ProcessedDoc {
  * @param supportedVersions - An array of supported semver version strings
  * @param options - Optional options object
  * @param options.sep - Optional path separator. Defaults to `sep` from `path`.
- * @returns The matched semver version string or `undefined` if no match is found.
+ * @returns A matched SemVer object containing a version string or `undefined` if no match is found.
  */
 const matchPackageVersion = (value: string | undefined, supportedVersions: string[] = [], { sep: separator = sep } = {}) => {
   if (
@@ -59,12 +59,11 @@ const matchPackageVersion = (value: string | undefined, supportedVersions: strin
  * @returns The resolved path to the nearest package.json, or undefined if none is found.
  */
 const findNearestPackageJson = async (startPath: string) => {
-  let currentDir = startPath?.trim?.();
-
-  if (typeof currentDir !== 'string' || !currentDir.length) {
+  if (!isPath(startPath) && !isUrl(startPath)) {
     return undefined;
   }
 
+  let currentDir = startPath.trim();
   const { root } = parse(currentDir);
 
   while (currentDir !== root) {

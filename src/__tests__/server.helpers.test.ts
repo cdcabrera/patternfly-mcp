@@ -574,14 +574,11 @@ describe('isUrl', () => {
   });
 
   it.each([
-    { options: { isStrict: true, allowedProtocols: ['http'] }, expected: false },
-    { options: { isStrict: false, allowedProtocols: ['http'] }, expected: true },
-    { options: { isStrict: true, allowedProtocols: ['ftp'] }, expected: true },
-    { options: { isStrict: false, allowedProtocols: ['ftp'] }, expected: true }
+    { description: 'http allowed, strict', options: { isStrict: true, allowedProtocols: ['http'] }, expected: false },
+    { description: 'http allowed, not strict', options: { isStrict: false, allowedProtocols: ['http'] }, expected: true },
+    { description: 'ftp allowed, strict', options: { isStrict: true, allowedProtocols: ['ftp'] }, expected: true },
+    { description: 'ftp allowed, not strict', options: { isStrict: false, allowedProtocols: ['ftp'] }, expected: true }
   ])('should handle allowedProtocols and strict options, $description', ({ options, expected }) => {
-    expect(isUrl('ftp://example.com', options)).toBe(expected);
-    expect(isUrl('ftp://example.com', options)).toBe(expected);
-    expect(isUrl('ftp://example.com', options)).toBe(expected);
     expect(isUrl('ftp://example.com', options)).toBe(expected);
   });
 });

@@ -31,9 +31,10 @@ const findClosestPatternFlyVersion = async (
   const availableVersions = options.patternflyOptions.availableResourceVersions;
   const { defaultVersion, versionWhitelist, versionStrategy } = options.patternflyOptions.default;
   const pkgPath = await findNearestPackageJson(contextPathOverride || options.contextPath);
+  const updatedDefaultVersion = semver.coerce(defaultVersion)?.version || defaultVersion;
 
   if (!pkgPath) {
-    return semver.coerce(defaultVersion)?.version || defaultVersion;
+    return updatedDefaultVersion;
   }
 
   try {
@@ -61,7 +62,7 @@ const findClosestPatternFlyVersion = async (
     }
 
     if (detectedVersions.size === 0) {
-      return semver.coerce(defaultVersion)?.version || defaultVersion;
+      return updatedDefaultVersion;
     }
 
     if (detectedVersions.size === 1) {
@@ -73,9 +74,9 @@ const findClosestPatternFlyVersion = async (
       ? semver.maxSatisfying(versionsArray, '*')
       : semver.minSatisfying(versionsArray, '*');
 
-    return maxVersion?.version || defaultVersion;
+    return maxVersion?.version || updatedDefaultVersion;
   } catch {
-    return defaultVersion;
+    return updatedDefaultVersion;
   }
 };
 
