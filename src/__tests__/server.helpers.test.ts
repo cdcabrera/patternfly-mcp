@@ -588,22 +588,22 @@ describe('isUrl', () => {
 
 describe('isPath', () => {
   it.each([
-    { description: 'absolute path', file: '/path/to/file.txt' },
-    { description: 'absolute path ref no extension', file: '/path/to/another/file' },
-    { description: 'min file extension', file: 'path/to/another/file.y' },
-    { description: 'potential multiple extensions', file: 'path/to/another/file.test.js' },
-    { description: 'current dir ref', file: './path/to/another/file.txt' },
-    { description: 'parent dir ref', file: '../path/to/another/file.txt' },
-    { description: 'file://', file: 'file://path/to/another/file.txt' },
-    { description: 'no file extension or dir ref', file: 'path/to/another/file' },
-    { description: 'Windows drive', file: 'C:/path/to/another/file.txt' }
-  ])('should validate $description', ({ file }) => {
-    expect(isPath(file, { sep: '/' })).toBe(true);
-  });
-
-  it('should handle separators and extensions', () => {
-    expect(isPath('/path/to/file', { sep: '\\' })).toBe(false);
-    expect(isPath('/path/to/file.txt', { sep: '\\' })).toBe(true);
+    { description: 'absolute path', file: '/path/to/file.txt', expected: true },
+    { description: 'absolute path ref no extension', file: '/path/to/another/file', expected: true },
+    { description: 'min file extension', file: 'path/to/another/file.sh', options: { isStrict: false }, expected: true },
+    { description: 'min file extension', file: 'path/to/another/file.sh', options: { isStrict: true }, expected: false },
+    { description: 'potential multiple extensions', file: 'path/to/another/file.test.js', options: { isStrict: false }, expected: true },
+    { description: 'potential multiple extensions', file: 'path/to/another/file.test.js', options: { isStrict: true }, expected: false },
+    { description: 'current dir ref', file: './path/to/another/file.txt', expected: true },
+    { description: 'parent dir ref', file: '../path/to/another/file.txt', expected: true },
+    { description: 'file://', file: 'file://path/to/another/file.txt', expected: true },
+    { description: 'no file extension or dir ref', file: 'path/to/another/file', options: { isStrict: false }, expected: true },
+    { description: 'no file extension or dir ref', file: 'path/to/another/file', options: { isStrict: true }, expected: false },
+    { description: 'Windows drive', file: 'C:/path/to/another/file.txt', expected: true },
+    { description: 'Windows separator no file extension', file: 'C:\\path\\to\\another\\file', options: { sep: '\\' }, expected: true },
+    { description: 'Windows separator file extension', file: 'C:\\path\\to\\another\\file.txt', options: { sep: '\\' }, expected: true }
+  ])('should validate $description', ({ file, options, expected }) => {
+    expect(isPath(file, { sep: '/', ...options } as any)).toBe(expected);
   });
 });
 

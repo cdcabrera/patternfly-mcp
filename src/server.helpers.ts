@@ -224,6 +224,8 @@ const isUrl = (str: unknown, { allowedProtocols = ['file', 'http', 'https', 'dat
  *
  * @param str - String to check
  * @param [options] - Options
+ * @param [options.allowedPrefixes] - List of allowed path prefixes. Default: `['.', '..', '/', '\\']`
+ * @param [options.isStrict] - If `true`, only strict path validation is performed. Default: `true`
  * @param [options.sep] - Path separator to use. Default: `path.sep`
  * @returns `true` if the string is a valid path.
  */
