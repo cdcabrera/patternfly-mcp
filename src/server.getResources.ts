@@ -60,7 +60,7 @@ const matchPackageVersion = (value: string | undefined, supportedVersions: strin
  * - Relative made-up directories to the working directory will return the closest match.
  * - Absolute starting paths with relative working directories will return the closest match.
  *
- * @note There is subtle behavior around using async `acccess` and looping. We ended up moving towards
+ * @note There is subtle behavior around using async `access` and looping. We ended up moving towards
  * `accessSync` when combined with the loop because it kept returning false positives. You can alter
  * it as-is back to async and witness the unit tests fail. If it is moved back to async, it
  * should be thoroughly tested.

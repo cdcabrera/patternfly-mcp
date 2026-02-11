@@ -122,9 +122,11 @@ let safePath;
 
 try {
   safePath = resolveLocalPathFunction(requestedPath);
-} catch {
-  throw new McpError(ErrorCode.InvalidParams, 'Access denied');
+} catch (err) {
+  throw new McpError(ErrorCode.InvalidParams, err.message);
 }
+
+// use safePath for subsequent file operations
 ```
 
 ### 6.2 Plugin Isolation
