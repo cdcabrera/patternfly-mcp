@@ -1,12 +1,12 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { patternFlyDocsTemplateResource } from '../resource.patternFlyDocsTemplate';
 import { processDocsFunction } from '../server.getResources';
-import { searchComponents } from '../tool.searchPatternFlyDocs';
 import { isPlainObject } from '../server.helpers';
+import { searchPatternFly } from '../patternFly.search';
 
 // Mock dependencies
 jest.mock('../server.getResources');
-jest.mock('../tool.searchPatternFlyDocs');
+jest.mock('../patternFly.search');
 jest.mock('../server.caching', () => ({
   memo: jest.fn(fn => fn)
 }));
@@ -15,7 +15,7 @@ jest.mock('../options.context', () => ({
 }));
 
 const mockProcessDocs = processDocsFunction as jest.MockedFunction<typeof processDocsFunction>;
-const mockSearchComponents = searchComponents as jest.MockedFunction<typeof searchComponents>;
+const mockSearchComponents = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
 
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {
@@ -68,7 +68,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
     mockSearchComponents.mockReturnValue({
       isSearchWildCardAll: false,
       firstExactMatch: undefined,
-      exactMatches: [{ urls } as any],
+      exactMatches: [{ urls, guidanceUrls: [] } as any],
       searchResults: []
     });
     mockProcessDocs.mockResolvedValue([{ content: mockResult }] as any);

@@ -1,12 +1,19 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { getComponentSchema } from '../tool.patternFlyDocs';
+import { getPatternFlyComponentSchema } from '../patternFly.getResources';
 import { patternFlySchemasTemplateResource } from '../resource.patternFlySchemasTemplate';
-import { searchComponents } from '../tool.searchPatternFlyDocs';
+import { searchPatternFly } from '../patternFly.search';
 import { isPlainObject } from '../server.helpers';
 
 // Mock dependencies
-jest.mock('../tool.searchPatternFlyDocs');
-jest.mock('../tool.patternFlyDocs');
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyComponentSchema: Object.assign(
+    jest.fn(),
+    { memo: jest.fn() }
+  )
+}));
+
+jest.mock('../patternFly.search');
 jest.mock('../server.caching', () => ({
   memo: jest.fn(fn => fn)
 }));
@@ -14,8 +21,8 @@ jest.mock('../options.context', () => ({
   getOptions: jest.fn(() => ({}))
 }));
 
-const mockGetComponentSchema = getComponentSchema as jest.MockedFunction<typeof getComponentSchema>;
-const mockSearchComponents = searchComponents as jest.MockedFunction<typeof searchComponents>;
+const mockGetComponentSchema = getPatternFlyComponentSchema as jest.MockedFunction<typeof getPatternFlyComponentSchema>;
+const mockSearchComponents = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
 
 describe('patternFlySchemasTemplateResource', () => {
   beforeEach(() => {
@@ -75,7 +82,6 @@ describe('patternFlySchemasTemplateResource, callback', () => {
       exactMatches: [],
       searchResults: []
     });
-    mockGetComponentSchema.mockReturnValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');
@@ -92,7 +98,7 @@ describe('patternFlySchemasTemplateResource, callback', () => {
       exactMatches: [{ item: 'Button', urls: [] } as any],
       searchResults: []
     });
-    mockGetComponentSchema.mockReturnValue(undefined as any);
+    mockGetComponentSchema.mockRejectedValue(undefined as any);
 
     const [_name, _uri, _config, handler] = patternFlySchemasTemplateResource();
     const uri = new URL('patternfly://schemas/DolorSitAmet');
