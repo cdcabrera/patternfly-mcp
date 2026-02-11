@@ -1,4 +1,5 @@
-import { access, readFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import { accessSync } from 'node:fs';
 import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
 import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
@@ -25,7 +26,7 @@ interface ProcessedDoc {
  *
  * @param value - The dependency semver version string to match
  * @param supportedVersions - An array of supported semver version strings
- * @param options - Optional options object
+ * @param options - Options object
  * @param options.sep - Optional path separator. Defaults to `sep` from `path`.
  * @returns A matched SemVer object containing a version string or `undefined` if no match is found.
  */
@@ -55,11 +56,17 @@ const matchPackageVersion = (value: string | undefined, supportedVersions: strin
 /**
  * Find the nearest package.json by walking up the directory tree.
  *
+ * @note Path lookup behavior has nuance when using relative paths. See unit tests for examples.
+ * - Relative made-up directories to the working directory will return the closest match.
+ * - Absolute starting paths with relative working directories will return the closest match.
+ *
  * @param startPath - Directory to start searching from
- * @returns The resolved path to the nearest package.json, or undefined if none is found.
+ * @param options - Options object
+ * @param options.resolvedPath - Return the resolved path instead of the file path. Defaults to `true`.
+ * @returns The resolved/relative path to the nearest package.json, or `undefined` if none is found.
  */
-const findNearestPackageJson = async (startPath: string) => {
-  if (!isPath(startPath) && !isUrl(startPath)) {
+const findNearestPackageJson = async (startPath: string, { resolvedPath = true } = {}) => {
+  if (typeof startPath !== 'string' || (!isPath(startPath, { isStrict: false }) && !isUrl(startPath))) {
     return undefined;
   }
 
@@ -70,9 +77,9 @@ const findNearestPackageJson = async (startPath: string) => {
     const pkgPath = join(currentDir, 'package.json');
 
     try {
-      await access(pkgPath);
+      accessSync(pkgPath);
 
-      return pkgPath;
+      return resolvedPath ? resolve(pkgPath) : pkgPath;
     } catch {
       currentDir = dirname(currentDir);
     }

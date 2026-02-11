@@ -182,7 +182,7 @@ const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.t
 /**
  * Check if a value is a valid URL, URL-like.
  *
- * @Note URL-like validation can be updated to support more URL schemes (e.g. `blob:`).
+ * @note URL-like validation can be updated to support more URL schemes (e.g. `blob:`).
  * Be aware this helper is used to gate-keep tools-as-plugins. Consider additions carefully
  * since they may fall outside our use cases.
  *
