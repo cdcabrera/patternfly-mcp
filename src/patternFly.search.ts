@@ -55,18 +55,19 @@ interface SearchPatternFlyResults {
  * @param [options.allowWildCardAll] - Allow a search query to match all components. Defaults to false.
  * @returns {SearchPatternFlyResults} - Search results object
  */
-const searchPatternFlyDocumentationPaths = (searchQuery: string, {
+const searchPatternFlyDocumentationPaths = async (searchQuery: string, {
   documentation = getPatternFlyMcpDocs.memo(),
   allowWildCardAll = false
 } = {}) => {
+  const updatedDocumentation = await documentation;
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = documentation.pathIndex.map(path => ({ matchType: 'all', distance: 0, item: path } as FuzzySearchResult));
+    searchResults = updatedDocumentation.pathIndex.map(path => ({ matchType: 'all', distance: 0, item: path } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, documentation.pathIndex, {
+    searchResults = fuzzySearch(searchQuery, updatedDocumentation.pathIndex, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -78,7 +79,7 @@ const searchPatternFlyDocumentationPaths = (searchQuery: string, {
       const baseName = basename(searchQuery);
 
       if (baseName) {
-        const baseSearch = fuzzySearch(baseName, documentation.pathIndex, {
+        const baseSearch = fuzzySearch(baseName, updatedDocumentation.pathIndex, {
           maxDistance: 3,
           maxResults: 10,
           isFuzzyMatch: true,
@@ -124,20 +125,22 @@ searchPatternFlyDocumentationPaths.memo = memo(searchPatternFlyDocumentationPath
  *   - `exactMatches`: All exact matches within fuzzy search results
  *   - `searchResults`: Fuzzy search results
  */
-const searchPatternFly = (searchQuery: string, {
+const searchPatternFly = async (searchQuery: string, {
   components = getPatternFlyReactComponentNames.memo(),
   documentation = getPatternFlyMcpDocs.memo(),
   resources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false
-} = {}): SearchPatternFlyResults => {
+} = {}): Promise<SearchPatternFlyResults> => {
+  const updatedDocumentation = await documentation;
+  const updatedResources = await resources;
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = resources.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = updatedResources.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, resources.nameIndex, {
+    searchResults = fuzzySearch(searchQuery, updatedResources.nameIndex, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -147,8 +150,8 @@ const searchPatternFly = (searchQuery: string, {
 
   const extendResults = (results: FuzzySearchResult[] = [], query?: string) => results.map(result => {
     const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
-    const guidanceUrls = documentation.byNameWithPathGuidance[result.item] || [];
-    const urls = documentation.byNameWithPathNoGuidance[result.item] || [];
+    const guidanceUrls = updatedDocumentation.byNameWithPathGuidance[result.item] || [];
+    const urls = updatedDocumentation.byNameWithPathNoGuidance[result.item] || [];
 
     return {
       ...result,

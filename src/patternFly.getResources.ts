@@ -3,6 +3,7 @@ import patternFlyDocsCatalog from './docs.json';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isPlainObject } from './server.helpers';
+import { findClosestPatternFlyVersion } from './patternFly.helpers';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -65,6 +66,24 @@ type PatternFlyMcpDocsByNameWithPath = {
   [name: string]: string[]
 };
 
+type GetPatternFlyMcpDocs = {
+  original: PatternFlyMcpDocs,
+  availableVersions: string[],
+  closestVersion: string,
+  markdownIndex: string[],
+  nameIndex: string[],
+  pathIndex: string[],
+  bySection: PatternFlyMcpDocsBySection,
+  byCategory: PatternFlyMcpDocsByCategory,
+  byGuidance: PatternFlyMcpDocsByCategory,
+  byPath: PatternFlyMcpDocsByPath,
+  byName: PatternFlyMcpDocs,
+  byNameWithPath: PatternFlyMcpDocsByNameWithPath,
+  byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath,
+  byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath,
+  byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath
+};
+
 /**
  * Set the category display label based on the entry's section and category.
  *
@@ -100,22 +119,8 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
  *
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
-const getPatternFlyMcpDocs = (): {
-  original: PatternFlyMcpDocs,
-  availableVersions: string[],
-  markdownIndex: string[],
-  nameIndex: string[],
-  pathIndex: string[],
-  bySection: PatternFlyMcpDocsBySection,
-  byCategory: PatternFlyMcpDocsByCategory,
-  byGuidance: PatternFlyMcpDocsByCategory,
-  byPath: PatternFlyMcpDocsByPath,
-  byName: PatternFlyMcpDocs,
-  byNameWithPath: PatternFlyMcpDocsByNameWithPath,
-  byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath,
-  byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath,
-  byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath
-} => {
+const getPatternFlyMcpDocs = async (): Promise<GetPatternFlyMcpDocs> => {
+  const closestVersion = await findClosestPatternFlyVersion();
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const bySection: PatternFlyMcpDocsBySection = {};
   const byCategory: PatternFlyMcpDocsByCategory = {};
@@ -200,6 +205,7 @@ const getPatternFlyMcpDocs = (): {
   return {
     original: originalDocs,
     availableVersions: Array.from(availableVersions).sort((a, b) => b.localeCompare(a)),
+    closestVersion,
     markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(nameIndex).sort((a, b) => a.localeCompare(b)),
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b)),
@@ -262,12 +268,16 @@ getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_O
  *
  * @returns A multifaceted resource breakdown.  Use the "memoized" property for performance.
  */
-const getPatternFlyMcpResources = () => ({
-  nameIndex: Array.from(new Set([
-    ...getPatternFlyReactComponentNames.memo().nameIndex,
-    ...getPatternFlyMcpDocs.memo().nameIndex
-  ])).sort((a, b) => a.localeCompare(b))
-});
+const getPatternFlyMcpResources = async () => {
+  const pfMcpDocs = await getPatternFlyMcpDocs.memo();
+
+  return {
+    nameIndex: Array.from(new Set([
+      ...getPatternFlyReactComponentNames.memo().nameIndex,
+      ...pfMcpDocs.nameIndex
+    ])).sort((a, b) => a.localeCompare(b))
+  };
+};
 
 /**
  * Memoized version of getPatternFlyMcpResources.

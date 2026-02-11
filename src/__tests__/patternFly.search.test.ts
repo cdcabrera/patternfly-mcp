@@ -1,15 +1,15 @@
 import { searchPatternFlyDocumentationPaths, searchPatternFly } from '../patternFly.search';
 
 describe('searchPatternFlyDocumentationPaths', () => {
-  it('should return an array of search paths', () => {
-    const { searchResults, ...rest } = searchPatternFlyDocumentationPaths('*', { allowWildCardAll: true });
+  it('should return an array of search paths', async () => {
+    const { searchResults, ...rest } = await searchPatternFlyDocumentationPaths('*', { allowWildCardAll: true });
 
     expect(searchResults.length).toBeGreaterThan(0);
     expect(Object.keys(rest)).toMatchSnapshot('keys');
   });
 
-  it('should find a suffix match', () => {
-    const { searchResults } = searchPatternFlyDocumentationPaths('made-up-path/alert.md');
+  it('should find a suffix match', async () => {
+    const { searchResults } = await searchPatternFlyDocumentationPaths('made-up-path/alert.md');
 
     expect(searchResults.filter(({ matchType }) => matchType === 'suffix')).toEqual([
       expect.objectContaining({
@@ -21,15 +21,15 @@ describe('searchPatternFlyDocumentationPaths', () => {
 });
 
 describe('searchPatternFly', () => {
-  it('should return an array of search results', () => {
-    const { searchResults, ...rest } = searchPatternFly('*', { allowWildCardAll: true });
+  it('should return an array of search results', async () => {
+    const { searchResults, ...rest } = await searchPatternFly('*', { allowWildCardAll: true });
 
     expect(searchResults.length).toBeGreaterThan(0);
     expect(Object.keys(rest)).toMatchSnapshot('keys');
   });
 
-  it('should find a suffix match', () => {
-    const { searchResults } = searchPatternFly('utton');
+  it('should find a suffix match', async () => {
+    const { searchResults } = await searchPatternFly('utton');
 
     expect(searchResults.filter(({ matchType }) => matchType === 'suffix')).toEqual([
       expect.objectContaining({

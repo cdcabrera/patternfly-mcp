@@ -98,14 +98,14 @@ describe('getPatternFlyReactComponentNames', () => {
 });
 
 describe('getPatternFlyMcpDocs', () => {
-  it('should return multiple organized facets', () => {
-    const result = getPatternFlyMcpDocs();
+  it('should return multiple organized facets', async () => {
+    const result = await getPatternFlyMcpDocs();
 
     expect(Object.keys(result)).toMatchSnapshot('properties');
   });
 
-  it('should have a memoized property', () => {
-    expect(getPatternFlyMcpDocs).toHaveProperty('memo');
+  it('should have a memoized property', async () => {
+    await expect(getPatternFlyMcpDocs).resolves.toHaveProperty('memo');
   });
 });
 
