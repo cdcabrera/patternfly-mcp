@@ -60,12 +60,17 @@ const matchPackageVersion = (value: string | undefined, supportedVersions: strin
  * - Relative made-up directories to the working directory will return the closest match.
  * - Absolute starting paths with relative working directories will return the closest match.
  *
+ * @note There is subtle behavior around using async `acccess` and looping. We ended up moving towards
+ * `accessSync` when combined with the loop because it kept returning false positives. You can alter
+ * it as-is back to async and witness the unit tests fail. If it is moved back to async, it
+ * should be thoroughly tested.
+ *
  * @param startPath - Directory to start searching from
  * @param options - Options object
- * @param options.resolvedPath - Return the resolved path instead of the file path. Defaults to `true`.
+ * @param options.resolvedPath - Set to `true` to return the absolute path, or `false` to return the relative path. Defaults to `true`.
  * @returns The resolved/relative path to the nearest package.json, or `undefined` if none is found.
  */
-const findNearestPackageJson = async (startPath: string, { resolvedPath = true } = {}) => {
+const findNearestPackageJson = (startPath: string, { resolvedPath = true } = {}) => {
   if (typeof startPath !== 'string' || (!isPath(startPath, { isStrict: false }) && !isUrl(startPath))) {
     return undefined;
   }

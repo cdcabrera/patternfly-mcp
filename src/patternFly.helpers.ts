@@ -30,7 +30,7 @@ const findClosestPatternFlyVersion = async (
 ): Promise<string> => {
   const availableVersions = options.patternflyOptions.availableResourceVersions;
   const { defaultVersion, versionWhitelist, versionStrategy } = options.patternflyOptions.default;
-  const pkgPath = await findNearestPackageJson(contextPathOverride || options.contextPath);
+  const pkgPath = findNearestPackageJson(contextPathOverride || options.contextPath);
   const updatedDefaultVersion = semver.coerce(defaultVersion)?.version || defaultVersion;
 
   if (!pkgPath) {

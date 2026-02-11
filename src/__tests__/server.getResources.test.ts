@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import {
   matchPackageVersion,
   findNearestPackageJson,
@@ -111,11 +112,11 @@ describe('findNearestPackageJson', () => {
     jest.clearAllMocks();
   });
 
-  it('should find the nearest package.json', async () => {
+  it('should find the nearest package.json', () => {
     // Use the PF MCP package.json
-    const path = await findNearestPackageJson(process.cwd());
+    const path = findNearestPackageJson(process.cwd());
 
-    expect(path).toBe(`${process.cwd()}/package.json`);
+    expect(path).toBe(join(process.cwd(), 'package.json'));
   });
 
   it.each([
@@ -139,16 +140,16 @@ describe('findNearestPackageJson', () => {
       description: 'Windows relative made up and one up directory',
       packagePath: '..\\madeUpLoremIpsum\\directory'
     }
-  ])('should attempt to find the nearest package.json, $description', async ({ packagePath }) => {
+  ])('should attempt to find the nearest package.json, $description', ({ packagePath }) => {
     // Use the PF MCP package.json
-    const path = await findNearestPackageJson(packagePath);
+    const path = findNearestPackageJson(packagePath);
 
     expect(path).toBeDefined();
     expect(path).not.toContain('madeUpLoremIpsum');
   });
 
-  it('should return undefined if no package.json is found', async () => {
-    const path = await findNearestPackageJson('/madeUpLoremIpsum/directory');
+  it('should return undefined if no package.json is found', () => {
+    const path = findNearestPackageJson('/madeUpLoremIpsum/directory');
 
     expect(path).toBeUndefined();
   });

@@ -118,9 +118,11 @@ When implementing tools that interact with the local filesystem, always use `res
 ```typescript
 import { resolveLocalPathFunction } from './server.getResources';
 // ...
-const safePath = resolveLocalPathFunction(requestedPath);
+let safePath;
 
-if (!safePath) {
+try {
+  safePath = resolveLocalPathFunction(requestedPath);
+} catch {
   throw new McpError(ErrorCode.InvalidParams, 'Access denied');
 }
 ```
