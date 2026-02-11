@@ -122,8 +122,8 @@ let safePath;
 
 try {
   safePath = resolveLocalPathFunction(requestedPath);
-} catch (err) {
-  throw new McpError(ErrorCode.InvalidParams, err.message);
+} catch {
+  throw new McpError(ErrorCode.InvalidParams, 'Access denied');
 }
 
 // use safePath for subsequent file operations
