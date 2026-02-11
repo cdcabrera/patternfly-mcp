@@ -54,7 +54,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (name) {
-      const { exactMatches, searchResults } = searchPatternFly.memo(name);
+      const { exactMatches, searchResults } = await searchPatternFly.memo(name);
 
       if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0 && match.guidanceUrls.length === 0)) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
@@ -106,7 +106,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       };
     }
 
-    const { byPath } = getPatternFlyMcpDocs.memo();
+    const { byPath } = await getPatternFlyMcpDocs.memo();
 
     for (const doc of docs) {
       const patternFlyEntry = doc?.path ? byPath[doc.path] : undefined;

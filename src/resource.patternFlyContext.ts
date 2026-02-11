@@ -1,4 +1,7 @@
 import { type McpResource } from './server';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import { getOptions } from './options.context';
+import { stringJoin } from './server.helpers';
 
 /**
  * Name of the resource.
@@ -24,11 +27,12 @@ const CONFIG = {
  *
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlyContextResource = (): McpResource => [
+const patternFlyContextResource = (options = getOptions()): McpResource => [
   NAME,
   URI_TEMPLATE,
   CONFIG,
   async () => {
+    const { closestVersion } = await getPatternFlyMcpDocs.memo();
     const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
 **What is PatternFly?**
@@ -43,12 +47,19 @@ PatternFly provides React components, design guidelines, and development tools f
 **PatternFly MCP Server:**
 This MCP server provides tools to access PatternFly documentation, component schemas, and design guidelines. Use the available tools to fetch documentation, search for component information, and retrieve component prop definitions.`;
 
+    const environmentSnapshot = stringJoin.newline(
+      `### Project Environment Snapshot`,
+      '',
+      `**Detected PatternFly Version:** ${closestVersion}`,
+      `**Project Context Path**: ${options.contextPath}`
+    );
+
     return {
       contents: [
         {
           uri: 'patternfly://context',
           mimeType: 'text/markdown',
-          text: context
+          text: stringJoin.basic(context, options.separator, environmentSnapshot)
         }
       ]
     };

@@ -32,7 +32,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const { isSearchWildCardAll, searchResults } = searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
+    const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
       return {

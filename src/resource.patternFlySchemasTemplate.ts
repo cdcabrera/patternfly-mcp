@@ -51,7 +51,7 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
       );
     }
 
-    const { exactMatches, searchResults } = searchPatternFly.memo(name);
+    const { exactMatches, searchResults } = await searchPatternFly.memo(name);
     let result: PatternFlyComponentSchema | undefined;
 
     if (exactMatches.length > 0) {
