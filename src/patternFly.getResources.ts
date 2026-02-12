@@ -63,26 +63,53 @@ type PatternFlyMcpDocsByPath = {
  * PatternFly JSON catalog by name with a path array.
  */
 type PatternFlyMcpDocsByNameWithPath = {
-  [name: string]: string[]
+  [name: string]: string[];
 };
 
-type GetPatternFlyMcpDocs = {
-  original: PatternFlyMcpDocs,
-  availableVersions: string[],
-  closestVersion: string,
-  markdownIndex: string[],
-  nameIndex: string[],
-  pathIndex: string[],
-  bySection: PatternFlyMcpDocsBySection,
-  byCategory: PatternFlyMcpDocsByCategory,
-  byGuidance: PatternFlyMcpDocsByCategory,
-  byPath: PatternFlyMcpDocsByPath,
-  byName: PatternFlyMcpDocs,
-  byNameWithPath: PatternFlyMcpDocsByNameWithPath,
-  byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath,
-  byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath,
-  byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath
-};
+/**
+ * Pre-sorted and formatted PatternFly JSON catalog for MCP documentation.
+ *
+ * @interface PatternFlyMcpAvailableDocs
+ *
+ * @property {PatternFlyMcpDocs} original - Original PatternFly JSON catalog, (e.g. `byName` with entries)
+ * @property availableVersions - All available versions of PatternFly
+ * @property closestVersion - Closest version of PatternFly to the current version, (e.g. "v4", "v5", "v6")
+ * @property closestSemVer - Closest version of PatternFly to the current version, (e.g. "4.0.0", "5.0.0", "6.0.0")
+ * @property markdownIndex - All available Markdown formatted documentation paths as a list
+ * @property nameIndex - All available documentation names as a list
+ * @property pathIndex - All available documentation paths as a list
+ * @property {PatternFlyMcpDocsBySection} bySection - Entire PatternFly JSON catalog by section with entries
+ * @property {PatternFlyMcpDocsByCategory} byCategory - Entire PatternFly JSON catalog by category with entries
+ * @property {PatternFlyMcpDocsByCategory} byGuidance - PatternFly JSON catalog by category, but only includes AI guidance entries
+ * @property {PatternFlyMcpDocsByPath} byPath - Entire PatternFly JSON catalog by path with entries AND the name of the entry
+ * @property {PatternFlyMcpDocs} byName - An alias to the `original` PatternFly JSON catalog by name with entries
+ * @property {PatternFlyMcpDocs} byNameWithGuidance - Entire PatternFly JSON catalog by name with entries, but only includes AI guidance entries
+ * @property {PatternFlyMcpDocs} byNameWithNoGuidance - Entire PatternFly JSON catalog by name with entries, but only includes non-AI guidance entries
+ * @property {PatternFlyMcpDocsByNameWithPath} byNameWithPath - Entire PatternFly JSON catalog by name with paths only
+ * @property {PatternFlyMcpDocsByNameWithPath} byNameWithPathGuidance - Entire PatternFly JSON catalog by name with paths only, but only includes AI guidance paths
+ * @property {PatternFlyMcpDocsByNameWithPath} byNameWithPathMarkdown - Entire PatternFly JSON catalog by name with paths only, but only includes Markdown formatted paths
+ * @property {PatternFlyMcpDocsByNameWithPath} byNameWithPathNoGuidance - Entire PatternFly JSON catalog by name with paths only, but only includes non-AI guidance paths
+ */
+interface PatternFlyMcpAvailableDocs {
+  original: PatternFlyMcpDocs;
+  availableVersions: string[];
+  closestVersion: string;
+  closestSemVer: string;
+  markdownIndex: string[];
+  nameIndex: string[];
+  pathIndex: string[];
+  bySection: PatternFlyMcpDocsBySection;
+  byCategory: PatternFlyMcpDocsByCategory;
+  byGuidance: PatternFlyMcpDocsByCategory;
+  byPath: PatternFlyMcpDocsByPath;
+  byName: PatternFlyMcpDocs;
+  byNameWithGuidance: PatternFlyMcpDocs;
+  byNameWithNoGuidance: PatternFlyMcpDocs;
+  byNameWithPath: PatternFlyMcpDocsByNameWithPath;
+  byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath;
+  byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath;
+  byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath;
+}
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -119,7 +146,7 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
  *
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
-const getPatternFlyMcpDocs = async (): Promise<GetPatternFlyMcpDocs> => {
+const getPatternFlyMcpDocs = async (): Promise<PatternFlyMcpAvailableDocs> => {
   const closestVersion = await findClosestPatternFlyVersion();
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const bySection: PatternFlyMcpDocsBySection = {};
@@ -131,10 +158,15 @@ const getPatternFlyMcpDocs = async (): Promise<GetPatternFlyMcpDocs> => {
   const byNameWithPathGuidance: PatternFlyMcpDocsByNameWithPath = {};
   const byNameWithPathMarkdown: PatternFlyMcpDocsByNameWithPath = {};
   const byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath = {};
+  const byNameWithGuidance: PatternFlyMcpDocs = {};
+  const byNameWithNoGuidance: PatternFlyMcpDocs = {};
   const availableVersions = new Set<string>();
   const markdownIndex = new Set<string>();
   const nameIndex = new Set<string>();
   const pathIndex = new Set<string>();
+
+  const updatedClosestVersion = `v${closestVersion.split('.')[0]}`;
+  const closestSemVer = closestVersion;
 
   Object.entries(originalDocs).forEach(([name, entries]) => {
     nameIndex.add(name);
@@ -177,9 +209,19 @@ const getPatternFlyMcpDocs = async (): Promise<GetPatternFlyMcpDocs> => {
           if (entry.section === 'guidelines') {
             byNameWithPathGuidance[name] ??= [];
             byNameWithPathGuidance[name].push(entry.path);
+
+            byNameWithGuidance[name] ??= [];
+            byNameWithGuidance[name].push({
+              ...entry
+            });
           } else {
             byNameWithPathNoGuidance[name] ??= [];
             byNameWithPathNoGuidance[name].push(entry.path);
+
+            byNameWithNoGuidance[name] ??= [];
+            byNameWithNoGuidance[name].push({
+              ...entry
+            });
           }
         }
       }
@@ -205,7 +247,8 @@ const getPatternFlyMcpDocs = async (): Promise<GetPatternFlyMcpDocs> => {
   return {
     original: originalDocs,
     availableVersions: Array.from(availableVersions).sort((a, b) => b.localeCompare(a)),
-    closestVersion,
+    closestVersion: updatedClosestVersion,
+    closestSemVer,
     markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(nameIndex).sort((a, b) => a.localeCompare(b)),
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b)),
@@ -214,6 +257,8 @@ const getPatternFlyMcpDocs = async (): Promise<GetPatternFlyMcpDocs> => {
     byGuidance,
     byPath,
     byName,
+    byNameWithGuidance,
+    byNameWithNoGuidance,
     byNameWithPath,
     byNameWithPathGuidance,
     byNameWithPathMarkdown,
@@ -291,6 +336,7 @@ export {
   getPatternFlyReactComponentNames,
   setCategoryDisplayLabel,
   type PatternFlyComponentSchema,
+  type PatternFlyMcpAvailableDocs,
   type PatternFlyMcpDocEntry,
   type PatternFlyMcpDocs,
   type PatternFlyMcpDocsBySection,
