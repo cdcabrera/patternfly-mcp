@@ -4,6 +4,7 @@ import { type McpTool } from './server';
 import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
  * searchPatternFlyDocs tool function
@@ -32,9 +33,10 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
+    const { isSearchWildCardAll, extendedSearchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
+    const { closestVersion } = await getPatternFlyMcpDocs.memo();
 
-    if (!isSearchWildCardAll && searchResults.length === 0) {
+    if (!isSearchWildCardAll && extendedSearchResults.length === 0) {
       return {
         content: [{
           type: 'text',
@@ -50,16 +52,24 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       };
     }
 
-    const results = searchResults.map(result => {
-      const urlList = result.urls.length
+    const results = extendedSearchResults.map(result => {
+      const urlList = result.docEntries.length
         ? stringJoin.newline(
-          ...result.urls.map((url: string, index: number) => `  ${index + 1}. ${url}`)
+          ...result.docEntries.map((entry, index: number) => {
+            const isDetectedVersion = entry.version === closestVersion;
+
+            return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
+          })
         )
         : '  - No documentation URLs found';
 
-      const guidanceUrlList = result.guidanceUrls.length
+      const guidanceUrlList = result.guidanceEntries.length
         ? stringJoin.newline(
-          ...result.guidanceUrls.map((url: string, index: number) => `  ${index + 1}. ${url}`)
+          ...result.guidanceEntries.map((entry, index: number) => {
+            const isDetectedVersion = entry.version === closestVersion;
+
+            return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
+          })
         )
         : '  - No guidance URLs found';
 
@@ -82,7 +92,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       content: [{
         type: 'text',
         text: stringJoin.newline(
-          `# Search results for "${isSearchWildCardAll ? 'all resources' : searchQuery}", ${searchResults.length} matches found:`,
+          `# Search results for "${isSearchWildCardAll ? 'all resources' : searchQuery}", ${extendedSearchResults.length} matches found:`,
+          `**Detected PatternFly Version**: ${closestVersion}`,
           ...results,
           '',
           '---',
@@ -102,7 +113,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
       **Usage**:
         1. Input a "searchQuery" to find PatternFly documentation and guideline URLs, and component names.
-        2. Use the returned resource names OR URLs with the "usePatternFlyDocs" tool to get markdown documentation, guidelines, and component JSON schemas.
+        2. Use the returned resource names OR URLs OR version with the "usePatternFlyDocs" tool to get markdown documentation, guidelines, and component JSON schemas.
 
       **Returns**:
         - Component and resource names that can be used with "usePatternFlyDocs"
