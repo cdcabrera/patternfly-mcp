@@ -25,6 +25,7 @@ const CONFIG = {
 /**
  * Resource creator for context.
  *
+ * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
 const patternFlyContextResource = (options = getOptions()): McpResource => [
@@ -48,10 +49,11 @@ PatternFly provides React components, design guidelines, and development tools f
 This MCP server provides tools to access PatternFly documentation, component schemas, and design guidelines. Use the available tools to fetch documentation, search for component information, and retrieve component prop definitions.`;
 
     const environmentSnapshot = stringJoin.newline(
-      `### Project Environment Snapshot`,
+      `### Environment Snapshot`,
       '',
       `**Detected PatternFly Version:** ${closestVersion}`,
-      `**Project Context Path**: ${options.contextPath}`
+      // `**Detected PatternFly SemVer:** ${closestSemVer}`,
+      `**Context Path**: ${options.contextPath}`
     );
 
     return {
