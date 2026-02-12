@@ -5,27 +5,35 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpDocs,
   getPatternFlyMcpResources,
-  getPatternFlyReactComponentNames
+  getPatternFlyReactComponentNames,
+  type PatternFlyMcpDocEntry
 } from './patternFly.getResources';
 
 /**
- * Search result object returned by searchPatternFly.
- * Includes additional metadata and URLs.
+ * Search result object returned by searchPatternFly, includes additional metadata and URLs.
  *
  * @interface SearchPatternFlyResult
  * @extends FuzzySearchResult
- * @property {string} doc - PatternFly documentation URL
- * @property {boolean} isSchemasAvailable - Whether JSON schemas are available for the component
- * @property {string | undefined} schema - JSON schema URL, if available
- * @property {string[]} urls - List of documentation URLs
- * @property {string[]} guidanceUrls - List of agent guidance URLs
+ *
+ * @property doc - PatternFly documentation URL
+ * @property {PatternFlyMcpDocEntry[]} docEntries - List of the associated documentation entries
+ *     containing metadata and paths.
+ * @property docUrls - List of associated documentation URLs
+ * @property {PatternFlyMcpDocEntry[]} guidanceEntries - List of the associated agent guidance entries
+ *     containing metadata and paths.
+ * @property guidanceUrls - List of associated agent guidance URLs
+ * @property isSchemasAvailable - Whether JSON schemas are available for the component
+ * @property schema - JSON schema URL, if available
+ * @property query - Associated search query string, `undefined` if no query was provided
  */
-interface SearchPatternFlyResult extends FuzzySearchResult {
+interface SearchPatternFlyResultExtended extends FuzzySearchResult {
   doc: string;
+  docEntries: PatternFlyMcpDocEntry[];
+  docUrls: string[];
+  guidanceEntries: PatternFlyMcpDocEntry[];
+  guidanceUrls: string[];
   isSchemasAvailable: boolean;
   schema: string | undefined;
-  urls: string[];
-  guidanceUrls: string[];
   query: string | undefined;
 }
 
@@ -34,31 +42,51 @@ interface SearchPatternFlyResult extends FuzzySearchResult {
  * Includes additional metadata and URLs.
  *
  * @interface SearchPatternFlyResults
- * @property {boolean} isSearchWildCardAll - Whether the search query matched all components
+ *
+ * @property isSearchWildCardAll - Whether the search query matched all components
  * @property {SearchPatternFlyResult | undefined} firstExactMatch - First exact match within fuzzy search results
  * @property {SearchPatternFlyResult[]} exactMatches - All exact matches within fuzzy search results
  * @property {SearchPatternFlyResult[]} searchResults - Fuzzy search results
  */
 interface SearchPatternFlyResults {
   isSearchWildCardAll: boolean,
-  firstExactMatch: SearchPatternFlyResult | undefined,
-  exactMatches: SearchPatternFlyResult[],
-  searchResults: SearchPatternFlyResult[]
+  firstExactMatch: FuzzySearchResult | undefined,
+  exactMatches: FuzzySearchResult[],
+  searchResults: FuzzySearchResult[]
+}
+
+/**
+ * Search results object returned by searchPatternFlyDocumentationPaths.
+ * Includes additional metadata and URLs.
+ *
+ * @interface SearchPatternFlyResultsExtended
+ * @extends SearchPatternFlyResults
+ *
+ * @property {SearchPatternFlyResult | undefined} extendedFirstExactMatch - First exact match within fuzzy
+ *     search results
+ * @property {SearchPatternFlyResult[]} extendedExactMatches - All exact matches within fuzzy search results
+ * @property {SearchPatternFlyResult[]} extendedSearchResults - Fuzzy search results
+ */
+interface SearchPatternFlyResultsExtended extends SearchPatternFlyResults {
+  extendedFirstExactMatch: SearchPatternFlyResultExtended | undefined,
+  extendedExactMatches: SearchPatternFlyResultExtended[],
+  extendedSearchResults: SearchPatternFlyResultExtended[]
 }
 
 /**
  * Search PatternFly documentation paths with fuzzy search.
  *
- * @param {string} searchQuery - The search query to use for fuzzy search
+ * @param searchQuery - The search query to use for fuzzy search
  * @param [options] - Optional search options
- * @param [options.documentation] - Object of multifaceted documentation entries to search, defaults to `getPatternFlyMcpDocs`
+ * @param [options.documentation] - Object of multifaceted documentation entries to search,
+ *     defaults to `getPatternFlyMcpDocs`
  * @param [options.allowWildCardAll] - Allow a search query to match all components. Defaults to false.
  * @returns {SearchPatternFlyResults} - Search results object
  */
 const searchPatternFlyDocumentationPaths = async (searchQuery: string, {
   documentation = getPatternFlyMcpDocs.memo(),
   allowWildCardAll = false
-} = {}) => {
+} = {}): Promise<SearchPatternFlyResults> => {
   const updatedDocumentation = await documentation;
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
@@ -117,20 +145,17 @@ searchPatternFlyDocumentationPaths.memo = memo(searchPatternFlyDocumentationPath
  * @param settings - Optional settings object
  * @param settings.components - Object of multifaceted component names to search.
  * @param settings.documentation - Object of multifaceted documentation entries to search.
- * @param settings.resources - Object of multifaceted resources entries to search, e.g. all component names, documentation and guidance URLs, etc.
+ * @param settings.resources - Object of multifaceted resources entries to search, e.g. all component names,
+ *     documentation and guidance URLs, etc.
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
- *   - `isSearchWildCardAll`: Whether the search query matched all components
- *   - `firstExactMatch`: First exact match within fuzzy search results
- *   - `exactMatches`: All exact matches within fuzzy search results
- *   - `searchResults`: Fuzzy search results
  */
 const searchPatternFly = async (searchQuery: string, {
   components = getPatternFlyReactComponentNames.memo(),
   documentation = getPatternFlyMcpDocs.memo(),
   resources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false
-} = {}): Promise<SearchPatternFlyResults> => {
+} = {}): Promise<SearchPatternFlyResultsExtended> => {
   const updatedDocumentation = await documentation;
   const updatedResources = await resources;
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
@@ -149,30 +174,37 @@ const searchPatternFly = async (searchQuery: string, {
   }
 
   const extendResults = (results: FuzzySearchResult[] = [], query?: string) => results.map(result => {
-    const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
+    const docEntries = updatedDocumentation.byNameWithNoGuidance[result.item] || [];
+    const docUrls = updatedDocumentation.byNameWithPathNoGuidance[result.item] || [];
     const guidanceUrls = updatedDocumentation.byNameWithPathGuidance[result.item] || [];
-    const urls = updatedDocumentation.byNameWithPathNoGuidance[result.item] || [];
+    const guidanceEntries = updatedDocumentation.byNameWithGuidance[result.item] || [];
+    const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
 
     return {
       ...result,
       doc: `patternfly://docs/${result.item}`,
+      docEntries,
+      docUrls,
+      guidanceEntries,
+      guidanceUrls,
       isSchemasAvailable,
       schema: isSchemasAvailable ? `patternfly://schemas/${result.item}` : undefined,
-      urls,
-      guidanceUrls,
       query
     };
   });
 
   const exactMatches = searchResults.filter(result => result.matchType === 'exact');
-  const extendedExactMatches: SearchPatternFlyResult[] = extendResults(exactMatches, searchQuery);
-  const extendedSearchResults: SearchPatternFlyResult[] = extendResults(searchResults, searchQuery);
+  const extendedExactMatches: SearchPatternFlyResultExtended[] = extendResults(exactMatches, searchQuery);
+  const extendedSearchResults: SearchPatternFlyResultExtended[] = extendResults(searchResults, searchQuery);
 
   return {
     isSearchWildCardAll,
-    firstExactMatch: extendedExactMatches[0],
-    exactMatches: extendedExactMatches,
-    searchResults: extendedSearchResults
+    firstExactMatch: exactMatches[0],
+    exactMatches: exactMatches,
+    searchResults: searchResults,
+    extendedFirstExactMatch: extendedExactMatches[0],
+    extendedExactMatches: extendedExactMatches,
+    extendedSearchResults: extendedSearchResults
   };
 };
 
@@ -181,4 +213,10 @@ const searchPatternFly = async (searchQuery: string, {
  */
 searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
 
-export { searchPatternFly, searchPatternFlyDocumentationPaths, type SearchPatternFlyResults, type SearchPatternFlyResult };
+export {
+  searchPatternFly,
+  searchPatternFlyDocumentationPaths,
+  type SearchPatternFlyResults,
+  type SearchPatternFlyResultsExtended,
+  type SearchPatternFlyResultExtended
+};
