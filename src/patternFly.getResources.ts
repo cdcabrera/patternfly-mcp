@@ -160,6 +160,7 @@ const getPatternFlyMcpDocs = async (): Promise<PatternFlyMcpAvailableDocs> => {
   const byNameWithPathNoGuidance: PatternFlyMcpDocsByNameWithPath = {};
   const byNameWithGuidance: PatternFlyMcpDocs = {};
   const byNameWithNoGuidance: PatternFlyMcpDocs = {};
+  // const byVersionWithPath: PatternFlyMcpDocsByVersion = {};
   const availableVersions = new Set<string>();
   const markdownIndex = new Set<string>();
   const nameIndex = new Set<string>();
@@ -236,12 +237,20 @@ const getPatternFlyMcpDocs = async (): Promise<PatternFlyMcpAvailableDocs> => {
     paths.sort((a, b) => b.localeCompare(a));
   });
 
+  Object.entries(byNameWithGuidance).forEach(([_name, entries]) => {
+    entries.sort((a, b) => b.displayName.localeCompare(a.displayName));
+  });
+
   Object.entries(byNameWithPathMarkdown).forEach(([_name, markdownPaths]) => {
     markdownPaths.sort((a, b) => b.localeCompare(a));
   });
 
   Object.entries(byNameWithPathNoGuidance).forEach(([_name, paths]) => {
     paths.sort((a, b) => b.localeCompare(a));
+  });
+
+  Object.entries(byNameWithNoGuidance).forEach(([_name, entries]) => {
+    entries.sort((a, b) => b.displayName.localeCompare(a.displayName));
   });
 
   return {
