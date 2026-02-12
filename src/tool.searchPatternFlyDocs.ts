@@ -45,6 +45,11 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
             '',
             '---',
             '',
+            '**Environment snapshot**:',
+            `  - Detected PatternFly Version: ${closestVersion}`,
+            '',
+            '---',
+            '',
             '**Important**:',
             '  - Use a search all ("*") to find all available resources.'
           )
@@ -93,8 +98,12 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         type: 'text',
         text: stringJoin.newline(
           `# Search results for "${isSearchWildCardAll ? 'all resources' : searchQuery}", ${extendedSearchResults.length} matches found:`,
-          `**Detected PatternFly Version**: ${closestVersion}`,
           ...results,
+          '',
+          '---',
+          '',
+          '**Environment snapshot**:',
+          `  - Detected PatternFly Version: ${closestVersion}`,
           '',
           '---',
           '',
