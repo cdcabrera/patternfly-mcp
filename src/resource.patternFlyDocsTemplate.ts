@@ -94,46 +94,6 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
   filterEnumeratedPatternFlyVersion(value as string | undefined);
 
 /**
-  const { availableVersions } = await getPatternFlyMcpDocs.memo();
-  const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
-
-  return [
-    ...availableVersions,
-    'current',
-    'detected',
-    'latest'
-  ].filter(version => version.toLowerCase().startsWith(updatedValue));
-*/
-
-/*
-const uriNameCompleteOLD = async (value: unknown, context?: { arguments?: Record<string, string> }): Promise<string[]> => {
-  const { closestVersion, latestVersion, nameIndex, byVersion } = await getPatternFlyMcpDocs.memo();
-  const version = context?.arguments?.version;
-  const updatedVersion = typeof version === 'string' ? version.toLowerCase().trim() : undefined;
-  const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
-
-  let refineVersion = updatedVersion;
-
-  switch (updatedVersion) {
-    case 'current':
-    case 'latest':
-      refineVersion = latestVersion;
-      break;
-    case 'detected':
-      refineVersion = closestVersion;
-      break;
-  }
-
-  if (refineVersion && (refineVersion in byVersion)) {
-    return byVersion[refineVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
-      .map(entry => entry.name) as string[];
-  }
-
-  return nameIndex.filter(name => name.toLowerCase().startsWith(updatedValue));
-};
-*/
-
-/**
  * Name completion callback for the URI template.
  *
  * @note If version is not available, the latest version is used to refine the search results
@@ -151,15 +111,6 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 
   return byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
     .map(entry => entry.name) as string[];
-
-  /*
-  if (updatedVersion) {
-    return byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
-      .map(entry => entry.name) as string[];
-  }
-
-  return nameIndex.filter(name => name.toLowerCase().startsWith(updatedValue));
-  */
 };
 
 /**

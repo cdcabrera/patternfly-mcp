@@ -232,6 +232,8 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
         resource.versions[version].entriesNoGuidance.push(entry);
       }
     });
+
+    resources.set(name, resource);
   });
 
   Object.entries(byVersion).forEach(([_version, entries]) => {
