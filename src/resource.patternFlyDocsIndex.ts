@@ -31,13 +31,13 @@ const patternFlyDocsIndexResource = (): McpResource => [
   URI_TEMPLATE,
   CONFIG,
   async () => {
-    const { markdownIndex } = await getPatternFlyMcpDocs.memo();
+    const { resourceMarkdownIndex } = await getPatternFlyMcpDocs.memo();
 
     const allDocs = stringJoin.newline(
       '# PatternFly Documentation Index',
       '',
       '',
-      ...markdownIndex
+      ...resourceMarkdownIndex
     );
 
     return {

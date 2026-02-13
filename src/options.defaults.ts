@@ -161,7 +161,8 @@ interface ModeOptions {
  *
  * @property availableResourceVersions List of intended available PatternFly resource versions to the MCP server.
  * @property default Default specific options.
- * @property default.defaultVersion Default PatternFly version.
+ * @property default.latestSemVer Default PatternFly `SemVer` major version (e.g., '6.0.0').
+ * @property default.latestVersion Default PatternFly `tag` major version, used for display and file paths (e.g., 'v6').
  * @property default.versionWhitelist List of mostly reliable dependencies to scan for when detecting the PatternFly version.
  * @property default.versionStrategy Strategy to use when multiple PatternFly versions are detected.
  *    - 'highest': Use the highest major version found.
@@ -170,7 +171,8 @@ interface ModeOptions {
 interface PatternFlyOptions {
   availableResourceVersions: string[];
   default: {
-    defaultVersion: string;
+    latestSemVer: string;
+    latestVersion: string;
     versionWhitelist: string[];
     versionStrategy: 'highest' | 'lowest';
   }
@@ -350,7 +352,8 @@ const LOG_BASENAME = 'pf-mcp:log';
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   availableResourceVersions: ['6.0.0'],
   default: {
-    defaultVersion: '6.0.0',
+    latestSemVer: '6.0.0',
+    latestVersion: 'v6',
     versionWhitelist: [
       '@patternfly/react-core',
       '@patternfly/patternfly'

@@ -27,13 +27,19 @@ import {
  * @property query - Associated search query string, `undefined` if no query was provided
  */
 interface SearchPatternFlyResultExtended extends FuzzySearchResult {
-  doc: string;
-  docEntries: PatternFlyMcpDocEntry[];
-  docUrls: string[];
-  guidanceEntries: PatternFlyMcpDocEntry[];
-  guidanceUrls: string[];
+  // doc: string;
+  // docEntries: PatternFlyMcpDocEntry[];
+  // docUrls: string[];
+  // guidanceEntries: PatternFlyMcpDocEntry[];
+  // guidanceUrls: string[];
+  urls: string[];
+  urlsNoGuidance: string[];
+  urlsGuidance: string[];
+  entriesGuidance: PatternFlyMcpDocEntry[];
+  entriesNoGuidance: PatternFlyMcpDocEntry[];
   isSchemasAvailable: boolean;
-  schema: string | undefined;
+  // schema: string | undefined;
+  versions: Record<string, { uris: string[], urls: string[], urlsGuidance: string[], urlsNoGuidance: string[], entriesGuidance: unknown[], entriesNoGuidance: unknown[] }>;
   query: string | undefined;
 }
 
@@ -174,21 +180,94 @@ const searchPatternFly = async (searchQuery: string, {
   }
 
   const extendResults = (results: FuzzySearchResult[] = [], query?: string) => results.map(result => {
-    const docEntries = updatedDocumentation.byNameWithNoGuidance[result.item] || [];
-    const docUrls = updatedDocumentation.byNameWithPathNoGuidance[result.item] || [];
-    const guidanceUrls = updatedDocumentation.byNameWithPathGuidance[result.item] || [];
-    const guidanceEntries = updatedDocumentation.byNameWithGuidance[result.item] || [];
+    const urls = updatedDocumentation.byNameWithPath[result.item] || [];
+    const urlsNoGuidance = updatedDocumentation.byNameWithPathNoGuidance[result.item] || [];
+    const urlsGuidance = updatedDocumentation.byNameWithPathGuidance[result.item] || [];
+
+    const entriesNoGuidance = updatedDocumentation.byNameWithNoGuidance[result.item] || [];
+    const entriesGuidance = updatedDocumentation.byNameWithGuidance[result.item] || [];
     const isSchemasAvailable = components.componentNamesWithSchema.includes(result.item);
+
+    const versions: Record<string, {
+      uris: string[],
+      urls: string[],
+      urlsGuidance: string[],
+      urlsNoGuidance: string[],
+      entriesGuidance: unknown[],
+      entriesNoGuidance: unknown[]
+    }> = {};
+
+    Object.entries(updatedDocumentation.byVersionByNameWithPath).forEach(([version, names]) => {
+      if (names[result.item]) {
+        // @ts-expect-error ignore, nullish assignment
+        versions[version] ??= {};
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].uris ??= [];
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].urls ??= [];
+
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].uris.push(`patternfly://docs/${version}/${result.item}`);
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].urls.push(...names[result.item] as string[]);
+      }
+    });
+
+    Object.entries(updatedDocumentation.byVersionByNameWithPathGuidance).forEach(([version, names]) => {
+      if (names[result.item]) {
+        // @ts-expect-error ignore, nullish assignment
+        versions[version] ??= {};
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].urlsGuidance ??= [];
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].urlsGuidance.push(...names[result.item] as string[]);
+      }
+    });
+
+    Object.entries(updatedDocumentation.byVersionByNameWithPathNoGuidance).forEach(([version, names]) => {
+      if (names[result.item]) {
+        // @ts-expect-error ignore, nullish assignment
+        versions[version] ??= {};
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].urlsNoGuidance ??= [];
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].urlsNoGuidance.push(...names[result.item] as string[]);
+      }
+    });
+
+    Object.entries(updatedDocumentation.byVersionByNameGuidance).forEach(([version, names]) => {
+      if (names[result.item]) {
+        // @ts-expect-error ignore, nullish assignment
+        versions[version] ??= {};
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].entriesGuidance ??= [];
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].entriesGuidance.push(...names[result.item] as string[]);
+      }
+    });
+
+    Object.entries(updatedDocumentation.byVersionByNameNoGuidance).forEach(([version, names]) => {
+      if (names[result.item]) {
+        // @ts-expect-error ignore, nullish assignment
+        versions[version] ??= {};
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].entriesNoGuidance ??= [];
+        // @ts-expect-error ignore, nullish assignment
+        versions[version].entriesNoGuidance.push(...names[result.item] as string[]);
+      }
+    });
 
     return {
       ...result,
-      doc: `patternfly://docs/${result.item}`,
-      docEntries,
-      docUrls,
-      guidanceEntries,
-      guidanceUrls,
+      urls,
+      urlsNoGuidance,
+      urlsGuidance,
+
+      entriesNoGuidance,
+      entriesGuidance,
       isSchemasAvailable,
-      schema: isSchemasAvailable ? `patternfly://schemas/${result.item}` : undefined,
+      // schema: isSchemasAvailable ? `patternfly://schemas/${result.item}` : undefined,
+      versions,
       query
     };
   });

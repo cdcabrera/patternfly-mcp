@@ -6,6 +6,7 @@ import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpDocs, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { log } from './logger';
 
 /**
@@ -16,16 +17,17 @@ import { log } from './logger';
  */
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
-    const { urlList, name } = args;
+    const { urlList, name, version } = args;
     const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
     const isName = typeof name === 'string' && name.trim().length > 0;
+    const isVersion = typeof version === 'string' && version.trim().length > 0;
     const hasUri = (isName && new RegExp('patternfly://', 'i').test(name)) || (isUrlList && urlList.some(url => new RegExp('patternfly://', 'i').test(url)));
 
     if (hasUri) {
       throw new McpError(
         ErrorCode.InvalidParams,
         stringJoin.basic(
-          'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used directly.',
+          'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used with MCP resources directly.',
           'Use a component "name" or provide a "urlList" of raw documentation URLs.'
         )
       );
@@ -45,6 +47,13 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
+    if (isVersion && version.length > options.maxSearchLength) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `String "version" exceeds maximum length of ${options.maxSearchLength} characters.`
+      );
+    }
+
     const updatedUrlList = isUrlList ? urlList.slice(0, options.recommendedMaxDocsToLoad) : [];
 
     if (isUrlList && urlList.length > options.recommendedMaxDocsToLoad) {
@@ -53,22 +62,35 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    if (name) {
-      const { exactMatches, searchResults } = await searchPatternFly.memo(name);
+    const { latestVersion, byPath } = await getPatternFlyMcpDocs.memo();
+    const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
+    const isLatestVersion = latestVersion === updatedVersion;
 
-      if (exactMatches.length === 0 || exactMatches.every(match => match.urls.length === 0 && match.guidanceUrls.length === 0)) {
+    const filteredUrlList = updatedUrlList.filter(url => byPath[url]?.version === updatedVersion);
+
+    updatedUrlList.length = 0;
+    updatedUrlList.push(...filteredUrlList);
+
+    const updatedName = name?.trim();
+
+    if (updatedName) {
+      const { searchResults, extendedExactMatches } = await searchPatternFly.memo(updatedName);
+
+      if (extendedExactMatches.length === 0 ||
+        extendedExactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
+      ) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
         const suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-          : 'No similar components found.';
+          : 'No similar resources found.';
 
         throw new McpError(
           ErrorCode.InvalidParams,
-          `Component "${name.trim()}" not found. ${suggestionMessage}`
+          `Resource "${updatedName}" not found. ${suggestionMessage}`
         );
       }
 
-      updatedUrlList.push(...exactMatches.flatMap(match => match.urls));
+      updatedUrlList.push(...extendedExactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
     }
 
     const docs: ProcessedDoc[] = [];
@@ -88,25 +110,31 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (docs.length === 0) {
+      const nameFilter = `**Name**: ${name || '*'}`;
+      const versionFilter = `**PatternFly Version**: ${updatedVersion || '*'}`;
       const urlListBlock = updatedUrlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
+      const urlListFilter = stringJoin.newline(
+        `**URL List**:`,
+        urlListBlock || '  - None'
+      );
 
       return {
         content: [{
           type: 'text',
           text: stringJoin.newline(
-            `No PatternFly documentation found for:`,
-            urlListBlock,
+            `No PatternFly resources found for:`,
+            nameFilter,
+            versionFilter,
+            urlListFilter,
             '',
             '---',
             '',
             '**Important**:',
-            '  - To browse all available components use "searchPatternFlyDocs" with a search all ("*").'
+            '  - To browse all available resources use "searchPatternFlyDocs" with a search all ("*").'
           )
         }]
       };
     }
-
-    const { byPath } = await getPatternFlyMcpDocs.memo();
 
     for (const doc of docs) {
       const patternFlyEntry = doc?.path ? byPath[doc.path] : undefined;
@@ -122,7 +150,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         doc.content
       ));
 
-      if (componentName && !schemasSeen.has(componentName)) {
+      if (isLatestVersion && componentName && !schemasSeen.has(componentName)) {
         schemasSeen.add(componentName);
         const componentSchema = await getPatternFlyComponentSchema.memo(componentName);
 
@@ -151,10 +179,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'usePatternFlyDocs',
     {
-      description: `Get markdown documentation and component JSON schemas for PatternFly components.
+      description: `Get markdown documentation and component JSON schemas for PatternFly resources and components.
 
       **Usage**:
-        1. Input a component name (e.g., "Button") OR a list of up to ${options.recommendedMaxDocsToLoad} documentation URLs at a time (typically from searchPatternFlyDocs results).
+        1. Input a resource or component name (e.g., "Button") OR a list of up to ${options.recommendedMaxDocsToLoad} documentation URLs at a time (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
@@ -162,7 +190,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       `,
       inputSchema: {
         urlList: z.array(z.string()).max(options.recommendedMaxDocsToLoad).optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad} at a time`),
-        name: z.string().max(options.maxSearchLength).optional().describe('The name of a PatternFly component to fetch documentation for (e.g., "Button", "Table")')
+        name: z.string().max(options.maxSearchLength).optional().describe('The name of a PatternFly resource or component to fetch documentation for (e.g., "Button", "Table")'),
+        version: z.enum(['current', 'detected', 'latest', 'v5', 'v6']).optional().describe('Filter results by a specific PatternFly version (e.g. "current", "detected", "latest", "v5", "v6")')
       }
     },
     callback

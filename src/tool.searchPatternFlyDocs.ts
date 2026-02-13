@@ -58,9 +58,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     const results = extendedSearchResults.map(result => {
-      const urlList = result.docEntries.length
+      const urlList = result.entriesNoGuidance.length
         ? stringJoin.newline(
-          ...result.docEntries.map((entry, index: number) => {
+          ...result.entriesNoGuidance.map((entry, index: number) => {
             const isDetectedVersion = entry.version === closestVersion;
 
             return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
@@ -68,9 +68,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         )
         : '  - No documentation URLs found';
 
-      const guidanceUrlList = result.guidanceEntries.length
+      const guidanceUrlList = result.entriesGuidance.length
         ? stringJoin.newline(
-          ...result.guidanceEntries.map((entry, index: number) => {
+          ...result.entriesGuidance.map((entry, index: number) => {
             const isDetectedVersion = entry.version === closestVersion;
 
             return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;

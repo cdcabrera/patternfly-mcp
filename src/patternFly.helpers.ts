@@ -7,6 +7,58 @@ import {
 } from './server.getResources';
 import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
+
+/**
+ * Filter the version string to a valid PatternFly `tag` display version, (e.g. "v4", "v5", "v6")
+ *
+ * @param version - The version string to filter.
+ * @returns The filtered version string, or an empty array if the version is not recognized.
+ */
+const filterEnumeratedPatternFlyVersion = async (version?: string) => {
+  const { availableVersions } = await getPatternFlyMcpDocs.memo();
+  const updatedVersion = typeof version === 'string' ? version.toLowerCase().trim() : undefined;
+
+  return [
+    ...availableVersions,
+    'current',
+    'detected',
+    'latest'
+  ].filter(version => version.toLowerCase().startsWith(updatedVersion || ''));
+};
+
+/**
+ * Normalize the version string to a valid PatternFly `tag` display version, (e.g. "v4", "v5", "v6")
+ *
+ * @param version - The version string to normalize.
+ * @returns The normalized version string, or `undefined` if the version is not recognized.
+ */
+const normalizeEnumeratedPatternFlyVersion = async (version?: string) => {
+  const { closestVersion, latestVersion, availableVersions } = await getPatternFlyMcpDocs.memo();
+  const updatedVersion = typeof version === 'string' ? version.toLowerCase().trim() : undefined;
+  let refineVersion = updatedVersion;
+
+  switch (updatedVersion) {
+    case 'current':
+    case 'latest':
+      refineVersion = latestVersion;
+      break;
+    case 'detected':
+      refineVersion = closestVersion;
+      break;
+  }
+
+  if (refineVersion && availableVersions.includes(refineVersion)) {
+    return refineVersion;
+  }
+
+  return undefined;
+};
+
+/**
+ * Memoized version of normalizeEnumeratedPatternFlyVersion.
+ */
+normalizeEnumeratedPatternFlyVersion.memo = memo(normalizeEnumeratedPatternFlyVersion);
 
 /**
  * Find the closest PatternFly version used within the project context.
@@ -88,4 +140,4 @@ const findClosestPatternFlyVersion = async (
  */
 findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
 
-export { findClosestPatternFlyVersion };
+export { filterEnumeratedPatternFlyVersion, findClosestPatternFlyVersion, normalizeEnumeratedPatternFlyVersion };
