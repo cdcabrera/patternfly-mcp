@@ -1,15 +1,8 @@
-// import semver, { type SemVer } from 'semver';
+import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
-/*
-import {
-  findNearestPackageJson,
-  matchPackageVersion,
-  readLocalFileFunction
-} from './server.getResources';
-*/
-// import { fuzzySearch } from './server.search';
+import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
+import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
-// import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
  * Get the PatternFly version context.
@@ -101,6 +94,29 @@ normalizeEnumeratedPatternFlyVersion.memo = memo(normalizeEnumeratedPatternFlyVe
 /**
  * Find the closest PatternFly version used within the project context.
  *
+ * @note Temporary closest version until environment audit tooling is available.
+ *
+ * @param contextPathOverride
+ * @param options
+ */
+const findClosestPatternFlyVersion = async (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  contextPathOverride: string | undefined = undefined,
+  options = getOptions()
+): Promise<string> => {
+  const { latestSemVer } = options.patternflyOptions.default;
+
+  return latestSemVer;
+};
+
+/**
+ * Memoized version of findClosestPatternFlyVersion.
+ */
+findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
+
+/**
+ * Find the closest PatternFly version used within the project context.
+ *
  * @note In the future the available versions of PatternFly will be determined by the available resources.
  * In the short-term we limit the available versions via `patternflyOptions.availableResourceVersions`.
  *
@@ -120,17 +136,10 @@ normalizeEnumeratedPatternFlyVersion.memo = memo(normalizeEnumeratedPatternFlyVe
  * @param options - Global options
  * @returns Matched PatternFly semver version (e.g., '6.0.0', '5.0.0', '4.0.0')
  */
-const findClosestPatternFlyVersion = async (
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+const disabled_findClosestPatternFlyVersion = async (
   contextPathOverride: string | undefined = undefined,
   options = getOptions()
 ): Promise<string> => {
-  const { latestSemVer } = options.patternflyOptions.default;
-
-  return latestSemVer;
-
-  // Temporarily disabled active scanning until user context auditing is available.
-  /*
   const availableVersions = options.patternflyOptions.availableResourceVersions;
   const { latestSemVer, versionWhitelist, versionStrategy } = options.patternflyOptions.default;
   const pkgPath = findNearestPackageJson(contextPathOverride || options.contextPath);
@@ -181,17 +190,12 @@ const findClosestPatternFlyVersion = async (
   } catch {
     return updatedDefaultVersion;
   }
-   */
 };
-
-/**
- * Memoized version of findClosestPatternFlyVersion.
- */
-findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
 
 export {
   filterEnumeratedPatternFlyVersion,
   findClosestPatternFlyVersion,
+  disabled_findClosestPatternFlyVersion,
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion
 };
