@@ -74,10 +74,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const updatedName = name?.trim();
 
     if (updatedName) {
-      const { searchResults, extendedExactMatches } = await searchPatternFly.memo(updatedName);
+      const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName);
 
-      if (extendedExactMatches.length === 0 ||
-        extendedExactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
+      if (exactMatches.length === 0 ||
+        exactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
       ) {
         const suggestions = searchResults.map(result => result.item).slice(0, 3);
         const suggestionMessage = suggestions.length
@@ -90,7 +90,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         );
       }
 
-      updatedUrlList.push(...extendedExactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
+      updatedUrlList.push(...exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
     }
 
     const docs: ProcessedDoc[] = [];

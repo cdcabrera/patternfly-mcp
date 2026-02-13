@@ -33,10 +33,10 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const { isSearchWildCardAll, extendedSearchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
+    const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
     const { closestVersion } = await getPatternFlyMcpDocs.memo();
 
-    if (!isSearchWildCardAll && extendedSearchResults.length === 0) {
+    if (!isSearchWildCardAll && searchResults.length === 0) {
       return {
         content: [{
           type: 'text',
@@ -57,7 +57,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       };
     }
 
-    const results = extendedSearchResults.map(result => {
+    const results = searchResults.map(result => {
       const urlList = result.entriesNoGuidance.length
         ? stringJoin.newline(
           ...result.entriesNoGuidance.map((entry, index: number) => {
@@ -97,7 +97,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       content: [{
         type: 'text',
         text: stringJoin.newline(
-          `# Search results for "${isSearchWildCardAll ? 'all resources' : searchQuery}", ${extendedSearchResults.length} matches found:`,
+          `# Search results for "${isSearchWildCardAll ? 'all resources' : searchQuery}", ${searchResults.length} matches found:`,
           ...results,
           '',
           '---',

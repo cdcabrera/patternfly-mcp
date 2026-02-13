@@ -1,12 +1,12 @@
-import { basename } from 'node:path';
 import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpDocs,
-  getPatternFlyMcpResources,
-  getPatternFlyReactComponentNames,
-  type PatternFlyMcpDocEntry
+  // getPatternFlyMcpResources,
+  // getPatternFlyReactComponentNames,
+  // type PatternFlyMcpDocEntry,
+  type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
 
 /**
@@ -26,7 +26,7 @@ import {
  * @property schema - JSON schema URL, if available
  * @property query - Associated search query string, `undefined` if no query was provided
  */
-interface SearchPatternFlyResultExtended extends FuzzySearchResult {
+/* interface SearchPatternFlyResultExtended extends FuzzySearchResult {
   // doc: string;
   // docEntries: PatternFlyMcpDocEntry[];
   // docUrls: string[];
@@ -43,6 +43,8 @@ interface SearchPatternFlyResultExtended extends FuzzySearchResult {
   query: string | undefined;
 }
 
+ */
+
 /**
  * Search results object returned by searchPatternFly.
  * Includes additional metadata and URLs.
@@ -56,9 +58,9 @@ interface SearchPatternFlyResultExtended extends FuzzySearchResult {
  */
 interface SearchPatternFlyResults {
   isSearchWildCardAll: boolean,
-  firstExactMatch: FuzzySearchResult | undefined,
-  exactMatches: FuzzySearchResult[],
-  searchResults: FuzzySearchResult[]
+  firstExactMatch: (FuzzySearchResult & PatternFlyMcpResourceMetadata) | undefined,
+  exactMatches: (FuzzySearchResult & PatternFlyMcpResourceMetadata)[],
+  searchResults: (FuzzySearchResult & PatternFlyMcpResourceMetadata)[]
 }
 
 /**
@@ -73,105 +75,37 @@ interface SearchPatternFlyResults {
  * @property {SearchPatternFlyResult[]} extendedExactMatches - All exact matches within fuzzy search results
  * @property {SearchPatternFlyResult[]} extendedSearchResults - Fuzzy search results
  */
-interface SearchPatternFlyResultsExtended extends SearchPatternFlyResults {
-  extendedFirstExactMatch: SearchPatternFlyResultExtended | undefined,
-  extendedExactMatches: SearchPatternFlyResultExtended[],
-  extendedSearchResults: SearchPatternFlyResultExtended[]
-}
-
-/**
- * Search PatternFly documentation paths with fuzzy search.
- *
- * @param searchQuery - The search query to use for fuzzy search
- * @param [options] - Optional search options
- * @param [options.documentation] - Object of multifaceted documentation entries to search,
- *     defaults to `getPatternFlyMcpDocs`
- * @param [options.allowWildCardAll] - Allow a search query to match all components. Defaults to false.
- * @returns {SearchPatternFlyResults} - Search results object
- */
-const searchPatternFlyDocumentationPaths = async (searchQuery: string, {
-  documentation = getPatternFlyMcpDocs.memo(),
-  allowWildCardAll = false
-} = {}): Promise<SearchPatternFlyResults> => {
-  const updatedDocumentation = await documentation;
-  const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
-  const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
-  let searchResults: FuzzySearchResult[] = [];
-
-  if (isSearchWildCardAll) {
-    searchResults = updatedDocumentation.pathIndex.map(path => ({ matchType: 'all', distance: 0, item: path } as FuzzySearchResult));
-  } else {
-    searchResults = fuzzySearch(searchQuery, updatedDocumentation.pathIndex, {
-      maxDistance: 3,
-      maxResults: 10,
-      isFuzzyMatch: true,
-      deduplicateByNormalized: true
-    });
-
-    if (!searchResults.length) {
-      // Fallback results, in the event the fileName, suffix, is a match but the path is not try a smaller string.
-      const baseName = basename(searchQuery);
-
-      if (baseName) {
-        const baseSearch = fuzzySearch(baseName, updatedDocumentation.pathIndex, {
-          maxDistance: 3,
-          maxResults: 10,
-          isFuzzyMatch: true,
-          deduplicateByNormalized: true
-        });
-
-        const suffixMatch = baseSearch.find(searchResult => searchResult.item.endsWith(baseName));
-
-        if (suffixMatch) {
-          searchResults = [suffixMatch];
-        }
-      }
-    }
-  }
-
-  const exactMatches = searchResults.filter(result => result.matchType === 'exact');
-
-  return {
-    isSearchWildCardAll,
-    firstExactMatch: exactMatches[0],
-    exactMatches: exactMatches,
-    searchResults: searchResults
-  };
-};
-
-/**
- * Memoized version of searchPatternFlyDocumentationPaths.
- */
-searchPatternFlyDocumentationPaths.memo = memo(searchPatternFlyDocumentationPaths, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
+// interface SearchPatternFlyResultsExtended extends SearchPatternFlyResults {
+  // extendedFirstExactMatch: SearchPatternFlyResultExtended | undefined,
+  // extendedExactMatches: SearchPatternFlyResultExtended[],
+  // extendedSearchResults: SearchPatternFlyResultExtended[]
+// }
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @param searchQuery - Search query string
  * @param settings - Optional settings object
- * @param settings.components - Object of multifaceted component names to search.
  * @param settings.documentation - Object of multifaceted documentation entries to search.
- * @param settings.resources - Object of multifaceted resources entries to search, e.g. all component names,
- *     documentation and guidance URLs, etc.
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
  */
 const searchPatternFly = async (searchQuery: string, {
-  components = getPatternFlyReactComponentNames.memo(),
+  // components = getPatternFlyReactComponentNames.memo(),
   documentation = getPatternFlyMcpDocs.memo(),
-  resources = getPatternFlyMcpResources.memo(),
+  // resources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false
-} = {}): Promise<SearchPatternFlyResultsExtended> => {
+} = {}) => {
   const updatedDocumentation = await documentation;
-  const updatedResources = await resources;
+  // const updatedResources = await resources;
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = updatedResources.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = updatedDocumentation.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, updatedResources.nameIndex, {
+    searchResults = fuzzySearch(searchQuery, updatedDocumentation.nameIndex, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -179,6 +113,17 @@ const searchPatternFly = async (searchQuery: string, {
     });
   }
 
+  const updatedSearchResults: (FuzzySearchResult & PatternFlyMcpResourceMetadata)[] = searchResults.map((result: FuzzySearchResult) => {
+    const resource = updatedDocumentation.resources.get(result.item);
+
+    return {
+      ...result,
+      ...resource,
+      query: searchQuery
+    };
+  }) as (FuzzySearchResult & PatternFlyMcpResourceMetadata)[];
+
+  /*
   const extendResults = (results: FuzzySearchResult[] = [], query?: string) => results.map(result => {
     const urls = updatedDocumentation.byNameWithPath[result.item] || [];
     const urlsNoGuidance = updatedDocumentation.byNameWithPathNoGuidance[result.item] || [];
@@ -271,19 +216,20 @@ const searchPatternFly = async (searchQuery: string, {
       query
     };
   });
+  */
 
-  const exactMatches = searchResults.filter(result => result.matchType === 'exact');
-  const extendedExactMatches: SearchPatternFlyResultExtended[] = extendResults(exactMatches, searchQuery);
-  const extendedSearchResults: SearchPatternFlyResultExtended[] = extendResults(searchResults, searchQuery);
+  const exactMatches = updatedSearchResults.filter(result => result.matchType === 'exact');
+  // const extendedExactMatches: SearchPatternFlyResultExtended[] = extendResults(exactMatches, searchQuery);
+  // const extendedSearchResults: SearchPatternFlyResultExtended[] = extendResults(searchResults, searchQuery);
 
   return {
     isSearchWildCardAll,
     firstExactMatch: exactMatches[0],
     exactMatches: exactMatches,
-    searchResults: searchResults,
-    extendedFirstExactMatch: extendedExactMatches[0],
-    extendedExactMatches: extendedExactMatches,
-    extendedSearchResults: extendedSearchResults
+    searchResults: updatedSearchResults
+    // extendedFirstExactMatch: exactMatches[0],
+    // extendedExactMatches: exactMatches,
+    // extendedSearchResults: searchResults
   };
 };
 
@@ -294,8 +240,7 @@ searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.s
 
 export {
   searchPatternFly,
-  searchPatternFlyDocumentationPaths,
-  type SearchPatternFlyResults,
-  type SearchPatternFlyResultsExtended,
-  type SearchPatternFlyResultExtended
+  type SearchPatternFlyResults
+  // type SearchPatternFlyResultsExtended,
+  // type SearchPatternFlyResultExtended
 };

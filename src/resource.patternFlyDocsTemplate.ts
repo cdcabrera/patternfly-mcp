@@ -192,10 +192,10 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
 
   const docResults = [];
   const docs = [];
-  const { searchResults, extendedExactMatches } = await searchPatternFly.memo(name);
+  const { searchResults, exactMatches } = await searchPatternFly.memo(name);
 
-  if (extendedExactMatches.length === 0 ||
-    extendedExactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
+  if (exactMatches.length === 0 ||
+    exactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
   ) {
     const suggestions = searchResults.map(result => result.item).slice(0, 3);
     const suggestionMessage = suggestions.length
@@ -209,7 +209,7 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   }
 
   try {
-    const exactMatchesUrls = extendedExactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean) as string[];
+    const exactMatchesUrls = exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean) as string[];
 
     if (exactMatchesUrls.length > 0) {
       const processedDocs = await processDocsFunction.memo(exactMatchesUrls);
