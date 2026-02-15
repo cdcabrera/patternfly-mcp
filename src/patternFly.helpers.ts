@@ -5,6 +5,29 @@ import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
 
 /**
+ * Find the closest PatternFly version used within the project context.
+ *
+ * @note Temporary closest version until environment audit tooling is available.
+ *
+ * @param contextPathOverride
+ * @param options
+ */
+const findClosestPatternFlyVersion = async (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  contextPathOverride: string | undefined = undefined,
+  options = getOptions()
+): Promise<string> => {
+  const { latestSemVer } = options.patternflyOptions.default;
+
+  return latestSemVer;
+};
+
+/**
+ * Memoized version of findClosestPatternFlyVersion.
+ */
+findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
+
+/**
  * Get the PatternFly version context.
  *
  * @note We may need to keep a latest version outside of context and add an environment latest version.
@@ -13,6 +36,7 @@ import { memo } from './server.caching';
  * @param options - Global options
  * @returns The PatternFly version context, including the closest version, the latest version, and the available versions.
  *   - `availableVersions`: The list of available PatternFly `tag` versions, (e.g. "v4", "v5", "v6")
+ *   - `enumeratedVersions`: The list of available PatternFly `tag` and `display` versions, (e.g. "v4", "v5", "v6", "current", "latest")
  *   - `closestSemVer`: The closest SemVer version detected in the project context.
  *   - `closestVersion`: The closest PatternFly `tag` version detected in the project context, (e.g. "v4", "v5", "v6")
  *   - `latestVersion`: The latest PatternFly `tag` version, (e.g. "v4", "v5", "v6")
@@ -23,12 +47,14 @@ const getPatternFlyVersionContext = async (
 ) => {
   const availableSemVer = options.patternflyOptions.availableResourceVersions;
   const availableVersions = availableSemVer.map(version => `v${version.split('.')[0]}`);
+  const enumeratedVersions = Array.from(new Set([...options.patternflyOptions.availableSearchVersions, ...availableVersions]));
   const latestVersion = availableVersions[0] || options.patternflyOptions.default.latestVersion;
   const closestSemVer = await findClosestPatternFlyVersion.memo(contextPathOverride);
   const closestVersion = `v${closestSemVer.split('.')[0]}`;
 
   return {
     availableVersions,
+    enumeratedVersions,
     closestSemVer,
     closestVersion,
     latestVersion
@@ -41,21 +67,19 @@ const getPatternFlyVersionContext = async (
 getPatternFlyVersionContext.memo = memo(getPatternFlyVersionContext);
 
 /**
- * Filter the version string to a valid PatternFly `tag` display version, (e.g. "v4", "v5", "v6")
+ * Get all available PatternFly enumerations OR filter a version string to a valid PatternFly `tag` OR `display` version,
+ * (e.g. "current", "v6", etc.)
  *
  * @param version - The version string to filter.
- * @returns The filtered version string, or an empty array if the version is not recognized.
+ * @returns If version is provided returns the filtered version string array, or an empty array if the version is not recognized,
+ *     otherwise returns all available versions.
  */
-const filterEnumeratedPatternFlyVersion = async (version?: string) => {
-  const { availableVersions } = await getPatternFlyVersionContext.memo();
+const filterEnumeratedPatternFlyVersions = async (version?: string) => {
+  const { enumeratedVersions } = await getPatternFlyVersionContext.memo();
   const updatedVersion = typeof version === 'string' ? version.toLowerCase().trim() : undefined;
 
-  return [
-    ...availableVersions,
-    'current',
-    'detected',
-    'latest'
-  ].filter(version => version.toLowerCase().startsWith(updatedVersion || ''));
+  return enumeratedVersions
+    .filter(version => version.toLowerCase().startsWith(updatedVersion || ''));
 };
 
 /**
@@ -90,29 +114,6 @@ const normalizeEnumeratedPatternFlyVersion = async (version?: string) => {
  * Memoized version of normalizeEnumeratedPatternFlyVersion.
  */
 normalizeEnumeratedPatternFlyVersion.memo = memo(normalizeEnumeratedPatternFlyVersion);
-
-/**
- * Find the closest PatternFly version used within the project context.
- *
- * @note Temporary closest version until environment audit tooling is available.
- *
- * @param contextPathOverride
- * @param options
- */
-const findClosestPatternFlyVersion = async (
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  contextPathOverride: string | undefined = undefined,
-  options = getOptions()
-): Promise<string> => {
-  const { latestSemVer } = options.patternflyOptions.default;
-
-  return latestSemVer;
-};
-
-/**
- * Memoized version of findClosestPatternFlyVersion.
- */
-findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
 
 /**
  * Find the closest PatternFly version used within the project context.
@@ -193,8 +194,8 @@ const disabled_findClosestPatternFlyVersion = async (
 };
 
 export {
-  filterEnumeratedPatternFlyVersion,
   findClosestPatternFlyVersion,
+  filterEnumeratedPatternFlyVersions,
   disabled_findClosestPatternFlyVersion,
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion

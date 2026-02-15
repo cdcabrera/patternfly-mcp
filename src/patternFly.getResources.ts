@@ -42,7 +42,7 @@ type PatternFlyMcpDocsByPath = {
 };
 
 /**
- * PatternFly JSON catalog by version with an entry.
+ * PatternFly JSON catalog by version with a list of entries.
  */
 type PatternFlyMcpDocsByVersion = {
   [version: string]: (PatternFlyMcpDocEntry & { name: string })[];
@@ -82,6 +82,8 @@ type PatternFlyMcpResourceMetadata = {
 
 /**
  * Patternfly available documentation.
+ *
+ * @note To avoid lookup issues we normalize all keys and indexes to lowercase.
  *
  * @interface PatternFlyMcpAvailableDocs
  *
@@ -147,11 +149,13 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
  * @note The "table" component is manually added to the `allComponentNames` list because it's not currently included
  * in the component schemas package.
  *
+ * @note To avoid lookup issues we normalize all keys and indexes to lowercase. Component names are lowercased.
+ *
  * @returns A multifaceted React component breakdown.  Use the "memoized" property for performance.
  */
 const getPatternFlyReactComponentNames = () => ({
-  nameIndex: Array.from(new Set([...pfComponentNames, 'Table'])).sort((a, b) => a.localeCompare(b)),
-  componentNamesWithSchema: pfComponentNames.sort((a, b) => a.localeCompare(b))
+  nameIndex: Array.from(new Set([...pfComponentNames, 'Table'])).map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b)),
+  componentNamesWithSchema: pfComponentNames.map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b))
 });
 
 /**
@@ -177,7 +181,8 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
   const uriIndex = new Set<string>();
   const { componentNamesWithSchema: schemaNames } = getPatternFlyReactComponentNames.memo();
 
-  Object.entries(originalDocs).forEach(([name, entries]) => {
+  Object.entries(originalDocs).forEach(([docsName, entries]) => {
+    const name = docsName.toLowerCase();
     const resource: PatternFlyMcpResourceMetadata = {
       name,
       isSchemasAvailable: options.patternflyOptions.default.latestVersion === latestVersion && schemaNames.includes(name),
@@ -190,7 +195,8 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
     };
 
     entries.forEach(entry => {
-      const version = entry.version || 'unknown';
+      const version = (entry.version || 'unknown').toLowerCase();
+      const path = entry.path.toLowerCase();
 
       resource.versions[version] ??= {
         uris: [],
@@ -201,34 +207,34 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
         entriesNoGuidance: []
       };
 
-      byPath[entry.path] = { ...entry, name };
+      byPath[path] = { ...entry, name: docsName };
 
       byVersion[entry.version] ??= [];
-      byVersion[entry.version]?.push({ ...entry, name });
+      byVersion[entry.version]?.push({ ...entry, name: docsName });
 
-      pathIndex.add(entry.path);
+      pathIndex.add(path);
 
       const uri = `patternfly://docs/${version}/${name}`;
 
       if (!uriIndex.has(uri)) {
         uriIndex.add(`patternfly://docs/${version}/${name}`);
-        markdownIndex.add(`[${uri} - ${setCategoryDisplayLabel(entry)}](${entry.path})`);
+        markdownIndex.add(`[${uri} - ${setCategoryDisplayLabel(entry)}](${path})`);
 
-        resource.versions[version].uris.push(`patternfly://docs/${version}/${name}`);
+        resource.versions[version].uris.push(uri);
       }
 
-      resource.urls.push(entry.path);
-      resource.versions[version].urls.push(entry.path);
+      resource.urls.push(path);
+      resource.versions[version].urls.push(path);
 
       if (entry.section === 'guidelines') {
-        resource.urlsGuidance.push(entry.path);
+        resource.urlsGuidance.push(path);
         resource.entriesGuidance.push(entry);
-        resource.versions[version].urlsGuidance.push(entry.path);
+        resource.versions[version].urlsGuidance.push(path);
         resource.versions[version].entriesGuidance.push(entry);
       } else {
-        resource.urlsNoGuidance.push(entry.path);
+        resource.urlsNoGuidance.push(path);
         resource.entriesNoGuidance.push(entry);
-        resource.versions[version].urlsNoGuidance.push(entry.path);
+        resource.versions[version].urlsNoGuidance.push(path);
         resource.versions[version].entriesNoGuidance.push(entry);
       }
     });
@@ -237,7 +243,7 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
   });
 
   Object.entries(byVersion).forEach(([_version, entries]) => {
-    entries.sort((a, b) => b.name.localeCompare(a.name));
+    entries.sort((a, b) => a.name.localeCompare(b.name));
   });
 
   return {

@@ -159,7 +159,8 @@ interface ModeOptions {
 /**
  * PatternFly-specific options.
  *
- * @property availableResourceVersions List of intended available PatternFly resource versions to the MCP server.
+ * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
+ * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
  * @property default Default specific options.
  * @property default.latestSemVer Default PatternFly `SemVer` major version (e.g., '6.0.0').
  * @property default.latestVersion Default PatternFly `tag` major version, used for display and file paths (e.g., 'v6').
@@ -170,6 +171,7 @@ interface ModeOptions {
  */
 interface PatternFlyOptions {
   availableResourceVersions: string[];
+  availableSearchVersions: ('current' | 'latest' | 'v6')[];
   default: {
     latestSemVer: string;
     latestVersion: string;
@@ -351,6 +353,7 @@ const LOG_BASENAME = 'pf-mcp:log';
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   availableResourceVersions: ['6.0.0'],
+  availableSearchVersions: ['current', 'latest', 'v6'],
   default: {
     latestSemVer: '6.0.0',
     latestVersion: 'v6',

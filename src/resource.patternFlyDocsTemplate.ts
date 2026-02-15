@@ -11,7 +11,7 @@ import { getOptions, runWithOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpDocs } from './patternFly.getResources';
 import {
-  filterEnumeratedPatternFlyVersion,
+  filterEnumeratedPatternFlyVersions,
   normalizeEnumeratedPatternFlyVersion
 } from './patternFly.helpers';
 
@@ -63,15 +63,20 @@ const listResources = async () => {
 
   // Initial sort by the latest version
   Object.entries(byVersion).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, entries]) => {
+    const seenIndex = new Set<string>();
     const versionResource: PatterFlyDocsListResourceResult[] = [];
 
     entries.forEach(entry => {
-      versionResource.push({
-        uri: `patternfly://docs/${version}/${entry.name}`,
-        mimeType: 'text/markdown',
-        name: `${entry.name} (${version})`,
-        description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
-      });
+      if (!seenIndex.has(entry.name)) {
+        seenIndex.add(entry.name);
+
+        versionResource.push({
+          uri: `patternfly://docs/${version}/${entry.name.toLowerCase()}`,
+          mimeType: 'text/markdown',
+          name: `${entry.name} (${version})`,
+          description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
+        });
+      }
     });
 
     resources.push(...versionResource);
@@ -91,7 +96,7 @@ listResources.memo = memo(listResources);
  * @returns The list of available versions.
  */
 const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) =>
-  filterEnumeratedPatternFlyVersion(value as string | undefined);
+  filterEnumeratedPatternFlyVersions(value as string | undefined);
 
 /**
  * Name completion callback for the URI template.

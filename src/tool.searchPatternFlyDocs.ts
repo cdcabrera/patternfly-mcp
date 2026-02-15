@@ -4,7 +4,7 @@ import { type McpTool } from './server';
 import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
+// import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
  * searchPatternFlyDocs tool function
@@ -34,7 +34,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
-    const { closestVersion } = await getPatternFlyMcpDocs.memo();
+    // const { closestVersion } = await getPatternFlyMcpDocs.memo();
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
       return {
@@ -44,10 +44,10 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
             `No PatternFly resources found matching "${searchQuery}"`,
             '',
             '---',
-            '',
-            '**Environment snapshot**:',
-            `  - Detected PatternFly Version: ${closestVersion}`,
-            '',
+            // '',
+            // '**Environment snapshot**:',
+            // `  - Detected PatternFly Version: ${closestVersion}`,
+            // '',
             '---',
             '',
             '**Important**:',
@@ -60,21 +60,17 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     const results = searchResults.map(result => {
       const urlList = result.entriesNoGuidance.length
         ? stringJoin.newline(
-          ...result.entriesNoGuidance.map((entry, index: number) => {
-            const isDetectedVersion = entry.version === closestVersion;
-
-            return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
-          })
+          ...result.entriesNoGuidance.map((entry, index) => `  ${index + 1}. ${entry.path}`)
+          // const isDetectedVersion = entry.version === closestVersion;
+          // return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
         )
         : '  - No documentation URLs found';
 
       const guidanceUrlList = result.entriesGuidance.length
         ? stringJoin.newline(
-          ...result.entriesGuidance.map((entry, index: number) => {
-            const isDetectedVersion = entry.version === closestVersion;
-
-            return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
-          })
+          ...result.entriesGuidance.map((entry, index) => `  ${index + 1}. ${entry.path}`)
+          // const isDetectedVersion = entry.version === closestVersion;
+          // return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
         )
         : '  - No guidance URLs found';
 
@@ -101,9 +97,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           ...results,
           '',
           '---',
-          '',
-          '**Environment snapshot**:',
-          `  - Detected PatternFly Version: ${closestVersion}`,
+          // '',
+          // '**Environment snapshot**:',
+          // `  - Detected PatternFly Version: ${closestVersion}`,
           '',
           '---',
           '',

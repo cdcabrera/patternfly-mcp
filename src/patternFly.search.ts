@@ -66,7 +66,7 @@ const searchPatternFly = async (searchQuery: string, {
     };
   }) as SearchPatternFlyResult[];
 
-  const exactMatches = updatedSearchResults.filter(result => result.matchType === 'exact');
+  const exactMatches = updatedSearchResults.filter(result => result.matchType === 'exact' || result.matchType === 'all');
 
   return {
     isSearchWildCardAll,
