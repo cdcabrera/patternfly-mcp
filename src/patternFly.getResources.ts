@@ -152,10 +152,14 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
  * @note To avoid lookup issues we normalize all keys and indexes to lowercase. Component names are lowercased.
  *
  * @returns A multifaceted React component breakdown.  Use the "memoized" property for performance.
+ * - `nameIndex`: Lowercase component names sorted alphabetically.
+ * - `componentNamesWithSchema`: Lowercase component names sorted alphabetically.
+ * - `componentNamesWithSchemaMap`: Map of lowercase component names to original case component names.
  */
 const getPatternFlyReactComponentNames = () => ({
   nameIndex: Array.from(new Set([...pfComponentNames, 'Table'])).map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b)),
-  componentNamesWithSchema: pfComponentNames.map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b))
+  componentNamesWithSchema: pfComponentNames.map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b)),
+  componentNamesWithSchemaMap: new Map(pfComponentNames.map(name => [name.toLowerCase(), name]))
 });
 
 /**
@@ -273,8 +277,16 @@ getPatternFlyMcpDocs.memo = memo(getPatternFlyMcpDocs);
  * @returns {Promise<PatternFlyComponentSchema|undefined>} The component schema, or `undefined` if the component name is not found.
  */
 const getPatternFlyComponentSchema = async (componentName: string) => {
+  const { componentNamesWithSchemaMap } = getPatternFlyReactComponentNames.memo();
+
   try {
-    return await getComponentSchema(componentName);
+    const updatedComponentName = componentNamesWithSchemaMap.get(componentName.toLowerCase());
+
+    if (!updatedComponentName) {
+      return undefined;
+    }
+
+    return await getComponentSchema(updatedComponentName);
   } catch {}
 
   return undefined;
