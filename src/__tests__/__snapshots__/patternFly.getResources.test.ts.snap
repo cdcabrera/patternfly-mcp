@@ -2,26 +2,17 @@
 
 exports[`getPatternFlyMcpDocs should return multiple organized facets: properties 1`] = `
 [
-  "original",
+  "resources",
   "availableVersions",
+  "closestVersion",
+  "closestSemVer",
+  "latestVersion",
   "markdownIndex",
   "nameIndex",
   "pathIndex",
-  "bySection",
-  "byCategory",
-  "byGuidance",
+  "uriIndex",
   "byPath",
-  "byName",
-  "byNameWithPath",
-  "byNameWithPathGuidance",
-  "byNameWithPathMarkdown",
-  "byNameWithPathNoGuidance",
-]
-`;
-
-exports[`getPatternFlyMcpResources should return multiple organized facets: properties 1`] = `
-[
-  "nameIndex",
+  "byVersion",
 ]
 `;
 

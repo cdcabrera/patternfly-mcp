@@ -65,7 +65,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
       result: 'Button documentation content'
     }
   ])('should parse parameters and return documentation, $description', async ({ name, urls, result: mockResult }) => {
-    mockSearchComponents.mockReturnValue({
+    mockSearchComponents.mockResolvedValue({
       isSearchWildCardAll: false,
       firstExactMatch: undefined,
       exactMatches: [{ urls, guidanceUrls: [] } as any],
@@ -116,7 +116,7 @@ describe('patternFlyDocsTemplateResource, callback', () => {
   });
 
   it('should handle documentation loading errors', async () => {
-    mockSearchComponents.mockReturnValue({
+    mockSearchComponents.mockResolvedValue({
       isSearchWildCardAll: false,
       firstExactMatch: undefined,
       exactMatches: [],

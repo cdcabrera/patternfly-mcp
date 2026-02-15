@@ -2,8 +2,7 @@ import {
   setCategoryDisplayLabel,
   getPatternFlyComponentSchema,
   getPatternFlyReactComponentNames,
-  getPatternFlyMcpDocs,
-  getPatternFlyMcpResources
+  getPatternFlyMcpDocs
 } from '../patternFly.getResources';
 
 describe('setCategoryDisplayLabel', () => {
@@ -106,17 +105,5 @@ describe('getPatternFlyMcpDocs', () => {
 
   it('should have a memoized property', async () => {
     await expect(getPatternFlyMcpDocs).resolves.toHaveProperty('memo');
-  });
-});
-
-describe('getPatternFlyMcpResources', () => {
-  it('should return multiple organized facets', () => {
-    const result = getPatternFlyMcpResources();
-
-    expect(Object.keys(result)).toMatchSnapshot('properties');
-  });
-
-  it('should have a memoized property', () => {
-    expect(getPatternFlyMcpResources).toHaveProperty('memo');
   });
 });

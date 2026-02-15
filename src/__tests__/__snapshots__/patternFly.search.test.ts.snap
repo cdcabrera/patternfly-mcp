@@ -7,11 +7,3 @@ exports[`searchPatternFly should return an array of search results: keys 1`] = `
   "exactMatches",
 ]
 `;
-
-exports[`searchPatternFlyDocumentationPaths should return an array of search paths: keys 1`] = `
-[
-  "isSearchWildCardAll",
-  "firstExactMatch",
-  "exactMatches",
-]
-`;
