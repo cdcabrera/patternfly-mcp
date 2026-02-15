@@ -156,7 +156,7 @@ interface ModeOptions {
  */
 interface PatternFlyOptions {
   availableResourceVersions: string[];
-  availableSearchVersions: ('current' | 'latest' | 'v6')[];
+  availableSearchVersions: ('current' | 'detected' | 'latest' | 'v3' | 'v4' | 'v5' | 'v6')[];
   default: {
     latestSemVer: string;
     latestVersion: string;
