@@ -104,6 +104,6 @@ describe('getPatternFlyMcpDocs', () => {
   });
 
   it('should have a memoized property', async () => {
-    await expect(getPatternFlyMcpDocs).resolves.toHaveProperty('memo');
+    expect(getPatternFlyMcpDocs).toHaveProperty('memo');
   });
 });

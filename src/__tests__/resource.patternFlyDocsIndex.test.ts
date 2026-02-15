@@ -26,6 +26,6 @@ describe('patternFlyDocsIndexResource, callback', () => {
 
     expect(result.contents).toBeDefined();
     expect(Object.keys(result.contents[0])).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0].text).toContain('[@patternfly/About Modal - Accessibility]');
+    expect(result.contents[0].text).toContain('[patternfly://docs/v6/aboutmodal - Accessibility]');
   });
 });

@@ -216,10 +216,10 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
 
       const uri = `patternfly://docs/${version}/${name}`;
 
+      markdownIndex.add(`[${uri} - ${setCategoryDisplayLabel(entry)}](${path})`);
+
       if (!uriIndex.has(uri)) {
         uriIndex.add(`patternfly://docs/${version}/${name}`);
-        markdownIndex.add(`[${uri} - ${setCategoryDisplayLabel(entry)}](${path})`);
-
         resource.versions[version].uris.push(uri);
       }
 
