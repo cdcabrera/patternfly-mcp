@@ -4,7 +4,6 @@ import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isPlainObject } from './server.helpers';
 import { getPatternFlyVersionContext } from './patternFly.helpers';
-import { getOptions } from './options.context';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -83,7 +82,8 @@ type PatternFlyMcpResourceMetadata = {
 /**
  * Patternfly available documentation.
  *
- * @note To avoid lookup issues we normalize all keys and indexes to lowercase.
+ * @note To avoid lookup issues we normalize most keys and indexes to lowercase, except docs.json `paths`.
+ * GitHub has case-sensitive links.
  *
  * @interface PatternFlyMcpAvailableDocs
  *
