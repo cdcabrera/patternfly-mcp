@@ -113,9 +113,12 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
   const version = context?.arguments?.version;
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
   const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
+  const names = new Set<string>();
 
-  return byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
-    .map(entry => entry.name) as string[];
+  byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
+    .forEach(entry => names.add(entry.name));
+
+  return Array.from(names).sort();
 };
 
 /**
@@ -143,8 +146,13 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
     );
   }
 
-  const { latestVersion } = await getPatternFlyMcpDocs.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+
+  if (!updatedVersion) {
+    const { latestVersion } = await getPatternFlyMcpDocs.memo();
+
+    updatedVersion = latestVersion;
+  }
 
   const docResults = [];
   const docs = [];
