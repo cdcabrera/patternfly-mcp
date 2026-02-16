@@ -35,7 +35,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/AboutModal/examples/AboutModal.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/AboutModal/examples/AboutModal.md",
         "version": "v6"
       },
       {
@@ -77,7 +77,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Accordion/examples/Accordion.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Accordion/examples/Accordion.md",
         "version": "v6"
       }
     ],
@@ -109,7 +109,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/ActionList/examples/ActionList.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/ActionList/examples/ActionList.md",
         "version": "v6"
       }
     ],
@@ -141,7 +141,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Alert/examples/Alert.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Alert/examples/Alert.md",
         "version": "v6"
       }
     ],
@@ -195,7 +195,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Avatar/examples/Avatar.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Avatar/examples/Avatar.md",
         "version": "v6"
       }
     ],
@@ -217,7 +217,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/BackToTop/examples/BackToTop.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/BackToTop/examples/BackToTop.md",
         "version": "v6"
       }
     ],
@@ -249,7 +249,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Backdrop/examples/Backdrop.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Backdrop/examples/Backdrop.md",
         "version": "v6"
       }
     ],
@@ -281,7 +281,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/BackgroundImage/examples/BackgroundImage.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/BackgroundImage/examples/BackgroundImage.md",
         "version": "v6"
       }
     ],
@@ -313,7 +313,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Badge/examples/Badge.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Badge/examples/Badge.md",
         "version": "v6"
       }
     ],
@@ -345,7 +345,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Banner/examples/Banner.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Banner/examples/Banner.md",
         "version": "v6"
       }
     ],
@@ -377,7 +377,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Brand/examples/Brand.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Brand/examples/Brand.md",
         "version": "v6"
       }
     ],
@@ -409,7 +409,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Breadcrumb/examples/Breadcrumb.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Breadcrumb/examples/Breadcrumb.md",
         "version": "v6"
       }
     ],
@@ -441,7 +441,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Button/examples/Button.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Button/examples/Button.md",
         "version": "v6"
       }
     ],
@@ -473,7 +473,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/CalendarMonth/examples/CalendarMonth.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/CalendarMonth/examples/CalendarMonth.md",
         "version": "v6"
       }
     ],
@@ -505,7 +505,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Card/examples/Card.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Card/examples/Card.md",
         "version": "v6"
       }
     ],
@@ -537,7 +537,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Checkbox/examples/Checkbox.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Checkbox/examples/Checkbox.md",
         "version": "v6"
       }
     ],
@@ -591,7 +591,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/ClipboardCopy/examples/ClipboardCopy.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/ClipboardCopy/examples/ClipboardCopy.md",
         "version": "v6"
       }
     ],
@@ -613,7 +613,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/CodeBlock/examples/CodeBlock.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/CodeBlock/examples/CodeBlock.md",
         "version": "v6"
       }
     ],
@@ -657,7 +657,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Content/examples/Content.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Content/examples/Content.md",
         "version": "v6"
       }
     ],
@@ -679,7 +679,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/DataList/examples/DataList.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/DataList/examples/DataList.md",
         "version": "v6"
       }
     ],
@@ -701,7 +701,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/DatePicker/examples/DatePicker.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/DatePicker/examples/DatePicker.md",
         "version": "v6"
       }
     ],
@@ -723,7 +723,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/DescriptionList/examples/DescriptionList.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/DescriptionList/examples/DescriptionList.md",
         "version": "v6"
       }
     ],
@@ -745,7 +745,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Divider/examples/Divider.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Divider/examples/Divider.md",
         "version": "v6"
       }
     ],
@@ -779,7 +779,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Drawer/examples/Drawer.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Drawer/examples/Drawer.md",
         "version": "v6"
       }
     ],
@@ -801,7 +801,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Dropdown/examples/Dropdown.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Dropdown/examples/Dropdown.md",
         "version": "v6"
       }
     ],
@@ -823,7 +823,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/DualListSelector/examples/DualListSelector.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/DualListSelector/examples/DualListSelector.md",
         "version": "v6"
       }
     ],
@@ -845,7 +845,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/EmptyState/examples/EmptyState.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/EmptyState/examples/EmptyState.md",
         "version": "v6"
       }
     ],
@@ -877,7 +877,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/ExpandableSection/examples/ExpandableSection.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/ExpandableSection/examples/ExpandableSection.md",
         "version": "v6"
       }
     ],
@@ -899,7 +899,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/FileUpload/examples/FileUpload.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/FileUpload/examples/FileUpload.md",
         "version": "v6"
       }
     ],
@@ -921,7 +921,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Form/examples/Form.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Form/examples/Form.md",
         "version": "v6"
       }
     ],
@@ -955,7 +955,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/FormSelect/examples/FormSelect.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/FormSelect/examples/FormSelect.md",
         "version": "v6"
       }
     ],
@@ -987,7 +987,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/HelperText/examples/HelperText.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/HelperText/examples/HelperText.md",
         "version": "v6"
       }
     ],
@@ -1009,7 +1009,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Hint/examples/Hint.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Hint/examples/Hint.md",
         "version": "v6"
       }
     ],
@@ -1021,7 +1021,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Icon/examples/Icon.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Icon/examples/Icon.md",
         "version": "v6"
       }
     ],
@@ -1055,7 +1055,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/InputGroup/examples/InputGroup.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/InputGroup/examples/InputGroup.md",
         "version": "v6"
       }
     ],
@@ -1087,7 +1087,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/JumpLinks/examples/JumpLinks.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/JumpLinks/examples/JumpLinks.md",
         "version": "v6"
       }
     ],
@@ -1119,7 +1119,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Label/examples/Label.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Label/examples/Label.md",
         "version": "v6"
       }
     ],
@@ -1141,7 +1141,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/List/examples/List.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/List/examples/List.md",
         "version": "v6"
       }
     ],
@@ -1163,7 +1163,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/LoginPage/examples/LoginPage.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/LoginPage/examples/LoginPage.md",
         "version": "v6"
       }
     ],
@@ -1185,7 +1185,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Masthead/examples/Masthead.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Masthead/examples/Masthead.md",
         "version": "v6"
       }
     ],
@@ -1217,7 +1217,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Menu/examples/Menu.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Menu/examples/Menu.md",
         "version": "v6"
       }
     ],
@@ -1249,7 +1249,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/MenuToggle/examples/MenuToggle.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/MenuToggle/examples/MenuToggle.md",
         "version": "v6"
       }
     ],
@@ -1281,7 +1281,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Modal/examples/Modal.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Modal/examples/Modal.md",
         "version": "v6"
       }
     ],
@@ -1325,7 +1325,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/NotificationBadge/examples/NotificationBadge.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/NotificationBadge/examples/NotificationBadge.md",
         "version": "v6"
       }
     ],
@@ -1347,7 +1347,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/NotificationDrawer/examples/NotificationDrawer.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/NotificationDrawer/examples/NotificationDrawer.md",
         "version": "v6"
       }
     ],
@@ -1369,7 +1369,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/NumberInput/examples/NumberInput.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/NumberInput/examples/NumberInput.md",
         "version": "v6"
       }
     ],
@@ -1391,7 +1391,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/OverflowMenu/examples/OverflowMenu.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/OverflowMenu/examples/OverflowMenu.md",
         "version": "v6"
       }
     ],
@@ -1423,7 +1423,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Page/examples/Page.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Page/examples/Page.md",
         "version": "v6"
       }
     ],
@@ -1445,7 +1445,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Pagination/examples/Pagination.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Pagination/examples/Pagination.md",
         "version": "v6"
       }
     ],
@@ -1467,7 +1467,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Panel/examples/Panel.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Panel/examples/Panel.md",
         "version": "v6"
       }
     ],
@@ -1489,7 +1489,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Popover/examples/Popover.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Popover/examples/Popover.md",
         "version": "v6"
       }
     ],
@@ -1521,7 +1521,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Progress/examples/Progress.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Progress/examples/Progress.md",
         "version": "v6"
       }
     ],
@@ -1553,7 +1553,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/ProgressStepper/examples/ProgressStepper.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/ProgressStepper/examples/ProgressStepper.md",
         "version": "v6"
       }
     ],
@@ -1585,7 +1585,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Radio/examples/Radio.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Radio/examples/Radio.md",
         "version": "v6"
       }
     ],
@@ -1607,7 +1607,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/SearchInput/examples/SearchInput.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/SearchInput/examples/SearchInput.md",
         "version": "v6"
       }
     ],
@@ -1629,7 +1629,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Select/examples/Select.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Select/examples/Select.md",
         "version": "v6"
       }
     ],
@@ -1661,7 +1661,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Sidebar/examples/Sidebar.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Sidebar/examples/Sidebar.md",
         "version": "v6"
       }
     ],
@@ -1683,7 +1683,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/SimpleList/examples/SimpleList.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/SimpleList/examples/SimpleList.md",
         "version": "v6"
       }
     ],
@@ -1715,7 +1715,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Skeleton/examples/Skeleton.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Skeleton/examples/Skeleton.md",
         "version": "v6"
       }
     ],
@@ -1747,7 +1747,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/SkipToContent/examples/SkipToContent.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/SkipToContent/examples/SkipToContent.md",
         "version": "v6"
       }
     ],
@@ -1769,7 +1769,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Slider/examples/Slider.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Slider/examples/Slider.md",
         "version": "v6"
       }
     ],
@@ -1791,7 +1791,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Spinner/examples/Spinner.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Spinner/examples/Spinner.md",
         "version": "v6"
       }
     ],
@@ -1823,7 +1823,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Switch/examples/Switch.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Switch/examples/Switch.md",
         "version": "v6"
       }
     ],
@@ -1845,7 +1845,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-table/src/components/Table/examples/Table.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-table/src/components/Table/examples/Table.md",
         "version": "v6"
       }
     ],
@@ -1877,7 +1877,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Tabs/examples/Tabs.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Tabs/examples/Tabs.md",
         "version": "v6"
       }
     ],
@@ -1899,7 +1899,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/TextArea/examples/TextArea.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/TextArea/examples/TextArea.md",
         "version": "v6"
       }
     ],
@@ -1921,7 +1921,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/TextInput/examples/TextInput.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/TextInput/examples/TextInput.md",
         "version": "v6"
       }
     ],
@@ -1943,7 +1943,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/TextInputGroup/examples/TextInputGroup.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/TextInputGroup/examples/TextInputGroup.md",
         "version": "v6"
       }
     ],
@@ -1977,7 +1977,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/TimePicker/examples/TimePicker.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/TimePicker/examples/TimePicker.md",
         "version": "v6"
       }
     ],
@@ -1999,7 +1999,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Timestamp/examples/Timestamp.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Timestamp/examples/Timestamp.md",
         "version": "v6"
       }
     ],
@@ -2031,7 +2031,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Title/examples/Title.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Title/examples/Title.md",
         "version": "v6"
       }
     ],
@@ -2053,7 +2053,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/ToggleGroup/examples/ToggleGroup.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/ToggleGroup/examples/ToggleGroup.md",
         "version": "v6"
       }
     ],
@@ -2075,7 +2075,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Toolbar/examples/Toolbar.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Toolbar/examples/Toolbar.md",
         "version": "v6"
       }
     ],
@@ -2107,7 +2107,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Tooltip/examples/Tooltip.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Tooltip/examples/Tooltip.md",
         "version": "v6"
       },
       {
@@ -2127,7 +2127,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartTooltip/examples/ChartTooltip.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartTooltip/examples/ChartTooltip.md",
         "version": "v6"
       }
     ],
@@ -2159,7 +2159,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/TreeView/examples/TreeView.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/TreeView/examples/TreeView.md",
         "version": "v6"
       }
     ],
@@ -2181,7 +2181,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Truncate/examples/Truncate.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Truncate/examples/Truncate.md",
         "version": "v6"
       }
     ],
@@ -2203,7 +2203,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/components/Wizard/examples/Wizard.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/components/Wizard/examples/Wizard.md",
         "version": "v6"
       }
     ],
@@ -2225,7 +2225,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Bullseye/examples/Bullseye.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Bullseye/examples/Bullseye.md",
         "version": "v6"
       }
     ],
@@ -2247,7 +2247,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Flex/examples/Flex.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Flex/examples/Flex.md",
         "version": "v6"
       }
     ],
@@ -2269,7 +2269,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Gallery/examples/Gallery.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Gallery/examples/Gallery.md",
         "version": "v6"
       }
     ],
@@ -2291,7 +2291,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Grid/examples/Grid.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Grid/examples/Grid.md",
         "version": "v6"
       }
     ],
@@ -2313,7 +2313,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Level/examples/Level.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Level/examples/Level.md",
         "version": "v6"
       }
     ],
@@ -2335,7 +2335,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Split/examples/Split.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Split/examples/Split.md",
         "version": "v6"
       }
     ],
@@ -2357,7 +2357,7 @@
         "section": "layouts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-core/src/layouts/Stack/examples/Stack.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/layouts/Stack/examples/Stack.md",
         "version": "v6"
       }
     ],
@@ -2369,7 +2369,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartTheme/examples/ChartTheme.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartTheme/examples/ChartTheme.md",
         "version": "v6"
       }
     ],
@@ -2391,7 +2391,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartArea/examples/ChartArea.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartArea/examples/ChartArea.md",
         "version": "v6"
       }
     ],
@@ -2413,7 +2413,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartBar/examples/ChartBar.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartBar/examples/ChartBar.md",
         "version": "v6"
       }
     ],
@@ -2425,7 +2425,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartBoxPlot/examples/ChartBoxPlot.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartBoxPlot/examples/ChartBoxPlot.md",
         "version": "v6"
       }
     ],
@@ -2447,7 +2447,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartBullet/examples/ChartBullet.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartBullet/examples/ChartBullet.md",
         "version": "v6"
       }
     ],
@@ -2469,7 +2469,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartDonut/examples/ChartDonut.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartDonut/examples/ChartDonut.md",
         "version": "v6"
       }
     ],
@@ -2491,7 +2491,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartDonutUtilization/examples/ChartDonutUtilization.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartDonutUtilization/examples/ChartDonutUtilization.md",
         "version": "v6"
       }
     ],
@@ -2513,7 +2513,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartLine/examples/ChartLine.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartLine/examples/ChartLine.md",
         "version": "v6"
       }
     ],
@@ -2535,7 +2535,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartPie/examples/ChartPie.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartPie/examples/ChartPie.md",
         "version": "v6"
       }
     ],
@@ -2557,7 +2557,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartScatter/examples/ChartScatter.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartScatter/examples/ChartScatter.md",
         "version": "v6"
       }
     ],
@@ -2579,7 +2579,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/Sparkline/examples/sparkline.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/Sparkline/examples/sparkline.md",
         "version": "v6"
       }
     ],
@@ -2601,7 +2601,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartStack/examples/ChartStack.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartStack/examples/ChartStack.md",
         "version": "v6"
       }
     ],
@@ -2623,7 +2623,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartThreshold/examples/ChartThreshold.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartThreshold/examples/ChartThreshold.md",
         "version": "v6"
       }
     ],
@@ -2645,7 +2645,7 @@
         "section": "charts",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/refs/tags/v6.4.0/packages/react-charts/src/victory/components/ChartLegend/examples/ChartLegend.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-charts/src/victory/components/ChartLegend/examples/ChartLegend.md",
         "version": "v6"
       }
     ],

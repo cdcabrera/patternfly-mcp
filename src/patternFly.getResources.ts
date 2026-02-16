@@ -200,7 +200,7 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
 
     entries.forEach(entry => {
       const version = (entry.version || 'unknown').toLowerCase();
-      const path = entry.path.toLowerCase();
+      const path = entry.path;
 
       resource.versions[version] ??= {
         uris: [],
