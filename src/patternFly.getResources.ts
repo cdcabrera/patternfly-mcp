@@ -171,11 +171,11 @@ getPatternFlyReactComponentNames.memo = memo(getPatternFlyReactComponentNames);
  * Get a multifaceted documentation breakdown from the JSON catalog.
  *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
- * @param options - Options.
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
-const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getOptions()): Promise<PatternFlyMcpAvailableDocs> => {
-  const { availableVersions, closestVersion, closestSemVer, latestVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
+const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<PatternFlyMcpAvailableDocs> => {
+  const { isLatestVersion, ...versionContext } = await getPatternFlyVersionContext.memo(contextPathOverride);
+
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpDocsByPath = {};
@@ -189,7 +189,7 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
     const name = docsName.toLowerCase();
     const resource: PatternFlyMcpResourceMetadata = {
       name,
-      isSchemasAvailable: options.patternflyOptions.default.latestVersion === latestVersion && schemaNames.includes(name),
+      isSchemasAvailable: isLatestVersion && schemaNames.includes(name),
       urls: [],
       urlsNoGuidance: [],
       urlsGuidance: [],
@@ -251,11 +251,8 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string, options = getO
   });
 
   return {
+    ...versionContext,
     resources,
-    availableVersions,
-    closestVersion,
-    closestSemVer,
-    latestVersion,
     markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b)),
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b)),

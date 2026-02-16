@@ -16,11 +16,8 @@ const findClosestPatternFlyVersion = async (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   contextPathOverride: string | undefined = undefined,
   options = getOptions()
-): Promise<string> => {
-  const { latestSemVer } = options.patternflyOptions.default;
-
-  return latestSemVer;
-};
+): Promise<string> =>
+  options.patternflyOptions?.default?.latestSemVer;
 
 /**
  * Memoized version of findClosestPatternFlyVersion.
@@ -40,24 +37,29 @@ findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
  *   - `closestSemVer`: The closest SemVer version detected in the project context.
  *   - `closestVersion`: The closest PatternFly `tag` version detected in the project context, (e.g. "v4", "v5", "v6")
  *   - `latestVersion`: The latest PatternFly `tag` version, (e.g. "v4", "v5", "v6")
+ *   - `isLatestVersion`: Whether the closest version is the actual latest `default` version provided by MCP options.
  */
 const getPatternFlyVersionContext = async (
   contextPathOverride: string | undefined = undefined,
   options = getOptions()
 ) => {
-  const availableSemVer = options.patternflyOptions.availableResourceVersions;
-  const availableVersions = availableSemVer.map(version => `v${version.split('.')[0]}`);
-  const enumeratedVersions = Array.from(new Set([...options.patternflyOptions.availableSearchVersions, ...availableVersions]));
-  const latestVersion = availableVersions[0] || options.patternflyOptions.default.latestVersion;
+  const availableSemVer = options.patternflyOptions?.availableResourceVersions;
+  const availableVersions = availableSemVer?.map?.(version => `v${version.split('.')[0]}`) || [];
+  const enumeratedVersions = Array.from(new Set([...options.patternflyOptions?.availableSearchVersions || [], ...availableVersions]));
+
+  const latestDefaultVersion = options.patternflyOptions?.default?.latestVersion;
+  const latestVersion = availableVersions[0] || latestDefaultVersion;
+
   const closestSemVer = await findClosestPatternFlyVersion.memo(contextPathOverride);
-  const closestVersion = `v${closestSemVer.split('.')[0]}`;
+  const closestVersion = closestSemVer ? `v${closestSemVer.split('.')[0]}` : latestVersion;
 
   return {
     availableVersions,
     enumeratedVersions,
     closestSemVer,
     closestVersion,
-    latestVersion
+    latestVersion,
+    isLatestVersion: latestDefaultVersion === latestVersion
   };
 };
 
