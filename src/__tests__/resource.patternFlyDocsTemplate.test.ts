@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises';
+// import { readFile } from 'node:fs/promises';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
+import { mockReadFile, mockFetch } from '../../jest.setupTests';
 import {
   patternFlyDocsTemplateResource,
   listResources,
@@ -10,12 +11,13 @@ import {
 import { isPlainObject } from '../server.helpers';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 
+/*
 jest.mock('node:fs/promises', () => ({
   ...jest.requireActual('node:fs/promises'),
   readFile: jest.fn()
-}));
+}));*/
 
-const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
+// const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
 
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {
@@ -94,15 +96,15 @@ describe('uriNameComplete', () => {
 });
 
 describe('resourceCallback', () => {
-  let fetchMock: jest.SpyInstance;
+  // let fetchMock: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    fetchMock = jest.spyOn(global, 'fetch');
+    // fetchMock = jest.spyOn(global, 'fetch');
   });
 
   afterEach(() => {
-    fetchMock.mockRestore();
+    // fetchMock.mockRestore();
   });
 
   it.each([
@@ -131,7 +133,7 @@ describe('resourceCallback', () => {
     const mockContent = `Mock content for ${variables.name}`;
 
     mockReadFile.mockResolvedValue(mockContent);
-    fetchMock.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       text: () => mockContent
     } as any);
@@ -176,7 +178,7 @@ describe('resourceCallback', () => {
     const mockContent = `Mock content for ${variables.name}`;
 
     mockReadFile.mockResolvedValue(mockContent);
-    fetchMock.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       text: () => mockContent
     } as any);
