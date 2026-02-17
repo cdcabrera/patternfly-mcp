@@ -34,6 +34,9 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "availableResourceVersions": [
       "6.0.0",
     ],
+    "availableSchemaVersions": [
+      "v6",
+    ],
     "availableSearchVersions": [
       "current",
       "latest",

@@ -127,7 +127,7 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>) => 
       uri: 'patternfly://schemas/index',
       mimeType: 'text/markdown',
       text: stringJoin.newline(
-        `# PatternFly Component Names JSON Schema Index for "${updatedVersion}"`,
+        `# PatternFly Component JSON Schemas Index for "${updatedVersion}"`,
         '',
         '',
         ...docsIndex || []

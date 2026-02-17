@@ -3,15 +3,16 @@
 exports[`getPatternFlyMcpDocs should return multiple organized facets: properties 1`] = `
 [
   "availableVersions",
+  "availableSchemaVersions",
   "enumeratedVersions",
   "closestSemVer",
   "closestVersion",
   "latestVersion",
   "resources",
-  "markdownIndex",
   "nameIndex",
   "pathIndex",
   "uriIndex",
+  "uriSchemasIndex",
   "byPath",
   "byVersion",
 ]

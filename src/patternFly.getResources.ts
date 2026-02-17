@@ -48,20 +48,6 @@ type PatternFlyMcpDocsByPath = {
 };
 
 /**
- * PatternFly JSON catalog by URI with an entry.
- */
-// type PatternFlyMcpDocsByUri = {
-//  [uri: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
-// };
-
-/**
- * PatternFly JSON catalog by URI schemas with an entry.
- */
-// type PatternFlyMcpDocsByUriSchemas = {
-//  [uriSchemas: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
-// };
-
-/**
  * PatternFly JSON catalog by version with a list of entries.
  */
 type PatternFlyMcpDocsByVersion = {
@@ -91,8 +77,6 @@ type PatternFlyMcpResourceMetadata = {
   entriesGuidance: PatternFlyMcpDocEntry[];
   entriesNoGuidance: PatternFlyMcpDocEntry[];
   versions: Record<string, {
-    // markdownDocsIndex: string[];
-    // markdownSchemasIndex: string[];
     isSchemasAvailable: boolean;
     uri: string;
     uriSchemas: string | undefined;
@@ -135,8 +119,6 @@ interface PatternFlyMcpAvailableDocs {
   uriIndex: string[];
   uriSchemasIndex: string[];
   byPath: PatternFlyMcpDocsByPath;
-  // byUri: PatternFlyMcpDocsByUri;
-  // byUriSchemas: PatternFlyMcpDocsByUriSchemas;
   byVersion: PatternFlyMcpDocsByVersion;
 }
 
@@ -206,8 +188,6 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpDocsByPath = {};
-  // const byUri: PatternFlyMcpDocsByUri = {};
-  // const byUriSchemas: PatternFlyMcpDocsByUriSchemas = {};
   const byVersion: PatternFlyMcpDocsByVersion = {};
   const pathIndex = new Set<string>();
   const uriIndex = new Set<string>();
@@ -237,12 +217,9 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
       uriIndex.add(uri);
 
       resource.versions[version] ??= {
-        // markdownDocsIndex: [],
-        // markdownSchemasIndex: [],
         isSchemasAvailable,
         uri,
         uriSchemas: undefined,
-        // urisSchemas: [],
         urls: [],
         urlsGuidance: [],
         urlsNoGuidance: [],
@@ -261,31 +238,12 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
         if (!uriSchemasIndex.has(uriSchemas)) {
           resource.versions[version].uriSchemas = uriSchemas;
         }
-
-        // byUriSchemas[uriSchemas] ??= [];
-        // byUriSchemas[uriSchemas]?.push({ ...entry, name: docsName, displayCategory, uri, uriSchemas });
-        // markdownSchemasIndex.add(`[${docsName} (${version})](${uriSchema})`);
-        // resource.versions[version].markdownSchemasIndex.push(`[${docsName} (${version})](${uriSchema})`);
       }
 
       byPath[path] = { ...entry, name: docsName, displayCategory, uri };
 
-      // byUri[uri] ??= [];
-      // byUri[uri].push({ ...entry, name: docsName, displayCategory, uri, uriSchemas });
-
       byVersion[entry.version] ??= [];
       byVersion[entry.version]?.push({ ...entry, name: docsName, displayCategory, uri });
-
-      // pathIndex.add(path);
-      // uriIndex.add(uri);
-
-      // markdownIndex.add(`[${docsName} (${version}) - ${setCategoryDisplayLabel(entry)}](${uri})`);
-      // resource.versions[version].markdownDocsIndex.push(`[${docsName} (${version}) - ${setCategoryDisplayLabel(entry)}](${uri})`);
-
-      // if (!uriIndex.has(uri)) {
-      //  uriIndex.add(uri);
-      // resource.versions[version].uris.push(uri);
-      // }
 
       resource.urls.push(path);
       resource.versions[version].urls.push(path);
@@ -313,15 +271,11 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
   return {
     ...versionContext,
     resources,
-    // markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
-    // markdownSchemasIndex: Array.from(markdownSchemasIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b)),
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b)),
     uriIndex: Array.from(uriIndex).sort((a, b) => a.localeCompare(b)),
     uriSchemasIndex: Array.from(uriSchemasIndex).sort((a, b) => a.localeCompare(b)),
     byPath,
-    // byUri,
-    // byUriSchemas,
     byVersion
   };
 };
@@ -370,7 +324,5 @@ export {
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpDocs,
   type PatternFlyMcpDocsByPath,
-  // type PatternFlyMcpDocsByUri,
-  // type PatternFlyMcpDocsByUriSchemas,
   type PatternFlyMcpDocsByVersion
 };

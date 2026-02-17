@@ -19,6 +19,9 @@ exports[`runServer should allow server to be stopped, http stop server: diagnost
       "Registered resource: patternfly-context",
     ],
     [
+      "Registered resource: patternfly-components-index",
+    ],
+    [
       "Registered resource: patternfly-docs-index",
     ],
     [
@@ -72,6 +75,9 @@ exports[`runServer should allow server to be stopped, stdio stop server: diagnos
       "Registered resource: patternfly-context",
     ],
     [
+      "Registered resource: patternfly-components-index",
+    ],
+    [
       "Registered resource: patternfly-docs-index",
     ],
     [
@@ -123,6 +129,9 @@ exports[`runServer should attempt to run server, create transport, connect, and 
     ],
     [
       "Registered resource: patternfly-context",
+    ],
+    [
+      "Registered resource: patternfly-components-index",
     ],
     [
       "Registered resource: patternfly-docs-index",
@@ -185,6 +194,9 @@ exports[`runServer should attempt to run server, disable SIGINT handler: diagnos
       "Registered resource: patternfly-context",
     ],
     [
+      "Registered resource: patternfly-components-index",
+    ],
+    [
       "Registered resource: patternfly-docs-index",
     ],
     [
@@ -238,6 +250,9 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
     ],
     [
       "Registered resource: patternfly-context",
+    ],
+    [
+      "Registered resource: patternfly-components-index",
     ],
     [
       "Registered resource: patternfly-docs-index",
@@ -298,6 +313,9 @@ exports[`runServer should attempt to run server, register a tool: diagnostics 1`
     ],
     [
       "Registered resource: patternfly-context",
+    ],
+    [
+      "Registered resource: patternfly-components-index",
     ],
     [
       "Registered resource: patternfly-docs-index",
@@ -369,6 +387,9 @@ exports[`runServer should attempt to run server, register multiple tools: diagno
     ],
     [
       "Registered resource: patternfly-context",
+    ],
+    [
+      "Registered resource: patternfly-components-index",
     ],
     [
       "Registered resource: patternfly-docs-index",
@@ -452,6 +473,9 @@ exports[`runServer should attempt to run server, use custom options: diagnostics
       "Registered resource: patternfly-context",
     ],
     [
+      "Registered resource: patternfly-components-index",
+    ],
+    [
       "Registered resource: patternfly-docs-index",
     ],
     [
@@ -510,6 +534,9 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
     ],
     [
       "Registered resource: patternfly-context",
+    ],
+    [
+      "Registered resource: patternfly-components-index",
     ],
     [
       "Registered resource: patternfly-docs-index",
@@ -583,6 +610,9 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
     ],
     [
       "Registered resource: patternfly-context",
+    ],
+    [
+      "Registered resource: patternfly-components-index",
     ],
     [
       "Registered resource: patternfly-docs-index",

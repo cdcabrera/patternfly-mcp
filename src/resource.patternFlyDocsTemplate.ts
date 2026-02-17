@@ -10,7 +10,7 @@ import { getOptions, runWithOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpDocs } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { listResources, uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
+import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
 
 /**
  * Name of the resource template.
@@ -30,57 +30,6 @@ const CONFIG = {
   description: 'Retrieve specific PatternFly documentation by name or path',
   mimeType: 'text/markdown'
 };
-
-/**
- * List resources callback for the URI template.
- *
- * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
- */
-/*
-const listResources = async () => {
-  const { byVersion } = await getPatternFlyMcpDocs.memo();
-
-  const resources: PatterFlyListResourceResult[] = [];
-
-  // Initial sort by the latest version
-  Object.entries(byVersion).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, entries]) => {
-    const seenIndex = new Set<string>();
-    const versionResource: PatterFlyListResourceResult[] = [];
-
-    entries.forEach(entry => {
-      if (!seenIndex.has(entry.name)) {
-        seenIndex.add(entry.name);
-
-        versionResource.push({
-          uri: `patternfly://docs/${version}/${entry.name.toLowerCase()}`,
-          mimeType: 'text/markdown',
-          name: `${entry.name} (${version})`,
-          description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
-        });
-      }
-    });
-
-    resources.push(...versionResource);
-  });
-
-  return {
-    resources
-  };
-};
-
-listResources.memo = memo(listResources);
-*/
-
-/**
- * Name completion callback for the URI template.
- *
- * @param value - The value to complete.
- * @returns The list of available versions.
- */
-/*
-const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) =>
-  filterEnumeratedPatternFlyVersions(value as string | undefined);
-*/
 
 /**
  * Name completion callback for the URI template.
