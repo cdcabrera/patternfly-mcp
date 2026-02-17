@@ -11,14 +11,6 @@ import {
 import { isPlainObject } from '../server.helpers';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 
-/*
-jest.mock('node:fs/promises', () => ({
-  ...jest.requireActual('node:fs/promises'),
-  readFile: jest.fn()
-}));*/
-
-// const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
-
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -96,15 +88,8 @@ describe('uriNameComplete', () => {
 });
 
 describe('resourceCallback', () => {
-  // let fetchMock: jest.SpyInstance;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    // fetchMock = jest.spyOn(global, 'fetch');
-  });
-
-  afterEach(() => {
-    // fetchMock.mockRestore();
   });
 
   it.each([

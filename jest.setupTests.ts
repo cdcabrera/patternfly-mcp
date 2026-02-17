@@ -23,6 +23,9 @@ jest.mock('pid-port', () => ({
   portToPid: jest.fn().mockResolvedValue(undefined)
 }));
 
+/**
+ * Note: Mock node:fs/promises `readFile`
+ */
 jest.mock('node:fs/promises', () => ({
   ...jest.requireActual('node:fs/promises'),
   readFile: jest.fn()
