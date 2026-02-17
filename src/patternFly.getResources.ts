@@ -94,7 +94,7 @@ type PatternFlyMcpResourceMetadata = {
     // markdownDocsIndex: string[];
     // markdownSchemasIndex: string[];
     isSchemasAvailable: boolean;
-    uris: string[];
+    uri: string;
     uriSchemas: string | undefined;
     urls: string[];
     urlsGuidance: string[];
@@ -229,15 +229,18 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
     };
 
     entries.forEach(entry => {
-
       const version = (entry.version || 'unknown').toLowerCase();
       const path = entry.path;
+      const uri = `patternfly://docs/${version}/${name}`;
+
+      pathIndex.add(path);
+      uriIndex.add(uri);
 
       resource.versions[version] ??= {
         // markdownDocsIndex: [],
         // markdownSchemasIndex: [],
         isSchemasAvailable,
-        uris: [],
+        uri,
         uriSchemas: undefined,
         // urisSchemas: [],
         urls: [],
@@ -247,7 +250,6 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
         entriesNoGuidance: []
       };
 
-      const uri = `patternfly://docs/${version}/${name}`;
       const displayCategory = setCategoryDisplayLabel(entry);
       let uriSchemas;
 
@@ -259,7 +261,6 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
         if (!uriSchemasIndex.has(uriSchemas)) {
           resource.versions[version].uriSchemas = uriSchemas;
         }
-
 
         // byUriSchemas[uriSchemas] ??= [];
         // byUriSchemas[uriSchemas]?.push({ ...entry, name: docsName, displayCategory, uri, uriSchemas });
@@ -275,15 +276,16 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
       byVersion[entry.version] ??= [];
       byVersion[entry.version]?.push({ ...entry, name: docsName, displayCategory, uri });
 
-      pathIndex.add(path);
+      // pathIndex.add(path);
+      // uriIndex.add(uri);
 
       // markdownIndex.add(`[${docsName} (${version}) - ${setCategoryDisplayLabel(entry)}](${uri})`);
       // resource.versions[version].markdownDocsIndex.push(`[${docsName} (${version}) - ${setCategoryDisplayLabel(entry)}](${uri})`);
 
-      if (!uriIndex.has(uri)) {
-        uriIndex.add(uri);
-        resource.versions[version].uris.push(uri);
-      }
+      // if (!uriIndex.has(uri)) {
+      //  uriIndex.add(uri);
+      // resource.versions[version].uris.push(uri);
+      // }
 
       resource.urls.push(path);
       resource.versions[version].urls.push(path);

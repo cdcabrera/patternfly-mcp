@@ -55,7 +55,6 @@ const CONFIG = {
  */
 const listResources = async () => {
   const { byVersion } = await getPatternFlyMcpDocs.memo();
-
   const resources: PatterFlyListResourceResult[] = [];
 
   // Initial sort by the latest version
@@ -84,6 +83,9 @@ const listResources = async () => {
   };
 };
 
+/**
+ * Memoized version of listResources.
+ */
 listResources.memo = memo(listResources);
 
 /**
@@ -105,22 +107,15 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
   const { version } = variables || {};
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
 
   if (!updatedVersion) {
-    const { latestVersion } = await getPatternFlyMcpDocs.memo();
-
     updatedVersion = latestVersion;
   }
 
-  const { byVersion } = await getPatternFlyMcpDocs.memo();
-  // const docsIndex = byVersion[updatedVersion]?.map((item, index) =>
-  //  `${index + 1}. [${item.name} - ${item.displayCategory} (${item.version})](${item.uri})`);
-
-  // `1. [AboutModal - Design Guidelines, Accessibility, Examples (v6)](patternfly://docs/v6/aboutmodal)`
-
   const entries = byVersion[updatedVersion] || [];
 
-  // Group categories by URI
+  // Group by URI
   const groupedByUri = new Map<string, { name: string, version: string, categories: string[] }>();
 
   entries.forEach(item => {
