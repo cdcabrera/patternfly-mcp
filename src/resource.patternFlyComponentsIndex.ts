@@ -96,8 +96,9 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>) => 
   });
 
   // Generate the consolidated list
-  const docsIndex = Array.from(groupedByUri.entries()).map(([uri, data], index) =>
-    `${index + 1}. [${data.name} (${data.version})](${uri})`);
+  const docsIndex = Array.from(groupedByUri.entries())
+    .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
+    .map(([uri, data], index) => `${index + 1}. [${data.name} (${data.version})](${uri})`);
 
   return {
     contents: [{

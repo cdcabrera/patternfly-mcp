@@ -131,11 +131,13 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>) => 
   });
 
   // Generate the consolidated list
-  const docsIndex = Array.from(groupedByUri.entries()).map(([uri, data], index) => {
-    const categoryList = data.categories.join(', ');
+  const docsIndex = Array.from(groupedByUri.entries())
+    .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
+    .map(([uri, data], index) => {
+      const categoryList = data.categories.join(', ');
 
-    return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri})`;
-  });
+      return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri})`;
+    });
 
   const allDocs = stringJoin.newline(
     `# PatternFly Documentation Index for "${updatedVersion}"`,
