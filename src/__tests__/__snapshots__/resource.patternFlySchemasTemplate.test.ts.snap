@@ -7,11 +7,14 @@ exports[`patternFlySchemasTemplateResource should have a consistent return struc
   "name": "patternfly-schemas-template",
   "uri": ResourceTemplate {
     "_callbacks": {
-      "list": undefined,
+      "complete": {
+        "name": [Function],
+      },
+      "list": [Function],
     },
     "_uriTemplate": UriTemplate {
       "parts": [
-        "patternfly://schemas/",
+        "patternfly://schemas/v6/",
         {
           "exploded": false,
           "name": "name",
@@ -21,7 +24,7 @@ exports[`patternFlySchemasTemplateResource should have a consistent return struc
           "operator": "",
         },
       ],
-      "template": "patternfly://schemas/{name}",
+      "template": "patternfly://schemas/v6/{name}",
     },
   },
 }

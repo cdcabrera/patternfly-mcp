@@ -1,6 +1,14 @@
+import {
+  type CompleteResourceTemplateCallback,
+  ResourceTemplate
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
+import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
-import { getPatternFlyReactComponentNames } from './patternFly.getResources';
+import { getOptions, runWithOptions } from './options.context';
+import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import { type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
 /**
  * Name of the resource.
@@ -10,7 +18,7 @@ const NAME = 'patternfly-schemas-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://schemas/index';
+const URI_TEMPLATE = 'patternfly://schemas/index{?version}';
 
 /**
  * Resource configuration.
@@ -22,30 +30,127 @@ const CONFIG = {
 };
 
 /**
+ * List resources callback for the URI template.
+ *
+ * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
+ */
+const listResources = async () => {
+  const { availableSchemaVersions, byVersion, resources: docsResources } = await getPatternFlyMcpDocs.memo();
+
+  const resources: PatterFlyListResourceResult[] = [];
+
+  availableSchemaVersions.forEach(version => {
+    const versionEntries = byVersion[version] || [];
+    const versionResource: PatterFlyListResourceResult[] = [];
+    const seenIndex = new Set<string>();
+
+    versionEntries.forEach(entry => {
+      const entryName = entry.name.toLowerCase();
+
+      if (!seenIndex.has(entryName) && docsResources.get(entryName)?.isSchemasAvailable) {
+        seenIndex.add(entryName);
+
+        resources.push({
+          uri: `patternfly://schemas/${version}/${entryName}`,
+          mimeType: 'application/json',
+          name: `${entry.name} (${version})`,
+          description: `JSON component schemas for PatternFly version "${version}" of "${entry.name}"`
+        });
+      }
+    });
+
+    resources.push(...versionResource);
+  });
+
+  return {
+    resources
+  };
+};
+
+listResources.memo = memo(listResources);
+
+/**
+ * Name completion callback for the URI template.
+ *
+ * @param _value - The value to complete.
+ * @returns The list of available versions.
+ */
+const uriVersionComplete: CompleteResourceTemplateCallback = async (_value: unknown) => {
+  const { availableSchemaVersions } = await getPatternFlyMcpDocs.memo();
+
+  return availableSchemaVersions;
+};
+
+/**
+ * Resource callback for the documentation index.
+ *
+ * @param uri - URI of the resource.
+ * @param variables - Variables for the resource.
+ * @returns The resource contents.
+ */
+const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
+  const { version } = variables || {};
+  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const { latestVersion, byVersion, resources } = await getPatternFlyMcpDocs.memo();
+
+  if (!updatedVersion) {
+    updatedVersion = latestVersion;
+  }
+
+  const entries = byVersion[updatedVersion] || [];
+  const groupedByUri = new Map<string, { name: string, version: string }>();
+
+  entries.forEach(entry => {
+    const entryName = entry.name.toLowerCase();
+    const resource = resources.get(entryName)?.versions[updatedVersion];
+
+    if (resource?.uriSchemas) {
+      groupedByUri.set(resource.uriSchemas, { name: entry.name, version: entry.version });
+    }
+  });
+
+  // Generate the consolidated list
+  const docsIndex = Array.from(groupedByUri.entries()).map(([uri, data], index) =>
+    `${index + 1}. [${data.name} (${data.version})](${uri})`);
+
+  return {
+    contents: [{
+      uri: 'patternfly://schemas/index',
+      mimeType: 'text/markdown',
+      text: stringJoin.newline(
+        `# PatternFly Component Names Index for "${updatedVersion}"`,
+        '',
+        '',
+        ...docsIndex || []
+      )
+    }]
+  };
+};
+
+/**
  * Resource creator for the component schemas index.
  *
+ * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlySchemasIndexResource = (): McpResource => [
+const patternFlySchemasIndexResource = (options = getOptions()): McpResource => [
   NAME,
-  URI_TEMPLATE,
+  new ResourceTemplate(URI_TEMPLATE, {
+    list: async () => runWithOptions(options, async () => listResources.memo()),
+    complete: {
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+    }
+  }),
   CONFIG,
-  async () => {
-    const { componentNamesWithSchema } = getPatternFlyReactComponentNames.memo();
-
-    return {
-      contents: [{
-        uri: 'patternfly://schemas/index',
-        mimeType: 'text/markdown',
-        text: stringJoin.newline(
-          '# PatternFly Component Names Index',
-          '',
-          '',
-          ...componentNamesWithSchema
-        )
-      }]
-    };
-  }
+  async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables))
 ];
 
-export { patternFlySchemasIndexResource, NAME, URI_TEMPLATE, CONFIG };
+export {
+  patternFlySchemasIndexResource,
+  listResources,
+  resourceCallback,
+  uriVersionComplete,
+  NAME,
+  URI_TEMPLATE,
+  CONFIG
+};

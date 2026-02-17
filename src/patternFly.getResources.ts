@@ -24,6 +24,13 @@ type PatternFlyMcpDocEntry = {
   version: string;
 };
 
+type PatternFlyMcpDocsMeta = {
+  name: string;
+  displayCategory: string;
+  uri: string;
+  // uriSchemas?: string | undefined
+};
+
 /**
  * PatternFly JSON catalog, the original JSON.
  *
@@ -37,14 +44,28 @@ interface PatternFlyMcpDocs {
  * PatternFly JSON catalog by path with an entry.
  */
 type PatternFlyMcpDocsByPath = {
-  [path: string]: PatternFlyMcpDocEntry & { name: string };
+  [path: string]: PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta;
 };
+
+/**
+ * PatternFly JSON catalog by URI with an entry.
+ */
+// type PatternFlyMcpDocsByUri = {
+//  [uri: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
+// };
+
+/**
+ * PatternFly JSON catalog by URI schemas with an entry.
+ */
+// type PatternFlyMcpDocsByUriSchemas = {
+//  [uriSchemas: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
+// };
 
 /**
  * PatternFly JSON catalog by version with a list of entries.
  */
 type PatternFlyMcpDocsByVersion = {
-  [version: string]: (PatternFlyMcpDocEntry & { name: string })[];
+  [version: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
 };
 
 /**
@@ -70,7 +91,11 @@ type PatternFlyMcpResourceMetadata = {
   entriesGuidance: PatternFlyMcpDocEntry[];
   entriesNoGuidance: PatternFlyMcpDocEntry[];
   versions: Record<string, {
+    // markdownDocsIndex: string[];
+    // markdownSchemasIndex: string[];
+    isSchemasAvailable: boolean;
     uris: string[];
+    uriSchemas: string | undefined;
     urls: string[];
     urlsGuidance: string[];
     urlsNoGuidance: string[];
@@ -89,27 +114,29 @@ type PatternFlyMcpResourceMetadata = {
  *
  * @property resources - Patternfly available documentation and metadata by resource name.
  * @property availableVersions - Patternfly available versions.
+ * @property availableSchemaVersions - Patternfly available schema versions.
  * @property closestVersion - Patternfly closest version.
  * @property closestSemVer - Patternfly closest semantic version.
  * @property latestVersion - Patternfly latest version.
- * @property markdownIndex - Patternfly documentation markdown index.
  * @property nameIndex - Patternfly documentation name index.
  * @property pathIndex - Patternfly documentation path index.
- * @property uriIndex - Patternfly documentation URI index.
  * @property byPath - Patternfly documentation by path with entries
  * @property byVersion - Patternfly documentation by version with entries
  */
 interface PatternFlyMcpAvailableDocs {
   resources: Map<string, PatternFlyMcpResourceMetadata>;
   availableVersions: string[];
+  availableSchemaVersions: string[];
   closestVersion: string;
   closestSemVer: string;
   latestVersion: string;
-  markdownIndex: string[];
   nameIndex: string[];
   pathIndex: string[];
   uriIndex: string[];
+  uriSchemasIndex: string[];
   byPath: PatternFlyMcpDocsByPath;
+  // byUri: PatternFlyMcpDocsByUri;
+  // byUriSchemas: PatternFlyMcpDocsByUriSchemas;
   byVersion: PatternFlyMcpDocsByVersion;
 }
 
@@ -179,17 +206,20 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
   const originalDocs: PatternFlyMcpDocs = patternFlyDocsCatalog.docs;
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpDocsByPath = {};
+  // const byUri: PatternFlyMcpDocsByUri = {};
+  // const byUriSchemas: PatternFlyMcpDocsByUriSchemas = {};
   const byVersion: PatternFlyMcpDocsByVersion = {};
-  const markdownIndex = new Set<string>();
   const pathIndex = new Set<string>();
   const uriIndex = new Set<string>();
+  const uriSchemasIndex = new Set<string>();
   const { componentNamesWithSchema: schemaNames } = getPatternFlyReactComponentNames.memo();
 
   Object.entries(originalDocs).forEach(([docsName, entries]) => {
     const name = docsName.toLowerCase();
+    const isSchemasAvailable = isLatestVersion && schemaNames.includes(name);
     const resource: PatternFlyMcpResourceMetadata = {
       name,
-      isSchemasAvailable: isLatestVersion && schemaNames.includes(name),
+      isSchemasAvailable,
       urls: [],
       urlsNoGuidance: [],
       urlsGuidance: [],
@@ -199,11 +229,17 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
     };
 
     entries.forEach(entry => {
+
       const version = (entry.version || 'unknown').toLowerCase();
       const path = entry.path;
 
       resource.versions[version] ??= {
+        // markdownDocsIndex: [],
+        // markdownSchemasIndex: [],
+        isSchemasAvailable,
         uris: [],
+        uriSchemas: undefined,
+        // urisSchemas: [],
         urls: [],
         urlsGuidance: [],
         urlsNoGuidance: [],
@@ -211,19 +247,41 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
         entriesNoGuidance: []
       };
 
-      byPath[path] = { ...entry, name: docsName };
+      const uri = `patternfly://docs/${version}/${name}`;
+      const displayCategory = setCategoryDisplayLabel(entry);
+      let uriSchemas;
+
+      if (isSchemasAvailable) {
+        uriSchemas = `patternfly://schemas/${version}/${name}`;
+
+        uriSchemasIndex.add(uriSchemas);
+
+        if (!uriSchemasIndex.has(uriSchemas)) {
+          resource.versions[version].uriSchemas = uriSchemas;
+        }
+
+
+        // byUriSchemas[uriSchemas] ??= [];
+        // byUriSchemas[uriSchemas]?.push({ ...entry, name: docsName, displayCategory, uri, uriSchemas });
+        // markdownSchemasIndex.add(`[${docsName} (${version})](${uriSchema})`);
+        // resource.versions[version].markdownSchemasIndex.push(`[${docsName} (${version})](${uriSchema})`);
+      }
+
+      byPath[path] = { ...entry, name: docsName, displayCategory, uri };
+
+      // byUri[uri] ??= [];
+      // byUri[uri].push({ ...entry, name: docsName, displayCategory, uri, uriSchemas });
 
       byVersion[entry.version] ??= [];
-      byVersion[entry.version]?.push({ ...entry, name: docsName });
+      byVersion[entry.version]?.push({ ...entry, name: docsName, displayCategory, uri });
 
       pathIndex.add(path);
 
-      const uri = `patternfly://docs/${version}/${name}`;
-
-      markdownIndex.add(`[${uri} - ${setCategoryDisplayLabel(entry)}](${path})`);
+      // markdownIndex.add(`[${docsName} (${version}) - ${setCategoryDisplayLabel(entry)}](${uri})`);
+      // resource.versions[version].markdownDocsIndex.push(`[${docsName} (${version}) - ${setCategoryDisplayLabel(entry)}](${uri})`);
 
       if (!uriIndex.has(uri)) {
-        uriIndex.add(`patternfly://docs/${version}/${name}`);
+        uriIndex.add(uri);
         resource.versions[version].uris.push(uri);
       }
 
@@ -253,11 +311,15 @@ const getPatternFlyMcpDocs = async (contextPathOverride?: string): Promise<Patte
   return {
     ...versionContext,
     resources,
-    markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
+    // markdownIndex: Array.from(markdownIndex).sort((a, b) => a.localeCompare(b)),
+    // markdownSchemasIndex: Array.from(markdownSchemasIndex).sort((a, b) => a.localeCompare(b)),
     nameIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b)),
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b)),
     uriIndex: Array.from(uriIndex).sort((a, b) => a.localeCompare(b)),
+    uriSchemasIndex: Array.from(uriSchemasIndex).sort((a, b) => a.localeCompare(b)),
     byPath,
+    // byUri,
+    // byUriSchemas,
     byVersion
   };
 };
@@ -303,7 +365,10 @@ export {
   type PatternFlyMcpAvailableDocs,
   type PatternFlyMcpResourceMetadata,
   type PatternFlyMcpDocEntry,
+  type PatternFlyMcpDocsMeta,
   type PatternFlyMcpDocs,
   type PatternFlyMcpDocsByPath,
+  // type PatternFlyMcpDocsByUri,
+  // type PatternFlyMcpDocsByUriSchemas,
   type PatternFlyMcpDocsByVersion
 };

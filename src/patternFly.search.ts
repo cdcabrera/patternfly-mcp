@@ -7,7 +7,10 @@ import { getPatternFlyMcpDocs, type PatternFlyMcpResourceMetadata } from './patt
  * Search result object returned by searchPatternFly.
  * Includes additional metadata and URLs.
  */
-type SearchPatternFlyResult = FuzzySearchResult & PatternFlyMcpResourceMetadata & { query: string };
+// type SearchPatternFlyResult = FuzzySearchResult & PatternFlyMcpResourceMetadata & { query: string };
+interface SearchPatternFlyResult extends FuzzySearchResult, PatternFlyMcpResourceMetadata {
+  query: string;
+}
 
 /**
  * Search results object returned by searchPatternFly.

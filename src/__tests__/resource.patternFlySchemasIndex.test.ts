@@ -34,6 +34,6 @@ describe('patternFlySchemasIndexResource, callback', () => {
 
     expect(result.contents).toBeDefined();
     expect(Object.keys(result.contents[0])).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0].text).toContain('# PatternFly Component Names Index');
+    expect(result.contents[0].text).toContain('# PatternFly Component JSON Schemas Index');
   });
 });

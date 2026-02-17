@@ -33,6 +33,7 @@ findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
  * @param options - Global options
  * @returns The PatternFly version context, including the closest version, the latest version, and the available versions.
  *   - `availableVersions`: The list of available PatternFly `tag` versions, (e.g. "v4", "v5", "v6")
+ *   - `availableSchemaVersions`: The list of available PatternFly `tag` schema versions, (e.g. "v6")
  *   - `enumeratedVersions`: The list of available PatternFly `tag` and `display` versions, (e.g. "v4", "v5", "v6", "current", "latest")
  *   - `closestSemVer`: The closest SemVer version detected in the project context.
  *   - `closestVersion`: The closest PatternFly `tag` version detected in the project context, (e.g. "v4", "v5", "v6")
@@ -45,6 +46,7 @@ const getPatternFlyVersionContext = async (
 ) => {
   const availableSemVer = options.patternflyOptions?.availableResourceVersions;
   const availableVersions = availableSemVer?.map?.(version => `v${version.split('.')[0]}`) || [];
+  const availableSchemaVersions = options.patternflyOptions?.availableSchemaVersions || [];
   const enumeratedVersions = Array.from(new Set([...options.patternflyOptions?.availableSearchVersions || [], ...availableVersions]));
 
   const latestDefaultVersion = options.patternflyOptions?.default?.latestVersion;
@@ -55,6 +57,7 @@ const getPatternFlyVersionContext = async (
 
   return {
     availableVersions,
+    availableSchemaVersions,
     enumeratedVersions,
     closestSemVer,
     closestVersion,

@@ -6,31 +6,11 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
-import { memo } from './server.caching';
 import { getOptions, runWithOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpDocs } from './patternFly.getResources';
-import {
-  filterEnumeratedPatternFlyVersions,
-  normalizeEnumeratedPatternFlyVersion
-} from './patternFly.helpers';
-
-/**
- * List resources result type.
- *
- * @note This is temporary until MCP SDK exports ListResourcesResult.
- *
- * @property uri - The fully qualified URI of the resource.
- * @property name - A human-readable name for the resource.
- * @property [mimeType] - The MIME type of the content.
- * @property [description] - A brief hint for the model.
- */
-type PatterFlyDocsListResourceResult = {
-  uri: string;
-  name: string;
-  mimeType?: string;
-  description?: string;
-};
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { listResources, uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 
 /**
  * Name of the resource template.
@@ -54,17 +34,18 @@ const CONFIG = {
 /**
  * List resources callback for the URI template.
  *
- * @returns {Promise<PatterFlyDocsListResourceResult>} The list of available resources.
+ * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
+/*
 const listResources = async () => {
   const { byVersion } = await getPatternFlyMcpDocs.memo();
 
-  const resources: PatterFlyDocsListResourceResult[] = [];
+  const resources: PatterFlyListResourceResult[] = [];
 
   // Initial sort by the latest version
   Object.entries(byVersion).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, entries]) => {
     const seenIndex = new Set<string>();
-    const versionResource: PatterFlyDocsListResourceResult[] = [];
+    const versionResource: PatterFlyListResourceResult[] = [];
 
     entries.forEach(entry => {
       if (!seenIndex.has(entry.name)) {
@@ -88,6 +69,7 @@ const listResources = async () => {
 };
 
 listResources.memo = memo(listResources);
+*/
 
 /**
  * Name completion callback for the URI template.
@@ -95,8 +77,10 @@ listResources.memo = memo(listResources);
  * @param value - The value to complete.
  * @returns The list of available versions.
  */
+/*
 const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) =>
   filterEnumeratedPatternFlyVersions(value as string | undefined);
+*/
 
 /**
  * Name completion callback for the URI template.
@@ -124,8 +108,8 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 /**
  * Resource callback for the documentation template.
  *
- * @param uri - The URI of the resource.
- * @param variables - The variables of the resource.
+ * @param uri - URI of the resource.
+ * @param variables - Variables for the resource.
  * @param options - Global options
  * @returns The resource contents.
  */
@@ -235,9 +219,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 
 export {
   patternFlyDocsTemplateResource,
-  listResources,
   resourceCallback,
-  uriVersionComplete,
   uriNameComplete,
   NAME,
   URI_TEMPLATE,
