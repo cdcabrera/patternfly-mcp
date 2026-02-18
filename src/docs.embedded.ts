@@ -1,0 +1,113 @@
+/**
+ * PatternFly JSON catalog doc
+ */
+type PatternFlyMcpDocsCatalogDoc = {
+  displayName: string;
+  description: string;
+  pathSlug: string;
+  section: string;
+  category: string;
+  source: string;
+  path: string;
+  version: string;
+};
+
+/**
+ * PatternFly JSON catalog documentation entries.
+ */
+type PatternFlyMcpDocsCatalogEntry = {
+  [key: string]: PatternFlyMcpDocsCatalogDoc[]
+};
+
+/**
+ * PatternFly documentation catalog.
+ *
+ * @interface PatternFlyMcpDocsCatalog
+ *
+ * @property [version] - Version of the catalog.
+ * @property [generated] - Date when the catalog was generated.
+ * @property {PatternFlyMcpDocsCatalogEntry} docs - PatternFly documentation entries.
+ */
+interface PatternFlyMcpDocsCatalog {
+  version?: string;
+  generated?: string;
+  meta: {
+    totalEntries: number;
+    totalDocs: number;
+    source: string;
+  };
+  docs: PatternFlyMcpDocsCatalogEntry
+}
+
+/**
+ * Fallback documentation for when the catalog is unavailable.
+ * Points to the high-level entry points for PatternFly.
+ */
+const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
+  meta: {
+    totalEntries: 1,
+    totalDocs: 5,
+    source: 'patternfly-mcp-fallback'
+  },
+  docs: {
+    patternfly: [
+      {
+        displayName: 'PatternFly Home',
+        description: 'Official PatternFly design system website.',
+        pathSlug: 'home',
+        section: 'home',
+        category: 'reference',
+        source: 'website',
+        path: 'https://www.patternfly.org',
+        version: 'v6'
+      },
+      {
+        displayName: 'PatternFly GitHub',
+        description: 'PatternFly organization on GitHub (Core & React).',
+        pathSlug: 'github',
+        section: 'github',
+        category: 'reference',
+        source: 'github',
+        path: 'https://github.com/patternfly',
+        version: 'v6'
+      },
+      {
+        displayName: 'PatternFly Org',
+        description: 'Direct source for PatternFly documentation and guidelines.',
+        pathSlug: 'github',
+        section: 'github',
+        category: 'reference',
+        source: 'github',
+        path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/README.md',
+        version: 'v6'
+      },
+      {
+        displayName: 'PatternFly React Docs',
+        description: 'Direct source for PatternFly React component examples.',
+        pathSlug: 'react-src',
+        section: 'components',
+        category: 'react',
+        source: 'github',
+        path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/README.md',
+        version: 'v6'
+      },
+      {
+        displayName: 'PatternFly AI Coding Helpers',
+        description: 'Direct source for PatternFly AI guidelines for developing React.',
+        pathSlug: 'github',
+        section: 'github',
+        category: 'reference',
+        source: 'github',
+        path: 'https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/README.md',
+        version: 'v6'
+      }
+    ]
+  }
+};
+
+export {
+  EMBEDDED_DOCS,
+  type PatternFlyMcpDocsCatalog,
+  type PatternFlyMcpDocsCatalogEntry,
+  type PatternFlyMcpDocsCatalogDoc
+};
