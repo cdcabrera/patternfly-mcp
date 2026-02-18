@@ -45,11 +45,16 @@ describe('searchPatternFly', () => {
   ])('should attempt to match components and keywords, $description', async ({ search, matchType }) => {
     const { searchResults } = await searchPatternFly(search);
 
-    expect(searchResults.filter(({ matchType: returnMatchType }) => returnMatchType === matchType)).toEqual([
-      expect.objectContaining({
-        item: expect.stringContaining(search),
-        query: expect.stringMatching(search)
-      })
-    ]);
+    expect(searchResults.find(({ matchType: returnMatchType }) => returnMatchType === matchType)).toEqual(expect.objectContaining({
+      name: expect.stringContaining(search),
+      query: expect.stringMatching(search)
+    }));
+  });
+
+  it('should allow version filtering', async () => {
+    const { searchResults } = await searchPatternFly('about modal', { pfVersion: 'v5' });
+
+    expect(searchResults.length).toBeGreaterThan(0);
+    expect(searchResults.every(({ uri }) => uri?.includes('v5'))).toBe(true);
   });
 });
