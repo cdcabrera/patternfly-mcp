@@ -1,9 +1,17 @@
-import { componentNames as pfComponentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
-import patternFlyDocsCatalog from './docs.json';
+import {
+  componentNames as pfComponentNames,
+  getComponentSchema
+} from '@patternfly/patternfly-component-schemas/json';
+// import patternFlyDocsCatalog from './docs.json';
+// import myJsonFile from './myJson.json';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isPlainObject } from './server.helpers';
-import { getPatternFlyVersionContext, type PatternFlyVersionContext } from './patternFly.helpers';
+import {
+  getPatternFlyVersionContext,
+  type PatternFlyVersionContext
+} from './patternFly.helpers';
+import { log, formatUnknownError } from './logger';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -135,6 +143,28 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
 }
 
 /**
+ * Lazy load the PatternFly documentation catalog.
+ *
+ * @returns PatternFly documentation catalog JSON.
+ */
+const getPatternFlyDocsCatalog = async () => {
+  let docsCatalog = { docs: {} };
+
+  try {
+    docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+  } catch (error) {
+    log.debug(`Failed to import docs catalog entry '#docsCatalog': ${formatUnknownError(error)}`);
+  }
+
+  return docsCatalog.docs;
+};
+
+/**
+ * Memoized version of getPatternFlyDocsCatalog.
+ */
+getPatternFlyDocsCatalog.memo = memo(getPatternFlyDocsCatalog);
+
+/**
  * Set the category display label based on the entry's section and category.
  *
  * @param entry - PatternFly documentation entry
@@ -219,7 +249,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const componentNames = await getPatternFlyReactComponentNames.memo(contextPathOverride);
   const { byVersion: componentNamesByVersion, componentNamesIndex, componentNamesWithSchemasIndex: schemaNames } = componentNames;
 
-  const originalDocs: PatternFlyMcpResources = patternFlyDocsCatalog.docs;
+  const originalDocs: PatternFlyMcpResources = await getPatternFlyDocsCatalog.memo();
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
