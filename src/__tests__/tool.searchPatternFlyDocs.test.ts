@@ -79,17 +79,17 @@ describe('searchPatternFlyDocsTool, callback', () => {
   it.each([
     {
       description: 'with missing or undefined searchQuery',
-      error: 'Missing required parameter: searchQuery',
+      error: '"searchQuery" must be a string from',
       searchQuery: undefined
     },
     {
       description: 'with null searchQuery',
-      error: 'Missing required parameter: searchQuery',
+      error: '"searchQuery" must be a string from',
       searchQuery: null
     },
     {
       description: 'with non-string searchQuery',
-      error: 'Missing required parameter: searchQuery',
+      error: '"searchQuery" must be a string from',
       searchQuery: 123
     }
   ])('should handle errors, $description', async ({ error, searchQuery }) => {

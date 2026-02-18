@@ -15,6 +15,7 @@ import {
   type PatternFlyMcpDocsCatalogEntry,
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
+import { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS } from './docs.filterWords';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -61,11 +62,20 @@ type PatternFlyMcpResourcesByVersion = {
 };
 
 /**
+ * PatternFly resource keywords by resource name.
+ */
+type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
+
+/**
  * PatternFly resource metadata.
  *
  * @note This might need to be called resource metadata. `docs.json` doesn't just contain component metadata.
  *
  * @property name - The name of component entry.
+ * @property uri - The URI of component entry. DO NOT EXPECT THIS PROPERTY TO EXIST. Typically expanded under
+ *     conditional PatternFly search results, specific to PF versioning.
+ * @property uriSchemas - The URI of component schemas. DO NOT EXPECT THIS PROPERTY TO EXIST. Typically expanded
+ *     under conditional PatternFly search results, specific to PF versioning.
  * @property urls - All entry URLs for component documentation.
  * @property urlsNoGuidance - All entry URLs for component documentation without AI guidance.
  * @property urlsGuidance - All entry URLs for component documentation with AI guidance.
@@ -75,9 +85,12 @@ type PatternFlyMcpResourcesByVersion = {
  */
 type PatternFlyMcpResourceMetadata = {
   name: string;
+  uri: string | undefined;
+  uriSchemas: string | undefined;
   urls: string[];
   urlsNoGuidance: string[];
   urlsGuidance: string[];
+  entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   versions: Record<string, {
@@ -87,6 +100,7 @@ type PatternFlyMcpResourceMetadata = {
     urls: string[];
     urlsGuidance: string[];
     urlsNoGuidance: string[];
+    entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
     entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
     entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   }>;
@@ -105,6 +119,7 @@ type PatternFlyMcpResourceMetadata = {
  * @property docsIndex - Patternfly available documentation index.
  * @property componentsIndex - Patternfly available components index.
  * @property keywordsIndex - Patternfly available keywords index.
+ * @property keywordsMap - Patternfly available keywords by resource name.
  * @property isFallbackDocumentation - Whether the fallback documentation is used.
  * @property pathIndex - Patternfly documentation path index.
  * @property byPath - Patternfly documentation by path with entries
@@ -117,6 +132,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   docsIndex: string[];
   componentsIndex: string[];
   keywordsIndex: string[];
+  keywordsMap: PatternFlyMcpKeywordsMap;
   isFallbackDocumentation: boolean;
   pathIndex: string[];
   byPath: PatternFlyMcpResourcesByPath;
@@ -137,7 +153,8 @@ const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { 
   let isFallback = false;
 
   try {
-    docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+    // docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+    docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
   } catch (error) {
     isFallback = true;
     log.debug(`Failed to import docs catalog '#docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
@@ -229,6 +246,88 @@ const getPatternFlyReactComponentNames = async (contextPathOverride?: string) =>
 getPatternFlyReactComponentNames.memo = memo(getPatternFlyReactComponentNames);
 
 /**
+ * Filter keywords by removing noise words.
+ *
+ * @param keywordsMap - Available keywords by resource name.
+ * @param settings - Settings object
+ * @param settings.filterList - List of words to filter out from keywords.
+ */
+const filterKeywords = (keywordsMap: PatternFlyMcpKeywordsMap, { filterList = INDEX_NOISE_WORDS } = {}) => {
+  const filteredKeywords: PatternFlyMcpKeywordsMap = new Map();
+
+  for (const [keyword, versionMap] of keywordsMap) {
+    const updatedKeyword = keyword.toLowerCase().trim();
+    const isVariant = filterList.some(word => {
+      const updatedWord = word.toLowerCase().trim();
+
+      return updatedKeyword === updatedWord || updatedKeyword.startsWith(updatedWord) || updatedKeyword.endsWith(updatedWord);
+    });
+
+    if (!isVariant) {
+      filteredKeywords.set(keyword, versionMap);
+    }
+  }
+
+  return filteredKeywords;
+};
+
+/**
+ * Update the keywords map with the given keyword.
+ *
+ * @param keywordsMap - Available keywords by resource name.
+ * @param params - Params object
+ * @param params.keyword - Keyword to add to the map.
+ * @param params.name - Name of the resource associated with the keyword.
+ * @param params.version - Version of the resource associated with the keyword.
+ * @param settings - Settings object
+ * @param settings.blockList - List of words to block from indexing.
+ */
+const mutateKeyWordsMap = (
+  keywordsMap: PatternFlyMcpKeywordsMap,
+  { keyword, name, version }: { keyword: string, name: string, version: string },
+  { blockList = INDEX_BLOCKLIST_WORDS } = {}
+) => {
+  const normalizedKeyword = keyword.toLowerCase().trim();
+  const initialSplit = normalizedKeyword.split(' ').filter(Boolean);
+  const isMultipleWords = initialSplit.length > 1;
+
+  const mutateMap = (word: string) => {
+    if (!keywordsMap.has(word)) {
+      keywordsMap.set(word, new Map());
+    }
+
+    const versionMap = keywordsMap.get(word);
+
+    if (!versionMap?.has(version)) {
+      versionMap?.set(version, []);
+    }
+
+    const mapped = versionMap?.get(version);
+
+    if (!mapped?.includes(name)) {
+      mapped?.push(name);
+    }
+  };
+
+  // Break phrase apart
+  if (isMultipleWords) {
+    const splitKeywords = initialSplit.map(word => word.trim().replace(/[()|"'<>@#!,.;:]/g, ''));
+
+    for (const word of splitKeywords) {
+      if (word.length <= 3 || blockList.find(blockedWord => blockedWord === word.toLowerCase())) {
+        continue;
+      }
+
+      mutateMap(word);
+    }
+  }
+  // But also apply entire phrases
+  // } else {
+  mutateMap(normalizedKeyword);
+  // }
+};
+
+/**
  * Get a multifaceted resources breakdown from PatternFly.
  *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
@@ -245,14 +344,18 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const byUri: PatternFlyMcpResourcesByUri = {};
   const byVersion: PatternFlyMcpResourcesByVersion = {};
   const pathIndex = new Set<string>();
+  const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   Object.entries(originalDocs.docs).forEach(([docsName, entries]) => {
     const name = docsName.toLowerCase();
     const resource: PatternFlyMcpResourceMetadata = {
       name,
+      uri: undefined,
+      uriSchemas: undefined,
       urls: [],
       urlsNoGuidance: [],
       urlsGuidance: [],
+      entries: [],
       entriesGuidance: [],
       entriesNoGuidance: [],
       versions: {}
@@ -273,6 +376,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         urls: [],
         urlsGuidance: [],
         urlsNoGuidance: [],
+        entries: [],
         entriesGuidance: [],
         entriesNoGuidance: []
       };
@@ -304,6 +408,23 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.urls.push(path);
       resource.versions[version].urls.push(path);
 
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
+
+      if (entry.category) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name, version });
+      }
+
+      if (entry.section) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.section, name, version });
+      }
+
+      if (entry.description) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name, version });
+      }
+
+      resource.entries.push(extendedEntry);
+      resource.versions[version].entries.push(extendedEntry);
+
       if (extendedEntry.section === 'guidelines') {
         resource.urlsGuidance.push(path);
         resource.entriesGuidance.push(extendedEntry);
@@ -324,14 +445,19 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   });
 
+  const filteredKeywords = filterKeywords(rawKeywordsMap);
+
   return {
     ...versionContext,
     resources,
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     componentsIndex: componentNamesIndex,
-    keywordsIndex: Array.from(new Set([...Array.from(resources.keys()), ...componentNamesIndex]))
-      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     isFallbackDocumentation: originalDocs.isFallback,
+    keywordsIndex: Array.from(new Set([
+      ...componentNamesIndex,
+      ...Array.from(filteredKeywords.keys())
+    ])).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    keywordsMap: filteredKeywords,
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     byPath,
     byUri,

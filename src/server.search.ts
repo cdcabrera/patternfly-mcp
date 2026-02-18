@@ -194,9 +194,13 @@ const fuzzySearch = (
     } else if (normalizedQuery !== '' && normalizedItem !== '' && normalizedQuery.includes(normalizedItem)) {
       matchType = 'partial';
       editDistance = 2;
-    } else if (isFuzzyMatch && Math.abs(normalizedItem.length - normalizedQuery.length) <= maxDistance) {
-      matchType = 'fuzzy';
-      editDistance = distance(normalizedQuery, normalizedItem);
+    } else if (isFuzzyMatch && normalizedQuery !== '' && normalizedItem !== '') {
+      const checkDistance = distance(normalizedItem, normalizedQuery);
+
+      if (checkDistance <= maxDistance) {
+        matchType = 'fuzzy';
+        editDistance = checkDistance;
+      }
     }
 
     if (matchType === undefined) {
