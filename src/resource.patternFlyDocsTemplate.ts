@@ -8,7 +8,7 @@ import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
 
@@ -20,7 +20,7 @@ const NAME = 'patternfly-docs-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{version}/{name}';
+const URI_TEMPLATE = 'patternfly://docs/{version}/{name}{?section,category}';
 
 /**
  * Resource configuration.
@@ -42,7 +42,7 @@ const CONFIG = {
  * @returns The list of available names.
  */
 const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
-  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const version = context?.arguments?.version;
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
   const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
@@ -82,7 +82,7 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 
   if (!updatedVersion) {
-    const { latestVersion } = await getPatternFlyMcpDocs.memo();
+    const { latestVersion } = await getPatternFlyMcpResources.memo();
 
     updatedVersion = latestVersion;
   }
@@ -91,13 +91,21 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   const docs = [];
   const { searchResults, exactMatches } = await searchPatternFly.memo(name);
 
-  if (exactMatches.length === 0 ||
-    exactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
-  ) {
-    const suggestions = searchResults.map(result => result.item).slice(0, 3);
-    const suggestionMessage = suggestions.length
-      ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-      : 'No similar resources found.';
+  if (exactMatches.length === 0 || exactMatches.every(match => !match.versions[updatedVersion]?.urls.length)) {
+    const { resources } = await getPatternFlyMcpResources.memo();
+    const isSchemasAvailable = resources.get(name.toLowerCase())?.versions?.[updatedVersion]?.isSchemasAvailable;
+    let suggestionMessage;
+
+    if (isSchemasAvailable) {
+      suggestionMessage =
+        `A JSON Schema is available. Use "patternfly://schemas/${updatedVersion}/${name.toLowerCase()}" to view prop definitions."`;
+    } else {
+      const suggestions = searchResults.map(result => result.item).slice(0, 3);
+
+      suggestionMessage = suggestions.length
+        ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+        : 'No similar resources found.';
+    }
 
     throw new McpError(
       ErrorCode.InvalidParams,

@@ -1,7 +1,7 @@
 import { fuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import { getPatternFlyMcpDocs, type PatternFlyMcpResourceMetadata } from './patternFly.getResources';
+import { getPatternFlyMcpResources, type PatternFlyMcpResourceMetadata } from './patternFly.getResources';
 
 /**
  * Search result object returned by searchPatternFly.
@@ -35,23 +35,23 @@ interface SearchPatternFlyResults {
  *
  * @param searchQuery - Search query string
  * @param settings - Optional settings object
- * @param settings.documentation - Object of multifaceted documentation entries to search.
+ * @param settings.resources - Object of multifaceted documentation entries to search.
  * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to false.
  * @returns Object containing search results and matched URLs
  */
 const searchPatternFly = async (searchQuery: string, {
-  documentation = getPatternFlyMcpDocs.memo(),
+  resources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false
 } = {}): Promise<SearchPatternFlyResults> => {
-  const updatedDocumentation = await documentation;
+  const updatedResources = await resources;
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   let searchResults: FuzzySearchResult[] = [];
 
   if (isSearchWildCardAll) {
-    searchResults = updatedDocumentation.nameIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, updatedDocumentation.nameIndex, {
+    searchResults = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
       maxDistance: 3,
       maxResults: 10,
       isFuzzyMatch: true,
@@ -60,7 +60,7 @@ const searchPatternFly = async (searchQuery: string, {
   }
 
   const updatedSearchResults = searchResults.map((result: FuzzySearchResult) => {
-    const resource = updatedDocumentation.resources.get(result.item);
+    const resource = updatedResources.resources.get(result.item);
 
     return {
       ...result,

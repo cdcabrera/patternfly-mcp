@@ -8,6 +8,8 @@ exports[`patternFlyDocsIndexResource should have a consistent return structure: 
   "uri": ResourceTemplate {
     "_callbacks": {
       "complete": {
+        "category": [Function],
+        "section": [Function],
         "version": [Function],
       },
       "list": [Function],
@@ -20,11 +22,13 @@ exports[`patternFlyDocsIndexResource should have a consistent return structure: 
           "name": "version",
           "names": [
             "version",
+            "section",
+            "category",
           ],
           "operator": "?",
         },
       ],
-      "template": "patternfly://docs/index{?version}",
+      "template": "patternfly://docs/index{?version,section,category}",
     },
   },
 }

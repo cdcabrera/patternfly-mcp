@@ -5,7 +5,7 @@ import { processDocsFunction, type ProcessedDoc } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
-import { getPatternFlyMcpDocs, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
+import { getPatternFlyMcpResources, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { log } from './logger';
 
@@ -62,7 +62,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const { latestVersion, byPath } = await getPatternFlyMcpDocs.memo();
+    const { latestVersion, byPath } = await getPatternFlyMcpResources.memo();
     const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
     const isLatestVersion = latestVersion === updatedVersion;
 

@@ -33,8 +33,17 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
           ],
           "operator": "",
         },
+        {
+          "exploded": false,
+          "name": "section",
+          "names": [
+            "section",
+            "category",
+          ],
+          "operator": "?",
+        },
       ],
-      "template": "patternfly://docs/{version}/{name}",
+      "template": "patternfly://docs/{version}/{name}{?section,category}",
     },
   },
 }

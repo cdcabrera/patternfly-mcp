@@ -4,6 +4,7 @@ import { type McpTool } from './server';
 import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
+import {getPatternFlyMcpResources} from "./patternFly.getResources";
 // import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
@@ -34,7 +35,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
-    // const { closestVersion } = await getPatternFlyMcpDocs.memo();
+    // const { envVersion } = await getPatternFlyMcpResources.memo();
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
       return {
@@ -57,15 +58,42 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       };
     }
 
+    const { envVersion } = await getPatternFlyMcpResources.memo();
     const results = searchResults.map(result => {
-      const urlList = result.entriesNoGuidance.length
-        ? stringJoin.newline(
-          ...result.entriesNoGuidance.map((entry, index) => `  ${index + 1}. ${entry.path}`)
-          // const isDetectedVersion = entry.version === closestVersion;
-          // return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
-        )
-        : '  - No documentation URLs found';
+      /*
+      const urlList = result.entriesNoGuidance.length ? stringJoin.newline(
+          ...Object.entries(result.versions)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([version, entries]) =>
+              stringJoin.newline(
+                `### PatternFly ${version} documentation URLs`,
+                ...entries.entriesNoGuidance.map((entry, index) => `  ${index + 1}. ${entry.path}`)
+              ))
+        ) : '  - No documentation URLs found';
+       */
 
+      let urlList = '  - No documentation URLs found';
+
+      if (result.entriesNoGuidance?.length) {
+        urlList = stringJoin.newline(
+          ...Object.entries(result.versions)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([version, entries]) =>
+              stringJoin.newline(
+                `#### Documentation URLs ${version}`,
+                ...entries.entriesNoGuidance
+                  .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                  .map((entry, index) => `  ${index + 1}. [${entry.displayName} - ${entry.displayCategory} (${entry.version})](${entry.path})`)
+                  // .map((entry, index) => `  ${index + 1}. ${entry.path}`)
+              ))
+        );
+      }
+
+      // ...result.entriesNoGuidance.map((entry, index) => `  ${index + 1}. ${entry.path}`)
+      // const isDetectedVersion = entry.version === closestVersion;
+      // return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
+
+      /*
       const guidanceUrlList = result.entriesGuidance.length
         ? stringJoin.newline(
           ...result.entriesGuidance.map((entry, index) => `  ${index + 1}. ${entry.path}`)
@@ -73,19 +101,35 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           // return `  ${index + 1}. ${entry.path}${isDetectedVersion ? ' **[Detected version]**' : ''}`;
         )
         : '  - No guidance URLs found';
+      */
+
+      let guidanceUrlList = '  - No guidance URLs found';
+
+      if (result.entriesGuidance?.length) {
+        guidanceUrlList = stringJoin.newline(
+          ...Object.entries(result.versions)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([version, resultEntry]) =>
+              stringJoin.newline(
+                `#### AI guidance URLs ${version}`,
+                ...resultEntry.entriesGuidance
+                  .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                  .map((entry, index) => `  ${index + 1}. [${entry.displayName} - ${entry.displayCategory} (${entry.version})](${entry.path})`)
+                  // .map((entry, index) => `  ${index + 1}. ${entry.path}`)
+              ))
+        );
+      }
 
       return stringJoin.newline(
         '',
         `## ${result.item}`,
         `**Match Type**: ${result.matchType}`,
         `### "usePatternFlyDocs" tool resource URLs`,
-        `#### Documentation URLs`,
         urlList,
-        `#### AI guidance URLs`,
         guidanceUrlList,
         `### Resources metadata`,
         ` - **Component name**: ${result.item}`,
-        ` - **JSON Schemas**: ${result.isSchemasAvailable ? 'Available' : 'Not available'}`
+        ` - **JSON Schemas**: ${result.versions?.[envVersion]?.isSchemasAvailable ? 'Available' : 'Not available'}`
       );
     });
 

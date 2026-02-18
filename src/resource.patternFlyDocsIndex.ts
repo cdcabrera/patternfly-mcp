@@ -5,7 +5,7 @@ import {
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
 import { memo } from './server.caching';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import {
   filterEnumeratedPatternFlyVersions,
@@ -54,7 +54,7 @@ const CONFIG = {
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
-  const { byVersion } = await getPatternFlyMcpDocs.memo();
+  const { byVersion } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
   // Initial sort by the latest version
@@ -99,7 +99,7 @@ const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unkn
   const { version, section } = context?.arguments || {};
   const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
 
   if (!updatedVersion) {
     updatedVersion = latestVersion;
@@ -132,7 +132,7 @@ const uriSectionComplete: CompleteResourceTemplateCallback = async (value: unkno
   const { version, category } = context?.arguments || {};
   const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
 
   if (!updatedVersion) {
     updatedVersion = latestVersion;
@@ -173,7 +173,7 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
   const { category, version, section } = variables || {};
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
 
   if (!updatedVersion) {
     updatedVersion = latestVersion;

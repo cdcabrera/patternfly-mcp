@@ -3,7 +3,10 @@ import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import {
+  getPatternFlyMcpResources,
+  getPatternFlyReactComponentNames
+} from './patternFly.getResources';
 import { uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
@@ -15,7 +18,7 @@ const NAME = 'patternfly-components-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://components/index{?version}';
+const URI_TEMPLATE = 'patternfly://components/index{?version,section,category}';
 
 /**
  * Resource configuration.
@@ -32,24 +35,23 @@ const CONFIG = {
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
-  const { byVersion } = await getPatternFlyMcpDocs.memo();
+  const { byVersionComponentNames, resources: docsResources } = await getPatternFlyMcpResources.memo();
+  const { componentNamesWithSchemasMap } = await getPatternFlyReactComponentNames.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
-  Object.entries(byVersion).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, entries]) => {
-    const seenIndex = new Set<string>();
+  Object.entries(byVersionComponentNames).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, componentNames]) => {
     const versionResource: PatterFlyListResourceResult[] = [];
 
-    entries.forEach(entry => {
-      if (!seenIndex.has(entry.name) && entry.section === 'component') {
-        seenIndex.add(entry.name);
+    componentNames.forEach(componentName => {
+      const displayName = componentNamesWithSchemasMap[componentName];
+      const isSchemasAvailable = docsResources.get(componentName)?.versions?.[version]?.isSchemasAvailable ?? false;
 
-        versionResource.push({
-          uri: `patternfly://docs/${version}/${entry.name.toLowerCase()}`,
-          mimeType: 'text/markdown',
-          name: `${entry.name} (${version})`,
-          description: `Component documentation for PatternFly version "${version}" of "${entry.name}"`
-        });
-      }
+      versionResource.push({
+        uri: `patternfly://docs/${version}/${componentName}`,
+        mimeType: 'text/markdown',
+        name: `${displayName} (${version})`,
+        description: `Component documentation for PatternFly version "${version}" of "${displayName}.${isSchemasAvailable ? ' (JSON Schema available)' : ''}"`
+      });
     });
 
     resources.push(...versionResource);
@@ -75,7 +77,7 @@ listResources.memo = memo(listResources);
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
   const { version } = variables || {};
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion, resources } = await getPatternFlyMcpDocs.memo();
+  const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
 
   if (!updatedVersion) {
     updatedVersion = latestVersion;

@@ -1,8 +1,21 @@
 import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
+import { type PatternFlyOptions } from './options.defaults';
 import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
 import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
+
+interface PatternFlyVersionContext {
+  availableVersions: string[];
+  availableSchemasVersions: string[];
+  enumeratedVersions: string[];
+  envSemVer: string;
+  envVersion: string;
+  latestVersion: PatternFlyOptions['default']['latestVersion'];
+  latestSchemasVersion: PatternFlyOptions['default']['latestSchemasVersion'];
+  isEnvTheLatestVersion: boolean;
+  isEnvTheLatestSchemasVersion: boolean;
+}
 
 /**
  * Find the closest PatternFly version used within the project context.
@@ -35,34 +48,38 @@ findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
  *   - `availableVersions`: The list of available PatternFly `tag` versions, (e.g. "v4", "v5", "v6")
  *   - `availableSchemaVersions`: The list of available PatternFly `tag` schema versions, (e.g. "v6")
  *   - `enumeratedVersions`: The list of available PatternFly `tag` and `display` versions, (e.g. "v4", "v5", "v6", "current", "latest")
- *   - `closestSemVer`: The closest SemVer version detected in the project context.
- *   - `closestVersion`: The closest PatternFly `tag` version detected in the project context, (e.g. "v4", "v5", "v6")
+ *   - `envSemVer`: The "closest" or "detected" environment SemVer version detected in the project context.
+ *   - `envVersion`: The "closest" or "detected" environment PatternFly `tag` version detected in the project context, (e.g. "v4", "v5", "v6")
  *   - `latestVersion`: The latest PatternFly `tag` version, (e.g. "v4", "v5", "v6")
- *   - `isLatestVersion`: Whether the closest version is the actual latest `default` version provided by MCP options.
+ *   - `latestSchemasVersion`: The latest PatternFly `tag` schemas version
+ *   - `isEnvTheLatestVersion`: Whether the environment version is the actual latest `default` version provided by MCP options.
+ *   - `isEnvTheLatestSchemasVersion`: Whether the environment version is the actual latest schemas `default` version provided by MCP options.
  */
 const getPatternFlyVersionContext = async (
   contextPathOverride: string | undefined = undefined,
   options = getOptions()
-) => {
+): Promise<PatternFlyVersionContext> => {
   const availableSemVer = options.patternflyOptions?.availableResourceVersions;
   const availableVersions = availableSemVer?.map?.(version => `v${version.split('.')[0]}`) || [];
-  const availableSchemaVersions = options.patternflyOptions?.availableSchemaVersions || [];
+  const availableSchemasVersions = options.patternflyOptions?.availableSchemasVersions || [];
   const enumeratedVersions = Array.from(new Set([...options.patternflyOptions?.availableSearchVersions || [], ...availableVersions]));
 
-  const latestDefaultVersion = options.patternflyOptions?.default?.latestVersion;
-  const latestVersion = availableVersions[0] || latestDefaultVersion;
+  const latestVersion = options.patternflyOptions?.default?.latestVersion;
+  const latestSchemasVersion = options.patternflyOptions?.default?.latestSchemasVersion;
 
-  const closestSemVer = await findClosestPatternFlyVersion.memo(contextPathOverride);
-  const closestVersion = closestSemVer ? `v${closestSemVer.split('.')[0]}` : latestVersion;
+  const envSemVer = await findClosestPatternFlyVersion.memo(contextPathOverride);
+  const envVersion = envSemVer ? `v${envSemVer.split('.')[0]}` : latestVersion;
 
   return {
     availableVersions,
-    availableSchemaVersions,
+    availableSchemasVersions,
     enumeratedVersions,
-    closestSemVer,
-    closestVersion,
+    envSemVer,
+    envVersion,
     latestVersion,
-    isLatestVersion: latestDefaultVersion === latestVersion
+    latestSchemasVersion,
+    isEnvTheLatestVersion: envVersion === latestVersion,
+    isEnvTheLatestSchemasVersion: envVersion === latestSchemasVersion
   };
 };
 
@@ -94,7 +111,7 @@ const filterEnumeratedPatternFlyVersions = async (version?: string) => {
  * @returns The normalized version string, or `undefined` if the version is not recognized.
  */
 const normalizeEnumeratedPatternFlyVersion = async (version?: string) => {
-  const { closestVersion, latestVersion, availableVersions } = await getPatternFlyVersionContext.memo();
+  const { envVersion, latestVersion, availableVersions } = await getPatternFlyVersionContext.memo();
   const updatedVersion = typeof version === 'string' ? version.toLowerCase().trim() : undefined;
   let refineVersion = updatedVersion;
 
@@ -104,7 +121,7 @@ const normalizeEnumeratedPatternFlyVersion = async (version?: string) => {
       refineVersion = latestVersion;
       break;
     case 'detected':
-      refineVersion = closestVersion;
+      refineVersion = envVersion;
       break;
   }
 
@@ -203,5 +220,6 @@ export {
   filterEnumeratedPatternFlyVersions,
   disabled_findClosestPatternFlyVersion,
   getPatternFlyVersionContext,
-  normalizeEnumeratedPatternFlyVersion
+  normalizeEnumeratedPatternFlyVersion,
+  type PatternFlyVersionContext
 };

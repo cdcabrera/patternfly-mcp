@@ -6,7 +6,7 @@ import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
-import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
@@ -35,11 +35,11 @@ const CONFIG = {
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
-  const { availableSchemaVersions, byVersion, resources: docsResources } = await getPatternFlyMcpDocs.memo();
+  const { availableSchemasVersions, byVersion, resources: docsResources } = await getPatternFlyMcpResources.memo();
 
   const resources: PatterFlyListResourceResult[] = [];
 
-  availableSchemaVersions.forEach(version => {
+  availableSchemasVersions.forEach(version => {
     const versionEntries = byVersion[version] || [];
     const versionResource: PatterFlyListResourceResult[] = [];
     const seenIndex = new Set<string>();
@@ -47,7 +47,7 @@ const listResources = async () => {
     versionEntries.forEach(entry => {
       const entryName = entry.name.toLowerCase();
 
-      if (!seenIndex.has(entryName) && docsResources.get(entryName)?.isSchemasAvailable) {
+      if (!seenIndex.has(entryName) && docsResources.get(entryName)?.versions?.[version]?.isSchemasAvailable) {
         seenIndex.add(entryName);
 
         resources.push({
@@ -82,9 +82,9 @@ listResources.memo = memo(listResources);
  * @returns The list of available versions.
  */
 const uriVersionComplete: CompleteResourceTemplateCallback = async (_value: unknown) => {
-  const { availableSchemaVersions } = await getPatternFlyMcpDocs.memo();
+  const { availableSchemasVersions } = await getPatternFlyMcpResources.memo();
 
-  return availableSchemaVersions;
+  return availableSchemasVersions;
 };
 
 /**
@@ -97,7 +97,7 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (_value: unkn
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
   const { version } = variables || {};
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion, resources } = await getPatternFlyMcpDocs.memo();
+  const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
 
   if (!updatedVersion) {
     updatedVersion = latestVersion;

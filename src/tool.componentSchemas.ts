@@ -19,10 +19,9 @@ import {
  * @returns MCP tool tuple [name, schema, callback]
  */
 const componentSchemasTool = (options = getOptions()): McpTool => {
-  const { componentNamesWithSchema: componentNames } = getPatternFlyReactComponentNames.memo();
-
   const callback = async (args: any = {}) => {
     const { componentName } = args;
+    const { componentNamesWithSchemasIndex: componentNames } = await getPatternFlyReactComponentNames.memo();
 
     if (typeof componentName !== 'string') {
       throw new McpError(
