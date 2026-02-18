@@ -37,7 +37,7 @@ const NAME = 'patternfly-docs-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/index{?version}';
+const URI_TEMPLATE = 'patternfly://docs/index{?version,section,category}';
 
 /**
  * Resource configuration.
@@ -89,6 +89,72 @@ const listResources = async () => {
 listResources.memo = memo(listResources);
 
 /**
+ * Category completion callback for the URI template.
+ *
+ * @param value - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available categories.
+ */
+const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, section } = context?.arguments || {};
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
+
+  if (!updatedVersion) {
+    updatedVersion = latestVersion;
+  }
+
+  const entries = byVersion[updatedVersion] || [];
+  const availableCategories = new Set<string>();
+
+  entries.forEach(entry => {
+    if (normalizedSection && entry.section.toLowerCase() === normalizedSection) {
+      availableCategories.add(entry.category);
+
+      return;
+    }
+
+    availableCategories.add(entry.category);
+  });
+
+  return Array.from(availableCategories).sort();
+};
+
+/**
+ * Section completion callback for the URI template.
+ *
+ * @param value - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available sections.
+ */
+const uriSectionComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, category } = context?.arguments || {};
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
+
+  if (!updatedVersion) {
+    updatedVersion = latestVersion;
+  }
+
+  const entries = byVersion[updatedVersion] || [];
+  const availableSections = new Set<string>();
+
+  entries.forEach(entry => {
+    if (normalizedCategory && entry.category.toLowerCase() === normalizedCategory) {
+      availableSections.add(entry.section);
+
+      return;
+    }
+
+    availableSections.add(entry.section);
+  });
+
+  return Array.from(availableSections).sort();
+};
+
+/**
  * Name completion callback for the URI template.
  *
  * @param value - The value to complete.
@@ -105,7 +171,7 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
  * @returns The resource contents.
  */
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
-  const { version } = variables || {};
+  const { category, version, section } = variables || {};
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
   const { latestVersion, byVersion } = await getPatternFlyMcpDocs.memo();
 
@@ -113,7 +179,23 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>) => 
     updatedVersion = latestVersion;
   }
 
-  const entries = byVersion[updatedVersion] || [];
+  let entries = byVersion[updatedVersion] || [];
+
+  if (category || section) {
+    const normalizedCategory = typeof category === 'string' ? category.trim().toLowerCase() : undefined;
+    const normalizedSection = typeof section === 'string' ? section.trim().toLowerCase() : undefined;
+
+    entries = entries.filter(entry => {
+      const matchesCategory = category && entry.category.toLowerCase() === normalizedCategory;
+      const matchesSection = section && entry.section.toLowerCase() === normalizedSection;
+
+      if (normalizedCategory && normalizedSection) {
+        return matchesCategory && matchesSection;
+      } else {
+        return matchesCategory || matchesSection;
+      }
+    });
+  }
 
   // Group by URI
   const groupedByUri = new Map<string, { name: string, version: string, categories: string[] }>();
@@ -168,6 +250,8 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
   new ResourceTemplate(URI_TEMPLATE, {
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
       version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
     }
   }),
@@ -179,6 +263,8 @@ export {
   patternFlyDocsIndexResource,
   listResources,
   resourceCallback,
+  uriCategoryComplete,
+  uriSectionComplete,
   uriVersionComplete,
   NAME,
   URI_TEMPLATE,
