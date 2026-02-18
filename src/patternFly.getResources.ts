@@ -147,6 +147,12 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
   }
 
   switch (categoryLabel) {
+    case 'grammar':
+      categoryLabel = 'Grammar';
+      break;
+    case 'writing-guides':
+      categoryLabel = 'Writing Guidelines';
+      break;
     case 'design-guidelines':
       categoryLabel = 'Design Guidelines';
       break;
