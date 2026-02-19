@@ -80,7 +80,13 @@ exports[`Builtin tools, STDIO should expose expected tools and stable shape 1`] 
 }
 `;
 
-exports[`Logging should allow setting logging options, default 1`] = `[]`;
+exports[`Logging should allow setting logging options, default 1`] = `
+[
+  "(node:8465) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use \`node --trace-warnings ...\` to show where the warning was created)
+",
+]
+`;
 
 exports[`Logging should allow setting logging options, stderr 1`] = `
 [
@@ -110,13 +116,25 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 ",
   "[INFO]: @patternfly/patternfly-mcp server running on stdio transport
 ",
+  "(node:8466) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use \`node --trace-warnings ...\` to show where the warning was created)
+",
 ]
 `;
 
-exports[`Logging should allow setting logging options, with log level filtering 1`] = `[]`;
+exports[`Logging should allow setting logging options, with log level filtering 1`] = `
+[
+  "(node:8467) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use \`node --trace-warnings ...\` to show where the warning was created)
+",
+]
+`;
 
 exports[`Logging should allow setting logging options, with mcp protocol 1`] = `
 [
+  "(node:8468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use \`node --trace-warnings ...\` to show where the warning was created)
+",
   {
     "method": "notifications/message",
     "params": {

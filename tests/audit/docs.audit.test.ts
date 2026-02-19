@@ -1,8 +1,10 @@
 import { randomInt } from 'node:crypto';
-import docs from '../docs.json';
+import docs from '#docsCatalog';
 
 /**
  * Modern Fisher-Yates shuffle using crypto.randomInt
+ *
+ * @param arr - Array to shuffle
  */
 function shuffleInPlace<T>(arr: T[]) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -64,7 +66,7 @@ for (const urls of Object.values(groups)) {
   auditSet.push(...copy.slice(0, perGroup));
 }
 
-if (auditSet.length > maxTotal) {
+if (maxTotal > 0 && auditSet.length > maxTotal) {
   shuffleInPlace(auditSet);
   auditSet = auditSet.slice(0, maxTotal);
 }

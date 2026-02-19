@@ -21,7 +21,7 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "stripInternal": true,
-    "rootDirs": ["./src", "./tests"],
+    "rootDirs": ["./src", "./tests/e2e", "./tests/audit"],
     "paths": {
       "#docsCatalog": ["./src/docs.json"],
       "#toolsHost": ["./src/server.toolsHost.ts"]
