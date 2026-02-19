@@ -2687,6 +2687,16 @@
     ],
     "React": [
       {
+        "displayName": "React Development Rules",
+        "description": "AI guidance for PatternFly React development rules.",
+        "pathSlug": "react-development",
+        "section": "guidelines",
+        "category": "react",
+        "source": "github",
+        "path": "documentation:README.md",
+        "version": "v6"
+      },
+      {
         "displayName": "React Guidelines",
         "description": "AI guidance for PatternFly React Guidelines.",
         "pathSlug": "guidelines",

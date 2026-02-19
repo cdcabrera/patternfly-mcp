@@ -54,7 +54,7 @@ const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
       {
         displayName: 'PatternFly Home',
         description: 'Official PatternFly design system website.',
-        pathSlug: 'home',
+        pathSlug: 'patternfly-home',
         section: 'home',
         category: 'reference',
         source: 'website',
@@ -64,7 +64,7 @@ const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
       {
         displayName: 'PatternFly GitHub',
         description: 'PatternFly organization on GitHub (Core & React).',
-        pathSlug: 'github',
+        pathSlug: 'patternfly-github',
         section: 'github',
         category: 'reference',
         source: 'github',
@@ -74,17 +74,19 @@ const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
       {
         displayName: 'PatternFly Org',
         description: 'Direct source for PatternFly documentation and guidelines.',
-        pathSlug: 'github',
+        pathSlug: 'patternfly-org',
         section: 'github',
         category: 'reference',
         source: 'github',
-        path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/refs/heads/main/README.md',
+        path: 'https://github.com/patternfly/patternfly-org',
         version: 'v6'
-      },
+      }
+    ],
+    React: [
       {
         displayName: 'PatternFly React Docs',
         description: 'Direct source for PatternFly React component examples.',
-        pathSlug: 'react-src',
+        pathSlug: 'patternfly-react',
         section: 'components',
         category: 'react',
         source: 'github',
@@ -92,11 +94,11 @@ const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
         version: 'v6'
       },
       {
-        displayName: 'PatternFly AI Coding Helpers',
-        description: 'Direct source for PatternFly AI guidelines for developing React.',
-        pathSlug: 'github',
-        section: 'github',
-        category: 'reference',
+        displayName: 'React Development Rules',
+        description: 'AI guidance for PatternFly React development rules.',
+        pathSlug: 'react-development',
+        section: 'guidelines',
+        category: 'react',
         source: 'github',
         path: 'https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/README.md',
         version: 'v6'
