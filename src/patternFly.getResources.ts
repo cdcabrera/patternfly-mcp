@@ -1,28 +1,28 @@
-import { componentNames as pfComponentNames, getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
-import patternFlyDocsCatalog from './docs.json';
+import {
+  componentNames as pfComponentNames,
+  getComponentSchema
+} from '@patternfly/patternfly-component-schemas/json';
+// import patternFlyDocsCatalog from './docs.json';
+// import myJsonFile from './myJson.json';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { isPlainObject } from './server.helpers';
-import { getPatternFlyVersionContext, type PatternFlyVersionContext } from './patternFly.helpers';
+import {
+  getPatternFlyVersionContext,
+  type PatternFlyVersionContext
+} from './patternFly.helpers';
+import { log, formatUnknownError } from './logger';
+import {
+  EMBEDDED_DOCS,
+  type PatternFlyMcpDocsCatalog,
+  type PatternFlyMcpDocsCatalogEntry,
+  type PatternFlyMcpDocsCatalogDoc
+} from './docs.embedded';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
  */
 type PatternFlyComponentSchema = Awaited<ReturnType<typeof getPatternFlyComponentSchema>>;
-
-/**
- * PatternFly JSON catalog documentation entries
- */
-type PatternFlyMcpDocEntry = {
-  displayName: string;
-  description: string;
-  pathSlug: string;
-  section: string;
-  category: string;
-  source: string;
-  path: string;
-  version: string;
-};
 
 /**
  * PatternFly JSON extended documentation metadata
@@ -39,15 +39,13 @@ type PatternFlyMcpDocsMeta = {
  *
  * @interface PatternFlyMcpDocs
  */
-interface PatternFlyMcpResources {
-  [key: string]: PatternFlyMcpDocEntry[];
-}
+type PatternFlyMcpResources = PatternFlyMcpDocsCatalogEntry;
 
 /**
  * PatternFly resources by Path with an entry.
  */
 type PatternFlyMcpResourcesByPath = {
-  [path: string]: PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta;
+  [path: string]: PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta;
 };
 // type PatternFlyMcpResourcesByPath = Map<string, PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta>;
 
@@ -55,14 +53,14 @@ type PatternFlyMcpResourcesByPath = {
  * PatternFly resources by URI with a list of entries.
  */
 type PatternFlyMcpResourcesByUri = {
-  [uri: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
+  [uri: string]: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
 };
 
 /**
  * PatternFly resources by version with a list of entries.
  */
 type PatternFlyMcpResourcesByVersion = {
-  [version: string]: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
+  [version: string]: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
 };
 
 /**
@@ -84,8 +82,8 @@ type PatternFlyMcpResourceMetadata = {
   urls: string[];
   urlsNoGuidance: string[];
   urlsGuidance: string[];
-  entriesGuidance: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
-  entriesNoGuidance: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
+  entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
+  entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   versions: Record<string, {
     isSchemasAvailable: boolean;
     uri: string;
@@ -93,8 +91,8 @@ type PatternFlyMcpResourceMetadata = {
     urls: string[];
     urlsGuidance: string[];
     urlsNoGuidance: string[];
-    entriesGuidance: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
-    entriesNoGuidance: (PatternFlyMcpDocEntry & PatternFlyMcpDocsMeta)[];
+    entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
+    entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   }>;
 };
 
@@ -123,6 +121,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   docsIndex: string[];
   componentsIndex: string[];
   keywordsIndex: string[];
+  isFallbackDocumentation: boolean;
   pathIndex: string[];
   // uriIndex: string[];
   // uriSchemasIndex: string[];
@@ -135,11 +134,35 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
 }
 
 /**
+ * Lazy load the PatternFly documentation catalog.
+ *
+ * @returns PatternFly documentation catalog JSON.
+ */
+const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }> => {
+  let docsCatalog = EMBEDDED_DOCS;
+  let isFallback = false;
+
+  try {
+    docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+  } catch (error) {
+    isFallback = true;
+    log.debug(`Failed to import docs catalog '~docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
+  }
+
+  return { ...docsCatalog, isFallback };
+};
+
+/**
+ * Memoized version of getPatternFlyDocsCatalog.
+ */
+getPatternFlyDocsCatalog.memo = memo(getPatternFlyDocsCatalog);
+
+/**
  * Set the category display label based on the entry's section and category.
  *
  * @param entry - PatternFly documentation entry
  */
-const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
+const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
   let categoryLabel = entry?.category || 'Documentation';
 
   if (!isPlainObject(entry)) {
@@ -147,6 +170,12 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocEntry) => {
   }
 
   switch (categoryLabel) {
+    case 'grammar':
+      categoryLabel = 'Grammar';
+      break;
+    case 'writing-guides':
+      categoryLabel = 'Writing Guidelines';
+      break;
     case 'design-guidelines':
       categoryLabel = 'Design Guidelines';
       break;
@@ -213,14 +242,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const componentNames = await getPatternFlyReactComponentNames.memo(contextPathOverride);
   const { byVersion: componentNamesByVersion, componentNamesIndex, componentNamesWithSchemasIndex: schemaNames } = componentNames;
 
-  const originalDocs: PatternFlyMcpResources = patternFlyDocsCatalog.docs;
+  const originalDocs = await getPatternFlyDocsCatalog.memo();
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
   const byVersion: PatternFlyMcpResourcesByVersion = {};
   const pathIndex = new Set<string>();
 
-  Object.entries(originalDocs).forEach(([docsName, entries]) => {
+  Object.entries(originalDocs.docs).forEach(([docsName, entries]) => {
     const name = docsName.toLowerCase();
     const resource: PatternFlyMcpResourceMetadata = {
       name,
@@ -306,6 +335,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     componentsIndex: componentNamesIndex,
     keywordsIndex: Array.from(new Set([...Array.from(resources.keys()), ...componentNamesIndex]))
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    isFallbackDocumentation: originalDocs.isFallback,
     pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     byPath,
     byUri,
@@ -354,7 +384,6 @@ export {
   type PatternFlyComponentSchema,
   type PatternFlyMcpAvailableResources,
   type PatternFlyMcpResourceMetadata,
-  type PatternFlyMcpDocEntry,
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResources,
   type PatternFlyMcpResourcesByPath,
