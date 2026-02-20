@@ -1,4 +1,4 @@
-import { findClosestPatternFlyVersion } from '../patternFly.helpers';
+import { disabled_findClosestPatternFlyVersion } from '../patternFly.helpers';
 import { readLocalFileFunction } from '../server.getResources';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 
@@ -24,7 +24,7 @@ describe('findClosestPatternFlyVersion', () => {
       expected: '6.0.0'
     }
   ])('should return default version if no package.json is found, $description', async ({ path, expected }) => {
-    const version = await findClosestPatternFlyVersion(path as any);
+    const version = await disabled_findClosestPatternFlyVersion(path as any);
 
     expect(version).toBe(expected);
   });
@@ -143,11 +143,11 @@ describe('findClosestPatternFlyVersion', () => {
     }));
 
     // Use the PF MCP package.json so we can override with "mockReadLocalFile". Override available resource versions.
-    const version = await findClosestPatternFlyVersion(process.cwd(), {
+    const version = await disabled_findClosestPatternFlyVersion(process.cwd(), {
       ...DEFAULT_OPTIONS,
       patternflyOptions: {
         ...DEFAULT_OPTIONS.patternflyOptions,
-        availableResourceVersions: ['4.0.0', '5.0.0', '6.0.0']
+        availableResourceVersions: ['4.0.0', '5.0.0', '6.0.0'] as any
       }
     });
 
