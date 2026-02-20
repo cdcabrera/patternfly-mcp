@@ -2,6 +2,7 @@
 
 exports[`getPatternFlyMcpResources should return multiple organized facets: properties 1`] = `
 [
+  "availableSemVer",
   "availableVersions",
   "availableSchemasVersions",
   "enumeratedVersions",

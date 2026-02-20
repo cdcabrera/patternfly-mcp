@@ -6,6 +6,7 @@ import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
 
 interface PatternFlyVersionContext {
+  availableSemVer: string[];
   availableVersions: string[];
   availableSchemasVersions: string[];
   enumeratedVersions: string[];
@@ -46,6 +47,7 @@ findClosestPatternFlyVersion.memo = memo(findClosestPatternFlyVersion);
  * @param contextPathOverride - Optional override for the context path
  * @param options - Global options
  * @returns The PatternFly version context, including the closest version, the latest version, and the available versions.
+ *   - `availableSemVer`: The list of available PatternFly SemVer versions, (e.g. "4.0.0", "5.0.0", "6.0.0")
  *   - `availableVersions`: The list of available PatternFly `tag` versions, (e.g. "v4", "v5", "v6")
  *   - `availableSchemaVersions`: The list of available PatternFly `tag` schema versions, (e.g. "v6")
  *   - `enumeratedVersions`: The list of available PatternFly `tag` and `display` versions, (e.g. "v4", "v5", "v6", "current", "latest")
@@ -61,7 +63,12 @@ const getPatternFlyVersionContext = async (
   options = getOptions()
 ): Promise<PatternFlyVersionContext> => {
   const availableSemVer = options.patternflyOptions?.availableResourceVersions;
-  const availableVersions = availableSemVer?.map?.(version => `v${version.split('.')[0]}`) || [];
+  const availableVersions = availableSemVer?.map?.(version => {
+    const majorVersion = semver.coerce(version)?.major;
+
+    return majorVersion ? `v${majorVersion}` : undefined;
+  }).filter(Boolean) as string[] || [];
+
   const availableSchemasVersions = options.patternflyOptions?.availableSchemasVersions || [];
   const enumeratedVersions = Array.from(new Set([...options.patternflyOptions?.availableSearchVersions || [], ...availableVersions]));
 
@@ -69,9 +76,11 @@ const getPatternFlyVersionContext = async (
   const latestSchemasVersion = options.patternflyOptions?.default?.latestSchemasVersion;
 
   const envSemVer = await findClosestPatternFlyVersion.memo(contextPathOverride);
-  const envVersion = envSemVer ? `v${envSemVer.split('.')[0]}` : latestVersion;
+  const majorVersion = semver.coerce(envSemVer)?.major;
+  const envVersion = majorVersion ? `v${majorVersion}` : latestVersion;
 
   return {
+    availableSemVer,
     availableVersions,
     availableSchemasVersions,
     enumeratedVersions,
@@ -88,22 +97,6 @@ const getPatternFlyVersionContext = async (
  * Memoized version of getPatternFlyVersionContext.
  */
 getPatternFlyVersionContext.memo = memo(getPatternFlyVersionContext);
-
-/**
- * Get all available PatternFly enumerations OR filter a version string to a valid PatternFly `tag` OR `display` version,
- * (e.g. "current", "v6", etc.)
- *
- * @param version - The version string to filter.
- * @returns If version is provided returns the filtered version string array, or an empty array if the version is not recognized,
- *     otherwise returns all available versions.
- */
-const filterEnumeratedPatternFlyVersions = async (version?: string) => {
-  const { enumeratedVersions } = await getPatternFlyVersionContext.memo();
-  const updatedVersion = typeof version === 'string' ? version.toLowerCase().trim() : undefined;
-
-  return enumeratedVersions
-    .filter(version => version.toLowerCase().startsWith(updatedVersion || ''));
-};
 
 /**
  * Normalize the version string to a valid PatternFly `tag` display version, (e.g. "v4", "v5", "v6")
@@ -126,6 +119,15 @@ const normalizeEnumeratedPatternFlyVersion = async (version?: string) => {
       break;
   }
 
+  if (refineVersion && refineVersion.includes('.')) {
+    const majorVersion = semver.coerce(refineVersion)?.major;
+    const tagVersion = majorVersion ? `v${majorVersion}` : undefined;
+
+    if (tagVersion && availableVersions.includes(tagVersion)) {
+      return tagVersion;
+    }
+  }
+
   if (refineVersion && availableVersions.includes(refineVersion)) {
     return refineVersion;
   }
@@ -137,6 +139,22 @@ const normalizeEnumeratedPatternFlyVersion = async (version?: string) => {
  * Memoized version of normalizeEnumeratedPatternFlyVersion.
  */
 normalizeEnumeratedPatternFlyVersion.memo = memo(normalizeEnumeratedPatternFlyVersion);
+
+/**
+ * Get all available PatternFly enumerations OR filter a version string to a valid PatternFly `tag` OR `display` version,
+ * (e.g. "current", "v6", etc.)
+ *
+ * @param version - The version string to filter.
+ * @returns If version is provided returns the filtered version string array, or an empty array if the version is not recognized,
+ *     otherwise returns all available versions.
+ */
+const filterEnumeratedPatternFlyVersions = async (version?: string) => {
+  const { enumeratedVersions } = await getPatternFlyVersionContext.memo();
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+
+  return enumeratedVersions
+    .filter(version => version.toLowerCase().startsWith(normalizedVersion || ''));
+};
 
 /**
  * Find the closest PatternFly version used within the project context.

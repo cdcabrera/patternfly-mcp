@@ -4,7 +4,6 @@ import {
 } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import { isPlainObject } from './server.helpers';
 import {
   getPatternFlyVersionContext,
   type PatternFlyVersionContext
@@ -162,13 +161,13 @@ getPatternFlyDocsCatalog.memo = memo(getPatternFlyDocsCatalog);
  * @returns The category display label
  */
 const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
-  let categoryLabel = entry?.category || 'Documentation';
+  let categoryLabel = typeof entry?.category === 'string' ? entry.category.trim().toLowerCase() : undefined;
 
-  if (!isPlainObject(entry)) {
-    return categoryLabel;
+  if (categoryLabel === undefined) {
+    return 'Documentation';
   }
 
-  switch (categoryLabel?.trim().toLowerCase()) {
+  switch (categoryLabel) {
     case 'grammar':
       categoryLabel = 'Grammar';
       break;
@@ -189,7 +188,7 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
       break;
   }
 
-  return entry.section?.trim()?.toLowerCase() === 'guidelines' ? 'AI Guidance' : categoryLabel;
+  return entry?.section?.trim()?.toLowerCase() === 'guidelines' ? 'AI Guidance' : categoryLabel;
 };
 
 /**
