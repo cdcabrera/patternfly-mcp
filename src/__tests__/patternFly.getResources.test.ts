@@ -100,6 +100,10 @@ describe('getPatternFlyMcpResources', () => {
   it('should return multiple organized facets', async () => {
     const result = await getPatternFlyMcpResources();
 
+    // console.warn(result.keywordsIndex);
+    expect(result.keywordsIndex).toMatchSnapshot('keywords');
+    expect(result.keywordsMap).toMatchSnapshot('keywordsMap');
+
     expect(Object.keys(result)).toMatchSnapshot('properties');
   });
 

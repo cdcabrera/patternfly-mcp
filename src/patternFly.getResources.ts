@@ -62,6 +62,11 @@ type PatternFlyMcpResourcesByVersion = {
 };
 
 /**
+ * PatternFly resource keywords by resource name.
+ */
+type PatternFlyMcpKeywordsMap = Map<string, string[]>;
+
+/**
  * PatternFly resource metadata.
  *
  * @note This might need to be called resource metadata. `docs.json` doesn't just contain component metadata.
@@ -119,7 +124,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   docsIndex: string[];
   componentsIndex: string[];
   keywordsIndex: string[];
-  keywordsMap: Map<string, Map<string, string[]>>;
+  keywordsMap: PatternFlyMcpKeywordsMap;
   isFallbackDocumentation: boolean;
   pathIndex: string[];
   byPath: PatternFlyMcpResourcesByPath;
@@ -140,7 +145,8 @@ const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { 
   let isFallback = false;
 
   try {
-    docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+    // docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+    docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
   } catch (error) {
     isFallback = true;
     log.debug(`Failed to import docs catalog '#docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
@@ -231,12 +237,19 @@ const getPatternFlyReactComponentNames = async (contextPathOverride?: string) =>
  */
 getPatternFlyReactComponentNames.memo = memo(getPatternFlyReactComponentNames);
 
-const getFilteredKeywords = (keywordMap: Map<string, Map<string, string[]>>) => {
-  const filteredKeywords = new Map<string, Map<string, string[]>>();
+/**
+ * Filter keywords by removing noise words.
+ *
+ * @param keywordsMap - Available keywords by resource name.
+ * @param settings - Settings object
+ * @param settings.filterList - List of words to filter out from keywords.
+ */
+const filterKeywords = (keywordsMap: PatternFlyMcpKeywordsMap, { filterList = INDEX_NOISE_WORDS } = {}) => {
+  const filteredKeywords: PatternFlyMcpKeywordsMap = new Map();
 
-  for (const [keyword, versionMap] of keywordMap) {
+  for (const [keyword, versionMap] of keywordsMap) {
     const updatedKeyword = keyword.toLowerCase().trim();
-    const isVariant = INDEX_NOISE_WORDS.some(word => {
+    const isVariant = filterList.some(word => {
       const updatedWord = word.toLowerCase().trim();
 
       return updatedKeyword === updatedWord || updatedKeyword.startsWith(updatedWord) || updatedKeyword.endsWith(updatedWord);
@@ -250,35 +263,49 @@ const getFilteredKeywords = (keywordMap: Map<string, Map<string, string[]>>) => 
   return filteredKeywords;
 };
 
+/**
+ * Update the keywords map with the given keyword.
+ *
+ * @param keywordsMap - Available keywords by resource name.
+ * @param params - Params object
+ * @param params.keyword - Keyword to add to the map.
+ * @param params.name - Name of the resource associated with the keyword.
+ * @param settings - Settings object
+ * @param settings.blockList - List of words to block from indexing.
+ */
 const mutateKeyWordsMap = (
-  map: PatternFlyMcpAvailableResources['keywordsMap'],
-  { keyword, name, version }: { keyword: string, name: string, version: string }
+  keywordsMap: PatternFlyMcpKeywordsMap,
+  { keyword, name }: { keyword: string, name: string },
+  { blockList = INDEX_BLOCKLIST_WORDS } = {}
 ) => {
-  const normalizedKeywords = keyword.toLowerCase().trim().split(' ').filter(Boolean)
-    .map(word => word.trim().replace(/[()|"'<>@#!,.;:]/g, ''));
-  const updatedBlockList = INDEX_BLOCKLIST_WORDS.map(blockedWord => blockedWord.toLowerCase().trim());
+  const normalizedKeyword = keyword.toLowerCase().trim();
+  const initialSplit = normalizedKeyword.split(' ').filter(Boolean);
+  const isMultipleWords = initialSplit.length > 1;
 
-  for (const word of normalizedKeywords) {
-    // Basic Logic Filtering: 3-char min + Blocklist
-    if (word.length < 3 || updatedBlockList.find(blockedWord => blockedWord === word.toLowerCase())) {
-      continue;
+  const mutateMap = (word: string) => {
+    if (!keywordsMap.has(word)) {
+      keywordsMap.set(word, []);
     }
 
-    if (!map.has(word)) {
-      map.set(word, new Map());
-    }
-
-    const versionMap = map.get(word);
-
-    if (!versionMap?.has(version)) {
-      versionMap?.set(version, []);
-    }
-
-    const mapped = versionMap?.get(version);
+    const mapped = keywordsMap.get(word);
 
     if (!mapped?.includes(name)) {
       mapped?.push(name);
     }
+  };
+
+  if (isMultipleWords) {
+    const splitKeywords = initialSplit.map(word => word.trim().replace(/[()|"'<>@#!,.;:]/g, ''));
+
+    for (const word of splitKeywords) {
+      if (word.length <= 3 || blockList.find(blockedWord => blockedWord === word.toLowerCase())) {
+        continue;
+      }
+
+      mutateMap(word);
+    }
+  } else {
+    mutateMap(normalizedKeyword);
   }
 };
 
@@ -299,7 +326,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const byUri: PatternFlyMcpResourcesByUri = {};
   const byVersion: PatternFlyMcpResourcesByVersion = {};
   const pathIndex = new Set<string>();
-  const rawKeywordMap = new Map<string, Map<string, string[]>>();
+  // const rawKeywordMap = new Map<string, Map<string, string[]>>();
+  const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   Object.entries(originalDocs.docs).forEach(([docsName, entries]) => {
     const name = docsName.toLowerCase();
@@ -359,16 +387,18 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.urls.push(path);
       resource.versions[version].urls.push(path);
 
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name });
+
       if (entry.category) {
-        mutateKeyWordsMap(rawKeywordMap, { keyword: entry.category, name, version });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name });
       }
 
       if (entry.section) {
-        mutateKeyWordsMap(rawKeywordMap, { keyword: entry.section, name, version });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.section, name });
       }
 
       if (entry.description) {
-        mutateKeyWordsMap(rawKeywordMap, { keyword: entry.description, name, version });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name });
       }
 
       if (extendedEntry.section === 'guidelines') {
@@ -391,7 +421,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   });
 
-  const filteredKeywords = getFilteredKeywords(rawKeywordMap);
+  const filteredKeywords = filterKeywords(rawKeywordsMap);
 
   return {
     ...versionContext,
@@ -400,7 +430,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     componentsIndex: componentNamesIndex,
     isFallbackDocumentation: originalDocs.isFallback,
     keywordsIndex: Array.from(new Set([
-      ...Array.from(resources.keys()),
+      // ...Array.from(resources.keys()),
       ...componentNamesIndex,
       ...Array.from(filteredKeywords.keys())
     ])).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),

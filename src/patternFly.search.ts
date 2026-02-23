@@ -72,7 +72,7 @@ const searchPatternFly = async (searchQuery: string, {
         ...resource,
         query: searchQuery
       }];
-    }*/
+    }
 
     const versionMap = updatedResources.keywordsMap.get(result.item);
 
@@ -80,6 +80,17 @@ const searchPatternFly = async (searchQuery: string, {
       return Array.from(versionMap).flatMap(([_key, values]) => values).map(value => ({
         ...result,
         ...updatedResources.resources.get(value),
+        query: searchQuery
+      }));
+    }
+     */
+
+    const resources = updatedResources.keywordsMap.get(result.item);
+
+    if (resources) {
+      return resources.map(resource => ({
+        ...result,
+        ...updatedResources.resources.get(resource),
         query: searchQuery
       }));
     }
