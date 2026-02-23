@@ -281,1473 +281,2034 @@ exports[`getPatternFlyMcpResources should return multiple organized facets: keyw
 
 exports[`getPatternFlyMcpResources should return multiple organized facets: keywordsMap 1`] = `
 Map {
-  "design-guidelines" => [
-    "aboutmodal",
-    "accordion",
-    "actionlist",
-    "alert",
-    "applicationlauncher",
-    "avatar",
-    "backtotop",
-    "backdrop",
-    "backgroundimage",
-    "badge",
-    "banner",
-    "brand",
-    "breadcrumb",
-    "button",
-    "calendarmonth",
-    "card",
-    "checkbox",
-    "chipdeprecated",
-    "clipboardcopy",
-    "codeblock",
-    "codeeditor",
-    "content",
-    "datalist",
-    "datepicker",
-    "descriptionlist",
-    "divider",
-    "draganddrop",
-    "drawer",
-    "dropdown",
-    "duallistselector",
-    "emptystate",
-    "expandablesection",
-    "fileupload",
-    "form",
-    "formcontrol",
-    "formselect",
-    "helpertext",
-    "hint",
-    "inlineedit",
-    "inputgroup",
-    "jumplinks",
-    "label",
-    "list",
-    "loginpage",
-    "masthead",
-    "menu",
-    "menutoggle",
-    "modal",
-    "navigation",
-    "notificationbadge",
-    "notificationdrawer",
-    "numberinput",
-    "overflowmenu",
-    "page",
-    "pagination",
-    "panel",
-    "popover",
-    "progress",
-    "progressstepper",
-    "radio",
-    "searchinput",
-    "select",
-    "sidebar",
-    "simplelist",
-    "skeleton",
-    "skiptocontent",
-    "slider",
-    "spinner",
-    "switch",
-    "table",
-    "tabs",
-    "textarea",
-    "textinput",
-    "textinputgroup",
-    "tiledeprecated",
-    "timepicker",
-    "timestamp",
-    "title",
-    "togglegroup",
-    "toolbar",
-    "tooltip",
-    "treeview",
-    "truncate",
-    "wizard",
-    "bullseye",
-    "flex",
-    "gallery",
-    "grid",
-    "level",
-    "split",
-    "stack",
-    "areachart",
-    "barchart",
-    "bulletchart",
-    "donutchart",
-    "donututilizationchart",
-    "linechart",
-    "piechart",
-    "scatterchart",
-    "sparklinechart",
-    "stackchart",
-    "thresholdchart",
-    "legendchart",
-  ],
-  "components" => [
-    "aboutmodal",
-    "accordion",
-    "actionlist",
-    "alert",
-    "applicationlauncher",
-    "avatar",
-    "backtotop",
-    "backdrop",
-    "backgroundimage",
-    "badge",
-    "banner",
-    "brand",
-    "breadcrumb",
-    "button",
-    "calendarmonth",
-    "card",
-    "checkbox",
-    "chipdeprecated",
-    "clipboardcopy",
-    "codeblock",
-    "codeeditor",
-    "content",
-    "datalist",
-    "datepicker",
-    "descriptionlist",
-    "divider",
-    "draganddrop",
-    "drawer",
-    "dropdown",
-    "duallistselector",
-    "emptystate",
-    "expandablesection",
-    "fileupload",
-    "form",
-    "formcontrol",
-    "formselect",
-    "helpertext",
-    "hint",
-    "icon",
-    "inlineedit",
-    "inputgroup",
-    "jumplinks",
-    "label",
-    "list",
-    "loginpage",
-    "masthead",
-    "menu",
-    "menutoggle",
-    "modal",
-    "navigation",
-    "notificationbadge",
-    "notificationdrawer",
-    "numberinput",
-    "overflowmenu",
-    "page",
-    "pagination",
-    "panel",
-    "popover",
-    "progress",
-    "progressstepper",
-    "radio",
-    "searchinput",
-    "select",
-    "sidebar",
-    "simplelist",
-    "skeleton",
-    "skiptocontent",
-    "slider",
-    "spinner",
-    "switch",
-    "table",
-    "tabs",
-    "textarea",
-    "textinput",
-    "textinputgroup",
-    "tiledeprecated",
-    "timepicker",
-    "timestamp",
-    "title",
-    "togglegroup",
-    "toolbar",
-    "tooltip",
-    "treeview",
-    "truncate",
-    "wizard",
-  ],
-  "design" => [
-    "aboutmodal",
-    "accordion",
-    "actionlist",
-    "alert",
-    "applicationlauncher",
-    "avatar",
-    "backtotop",
-    "backdrop",
-    "backgroundimage",
-    "badge",
-    "banner",
-    "brand",
-    "breadcrumb",
-    "button",
-    "calendarmonth",
-    "card",
-    "checkbox",
-    "chipdeprecated",
-    "clipboardcopy",
-    "codeblock",
-    "codeeditor",
-    "content",
-    "datalist",
-    "datepicker",
-    "descriptionlist",
-    "divider",
-    "draganddrop",
-    "drawer",
-    "dropdown",
-    "duallistselector",
-    "emptystate",
-    "expandablesection",
-    "fileupload",
-    "form",
-    "formcontrol",
-    "formselect",
-    "helpertext",
-    "hint",
-    "inlineedit",
-    "inputgroup",
-    "jumplinks",
-    "label",
-    "list",
-    "loginpage",
-    "masthead",
-    "menu",
-    "menutoggle",
-    "modal",
-    "navigation",
-    "notificationbadge",
-    "notificationdrawer",
-    "numberinput",
-    "overflowmenu",
-    "page",
-    "pagination",
-    "panel",
-    "popover",
-    "progress",
-    "progressstepper",
-    "radio",
-    "searchinput",
-    "select",
-    "sidebar",
-    "simplelist",
-    "skeleton",
-    "skiptocontent",
-    "slider",
-    "spinner",
-    "switch",
-    "table",
-    "tabs",
-    "textarea",
-    "textinput",
-    "textinputgroup",
-    "tiledeprecated",
-    "timepicker",
-    "timestamp",
-    "title",
-    "togglegroup",
-    "toolbar",
-    "tooltip",
-    "treeview",
-    "truncate",
-    "wizard",
-    "bullseye",
-    "flex",
-    "gallery",
-    "grid",
-    "level",
-    "split",
-    "stack",
-    "areachart",
-    "barchart",
-    "bulletchart",
-    "donutchart",
-    "donututilizationchart",
-    "linechart",
-    "piechart",
-    "scatterchart",
-    "sparklinechart",
-    "stackchart",
-    "thresholdchart",
-    "legendchart",
-    "writing",
-  ],
-  "guidelines" => [
-    "aboutmodal",
-    "accordion",
-    "actionlist",
-    "alert",
-    "applicationlauncher",
-    "avatar",
-    "backtotop",
-    "backdrop",
-    "backgroundimage",
-    "badge",
-    "banner",
-    "brand",
-    "breadcrumb",
-    "button",
-    "calendarmonth",
-    "card",
-    "checkbox",
-    "chipdeprecated",
-    "clipboardcopy",
-    "codeblock",
-    "codeeditor",
-    "content",
-    "datalist",
-    "datepicker",
-    "descriptionlist",
-    "divider",
-    "draganddrop",
-    "drawer",
-    "dropdown",
-    "duallistselector",
-    "emptystate",
-    "expandablesection",
-    "fileupload",
-    "form",
-    "formcontrol",
-    "formselect",
-    "helpertext",
-    "hint",
-    "inlineedit",
-    "inputgroup",
-    "jumplinks",
-    "label",
-    "list",
-    "loginpage",
-    "masthead",
-    "menu",
-    "menutoggle",
-    "modal",
-    "navigation",
-    "notificationbadge",
-    "notificationdrawer",
-    "numberinput",
-    "overflowmenu",
-    "page",
-    "pagination",
-    "panel",
-    "popover",
-    "progress",
-    "progressstepper",
-    "radio",
-    "searchinput",
-    "select",
-    "sidebar",
-    "simplelist",
-    "skeleton",
-    "skiptocontent",
-    "slider",
-    "spinner",
-    "switch",
-    "table",
-    "tabs",
-    "textarea",
-    "textinput",
-    "textinputgroup",
-    "tiledeprecated",
-    "timepicker",
-    "timestamp",
-    "title",
-    "togglegroup",
-    "toolbar",
-    "tooltip",
-    "treeview",
-    "truncate",
-    "wizard",
-    "bullseye",
-    "flex",
-    "gallery",
-    "grid",
-    "level",
-    "split",
-    "stack",
-    "areachart",
-    "barchart",
-    "bulletchart",
-    "donutchart",
-    "donututilizationchart",
-    "linechart",
-    "piechart",
-    "scatterchart",
-    "sparklinechart",
-    "stackchart",
-    "thresholdchart",
-    "legendchart",
-    "charts",
-    "chatbot",
-    "componentgroups",
-    "react",
-    "cli guidelines",
-    "writing",
-  ],
-  "modal" => [
-    "aboutmodal",
-    "modal",
-  ],
-  "accessibility" => [
-    "aboutmodal",
-    "accordion",
-    "actionlist",
-    "alert",
-    "applicationlauncher",
-    "avatar",
-    "backdrop",
-    "backgroundimage",
-    "badge",
-    "banner",
-    "brand",
-    "breadcrumb",
-    "button",
-    "calendarmonth",
-    "card",
-    "checkbox",
-    "chipdeprecated",
-    "clipboardcopy",
-    "codeeditor",
-    "expandablesection",
-    "helpertext",
-    "jumplinks",
-    "label",
-    "menu",
-    "menutoggle",
-    "modal",
-    "navigation",
-    "page",
-    "progress",
-    "progressstepper",
-    "radio",
-    "sidebar",
-    "skeleton",
-    "skiptocontent",
-    "switch",
-    "tabs",
-    "title",
-    "tooltip",
-    "treeview",
-  ],
-  "react" => [
-    "aboutmodal",
-    "accordion",
-    "actionlist",
-    "alert",
-    "avatar",
-    "backtotop",
-    "backdrop",
-    "backgroundimage",
-    "badge",
-    "banner",
-    "brand",
-    "breadcrumb",
-    "button",
-    "calendarmonth",
-    "card",
-    "checkbox",
-    "clipboardcopy",
-    "codeblock",
-    "content",
-    "datalist",
-    "datepicker",
-    "descriptionlist",
-    "divider",
-    "drawer",
-    "dropdown",
-    "duallistselector",
-    "emptystate",
-    "expandablesection",
-    "fileupload",
-    "form",
-    "formselect",
-    "helpertext",
-    "hint",
-    "icon",
-    "inputgroup",
-    "jumplinks",
-    "label",
-    "list",
-    "loginpage",
-    "masthead",
-    "menu",
-    "menutoggle",
-    "modal",
-    "notificationbadge",
-    "notificationdrawer",
-    "numberinput",
-    "overflowmenu",
-    "page",
-    "pagination",
-    "panel",
-    "popover",
-    "progress",
-    "progressstepper",
-    "radio",
-    "searchinput",
-    "select",
-    "sidebar",
-    "simplelist",
-    "skeleton",
-    "skiptocontent",
-    "slider",
-    "spinner",
-    "switch",
-    "table",
-    "tabs",
-    "textarea",
-    "textinput",
-    "textinputgroup",
-    "timepicker",
-    "timestamp",
-    "title",
-    "togglegroup",
-    "toolbar",
-    "tooltip",
-    "treeview",
-    "truncate",
-    "wizard",
-    "bullseye",
-    "flex",
-    "gallery",
-    "grid",
-    "level",
-    "split",
-    "stack",
-    "charttheme",
-    "areachart",
-    "barchart",
-    "boxplotchart",
-    "bulletchart",
-    "donutchart",
-    "donututilizationchart",
-    "linechart",
-    "piechart",
-    "scatterchart",
-    "sparklinechart",
-    "stackchart",
-    "thresholdchart",
-    "legendchart",
-    "charts",
-    "chatbot",
-    "componentgroups",
-    "react",
-  ],
-  "accordion" => [
-    "accordion",
-  ],
-  "actionlist" => [
-    "actionlist",
-  ],
-  "action" => [
-    "actionlist",
-  ],
-  "list" => [
-    "actionlist",
-    "datalist",
-    "descriptionlist",
-    "duallistselector",
-    "list",
-    "simplelist",
-  ],
-  "alert" => [
-    "alert",
-  ],
-  "applicationlauncher" => [
-    "applicationlauncher",
-  ],
-  "application" => [
-    "applicationlauncher",
-  ],
-  "launcher" => [
-    "applicationlauncher",
-  ],
-  "avatar" => [
-    "avatar",
-  ],
-  "backtotop" => [
-    "backtotop",
-  ],
-  "back" => [
-    "backtotop",
-  ],
-  "backdrop" => [
-    "backdrop",
-  ],
-  "backgroundimage" => [
-    "backgroundimage",
-  ],
-  "background" => [
-    "backgroundimage",
-  ],
-  "image" => [
-    "backgroundimage",
-  ],
-  "badge" => [
-    "badge",
-    "notificationbadge",
-  ],
-  "banner" => [
-    "banner",
-  ],
-  "brand" => [
-    "brand",
-  ],
-  "breadcrumb" => [
-    "breadcrumb",
-  ],
-  "button" => [
-    "button",
-  ],
-  "calendarmonth" => [
-    "calendarmonth",
-  ],
-  "calendar" => [
-    "calendarmonth",
-  ],
-  "month" => [
-    "calendarmonth",
-  ],
-  "card" => [
-    "card",
-  ],
-  "checkbox" => [
-    "checkbox",
-  ],
-  "chipdeprecated" => [
-    "chipdeprecated",
-  ],
-  "chip" => [
-    "chipdeprecated",
-  ],
-  "deprecated" => [
-    "chipdeprecated",
-    "tiledeprecated",
-  ],
-  "clipboardcopy" => [
-    "clipboardcopy",
-  ],
-  "clipboard" => [
-    "clipboardcopy",
-  ],
-  "copy" => [
-    "clipboardcopy",
-  ],
-  "codeblock" => [
-    "codeblock",
-  ],
-  "code" => [
-    "codeblock",
-    "codeeditor",
-  ],
-  "block" => [
-    "codeblock",
-  ],
-  "codeeditor" => [
-    "codeeditor",
-  ],
-  "editor" => [
-    "codeeditor",
-  ],
-  "content" => [
-    "content",
-    "skiptocontent",
-    "product tours",
-    "cli guidelines",
-    "writing",
-    "grammar",
-  ],
-  "datalist" => [
-    "datalist",
-  ],
-  "data" => [
-    "datalist",
-  ],
-  "datepicker" => [
-    "datepicker",
-  ],
-  "date" => [
-    "datepicker",
-  ],
-  "picker" => [
-    "datepicker",
-    "timepicker",
-  ],
-  "descriptionlist" => [
-    "descriptionlist",
-  ],
-  "description" => [
-    "descriptionlist",
-  ],
-  "divider" => [
-    "divider",
-  ],
-  "draganddrop" => [
-    "draganddrop",
-  ],
-  "drag" => [
-    "draganddrop",
-  ],
-  "drop" => [
-    "draganddrop",
-  ],
-  "drawer" => [
-    "drawer",
-    "notificationdrawer",
-  ],
-  "dropdown" => [
-    "dropdown",
-  ],
-  "duallistselector" => [
-    "duallistselector",
-  ],
-  "dual" => [
-    "duallistselector",
-  ],
-  "selector" => [
-    "duallistselector",
-  ],
-  "emptystate" => [
-    "emptystate",
-  ],
-  "empty" => [
-    "emptystate",
-  ],
-  "state" => [
-    "emptystate",
-  ],
-  "expandablesection" => [
-    "expandablesection",
-  ],
-  "expandable" => [
-    "expandablesection",
-  ],
-  "section" => [
-    "expandablesection",
-  ],
-  "fileupload" => [
-    "fileupload",
-  ],
-  "file" => [
-    "fileupload",
-  ],
-  "upload" => [
-    "fileupload",
-  ],
-  "form" => [
-    "form",
-    "formcontrol",
-    "formselect",
-  ],
-  "formcontrol" => [
-    "formcontrol",
-  ],
-  "control" => [
-    "formcontrol",
-  ],
-  "formselect" => [
-    "formselect",
-  ],
-  "select" => [
-    "formselect",
-    "select",
-  ],
-  "helpertext" => [
-    "helpertext",
-  ],
-  "helper" => [
-    "helpertext",
-  ],
-  "text" => [
-    "helpertext",
-    "textarea",
-    "textinput",
-    "textinputgroup",
-    "grammar",
-  ],
-  "hint" => [
-    "hint",
-  ],
-  "icon" => [
-    "icon",
-  ],
-  "inlineedit" => [
-    "inlineedit",
-  ],
-  "inline" => [
-    "inlineedit",
-  ],
-  "edit" => [
-    "inlineedit",
-  ],
-  "inputgroup" => [
-    "inputgroup",
-  ],
-  "input" => [
-    "inputgroup",
-    "numberinput",
-    "searchinput",
-    "textinput",
-    "textinputgroup",
-  ],
-  "group" => [
-    "inputgroup",
-    "textinputgroup",
-    "togglegroup",
-  ],
-  "jumplinks" => [
-    "jumplinks",
-  ],
-  "jump" => [
-    "jumplinks",
-  ],
-  "links" => [
-    "jumplinks",
-  ],
-  "label" => [
-    "label",
-  ],
-  "loginpage" => [
-    "loginpage",
-  ],
-  "login" => [
-    "loginpage",
-  ],
-  "page" => [
-    "loginpage",
-    "page",
-  ],
-  "masthead" => [
-    "masthead",
-  ],
-  "menu" => [
-    "menu",
-    "menutoggle",
-    "overflowmenu",
-  ],
-  "menutoggle" => [
-    "menutoggle",
-  ],
-  "toggle" => [
-    "menutoggle",
-    "togglegroup",
-  ],
-  "navigation" => [
-    "navigation",
-  ],
-  "notificationbadge" => [
-    "notificationbadge",
-  ],
-  "notification" => [
-    "notificationbadge",
-    "notificationdrawer",
-  ],
-  "notificationdrawer" => [
-    "notificationdrawer",
-  ],
-  "numberinput" => [
-    "numberinput",
-  ],
-  "number" => [
-    "numberinput",
-  ],
-  "overflowmenu" => [
-    "overflowmenu",
-  ],
-  "overflow" => [
-    "overflowmenu",
-    "grammar",
-  ],
-  "pagination" => [
-    "pagination",
-  ],
-  "panel" => [
-    "panel",
-  ],
-  "popover" => [
-    "popover",
-  ],
-  "progress" => [
-    "progress",
-    "progressstepper",
-  ],
-  "progressstepper" => [
-    "progressstepper",
-  ],
-  "stepper" => [
-    "progressstepper",
-  ],
-  "radio" => [
-    "radio",
-  ],
-  "searchinput" => [
-    "searchinput",
-  ],
-  "search" => [
-    "searchinput",
-  ],
-  "sidebar" => [
-    "sidebar",
-  ],
-  "simplelist" => [
-    "simplelist",
-  ],
-  "simple" => [
-    "simplelist",
-  ],
-  "skeleton" => [
-    "skeleton",
-  ],
-  "skiptocontent" => [
-    "skiptocontent",
-  ],
-  "skip" => [
-    "skiptocontent",
-  ],
-  "slider" => [
-    "slider",
-  ],
-  "spinner" => [
-    "spinner",
-  ],
-  "switch" => [
-    "switch",
-  ],
-  "table" => [
-    "table",
-  ],
-  "tabs" => [
-    "tabs",
-  ],
-  "textarea" => [
-    "textarea",
-  ],
-  "area" => [
-    "textarea",
-    "areachart",
-  ],
-  "textinput" => [
-    "textinput",
-  ],
-  "textinputgroup" => [
-    "textinputgroup",
-  ],
-  "tiledeprecated" => [
-    "tiledeprecated",
-  ],
-  "tile" => [
-    "tiledeprecated",
-  ],
-  "timepicker" => [
-    "timepicker",
-  ],
-  "time" => [
-    "timepicker",
-  ],
-  "timestamp" => [
-    "timestamp",
-  ],
-  "title" => [
-    "title",
-  ],
-  "togglegroup" => [
-    "togglegroup",
-  ],
-  "toolbar" => [
-    "toolbar",
-  ],
-  "tooltip" => [
-    "tooltip",
-  ],
-  "charts" => [
-    "tooltip",
-    "charttheme",
-    "areachart",
-    "barchart",
-    "boxplotchart",
-    "bulletchart",
-    "donutchart",
-    "donututilizationchart",
-    "linechart",
-    "piechart",
-    "scatterchart",
-    "sparklinechart",
-    "stackchart",
-    "thresholdchart",
-    "legendchart",
-    "charts",
-  ],
-  "chart" => [
-    "tooltip",
-    "charttheme",
-    "areachart",
-    "barchart",
-    "boxplotchart",
-    "bulletchart",
-    "donutchart",
-    "donututilizationchart",
-    "linechart",
-    "piechart",
-    "scatterchart",
-    "sparklinechart",
-    "stackchart",
-    "thresholdchart",
-    "legendchart",
-  ],
-  "writing-guides" => [
-    "tooltip",
-    "product tours",
-    "cli guidelines",
-    "error messages",
-    "writing",
-  ],
-  "content-design" => [
-    "tooltip",
-    "product tours",
-    "cli guidelines",
-    "error messages",
-    "writing",
-    "grammar",
-  ],
-  "guidance" => [
-    "tooltip",
-    "charts",
-    "chatbot",
-    "componentgroups",
-    "react",
-    "cli guidelines",
-    "writing",
-    "grammar",
-  ],
-  "writing" => [
-    "tooltip",
-    "product tours",
-    "cli guidelines",
-    "error messages",
-    "writing",
-  ],
-  "tooltips" => [
-    "tooltip",
-  ],
-  "including" => [
-    "tooltip",
-    "grammar",
-  ],
-  "specific" => [
-    "tooltip",
-  ],
-  "rules" => [
-    "tooltip",
-    "grammar",
-  ],
-  "icons" => [
-    "tooltip",
-  ],
-  "treeview" => [
-    "treeview",
-  ],
-  "tree" => [
-    "treeview",
-  ],
-  "view" => [
-    "treeview",
-    "grammar",
-  ],
-  "truncate" => [
-    "truncate",
-  ],
-  "wizard" => [
-    "wizard",
-  ],
-  "bullseye" => [
-    "bullseye",
-  ],
-  "layouts" => [
-    "bullseye",
-    "flex",
-    "gallery",
-    "grid",
-    "level",
-    "split",
-    "stack",
-  ],
-  "layout" => [
-    "bullseye",
-    "flex",
-    "gallery",
-    "grid",
-    "level",
-    "split",
-    "stack",
-  ],
-  "flex" => [
-    "flex",
-  ],
-  "gallery" => [
-    "gallery",
-  ],
-  "grid" => [
-    "grid",
-  ],
-  "level" => [
-    "level",
-  ],
-  "split" => [
-    "split",
-  ],
-  "stack" => [
-    "stack",
-    "stackchart",
-  ],
-  "charttheme" => [
-    "charttheme",
-  ],
-  "colors" => [
-    "charttheme",
-  ],
-  "areachart" => [
-    "areachart",
-  ],
-  "barchart" => [
-    "barchart",
-  ],
-  "boxplotchart" => [
-    "boxplotchart",
-  ],
-  "plot" => [
-    "boxplotchart",
-  ],
-  "bulletchart" => [
-    "bulletchart",
-  ],
-  "bullet" => [
-    "bulletchart",
-  ],
-  "donutchart" => [
-    "donutchart",
-  ],
-  "donut" => [
-    "donutchart",
-    "donututilizationchart",
-  ],
-  "donututilizationchart" => [
-    "donututilizationchart",
-  ],
-  "utilization" => [
-    "donututilizationchart",
-  ],
-  "linechart" => [
-    "linechart",
-  ],
-  "line" => [
-    "linechart",
-  ],
-  "piechart" => [
-    "piechart",
-  ],
-  "scatterchart" => [
-    "scatterchart",
-  ],
-  "scatter" => [
-    "scatterchart",
-  ],
-  "sparklinechart" => [
-    "sparklinechart",
-  ],
-  "sparkline" => [
-    "sparklinechart",
-  ],
-  "stackchart" => [
-    "stackchart",
-  ],
-  "thresholdchart" => [
-    "thresholdchart",
-  ],
-  "threshold" => [
-    "thresholdchart",
-  ],
-  "legendchart" => [
-    "legendchart",
-  ],
-  "legend" => [
-    "legendchart",
-  ],
-  "chatbot" => [
-    "chatbot",
-  ],
-  "componentgroups" => [
-    "componentgroups",
-  ],
-  "groups" => [
-    "componentgroups",
-  ],
-  "resources" => [
-    "react",
-    "writing",
-  ],
-  "setup" => [
-    "react",
-  ],
-  "troubleshooting" => [
-    "react",
-  ],
-  "product" => [
-    "product tours",
-  ],
-  "tours" => [
-    "product tours",
-  ],
-  "best" => [
-    "product tours",
-    "error messages",
-  ],
-  "practices" => [
-    "product tours",
-    "error messages",
-  ],
-  "tone" => [
-    "product tours",
-    "writing",
-  ],
-  "advice" => [
-    "product tours",
-    "writing",
-  ],
-  "onboarding" => [
-    "product tours",
-  ],
-  "flows" => [
-    "product tours",
-  ],
-  "detailed" => [
-    "cli guidelines",
-  ],
-  "designing" => [
-    "cli guidelines",
-  ],
-  "command-line" => [
-    "cli guidelines",
-  ],
-  "interfaces" => [
-    "cli guidelines",
-  ],
-  "clis" => [
-    "cli guidelines",
-  ],
-  "error" => [
-    "error messages",
-  ],
-  "messages" => [
-    "error messages",
-  ],
-  "effective" => [
-    "error messages",
-  ],
-  "clear" => [
-    "error messages",
-  ],
-  "actionable" => [
-    "error messages",
-  ],
-  "empathetic" => [
-    "error messages",
-  ],
-  "overview" => [
-    "writing",
-  ],
-  "defines" => [
-    "writing",
-  ],
-  "unique" => [
-    "writing",
-  ],
-  "voice" => [
-    "writing",
-    "grammar",
-  ],
-  "standards" => [
-    "writing",
-  ],
-  "consistency" => [
-    "writing",
-  ],
-  "humanity" => [
-    "writing",
-  ],
-  "across" => [
-    "writing",
-    "grammar",
-  ],
-  "products" => [
-    "writing",
-  ],
-  "foundational" => [
-    "writing",
-  ],
-  "integrating" => [
-    "writing",
-  ],
-  "words" => [
-    "writing",
-    "grammar",
-  ],
-  "into" => [
-    "writing",
-  ],
-  "process" => [
-    "writing",
-  ],
-  "ensuring" => [
-    "writing",
-  ],
-  "intuitive" => [
-    "writing",
-  ],
-  "human-centered" => [
-    "writing",
-  ],
-  "experiences" => [
-    "writing",
-  ],
-  "grammar" => [
-    "writing",
-    "grammar",
-  ],
-  "inclusion" => [
-    "writing",
-  ],
-  "supporting" => [
-    "writing",
-  ],
-  "screen" => [
-    "writing",
-  ],
-  "readers" => [
-    "writing",
-  ],
-  "adapting" => [
-    "writing",
-  ],
-  "global" => [
-    "writing",
-  ],
-  "audiences" => [
-    "writing",
-  ],
-  "structuring" => [
-    "writing",
-  ],
-  "specifically" => [
-    "writing",
-  ],
-  "patternflys" => [
-    "writing",
-  ],
-  "detailing" => [
-    "grammar",
-  ],
-  "casing" => [
-    "grammar",
-  ],
-  "style" => [
-    "grammar",
-  ],
-  "different" => [
-    "grammar",
-  ],
-  "scenarios" => [
-    "grammar",
-  ],
-  "displaying" => [
-    "grammar",
-  ],
-  "formatting" => [
-    "grammar",
-  ],
-  "dates" => [
-    "grammar",
-  ],
-  "times" => [
-    "grammar",
-  ],
-  "currency" => [
-    "grammar",
-  ],
-  "numerical" => [
-    "grammar",
-  ],
-  "values" => [
-    "grammar",
-  ],
-  "punctuation" => [
-    "grammar",
-  ],
-  "properly" => [
-    "grammar",
-  ],
-  "long-form" => [
-    "grammar",
-  ],
-  "point" => [
-    "grammar",
-  ],
-  "sentence" => [
-    "grammar",
-  ],
-  "clarity" => [
-    "grammar",
-  ],
-  "language" => [
-    "grammar",
-  ],
-  "preferred" => [
-    "grammar",
-  ],
-  "terms" => [
-    "grammar",
-  ],
-  "phrases" => [
-    "grammar",
-  ],
-  "avoid" => [
-    "grammar",
-  ],
-  "replacing" => [
-    "grammar",
-  ],
-  "ellipses" => [
-    "grammar",
-  ],
-  "manage" => [
-    "grammar",
-  ],
-  "display" => [
-    "grammar",
-  ],
-  "space" => [
-    "grammar",
-  ],
-  "limited" => [
-    "grammar",
-  ],
-  "units" => [
-    "grammar",
-  ],
-  "measurement" => [
-    "grammar",
-  ],
-  "shorthand" => [
-    "grammar",
-  ],
-  "symbols" => [
-    "grammar",
-  ],
+  "design-guidelines" => Map {
+    "v6" => [
+      "aboutmodal",
+      "accordion",
+      "actionlist",
+      "alert",
+      "applicationlauncher",
+      "avatar",
+      "backtotop",
+      "backdrop",
+      "backgroundimage",
+      "badge",
+      "banner",
+      "brand",
+      "breadcrumb",
+      "button",
+      "calendarmonth",
+      "card",
+      "checkbox",
+      "chipdeprecated",
+      "clipboardcopy",
+      "codeblock",
+      "codeeditor",
+      "content",
+      "datalist",
+      "datepicker",
+      "descriptionlist",
+      "divider",
+      "draganddrop",
+      "drawer",
+      "dropdown",
+      "duallistselector",
+      "emptystate",
+      "expandablesection",
+      "fileupload",
+      "form",
+      "formcontrol",
+      "formselect",
+      "helpertext",
+      "hint",
+      "inlineedit",
+      "inputgroup",
+      "jumplinks",
+      "label",
+      "list",
+      "loginpage",
+      "masthead",
+      "menu",
+      "menutoggle",
+      "modal",
+      "navigation",
+      "notificationbadge",
+      "notificationdrawer",
+      "numberinput",
+      "overflowmenu",
+      "page",
+      "pagination",
+      "panel",
+      "popover",
+      "progress",
+      "progressstepper",
+      "radio",
+      "searchinput",
+      "select",
+      "sidebar",
+      "simplelist",
+      "skeleton",
+      "skiptocontent",
+      "slider",
+      "spinner",
+      "switch",
+      "table",
+      "tabs",
+      "textarea",
+      "textinput",
+      "textinputgroup",
+      "tiledeprecated",
+      "timepicker",
+      "timestamp",
+      "title",
+      "togglegroup",
+      "toolbar",
+      "tooltip",
+      "treeview",
+      "truncate",
+      "wizard",
+      "bullseye",
+      "flex",
+      "gallery",
+      "grid",
+      "level",
+      "split",
+      "stack",
+      "areachart",
+      "barchart",
+      "bulletchart",
+      "donutchart",
+      "donututilizationchart",
+      "linechart",
+      "piechart",
+      "scatterchart",
+      "sparklinechart",
+      "stackchart",
+      "thresholdchart",
+      "legendchart",
+    ],
+    "v5" => [
+      "aboutmodal",
+    ],
+  },
+  "components" => Map {
+    "v6" => [
+      "aboutmodal",
+      "accordion",
+      "actionlist",
+      "alert",
+      "applicationlauncher",
+      "avatar",
+      "backtotop",
+      "backdrop",
+      "backgroundimage",
+      "badge",
+      "banner",
+      "brand",
+      "breadcrumb",
+      "button",
+      "calendarmonth",
+      "card",
+      "checkbox",
+      "chipdeprecated",
+      "clipboardcopy",
+      "codeblock",
+      "codeeditor",
+      "content",
+      "datalist",
+      "datepicker",
+      "descriptionlist",
+      "divider",
+      "draganddrop",
+      "drawer",
+      "dropdown",
+      "duallistselector",
+      "emptystate",
+      "expandablesection",
+      "fileupload",
+      "form",
+      "formcontrol",
+      "formselect",
+      "helpertext",
+      "hint",
+      "icon",
+      "inlineedit",
+      "inputgroup",
+      "jumplinks",
+      "label",
+      "list",
+      "loginpage",
+      "masthead",
+      "menu",
+      "menutoggle",
+      "modal",
+      "navigation",
+      "notificationbadge",
+      "notificationdrawer",
+      "numberinput",
+      "overflowmenu",
+      "page",
+      "pagination",
+      "panel",
+      "popover",
+      "progress",
+      "progressstepper",
+      "radio",
+      "searchinput",
+      "select",
+      "sidebar",
+      "simplelist",
+      "skeleton",
+      "skiptocontent",
+      "slider",
+      "spinner",
+      "switch",
+      "table",
+      "tabs",
+      "textarea",
+      "textinput",
+      "textinputgroup",
+      "tiledeprecated",
+      "timepicker",
+      "timestamp",
+      "title",
+      "togglegroup",
+      "toolbar",
+      "tooltip",
+      "treeview",
+      "truncate",
+      "wizard",
+    ],
+    "v5" => [
+      "aboutmodal",
+    ],
+  },
+  "design" => Map {
+    "v6" => [
+      "aboutmodal",
+      "accordion",
+      "actionlist",
+      "alert",
+      "applicationlauncher",
+      "avatar",
+      "backtotop",
+      "backdrop",
+      "backgroundimage",
+      "badge",
+      "banner",
+      "brand",
+      "breadcrumb",
+      "button",
+      "calendarmonth",
+      "card",
+      "checkbox",
+      "chipdeprecated",
+      "clipboardcopy",
+      "codeblock",
+      "codeeditor",
+      "content",
+      "datalist",
+      "datepicker",
+      "descriptionlist",
+      "divider",
+      "draganddrop",
+      "drawer",
+      "dropdown",
+      "duallistselector",
+      "emptystate",
+      "expandablesection",
+      "fileupload",
+      "form",
+      "formcontrol",
+      "formselect",
+      "helpertext",
+      "hint",
+      "inlineedit",
+      "inputgroup",
+      "jumplinks",
+      "label",
+      "list",
+      "loginpage",
+      "masthead",
+      "menu",
+      "menutoggle",
+      "modal",
+      "navigation",
+      "notificationbadge",
+      "notificationdrawer",
+      "numberinput",
+      "overflowmenu",
+      "page",
+      "pagination",
+      "panel",
+      "popover",
+      "progress",
+      "progressstepper",
+      "radio",
+      "searchinput",
+      "select",
+      "sidebar",
+      "simplelist",
+      "skeleton",
+      "skiptocontent",
+      "slider",
+      "spinner",
+      "switch",
+      "table",
+      "tabs",
+      "textarea",
+      "textinput",
+      "textinputgroup",
+      "tiledeprecated",
+      "timepicker",
+      "timestamp",
+      "title",
+      "togglegroup",
+      "toolbar",
+      "tooltip",
+      "treeview",
+      "truncate",
+      "wizard",
+      "bullseye",
+      "flex",
+      "gallery",
+      "grid",
+      "level",
+      "split",
+      "stack",
+      "areachart",
+      "barchart",
+      "bulletchart",
+      "donutchart",
+      "donututilizationchart",
+      "linechart",
+      "piechart",
+      "scatterchart",
+      "sparklinechart",
+      "stackchart",
+      "thresholdchart",
+      "legendchart",
+      "writing",
+    ],
+    "v5" => [
+      "aboutmodal",
+    ],
+  },
+  "guidelines" => Map {
+    "v6" => [
+      "aboutmodal",
+      "accordion",
+      "actionlist",
+      "alert",
+      "applicationlauncher",
+      "avatar",
+      "backtotop",
+      "backdrop",
+      "backgroundimage",
+      "badge",
+      "banner",
+      "brand",
+      "breadcrumb",
+      "button",
+      "calendarmonth",
+      "card",
+      "checkbox",
+      "chipdeprecated",
+      "clipboardcopy",
+      "codeblock",
+      "codeeditor",
+      "content",
+      "datalist",
+      "datepicker",
+      "descriptionlist",
+      "divider",
+      "draganddrop",
+      "drawer",
+      "dropdown",
+      "duallistselector",
+      "emptystate",
+      "expandablesection",
+      "fileupload",
+      "form",
+      "formcontrol",
+      "formselect",
+      "helpertext",
+      "hint",
+      "inlineedit",
+      "inputgroup",
+      "jumplinks",
+      "label",
+      "list",
+      "loginpage",
+      "masthead",
+      "menu",
+      "menutoggle",
+      "modal",
+      "navigation",
+      "notificationbadge",
+      "notificationdrawer",
+      "numberinput",
+      "overflowmenu",
+      "page",
+      "pagination",
+      "panel",
+      "popover",
+      "progress",
+      "progressstepper",
+      "radio",
+      "searchinput",
+      "select",
+      "sidebar",
+      "simplelist",
+      "skeleton",
+      "skiptocontent",
+      "slider",
+      "spinner",
+      "switch",
+      "table",
+      "tabs",
+      "textarea",
+      "textinput",
+      "textinputgroup",
+      "tiledeprecated",
+      "timepicker",
+      "timestamp",
+      "title",
+      "togglegroup",
+      "toolbar",
+      "tooltip",
+      "treeview",
+      "truncate",
+      "wizard",
+      "bullseye",
+      "flex",
+      "gallery",
+      "grid",
+      "level",
+      "split",
+      "stack",
+      "areachart",
+      "barchart",
+      "bulletchart",
+      "donutchart",
+      "donututilizationchart",
+      "linechart",
+      "piechart",
+      "scatterchart",
+      "sparklinechart",
+      "stackchart",
+      "thresholdchart",
+      "legendchart",
+      "charts",
+      "chatbot",
+      "componentgroups",
+      "react",
+      "cli guidelines",
+      "writing",
+    ],
+    "v5" => [
+      "aboutmodal",
+    ],
+  },
+  "modal" => Map {
+    "v6" => [
+      "aboutmodal",
+      "modal",
+    ],
+    "v5" => [
+      "aboutmodal",
+    ],
+  },
+  "accessibility" => Map {
+    "v6" => [
+      "aboutmodal",
+      "accordion",
+      "actionlist",
+      "alert",
+      "applicationlauncher",
+      "avatar",
+      "backdrop",
+      "backgroundimage",
+      "badge",
+      "banner",
+      "brand",
+      "breadcrumb",
+      "button",
+      "calendarmonth",
+      "card",
+      "checkbox",
+      "chipdeprecated",
+      "clipboardcopy",
+      "codeeditor",
+      "expandablesection",
+      "helpertext",
+      "jumplinks",
+      "label",
+      "menu",
+      "menutoggle",
+      "modal",
+      "navigation",
+      "page",
+      "progress",
+      "progressstepper",
+      "radio",
+      "sidebar",
+      "skeleton",
+      "skiptocontent",
+      "switch",
+      "tabs",
+      "title",
+      "tooltip",
+      "treeview",
+    ],
+  },
+  "react" => Map {
+    "v6" => [
+      "aboutmodal",
+      "accordion",
+      "actionlist",
+      "alert",
+      "avatar",
+      "backtotop",
+      "backdrop",
+      "backgroundimage",
+      "badge",
+      "banner",
+      "brand",
+      "breadcrumb",
+      "button",
+      "calendarmonth",
+      "card",
+      "checkbox",
+      "clipboardcopy",
+      "codeblock",
+      "content",
+      "datalist",
+      "datepicker",
+      "descriptionlist",
+      "divider",
+      "drawer",
+      "dropdown",
+      "duallistselector",
+      "emptystate",
+      "expandablesection",
+      "fileupload",
+      "form",
+      "formselect",
+      "helpertext",
+      "hint",
+      "icon",
+      "inputgroup",
+      "jumplinks",
+      "label",
+      "list",
+      "loginpage",
+      "masthead",
+      "menu",
+      "menutoggle",
+      "modal",
+      "notificationbadge",
+      "notificationdrawer",
+      "numberinput",
+      "overflowmenu",
+      "page",
+      "pagination",
+      "panel",
+      "popover",
+      "progress",
+      "progressstepper",
+      "radio",
+      "searchinput",
+      "select",
+      "sidebar",
+      "simplelist",
+      "skeleton",
+      "skiptocontent",
+      "slider",
+      "spinner",
+      "switch",
+      "table",
+      "tabs",
+      "textarea",
+      "textinput",
+      "textinputgroup",
+      "timepicker",
+      "timestamp",
+      "title",
+      "togglegroup",
+      "toolbar",
+      "tooltip",
+      "treeview",
+      "truncate",
+      "wizard",
+      "bullseye",
+      "flex",
+      "gallery",
+      "grid",
+      "level",
+      "split",
+      "stack",
+      "charttheme",
+      "areachart",
+      "barchart",
+      "boxplotchart",
+      "bulletchart",
+      "donutchart",
+      "donututilizationchart",
+      "linechart",
+      "piechart",
+      "scatterchart",
+      "sparklinechart",
+      "stackchart",
+      "thresholdchart",
+      "legendchart",
+      "charts",
+      "chatbot",
+      "componentgroups",
+      "react",
+    ],
+  },
+  "accordion" => Map {
+    "v6" => [
+      "accordion",
+    ],
+  },
+  "actionlist" => Map {
+    "v6" => [
+      "actionlist",
+    ],
+  },
+  "action" => Map {
+    "v6" => [
+      "actionlist",
+    ],
+  },
+  "list" => Map {
+    "v6" => [
+      "actionlist",
+      "datalist",
+      "descriptionlist",
+      "duallistselector",
+      "list",
+      "simplelist",
+    ],
+  },
+  "alert" => Map {
+    "v6" => [
+      "alert",
+    ],
+  },
+  "applicationlauncher" => Map {
+    "v6" => [
+      "applicationlauncher",
+    ],
+  },
+  "application" => Map {
+    "v6" => [
+      "applicationlauncher",
+    ],
+  },
+  "launcher" => Map {
+    "v6" => [
+      "applicationlauncher",
+    ],
+  },
+  "avatar" => Map {
+    "v6" => [
+      "avatar",
+    ],
+  },
+  "backtotop" => Map {
+    "v6" => [
+      "backtotop",
+    ],
+  },
+  "back" => Map {
+    "v6" => [
+      "backtotop",
+    ],
+  },
+  "backdrop" => Map {
+    "v6" => [
+      "backdrop",
+    ],
+  },
+  "backgroundimage" => Map {
+    "v6" => [
+      "backgroundimage",
+    ],
+  },
+  "background" => Map {
+    "v6" => [
+      "backgroundimage",
+    ],
+  },
+  "image" => Map {
+    "v6" => [
+      "backgroundimage",
+    ],
+  },
+  "badge" => Map {
+    "v6" => [
+      "badge",
+      "notificationbadge",
+    ],
+  },
+  "banner" => Map {
+    "v6" => [
+      "banner",
+    ],
+  },
+  "brand" => Map {
+    "v6" => [
+      "brand",
+    ],
+  },
+  "breadcrumb" => Map {
+    "v6" => [
+      "breadcrumb",
+    ],
+  },
+  "button" => Map {
+    "v6" => [
+      "button",
+    ],
+  },
+  "calendarmonth" => Map {
+    "v6" => [
+      "calendarmonth",
+    ],
+  },
+  "calendar" => Map {
+    "v6" => [
+      "calendarmonth",
+    ],
+  },
+  "month" => Map {
+    "v6" => [
+      "calendarmonth",
+    ],
+  },
+  "card" => Map {
+    "v6" => [
+      "card",
+    ],
+  },
+  "checkbox" => Map {
+    "v6" => [
+      "checkbox",
+    ],
+  },
+  "chipdeprecated" => Map {
+    "v6" => [
+      "chipdeprecated",
+    ],
+  },
+  "chip" => Map {
+    "v6" => [
+      "chipdeprecated",
+    ],
+  },
+  "deprecated" => Map {
+    "v6" => [
+      "chipdeprecated",
+      "tiledeprecated",
+    ],
+  },
+  "clipboardcopy" => Map {
+    "v6" => [
+      "clipboardcopy",
+    ],
+  },
+  "clipboard" => Map {
+    "v6" => [
+      "clipboardcopy",
+    ],
+  },
+  "copy" => Map {
+    "v6" => [
+      "clipboardcopy",
+    ],
+  },
+  "codeblock" => Map {
+    "v6" => [
+      "codeblock",
+    ],
+  },
+  "code" => Map {
+    "v6" => [
+      "codeblock",
+      "codeeditor",
+    ],
+  },
+  "block" => Map {
+    "v6" => [
+      "codeblock",
+    ],
+  },
+  "codeeditor" => Map {
+    "v6" => [
+      "codeeditor",
+    ],
+  },
+  "editor" => Map {
+    "v6" => [
+      "codeeditor",
+    ],
+  },
+  "content" => Map {
+    "v6" => [
+      "content",
+      "skiptocontent",
+      "product tours",
+      "cli guidelines",
+      "writing",
+      "grammar",
+    ],
+  },
+  "datalist" => Map {
+    "v6" => [
+      "datalist",
+    ],
+  },
+  "data" => Map {
+    "v6" => [
+      "datalist",
+    ],
+  },
+  "datepicker" => Map {
+    "v6" => [
+      "datepicker",
+    ],
+  },
+  "date" => Map {
+    "v6" => [
+      "datepicker",
+    ],
+  },
+  "picker" => Map {
+    "v6" => [
+      "datepicker",
+      "timepicker",
+    ],
+  },
+  "descriptionlist" => Map {
+    "v6" => [
+      "descriptionlist",
+    ],
+  },
+  "description" => Map {
+    "v6" => [
+      "descriptionlist",
+    ],
+  },
+  "divider" => Map {
+    "v6" => [
+      "divider",
+    ],
+  },
+  "draganddrop" => Map {
+    "v6" => [
+      "draganddrop",
+    ],
+  },
+  "drag" => Map {
+    "v6" => [
+      "draganddrop",
+    ],
+  },
+  "drop" => Map {
+    "v6" => [
+      "draganddrop",
+    ],
+  },
+  "drawer" => Map {
+    "v6" => [
+      "drawer",
+      "notificationdrawer",
+    ],
+  },
+  "dropdown" => Map {
+    "v6" => [
+      "dropdown",
+    ],
+  },
+  "duallistselector" => Map {
+    "v6" => [
+      "duallistselector",
+    ],
+  },
+  "dual" => Map {
+    "v6" => [
+      "duallistselector",
+    ],
+  },
+  "selector" => Map {
+    "v6" => [
+      "duallistselector",
+    ],
+  },
+  "emptystate" => Map {
+    "v6" => [
+      "emptystate",
+    ],
+  },
+  "empty" => Map {
+    "v6" => [
+      "emptystate",
+    ],
+  },
+  "state" => Map {
+    "v6" => [
+      "emptystate",
+    ],
+  },
+  "expandablesection" => Map {
+    "v6" => [
+      "expandablesection",
+    ],
+  },
+  "expandable" => Map {
+    "v6" => [
+      "expandablesection",
+    ],
+  },
+  "section" => Map {
+    "v6" => [
+      "expandablesection",
+    ],
+  },
+  "fileupload" => Map {
+    "v6" => [
+      "fileupload",
+    ],
+  },
+  "file" => Map {
+    "v6" => [
+      "fileupload",
+    ],
+  },
+  "upload" => Map {
+    "v6" => [
+      "fileupload",
+    ],
+  },
+  "form" => Map {
+    "v6" => [
+      "form",
+      "formcontrol",
+      "formselect",
+    ],
+  },
+  "formcontrol" => Map {
+    "v6" => [
+      "formcontrol",
+    ],
+  },
+  "control" => Map {
+    "v6" => [
+      "formcontrol",
+    ],
+  },
+  "formselect" => Map {
+    "v6" => [
+      "formselect",
+    ],
+  },
+  "select" => Map {
+    "v6" => [
+      "formselect",
+      "select",
+    ],
+  },
+  "helpertext" => Map {
+    "v6" => [
+      "helpertext",
+    ],
+  },
+  "helper" => Map {
+    "v6" => [
+      "helpertext",
+    ],
+  },
+  "text" => Map {
+    "v6" => [
+      "helpertext",
+      "textarea",
+      "textinput",
+      "textinputgroup",
+      "grammar",
+    ],
+  },
+  "hint" => Map {
+    "v6" => [
+      "hint",
+    ],
+  },
+  "icon" => Map {
+    "v6" => [
+      "icon",
+    ],
+  },
+  "inlineedit" => Map {
+    "v6" => [
+      "inlineedit",
+    ],
+  },
+  "inline" => Map {
+    "v6" => [
+      "inlineedit",
+    ],
+  },
+  "edit" => Map {
+    "v6" => [
+      "inlineedit",
+    ],
+  },
+  "inputgroup" => Map {
+    "v6" => [
+      "inputgroup",
+    ],
+  },
+  "input" => Map {
+    "v6" => [
+      "inputgroup",
+      "numberinput",
+      "searchinput",
+      "textinput",
+      "textinputgroup",
+    ],
+  },
+  "group" => Map {
+    "v6" => [
+      "inputgroup",
+      "textinputgroup",
+      "togglegroup",
+    ],
+  },
+  "jumplinks" => Map {
+    "v6" => [
+      "jumplinks",
+    ],
+  },
+  "jump" => Map {
+    "v6" => [
+      "jumplinks",
+    ],
+  },
+  "links" => Map {
+    "v6" => [
+      "jumplinks",
+    ],
+  },
+  "label" => Map {
+    "v6" => [
+      "label",
+    ],
+  },
+  "loginpage" => Map {
+    "v6" => [
+      "loginpage",
+    ],
+  },
+  "login" => Map {
+    "v6" => [
+      "loginpage",
+    ],
+  },
+  "page" => Map {
+    "v6" => [
+      "loginpage",
+      "page",
+    ],
+  },
+  "masthead" => Map {
+    "v6" => [
+      "masthead",
+    ],
+  },
+  "menu" => Map {
+    "v6" => [
+      "menu",
+      "menutoggle",
+      "overflowmenu",
+    ],
+  },
+  "menutoggle" => Map {
+    "v6" => [
+      "menutoggle",
+    ],
+  },
+  "toggle" => Map {
+    "v6" => [
+      "menutoggle",
+      "togglegroup",
+    ],
+  },
+  "navigation" => Map {
+    "v6" => [
+      "navigation",
+    ],
+  },
+  "notificationbadge" => Map {
+    "v6" => [
+      "notificationbadge",
+    ],
+  },
+  "notification" => Map {
+    "v6" => [
+      "notificationbadge",
+      "notificationdrawer",
+    ],
+  },
+  "notificationdrawer" => Map {
+    "v6" => [
+      "notificationdrawer",
+    ],
+  },
+  "numberinput" => Map {
+    "v6" => [
+      "numberinput",
+    ],
+  },
+  "number" => Map {
+    "v6" => [
+      "numberinput",
+    ],
+  },
+  "overflowmenu" => Map {
+    "v6" => [
+      "overflowmenu",
+    ],
+  },
+  "overflow" => Map {
+    "v6" => [
+      "overflowmenu",
+      "grammar",
+    ],
+  },
+  "pagination" => Map {
+    "v6" => [
+      "pagination",
+    ],
+  },
+  "panel" => Map {
+    "v6" => [
+      "panel",
+    ],
+  },
+  "popover" => Map {
+    "v6" => [
+      "popover",
+    ],
+  },
+  "progress" => Map {
+    "v6" => [
+      "progress",
+      "progressstepper",
+    ],
+  },
+  "progressstepper" => Map {
+    "v6" => [
+      "progressstepper",
+    ],
+  },
+  "stepper" => Map {
+    "v6" => [
+      "progressstepper",
+    ],
+  },
+  "radio" => Map {
+    "v6" => [
+      "radio",
+    ],
+  },
+  "searchinput" => Map {
+    "v6" => [
+      "searchinput",
+    ],
+  },
+  "search" => Map {
+    "v6" => [
+      "searchinput",
+    ],
+  },
+  "sidebar" => Map {
+    "v6" => [
+      "sidebar",
+    ],
+  },
+  "simplelist" => Map {
+    "v6" => [
+      "simplelist",
+    ],
+  },
+  "simple" => Map {
+    "v6" => [
+      "simplelist",
+    ],
+  },
+  "skeleton" => Map {
+    "v6" => [
+      "skeleton",
+    ],
+  },
+  "skiptocontent" => Map {
+    "v6" => [
+      "skiptocontent",
+    ],
+  },
+  "skip" => Map {
+    "v6" => [
+      "skiptocontent",
+    ],
+  },
+  "slider" => Map {
+    "v6" => [
+      "slider",
+    ],
+  },
+  "spinner" => Map {
+    "v6" => [
+      "spinner",
+    ],
+  },
+  "switch" => Map {
+    "v6" => [
+      "switch",
+    ],
+  },
+  "table" => Map {
+    "v6" => [
+      "table",
+    ],
+  },
+  "tabs" => Map {
+    "v6" => [
+      "tabs",
+    ],
+  },
+  "textarea" => Map {
+    "v6" => [
+      "textarea",
+    ],
+  },
+  "area" => Map {
+    "v6" => [
+      "textarea",
+      "areachart",
+    ],
+  },
+  "textinput" => Map {
+    "v6" => [
+      "textinput",
+    ],
+  },
+  "textinputgroup" => Map {
+    "v6" => [
+      "textinputgroup",
+    ],
+  },
+  "tiledeprecated" => Map {
+    "v6" => [
+      "tiledeprecated",
+    ],
+  },
+  "tile" => Map {
+    "v6" => [
+      "tiledeprecated",
+    ],
+  },
+  "timepicker" => Map {
+    "v6" => [
+      "timepicker",
+    ],
+  },
+  "time" => Map {
+    "v6" => [
+      "timepicker",
+    ],
+  },
+  "timestamp" => Map {
+    "v6" => [
+      "timestamp",
+    ],
+  },
+  "title" => Map {
+    "v6" => [
+      "title",
+    ],
+  },
+  "togglegroup" => Map {
+    "v6" => [
+      "togglegroup",
+    ],
+  },
+  "toolbar" => Map {
+    "v6" => [
+      "toolbar",
+    ],
+  },
+  "tooltip" => Map {
+    "v6" => [
+      "tooltip",
+    ],
+  },
+  "charts" => Map {
+    "v6" => [
+      "tooltip",
+      "charttheme",
+      "areachart",
+      "barchart",
+      "boxplotchart",
+      "bulletchart",
+      "donutchart",
+      "donututilizationchart",
+      "linechart",
+      "piechart",
+      "scatterchart",
+      "sparklinechart",
+      "stackchart",
+      "thresholdchart",
+      "legendchart",
+      "charts",
+    ],
+  },
+  "chart" => Map {
+    "v6" => [
+      "tooltip",
+      "charttheme",
+      "areachart",
+      "barchart",
+      "boxplotchart",
+      "bulletchart",
+      "donutchart",
+      "donututilizationchart",
+      "linechart",
+      "piechart",
+      "scatterchart",
+      "sparklinechart",
+      "stackchart",
+      "thresholdchart",
+      "legendchart",
+    ],
+  },
+  "writing-guides" => Map {
+    "v6" => [
+      "tooltip",
+      "product tours",
+      "cli guidelines",
+      "error messages",
+      "writing",
+    ],
+  },
+  "content-design" => Map {
+    "v6" => [
+      "tooltip",
+      "product tours",
+      "cli guidelines",
+      "error messages",
+      "writing",
+      "grammar",
+    ],
+  },
+  "guidance" => Map {
+    "v6" => [
+      "tooltip",
+      "charts",
+      "chatbot",
+      "componentgroups",
+      "react",
+      "cli guidelines",
+      "writing",
+      "grammar",
+    ],
+  },
+  "writing" => Map {
+    "v6" => [
+      "tooltip",
+      "product tours",
+      "cli guidelines",
+      "error messages",
+      "writing",
+    ],
+  },
+  "tooltips" => Map {
+    "v6" => [
+      "tooltip",
+    ],
+  },
+  "including" => Map {
+    "v6" => [
+      "tooltip",
+      "grammar",
+    ],
+  },
+  "specific" => Map {
+    "v6" => [
+      "tooltip",
+    ],
+  },
+  "rules" => Map {
+    "v6" => [
+      "tooltip",
+      "grammar",
+    ],
+  },
+  "icons" => Map {
+    "v6" => [
+      "tooltip",
+    ],
+  },
+  "treeview" => Map {
+    "v6" => [
+      "treeview",
+    ],
+  },
+  "tree" => Map {
+    "v6" => [
+      "treeview",
+    ],
+  },
+  "view" => Map {
+    "v6" => [
+      "treeview",
+      "grammar",
+    ],
+  },
+  "truncate" => Map {
+    "v6" => [
+      "truncate",
+    ],
+  },
+  "wizard" => Map {
+    "v6" => [
+      "wizard",
+    ],
+  },
+  "bullseye" => Map {
+    "v6" => [
+      "bullseye",
+    ],
+  },
+  "layouts" => Map {
+    "v6" => [
+      "bullseye",
+      "flex",
+      "gallery",
+      "grid",
+      "level",
+      "split",
+      "stack",
+    ],
+  },
+  "layout" => Map {
+    "v6" => [
+      "bullseye",
+      "flex",
+      "gallery",
+      "grid",
+      "level",
+      "split",
+      "stack",
+    ],
+  },
+  "flex" => Map {
+    "v6" => [
+      "flex",
+    ],
+  },
+  "gallery" => Map {
+    "v6" => [
+      "gallery",
+    ],
+  },
+  "grid" => Map {
+    "v6" => [
+      "grid",
+    ],
+  },
+  "level" => Map {
+    "v6" => [
+      "level",
+    ],
+  },
+  "split" => Map {
+    "v6" => [
+      "split",
+    ],
+  },
+  "stack" => Map {
+    "v6" => [
+      "stack",
+      "stackchart",
+    ],
+  },
+  "charttheme" => Map {
+    "v6" => [
+      "charttheme",
+    ],
+  },
+  "colors" => Map {
+    "v6" => [
+      "charttheme",
+    ],
+  },
+  "areachart" => Map {
+    "v6" => [
+      "areachart",
+    ],
+  },
+  "barchart" => Map {
+    "v6" => [
+      "barchart",
+    ],
+  },
+  "boxplotchart" => Map {
+    "v6" => [
+      "boxplotchart",
+    ],
+  },
+  "plot" => Map {
+    "v6" => [
+      "boxplotchart",
+    ],
+  },
+  "bulletchart" => Map {
+    "v6" => [
+      "bulletchart",
+    ],
+  },
+  "bullet" => Map {
+    "v6" => [
+      "bulletchart",
+    ],
+  },
+  "donutchart" => Map {
+    "v6" => [
+      "donutchart",
+    ],
+  },
+  "donut" => Map {
+    "v6" => [
+      "donutchart",
+      "donututilizationchart",
+    ],
+  },
+  "donututilizationchart" => Map {
+    "v6" => [
+      "donututilizationchart",
+    ],
+  },
+  "utilization" => Map {
+    "v6" => [
+      "donututilizationchart",
+    ],
+  },
+  "linechart" => Map {
+    "v6" => [
+      "linechart",
+    ],
+  },
+  "line" => Map {
+    "v6" => [
+      "linechart",
+    ],
+  },
+  "piechart" => Map {
+    "v6" => [
+      "piechart",
+    ],
+  },
+  "scatterchart" => Map {
+    "v6" => [
+      "scatterchart",
+    ],
+  },
+  "scatter" => Map {
+    "v6" => [
+      "scatterchart",
+    ],
+  },
+  "sparklinechart" => Map {
+    "v6" => [
+      "sparklinechart",
+    ],
+  },
+  "sparkline" => Map {
+    "v6" => [
+      "sparklinechart",
+    ],
+  },
+  "stackchart" => Map {
+    "v6" => [
+      "stackchart",
+    ],
+  },
+  "thresholdchart" => Map {
+    "v6" => [
+      "thresholdchart",
+    ],
+  },
+  "threshold" => Map {
+    "v6" => [
+      "thresholdchart",
+    ],
+  },
+  "legendchart" => Map {
+    "v6" => [
+      "legendchart",
+    ],
+  },
+  "legend" => Map {
+    "v6" => [
+      "legendchart",
+    ],
+  },
+  "chatbot" => Map {
+    "v6" => [
+      "chatbot",
+    ],
+  },
+  "componentgroups" => Map {
+    "v6" => [
+      "componentgroups",
+    ],
+  },
+  "groups" => Map {
+    "v6" => [
+      "componentgroups",
+    ],
+  },
+  "resources" => Map {
+    "v6" => [
+      "react",
+      "writing",
+    ],
+  },
+  "setup" => Map {
+    "v6" => [
+      "react",
+    ],
+  },
+  "troubleshooting" => Map {
+    "v6" => [
+      "react",
+    ],
+  },
+  "product" => Map {
+    "v6" => [
+      "product tours",
+    ],
+  },
+  "tours" => Map {
+    "v6" => [
+      "product tours",
+    ],
+  },
+  "best" => Map {
+    "v6" => [
+      "product tours",
+      "error messages",
+    ],
+  },
+  "practices" => Map {
+    "v6" => [
+      "product tours",
+      "error messages",
+    ],
+  },
+  "tone" => Map {
+    "v6" => [
+      "product tours",
+      "writing",
+    ],
+  },
+  "advice" => Map {
+    "v6" => [
+      "product tours",
+      "writing",
+    ],
+  },
+  "onboarding" => Map {
+    "v6" => [
+      "product tours",
+    ],
+  },
+  "flows" => Map {
+    "v6" => [
+      "product tours",
+    ],
+  },
+  "detailed" => Map {
+    "v6" => [
+      "cli guidelines",
+    ],
+  },
+  "designing" => Map {
+    "v6" => [
+      "cli guidelines",
+    ],
+  },
+  "command-line" => Map {
+    "v6" => [
+      "cli guidelines",
+    ],
+  },
+  "interfaces" => Map {
+    "v6" => [
+      "cli guidelines",
+    ],
+  },
+  "clis" => Map {
+    "v6" => [
+      "cli guidelines",
+    ],
+  },
+  "error" => Map {
+    "v6" => [
+      "error messages",
+    ],
+  },
+  "messages" => Map {
+    "v6" => [
+      "error messages",
+    ],
+  },
+  "effective" => Map {
+    "v6" => [
+      "error messages",
+    ],
+  },
+  "clear" => Map {
+    "v6" => [
+      "error messages",
+    ],
+  },
+  "actionable" => Map {
+    "v6" => [
+      "error messages",
+    ],
+  },
+  "empathetic" => Map {
+    "v6" => [
+      "error messages",
+    ],
+  },
+  "overview" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "defines" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "unique" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "voice" => Map {
+    "v6" => [
+      "writing",
+      "grammar",
+    ],
+  },
+  "standards" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "consistency" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "humanity" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "across" => Map {
+    "v6" => [
+      "writing",
+      "grammar",
+    ],
+  },
+  "products" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "foundational" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "integrating" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "words" => Map {
+    "v6" => [
+      "writing",
+      "grammar",
+    ],
+  },
+  "into" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "process" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "ensuring" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "intuitive" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "human-centered" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "experiences" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "grammar" => Map {
+    "v6" => [
+      "writing",
+      "grammar",
+    ],
+  },
+  "inclusion" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "supporting" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "screen" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "readers" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "adapting" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "global" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "audiences" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "structuring" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "specifically" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "patternflys" => Map {
+    "v6" => [
+      "writing",
+    ],
+  },
+  "detailing" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "casing" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "style" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "different" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "scenarios" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "displaying" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "formatting" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "dates" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "times" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "currency" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "numerical" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "values" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "punctuation" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "properly" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "long-form" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "point" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "sentence" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "clarity" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "language" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "preferred" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "terms" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "phrases" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "avoid" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "replacing" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "ellipses" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "manage" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "display" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "space" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "limited" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "units" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "measurement" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "shorthand" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
+  "symbols" => Map {
+    "v6" => [
+      "grammar",
+    ],
+  },
 }
 `;
 
@@ -1766,8 +2327,9 @@ exports[`getPatternFlyMcpResources should return multiple organized facets: prop
   "resources",
   "docsIndex",
   "componentsIndex",
-  "keywordsIndex",
   "isFallbackDocumentation",
+  "keywordsIndex",
+  "keywordsMap",
   "pathIndex",
   "byPath",
   "byUri",

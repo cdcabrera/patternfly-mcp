@@ -64,7 +64,7 @@ type PatternFlyMcpResourcesByVersion = {
 /**
  * PatternFly resource keywords by resource name.
  */
-type PatternFlyMcpKeywordsMap = Map<string, string[]>;
+type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
 
 /**
  * PatternFly resource metadata.
@@ -270,12 +270,13 @@ const filterKeywords = (keywordsMap: PatternFlyMcpKeywordsMap, { filterList = IN
  * @param params - Params object
  * @param params.keyword - Keyword to add to the map.
  * @param params.name - Name of the resource associated with the keyword.
+ * @param params.version - Version of the resource associated with the keyword.
  * @param settings - Settings object
  * @param settings.blockList - List of words to block from indexing.
  */
 const mutateKeyWordsMap = (
   keywordsMap: PatternFlyMcpKeywordsMap,
-  { keyword, name }: { keyword: string, name: string },
+  { keyword, name, version }: { keyword: string, name: string, version: string },
   { blockList = INDEX_BLOCKLIST_WORDS } = {}
 ) => {
   const normalizedKeyword = keyword.toLowerCase().trim();
@@ -284,10 +285,16 @@ const mutateKeyWordsMap = (
 
   const mutateMap = (word: string) => {
     if (!keywordsMap.has(word)) {
-      keywordsMap.set(word, []);
+      keywordsMap.set(word, new Map());
     }
 
-    const mapped = keywordsMap.get(word);
+    const versionMap = keywordsMap.get(word);
+
+    if (!versionMap?.has(version)) {
+      versionMap?.set(version, []);
+    }
+
+    const mapped = versionMap?.get(version);
 
     if (!mapped?.includes(name)) {
       mapped?.push(name);
@@ -326,7 +333,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const byUri: PatternFlyMcpResourcesByUri = {};
   const byVersion: PatternFlyMcpResourcesByVersion = {};
   const pathIndex = new Set<string>();
-  // const rawKeywordMap = new Map<string, Map<string, string[]>>();
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   Object.entries(originalDocs.docs).forEach(([docsName, entries]) => {
@@ -387,18 +393,18 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.urls.push(path);
       resource.versions[version].urls.push(path);
 
-      mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name });
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
 
       if (entry.category) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name, version });
       }
 
       if (entry.section) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.section, name });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.section, name, version });
       }
 
       if (entry.description) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name, version });
       }
 
       if (extendedEntry.section === 'guidelines') {
@@ -430,7 +436,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     componentsIndex: componentNamesIndex,
     isFallbackDocumentation: originalDocs.isFallback,
     keywordsIndex: Array.from(new Set([
-      // ...Array.from(resources.keys()),
       ...componentNamesIndex,
       ...Array.from(filteredKeywords.keys())
     ])).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),

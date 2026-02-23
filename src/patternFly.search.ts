@@ -72,19 +72,19 @@ const searchPatternFly = async (searchQuery: string, {
         ...resource,
         query: searchQuery
       }];
-    }
+    }*/
 
     const versionMap = updatedResources.keywordsMap.get(result.item);
 
     if (versionMap) {
-      return Array.from(versionMap).flatMap(([_key, values]) => values).map(value => ({
+      return Array.from(versionMap).flatMap(([_version, names]) => names).map(name => ({
         ...result,
-        ...updatedResources.resources.get(value),
+        ...updatedResources.resources.get(name),
         query: searchQuery
       }));
     }
-     */
 
+    /*
     const resources = updatedResources.keywordsMap.get(result.item);
 
     if (resources) {
@@ -94,6 +94,7 @@ const searchPatternFly = async (searchQuery: string, {
         query: searchQuery
       }));
     }
+    */
 
     return [];
   }) as (SearchPatternFlyResult[])[];
