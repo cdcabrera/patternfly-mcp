@@ -16,9 +16,7 @@ import { type ToolModule } from './server.toolsUser';
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
  * @property {LoggingOptions} logging - Logging options.
- * @property maxDocsToLoad - Maximum number of docs to load.
- * @property maxSearchLength - Maximum length for search strings.
- * @property recommendedMaxDocsToLoad - Recommended maximum number of docs to load.
+ * @property {MinMax} minMax - Minimum and maximum ranges for various options.
  * @property {typeof MODE_LEVELS} mode - Specifies the mode of operation.
  *    - `cli`: Command-line interface mode.
  *    - `programmatic`: Programmatic interaction mode where the application is used as a library or API.
@@ -48,9 +46,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   http: HttpOptions;
   isHttp: boolean;
   logging: TLogOptions;
-  maxDocsToLoad: number;
-  maxSearchLength: number;
-  recommendedMaxDocsToLoad: number;
+  minMax: MinMax;
   mode: 'cli' | 'programmatic' | 'test';
   modeOptions: ModeOptions;
   name: string;
@@ -124,6 +120,35 @@ interface LoggingOptions {
   stderr: boolean;
   protocol: boolean;
   transport: 'stdio' | 'mcp';
+}
+
+/**
+ * Minimum and maximum ranges for various options.
+ *
+ * @interface MinMax
+ *
+ * @property urlString Minimum and maximum length for URL strings.
+ * @property toolSearches Minimum and maximum number of tool searches.
+ * @property inputStrings Minimum and maximum length for input strings.
+ * @property docsToLoad Minimum and maximum number of docs to load.
+ */
+interface MinMax {
+  urlString: {
+    min: number;
+    max: number;
+  }
+  toolSearches: {
+    min: number;
+    max: number;
+  }
+  inputStrings: {
+    min: number;
+    max: number;
+  }
+  docsToLoad: {
+    min: number;
+    max: number;
+  }
 }
 
 /**
@@ -255,6 +280,28 @@ const HTTP_OPTIONS: HttpOptions = {
   host: '127.0.0.1',
   allowedOrigins: [],
   allowedHosts: []
+};
+
+/**
+ * Minimum and maximum ranges for various options.
+ */
+const MIN_MAX: MinMax = {
+  urlString: {
+    min: 11,
+    max: 1500
+  },
+  toolSearches: {
+    min: 0,
+    max: 10
+  },
+  inputStrings: {
+    min: 1,
+    max: 256
+  },
+  docsToLoad: {
+    min: 0,
+    max: 15
+  }
 };
 
 /**
@@ -399,9 +446,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   isHttp: false,
   http: HTTP_OPTIONS,
   logging: LOGGING_OPTIONS,
-  maxDocsToLoad: 500,
-  maxSearchLength: 256,
-  recommendedMaxDocsToLoad: 15,
+  minMax: MIN_MAX,
   mode: 'programmatic',
   modeOptions: MODE_OPTIONS,
   name: packageJson.name,

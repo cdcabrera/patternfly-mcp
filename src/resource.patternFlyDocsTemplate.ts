@@ -72,10 +72,10 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
     );
   }
 
-  if (name.length > options.maxSearchLength) {
+  if (name.length > options.minMax.inputStrings.max) {
     throw new McpError(
       ErrorCode.InvalidParams,
-      `Resource name exceeds maximum length of ${options.maxSearchLength} characters.`
+      `Resource name exceeds maximum length of ${options.minMax.inputStrings.max} characters.`
     );
   }
 

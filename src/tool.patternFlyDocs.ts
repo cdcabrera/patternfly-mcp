@@ -7,7 +7,7 @@ import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { log } from './logger';
+import { validateToolInput, validateToolInputLength, validateToolInputArrayEntryLength } from "./tool.helpers";
 
 /**
  * usePatternFlyDocs tool function
@@ -21,17 +21,6 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
     const isName = typeof name === 'string' && name.trim().length > 0;
     const isVersion = typeof version === 'string' && version.trim().length > 0;
-    const hasUri = (isName && new RegExp('patternfly://', 'i').test(name)) || (isUrlList && urlList.some(url => new RegExp('patternfly://', 'i').test(url)));
-
-    if (hasUri) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        stringJoin.basic(
-          'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used with MCP resources directly.',
-          'Use a component "name" or provide a "urlList" of raw documentation URLs.'
-        )
-      );
-    }
 
     if ((isUrlList && isName) || (!isUrlList && !isName)) {
       throw new McpError(
@@ -40,28 +29,70 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    if (isName && name.length > options.maxSearchLength) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `String "name" exceeds maximum length of ${options.maxSearchLength} characters.`
+    if (isName) {
+      validateToolInputLength(name, {
+        max: options.minMax.inputStrings.max,
+        min: 2,
+        description: `"name" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+      });
+
+      validateToolInput(
+        name,
+        (value: string) => new RegExp('patternfly://', 'i').test(value),
+        new McpError(
+          ErrorCode.InvalidParams,
+          stringJoin.basic(
+            'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used with MCP resources directly.',
+            'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
+          )
+        )
       );
     }
 
-    if (isVersion && version.length > options.maxSearchLength) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `String "version" exceeds maximum length of ${options.maxSearchLength} characters.`
+    if (isUrlList) {
+      validateToolInputArrayEntryLength(urlList, {
+        ...options.minMax.urlString,
+        description: `"urlList" must contain strings that do not exceed 1500 characters in length.`
+      });
+
+      validateToolInput(
+        urlList,
+        (value: string[]) => value.length > options.minMax.docsToLoad.max,
+        new McpError(
+          ErrorCode.InvalidParams,
+          `"urlList" must be an array with a maximum length of ${options.minMax.docsToLoad.max} items.`
+        )
+      );
+
+      validateToolInput(
+        urlList,
+        (value: string[]) => value.some(url => new RegExp('patternfly://', 'i').test(url)),
+        new McpError(
+          ErrorCode.InvalidParams,
+          stringJoin.basic(
+            'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used with MCP resources directly.',
+            'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
+          )
+        )
       );
     }
 
-    const updatedUrlList = isUrlList ? urlList.slice(0, options.recommendedMaxDocsToLoad) : [];
+    if (isVersion) {
+      validateToolInputLength(version, {
+        max: options.minMax.inputStrings.max,
+        min: 2,
+        description: `"version" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+      });
 
-    if (isUrlList && urlList.length > options.recommendedMaxDocsToLoad) {
-      log.warn(
-        `usePatternFlyDocs: urlList truncated from ${urlList.length} to ${options.recommendedMaxDocsToLoad} items.`
-      );
+      validateToolInput(version,
+        (value: any) => options.patternflyOptions.availableSearchVersions.includes(value),
+        new McpError(
+          ErrorCode.InvalidParams,
+          `Invalid "version" parameter: "${version}". Must be one of: ${options.patternflyOptions.availableSearchVersions.join(', ')}`
+        ));
     }
 
+    const updatedUrlList = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
     const { latestVersion, byPath } = await getPatternFlyMcpResources.memo();
     const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
     const isLatestVersion = latestVersion === updatedVersion;
@@ -110,7 +141,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (docs.length === 0) {
-      const nameFilter = `**Name**: ${name || '*'}`;
+      const nameFilter = `**Name**: ${updatedName || '*'}`;
       const versionFilter = `**PatternFly Version**: ${updatedVersion || '*'}`;
       const urlListBlock = updatedUrlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
       const urlListFilter = stringJoin.newline(
@@ -138,9 +169,9 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     for (const doc of docs) {
       const patternFlyEntry = doc?.path ? byPath[doc.path] : undefined;
-      const componentName = patternFlyEntry?.name;
+      const entryName = patternFlyEntry?.name;
       const docTitle = patternFlyEntry
-        ? `# Documentation for ${patternFlyEntry.displayName || componentName} [${setCategoryDisplayLabel(patternFlyEntry)}]`
+        ? `# Documentation for ${patternFlyEntry.displayName || entryName} [${setCategoryDisplayLabel(patternFlyEntry)}]`
         : `# Content for ${doc.path}`;
 
       docResults.push(stringJoin.newline(
@@ -150,13 +181,13 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         doc.content
       ));
 
-      if (isLatestVersion && componentName && !schemasSeen.has(componentName)) {
-        schemasSeen.add(componentName);
-        const componentSchema = await getPatternFlyComponentSchema.memo(componentName);
+      if (isLatestVersion && entryName && !schemasSeen.has(entryName)) {
+        schemasSeen.add(entryName);
+        const componentSchema = await getPatternFlyComponentSchema.memo(entryName);
 
         if (componentSchema) {
           schemaResults.push(stringJoin.newline(
-            `# Component Schema for ${componentName}`,
+            `# Component Schema for ${entryName}`,
             `This machine-readable JSON schema defines the component's props, types, and validation rules.`,
             '```json',
             JSON.stringify(componentSchema, null, 2),
@@ -182,17 +213,17 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       description: `Get markdown documentation and component JSON schemas for PatternFly resources and components.
 
       **Usage**:
-        1. Input a resource or component name (e.g., "Button") OR a list of up to ${options.recommendedMaxDocsToLoad} documentation URLs at a time (typically from searchPatternFlyDocs results).
+        1. Input a component or resource name (e.g., "Button", "Writing") or a list of up to ${options.minMax.docsToLoad.max} documentation URLs at a time (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
         - Component JSON schemas, if available
       `,
       inputSchema: {
-        urlList: z.array(z.string()).max(options.recommendedMaxDocsToLoad)
-          .optional().describe(`The list of URLs to fetch the documentation from (max ${options.recommendedMaxDocsToLoad} at a time`),
-        name: z.string().max(options.maxSearchLength)
-          .optional().describe('The name of a PatternFly resource or component to fetch documentation for (e.g., "Button", "Table")'),
+        urlList: z.array(z.string()).max(options.minMax.docsToLoad.max)
+          .optional().describe(`The list of URLs to fetch the documentation from (max ${options.minMax.docsToLoad.max} at a time`),
+        name: z.string().max(options.minMax.inputStrings.max)
+          .optional().describe('The name of a PatternFly component or resource to fetch documentation for (e.g., "Button", "Table", "Writing")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }

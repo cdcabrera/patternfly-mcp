@@ -30,10 +30,10 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
       );
     }
 
-    if (componentName.length > options.maxSearchLength) {
+    if (componentName.length > options.minMax.inputStrings.max) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Component name exceeds maximum length of ${options.maxSearchLength} characters.`
+        `Component name exceeds maximum length of ${options.minMax.inputStrings.max} characters.`
       );
     }
 
@@ -93,7 +93,7 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
 
       Returns prop definitions, types, and validation rules. Use this for structured component metadata, not documentation.`,
       inputSchema: {
-        componentName: z.string().max(options.maxSearchLength).describe('Name of the PatternFly component (e.g., "Button", "Table")')
+        componentName: z.string().max(options.minMax.inputStrings.max).describe('Name of the PatternFly component (e.g., "Button", "Table")')
       }
     },
     callback

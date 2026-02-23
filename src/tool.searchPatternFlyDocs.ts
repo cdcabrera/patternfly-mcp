@@ -5,6 +5,8 @@ import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
+import {normalizeEnumeratedPatternFlyVersion} from "./patternFly.helpers";
+import {validateToolInput, validateToolInputLength} from "./tool.helpers";
 // import { getPatternFlyMcpDocs } from './patternFly.getResources';
 
 /**
@@ -18,23 +20,38 @@ import { getPatternFlyMcpResources } from './patternFly.getResources';
  */
 const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
-    const { searchQuery } = args;
+    const { searchQuery, version } = args;
+    const isVersion = typeof version === 'string' && version.trim().length > 0;
 
-    if (typeof searchQuery !== 'string') {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Missing required parameter: searchQuery must be a string: ${searchQuery}`
-      );
+    validateToolInputLength(searchQuery, {
+      max: options.minMax.inputStrings.max,
+      min: 1,
+      description: `"searchQuery" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+    });
+
+    if (isVersion) {
+      validateToolInputLength(version, {
+        max: options.minMax.inputStrings.max,
+        min: 2,
+        description: `"version" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+      });
+
+      validateToolInput(version,
+        (value: any) => options.patternflyOptions.availableSearchVersions.includes(value),
+        new McpError(
+          ErrorCode.InvalidParams,
+          `Invalid "version" parameter: "${version}". Must be one of: ${options.patternflyOptions.availableSearchVersions.join(', ')}`
+        ));
     }
 
-    if (searchQuery.length > options.maxSearchLength) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Search query exceeds ${options.maxSearchLength} character max length.`
-      );
-    }
+    const { latestVersion } = await getPatternFlyMcpResources.memo();
+    const pfVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
+    // const isLatestVersion = latestVersion === updatedVersion;
 
-    const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(searchQuery, { allowWildCardAll: true });
+    const { isSearchWildCardAll, searchResults } = await searchPatternFly.memo(
+      searchQuery,
+      { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max, pfVersion }
+    );
     // const { envVersion } = await getPatternFlyMcpResources.memo();
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
@@ -169,7 +186,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         - Documentation and guideline URLs that can be used with "usePatternFlyDocs"
       `,
       inputSchema: {
-        searchQuery: z.string().max(options.maxSearchLength).describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")')
+        searchQuery: z.string().max(options.minMax.inputStrings.max).describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
+        version: z.enum(options.patternflyOptions.availableSearchVersions)
+          .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
     },
     callback
