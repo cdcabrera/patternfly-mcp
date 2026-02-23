@@ -63,22 +63,38 @@ const searchPatternFly = async (searchQuery: string, {
   }
 
   const updatedSearchResults = searchResults.map((result: FuzzySearchResult) => {
+    /*
     const resource = updatedResources.resources.get(result.item);
 
-    return {
-      ...result,
-      ...resource,
-      query: searchQuery
-    };
-  }) as SearchPatternFlyResult[];
+    if (resource) {
+      return [{
+        ...result,
+        ...resource,
+        query: searchQuery
+      }];
+    }*/
 
-  const exactMatches = updatedSearchResults.filter(result => result.matchType === 'exact' || result.matchType === 'all');
+    const versionMap = updatedResources.keywordsMap.get(result.item);
+
+    if (versionMap) {
+      return Array.from(versionMap).flatMap(([_key, values]) => values).map(value => ({
+        ...result,
+        ...updatedResources.resources.get(value),
+        query: searchQuery
+      }));
+    }
+
+    return [];
+  }) as (SearchPatternFlyResult[])[];
+
+  const flattenedResults = updatedSearchResults.flat();
+  const exactMatches = flattenedResults.filter(result => result.matchType === 'exact' || result.matchType === 'all');
 
   return {
     isSearchWildCardAll,
     firstExactMatch: exactMatches[0],
     exactMatches,
-    searchResults: updatedSearchResults
+    searchResults: flattenedResults
   };
 };
 
