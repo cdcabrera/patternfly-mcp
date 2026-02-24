@@ -1,44 +1,39 @@
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
-  validateToolInput,
-  validateToolInputString,
-  validateToolInputStringLength,
-  validateToolInputStringArrayEntryLength,
-  validateToolInputStringNumberEnumLike
+  assertInput,
+  assertInputString,
+  assertInputStringLength,
+  assertInputStringArrayEntryLength,
+  assertInputStringNumberEnumLike
 } from '../tool.helpers';
 
-describe('validateToolInput', () => {
+describe('assertInput', () => {
   it.each([
     {
       description: 'basic string validation',
       param: '',
-      validator: (value: any) => typeof value !== 'string' || !(value.trim().length > 0)
+      condition: (value: any) => typeof value === 'string' && value.trim().length > 0
     },
     {
       description: 'pattern in string validation',
       param: 'patternfly://lorem-ipsum',
-      validator: (value: any) => new RegExp('patternfly://', 'i').test(value)
+      condition: (value: any) => new RegExp('patternfly://', 'i').test(value)
     },
     {
       description: 'array entry length validation',
       param: ['lorem', 'ipsum'],
-      validator: (value: any) => !Array.isArray(value) || !(value.length > 2)
+      condition: (value: any) => Array.isArray(value) && value.length > 2
     }
-  ])('should throw an error for validation, $description', ({ param, validator }) => {
+  ])('should throw an error for validation, $description', ({ param, condition }) => {
     const errorMessage = `Lorem ipsum error message for ${param} validation.`;
 
-    expect(() => validateToolInput(
-      param,
-      validator,
-      new McpError(
-        ErrorCode.InvalidParams,
-        errorMessage
-      )
+    expect(() => assertInput(
+      condition,
+      errorMessage
     )).toThrow(errorMessage);
   });
 });
 
-describe('validateToolInputString', () => {
+describe('assertInputString', () => {
   it.each([
     {
       description: 'empty string',
@@ -59,13 +54,13 @@ describe('validateToolInputString', () => {
   ])('should throw an error for validation, $description', ({ param }) => {
     const errorMessage = '"Input" must be a string';
 
-    expect(() => validateToolInputString(
+    expect(() => assertInputString(
       param
     )).toThrow(errorMessage);
   });
 });
 
-describe('validateToolInputStringLength', () => {
+describe('assertInputStringLength', () => {
   it.each([
     {
       description: 'empty string',
@@ -106,19 +101,19 @@ describe('validateToolInputStringLength', () => {
     {
       description: 'max and min and description',
       param: 'lorem ipsum',
-      options: { min: 1, max: 10, description: 'dolor sit amet, consectetur adipiscing elit.' }
+      options: { min: 1, max: 10, message: 'dolor sit amet, consectetur adipiscing elit.' }
     }
   ])('should throw an error for validation, $description', ({ param, options }) => {
-    const errorMessage = options?.description || `"${options?.inputDisplayName || 'Input'}" must be a string`;
+    const errorMessage = options?.message || `"${options?.inputDisplayName || 'Input'}" must be a string`;
 
-    expect(() => validateToolInputStringLength(
+    expect(() => assertInputStringLength(
       param,
       { min: 1, max: 100, ...options } as any
     )).toThrow(errorMessage);
   });
 });
 
-describe('validateToolInputStringArrayEntryLength', () => {
+describe('assertInputStringArrayEntryLength', () => {
   it.each([
     {
       description: 'empty string',
@@ -159,19 +154,19 @@ describe('validateToolInputStringArrayEntryLength', () => {
     {
       description: 'max and min and description',
       param: ['lorem ipsum'],
-      options: { min: 1, max: 10, description: 'dolor sit amet, consectetur adipiscing elit.' }
+      options: { min: 1, max: 10, message: 'dolor sit amet, consectetur adipiscing elit.' }
     }
   ])('should throw an error for validation, $description', ({ param, options }) => {
-    const errorMessage = options?.description || `"${options?.inputDisplayName || 'Input'}" array must contain strings with length`;
+    const errorMessage = options?.message || `"${options?.inputDisplayName || 'Input'}" array must contain strings`;
 
-    expect(() => validateToolInputStringArrayEntryLength(
+    expect(() => assertInputStringArrayEntryLength(
       param as any,
       { min: 1, max: 100, ...options } as any
     )).toThrow(errorMessage);
   });
 });
 
-describe('validateToolInputStringNumberEnumLike', () => {
+describe('assertInputStringNumberEnumLike', () => {
   it.each([
     {
       description: 'empty string',
@@ -208,12 +203,12 @@ describe('validateToolInputStringNumberEnumLike', () => {
       description: 'string and description',
       param: 'lorem ipsum',
       compare: [1, 2],
-      options: { description: 'dolor sit amet, consectetur adipiscing elit.' }
+      options: { message: 'dolor sit amet, consectetur adipiscing elit.' }
     }
   ])('should throw an error for validation, $description', ({ param, compare, options }) => {
-    const errorMessage = options?.description || `"${options?.inputDisplayName || 'Input'}" must be one of the following values`;
+    const errorMessage = options?.message || `"${options?.inputDisplayName || 'Input'}" must be one of the following values`;
 
-    expect(() => validateToolInputStringNumberEnumLike(
+    expect(() => assertInputStringNumberEnumLike(
       param as any,
       compare as any,
       { ...options } as any
@@ -223,7 +218,7 @@ describe('validateToolInputStringNumberEnumLike', () => {
   it('should throw an internal error for validation when missing comparison values', () => {
     const errorMessage = 'List of allowed values is empty';
 
-    expect(() => validateToolInputStringNumberEnumLike(
+    expect(() => assertInputStringNumberEnumLike(
       1,
       []
     )).toThrow(errorMessage);
