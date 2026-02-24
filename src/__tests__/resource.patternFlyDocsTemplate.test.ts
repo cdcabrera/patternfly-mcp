@@ -108,22 +108,22 @@ describe('resourceCallback', () => {
   it.each([
     {
       description: 'with missing or undefined name',
-      error: 'Missing required parameter: name must be a string',
+      error: 'must be a string',
       variables: { version: 'v6' }
     },
     {
       description: 'with null name',
-      error: 'Missing required parameter: name must be a string',
+      error: 'must be a string',
       variables: { name: null, version: 'v6' }
     },
     {
       description: 'with empty name',
-      error: 'Missing required parameter: name must be a string',
+      error: 'must be a string',
       variables: { name: '', version: 'v6' }
     },
     {
       description: 'with non-string name',
-      error: 'Missing required parameter: name must be a string',
+      error: 'must be a string',
       variables: { name: 123, version: 'v6' }
     },
     {

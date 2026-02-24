@@ -93,7 +93,7 @@ describe('usePatternFlyDocsTool, callback', () => {
     },
     {
       description: 'with empty files',
-      error: 'Provide either a string',
+      error: 'array must contain strings with length',
       urlList: ['components/button.md', '', '   ', 'components/card.md', 'components/table.md']
     },
     {
@@ -103,7 +103,7 @@ describe('usePatternFlyDocsTool, callback', () => {
     },
     {
       description: 'with empty strings in a urlList',
-      error: 'Provide either a string',
+      error: 'array must contain strings with length',
       urlList: ['', ' ']
     },
     {
@@ -123,7 +123,7 @@ describe('usePatternFlyDocsTool, callback', () => {
     mockProcessDocs.mockRejectedValue(new Error('File not found'));
     const [_name, _schema, callback] = usePatternFlyDocsTool();
 
-    await expect(callback({ urlList: ['missing.md'] })).rejects.toThrow(McpError);
-    await expect(callback({ urlList: ['missing.md'] })).rejects.toThrow('Failed to fetch documentation');
+    await expect(callback({ urlList: ['https://www.patternfly.org//missing.md'] })).rejects.toThrow(McpError);
+    await expect(callback({ urlList: ['https://www.patternfly.org/missing.md'] })).rejects.toThrow('Failed to fetch documentation');
   });
 });

@@ -11,6 +11,7 @@ import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
+import { validateToolInput, validateToolInputStringLength } from './tool.helpers';
 
 /**
  * Name of the resource template.
@@ -65,19 +66,10 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 const resourceCallback = async (uri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
-  if (!name || typeof name !== 'string') {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Missing required parameter: name must be a string: ${name}`
-    );
-  }
-
-  if (name.length > options.minMax.inputStrings.max) {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Resource name exceeds maximum length of ${options.minMax.inputStrings.max} characters.`
-    );
-  }
+  validateToolInputStringLength(name, {
+    ...options.minMax.inputStrings,
+    inputDisplayName: 'name'
+  });
 
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 
@@ -129,12 +121,14 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   }
 
   // Redundancy check, technically this should never happen, future proofing
-  if (docs.length === 0) {
-    throw new McpError(
+  validateToolInput(
+    docs,
+    (vDocs: string[]) => vDocs.length === 0,
+    new McpError(
       ErrorCode.InvalidParams,
       `"${name.trim()}" was found, but no documentation URLs are available for it.`
-    );
-  }
+    )
+  );
 
   for (const doc of docs) {
     docResults.push(stringJoin.newline(

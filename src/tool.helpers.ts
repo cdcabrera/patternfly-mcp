@@ -59,7 +59,7 @@ function validateToolInputStringLength(
   validateToolInput(
     input,
     (vInput: unknown) => typeof vInput !== 'string' || !(vInput.length >= min && vInput.length <= max),
-    new McpError(ErrorCode.InvalidParams, description || `"${inputDisplayName || 'Input'}" must be a string from "${min}" to "${max + 1}" characters`)
+    new McpError(ErrorCode.InvalidParams, description || `"${inputDisplayName || 'Input'}" must be a string from "${min}" to "${max}" characters`)
   );
 }
 
@@ -83,7 +83,7 @@ function validateToolInputStringArrayEntryLength(
     input,
     (vInput: unknown[]) => !Array.isArray(vInput) || !vInput.every(entry => typeof entry === 'string' && entry.trim().length >= min && entry.trim().length <= max),
     // (vInput: unknown[]) => Array.isArray(vInput) && !vInput.every(entry => typeof entry === 'string' && entry.trim().length >= min && entry.trim().length <= max),
-    new McpError(ErrorCode.InvalidParams, description || `"${inputDisplayName || 'Input'}" array must contain strings with length from "${min - 1}" to "${max + 1}" characters`)
+    new McpError(ErrorCode.InvalidParams, description || `"${inputDisplayName || 'Input'}" array must contain strings with length from "${min}" to "${max}" characters`)
   );
 }
 
