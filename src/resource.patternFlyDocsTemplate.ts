@@ -11,7 +11,7 @@ import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
-import { assertInput, assertInputStringLength } from './tool.helpers';
+import { assertInput, assertInputStringLength } from './server.assertions';
 
 /**
  * Name of the resource template.

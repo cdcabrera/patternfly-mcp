@@ -13,7 +13,7 @@ import {
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlySchemasIndex';
-import { assertInputStringLength } from './tool.helpers';
+import { assertInputStringLength } from './server.assertions';
 
 /**
  * Name of the resource template.

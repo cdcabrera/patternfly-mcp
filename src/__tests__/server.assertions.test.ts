@@ -4,7 +4,7 @@ import {
   assertInputStringLength,
   assertInputStringArrayEntryLength,
   assertInputStringNumberEnumLike
-} from '../tool.helpers';
+} from '../server.assertions';
 
 describe('assertInput', () => {
   it.each([
