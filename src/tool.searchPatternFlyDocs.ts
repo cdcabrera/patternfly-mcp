@@ -1,13 +1,11 @@
 import { z } from 'zod';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
 import { stringJoin } from './server.helpers';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import {normalizeEnumeratedPatternFlyVersion} from "./patternFly.helpers";
-import {validateToolInput, validateToolInputLength} from "./tool.helpers";
-// import { getPatternFlyMcpDocs } from './patternFly.getResources';
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { validateToolInputStringLength, validateToolInputStringNumberEnumLike } from './tool.helpers';
 
 /**
  * searchPatternFlyDocs tool function
@@ -23,25 +21,24 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     const { searchQuery, version } = args;
     const isVersion = typeof version === 'string' && version.trim().length > 0;
 
-    validateToolInputLength(searchQuery, {
-      max: options.minMax.inputStrings.max,
-      min: 1,
-      description: `"searchQuery" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+    validateToolInputStringLength(searchQuery, {
+      ...options.minMax.inputStrings,
+      // min: 1,
+      inputDisplayName: 'searchQuery'
+      // description: `"searchQuery" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
     });
 
     if (isVersion) {
-      validateToolInputLength(version, {
+      validateToolInputStringLength(version, {
         max: options.minMax.inputStrings.max,
         min: 2,
-        description: `"version" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+        inputDisplayName: 'version'
+        // description: `"version" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
       });
 
-      validateToolInput(version,
-        (value: any) => options.patternflyOptions.availableSearchVersions.includes(value),
-        new McpError(
-          ErrorCode.InvalidParams,
-          `Invalid "version" parameter: "${version}". Must be one of: ${options.patternflyOptions.availableSearchVersions.join(', ')}`
-        ));
+      validateToolInputStringNumberEnumLike(version, options.patternflyOptions.availableSearchVersions, {
+        inputDisplayName: 'version'
+      });
     }
 
     const { latestVersion } = await getPatternFlyMcpResources.memo();

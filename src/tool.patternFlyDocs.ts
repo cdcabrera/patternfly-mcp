@@ -7,7 +7,12 @@ import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { validateToolInput, validateToolInputLength, validateToolInputArrayEntryLength } from "./tool.helpers";
+import {
+  validateToolInput,
+  validateToolInputStringLength,
+  validateToolInputStringArrayEntryLength,
+  validateToolInputStringNumberEnumLike
+} from './tool.helpers';
 
 /**
  * usePatternFlyDocs tool function
@@ -18,22 +23,33 @@ import { validateToolInput, validateToolInputLength, validateToolInputArrayEntry
 const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
     const { urlList, name, version } = args;
-    const isUrlList = urlList && Array.isArray(urlList) && urlList.length > 0 && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
-    const isName = typeof name === 'string' && name.trim().length > 0;
-    const isVersion = typeof version === 'string' && version.trim().length > 0;
+    const isUrlList = Array.isArray(urlList) && urlList.length > 0; // && urlList.every(url => typeof url === 'string' && url.trim().length > 0);
+    const isName = typeof name === 'string'; // && name.trim().length > 0;
+    const isVersion = typeof version === 'string'; // && version.trim().length > 0;
 
+    /*
     if ((isUrlList && isName) || (!isUrlList && !isName)) {
-      throw new McpError(
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `Provide either a string "name" OR an array of strings "urlList".`
+    );
+    } */
+
+    validateToolInput(
+      [isUrlList, isName],
+      ([vIsUrlList, vIsName]) => (vIsUrlList && vIsName) || (!vIsUrlList && !vIsName),
+      new McpError(
         ErrorCode.InvalidParams,
         `Provide either a string "name" OR an array of strings "urlList".`
-      );
-    }
+      )
+    );
 
     if (isName) {
-      validateToolInputLength(name, {
-        max: options.minMax.inputStrings.max,
-        min: 2,
-        description: `"name" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
+      validateToolInputStringLength(name, {
+        ...options.minMax.inputStrings,
+        // min: 2,
+        inputDisplayName: 'name'
+        // description: `"name" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
       });
 
       validateToolInput(
@@ -50,9 +66,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (isUrlList) {
-      validateToolInputArrayEntryLength(urlList, {
+      validateToolInputStringArrayEntryLength(urlList, {
         ...options.minMax.urlString,
-        description: `"urlList" must contain strings that do not exceed 1500 characters in length.`
+        inputDisplayName: 'urlList'
+        // description: `"urlList" must contain strings that do not exceed 1500 characters in length.`
       });
 
       validateToolInput(
@@ -78,7 +95,18 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     if (isVersion) {
-      validateToolInputLength(version, {
+      validateToolInputStringLength(version, {
+        max: options.minMax.inputStrings.max,
+        min: 2,
+        inputDisplayName: 'version'
+      });
+
+      validateToolInputStringNumberEnumLike(version, options.patternflyOptions.availableSearchVersions, {
+        inputDisplayName: 'version'
+      });
+
+      /*
+      validateToolInputStringLength(version, {
         max: options.minMax.inputStrings.max,
         min: 2,
         description: `"version" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
@@ -90,6 +118,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
           ErrorCode.InvalidParams,
           `Invalid "version" parameter: "${version}". Must be one of: ${options.patternflyOptions.availableSearchVersions.join(', ')}`
         ));
+      */
     }
 
     const updatedUrlList = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
