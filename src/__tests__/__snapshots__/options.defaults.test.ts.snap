@@ -20,8 +20,24 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "stderr": false,
     "transport": "stdio",
   },
-  "maxDocsToLoad": 500,
-  "maxSearchLength": 256,
+  "minMax": {
+    "docsToLoad": {
+      "max": 15,
+      "min": 0,
+    },
+    "inputStrings": {
+      "max": 256,
+      "min": 1,
+    },
+    "toolSearches": {
+      "max": 10,
+      "min": 0,
+    },
+    "urlString": {
+      "max": 1500,
+      "min": 11,
+    },
+  },
   "mode": "programmatic",
   "modeOptions": {
     "cli": {},
@@ -59,7 +75,6 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "loadTimeoutMs": 5000,
   },
   "pluginIsolation": "strict",
-  "recommendedMaxDocsToLoad": 15,
   "repoName": "patternfly-mcp",
   "resourceMemoOptions": {
     "default": {
