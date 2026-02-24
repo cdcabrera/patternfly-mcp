@@ -13,7 +13,7 @@ import {
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlySchemasIndex';
-import { validateToolInputStringLength } from './tool.helpers';
+import { assertInputStringLength } from './tool.helpers';
 
 /**
  * Name of the resource template.
@@ -70,27 +70,10 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 const resourceCallback = async (uri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
-  validateToolInputStringLength(name, {
+  assertInputStringLength(name, {
     ...options.minMax.inputStrings,
     inputDisplayName: 'name'
-    // description: `"name" must be a string that does not exceed the maximum length of ${options.minMax.inputStrings.max} characters.`
   });
-
-  /*
-  if (!name || typeof name !== 'string') {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Missing required parameter: name must be a string: ${name}`
-    );
-  }
-
-  if (name.length > options.minMax.inputStrings.max) {
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Resource name exceeds maximum length of ${options.minMax.inputStrings.max} characters.`
-    );
-  }
-  */
 
   let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 

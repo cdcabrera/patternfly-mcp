@@ -11,7 +11,7 @@ import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
-import { validateToolInput, validateToolInputStringLength } from './tool.helpers';
+import { assertInput, assertInputStringLength } from './tool.helpers';
 
 /**
  * Name of the resource template.
@@ -66,7 +66,7 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 const resourceCallback = async (uri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
-  validateToolInputStringLength(name, {
+  assertInputStringLength(name, {
     ...options.minMax.inputStrings,
     inputDisplayName: 'name'
   });
@@ -121,13 +121,9 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   }
 
   // Redundancy check, technically this should never happen, future proofing
-  validateToolInput(
-    docs,
-    (vDocs: string[]) => vDocs.length === 0,
-    new McpError(
-      ErrorCode.InvalidParams,
-      `"${name.trim()}" was found, but no documentation URLs are available for it.`
-    )
+  assertInput(
+    docs.length > 0,
+    `"${name.trim()}" was found, but no documentation URLs are available for it.`
   );
 
   for (const doc of docs) {
