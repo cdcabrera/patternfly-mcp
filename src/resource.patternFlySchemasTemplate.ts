@@ -62,12 +62,12 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
  *
  * @note We temporarily use `DEFAULT_OPTIONS` `latestSchemasVersion`
  *
- * @param uri - The URI of the resource.
+ * @param passedUri - The URI of the resource.
  * @param variables - The variables of the resource.
  * @param options - Global options
  * @returns The resource contents.
  */
-const resourceCallback = async (uri: URL, variables: Record<string, string>, options = getOptions()) => {
+const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
   assertInputStringLength(name, {
@@ -112,7 +112,7 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   return {
     contents: [
       {
-        uri: uri.href,
+        uri: passedUri?.toString(),
         mimeType: 'application/json',
         text: JSON.stringify(result, null, 2)
       }

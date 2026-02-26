@@ -90,11 +90,11 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (_value: unkn
 /**
  * Resource callback for the documentation index.
  *
- * @param uri - URI of the resource.
+ * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @returns The resource contents.
  */
-const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
+const resourceCallback = async (passedUri: URL, variables: Record<string, string>) => {
   const { version } = variables || {};
 
   const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
@@ -121,7 +121,7 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>) => 
 
   return {
     contents: [{
-      uri: 'patternfly://schemas/index',
+      uri: passedUri?.toString(),
       mimeType: 'text/markdown',
       text: stringJoin.newline(
         `# PatternFly Component JSON Schemas Index for "${updatedVersion}"`,

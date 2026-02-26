@@ -1,7 +1,7 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { memo } from './server.caching';
-import { stringJoin } from './server.helpers';
+import { buildSearchString, stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 import {
   getPatternFlyMcpResources,
@@ -70,11 +70,11 @@ listResources.memo = memo(listResources);
 /**
  * Resource callback for the documentation index.
  *
- * @param uri - URI of the resource.
+ * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @returns The resource contents.
  */
-const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
+const resourceCallback = async (passedUri: URL, variables: Record<string, string>) => {
   const { version } = variables || {};
 
   const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
@@ -97,11 +97,17 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>) => 
   // Generate the consolidated list
   const docsIndex = Array.from(groupedByUri.entries())
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
-    .map(([uri, data], index) => `${index + 1}. [${data.name} (${data.version})](${uri})`);
+    .map(([uri, data], index) => {
+      const searchString = buildSearchString({
+        version: updatedVersion
+      }, { prefix: true });
+
+      return `${index + 1}. [${data.name} (${data.version})](${uri}${searchString || ''})`;
+    });
 
   return {
     contents: [{
-      uri: 'patternfly://schemas/index',
+      uri: passedUri?.toString() || 'patternfly://schemas/index',
       mimeType: 'text/markdown',
       text: stringJoin.newline(
         `# PatternFly Component Names Index for "${updatedVersion}"`,
