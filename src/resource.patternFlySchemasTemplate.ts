@@ -2,7 +2,7 @@ import {
   type CompleteResourceTemplateCallback,
   ResourceTemplate
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { getOptions, runWithOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';

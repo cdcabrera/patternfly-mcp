@@ -1,4 +1,3 @@
-// import { readFile } from 'node:fs/promises';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { mockReadFile, mockFetch } from '../../jest.setupTests';
 import {
