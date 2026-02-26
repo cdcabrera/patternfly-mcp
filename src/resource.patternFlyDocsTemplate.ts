@@ -71,39 +71,34 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
     inputDisplayName: 'name'
   });
 
-  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  if (!updatedVersion) {
-    const { latestVersion } = await getPatternFlyMcpResources.memo();
-
-    updatedVersion = latestVersion;
-  }
+  const { latestVersion, resources } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
   const docResults = [];
   const docs = [];
   const { searchResults, exactMatches } = await searchPatternFly.memo(name);
 
-  if (exactMatches.length === 0 || exactMatches.every(match => !match.versions[updatedVersion]?.urls.length)) {
-    const { resources } = await getPatternFlyMcpResources.memo();
-    const isSchemasAvailable = resources.get(name.toLowerCase())?.versions?.[updatedVersion]?.isSchemasAvailable;
-    let suggestionMessage;
+  assertInput(
+    Boolean(exactMatches.length) && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
+    () => {
+      const isSchemasAvailable = resources.get(name.toLowerCase())?.versions?.[updatedVersion]?.isSchemasAvailable;
+      let suggestionMessage;
 
-    if (isSchemasAvailable) {
-      suggestionMessage =
-        `A JSON Schema is available. Use "patternfly://schemas/${updatedVersion}/${name.toLowerCase()}" to view prop definitions."`;
-    } else {
-      const suggestions = searchResults.map(result => result.item).slice(0, 3);
+      if (isSchemasAvailable) {
+        suggestionMessage =
+          `A JSON Schema is available. Use "patternfly://schemas/${updatedVersion}/${name.toLowerCase()}" to view prop definitions."`;
+      } else {
+        const suggestions = searchResults.map(result => result.item).slice(0, 3);
 
-      suggestionMessage = suggestions.length
-        ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-        : 'No similar resources found.';
-    }
+        suggestionMessage = suggestions.length
+          ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+          : 'No similar resources found.';
+      }
 
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `No documentation found for "${name.trim()}". ${suggestionMessage}`
-    );
-  }
+      return `No documentation found for "${name.trim()}". ${suggestionMessage}`;
+    },
+    ErrorCode.InvalidParams
+  );
 
   try {
     const exactMatchesUrls = exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean) as string[];

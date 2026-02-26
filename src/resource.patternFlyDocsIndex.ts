@@ -98,12 +98,9 @@ listResources.memo = memo(listResources);
 const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
   const { version, section } = context?.arguments || {};
   const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
-  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
 
-  if (!updatedVersion) {
-    updatedVersion = latestVersion;
-  }
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
   const entries = byVersion[updatedVersion] || [];
   const availableCategories = new Set<string>();
@@ -131,12 +128,9 @@ const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unkn
 const uriSectionComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
   const { version, category } = context?.arguments || {};
   const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
-  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
 
-  if (!updatedVersion) {
-    updatedVersion = latestVersion;
-  }
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
   const entries = byVersion[updatedVersion] || [];
   const availableSections = new Set<string>();
@@ -172,12 +166,9 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
  */
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
   const { category, version, section } = variables || {};
-  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
 
-  if (!updatedVersion) {
-    updatedVersion = latestVersion;
-  }
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
   let entries = byVersion[updatedVersion] || [];
 

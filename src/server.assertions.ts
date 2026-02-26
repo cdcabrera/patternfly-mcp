@@ -5,16 +5,17 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
  * MCP assert. Centralizes and throws an error if the validation fails.
  *
  * @param condition - The function or condition to be validated.
- * @param message - The error message to be thrown if the validation fails.
+ * @param message - The error message, or function that returns the error message, to be thrown if the validation fails.
  * @param {McpError} code - The error code to be thrown if the validation fails. Defaults to `ErrorCode.InvalidParams`.
  *
  * @throws {McpError} Throws the provided error message if the input validation fails.
  */
-const mcpAssert = (condition: unknown, message: string, code: ErrorCode = ErrorCode.InvalidParams) => {
+const mcpAssert = (condition: unknown, message: string | (() => string), code: ErrorCode = ErrorCode.InvalidParams) => {
   try {
     const result = typeof condition === 'function' ? condition() : condition;
+    const resultMessage = typeof message === 'function' ? message() : message;
 
-    assert.ok(result, message);
+    assert.ok(result, resultMessage);
   } catch (error) {
     throw new McpError(code, (error as Error).message);
   }
@@ -26,14 +27,14 @@ const mcpAssert = (condition: unknown, message: string, code: ErrorCode = ErrorC
  * @alias mcpAssert
  *
  * @param condition - The function or condition to be validated.
- * @param message - The error message to be thrown if the validation fails.
+ * @param message - The error message, or function that returns the error message, to be thrown if the validation fails.
  * @param {McpError} [code] - The error code to be thrown if the validation fails. Defaults to `ErrorCode.InvalidParams`.
  *
  * @throws {McpError} Throws the provided error message if the input validation fails.
  */
 function assertInput(
   condition: unknown,
-  message: string,
+  message: string | (() => string),
   code?: ErrorCode
 ): asserts condition {
   mcpAssert(condition, message, code);

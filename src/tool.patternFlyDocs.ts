@@ -94,19 +94,18 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     if (updatedName) {
       const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName);
 
-      if (exactMatches.length === 0 ||
-        exactMatches.every(match => !match.versions[updatedVersion]?.urls.length)
-      ) {
-        const suggestions = searchResults.map(result => result.item).slice(0, 3);
-        const suggestionMessage = suggestions.length
-          ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-          : 'No similar resources found.';
+      assertInput(
+        exactMatches.length > 0 && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
+        () => {
+          const suggestions = searchResults.map(result => result.item).slice(0, 3);
+          const suggestionMessage = suggestions.length
+            ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+            : 'No similar resources found.';
 
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `Resource "${updatedName}" not found. ${suggestionMessage}`
-        );
-      }
+          return `Resource "${updatedName}" not found. ${suggestionMessage}`;
+        },
+        ErrorCode.InvalidParams
+      );
 
       updatedUrlList.push(...exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
     }

@@ -13,7 +13,7 @@ import {
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlySchemasIndex';
-import { assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputStringLength } from './server.assertions';
 
 /**
  * Name of the resource template.
@@ -75,13 +75,8 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
     inputDisplayName: 'name'
   });
 
-  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  if (!updatedVersion) {
-    const { latestSchemasVersion } = await getPatternFlyMcpResources.memo();
-
-    updatedVersion = latestSchemasVersion;
-  }
+  const { latestSchemasVersion } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestSchemasVersion;
 
   const { exactMatches, searchResults } = await searchPatternFly.memo(name);
   let result: PatternFlyComponentSchema | undefined;
@@ -97,21 +92,22 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
     }
   }
 
-  if (result === undefined) {
-    const suggestions = searchResults
-      .filter(searchResult => searchResult?.versions?.[updatedVersion]?.isSchemasAvailable)
-      .map(searchResult => searchResult.item).slice(0, 3);
+  assertInput(
+    result === undefined,
+    () => {
+      const suggestions = searchResults
+        .filter(searchResult => searchResult?.versions?.[updatedVersion]?.isSchemasAvailable)
+        .map(searchResult => searchResult.item).slice(0, 3);
 
-    const suggestionMessage = suggestions.length
-      ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-      : 'No similar components found.';
-    const foundNotFound = exactMatches.length ? 'found but JSON schema not available.' : 'not found.';
+      const suggestionMessage = suggestions.length
+        ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
+        : 'No similar components found.';
+      const foundNotFound = exactMatches.length ? 'found but JSON schema not available.' : 'not found.';
 
-    throw new McpError(
-      ErrorCode.InvalidParams,
-      `Component "${name.trim()}" ${foundNotFound} ${suggestionMessage}`
-    );
-  }
+      return `Component "${name.trim()}" ${foundNotFound} ${suggestionMessage}`;
+    },
+    ErrorCode.InvalidParams
+  );
 
   return {
     contents: [

@@ -96,12 +96,9 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (_value: unkn
  */
 const resourceCallback = async (uri: URL, variables: Record<string, string>) => {
   const { version } = variables || {};
-  let updatedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
 
-  if (!updatedVersion) {
-    updatedVersion = latestVersion;
-  }
+  const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
   const entries = byVersion[updatedVersion] || [];
 
