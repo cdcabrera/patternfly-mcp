@@ -2,7 +2,6 @@ import {
   ResourceTemplate,
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
 import { memo } from './server.caching';
@@ -14,6 +13,14 @@ import {
 } from './patternFly.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { buildSearchString } from './server.helpers';
+
+/**
+ * Extended callback type that combines the `CompleteResourceTemplateCallback` type
+ * and an additional `memo` property.
+ *
+ * @extends CompleteResourceTemplateCallback
+ */
+type ExtendedCompleteResourceTemplateCallback = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
 
 /**
  * List resources result type.
@@ -332,5 +339,6 @@ export {
   NAME,
   URI_TEMPLATE,
   CONFIG,
+  type ExtendedCompleteResourceTemplateCallback,
   type PatterFlyListResourceResult
 };

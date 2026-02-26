@@ -1,26 +1,14 @@
-import {
-  ResourceTemplate,
-  type CompleteResourceTemplateCallback
-} from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
-import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
+import { listResources, uriVersionComplete, type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
 import { assertInput, assertInputString, assertInputStringLength } from './server.assertions';
 import { memo } from './server.caching';
-
-/**
- * Extended callback type that combines the `CompleteResourceTemplateCallback` type
- * and an additional `memo` property.
- *
- * @extends CompleteResourceTemplateCallback
- */
-type ExtendedCompleteResourceTemplateCallback = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
 
 /**
  * Name of the resource template.
@@ -137,38 +125,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  // const { exactMatches, remainingMatches } = await searchPatternFly.memo(updatedName);
-  // const updatedName =
-
-  /*
-  assertInput(
-    Boolean(exactMatches.length) && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
-    () => {
-      const isSchemasAvailable = resources.get(updatedName.toLowerCase())?.versions?.[updatedVersion]?.isSchemasAvailable;
-      let suggestionMessage;
-
-      if (isSchemasAvailable) {
-        suggestionMessage =
-          `A JSON Schema is available. Use "patternfly://schemas/${updatedVersion}/${updatedName.toLowerCase()}" to view prop definitions."`;
-      } else {
-        const suggestions = remainingMatches.map(result => result.name).slice(0, 3);
-
-        suggestionMessage = suggestions.length
-          ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-          : 'No similar resources found.';
-      }
-
-      return `No documentation found for "${updatedName}". ${suggestionMessage}`;
-    },
-    ErrorCode.InvalidParams
-  );
-   */
-
   const docResults = [];
   const docs = [];
 
   try {
-    // const exactMatchesUrls = exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean) as string[];
     const matchedUrls = updatedResourceEntries.map(entry => entry.path).filter(Boolean);
 
     if (matchedUrls.length > 0) {
