@@ -186,9 +186,16 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
 const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { category, version, section } = variables || {};
 
+  if (version) {
+    assertInputStringLength(version, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'version'
+    });
+  }
+
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
-  let entries = byVersion[updatedVersion] || [];
+
   let normalizedCategory: string | undefined;
   let normalizedSection: string | undefined;
 
@@ -211,6 +218,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   }
 
   // Apply category and section filtering
+  let entries = byVersion[updatedVersion] || [];
+
   if (normalizedCategory || normalizedSection) {
     entries = entries.filter(entry => {
       const matchesCategory = entry.category.toLowerCase() === normalizedCategory;
@@ -253,18 +262,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         }, { prefix: true });
       }
 
-      /*
-      const buildQuery = [];
-
-      if (normalizedCategory || normalizedSection) {
-        const sectionQuery = normalizedSection ? `section=${normalizedSection}` : '';
-        const categoryQuery = normalizedCategory ? `category=${normalizedCategory}` : '';
-
-        buildQuery.push(categoryQuery, sectionQuery);
-      }*/
-
       return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri}${searchString || ''})`;
-      // return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri}${buildQuery.length ? `?${buildQuery.filter(Boolean).join('&')}` : ''})`;
     });
 
   const allDocs = stringJoin.newline(
