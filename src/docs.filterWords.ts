@@ -14,6 +14,7 @@ const INDEX_NOISE_WORDS = [
   'also',
   'although',
   'always',
+  'and',
   'another',
   'appropriate',
   'available',
@@ -105,7 +106,7 @@ const INDEX_NOISE_WORDS = [
   'will',
   'with',
   'would',
-  'your'
+  'you'
 ];
 
 export { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS };

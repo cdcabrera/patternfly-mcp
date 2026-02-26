@@ -76,6 +76,11 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   },
   "pluginIsolation": "strict",
   "repoName": "patternfly-mcp",
+  "repoResources": {
+    "bugs": "https://github.com/patternfly/patternfly-mcp/issues",
+    "git": "git+https://github.com/patternfly/patternfly-mcp.git",
+    "homepage": "https://github.com/patternfly/patternfly-mcp#readme",
+  },
   "resourceMemoOptions": {
     "default": {
       "cacheLimit": 3,

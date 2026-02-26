@@ -260,7 +260,11 @@ const filterKeywords = (keywordsMap: PatternFlyMcpKeywordsMap, { filterList = IN
     const isVariant = filterList.some(word => {
       const updatedWord = word.toLowerCase().trim();
 
-      return updatedKeyword === updatedWord || updatedKeyword.startsWith(updatedWord) || updatedKeyword.endsWith(updatedWord);
+      return updatedKeyword === updatedWord ||
+        // Loose distance check
+        (updatedKeyword.startsWith(updatedWord) && updatedKeyword.replace(updatedWord, '').length < 4) ||
+        // Loose distance check
+        (updatedKeyword.endsWith(updatedWord) && updatedKeyword.replace(updatedWord, '').length < 4);
     });
 
     if (!isVariant) {
