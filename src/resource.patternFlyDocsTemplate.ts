@@ -3,12 +3,12 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
+import { memo } from './server.caching';
+import { assertInput, assertInputString, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete, type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
-import { assertInput, assertInputString, assertInputStringLength } from './server.assertions';
-import { memo } from './server.caching';
 
 /**
  * Name of the resource template.
