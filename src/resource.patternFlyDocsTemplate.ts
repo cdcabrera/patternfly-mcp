@@ -11,7 +11,16 @@ import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { listResources, uriVersionComplete } from './resource.patternFlyDocsIndex';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputString, assertInputStringLength } from './server.assertions';
+import { memo } from './server.caching';
+
+/**
+ * Extended callback type that combines the `CompleteResourceTemplateCallback` type
+ * and an additional `memo` property.
+ *
+ * @extends CompleteResourceTemplateCallback
+ */
+type ExtendedCompleteResourceTemplateCallback = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
 
 /**
  * Name of the resource template.
@@ -42,7 +51,7 @@ const CONFIG = {
  * @param context - The completion context.
  * @returns The list of available names.
  */
-const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const version = context?.arguments?.version;
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
@@ -56,55 +65,114 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 };
 
 /**
+ * Memoized version of uriNameComplete.
+ */
+uriNameComplete.memo = memo(uriNameComplete);
+
+/**
  * Resource callback for the documentation template.
  *
- * @param uri - URI of the resource.
+ * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @param options - Global options
  * @returns The resource contents.
  */
-const resourceCallback = async (uri: URL, variables: Record<string, string>, options = getOptions()) => {
-  const { version, name } = variables || {};
+const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
+  const { category, name, section, version } = variables || {};
+
+  assertInputStringLength(version, {
+    ...options.minMax.inputStrings,
+    inputDisplayName: 'version'
+  });
 
   assertInputStringLength(name, {
     ...options.minMax.inputStrings,
     inputDisplayName: 'name'
   });
 
+  const updatedName = (await uriNameComplete.memo(name, { arguments: { version } }))?.[0];
+
+  assertInputString(
+    updatedName,
+    { inputDisplayName: 'name' }
+  );
+
   const { latestVersion, resources } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const resourceEntries = resources.get(updatedName.toLowerCase())?.versions?.[updatedVersion]?.entries || [];
 
-  const docResults = [];
-  const docs = [];
-  const { searchResults, exactMatches } = await searchPatternFly.memo(name);
+  let normalizedCategory: string | undefined;
+  let normalizedSection: string | undefined;
 
+  if (section) {
+    assertInputStringLength(section, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'section'
+    });
+
+    normalizedSection = section.trim().toLowerCase();
+  }
+
+  if (category) {
+    assertInputStringLength(category, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'category'
+    });
+
+    normalizedCategory = category.trim().toLowerCase();
+  }
+
+  let updatedResourceEntries = resourceEntries;
+
+  if (normalizedCategory || normalizedSection) {
+    updatedResourceEntries = resourceEntries.filter(entry => {
+      const matchesCategory = entry.category.toLowerCase() === normalizedCategory;
+      const matchesSection = entry.section.toLowerCase() === normalizedSection;
+
+      if (normalizedCategory && normalizedSection) {
+        return matchesCategory && matchesSection;
+      } else {
+        return matchesCategory || matchesSection;
+      }
+    });
+  }
+
+  // const { exactMatches, remainingMatches } = await searchPatternFly.memo(updatedName);
+  // const updatedName =
+
+  /*
   assertInput(
     Boolean(exactMatches.length) && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
     () => {
-      const isSchemasAvailable = resources.get(name.toLowerCase())?.versions?.[updatedVersion]?.isSchemasAvailable;
+      const isSchemasAvailable = resources.get(updatedName.toLowerCase())?.versions?.[updatedVersion]?.isSchemasAvailable;
       let suggestionMessage;
 
       if (isSchemasAvailable) {
         suggestionMessage =
-          `A JSON Schema is available. Use "patternfly://schemas/${updatedVersion}/${name.toLowerCase()}" to view prop definitions."`;
+          `A JSON Schema is available. Use "patternfly://schemas/${updatedVersion}/${updatedName.toLowerCase()}" to view prop definitions."`;
       } else {
-        const suggestions = searchResults.map(result => result.item).slice(0, 3);
+        const suggestions = remainingMatches.map(result => result.name).slice(0, 3);
 
         suggestionMessage = suggestions.length
           ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
           : 'No similar resources found.';
       }
 
-      return `No documentation found for "${name.trim()}". ${suggestionMessage}`;
+      return `No documentation found for "${updatedName}". ${suggestionMessage}`;
     },
     ErrorCode.InvalidParams
   );
+   */
+
+  const docResults = [];
+  const docs = [];
 
   try {
-    const exactMatchesUrls = exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean) as string[];
+    // const exactMatchesUrls = exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean) as string[];
+    const matchedUrls = updatedResourceEntries.map(entry => entry.path).filter(Boolean);
 
-    if (exactMatchesUrls.length > 0) {
-      const processedDocs = await processDocsFunction.memo(exactMatchesUrls);
+    if (matchedUrls.length > 0) {
+      const processedDocs = await processDocsFunction.memo(matchedUrls);
 
       docs.push(...processedDocs);
     }
@@ -115,10 +183,22 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
     );
   }
 
-  // Redundancy check, technically this should never happen, future proofing
   assertInput(
     docs.length > 0,
-    `"${name.trim()}" was found, but no documentation URLs are available for it.`
+    () => {
+      let suggestionMessage = '';
+
+      if (normalizedCategory || normalizedSection) {
+        const variableList = [
+          (normalizedCategory && 'category') || undefined,
+          (normalizedSection && 'section') || undefined
+        ].filter(Boolean).join(' or ');
+
+        suggestionMessage = ` Try using a different ${variableList} search.`;
+      }
+
+      return `"${updatedName}" was found, but no documentation URLs are available for it.${suggestionMessage}`;
+    }
   );
 
   for (const doc of docs) {
@@ -132,7 +212,7 @@ const resourceCallback = async (uri: URL, variables: Record<string, string>, opt
   return {
     contents: [
       {
-        uri: uri.href,
+        uri: passedUri?.toString() || `patternfly://docs/${updatedVersion}/${updatedName}`,
         mimeType: 'text/markdown',
         text: docResults.join(options.separator)
       }

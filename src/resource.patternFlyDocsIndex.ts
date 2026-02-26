@@ -2,6 +2,7 @@ import {
   ResourceTemplate,
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
 import { memo } from './server.caching';
@@ -11,7 +12,7 @@ import {
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion
 } from './patternFly.helpers';
-import { assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputStringLength } from './server.assertions';
 import { buildSearchString } from './server.helpers';
 
 /**
@@ -264,6 +265,24 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
       return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri}${searchString || ''})`;
     });
+
+  assertInput(
+    docsIndex.length > 0,
+    () => {
+      let suggestionMessage = '';
+
+      if (normalizedCategory || normalizedSection) {
+        const variableList = [
+          (normalizedCategory && 'category') || undefined,
+          (normalizedSection && 'section') || undefined
+        ].filter(Boolean).join(' or ');
+
+        suggestionMessage = ` Try using a different ${variableList} search.`;
+      }
+
+      return `No documentation found for "${passedUri?.toString()}".${suggestionMessage}`;
+    }
+  );
 
   const allDocs = stringJoin.newline(
     `# PatternFly Documentation Index for "${updatedVersion}"`,
