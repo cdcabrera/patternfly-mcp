@@ -68,9 +68,11 @@ interface SearchPatternFlyOptions {
  * @param settings.pfVersion - PatternFly version to filter search results. Defaults to `undefined` for all versions.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all components
- *   - `firstExactMatch`: First exact match within fuzzy search results
- *   - `exactMatches`: All exact matches within fuzzy search results
- *   - `searchResults`: Fuzzy search results
+ *   - `firstExactMatch`: First exact match within search results
+ *   - `exactMatches`: Exact matches within search results
+ *   - `remainingMatches`: Contrast to `exactMatches`, the remaining matches within search results
+ *   - `searchResults`: All search results, exact and remaining matches
+ *   - `totalAvailableMatches`: Total number of available PatternFly keywords to match on.
  */
 const searchPatternFly = async (searchQuery: string, {
   resources = getPatternFlyMcpResources.memo(),
