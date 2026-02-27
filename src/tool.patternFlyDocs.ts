@@ -79,7 +79,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const updatedUrlList = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
+    const updatedUrlList: string[] = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
     const { latestVersion, byPath } = await getPatternFlyMcpResources.memo();
     const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
     const isLatestVersion = latestVersion === updatedVersion;
@@ -92,10 +92,11 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const updatedName = name?.trim();
 
     if (updatedName) {
-      const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName);
+      const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName, { version: updatedVersion });
 
       assertInput(
-        exactMatches.length > 0 && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
+        // exactMatches.length > 0 && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
+        exactMatches.length > 0 && exactMatches.every(match => match.entries.some(entry => Boolean(entry.path))),
         () => {
           const suggestions = searchResults.map(result => result.item).slice(0, 3);
           const suggestionMessage = suggestions.length
@@ -107,7 +108,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         ErrorCode.InvalidParams
       );
 
-      updatedUrlList.push(...exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
+      // updatedUrlList.push(...exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
+      updatedUrlList.push(...exactMatches.flatMap(match => match.entries.map(entry => entry.path)).filter(Boolean));
     }
 
     const docs: ProcessedDoc[] = [];

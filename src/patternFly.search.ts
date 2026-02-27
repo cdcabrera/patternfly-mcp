@@ -3,10 +3,11 @@ import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
-  type PatternFlyMcpAvailableResources, PatternFlyMcpDocsMeta,
+  type PatternFlyMcpAvailableResources,
+  type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
-import { PatternFlyMcpDocsCatalogDoc } from "./docs.embedded";
+import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
 
 /**
  * A filtered MCP resource.
@@ -153,11 +154,21 @@ const filterPatternFly = async (
 
     if (matchedEntries.length > 0) {
       byEntry.push(...matchedEntries);
-      const { versions: _versions, ...filteredResource } = resource;
+      const { versions, ...filteredResource } = resource;
+      let versionContextualProperties = {};
+
+      // Apply version contextual properties, typically URIs
+      if (updatedFilters.version && versions[updatedFilters.version]) {
+        versionContextualProperties = {
+          isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
+          uri: versions[updatedFilters.version]?.uri,
+          uriSchemas: versions[updatedFilters.version]?.uriSchemas
+        };
+      }
 
       byResource.set(name, {
-        // ...resource,
         ...filteredResource,
+        ...versionContextualProperties,
         entries: matchedEntries
       });
     }
@@ -321,7 +332,7 @@ const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFi
           }
 
           // Omit versions from the result
-          const { versions: _versions, ...filteredResource } = namedResource;
+          const { versions, ...filteredResource } = namedResource;
           // let updatedNamedResource: PatternFlyMcpResourceFilteredMetadata = { ...filteredResource };
 
           // Apply contextual filtering and flattening
@@ -338,12 +349,23 @@ const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFi
             };
           }
           */
+          let versionContextualProperties;
+
+          // Apply version contextual properties, typically URIs
+          if (filters.version && versions[filters.version]) {
+            versionContextualProperties = {
+              isSchemasAvailable: versions[filters.version]?.isSchemasAvailable,
+              uri: versions[filters.version]?.uri,
+              uriSchemas: versions[filters.version]?.uriSchemas
+            };
+          }
 
           // Apply property filters
 
           searchResultsMap.set(name, {
             ...result,
             ...byResource.get(name),
+            ...versionContextualProperties,
             // ...updatedNamedResource,
             query: searchQuery
           } as SearchPatternFlyResult);

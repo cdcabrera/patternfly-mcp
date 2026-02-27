@@ -25,6 +25,11 @@ type PatternFlyComponentSchema = Awaited<ReturnType<typeof getPatternFlyComponen
 
 /**
  * PatternFly JSON extended documentation metadata
+ *
+ * @property name - The name of component entry.
+ * @property displayCategory - The display category of component entry.
+ * @property uri - The parent resource URI of component entry.
+ * @property uriSchemas - The parent resource URI of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
  */
 type PatternFlyMcpDocsMeta = {
   name: string;
@@ -73,38 +78,19 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @note This might need to be called resource metadata. `docs.json` doesn't just contain component metadata.
  *
  * @property name - The name of component entry.
- * @property uri - The URI of component entry. DO NOT EXPECT THIS PROPERTY TO EXIST. Typically expanded under
- *     conditional PatternFly search results, specific to PF versioning.
- * @property uriSchemas - The URI of component schemas. DO NOT EXPECT THIS PROPERTY TO EXIST. Typically expanded
- *     under conditional PatternFly search results, specific to PF versioning.
- * @property urls - All entry URLs for component documentation.
- * @property urlsNoGuidance - All entry URLs for component documentation without AI guidance.
- * @property urlsGuidance - All entry URLs for component documentation with AI guidance.
- * @property entriesGuidance - All entry PatternFly documentation entries with AI guidance.
- * @property entriesNoGuidance - All entry PatternFly documentation entries without AI guidance.
- * @property versions - Entry segmented by versions.
+ * @property isSchemasAvailable - Whether schemas are available for this component **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property uri - The URI of component entry. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property uriSchemas - The URI of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property entries - All entry PatternFly documentation entries.
+ * @property versions - Entry segmented by versions. Contains all the same properties.
  */
 type PatternFlyMcpResourceMetadata = {
   name: string;
+  isSchemasAvailable: boolean | undefined;
   uri: string | undefined;
   uriSchemas: string | undefined;
-  urls: string[];
-  urlsNoGuidance: string[];
-  urlsGuidance: string[];
   entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-  entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-  entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-  versions: Record<string, { // SHOULD THIS BE AN OPTIONAL OR OMITTED PROPERTY
-    isSchemasAvailable: boolean;
-    uri: string;
-    uriSchemas: string | undefined;
-    urls: string[];
-    urlsGuidance: string[];
-    urlsNoGuidance: string[];
-    entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-    entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-    entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-  }>;
+  versions: Record<string, Omit<PatternFlyMcpResourceMetadata, 'name' | 'versions'>>;
 };
 
 /**
@@ -355,14 +341,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     const name = docsName.toLowerCase();
     const resource: PatternFlyMcpResourceMetadata = {
       name,
+      isSchemasAvailable: undefined,
       uri: undefined,
       uriSchemas: undefined,
-      urls: [], // REMOVE THIS AND REPLACE USES WITH ENTRIES this could be used from "entries" instead as "path"
-      urlsNoGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
-      urlsGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
       entries: [],
-      entriesGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
-      entriesNoGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
       versions: {}
     };
 
@@ -378,12 +360,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         isSchemasAvailable,
         uri,
         uriSchemas: undefined,
-        urls: [], // REMOVE THIS AND REPLACE USES WITH ENTRIES this could be used from "entries" instead as "path"
-        urlsGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
-        urlsNoGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
-        entries: [],
-        entriesGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
-        entriesNoGuidance: [] // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
+        entries: []
       };
 
       const displayCategory = setCategoryDisplayLabel(entry);
@@ -410,9 +387,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version] ??= [];
       byVersion[version]?.push(extendedEntry);
 
-      resource.urls.push(path);
-      resource.versions[version].urls.push(path);
-
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
 
       if (entry.category) {
@@ -429,18 +403,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       resource.entries.push(extendedEntry);
       resource.versions[version].entries.push(extendedEntry);
-
-      if (extendedEntry.section === 'guidelines') {
-        resource.urlsGuidance.push(path);
-        resource.entriesGuidance.push(extendedEntry);
-        resource.versions[version].urlsGuidance.push(path);
-        resource.versions[version].entriesGuidance.push(extendedEntry);
-      } else {
-        resource.urlsNoGuidance.push(path);
-        resource.entriesNoGuidance.push(extendedEntry);
-        resource.versions[version].urlsNoGuidance.push(path);
-        resource.versions[version].entriesNoGuidance.push(extendedEntry);
-      }
     });
 
     resources.set(name, resource);
