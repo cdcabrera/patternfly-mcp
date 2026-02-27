@@ -42,7 +42,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalAvailableMatches } = await searchPatternFly.memo(
       searchQuery,
-      { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max, pfVersion }
+      { version: pfVersion },
+      { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
     );
 
     assertInput(
@@ -109,15 +110,19 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         return `      - [${entry.displayName} - (${entry.version}) - ${entry.description}](${entry.path})`;
       });
 
-      let uri = result.uri;
-      let uriSchemas = result.uriSchemas;
+      const uri = result.uri;
+      const uriSchemas = result.uriSchemas;
 
+      /*
       if (!pfVersion) {
         const latestAvailableVersion = Array.from(availableVersions).sort((a, b) => b.localeCompare(a))[0];
 
-        uri = (latestAvailableVersion && result.versions?.[latestAvailableVersion]?.uri) || undefined;
-        uriSchemas = (latestAvailableVersion && result.versions?.[latestAvailableVersion]?.uriSchemas) || undefined;
+        uri = (latestAvailableVersion && result.uri) || undefined;
+        uriSchemas = (latestAvailableVersion && result.uriSchemas) || undefined;
+        // uri = (latestAvailableVersion && result.versions?.[latestAvailableVersion]?.uri) || undefined;
+        // uriSchemas = (latestAvailableVersion && result.versions?.[latestAvailableVersion]?.uriSchemas) || undefined;
       }
+       */
 
       return stringJoin.newlineFiltered(
         `${index + 1}. **${result.name}**:`,

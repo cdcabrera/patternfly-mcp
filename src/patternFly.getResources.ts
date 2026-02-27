@@ -16,6 +16,7 @@ import {
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
 import { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS } from './docs.filterWords';
+// import { freezeObject } from './server.helpers';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -62,7 +63,7 @@ type PatternFlyMcpResourcesByVersion = {
 };
 
 /**
- * PatternFly resource keywords by resource name.
+ * PatternFly resource keywords by resource name then by version.
  */
 type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
 
@@ -93,7 +94,7 @@ type PatternFlyMcpResourceMetadata = {
   entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   entriesGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   entriesNoGuidance: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-  versions: Record<string, {
+  versions: Record<string, { // SHOULD THIS BE AN OPTIONAL OR OMITTED PROPERTY
     isSchemasAvailable: boolean;
     uri: string;
     uriSchemas: string | undefined;
@@ -119,7 +120,7 @@ type PatternFlyMcpResourceMetadata = {
  * @property docsIndex - Patternfly available documentation index.
  * @property componentsIndex - Patternfly available components index.
  * @property keywordsIndex - Patternfly available keywords index.
- * @property keywordsMap - Patternfly available keywords by resource name.
+ * @property keywordsMap - Patternfly available keywords by resource name then by version.
  * @property isFallbackDocumentation - Whether the fallback documentation is used.
  * @property pathIndex - Patternfly documentation path index.
  * @property byPath - Patternfly documentation by path with entries
@@ -356,12 +357,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       name,
       uri: undefined,
       uriSchemas: undefined,
-      urls: [],
-      urlsNoGuidance: [],
-      urlsGuidance: [],
+      urls: [], // REMOVE THIS AND REPLACE USES WITH ENTRIES this could be used from "entries" instead as "path"
+      urlsNoGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
+      urlsGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
       entries: [],
-      entriesGuidance: [],
-      entriesNoGuidance: [],
+      entriesGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
+      entriesNoGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
       versions: {}
     };
 
@@ -377,12 +378,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         isSchemasAvailable,
         uri,
         uriSchemas: undefined,
-        urls: [],
-        urlsGuidance: [],
-        urlsNoGuidance: [],
+        urls: [], // REMOVE THIS AND REPLACE USES WITH ENTRIES this could be used from "entries" instead as "path"
+        urlsGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
+        urlsNoGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
         entries: [],
-        entriesGuidance: [],
-        entriesNoGuidance: []
+        entriesGuidance: [], // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
+        entriesNoGuidance: [] // REMOVE THIS not used anywhere - distinction is from section === 'guidelines'
       };
 
       const displayCategory = setCategoryDisplayLabel(entry);
