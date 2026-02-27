@@ -8,7 +8,14 @@ import { assertInput, assertInputString, assertInputStringLength } from './serve
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { listResources, uriVersionComplete, type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
+import {
+  listResources,
+  uriCategoryComplete,
+  uriNameComplete,
+  uriSectionComplete,
+  uriVersionComplete,
+  type ExtendedCompleteResourceTemplateCallback
+} from './resource.patternFlyDocsIndex';
 
 /**
  * Name of the resource template.
@@ -39,7 +46,7 @@ const CONFIG = {
  * @param context - The completion context.
  * @returns The list of available names.
  */
-const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+const disabled_uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const version = context?.arguments?.version;
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
@@ -55,7 +62,7 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: 
 /**
  * Memoized version of uriNameComplete.
  */
-uriNameComplete.memo = memo(uriNameComplete);
+disabled_uriNameComplete.memo = memo(disabled_uriNameComplete);
 
 /**
  * Resource callback for the documentation template.
@@ -191,8 +198,10 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
   new ResourceTemplate(URI_TEMPLATE, {
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args)),
-      name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args))
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
+      name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
     }
   }),
   CONFIG,
@@ -202,7 +211,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 export {
   patternFlyDocsTemplateResource,
   resourceCallback,
-  uriNameComplete,
+  // uriNameComplete,
   NAME,
   URI_TEMPLATE,
   CONFIG

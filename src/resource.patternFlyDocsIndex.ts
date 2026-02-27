@@ -98,6 +98,40 @@ const listResources = async () => {
  */
 listResources.memo = memo(listResources);
 
+const as
+
+const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const {version, section, name} = context?.arguments || {};
+};
+
+/**
+ * Name completion callback for the URI template.
+ *
+ * @note If version is not available, the latest version is used to refine the search results
+ * since it aligns with the default behavior of the PatternFly documentation.
+ *
+ * @param value - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available names.
+ */
+const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
+  const version = context?.arguments?.version;
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
+  const names = new Set<string>();
+
+  byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
+    .forEach(entry => names.add(entry.name));
+
+  return Array.from(names).sort();
+};
+
+/**
+ * Memoized version of uriNameComplete.
+ */
+uriNameComplete.memo = memo(uriNameComplete);
+
 /**
  * Category completion callback for the URI template.
  *
@@ -106,17 +140,25 @@ listResources.memo = memo(listResources);
  * @returns The list of available categories, or an empty list.
  */
 const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
-  const { version, section } = context?.arguments || {};
+  const { version, section, name } = context?.arguments || {};
   const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
   const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
 
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  let updatedName;
 
-  const entries = byVersion[updatedVersion] || [];
+  if (name) {
+    updatedName = (await uriNameComplete.memo(name, { arguments: { version } }))?.[0];
+  }
+
+  // you were trying to cross blend funcs on the resources... there's a pattern here
+  // with each resource callback calling the same x number of resources depending on varable inputs
+
+
   const availableCategories = new Set<string>();
 
-  entries.forEach(entry => {
+  byVersion[updatedVersion]?.forEach(entry => {
     if (normalizedSection && entry.section.toLowerCase() === normalizedSection) {
       availableCategories.add(entry.category);
 
@@ -334,6 +376,7 @@ export {
   listResources,
   resourceCallback,
   uriCategoryComplete,
+  uriNameComplete,
   uriSectionComplete,
   uriVersionComplete,
   NAME,
