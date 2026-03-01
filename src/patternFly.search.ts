@@ -48,6 +48,14 @@ interface FilterPatternFlyFilters {
 //   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Promise<PatternFlyMcpAvailableResources['resources']>;
 // }
 
+/**
+ * Result object returned by filterPatternFly.
+ *
+ * @interface FilterPatternFlyResults
+ *
+ * @property {PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta} byEntry - Array of filtered documentation entries.
+ * @property {Map<string, PatternFlyMcpResourceFilteredMetadata>} byResource - Map of filtered resources by resource name.
+ */
 interface FilterPatternFlyResults {
   byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   byResource: Map<string, PatternFlyMcpResourceFilteredMetadata>;
@@ -110,12 +118,15 @@ interface SearchPatternFlyOptions {
 /**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
  *
- * @param mcpResources - A map of available PatternFly documentation entries to search. Defaults to `getPatternFlyMcpResources.resources`
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
+ * @param mcpResources - A map of available PatternFly documentation entries to search. Defaults to `getPatternFlyMcpResources.resources`
+ * @returns {Promise<FilterPatternFlyResults>} - Filtered PatternFly results.
+ * - `byEntry`: Array of filtered documentation entries.
+ * - `byResource`: Map of filtered resources by resource name.
  */
 const filterPatternFly = async (
-  mcpResources: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata> = getPatternFlyMcpResources.memo(),
-  filters: FilterPatternFlyFilters
+  filters: FilterPatternFlyFilters,
+  mcpResources: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata> = getPatternFlyMcpResources.memo()
 ): Promise<FilterPatternFlyResults> => {
   const getResources = await mcpResources;
   const resources = (getResources as PatternFlyMcpAvailableResources)?.resources ||
@@ -336,7 +347,7 @@ const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFi
           // let updatedNamedResource: PatternFlyMcpResourceFilteredMetadata = { ...filteredResource };
 
           // Apply contextual filtering and flattening
-          const { byResource } = await filterPatternFly(new Map([[name, { ...filteredResource }]]), filters);
+          const { byResource } = await filterPatternFly(filters, new Map([[name, { ...filteredResource }]]));
 
           if (!byResource.has(name)) {
             continue;

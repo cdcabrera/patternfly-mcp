@@ -9,6 +9,8 @@ import {
 } from './patternFly.getResources';
 import { uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { filterPatternFly } from './patternFly.search';
+import {assertInputStringLength} from "./server.assertions";
 
 /**
  * Name of the resource.
@@ -18,7 +20,8 @@ const NAME = 'patternfly-components-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://components/index{?version,section,category}';
+// const URI_TEMPLATE = 'patternfly://components/index{?version,section,category}';
+const URI_TEMPLATE = 'patternfly://components/index{?version,category}';
 
 /**
  * Resource configuration.
@@ -72,14 +75,52 @@ listResources.memo = memo(listResources);
  *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
+ * @param options - Options for the resource.
  * @returns The resource contents.
  */
-const resourceCallback = async (passedUri: URL, variables: Record<string, string>) => {
-  const { version } = variables || {};
+const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
+  const { version, category } = variables || {};
+  const section = 'components';
 
-  const { latestVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
+  if (version) {
+    assertInputStringLength(version, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'version'
+    });
+  }
+
+  /* section is always components
+  if (section) {
+    assertInputStringLength(section, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'section'
+    });
+  }
+   */
+
+  if (category) {
+    assertInputStringLength(category, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'category'
+    });
+  }
+
+  const { latestVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const { byResource } = await filterPatternFly.memo({ version: updatedVersion, section, category });
 
+  // Generate the consolidated list
+  const docsIndex = Array.from(byResource.entries())
+    .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
+    .map(([_name, data], index) => {
+      const searchString = buildSearchString({
+        version: updatedVersion
+      }, { prefix: true });
+
+      return `${index + 1}. [${data.name} (${updatedVersion})](${data.uri}${searchString || ''})`;
+    });
+
+  /*
   const entries = byVersion[updatedVersion] || [];
 
   // Group by URI
@@ -104,6 +145,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
       return `${index + 1}. [${data.name} (${data.version})](${uri}${searchString || ''})`;
     });
+  */
 
   return {
     contents: [{
