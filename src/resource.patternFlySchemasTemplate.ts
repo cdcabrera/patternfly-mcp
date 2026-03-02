@@ -2,10 +2,9 @@ import {
   type CompleteResourceTemplateCallback,
   ResourceTemplate
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { getOptions, runWithOptions } from './options.context';
-import { filterPatternFly, searchPatternFly } from './patternFly.search';
+import { filterPatternFly } from './patternFly.search';
 import {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
@@ -120,53 +119,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       return `No component JSON schemas found for "${passedUri?.toString()}".${suggestionMessage}`;
     }
   );
-
-  /*
-  if (matchedSchemas.length > 0) {
-    for (const match of matchedSchemas) {
-      const schema = await getPatternFlyComponentSchema.memo(match);
-
-      if (schema) {
-        result = schema;
-        break;
-      }
-    }
-  }
-  */
-
-
-  /*
-  const { exactMatches, searchResults } = await searchPatternFly.memo(name, { version: updatedVersion });
-  let result: PatternFlyComponentSchema | undefined;
-
-  if (exactMatches.length > 0) {
-    for (const match of exactMatches) {
-      const schema = await getPatternFlyComponentSchema.memo(match.item);
-
-      if (schema) {
-        result = schema;
-        break;
-      }
-    }
-  }
-
-  assertInput(
-    result === undefined,
-    () => {
-      const suggestions = searchResults
-        .filter(searchResult => searchResult?.versions?.[updatedVersion]?.isSchemasAvailable)
-        .map(searchResult => searchResult.item).slice(0, 3);
-
-      const suggestionMessage = suggestions.length
-        ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-        : 'No similar components found.';
-      const foundNotFound = exactMatches.length ? 'found but JSON schema not available.' : 'not found.';
-
-      return `Component "${name.trim()}" ${foundNotFound} ${suggestionMessage}`;
-    },
-    ErrorCode.InvalidParams
-  );
-   */
 
   return {
     contents: [

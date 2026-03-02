@@ -36,35 +36,6 @@ const CONFIG = {
 };
 
 /**
- * Name completion callback for the URI template.
- *
- * @note If version is not available, the latest version is used to refine the search results
- * since it aligns with the default behavior of the PatternFly documentation.
- *
- * @param value - The value to complete.
- * @param context - The completion context.
- * @returns The list of available names.
- */
-/*
-const disabled_uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
-  const version = context?.arguments?.version;
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
-  const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
-  const names = new Set<string>();
-
-  byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
-    .forEach(entry => names.add(entry.name));
-
-  return Array.from(names).sort();
-};
-
-/**
- * Memoized version of uriNameComplete.
- */
-// disabled_uriNameComplete.memo = memo(disabled_uriNameComplete);
-
-/**
  * Resource callback for the documentation template.
  *
  * @param passedUri - URI of the resource.

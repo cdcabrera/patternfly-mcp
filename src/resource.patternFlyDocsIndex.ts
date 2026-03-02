@@ -134,31 +134,12 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: 
   byEntry.forEach(result => names.add(result.name));
 
   return Array.from(names).sort();
-
-  /*
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
-  const version = context?.arguments?.version;
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
-  const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
-  const names = new Set<string>();
-
-  byVersion[updatedVersion]?.filter(entry => entry.name.toLowerCase().startsWith(updatedValue))
-    .forEach(entry => names.add(entry.name));
-
-  return Array.from(names).sort();
-  */
 };
 
 /**
  * Memoized version of uriNameComplete.
  */
 uriNameComplete.memo = memo(uriNameComplete);
-
-// const as
-
-// const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
-//   const { version, category, section, name } = context?.arguments || {};
-// };
 
 /**
  * Category completion callback for the URI template.
@@ -184,57 +165,11 @@ const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (val
     name: normalizedName
   });
 
-  /*
-  const { searchResults } = await searchPatternFly.memo(normalizedName, {
-    version: normalizedVersion,
-    category: normalizedCategory,
-    section: normalizedSection
-    // name: normalizedName
-  }, { allowWildCardAll: true, maxResults: 100 });
-  */
-
   const categories = new Set<string>();
 
   byEntry.forEach(entry => categories.add(entry.category));
 
-  /*
-  searchResults.forEach(result => {
-    result.entries.forEach(entry => categories.add(entry.category));
-  });
-   */
-
   return Array.from(categories).sort();
-
-  /*
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
-  let updatedName;
-
-  if (name) {
-    updatedName = (await uriNameComplete.memo(name, { arguments: { version } }))?.[0];
-  }
-
-  // you were trying to cross blend funcs on the resources... there's a pattern here
-  // with each resource callback calling the same x number of resources depending on variable inputs
-
-
-  const availableCategories = new Set<string>();
-
-  byVersion[updatedVersion]?.forEach(entry => {
-    if (normalizedSection && entry.section.toLowerCase() === normalizedSection) {
-      availableCategories.add(entry.category);
-
-      return;
-    }
-
-    availableCategories.add(entry.category);
-  });
-
-  return Array
-    .from(availableCategories)
-    .sort()
-    .filter(category => normalizedValue === category || category.startsWith(normalizedValue) || category.endsWith(normalizedValue));
-   */
 };
 
 uriCategoryComplete.memo = memo(uriCategoryComplete);
@@ -268,32 +203,6 @@ const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (valu
   byEntry.forEach(entry => sections.add(entry.section));
 
   return Array.from(sections).sort();
-  /*
-  const { version, category } = context?.arguments || {};
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
-  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
-
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
-
-  const entries = byVersion[updatedVersion] || [];
-  const availableSections = new Set<string>();
-
-  entries.forEach(entry => {
-    if (normalizedCategory && entry.category.toLowerCase() === normalizedCategory) {
-      availableSections.add(entry.section);
-
-      return;
-    }
-
-    availableSections.add(entry.section);
-  });
-
-  return Array
-    .from(availableSections)
-    .sort()
-    .filter(section => normalizedValue === section || section.startsWith(normalizedValue) || section.endsWith(normalizedValue));
-  */
 };
 
 /**
@@ -387,45 +296,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     category,
     section
   });
-
-  /*
-  let normalizedCategory: string | undefined;
-  let normalizedSection: string | undefined;
-
-  if (section) {
-    assertInputStringLength(section, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'section'
-    });
-
-    normalizedSection = section.trim().toLowerCase();
-  }
-
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
-    });
-
-    normalizedCategory = category.trim().toLowerCase();
-  }
-
-  // Apply category and section filtering
-  let entries = byVersion[updatedVersion] || [];
-
-  if (normalizedCategory || normalizedSection) {
-    entries = entries.filter(entry => {
-      const matchesCategory = entry.category.toLowerCase() === normalizedCategory;
-      const matchesSection = entry.section.toLowerCase() === normalizedSection;
-
-      if (normalizedCategory && normalizedSection) {
-        return matchesCategory && matchesSection;
-      } else {
-        return matchesCategory || matchesSection;
-      }
-    });
-  }
-   */
 
   // Group by URI
   const groupedByUri = new Map<string, { name: string, version: string, categories: Set<string> }>();

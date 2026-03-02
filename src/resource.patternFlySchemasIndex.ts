@@ -73,41 +73,6 @@ const listResources = async () => {
   };
 };
 
-/*
-const disabled_listResources = async () => {
-  const { availableSchemasVersions, byVersion } = await getPatternFlyMcpResources.memo();
-
-  const resources: PatterFlyListResourceResult[] = [];
-
-  availableSchemasVersions.forEach(version => {
-    const versionEntries = byVersion[version] || [];
-    const versionResource: PatterFlyListResourceResult[] = [];
-    const seenIndex = new Set<string>();
-
-    versionEntries.forEach(entry => {
-      const entryName = entry.name.toLowerCase();
-
-      if (!seenIndex.has(entryName) && entry.uriSchemas) {
-        seenIndex.add(entryName);
-
-        resources.push({
-          uri: entry.uriSchemas,
-          mimeType: 'application/json',
-          name: `${entry.name} (${version})`,
-          description: `JSON component schemas for PatternFly version "${version}" of "${entry.name}"`
-        });
-      }
-    });
-
-    resources.push(...versionResource);
-  });
-
-  return {
-    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
-  };
-};
-*/
-
 /**
  * Memoized version of listResources.
  */

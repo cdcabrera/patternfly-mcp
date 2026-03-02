@@ -17,7 +17,6 @@ const NAME = 'patternfly-components-index';
 /**
  * URI template for the resource.
  */
-// const URI_TEMPLATE = 'patternfly://components/index{?version,section,category}';
 const URI_TEMPLATE = 'patternfly://components/index{?version,category}';
 
 /**
@@ -115,7 +114,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   return {
     contents: [{
-      uri: passedUri?.toString() || 'patternfly://schemas/index',
+      uri: passedUri?.toString() || 'patternfly://components/index',
       mimeType: 'text/markdown',
       text: stringJoin.newline(
         `# PatternFly Component Names Index for "${updatedVersion}"`,
