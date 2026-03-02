@@ -8,7 +8,9 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
   "uri": ResourceTemplate {
     "_callbacks": {
       "complete": {
+        "category": [Function],
         "name": [Function],
+        "section": [Function],
         "version": [Function],
       },
       "list": [Function],

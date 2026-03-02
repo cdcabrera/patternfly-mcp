@@ -62,13 +62,15 @@ describe('resourceCallback', () => {
     {
       description: 'default',
       variables: {
-        name: 'Button'
+        name: 'Button',
+        version: 'v6'
       }
     },
     {
       description: 'with lowercased name',
       variables: {
-        name: 'button'
+        name: 'button',
+        version: 'v6'
       }
     }
   ])('should attempt to return resource content, $description', async ({ variables }) => {
@@ -107,13 +109,13 @@ describe('resourceCallback', () => {
     },
     {
       description: 'non-existent name',
-      error: 'not found',
-      variables: { name: 'loremIpsum' }
+      error: 'No component JSON schemas found',
+      variables: { name: 'loremIpsum', version: 'v6' }
     },
     {
       description: 'found but no schema',
-      error: 'found but JSON schema not available',
-      variables: { name: 'table' }
+      error: 'No component JSON schemas found',
+      variables: { name: 'table', version: 'v6' }
     },
     {
       description: 'wrong version',
