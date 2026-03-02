@@ -117,8 +117,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { availableSchemasVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+
+  assertInput(
+    !version && !normalizedVersion,
+    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableSchemasVersions.join(', ')}`
+  );
+
+  const updatedVersion = normalizedVersion || latestSchemasVersion;
 
   let docsIndex: string[] = [];
 

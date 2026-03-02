@@ -65,10 +65,11 @@ const CONFIG = {
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
-  const { byVersion } = await getPatternFlyMcpResources.memo();
+  const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
   Object.entries(byVersion)
+    .filter(([version]) => availableVersions.includes(version))
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version, entries]) => {
       const seenIndex = new Set<string>();
@@ -288,8 +289,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { latestVersion } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+
+  assertInput(
+    !version && !normalizedVersion,
+    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+  );
+
+  const updatedVersion = normalizedVersion || latestVersion;
 
   const { byEntry } = await filterPatternFly.memo({
     version: updatedVersion,

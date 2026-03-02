@@ -1,3 +1,4 @@
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   patternFlySchemasIndexResource,
   listResources,
@@ -104,13 +105,6 @@ describe('resourceCallback', () => {
       description: 'default',
       variables: {},
       expected: '# PatternFly Component JSON Schemas Index for "v6"'
-    },
-    {
-      description: 'version',
-      variables: {
-        version: 'v5'
-      },
-      expected: '# PatternFly Component JSON Schemas Index for "v6"'
     }
   ])('should return component schemas index, $description', async ({ variables, expected }) => {
     const result = await resourceCallback(undefined as any, variables);
@@ -118,5 +112,18 @@ describe('resourceCallback', () => {
     expect(result.contents).toBeDefined();
     expect(Object.keys(result.contents[0] as any)).toEqual(['uri', 'mimeType', 'text']);
     expect(result.contents[0]?.text).toContain(expected);
+  });
+
+  it.each([
+    {
+      description: 'version',
+      variables: {
+        version: 'v5'
+      },
+      error: 'Invalid PatternFly version'
+    }
+  ])('should handle variable errors, $description', async ({ error, variables }) => {
+    await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);
+    await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(error);
   });
 });

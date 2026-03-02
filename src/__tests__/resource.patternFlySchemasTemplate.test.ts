@@ -114,11 +114,14 @@ describe('resourceCallback', () => {
       description: 'found but no schema',
       error: 'found but JSON schema not available',
       variables: { name: 'table' }
+    },
+    {
+      description: 'wrong version',
+      error: 'Invalid PatternFly version',
+      variables: { name: 'button', version: 'v5' }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
-    const uri = new URL('patternfly://schemas/v6');
-
-    await expect(resourceCallback(uri, variables as any)).rejects.toThrow(McpError);
-    await expect(resourceCallback(uri, variables as any)).rejects.toThrow(error);
+    await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);
+    await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(error);
   });
 });

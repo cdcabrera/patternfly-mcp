@@ -2,7 +2,7 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { buildSearchString, stringJoin } from './server.helpers';
-import { assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
@@ -37,10 +37,11 @@ const CONFIG = {
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
-  const { byVersionComponentNames } = await getPatternFlyMcpResources.memo();
+  const { availableVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
   Array.from(byVersionComponentNames)
+    .filter(([version]) => availableVersions.includes(version))
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version, components]) => {
       const versionResource: PatterFlyListResourceResult[] = [];
@@ -98,8 +99,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { latestVersion } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+
+  assertInput(
+    !version && !normalizedVersion,
+    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+  );
+
+  const updatedVersion = normalizedVersion || latestVersion;
   const { byResource } = await filterPatternFly.memo({ version: updatedVersion, section, category });
 
   const docsIndex = Array.from(byResource.entries())

@@ -94,6 +94,11 @@ describe('resourceCallback', () => {
       description: 'non-existent name, missing version',
       error: 'must be a string',
       variables: { name: 'loremIpsum' }
+    },
+    {
+      description: 'wrong version',
+      error: 'Invalid PatternFly version',
+      variables: { name: 'button', version: 'v5' }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
     const mockContent = `Mock content for ${variables.name}`;

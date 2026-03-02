@@ -70,8 +70,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { latestVersion } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+
+  assertInput(
+    version && normalizedVersion,
+    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+  );
+
+  const updatedVersion = normalizedVersion || latestVersion;
   const updatedName = name.trim();
 
   const { byEntry } = await filterPatternFly.memo({
