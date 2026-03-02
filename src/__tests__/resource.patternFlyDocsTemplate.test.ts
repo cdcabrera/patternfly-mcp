@@ -92,7 +92,7 @@ describe('resourceCallback', () => {
     },
     {
       description: 'non-existent name, missing version',
-      error: 'No documentation found',
+      error: 'must be a string',
       variables: { name: 'loremIpsum' }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
