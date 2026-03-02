@@ -65,6 +65,7 @@ interface FuzzySearch {
  * - `deduplicateByNormalized` - If true, deduplicate results by normalized value instead of original string (default: false)
  */
 interface FuzzySearchOptions {
+  allowEmptyQuery?: boolean;
   maxDistance?: number;
   maxResults?: number;
   normalizeFn?: (str: string) => string;
@@ -151,6 +152,7 @@ const findClosest = (
  * @param query - Search query string
  * @param items - Array of strings to search
  * @param {FuzzySearchOptions} options - Search configuration options
+ * @param options.allowEmptyQuery - Allow empty queries to match items with length <= maxDistance (default: `false`)
  * @param options.maxDistance - Maximum edit distance for a match. Distance is defined as
  * @param options.maxResults - Maximum number of results to return
  * @param {NormalizeString} options.normalizeFn - Function to normalize strings. Should always return a string or empty string (default: `normalizeString`)
@@ -179,6 +181,7 @@ const fuzzySearch = (
   query: string,
   items: string[] = [],
   {
+    allowEmptyQuery = false,
     maxDistance = 3,
     maxResults = 10,
     normalizeFn = normalizeString.memo,
@@ -221,7 +224,7 @@ const fuzzySearch = (
     } else if (normalizedQuery !== '' && normalizedItem !== '' && normalizedQuery.includes(normalizedItem)) {
       matchType = 'partial';
       editDistance = 2;
-    } else if (isFuzzyMatch && normalizedQuery !== '' && normalizedItem !== '') {
+    } else if (isFuzzyMatch && (allowEmptyQuery || (normalizedQuery !== '' && normalizedItem !== ''))) {
       const checkDistance = distance(normalizedItem, normalizedQuery);
 
       if (checkDistance <= maxDistance) {
