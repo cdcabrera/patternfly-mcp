@@ -38,6 +38,7 @@ const listResources = async () => {
   const { byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
+  // We use "byVersionComponentNames" instead of "byVersion" because it's specific to components.
   Array.from(byVersionComponentNames)
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version, components]) => {

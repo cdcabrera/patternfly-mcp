@@ -13,6 +13,7 @@ import {
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion
 } from './patternFly.helpers';
+import { filterPatternFly, searchPatternFly } from './patternFly.search';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -67,26 +68,29 @@ const listResources = async () => {
   const { byVersion } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
-  // Initial sort by the latest version
-  Object.entries(byVersion).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, entries]) => {
-    const seenIndex = new Set<string>();
-    const versionResource: PatterFlyListResourceResult[] = [];
+  Object.entries(byVersion)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .forEach(([version, entries]) => {
+      const seenIndex = new Set<string>();
+      const versionResource: PatterFlyListResourceResult[] = [];
 
-    entries.forEach(entry => {
-      if (!seenIndex.has(entry.name)) {
-        seenIndex.add(entry.name);
+      entries
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(entry => {
+          if (!seenIndex.has(entry.name)) {
+            seenIndex.add(entry.name);
 
-        versionResource.push({
-          uri: `patternfly://docs/${version}/${entry.name.toLowerCase()}`,
-          mimeType: 'text/markdown',
-          name: `${entry.name} (${version})`,
-          description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
+            versionResource.push({
+              uri: entry.uri,
+              mimeType: 'text/markdown',
+              name: `${entry.name} (${version})`,
+              description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
+            });
+          }
         });
-      }
-    });
 
-    resources.push(...versionResource);
-  });
+      resources.push(...versionResource);
+    });
 
   return {
     resources
@@ -97,12 +101,6 @@ const listResources = async () => {
  * Memoized version of listResources.
  */
 listResources.memo = memo(listResources);
-
-const as
-
-const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
-  const {version, section, name} = context?.arguments || {};
-};
 
 /**
  * Name completion callback for the URI template.
@@ -115,6 +113,29 @@ const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unkn
  * @returns The list of available names.
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, category, section } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
+
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  const normalizedName = normalizedValue;
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const names = new Set<string>();
+
+  byEntry.forEach(result => names.add(result.name));
+
+  return Array.from(names).sort();
+
+  /*
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const version = context?.arguments?.version;
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
@@ -125,12 +146,19 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: 
     .forEach(entry => names.add(entry.name));
 
   return Array.from(names).sort();
+  */
 };
 
 /**
  * Memoized version of uriNameComplete.
  */
 uriNameComplete.memo = memo(uriNameComplete);
+
+// const as
+
+// const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+//   const { version, category, section, name } = context?.arguments || {};
+// };
 
 /**
  * Category completion callback for the URI template.
@@ -139,11 +167,45 @@ uriNameComplete.memo = memo(uriNameComplete);
  * @param context - The completion context containing arguments for the URI template.
  * @returns The list of available categories, or an empty list.
  */
-const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
   const { version, section, name } = context?.arguments || {};
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
-  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
 
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
+
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+  const normalizedCategory = normalizedValue; // typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  /*
+  const { searchResults } = await searchPatternFly.memo(normalizedName, {
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection
+    // name: normalizedName
+  }, { allowWildCardAll: true, maxResults: 100 });
+  */
+
+  const categories = new Set<string>();
+
+  byEntry.forEach(entry => categories.add(entry.category));
+
+  /*
+  searchResults.forEach(result => {
+    result.entries.forEach(entry => categories.add(entry.category));
+  });
+   */
+
+  return Array.from(categories).sort();
+
+  /*
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
   let updatedName;
@@ -153,7 +215,7 @@ const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unkn
   }
 
   // you were trying to cross blend funcs on the resources... there's a pattern here
-  // with each resource callback calling the same x number of resources depending on varable inputs
+  // with each resource callback calling the same x number of resources depending on variable inputs
 
 
   const availableCategories = new Set<string>();
@@ -172,7 +234,10 @@ const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unkn
     .from(availableCategories)
     .sort()
     .filter(category => normalizedValue === category || category.startsWith(normalizedValue) || category.endsWith(normalizedValue));
+   */
 };
+
+uriCategoryComplete.memo = memo(uriCategoryComplete);
 
 /**
  * Section completion callback for the URI template.
@@ -181,7 +246,29 @@ const uriCategoryComplete: CompleteResourceTemplateCallback = async (value: unkn
  * @param context - The completion context containing arguments for the URI template.
  * @returns The list of available sections, or an empty list.
  */
-const uriSectionComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, category, name } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
+
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = normalizedValue;
+  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const sections = new Set<string>();
+
+  byEntry.forEach(entry => sections.add(entry.section));
+
+  return Array.from(sections).sort();
+  /*
   const { version, category } = context?.arguments || {};
   const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
   const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
@@ -206,23 +293,58 @@ const uriSectionComplete: CompleteResourceTemplateCallback = async (value: unkno
     .from(availableSections)
     .sort()
     .filter(section => normalizedValue === section || section.startsWith(normalizedValue) || section.endsWith(normalizedValue));
+  */
 };
 
 /**
+ * Memoized version of uriSectionComplete.
+ */
+uriSectionComplete.memo = memo(uriSectionComplete);
+
+/**
  * Name completion callback for the URI template.
+ *
+ * @note Currently, we don't run a full version list, just the latest. In the future, we
+ * should be pulling versions from the available documentation.
  *
  * @param value - The value to complete.
  * @returns The list of available versions, or an empty list.
  */
 const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) => {
-  const { enumeratedVersions } = await getPatternFlyVersionContext.memo();
-  const normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  const { availableVersions } = await getPatternFlyVersionContext.memo();
+  let normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
 
-  return enumeratedVersions
-    .filter(enumeratedVersion =>
-      normalizedVersion === enumeratedVersion ||
-      enumeratedVersion.startsWith(normalizedVersion) ||
-      enumeratedVersion.endsWith(normalizedVersion));
+  if (!normalizedVersion) {
+    return availableVersions;
+  }
+
+  normalizedVersion = await normalizeEnumeratedPatternFlyVersion(normalizedVersion);
+
+  return availableVersions.filter(version => normalizedVersion === version);
+
+  /*
+  const { section, category, name } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
+
+  const normalizedVersion = normalizedValue;
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const versions = new Set<string>();
+
+  byEntry.forEach(entry => versions.add(entry.version));
+
+  return Array.from(versions).sort();
+   */
 };
 
 /**
@@ -243,9 +365,30 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
+  if (category) {
+    assertInputStringLength(category, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'category'
+    });
+  }
+
+  if (section) {
+    assertInputStringLength(section, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'section'
+    });
+  }
+
+  const { latestVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
+  const { byEntry } = await filterPatternFly.memo({
+    version: updatedVersion,
+    category,
+    section
+  });
+
+  /*
   let normalizedCategory: string | undefined;
   let normalizedSection: string | undefined;
 
@@ -282,19 +425,20 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       }
     });
   }
+   */
 
   // Group by URI
   const groupedByUri = new Map<string, { name: string, version: string, categories: Set<string> }>();
 
-  entries.forEach(item => {
-    if (!groupedByUri.has(item.uri)) {
-      groupedByUri.set(item.uri, {
-        name: item.name,
-        version: item.version,
-        categories: new Set([item.displayCategory])
+  byEntry.forEach(entry => {
+    if (!groupedByUri.has(entry.uri)) {
+      groupedByUri.set(entry.uri, {
+        name: entry.name,
+        version: entry.version,
+        categories: new Set([entry.displayCategory])
       });
     } else {
-      groupedByUri.get(item.uri)?.categories.add(item.displayCategory);
+      groupedByUri.get(entry.uri)?.categories.add(entry.displayCategory);
     }
   });
 
@@ -303,14 +447,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([uri, data], index) => {
       const categoryList = Array.from(data.categories).join(', ');
-      let searchString;
-
-      if (normalizedCategory || normalizedSection) {
-        searchString = buildSearchString({
-          section: normalizedSection,
-          category: normalizedCategory
-        }, { prefix: true });
-      }
+      const searchString = buildSearchString({ section, category }, { prefix: true });
 
       return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri}${searchString || ''})`;
     });
@@ -320,10 +457,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     () => {
       let suggestionMessage = '';
 
-      if (normalizedCategory || normalizedSection) {
+      if (category || section) {
         const variableList = [
-          (normalizedCategory && 'category') || undefined,
-          (normalizedSection && 'section') || undefined
+          (category && 'category') || undefined,
+          (section && 'section') || undefined
         ].filter(Boolean).join(' or ');
 
         suggestionMessage = ` Try using a different ${variableList} search.`;
@@ -362,8 +499,8 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
   new ResourceTemplate(URI_TEMPLATE, {
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
-      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
-      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
       version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
     }
   }),

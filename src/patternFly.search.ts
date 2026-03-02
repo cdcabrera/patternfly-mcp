@@ -118,6 +118,14 @@ interface SearchPatternFlyOptions {
 /**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
  *
+ * @note This is a predictable filter, not a search. Use searchPatternFly for fuzzy search.`
+ * - Has case-insensitive filtering for all fields
+ * - Exact "version" filtering only
+ * - Has `prefix`, `suffix` filtering for any non-"version" field.
+ *
+ * @note Filter formats are generally assumed to be string values. If expanding to other types, ensure
+ * proper handling of non-string values.
+ *
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param mcpResources - A map of available PatternFly documentation entries to search. Defaults to `getPatternFlyMcpResources.resources`
  * @returns {Promise<FilterPatternFlyResults>} - Filtered PatternFly results.
@@ -132,11 +140,11 @@ const filterPatternFly = async (
   const resources = (getResources as PatternFlyMcpAvailableResources)?.resources ||
     (getResources as Map<string, PatternFlyMcpResourceFilteredMetadata>);
 
-  // Normalize filters
+  // Normalize filters - Currently, this is set to string filtering. Review expanding if/when necessary.
   const updatedFilters = Object.fromEntries(
     Object.entries(filters)
-      .filter(([_key, value]) => value !== undefined)
-      .map(([key, value]) => [key, value?.toLowerCase()])
+      .filter(([_key, value]) => value !== undefined && typeof value === 'string' && value.trim().length > 0)
+      .map(([key, value]) => [key, value?.trim()?.toLowerCase()])
   );
 
   // const filterVersion = filters?.version?.toLowerCase();
@@ -144,16 +152,27 @@ const filterPatternFly = async (
   // const filterSection = filters?.section?.toLowerCase();
   // const filterName = filters?.name?.toLowerCase();
 
+  const filterMatch = (propertyValue: string, filterValue: string) =>
+    propertyValue.toLowerCase() === filterValue ||
+    propertyValue.toLowerCase().startsWith(filterValue) ||
+    propertyValue.toLowerCase().endsWith(filterValue);
+    // propertyValue.toLowerCase().includes(filterValue);
+
   // const byResource = new Map<string, PatternFlyMcpResourceMetadata>();
   const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
   const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
 
   for (const [name, resource] of resources) {
     const matchedEntries = resource.entries.filter(entry => {
+      // const matchesVersion = !updatedFilters.version || filterMatch(entry.version, updatedFilters.version);
       const matchesVersion = !updatedFilters.version || entry.version.toLowerCase() === updatedFilters.version;
-      const matchesCategory = !updatedFilters.category || entry.category.toLowerCase() === updatedFilters.category;
-      const matchesSection = !updatedFilters.section || entry.section.toLowerCase() === updatedFilters.section;
-      const matchesName = !updatedFilters.name || entry.name.toLowerCase() === updatedFilters.name;
+      const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
+      const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
+      const matchesName = !updatedFilters.name || filterMatch(entry.name, updatedFilters.name);
+      // const matchesVersion = !updatedFilters.version || entry.version.toLowerCase() === updatedFilters.version;
+      // const matchesCategory = !updatedFilters.category || entry.category.toLowerCase() === updatedFilters.category;
+      // const matchesSection = !updatedFilters.section || entry.section.toLowerCase() === updatedFilters.section;
+      // const matchesName = !updatedFilters.name || entry.name.toLowerCase() === updatedFilters.name;
       // const matchesVersion = !filterVersion || entry.version.toLowerCase() === filterVersion;
       // const matchesCategory = !filterCategory || entry.category.toLowerCase() === filterCategory;
       // const matchesSection = !filterSection || entry.section.toLowerCase() === filterSection;
@@ -299,13 +318,14 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  *   - `searchResults`: All search results, exact and remaining matches
  *   - `totalAvailableMatches`: Total number of available PatternFly keywords to match on.
  */
-const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFilters, {
+const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyFilters | undefined, {
   mcpResources = getPatternFlyMcpResources.memo(),
   allowWildCardAll = false,
   maxDistance = 3,
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
   const updatedResources = await mcpResources;
+  const updatedFilters = filters || {};
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   let searchResults: FuzzySearchResult[] = [];
@@ -331,7 +351,7 @@ const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFi
     const versionMap = updatedResources.keywordsMap.get(result.item);
 
     if (versionMap) {
-      const versionResults = filters.version ? versionMap.get(filters.version) : Array.from(versionMap.values()).flat();
+      const versionResults = updatedFilters.version ? versionMap.get(updatedFilters.version) : Array.from(versionMap.values()).flat();
 
       if (versionResults) {
         // versionResults.forEach(name => {
@@ -347,7 +367,7 @@ const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFi
           // let updatedNamedResource: PatternFlyMcpResourceFilteredMetadata = { ...filteredResource };
 
           // Apply contextual filtering and flattening
-          const { byResource } = await filterPatternFly(filters, new Map([[name, { ...filteredResource }]]));
+          const { byResource } = await filterPatternFly(updatedFilters, new Map([[name, { ...filteredResource }]]));
 
           if (!byResource.has(name)) {
             continue;
@@ -363,11 +383,11 @@ const searchPatternFly = async (searchQuery: string, filters: FilterPatternFlyFi
           let versionContextualProperties;
 
           // Apply version contextual properties, typically URIs
-          if (filters.version && versions[filters.version]) {
+          if (updatedFilters.version && versions[updatedFilters.version]) {
             versionContextualProperties = {
-              isSchemasAvailable: versions[filters.version]?.isSchemasAvailable,
-              uri: versions[filters.version]?.uri,
-              uriSchemas: versions[filters.version]?.uriSchemas
+              isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
+              uri: versions[updatedFilters.version]?.uri,
+              uriSchemas: versions[updatedFilters.version]?.uriSchemas
             };
           }
 

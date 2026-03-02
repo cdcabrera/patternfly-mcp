@@ -106,8 +106,37 @@ describe('uriVersionComplete', () => {
   it.each([
     {
       description: 'all',
-      value: ''
+      value: '',
+      expected: 'v6'
     },
+    {
+      description: 'exact',
+      value: 'v6',
+      expected: 'v6'
+    },
+    {
+      description: 'exact, casing',
+      value: 'V6',
+      expected: 'v6'
+    },
+    {
+      description: 'enumerated, current',
+      value: 'current',
+      expected: 'v6'
+    },
+    {
+      description: 'enumerated, latest',
+      value: 'latest',
+      expected: 'v6'
+    }
+  ])('should attempt to return a version, $description', async ({ value, expected }) => {
+    const result = await uriVersionComplete(value);
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.join(', ')).toEqual(expect.stringContaining(expected));
+  });
+
+  it.each([
     {
       description: 'prefix',
       value: 'v'
@@ -117,18 +146,11 @@ describe('uriVersionComplete', () => {
       value: '6'
     },
     {
-      description: 'exact',
-      value: 'V6'
+      description: 'non-existent',
+      value: 'lorem'
     }
-  ])('should attempt to return a version, $description', async ({ value }) => {
+  ])('should not return any values, $description', async ({ value }) => {
     const result = await uriVersionComplete(value);
-
-    expect(result.length).toBeGreaterThan(0);
-    expect(result.join(', ')).toEqual(expect.stringContaining(value.toLowerCase()));
-  });
-
-  it('should not return any values for non-existent versions', async () => {
-    const result = await uriVersionComplete('lorem');
 
     expect(result.length).toBe(0);
   });

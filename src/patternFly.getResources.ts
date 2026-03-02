@@ -116,6 +116,8 @@ type PatternFlyMcpResourceMetadata = {
  * @extends PatternFlyVersionContext
  *
  * @property resources - Patternfly available documentation and metadata by resource name.
+ * @property availableCategories - Patternfly available documentation categories.
+ * @property availableSections - Patternfly available documentation sections.
  * @property docsIndex - Patternfly available documentation index.
  * @property componentsIndex - Patternfly available components index.
  * @property keywordsIndex - Patternfly available keywords index.
@@ -129,6 +131,8 @@ type PatternFlyMcpResourceMetadata = {
  */
 interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   resources: Map<string, PatternFlyMcpResourceMetadata>;
+  availableCategories: string[];
+  availableSections: string[];
   docsIndex: string[];
   componentsIndex: string[];
   keywordsIndex: string[];
@@ -382,6 +386,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const byVersion: PatternFlyMcpResourcesByVersion = {};
   const pathIndex = new Set<string>();
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
+  const availableCategories = new Set<string>();
+  const availableSections = new Set<string>();
 
   Object.entries(originalDocs.docs).forEach(([docsName, entries]) => {
     const name = docsName.toLowerCase();
@@ -436,10 +442,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
 
       if (entry.category) {
+        availableCategories.add(entry.category);
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name, version });
       }
 
       if (entry.section) {
+        availableSections.add(entry.section);
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.section, name, version });
       }
 
@@ -463,6 +471,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   return {
     ...versionContext,
     resources,
+    availableCategories: Array.from(availableCategories).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    availableSections: Array.from(availableSections).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     componentsIndex: componentNamesIndex,
     isFallbackDocumentation: originalDocs.isFallback,
