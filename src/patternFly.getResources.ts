@@ -23,6 +23,19 @@ import { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS } from './docs.filterWords';
  */
 type PatternFlyComponentSchema = Awaited<ReturnType<typeof getPatternFlyComponentSchema>>;
 
+type PatternFlyMcpComponentNamesByVersion = {
+  [name: string]: {
+    isSchemasAvailable: boolean;
+    displayName: string;
+  }
+};
+
+interface PatternFlyMcpComponentNames {
+  componentNamesIndex: string[];
+  componentNamesIndexMap: Map<string, string>;
+  byVersion: Map<string, PatternFlyMcpComponentNamesByVersion>;
+}
+
 /**
  * PatternFly JSON extended documentation metadata
  *
@@ -125,9 +138,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   byPath: PatternFlyMcpResourcesByPath;
   byUri: PatternFlyMcpResourcesByUri;
   byVersion: PatternFlyMcpResourcesByVersion;
-  byVersionComponentNames: {
-    [version: string]: string[];
-  };
+  byVersionComponentNames: PatternFlyMcpComponentNames['byVersion'];
 }
 
 /**
@@ -197,6 +208,9 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
 /**
  * A multifaceted list of all PatternFly React component names.
  *
+ * @note Consider iterating over the components by version using the "availableVersions" array
+ * from getPatternFlyVersionContext.
+ *
  * @note The "table" component is manually added to the `componentNamesIndex` list because it's not currently included
  * in the component schemas package.
  *
@@ -204,33 +218,65 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
  *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
  * @returns A multifaceted React component breakdown.  Use the "memoized" property for performance.
- * - `byVersion`: Map of lowercase PatternFly versions to lowercase component names.
- * - `componentNamesIndex`: Latest PF version, lowercase component names sorted alphabetically.
- * - `componentNamesWithSchemasIndex`: Latest PF version, lowercase component names sorted alphabetically.
- * - `componentNamesWithSchemasMap`: Latest PF version, Map of lowercase component names to original case component names.
+ * - `componentNamesIndex`: ALL component names across ALL versions,
+ * - `componentNamesIndexMap`: Map of lowercase ALL component names to original case component names,
+ * - `byVersion`: Map of lowercase PatternFly versions to Map of lowercase component names to { isSchemasAvailable: boolean, displayName: string }
  */
-const getPatternFlyReactComponentNames = async (contextPathOverride?: string) => {
-  const { latestSchemasVersion, isEnvTheLatestSchemasVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
-  const byVersion = new Map<string, string[]>();
+const getPatternFlyComponentNames = async (contextPathOverride?: string): Promise<PatternFlyMcpComponentNames> => {
+  const { latestSchemasVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
+  // const byVersion = new Map<string, string[]>();
+  // const byVersion = new Map<string, Map<string, { isSchemasAvailable: boolean, displayName: string }>>();
+  const byVersion: PatternFlyMcpComponentNames['byVersion'] = new Map();
+  // const byVersionIndex = new Map<string, string[]>();
 
   const latestNamesIndex = [...Array.from(new Set([...pfComponentNames, 'Table'])).map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
-  const latestNamesWithSchemaIndex = [...pfComponentNames.map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
-  const latestNamesWithSchemasMap = new Map(pfComponentNames.map(name => [name.toLowerCase(), name]));
+  const latestNamesIndexMap = new Map(Array.from(new Set([...pfComponentNames, 'Table'])).map(name => [name.toLowerCase(), name]));
+  // const latestNamesWithSchemaIndex = [...pfComponentNames.map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
+  // const latestNamesWithSchemasMap = new Map(pfComponentNames.map(name => [name.toLowerCase(), name]));
 
-  byVersion.set(latestSchemasVersion, latestNamesIndex);
+  /*
+  const latestByVersionMap = [
+    ...pfComponentNames.map(name => [name.toLowerCase(), { isSchemasAvailable: true, displayName: name }]),
+    ['table', { isSchemasAvailable: false, displayName: 'Table' }]
+  ];
+  */
+
+  const latestByNameMap = new Map<string, { isSchemasAvailable: boolean, displayName: string }>();
+
+  pfComponentNames.forEach(name => {
+    latestByNameMap.set(name.toLowerCase(), { isSchemasAvailable: true, displayName: name });
+  });
+
+  latestByNameMap.set('table', { isSchemasAvailable: false, displayName: 'Table' });
+  const convert = Object.fromEntries(latestByNameMap);
+
+  byVersion.set(
+    latestSchemasVersion,
+    convert
+  );
+
+  // pfComponentNames.map(name => [name.toLowerCase(), { isSchemasAvailable: true, displayName: name }]);
+  //      ['table', { isSchemasAvailable: false, displayName: 'Table' }]
+  // Temporary set latest available version of components index, "v6"
+  // byVersion.set(latestSchemasVersion, latestNamesIndex);
+
+  // byVersionIndex.set(latestSchemasVersion, latestNamesIndex);
 
   return {
-    byVersion: Object.fromEntries(byVersion),
-    componentNamesIndex: isEnvTheLatestSchemasVersion ? latestNamesIndex : [],
-    componentNamesWithSchemasIndex: isEnvTheLatestSchemasVersion ? latestNamesWithSchemaIndex : [],
-    componentNamesWithSchemasMap: isEnvTheLatestSchemasVersion ? Object.fromEntries(latestNamesWithSchemasMap) : {}
+    componentNamesIndex: latestNamesIndex,
+    componentNamesIndexMap: latestNamesIndexMap,
+    byVersion
+    // byVersionIndex: Object.fromEntries(byVersionIndex)
+    // componentNamesIndex: isEnvTheLatestSchemasVersion ? latestNamesIndex : [],
+    // componentNamesWithSchemasIndex: isEnvTheLatestSchemasVersion ? latestNamesWithSchemaIndex : [],
+    // componentNamesWithSchemasMap: isEnvTheLatestSchemasVersion ? Object.fromEntries(latestNamesWithSchemasMap) : {}
   };
 };
 
 /**
  * Memoized version of getPatternFlyReactComponentNames.
  */
-getPatternFlyReactComponentNames.memo = memo(getPatternFlyReactComponentNames);
+getPatternFlyComponentNames.memo = memo(getPatternFlyComponentNames);
 
 /**
  * Filter keywords by removing noise words.
@@ -326,8 +372,8 @@ const mutateKeyWordsMap = (
  */
 const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<PatternFlyMcpAvailableResources> => {
   const versionContext = await getPatternFlyVersionContext.memo(contextPathOverride);
-  const componentNames = await getPatternFlyReactComponentNames.memo(contextPathOverride);
-  const { byVersion: componentNamesByVersion, componentNamesIndex, componentNamesWithSchemasIndex: schemaNames } = componentNames;
+  const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
+  const { componentNamesIndex, byVersion: componentNamesByVersion, byVersion: byVersionSchemaNames } = componentNames;
 
   const originalDocs = await getPatternFlyDocsCatalog.memo();
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
@@ -350,7 +396,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
     entries.forEach(entry => {
       const version = (entry.version || 'unknown').toLowerCase();
-      const isSchemasAvailable = versionContext.latestSchemasVersion === version && schemaNames.includes(name);
+      const isSchemasAvailable = versionContext.latestSchemasVersion === version && byVersionSchemaNames.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
       const uri = `patternfly://docs/${version}/${name}`;
 
@@ -445,10 +491,10 @@ getPatternFlyMcpResources.memo = memo(getPatternFlyMcpResources);
  * @returns The component schema, or `undefined` if the component name is not found.
  */
 const getPatternFlyComponentSchema = async (componentName: string) => {
-  const { componentNamesWithSchemasMap } = await getPatternFlyReactComponentNames.memo();
+  const { latestVersion, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
 
   try {
-    const updatedComponentName = componentNamesWithSchemasMap[componentName.toLowerCase()];
+    const updatedComponentName = byVersionComponentNames.get(latestVersion)?.[componentName.toLowerCase()]?.displayName;
 
     if (!updatedComponentName) {
       return undefined;
@@ -470,8 +516,10 @@ getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_O
 export {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
-  getPatternFlyReactComponentNames,
+  getPatternFlyComponentNames,
   setCategoryDisplayLabel,
+  type PatternFlyMcpComponentNames,
+  type PatternFlyMcpComponentNamesByVersion,
   type PatternFlyComponentSchema,
   type PatternFlyMcpAvailableResources,
   type PatternFlyMcpResourceMetadata,

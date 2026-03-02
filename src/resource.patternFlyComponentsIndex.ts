@@ -2,15 +2,12 @@ import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { buildSearchString, stringJoin } from './server.helpers';
+import { assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
-import {
-  getPatternFlyMcpResources,
-  getPatternFlyReactComponentNames
-} from './patternFly.getResources';
-import { uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { filterPatternFly } from './patternFly.search';
-import {assertInputStringLength} from "./server.assertions";
+import { uriCategoryComplete, uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 
 /**
  * Name of the resource.
@@ -38,27 +35,30 @@ const CONFIG = {
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
-  const { byVersionComponentNames, resources: docsResources } = await getPatternFlyMcpResources.memo();
-  const { componentNamesWithSchemasMap } = await getPatternFlyReactComponentNames.memo();
+  const { byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
-  Object.entries(byVersionComponentNames).sort(([a], [b]) => b.localeCompare(a)).forEach(([version, componentNames]) => {
-    const versionResource: PatterFlyListResourceResult[] = [];
+  Array.from(byVersionComponentNames)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .forEach(([version, components]) => {
+      const versionResource: PatterFlyListResourceResult[] = [];
 
-    componentNames.forEach(componentName => {
-      const displayName = componentNamesWithSchemasMap[componentName];
-      const isSchemasAvailable = docsResources.get(componentName)?.versions?.[version]?.isSchemasAvailable ?? false;
+      Object.entries(components)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([name, component]) => {
+          const displayName = component.displayName;
+          const isSchemasAvailable = component.isSchemasAvailable || false;
 
-      versionResource.push({
-        uri: `patternfly://docs/${version}/${componentName}`,
-        mimeType: 'text/markdown',
-        name: `${displayName} (${version})`,
-        description: `Component documentation for PatternFly version "${version}" of "${displayName}.${isSchemasAvailable ? ' (JSON Schema available)' : ''}"`
-      });
+          versionResource.push({
+            uri: `patternfly://docs/${version}/${name}`,
+            mimeType: 'text/markdown',
+            name: `${displayName} (${version})`,
+            description: `Component documentation for PatternFly version "${version}" of "${displayName}.${isSchemasAvailable ? ' (JSON Schema available)' : ''}"`
+          });
+        });
+
+      resources.push(...versionResource);
     });
-
-    resources.push(...versionResource);
-  });
 
   return {
     resources
@@ -89,15 +89,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  /* section is always components
-  if (section) {
-    assertInputStringLength(section, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'section'
-    });
-  }
-   */
-
   if (category) {
     assertInputStringLength(category, {
       ...options.minMax.inputStrings,
@@ -109,7 +100,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
   const { byResource } = await filterPatternFly.memo({ version: updatedVersion, section, category });
 
-  // Generate the consolidated list
   const docsIndex = Array.from(byResource.entries())
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([_name, data], index) => {
@@ -119,33 +109,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
       return `${index + 1}. [${data.name} (${updatedVersion})](${data.uri}${searchString || ''})`;
     });
-
-  /*
-  const entries = byVersion[updatedVersion] || [];
-
-  // Group by URI
-  const groupedByUri = new Map<string, { name: string, version: string }>();
-
-  entries.forEach(entry => {
-    const entryName = entry.name.toLowerCase();
-    const resource = resources.get(entryName)?.versions[updatedVersion];
-
-    if (resource?.uri) {
-      groupedByUri.set(resource.uri, { name: entry.name, version: entry.version });
-    }
-  });
-
-  // Generate the consolidated list
-  const docsIndex = Array.from(groupedByUri.entries())
-    .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
-    .map(([uri, data], index) => {
-      const searchString = buildSearchString({
-        version: updatedVersion
-      }, { prefix: true });
-
-      return `${index + 1}. [${data.name} (${data.version})](${uri}${searchString || ''})`;
-    });
-  */
 
   return {
     contents: [{
@@ -172,6 +135,7 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
   new ResourceTemplate(URI_TEMPLATE, {
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
       version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
     }
   }),
