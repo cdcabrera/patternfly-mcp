@@ -1,5 +1,8 @@
 /**
  * Index keyword filtering for high-volume matches.
+ *
+ * @note It's tempting to remove category and section names from this list, don't. Instead, the search
+ * should be leveraging filters which allow for "section" and "category" specifically.
  */
 const INDEX_BLOCKLIST_WORDS = ['patternfly', 'component', 'components', 'documentation', 'example', 'examples'];
 

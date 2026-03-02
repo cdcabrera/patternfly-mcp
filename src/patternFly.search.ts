@@ -1,4 +1,4 @@
-import { fuzzySearch, type FuzzySearchResult } from './server.search';
+import { fuzzySearch, type FuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
@@ -18,8 +18,6 @@ import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
  */
 type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata, 'versions'>;
 
-// type FilterPatternFlyResults = Omit<PatternFlyMcpResourceMetadata, 'versions'>;
-
 /**
  * Filters for specific properties of PatternFly data.
  *
@@ -38,17 +36,6 @@ interface FilterPatternFlyFilters {
 }
 
 /**
- * Options for filterPatternFly.
- *
- * @interface FilterPatternFlyOptions
- *
- * @property {Promise<PatternFlyMcpAvailableResources>} [mcpResources] - Object of multifaceted documentation entries to search.
- */
-// interface FilterPatternFlyOptions {
-//   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Promise<PatternFlyMcpAvailableResources['resources']>;
-// }
-
-/**
  * Result object returned by filterPatternFly.
  *
  * @interface FilterPatternFlyResults
@@ -62,17 +49,18 @@ interface FilterPatternFlyResults {
 }
 
 /**
- * Search result object returned by searchPatternFly.
- * Includes additional metadata and URLs.
+ * Search result object returned by searchPatternFly. Includes additional metadata.
+ *
+ * @interface SearchPatternFlyResult
+ *
+ * @extends FuzzySearchResult
+ * @extends PatternFlyMcpResourceFilteredMetadata
+ *
+ * @property query - Search query used to generate the result.
  */
-// interface SearchPatternFlyResult extends FuzzySearchResult, PatternFlyMcpResourceMetadata {
-//  query: string;
-// }
 interface SearchPatternFlyResult extends FuzzySearchResult, PatternFlyMcpResourceFilteredMetadata {
   query: string;
 }
-
-// type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata, 'versions'>;
 
 /**
  * Search results object returned by searchPatternFly.
@@ -111,8 +99,6 @@ interface SearchPatternFlyOptions {
   allowWildCardAll?: boolean;
   maxDistance?: number;
   maxResults?: number;
-  // pfVersion?: string | undefined;
-  // propertyFilters?: FilterPatternFlyFilters
 }
 
 /**
@@ -133,7 +119,7 @@ interface SearchPatternFlyOptions {
  * - `byResource`: Map of filtered resources by resource name.
  */
 const filterPatternFly = async (
-  filters: FilterPatternFlyFilters,
+  filters: FilterPatternFlyFilters | undefined,
   mcpResources: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata> = getPatternFlyMcpResources.memo()
 ): Promise<FilterPatternFlyResults> => {
   const getResources = await mcpResources;
@@ -141,42 +127,30 @@ const filterPatternFly = async (
     (getResources as Map<string, PatternFlyMcpResourceFilteredMetadata>);
 
   // Normalize filters - Currently, this is set to string filtering. Review expanding if/when necessary.
-  const updatedFilters = Object.fromEntries(
-    Object.entries(filters)
-      .filter(([_key, value]) => value !== undefined && typeof value === 'string' && value.trim().length > 0)
-      .map(([key, value]) => [key, value?.trim()?.toLowerCase()])
-  );
+  let updatedFilters: FilterPatternFlyFilters = {};
 
-  // const filterVersion = filters?.version?.toLowerCase();
-  // const filterCategory = filters?.category?.toLowerCase();
-  // const filterSection = filters?.section?.toLowerCase();
-  // const filterName = filters?.name?.toLowerCase();
+  if (filters) {
+    updatedFilters = Object.fromEntries(
+      Object.entries(filters)
+        .filter(([_key, value]) => value !== undefined && typeof value === 'string' && value.trim().length > 0)
+        .map(([key, value]) => [key, value?.trim()?.toLowerCase()])
+    );
+  }
 
+  // Filter matching for resources and entries
+  const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
+  const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const filterMatch = (propertyValue: string, filterValue: string) =>
     propertyValue.toLowerCase() === filterValue ||
     propertyValue.toLowerCase().startsWith(filterValue) ||
     propertyValue.toLowerCase().endsWith(filterValue);
-    // propertyValue.toLowerCase().includes(filterValue);
-
-  // const byResource = new Map<string, PatternFlyMcpResourceMetadata>();
-  const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
-  const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
 
   for (const [name, resource] of resources) {
     const matchedEntries = resource.entries.filter(entry => {
-      // const matchesVersion = !updatedFilters.version || filterMatch(entry.version, updatedFilters.version);
       const matchesVersion = !updatedFilters.version || entry.version.toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
       const matchesName = !updatedFilters.name || filterMatch(entry.name, updatedFilters.name);
-      // const matchesVersion = !updatedFilters.version || entry.version.toLowerCase() === updatedFilters.version;
-      // const matchesCategory = !updatedFilters.category || entry.category.toLowerCase() === updatedFilters.category;
-      // const matchesSection = !updatedFilters.section || entry.section.toLowerCase() === updatedFilters.section;
-      // const matchesName = !updatedFilters.name || entry.name.toLowerCase() === updatedFilters.name;
-      // const matchesVersion = !filterVersion || entry.version.toLowerCase() === filterVersion;
-      // const matchesCategory = !filterCategory || entry.category.toLowerCase() === filterCategory;
-      // const matchesSection = !filterSection || entry.section.toLowerCase() === filterSection;
-      // const matchesName = !filterName || entry.name.toLowerCase() === filterName;
 
       // Any missing filter registers as true. Only filters that are active run their check.
       return matchesVersion && matchesCategory && matchesSection && matchesName;
@@ -188,7 +162,7 @@ const filterPatternFly = async (
       let versionContextualProperties = {};
 
       // Apply version contextual properties, typically URIs
-      if (updatedFilters.version && versions[updatedFilters.version]) {
+      if (updatedFilters.version && versions?.[updatedFilters.version]) {
         versionContextualProperties = {
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
@@ -208,87 +182,6 @@ const filterPatternFly = async (
     byEntry,
     byResource
   };
-
-  /*
-  if (filters.version) {
-    const normalizedVersion = filters.version.toLowerCase();
-
-    byEntry = byVersion[normalizedVersion] || [];
-    // byResource = Array.from(resources.values())
-    // .flatMap(resource => resource.versions[normalizedVersion]?.entries);
-  } else {
-    byEntry = Array.from(resources.values()).flatMap(resource => resource.entries);
-  }
-
-  // byResource = Object.entries(resources).forEach(
-  // );
-
-  byEntry = byEntry.filter(entry => {
-    let isCategory = false;
-    let isSection = false;
-    let isName = false;
-
-    if (filters.category) {
-      isCategory = entry.category.toLowerCase() === filters.category.toLowerCase();
-    }
-
-    if (filters.section) {
-      isSection = entry.section.toLowerCase() === filters.section.toLowerCase();
-    }
-
-    if (filters.name) {
-      isName = entry.name.toLowerCase() === filters.name.toLowerCase();
-    }
-
-    return (isCategory && isSection && isName) || isCategory || isSection || isName;
-  });
-  */
-  /*
-  return results.filter(entry => {
-    let isFiltered = false;
-
-    if (filters.category) {
-      isFiltered = entry.category.toLowerCase() === filters.category.toLowerCase();
-    }
-
-    if (filters.section) {
-      isFiltered = entry.section.toLowerCase() === filters.section.toLowerCase();
-    }
-
-    if (filters.name) {
-      isFiltered = entry.name.toLowerCase() === filters.name.toLowerCase();
-    }
-
-    return isFiltered;
-  });
-  */
-
-  /*
-  if (filters.category) {
-    const normalizeCategory = filters.category.toLowerCase();
-
-    results = results.filter(entry => entry.category.toLowerCase() === normalizeCategory);
-  }
-
-  if (filters.section) {
-    const normalizeSection = filters.section.toLowerCase();
-
-    results = results.filter(entry => entry.section.toLowerCase() === normalizeSection);
-  }
-
-  if (filters.name) {
-    const normalizeName = filters.name.toLowerCase();
-
-    results = results.filter(entry => entry.name.toLowerCase() === normalizeName);
-  }
-
-  return results;
-   */
-
-  // return {
-  //  byEntry,
-  //  byResource
-  // };
 };
 
 /**
@@ -299,6 +192,8 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
+ * @note Uses `filterPatternFly` for additional filtering.
+ *
  * @param searchQuery - Search query string
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param settings - Optional settings object
@@ -307,11 +202,11 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  *     - `keywordsIndex`: Index of normalized keywords for fuzzy search
  *     - `keywordsMap`: Map of normalized keywords against versioned entries
  *     - `resources`: Map of names against entries
- * @param settings.allowWildCardAll - Allow a search query to match all components. Defaults to `false`.
+ * @param settings.allowWildCardAll - Allow a search query to match all resources. Defaults to `false`.
  * @param settings.maxDistance - Maximum edit distance for fuzzy search. Defaults to `3`.
  * @param settings.maxResults - Maximum number of results to return. Defaults to `10`.
  * @returns Object containing search results and matched URLs
- *   - `isSearchWildCardAll`: Whether the search query matched all components
+ *   - `isSearchWildCardAll`: Whether the search query matched all resources
  *   - `firstExactMatch`: First exact match within search results
  *   - `exactMatches`: Exact matches within search results
  *   - `remainingMatches`: Contrast to `exactMatches`, the remaining matches within search results
@@ -328,25 +223,27 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
   const updatedFilters = filters || {};
   const isWildCardAll = searchQuery.trim() === '*' || searchQuery.trim().toLowerCase() === 'all' || searchQuery.trim() === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+  let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    searchResults = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
+    search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
       maxDistance,
       maxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true
     });
+
+    searchResults = search.results;
   }
 
   // Store refined results in a map for easy "did we already find this?" checks"
   const searchResultsMap = new Map<string, SearchPatternFlyResult>();
 
   // Refine search results with version filtering and mapping
-  // const refineSearchResult = async (result: FuzzySearchResult) => {
   for (const result of searchResults) {
     const versionMap = updatedResources.keywordsMap.get(result.item);
 
@@ -354,7 +251,6 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
       const versionResults = updatedFilters.version ? versionMap.get(updatedFilters.version) : Array.from(versionMap.values()).flat();
 
       if (versionResults) {
-        // versionResults.forEach(name => {
         for (const name of versionResults) {
           const namedResource = updatedResources.resources.get(name);
 
@@ -364,7 +260,6 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
 
           // Omit versions from the result
           const { versions, ...filteredResource } = namedResource;
-          // let updatedNamedResource: PatternFlyMcpResourceFilteredMetadata = { ...filteredResource };
 
           // Apply contextual filtering and flattening
           const { byResource } = await filterPatternFly(updatedFilters, new Map([[name, { ...filteredResource }]]));
@@ -372,14 +267,7 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
           if (!byResource.has(name)) {
             continue;
           }
-          /*
-          if (pfVersion && namedResource.versions[pfVersion]) {
-            updatedNamedResource = {
-              ...updatedNamedResource,
-              ...namedResource.versions[pfVersion]
-            };
-          }
-          */
+
           let versionContextualProperties;
 
           // Apply version contextual properties, typically URIs
@@ -392,20 +280,16 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
           }
 
           // Apply property filters
-
           searchResultsMap.set(name, {
             ...result,
             ...byResource.get(name),
             ...versionContextualProperties,
-            // ...updatedNamedResource,
             query: searchQuery
           } as SearchPatternFlyResult);
         }
       }
     }
   }
-
-  // searchResults.forEach(refineSearchResult);
 
   // Minor breakdown of search results
   const exactMatches = Array.from(searchResultsMap.values()).filter(result => result.matchType === 'exact' || result.matchType === 'all');
@@ -430,7 +314,7 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
     exactMatches: sortedExactMatches.slice(0, maxResults),
     remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
     searchResults: sortedSearchResults.slice(0, maxResults),
-    totalAvailableMatches: updatedResources.keywordsIndex.length
+    totalAvailableMatches: search?.totalResults ?? updatedResources.keywordsIndex.length
   };
 };
 
@@ -443,7 +327,7 @@ export {
   filterPatternFly,
   searchPatternFly,
   type FilterPatternFlyFilters,
-  // type FilterPatternFlyOptions,
+  type FilterPatternFlyResults,
   type SearchPatternFlyResult,
   type SearchPatternFlyResults
 };

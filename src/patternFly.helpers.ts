@@ -194,7 +194,7 @@ const disabled_findClosestPatternFlyVersion = async (
         isFuzzyMatch: true
       });
 
-      for (const match of matches) {
+      for (const match of matches.results) {
         const versionMatch = matchPackageVersion(allDeps[match.item], availableVersions);
 
         if (versionMatch) {
