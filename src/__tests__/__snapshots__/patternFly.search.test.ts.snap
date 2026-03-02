@@ -6,7 +6,8 @@ exports[`searchPatternFly should attempt to return an array of all available res
   "firstExactMatch",
   "exactMatches",
   "remainingMatches",
-  "totalAvailableMatches",
+  "totalResults",
+  "totalPotentialMatches",
 ]
 `;
 
@@ -16,7 +17,8 @@ exports[`searchPatternFly should attempt to return an array of all available res
   "firstExactMatch",
   "exactMatches",
   "remainingMatches",
-  "totalAvailableMatches",
+  "totalResults",
+  "totalPotentialMatches",
 ]
 `;
 
@@ -26,6 +28,7 @@ exports[`searchPatternFly should attempt to return an array of all available res
   "firstExactMatch",
   "exactMatches",
   "remainingMatches",
-  "totalAvailableMatches",
+  "totalResults",
+  "totalPotentialMatches",
 ]
 `;

@@ -40,7 +40,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     const pfVersion = await normalizeEnumeratedPatternFlyVersion(version);
 
-    const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalAvailableMatches } = await searchPatternFly.memo(
+    const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
       { version: pfVersion },
       { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
@@ -92,7 +92,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     if (isSearchWildCardAll) {
       searchTitle = stringJoin.basic(
         `# Search results for ${searchTitlePatternFly}"all" resources.`,
-        `Only showing the first ${parseResults.length} results. There are ${totalAvailableMatches} potential match variations.`,
+        `Only showing the first ${parseResults.length} results. There are ${totalPotentialMatches} potential match variations.`,
         `Try searching with a more specific query.`
       );
     } else if (exactMatches.length > 0) {

@@ -73,7 +73,8 @@ interface SearchPatternFlyResult extends FuzzySearchResult, PatternFlyMcpResourc
  * @property {SearchPatternFlyResult[]} exactMatches - Exact matches within search results
  * @property {SearchPatternFlyResult[]} remainingMatches - Contrast to `exactMatches`, the remaining matches within search results
  * @property {SearchPatternFlyResult[]} searchResults - All search results, exact and remaining matches
- * @property totalAvailableMatches - Total number of available PatternFly keywords to match on.
+ * @property totalPotentialMatches - Total number of available PatternFly keywords to match on, what was possible before narrowing.
+ * @property totalResults - Total number of actual resources that meet all criteria.
  */
 interface SearchPatternFlyResults {
   isSearchWildCardAll: boolean;
@@ -81,7 +82,8 @@ interface SearchPatternFlyResults {
   exactMatches: SearchPatternFlyResult[];
   remainingMatches: SearchPatternFlyResult[];
   searchResults: SearchPatternFlyResult[];
-  totalAvailableMatches: number;
+  totalPotentialMatches: number;
+  totalResults: number;
 }
 
 /**
@@ -211,7 +213,8 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  *   - `exactMatches`: Exact matches within search results
  *   - `remainingMatches`: Contrast to `exactMatches`, the remaining matches within search results
  *   - `searchResults`: All search results, exact and remaining matches
- *   - `totalAvailableMatches`: Total number of available PatternFly keywords to match on.
+ *   - `totalPotentialMatches`: Total number of available PatternFly keywords to match on, what was possible before narrowing.
+ *   - `totalResults`: Total number of actual resources that meet all criteria.
  */
 const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyFilters | undefined, {
   mcpResources = getPatternFlyMcpResources.memo(),
@@ -314,7 +317,8 @@ const searchPatternFly = async (searchQuery: string, filters?: FilterPatternFlyF
     exactMatches: sortedExactMatches.slice(0, maxResults),
     remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
     searchResults: sortedSearchResults.slice(0, maxResults),
-    totalAvailableMatches: search?.totalResults ?? updatedResources.keywordsIndex.length
+    totalResults: sortedSearchResults.length,
+    totalPotentialMatches: search?.totalResults ?? updatedResources.keywordsIndex.length
   };
 };
 
