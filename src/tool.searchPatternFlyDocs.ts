@@ -154,9 +154,13 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         - Documentation and guideline URLs that can be used with "usePatternFlyDocs"
       `,
       inputSchema: {
-        searchQuery: z.string().max(options.minMax.inputStrings.max).describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
+        searchQuery: z.string()
+          .min(options.minMax.inputStrings.min)
+          .max(options.minMax.inputStrings.max)
+          .describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
-          .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
+          .optional()
+          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
     },
     callback

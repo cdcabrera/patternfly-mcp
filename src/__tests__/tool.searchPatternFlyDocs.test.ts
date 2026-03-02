@@ -64,10 +64,6 @@ describe('searchPatternFlyDocsTool, callback', () => {
     {
       description: 'with "all" searchQuery all',
       searchQuery: 'ALL'
-    },
-    {
-      description: 'with empty searchQuery all',
-      searchQuery: ''
     }
   ])('should parse parameters, $description', async ({ searchQuery }) => {
     const [_name, _schema, callback] = searchPatternFlyDocsTool();
@@ -77,6 +73,11 @@ describe('searchPatternFlyDocsTool, callback', () => {
   });
 
   it.each([
+    {
+      description: 'with empty searchQuery',
+      error: '"searchQuery" must be a string from',
+      searchQuery: ''
+    },
     {
       description: 'with missing or undefined searchQuery',
       error: '"searchQuery" must be a string from',
