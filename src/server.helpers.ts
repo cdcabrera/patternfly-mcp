@@ -25,7 +25,7 @@ const buildSearchString = (
     return undefined;
   }
 
-  const entriesToString = entries.map(([key, value]) => [key, `${value}`]);
+  const entriesToString = entries.sort(([aKey], [bKey]) => aKey.localeCompare(bKey)).map(([key, value]) => [key, `${value}`]);
   const searchParams = new URLSearchParams(Object.fromEntries(entriesToString));
 
   return prefix ? `?${searchParams.toString()}` : searchParams.toString();
