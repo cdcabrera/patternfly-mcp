@@ -1,13 +1,19 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  ResourceTemplate,
+  type CompleteResourceTemplateCallback
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
+import {
+  getPatternFlyVersionContext,
+  normalizeEnumeratedPatternFlyVersion
+} from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
-import {assertInput, assertInputStringLength} from "./server.assertions";
+import { assertInput, assertInputStringLength } from './server.assertions';
 
 /**
  * Name of the resource.
@@ -108,6 +114,27 @@ const disabled_listResources = async () => {
 listResources.memo = memo(listResources);
 
 /**
+ * Name completion callback for the URI schemas template.
+ *
+ * @note Schemas has limited version support.
+ *
+ * @param value - The value to complete.
+ * @returns The list of available versions, or an empty list.
+ */
+const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) => {
+  const { availableSchemasVersions } = await getPatternFlyVersionContext.memo();
+  let normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
+
+  if (!normalizedVersion) {
+    return availableSchemasVersions;
+  }
+
+  normalizedVersion = await normalizeEnumeratedPatternFlyVersion(normalizedVersion);
+
+  return availableSchemasVersions.filter(version => normalizedVersion === version);
+};
+
+/**
  * Resource callback for the documentation index.
  *
  * @param passedUri - URI of the resource.
@@ -197,6 +224,7 @@ export {
   patternFlySchemasIndexResource,
   listResources,
   resourceCallback,
+  uriVersionComplete,
   NAME,
   URI_TEMPLATE,
   CONFIG

@@ -5,7 +5,7 @@ import {
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { getOptions, runWithOptions } from './options.context';
-import { searchPatternFly } from './patternFly.search';
+import { filterPatternFly, searchPatternFly } from './patternFly.search';
 import {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
@@ -42,17 +42,23 @@ const CONFIG = {
  * @returns The list of available names.
  */
 const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
-  const { latestSchemasVersion, byVersion, resources } = await getPatternFlyMcpResources.memo();
-  const version = context?.arguments?.version;
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestSchemasVersion;
-  const updatedValue = typeof value === 'string' ? value.toLowerCase().trim() : '';
+  const { version } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    name: normalizedValue
+  });
+
   const names = new Set<string>();
 
-  byVersion[updatedVersion]?.filter(entry => {
-    const entryName = entry.name.toLowerCase();
-
-    return resources.get(entryName)?.versions?.[updatedVersion]?.isSchemasAvailable && entryName.startsWith(updatedValue);
-  }).forEach(entry => names.add(entry.name));
+  byEntry.forEach(result => {
+    if (result.uriSchemas) {
+      names.add(result.name);
+    }
+  });
 
   return Array.from(names).sort();
 };
@@ -80,9 +86,56 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     inputDisplayName: 'name'
   });
 
-  const { latestSchemasVersion } = await getPatternFlyMcpResources.memo();
+  const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestSchemasVersion;
+  const updatedName = name.trim();
 
+  const { byEntry } = await filterPatternFly.memo({
+    version: updatedVersion,
+    name: updatedName
+  });
+
+  let result: PatternFlyComponentSchema | undefined;
+  const matchedSchemas: string[] = [];
+
+  byEntry.forEach(result => {
+    if (result.uriSchemas) {
+      matchedSchemas.push(result.name);
+    }
+  });
+
+  if (matchedSchemas[0]) {
+    result = await getPatternFlyComponentSchema.memo(matchedSchemas[0]);
+  }
+
+  assertInput(
+    matchedSchemas.length > 0 && result !== undefined,
+    () => {
+      let suggestionMessage = '';
+
+      if (!availableSchemasVersions.includes(updatedVersion)) {
+        suggestionMessage = ` Component schemas are only available for PatternFly versions ${availableSchemasVersions.join(', ')}`;
+      }
+
+      return `No component JSON schemas found for "${passedUri?.toString()}".${suggestionMessage}`;
+    }
+  );
+
+  /*
+  if (matchedSchemas.length > 0) {
+    for (const match of matchedSchemas) {
+      const schema = await getPatternFlyComponentSchema.memo(match);
+
+      if (schema) {
+        result = schema;
+        break;
+      }
+    }
+  }
+  */
+
+
+  /*
   const { exactMatches, searchResults } = await searchPatternFly.memo(name, { version: updatedVersion });
   let result: PatternFlyComponentSchema | undefined;
 
@@ -113,11 +166,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     },
     ErrorCode.InvalidParams
   );
+   */
 
   return {
     contents: [
       {
-        uri: passedUri?.toString(),
+        uri: passedUri?.toString() || `patternfly://schemas/${updatedVersion}/${updatedName}`,
         mimeType: 'application/json',
         text: JSON.stringify(result, null, 2)
       }

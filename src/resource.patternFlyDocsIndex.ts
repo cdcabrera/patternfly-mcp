@@ -13,7 +13,7 @@ import {
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion
 } from './patternFly.helpers';
-import { filterPatternFly, searchPatternFly } from './patternFly.search';
+import { filterPatternFly } from './patternFly.search';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
