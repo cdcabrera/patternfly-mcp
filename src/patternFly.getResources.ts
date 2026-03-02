@@ -150,8 +150,8 @@ const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { 
   let isFallback = false;
 
   try {
-    // docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
-    docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
+    docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+    // docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
   } catch (error) {
     isFallback = true;
     log.debug(`Failed to import docs catalog '#docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
