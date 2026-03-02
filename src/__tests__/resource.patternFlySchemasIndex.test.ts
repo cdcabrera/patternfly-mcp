@@ -1,4 +1,9 @@
-import { patternFlySchemasIndexResource, listResources } from '../resource.patternFlySchemasIndex';
+import {
+  patternFlySchemasIndexResource,
+  listResources,
+  uriVersionComplete,
+  resourceCallback
+} from '../resource.patternFlySchemasIndex';
 import { isPlainObject } from '../server.helpers';
 
 describe('patternFlySchemasIndexResource', () => {
@@ -35,7 +40,61 @@ describe('listResources', () => {
   });
 });
 
-describe('patternFlySchemasIndexResource, callback', () => {
+describe('uriVersionComplete', () => {
+  it.each([
+    {
+      description: 'all',
+      value: '',
+      expected: 'v6'
+    },
+    {
+      description: 'exact',
+      value: 'v6',
+      expected: 'v6'
+    },
+    {
+      description: 'exact, casing',
+      value: 'V6',
+      expected: 'v6'
+    },
+    {
+      description: 'enumerated, current',
+      value: 'current',
+      expected: 'v6'
+    },
+    {
+      description: 'enumerated, latest',
+      value: 'latest',
+      expected: 'v6'
+    }
+  ])('should attempt to return a version, $description', async ({ value, expected }) => {
+    const result = await uriVersionComplete(value);
+
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.join(', ')).toEqual(expect.stringContaining(expected));
+  });
+
+  it.each([
+    {
+      description: 'prefix',
+      value: 'v'
+    },
+    {
+      description: 'suffix',
+      value: '6'
+    },
+    {
+      description: 'non-existent',
+      value: 'lorem'
+    }
+  ])('should not return any values, $description', async ({ value }) => {
+    const result = await uriVersionComplete(value);
+
+    expect(result.length).toBe(0);
+  });
+});
+
+describe('resourceCallback', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -43,14 +102,21 @@ describe('patternFlySchemasIndexResource, callback', () => {
   it.each([
     {
       description: 'default',
-      args: []
+      variables: {},
+      expected: '# PatternFly Component JSON Schemas Index for "v6"'
+    },
+    {
+      description: 'version',
+      variables: {
+        version: 'v5'
+      },
+      expected: '# PatternFly Component JSON Schemas Index for "v6"'
     }
-  ])('should return component schemas index, $description', async ({ args }) => {
-    const [_name, _uri, _config, callback] = patternFlySchemasIndexResource();
-    const result = await callback(...args);
+  ])('should return component schemas index, $description', async ({ variables, expected }) => {
+    const result = await resourceCallback(undefined as any, variables);
 
     expect(result.contents).toBeDefined();
-    expect(Object.keys(result.contents[0])).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0].text).toContain('# PatternFly Component JSON Schemas Index');
+    expect(Object.keys(result.contents[0] as any)).toEqual(['uri', 'mimeType', 'text']);
+    expect(result.contents[0]?.text).toContain(expected);
   });
 });
