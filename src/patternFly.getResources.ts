@@ -16,7 +16,6 @@ import {
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
 import { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS } from './docs.filterWords';
-// import { freezeObject } from './server.helpers';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -116,8 +115,6 @@ type PatternFlyMcpResourceMetadata = {
  * @extends PatternFlyVersionContext
  *
  * @property resources - Patternfly available documentation and metadata by resource name.
- * @property availableCategories - Patternfly available documentation categories.
- * @property availableSections - Patternfly available documentation sections.
  * @property docsIndex - Patternfly available documentation index.
  * @property componentsIndex - Patternfly available components index.
  * @property keywordsIndex - Patternfly available keywords index.
@@ -131,8 +128,6 @@ type PatternFlyMcpResourceMetadata = {
  */
 interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   resources: Map<string, PatternFlyMcpResourceMetadata>;
-  availableCategories: string[];
-  availableSections: string[];
   docsIndex: string[];
   componentsIndex: string[];
   keywordsIndex: string[];
@@ -216,7 +211,7 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
  * from getPatternFlyVersionContext.
  *
  * @note The "table" component is manually added to the `componentNamesIndex` list because it's not currently included
- * in the component schemas package.
+ * in the component schemas v6 package.
  *
  * @note To avoid lookup issues we normalize all keys and indexes to lowercase. Component names are lowercased.
  *
@@ -228,28 +223,16 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
  */
 const getPatternFlyComponentNames = async (contextPathOverride?: string): Promise<PatternFlyMcpComponentNames> => {
   const { latestSchemasVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
-  // const byVersion = new Map<string, string[]>();
-  // const byVersion = new Map<string, Map<string, { isSchemasAvailable: boolean, displayName: string }>>();
-  const byVersion: PatternFlyMcpComponentNames['byVersion'] = new Map();
-  // const byVersionIndex = new Map<string, string[]>();
 
   const latestNamesIndex = [...Array.from(new Set([...pfComponentNames, 'Table'])).map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
   const latestNamesIndexMap = new Map(Array.from(new Set([...pfComponentNames, 'Table'])).map(name => [name.toLowerCase(), name]));
-  // const latestNamesWithSchemaIndex = [...pfComponentNames.map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
-  // const latestNamesWithSchemasMap = new Map(pfComponentNames.map(name => [name.toLowerCase(), name]));
-
-  /*
-  const latestByVersionMap = [
-    ...pfComponentNames.map(name => [name.toLowerCase(), { isSchemasAvailable: true, displayName: name }]),
-    ['table', { isSchemasAvailable: false, displayName: 'Table' }]
-  ];
-  */
-
   const latestByNameMap = new Map<string, { isSchemasAvailable: boolean, displayName: string }>();
 
   pfComponentNames.forEach(name => {
     latestByNameMap.set(name.toLowerCase(), { isSchemasAvailable: true, displayName: name });
   });
+
+  const byVersion: PatternFlyMcpComponentNames['byVersion'] = new Map();
 
   latestByNameMap.set('table', { isSchemasAvailable: false, displayName: 'Table' });
   const convert = Object.fromEntries(latestByNameMap);
@@ -259,21 +242,10 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
     convert
   );
 
-  // pfComponentNames.map(name => [name.toLowerCase(), { isSchemasAvailable: true, displayName: name }]);
-  //      ['table', { isSchemasAvailable: false, displayName: 'Table' }]
-  // Temporary set latest available version of components index, "v6"
-  // byVersion.set(latestSchemasVersion, latestNamesIndex);
-
-  // byVersionIndex.set(latestSchemasVersion, latestNamesIndex);
-
   return {
     componentNamesIndex: latestNamesIndex,
     componentNamesIndexMap: latestNamesIndexMap,
     byVersion
-    // byVersionIndex: Object.fromEntries(byVersionIndex)
-    // componentNamesIndex: isEnvTheLatestSchemasVersion ? latestNamesIndex : [],
-    // componentNamesWithSchemasIndex: isEnvTheLatestSchemasVersion ? latestNamesWithSchemaIndex : [],
-    // componentNamesWithSchemasMap: isEnvTheLatestSchemasVersion ? Object.fromEntries(latestNamesWithSchemasMap) : {}
   };
 };
 
@@ -362,10 +334,9 @@ const mutateKeyWordsMap = (
       mutateMap(word);
     }
   }
+
   // But also apply entire phrases
-  // } else {
   mutateMap(normalizedKeyword);
-  // }
 };
 
 /**
@@ -386,8 +357,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const byVersion: PatternFlyMcpResourcesByVersion = {};
   const pathIndex = new Set<string>();
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
-  const availableCategories = new Set<string>();
-  const availableSections = new Set<string>();
 
   Object.entries(originalDocs.docs).forEach(([docsName, entries]) => {
     const name = docsName.toLowerCase();
@@ -442,12 +411,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
 
       if (entry.category) {
-        availableCategories.add(entry.category);
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name, version });
       }
 
       if (entry.section) {
-        availableSections.add(entry.section);
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.section, name, version });
       }
 
@@ -471,8 +438,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   return {
     ...versionContext,
     resources,
-    availableCategories: Array.from(availableCategories).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
-    availableSections: Array.from(availableSections).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     componentsIndex: componentNamesIndex,
     isFallbackDocumentation: originalDocs.isFallback,

@@ -28,10 +28,9 @@ exports[`getPatternFlyMcpResources should return multiple organized facets: prop
 
 exports[`getPatternFlyReactComponentNames should return multiple organized facets: properties 1`] = `
 [
-  "byVersion",
   "componentNamesIndex",
-  "componentNamesWithSchemasIndex",
-  "componentNamesWithSchemasMap",
+  "componentNamesIndexMap",
+  "byVersion",
 ]
 `;
 
