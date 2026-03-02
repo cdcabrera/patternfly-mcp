@@ -3,8 +3,7 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './server';
 import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
-import { memo } from './server.caching';
-import { assertInput, assertInputString, assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
@@ -13,9 +12,9 @@ import {
   uriCategoryComplete,
   uriNameComplete,
   uriSectionComplete,
-  uriVersionComplete,
-  type ExtendedCompleteResourceTemplateCallback
+  uriVersionComplete
 } from './resource.patternFlyDocsIndex';
+import { filterPatternFly } from './patternFly.search';
 
 /**
  * Name of the resource template.
@@ -46,6 +45,7 @@ const CONFIG = {
  * @param context - The completion context.
  * @returns The list of available names.
  */
+/*
 const disabled_uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
   const { latestVersion, byVersion } = await getPatternFlyMcpResources.memo();
   const version = context?.arguments?.version;
@@ -62,7 +62,7 @@ const disabled_uriNameComplete: ExtendedCompleteResourceTemplateCallback = async
 /**
  * Memoized version of uriNameComplete.
  */
-disabled_uriNameComplete.memo = memo(disabled_uriNameComplete);
+// disabled_uriNameComplete.memo = memo(disabled_uriNameComplete);
 
 /**
  * Resource callback for the documentation template.
@@ -85,27 +85,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     inputDisplayName: 'name'
   });
 
-  const updatedName = (await uriNameComplete.memo(name, { arguments: { version } }))?.[0];
-
-  assertInputString(
-    updatedName,
-    { inputDisplayName: 'name' }
-  );
-
-  const { latestVersion, resources } = await getPatternFlyMcpResources.memo();
-  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
-  const resourceEntries = resources.get(updatedName.toLowerCase())?.versions?.[updatedVersion]?.entries || [];
-
-  let normalizedCategory: string | undefined;
-  let normalizedSection: string | undefined;
-
   if (section) {
     assertInputStringLength(section, {
       ...options.minMax.inputStrings,
       inputDisplayName: 'section'
     });
-
-    normalizedSection = section.trim().toLowerCase();
   }
 
   if (category) {
@@ -113,30 +97,24 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       ...options.minMax.inputStrings,
       inputDisplayName: 'category'
     });
-
-    normalizedCategory = category.trim().toLowerCase();
   }
 
-  let updatedResourceEntries = resourceEntries;
+  const { latestVersion } = await getPatternFlyMcpResources.memo();
+  const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
+  const updatedName = name.trim();
 
-  if (normalizedCategory || normalizedSection) {
-    updatedResourceEntries = resourceEntries.filter(entry => {
-      const matchesCategory = entry.category.toLowerCase() === normalizedCategory;
-      const matchesSection = entry.section.toLowerCase() === normalizedSection;
-
-      if (normalizedCategory && normalizedSection) {
-        return matchesCategory && matchesSection;
-      } else {
-        return matchesCategory || matchesSection;
-      }
-    });
-  }
+  const { byEntry } = await filterPatternFly.memo({
+    version: updatedVersion,
+    name: updatedName,
+    category,
+    section
+  });
 
   const docResults = [];
   const docs = [];
 
   try {
-    const matchedUrls = updatedResourceEntries.map(entry => entry.path).filter(Boolean);
+    const matchedUrls = byEntry.map(entry => entry.path).filter(Boolean);
 
     if (matchedUrls.length > 0) {
       const processedDocs = await processDocsFunction.memo(matchedUrls);
@@ -155,10 +133,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     () => {
       let suggestionMessage = '';
 
-      if (normalizedCategory || normalizedSection) {
+      if (category || section) {
         const variableList = [
-          (normalizedCategory && 'category') || undefined,
-          (normalizedSection && 'section') || undefined
+          (category && 'category') || undefined,
+          (section && 'section') || undefined
         ].filter(Boolean).join(' or ');
 
         suggestionMessage = ` Try using a different ${variableList} search.`;
@@ -199,8 +177,8 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
       category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
-      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
       name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
       version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
     }
   }),
@@ -211,7 +189,6 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
 export {
   patternFlyDocsTemplateResource,
   resourceCallback,
-  // uriNameComplete,
   NAME,
   URI_TEMPLATE,
   CONFIG

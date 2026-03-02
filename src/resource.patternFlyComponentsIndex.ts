@@ -32,13 +32,15 @@ const CONFIG = {
 /**
  * List resources callback for the URI template.
  *
+ * @note We use "byVersionComponentNames" instead of "byVersion" because it's specific to components.
+ * Docs resources don't necessarily contain all components.
+ *
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
 const listResources = async () => {
   const { byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatterFlyListResourceResult[] = [];
 
-  // We use "byVersionComponentNames" instead of "byVersion" because it's specific to components.
   Array.from(byVersionComponentNames)
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version, components]) => {
