@@ -2,7 +2,6 @@ import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { mockReadFile, mockFetch } from '../../jest.setupTests';
 import {
   patternFlyDocsTemplateResource,
-  uriNameComplete,
   resourceCallback
 } from '../resource.patternFlyDocsTemplate';
 import { isPlainObject } from '../server.helpers';
@@ -21,40 +20,6 @@ describe('patternFlyDocsTemplateResource', () => {
       config: isPlainObject(resource[2]),
       handler: resource[3]
     }).toMatchSnapshot('structure');
-  });
-});
-
-describe('uriNameComplete', () => {
-  it.each([
-    {
-      description: 'with empty string',
-      value: '',
-      expected: 10
-    },
-    {
-      description: 'with lowercased name',
-      value: 'button',
-      expected: 1
-    },
-    {
-      description: 'with uppercased name',
-      value: 'BUTTON',
-      expected: 1
-    },
-    {
-      description: 'with mixed case name',
-      value: 'bUTTON',
-      expected: 1
-    },
-    {
-      description: 'with empty space and name',
-      value: '  BUTTON  ',
-      expected: 1
-    }
-  ])('should attempt to return PatternFly component names, $description', async ({ value, expected }) => {
-    const result = await uriNameComplete(value);
-
-    expect(result.length).toBeGreaterThanOrEqual(expected);
   });
 });
 

@@ -1,6 +1,7 @@
 import {
   patternFlyDocsIndexResource,
   listResources,
+  uriNameComplete,
   uriCategoryComplete,
   uriSectionComplete,
   uriVersionComplete,
@@ -35,6 +36,40 @@ describe('listResources', () => {
       Boolean(obj.description));
 
     expect(everyResourceSameProperties).toBe(true);
+  });
+});
+
+describe('uriNameComplete', () => {
+  it.each([
+    {
+      description: 'with empty string',
+      value: '',
+      expected: 10
+    },
+    {
+      description: 'with lowercased name',
+      value: 'button',
+      expected: 1
+    },
+    {
+      description: 'with uppercased name',
+      value: 'BUTTON',
+      expected: 1
+    },
+    {
+      description: 'with mixed case name',
+      value: 'bUTTON',
+      expected: 1
+    },
+    {
+      description: 'with empty space and name',
+      value: '  BUTTON  ',
+      expected: 1
+    }
+  ])('should attempt to return PatternFly component names, $description', async ({ value, expected }) => {
+    const result = await uriNameComplete(value);
+
+    expect(result.length).toBeGreaterThanOrEqual(expected);
   });
 });
 
