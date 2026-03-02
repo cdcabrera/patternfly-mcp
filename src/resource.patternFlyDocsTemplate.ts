@@ -7,6 +7,13 @@ import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import {
+  listResources,
+  uriCategoryComplete,
+  uriNameComplete,
+  uriSectionComplete,
+  uriVersionComplete
+} from './resource.patternFlyDocsIndex';
 import { filterPatternFly } from './patternFly.search';
 
 /**
@@ -17,7 +24,7 @@ const NAME = 'patternfly-docs-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{name}';
+const URI_TEMPLATE = 'patternfly://docs/{version}/{name}{?section,category}';
 
 /**
  * Resource configuration.
@@ -39,17 +46,17 @@ const CONFIG = {
 const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { category, name, section, version } = variables || {};
 
+  assertInputStringLength(name, {
+    ...options.minMax.inputStrings,
+    inputDisplayName: 'name'
+  });
+
   if (version) {
     assertInputStringLength(version, {
       ...options.minMax.inputStrings,
       inputDisplayName: 'version'
     });
   }
-
-  assertInputStringLength(name, {
-    ...options.minMax.inputStrings,
-    inputDisplayName: 'name'
-  });
 
   if (section) {
     assertInputStringLength(section, {
@@ -147,7 +154,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: undefined
+    list: async () => runWithOptions(options, async () => listResources.memo()),
+    complete: {
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
+      name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+    }
   }),
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
