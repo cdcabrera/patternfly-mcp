@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
-import { fuzzySearch } from './server.search';
 import { getOptions } from './options.context';
 import {
   getPatternFlyComponentSchema,
-  getPatternFlyReactComponentNames,
+  getPatternFlyMcpResources,
   type PatternFlyComponentSchema
 } from './patternFly.getResources';
+import { searchPatternFly } from './patternFly.search';
 
 /**
  * componentSchemas tool function
@@ -21,7 +21,6 @@ import {
 const componentSchemasTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
     const { componentName } = args;
-    const { componentNamesWithSchemasIndex: componentNames } = await getPatternFlyReactComponentNames.memo();
 
     if (typeof componentName !== 'string') {
       throw new McpError(
@@ -37,15 +36,14 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
       );
     }
 
-    // Use fuzzySearch with `isFuzzyMatch` to handle exact and intentional suggestions in one pass
-    const results = fuzzySearch(componentName, componentNames, {
-      maxDistance: 3,
-      maxResults: 5,
-      isFuzzyMatch: true,
-      deduplicateByNormalized: true
-    });
+    const { latestVersion } = await getPatternFlyMcpResources.memo();
+    const { exactMatches, remainingMatches } = await searchPatternFly.memo(
+      componentName,
+      { version: latestVersion, section: 'components' },
+      { maxDistance: 3, maxResults: 5 }
+    );
 
-    const exact = results.find(result => result.matchType === 'exact');
+    const exact = exactMatches.find(match => match.isSchemasAvailable === true);
 
     if (exact) {
       let componentSchema: PatternFlyComponentSchema | undefined;
@@ -73,7 +71,7 @@ const componentSchemasTool = (options = getOptions()): McpTool => {
       };
     }
 
-    const suggestions = results.map(result => result.item).slice(0, 3);
+    const suggestions = remainingMatches.map(result => result.item).slice(0, 3);
     const suggestionMessage = suggestions.length
       ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
       : 'No similar components found.';
