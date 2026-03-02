@@ -114,7 +114,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([_name, data], index) => {
       const searchString = buildSearchString({
-        version: updatedVersion
+        version: updatedVersion,
+        category
       }, { prefix: true });
 
       return `${index + 1}. [${data.name} (${updatedVersion})](${data.uri}${searchString || ''})`;
@@ -157,7 +158,6 @@ export {
   patternFlyComponentsIndexResource,
   listResources,
   resourceCallback,
-  uriVersionComplete,
   NAME,
   URI_TEMPLATE,
   CONFIG
