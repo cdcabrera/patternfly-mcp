@@ -70,6 +70,11 @@ const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown,
 const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
+  assertInputStringLength(version, {
+    ...options.minMax.inputStrings,
+    inputDisplayName: 'version'
+  });
+
   assertInputStringLength(name, {
     ...options.minMax.inputStrings,
     inputDisplayName: 'name'
@@ -78,7 +83,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const { latestSchemasVersion } = await getPatternFlyMcpResources.memo();
   const updatedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestSchemasVersion;
 
-  const { exactMatches, searchResults } = await searchPatternFly.memo(name);
+  const { exactMatches, searchResults } = await searchPatternFly.memo(name, { version: updatedVersion });
   let result: PatternFlyComponentSchema | undefined;
 
   if (exactMatches.length > 0) {

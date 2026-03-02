@@ -64,7 +64,7 @@ const listResources = async () => {
     });
 
   return {
-    resources
+    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
   };
 };
 
