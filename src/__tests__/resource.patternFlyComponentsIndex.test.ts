@@ -1,13 +1,13 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
-  patternFlyDocsIndexResource,
+  patternFlyComponentsIndexResource,
   resourceCallback
-} from '../resource.patternFlyDocsIndex';
+} from '../resource.patternFlyComponentsIndex';
 import { isPlainObject } from '../server.helpers';
 
-describe('patternFlyDocsIndexResource', () => {
+describe('patternFlyComponentsIndexResource', () => {
   it('should have a consistent return structure', () => {
-    const resource = patternFlyDocsIndexResource();
+    const resource = patternFlyComponentsIndexResource();
 
     expect({
       name: resource[0],
@@ -23,7 +23,7 @@ describe('resourceCallback', () => {
     {
       description: 'default',
       variables: {},
-      expected: '# PatternFly Documentation Index for "v6"'
+      expected: '# PatternFly Component Names Index for "v6"'
     },
     {
       description: 'category',
@@ -31,21 +31,6 @@ describe('resourceCallback', () => {
         category: 'accessibility'
       },
       expected: '?category=accessibility'
-    },
-    {
-      description: 'section',
-      variables: {
-        section: 'components'
-      },
-      expected: '?section=components'
-    },
-    {
-      description: 'category and section',
-      variables: {
-        category: 'accessibility',
-        section: 'components'
-      },
-      expected: '?category=accessibility&section=components'
     }
   ])('should return context content, $description', async ({ variables, expected }) => {
     const result = await resourceCallback(undefined as any, variables);
