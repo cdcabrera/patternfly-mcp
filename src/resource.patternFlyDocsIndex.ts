@@ -1,4 +1,3 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
@@ -16,7 +15,7 @@ const NAME = 'patternfly-docs-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/index{?version,section,category}';
+const URI_TEMPLATE = 'patternfly://docs/index';
 
 /**
  * Resource configuration.
@@ -144,9 +143,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  */
 const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
   NAME,
-  new ResourceTemplate(URI_TEMPLATE, {
-    list: undefined
-  }),
+  URI_TEMPLATE,
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
 ];

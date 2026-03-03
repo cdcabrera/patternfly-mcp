@@ -5,24 +5,6 @@ exports[`patternFlySchemasIndexResource should have a consistent return structur
   "config": true,
   "handler": [Function],
   "name": "patternfly-schemas-index",
-  "uri": ResourceTemplate {
-    "_callbacks": {
-      "list": undefined,
-    },
-    "_uriTemplate": UriTemplate {
-      "parts": [
-        "patternfly://schemas/index",
-        {
-          "exploded": false,
-          "name": "version",
-          "names": [
-            "version",
-          ],
-          "operator": "?",
-        },
-      ],
-      "template": "patternfly://schemas/index{?version}",
-    },
-  },
+  "uri": "patternfly://schemas/index",
 }
 `;
