@@ -1,27 +1,28 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`patternFlySchemasIndexResource should have a consistent return structure: structure 1`] = `
+exports[`patternFlyComponentsIndexResource should have a consistent return structure: structure 1`] = `
 {
   "config": true,
   "handler": [Function],
-  "name": "patternfly-schemas-index",
+  "name": "patternfly-components-index",
   "uri": ResourceTemplate {
     "_callbacks": {
       "list": [Function],
     },
     "_uriTemplate": UriTemplate {
       "parts": [
-        "patternfly://schemas/index",
+        "patternfly://components/index",
         {
           "exploded": false,
           "name": "version",
           "names": [
             "version",
+            "category",
           ],
           "operator": "?",
         },
       ],
-      "template": "patternfly://schemas/index{?version}",
+      "template": "patternfly://components/index{?version,category}",
     },
   },
 }

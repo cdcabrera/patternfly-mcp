@@ -1,4 +1,5 @@
 import {
+  buildSearchString,
   freezeObject,
   generateHash,
   hashCode,
@@ -13,6 +14,50 @@ import {
   stringJoin,
   timeoutFunction
 } from '../server.helpers';
+
+describe('buildSearchString', () => {
+  it.each([
+    {
+      description: 'basic',
+      values: {
+        lorem: 'ipsum'
+      },
+      expected: 'lorem=ipsum'
+    },
+    {
+      description: 'with prefix',
+      values: {
+        lorem: 'ipsum'
+      },
+      options: {
+        prefix: true
+      },
+      expected: '?lorem=ipsum'
+    },
+    {
+      description: 'null, undefined, and with prefix',
+      values: {
+        lorem: 'ipsum',
+        dolor: undefined,
+        ipsum: null,
+        amet: 'dolor'
+      },
+      options: {
+        prefix: true
+      },
+      expected: '?amet=dolor&lorem=ipsum'
+    },
+    {
+      description: 'basic encoding',
+      values: {
+        lorem: 'ipsum dolor'
+      },
+      expected: 'lorem=ipsum+dolor'
+    }
+  ])('should build a search string, $description', ({ values, options, expected }) => {
+    expect(buildSearchString(values, options || {})).toBe(expected);
+  });
+});
 
 describe('freezeObject', () => {
   it.each([
