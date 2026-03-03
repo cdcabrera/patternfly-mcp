@@ -228,7 +228,7 @@ describe('Builtin resources, STDIO', () => {
     const content = response?.result.contents[0];
 
     expect(content.uri).toBe('patternfly://schemas/index');
-    expect(content.text).toContain('PatternFly Component Names Index');
+    expect(content.text).toContain('PatternFly Component JSON Schemas Index');
   });
 });
 
