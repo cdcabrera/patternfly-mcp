@@ -18,7 +18,7 @@ const NAME = 'patternfly-schemas-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://schemas/{version}/{name}';
+const URI_TEMPLATE = 'patternfly://schemas/{name}';
 
 /**
  * Resource configuration.

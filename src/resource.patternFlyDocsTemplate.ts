@@ -17,7 +17,7 @@ const NAME = 'patternfly-docs-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{version}/{name}{?section,category}';
+const URI_TEMPLATE = 'patternfly://docs/{name}';
 
 /**
  * Resource configuration.
