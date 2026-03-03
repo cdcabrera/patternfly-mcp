@@ -39,10 +39,12 @@ const CONFIG = {
 const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { category, name, section, version } = variables || {};
 
-  assertInputStringLength(version, {
-    ...options.minMax.inputStrings,
-    inputDisplayName: 'version'
-  });
+  if (version) {
+    assertInputStringLength(version, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'version'
+    });
+  }
 
   assertInputStringLength(name, {
     ...options.minMax.inputStrings,
@@ -64,14 +66,14 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   }
 
   const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const normalizedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestVersion;
 
   assertInput(
-    version && normalizedVersion,
+    normalizedVersion,
     `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
   );
 
-  const updatedVersion = normalizedVersion || latestVersion;
+  const updatedVersion = normalizedVersion;
   const updatedName = name.trim();
 
   const { byEntry } = await filterPatternFly.memo({

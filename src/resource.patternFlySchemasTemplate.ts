@@ -42,10 +42,12 @@ const CONFIG = {
 const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
-  assertInputStringLength(version, {
-    ...options.minMax.inputStrings,
-    inputDisplayName: 'version'
-  });
+  if (version) {
+    assertInputStringLength(version, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'version'
+    });
+  }
 
   assertInputStringLength(name, {
     ...options.minMax.inputStrings,
@@ -53,14 +55,14 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   });
 
   const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const normalizedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestSchemasVersion;
 
   assertInput(
-    version && normalizedVersion,
+    normalizedVersion,
     `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableSchemasVersions.join(', ')}`
   );
 
-  const updatedVersion = normalizedVersion || latestSchemasVersion;
+  const updatedVersion = normalizedVersion;
   const updatedName = name.trim();
 
   const { byEntry } = await filterPatternFly.memo({

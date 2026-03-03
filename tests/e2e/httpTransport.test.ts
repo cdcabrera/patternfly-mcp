@@ -97,7 +97,7 @@ describe('Builtin tools, HTTP transport', () => {
     const response = await CLIENT?.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
-    expect(text.startsWith('# Documentation')).toBe(true);
+    expect(text.includes('This is a generated offline fixture')).toBe(true);
     expect(text).toMatchSnapshot();
   });
 
@@ -121,7 +121,7 @@ describe('Builtin tools, HTTP transport', () => {
     const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
-    expect(text.startsWith('# Documentation')).toBe(true);
+    expect(text.includes('This is a test document for mocking')).toBe(true);
     expect(text).toMatchSnapshot();
     await CLIENT.close();
   });
