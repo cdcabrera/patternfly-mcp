@@ -84,10 +84,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
     const isLatestVersion = latestVersion === updatedVersion;
 
-    const filteredUrlList = updatedUrlList.filter(url => byPath[url]?.version === updatedVersion);
-
-    updatedUrlList.length = 0;
-    updatedUrlList.push(...filteredUrlList);
+    // Reconsider filtering here, it's too restrictive
+    // const filteredUrlList = updatedUrlList.filter(url => byPath[url]?.version === updatedVersion);
+    // updatedUrlList.length = 0;
+    // updatedUrlList.push(...filteredUrlList);
 
     const updatedName = name?.trim();
 
