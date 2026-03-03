@@ -103,6 +103,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 /**
  * Resource creator for the component schemas index.
  *
+ * @note This resource is being considered for deprecation in favor of a more
+ * all encompassing resource, like "resource.patternFlyComponentsIndex."
+ *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
