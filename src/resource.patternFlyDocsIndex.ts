@@ -1,30 +1,12 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
-import { memo } from './server.caching';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { buildSearchString } from './server.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
-
-/**
- * List resources result type.
- *
- * @note This is temporary until MCP SDK exports ListResourcesResult.
- *
- * @property uri - The fully qualified URI of the resource.
- * @property name - A human-readable name for the resource.
- * @property [mimeType] - The MIME type of the content.
- * @property [description] - A brief hint for the model.
- */
-type PatterFlyListResourceResult = {
-  uri: string;
-  name: string;
-  mimeType?: string;
-  description?: string;
-};
 
 /**
  * Name of the resource.
@@ -44,50 +26,6 @@ const CONFIG = {
   description: 'A comprehensive list of PatternFly documentation links, organized by components, layouts, charts, and guidance files.',
   mimeType: 'text/markdown'
 };
-
-/**
- * List resources callback for the URI template.
- *
- * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
- */
-const listResources = async () => {
-  const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
-  const resources: PatterFlyListResourceResult[] = [];
-
-  Object.entries(byVersion)
-    .filter(([version]) => availableVersions.includes(version))
-    .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version, entries]) => {
-      const seenIndex = new Set<string>();
-      const versionResource: PatterFlyListResourceResult[] = [];
-
-      entries
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach(entry => {
-          if (!seenIndex.has(entry.name)) {
-            seenIndex.add(entry.name);
-
-            versionResource.push({
-              uri: entry.uri,
-              mimeType: 'text/markdown',
-              name: `${entry.name} (${version})`,
-              description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
-            });
-          }
-        });
-
-      resources.push(...versionResource);
-    });
-
-  return {
-    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
-  };
-};
-
-/**
- * Memoized version of listResources.
- */
-listResources.memo = memo(listResources);
 
 /**
  * Resource callback for the documentation index.
@@ -207,7 +145,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo())
+    list: undefined
   }),
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
@@ -215,10 +153,8 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
 
 export {
   patternFlyDocsIndexResource,
-  listResources,
   resourceCallback,
   NAME,
   URI_TEMPLATE,
-  CONFIG,
-  type PatterFlyListResourceResult
+  CONFIG
 };

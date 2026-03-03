@@ -1,7 +1,6 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   patternFlySchemasIndexResource,
-  listResources,
   resourceCallback
 } from '../resource.patternFlySchemasIndex';
 import { isPlainObject } from '../server.helpers';
@@ -20,23 +19,6 @@ describe('patternFlySchemasIndexResource', () => {
       config: isPlainObject(resource[2]),
       handler: resource[3]
     }).toMatchSnapshot('structure');
-  });
-});
-
-describe('listResources', () => {
-  it('should return a list of resources', async () => {
-    const resources = await listResources();
-
-    expect(resources.resources).toBeDefined();
-
-    const everyResourceSameProperties = resources.resources.every((obj: any) =>
-      Boolean(obj.uri) &&
-      /^patternfly:\/\/schemas\//.test(obj.uri) &&
-      Boolean(obj.name) &&
-      Boolean(obj.mimeType) &&
-      Boolean(obj.description));
-
-    expect(everyResourceSameProperties).toBe(true);
   });
 });
 

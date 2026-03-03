@@ -7,7 +7,7 @@ exports[`patternFlyComponentsIndexResource should have a consistent return struc
   "name": "patternfly-components-index",
   "uri": ResourceTemplate {
     "_callbacks": {
-      "list": [Function],
+      "list": undefined,
     },
     "_uriTemplate": UriTemplate {
       "parts": [

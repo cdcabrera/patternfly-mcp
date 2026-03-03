@@ -7,7 +7,7 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
   "name": "patternfly-docs-template",
   "uri": ResourceTemplate {
     "_callbacks": {
-      "list": [Function],
+      "list": undefined,
     },
     "_uriTemplate": UriTemplate {
       "parts": [

@@ -7,7 +7,6 @@ import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { listResources } from './resource.patternFlyDocsIndex';
 import { filterPatternFly } from './patternFly.search';
 
 /**
@@ -146,7 +145,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo())
+    list: undefined
   }),
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))

@@ -1,10 +1,8 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
-import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
 import { assertInput, assertInputStringLength } from './server.assertions';
@@ -27,50 +25,6 @@ const CONFIG = {
   description: 'A list of all PatternFly component names available for JSON Schema retrieval',
   mimeType: 'text/markdown'
 };
-
-/**
- * List resources callback for the URI template.
- *
- * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
- */
-const listResources = async () => {
-  const { availableSchemasVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
-  const resources: PatterFlyListResourceResult[] = [];
-
-  Array.from(byVersionComponentNames)
-    .filter(([version]) => availableSchemasVersions.includes(version))
-    .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version, components]) => {
-      const versionResource: PatterFlyListResourceResult[] = [];
-
-      Object.entries(components)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .forEach(([name, component]) => {
-          const displayName = component.displayName;
-          const isSchemasAvailable = component.isSchemasAvailable || false;
-
-          if (isSchemasAvailable) {
-            versionResource.push({
-              uri: `patternfly://schemas/${version}/${name}`,
-              mimeType: 'application/json',
-              name: `${displayName} (${version})`,
-              description: `JSON component schemas for PatternFly version "${version}" of "${displayName}"`
-            });
-          }
-        });
-
-      resources.push(...versionResource);
-    });
-
-  return {
-    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
-  };
-};
-
-/**
- * Memoized version of listResources.
- */
-listResources.memo = memo(listResources);
 
 /**
  * Resource callback for the documentation index.
@@ -156,7 +110,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlySchemasIndexResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo())
+    list: undefined
   }),
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
@@ -164,7 +118,6 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
 
 export {
   patternFlySchemasIndexResource,
-  listResources,
   resourceCallback,
   NAME,
   URI_TEMPLATE,

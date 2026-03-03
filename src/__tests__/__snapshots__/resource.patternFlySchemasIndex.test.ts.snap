@@ -7,7 +7,7 @@ exports[`patternFlySchemasIndexResource should have a consistent return structur
   "name": "patternfly-schemas-index",
   "uri": ResourceTemplate {
     "_callbacks": {
-      "list": [Function],
+      "list": undefined,
     },
     "_uriTemplate": UriTemplate {
       "parts": [
