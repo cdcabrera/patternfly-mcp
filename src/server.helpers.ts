@@ -1,5 +1,6 @@
 import { createHash, type BinaryToTextEncoding } from 'node:crypto';
 import { extname, sep } from 'node:path';
+import { type WhitelistUrl } from './options.defaults';
 
 /**
  * Construct a search/query string from an object of key-value pairs, optionally filtering out
@@ -420,13 +421,13 @@ const generateHash = (anyValue: unknown): string => {
  * Check if a string URL matches a whitelist entry
  *
  * @param url - string URL to check
- * @param whitelist - List of whitelist entries
+ * @param {WhitelistUrl[]} whitelist - List of whitelist entries
  * @param options - Options for URL validation
  * @param options.allowedProtocols - List of allowed protocols for URL validation
  *
  * @returns `true` if the URL matches any whitelist entry
  */
-const isWhitelistedUrl = (url: string, whitelist: string[], { allowedProtocols = ['http', 'https'] } = {}) => {
+const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProtocols = ['http', 'https'] } = {}) => {
   if (typeof url !== 'string' || !isUrl(url, { allowedProtocols })) {
     return false;
   }
@@ -447,7 +448,7 @@ const isWhitelistedUrl = (url: string, whitelist: string[], { allowedProtocols =
       if (!pathMatch) {
         const checkDir = (listPath.endsWith('/') && listPath) || `${listPath}/`;
 
-        pathMatch = pathname.startsWith(checkDir);
+        pathMatch = updatedPath.startsWith(checkDir);
       }
 
       return hostMatch && pathMatch;

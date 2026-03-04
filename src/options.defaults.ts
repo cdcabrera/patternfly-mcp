@@ -169,6 +169,11 @@ interface ModeOptions {
 }
 
 /**
+ * A string that must start with a valid protocol.
+ */
+type WhitelistUrl = `${'http' | 'https'}://${string}`;
+
+/**
  * PatternFly-specific options.
  *
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
@@ -182,7 +187,7 @@ interface ModeOptions {
  * @property default.versionStrategy Strategy to use when multiple PatternFly versions are detected.
  *    - 'highest': Use the highest major version found.
  *    - 'lowest': Use the lowest major version found.
- * @property urlWhitelist List of allowed URLs to fetch PatternFly resources from.
+ * @property {WhitelistUrl[]} urlWhitelist List of allowed URLs to fetch PatternFly resources from.
  * @property urlWhiteListProtocols List of allowed URL protocols to validate against when fetching PatternFly resources.
  */
 interface PatternFlyOptions {
@@ -196,7 +201,7 @@ interface PatternFlyOptions {
     versionWhitelist: string[];
     versionStrategy: 'highest' | 'lowest';
   },
-  urlWhitelist: string[];
+  urlWhitelist: WhitelistUrl[];
   urlWhiteListProtocols: string[];
 }
 
@@ -515,5 +520,6 @@ export {
   type PatternFlyOptions,
   type PluginHostOptions,
   type StatsSession,
+  type WhitelistUrl,
   type XhrFetchOptions
 };

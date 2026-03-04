@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { isWhitelistedUrl, stringJoin } from './server.helpers';
-import { DEFAULT_OPTIONS } from './options.defaults';
+import { DEFAULT_OPTIONS, type WhitelistUrl } from './options.defaults';
 
 /**
  * MCP assert. Centralizes and throws an error if the validation fails.
@@ -141,7 +141,7 @@ function assertInputStringNumberEnumLike(
  * Assert/validate that a given input URL string, or array of URL strings, is whitelisted against a provided list of URLs.
  *
  * @param input - Input URL string, or array of URL strings, to validate.
- * @param whitelist - The list of allowed URLs to compare against.
+ * @param {WhitelistUrl[]} whitelist - The list of allowed URLs to compare against.
  * @param [options] - Validation options
  * @param [options.allowedProtocols] - Optional list of allowed URL protocols to validate against.
  * @param [options.inputDisplayName] - Optional display name for the input parameter, used in error messages.
@@ -150,7 +150,7 @@ function assertInputStringNumberEnumLike(
  */
 function assertInputUrlWhiteListed(
   input: unknown,
-  whitelist: string[],
+  whitelist: WhitelistUrl[],
   { allowedProtocols = DEFAULT_OPTIONS.patternflyOptions.urlWhiteListProtocols, inputDisplayName, message, urlDisplayMaxLength = 50 }: {
     allowedProtocols?: string[]; inputDisplayName?: string; message?: string; urlDisplayMaxLength?: number
   } = {}
@@ -178,6 +178,7 @@ function assertInputUrlWhiteListed(
 }
 
 export {
+  mcpAssert,
   assertInput,
   assertInputString,
   assertInputStringLength,
