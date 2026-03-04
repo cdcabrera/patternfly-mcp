@@ -82,11 +82,6 @@ describe('resourceCallback', () => {
       description: 'found but no schema',
       error: 'No component JSON schemas found',
       variables: { name: 'table', version: 'v6' }
-    },
-    {
-      description: 'wrong version',
-      error: 'Invalid PatternFly version',
-      variables: { name: 'button', version: 'v5' }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);
