@@ -188,7 +188,7 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
  *    - 'highest': Use the highest major version found.
  *    - 'lowest': Use the lowest major version found.
  * @property {WhitelistUrl[]} urlWhitelist List of allowed URLs to fetch PatternFly resources from.
- * @property urlWhiteListProtocols List of allowed URL protocols to validate against when fetching PatternFly resources.
+ * @property urlWhitelistProtocols List of allowed URL protocols to validate against when fetching PatternFly resources.
  */
 interface PatternFlyOptions {
   availableResourceVersions: ('6.0.0')[];
@@ -202,7 +202,7 @@ interface PatternFlyOptions {
     versionStrategy: 'highest' | 'lowest';
   },
   urlWhitelist: WhitelistUrl[];
-  urlWhiteListProtocols: string[];
+  urlWhitelistProtocols: string[];
 }
 
 /**
@@ -439,7 +439,7 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     'https://github.com/patternfly',
     'https://raw.githubusercontent.com/patternfly'
   ],
-  urlWhiteListProtocols: ['http', 'https']
+  urlWhitelistProtocols: ['http', 'https']
 };
 
 /**

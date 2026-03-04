@@ -86,7 +86,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
 
-  assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhiteListProtocols);
+  assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = ['strict', 'none'].includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
