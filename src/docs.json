@@ -1,9 +1,9 @@
 {
   "version": "1",
-  "generated": "2026-02-18T00:00:00.000Z",
+  "generated": "2026-03-04T00:00:00.000Z",
   "meta": {
-    "totalEntries": 115,
-    "totalDocs": 267,
+    "totalEntries": 122,
+    "totalDocs": 279,
     "source": "patternfly-mcp-internal"
   },
   "docs": {
@@ -2904,6 +2904,140 @@
         "category": "grammar",
         "source": "github",
         "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/content-design/grammar/units-and-symbols.md",
+        "version": "v6"
+      }
+    ],
+    "DesignTokens": [
+      {
+        "displayName": "Design tokens",
+        "description": "Design tokens overview.",
+        "pathSlug": "design-tokens-overview",
+        "section": "foundations-and-styles",
+        "category": "design-tokens",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/tokens.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Design Tokens for design",
+        "description": "Design guidance for using design tokens with Figma and PatternFly.",
+        "pathSlug": "design-tokens-design",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/design.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Design tokens for development",
+        "description": "Development guidance for using design tokens.",
+        "pathSlug": "design-tokens-development",
+        "section": "foundations-and-styles",
+        "category": "react",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/develop.md",
+        "version": "v6"
+      }
+    ],
+    "Colors": [
+      {
+        "displayName": "Color palettes",
+        "description": "Color guidelines for brand and PatternFly.",
+        "pathSlug": "colors",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/colors/colors.md",
+        "version": "v6"
+      }
+    ],
+    "Iconography": [
+      {
+        "displayName": "Iconography",
+        "description": "Icon guidelines overview.",
+        "pathSlug": "iconography",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/iconography/iconography.md",
+        "version": "v6"
+      }
+    ],
+    "Motion": [
+      {
+        "displayName": "Motion guidelines",
+        "description": "Motion guidelines overview.",
+        "pathSlug": "motion",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/motion.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Motion for development",
+        "description": "Development guidelines for animations (motion).",
+        "pathSlug": "motion-development",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/motion-development.md",
+        "version": "v6"
+      }
+    ],
+    "Spacers": [
+      {
+        "displayName": "Spacers",
+        "description": "Spacer guidelines and dimension tokens.",
+        "pathSlug": "spacers",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/spacers/spacers.md",
+        "version": "v6"
+      }
+    ],
+    "Theming": [
+      {
+        "displayName": "Theming",
+        "description": "Theming overview.",
+        "pathSlug": "theming",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/theming.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Dark theme",
+        "description": "Dark theme mode developer handbook.",
+        "pathSlug": "dark-theme-development",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/dark-theme-handbook.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "High contrast",
+        "description": "High contrast mode, improving component contrast through visual accessibility, developers handbook.",
+        "pathSlug": "high-contrast-development",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/high-contrast-handbook.md",
+        "version": "v6"
+      }
+    ],
+    "Typography": [
+      {
+        "displayName": "Typography",
+        "description": "Typography principles and standards, including token values and usage information.",
+        "pathSlug": "typography",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/typography/typography.md",
         "version": "v6"
       }
     ]

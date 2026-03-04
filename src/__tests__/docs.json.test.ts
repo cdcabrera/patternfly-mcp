@@ -17,4 +17,14 @@ describe('docs.json', () => {
 
     expect(totalDocs).toBe(docs.meta.totalDocs);
   });
+
+  it('should have unique links per each entry', () => {
+    const allLinks = new Set<string>();
+    const flatDocs = Object.values(docs.docs).flat();
+
+    flatDocs.forEach(entry => allLinks.add(entry.path));
+
+    expect(allLinks.size).toBe(flatDocs.length);
+    expect(allLinks.size).toBe(docs.meta.totalDocs);
+  });
 });
