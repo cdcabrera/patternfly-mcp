@@ -14,15 +14,6 @@ exports[`patternFlySchemasTemplateResource should have a consistent return struc
         "patternfly://schemas/",
         {
           "exploded": false,
-          "name": "version",
-          "names": [
-            "version",
-          ],
-          "operator": "",
-        },
-        "/",
-        {
-          "exploded": false,
           "name": "name",
           "names": [
             "name",
@@ -30,7 +21,7 @@ exports[`patternFlySchemasTemplateResource should have a consistent return struc
           "operator": "",
         },
       ],
-      "template": "patternfly://schemas/{version}/{name}",
+      "template": "patternfly://schemas/{name}",
     },
   },
 }

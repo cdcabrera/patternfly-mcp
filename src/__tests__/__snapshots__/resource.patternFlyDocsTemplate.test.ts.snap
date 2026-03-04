@@ -14,32 +14,14 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
         "patternfly://docs/",
         {
           "exploded": false,
-          "name": "version",
-          "names": [
-            "version",
-          ],
-          "operator": "",
-        },
-        "/",
-        {
-          "exploded": false,
           "name": "name",
           "names": [
             "name",
           ],
           "operator": "",
         },
-        {
-          "exploded": false,
-          "name": "section",
-          "names": [
-            "section",
-            "category",
-          ],
-          "operator": "?",
-        },
       ],
-      "template": "patternfly://docs/{version}/{name}{?section,category}",
+      "template": "patternfly://docs/{name}",
     },
   },
 }
