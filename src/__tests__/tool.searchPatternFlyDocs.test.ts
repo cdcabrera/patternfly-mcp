@@ -30,11 +30,6 @@ describe('searchPatternFlyDocsTool, callback', () => {
 
   it.each([
     {
-      description: 'explicit valid version',
-      searchQuery: 'Button',
-      version: 'v6'
-    },
-    {
       description: 'default',
       searchQuery: 'Button'
     },
@@ -49,6 +44,11 @@ describe('searchPatternFlyDocsTool, callback', () => {
     {
       description: 'with upper case componentName',
       searchQuery: 'BUTTON'
+    },
+    {
+      description: 'with explicit valid version',
+      searchQuery: 'Button',
+      version: 'v6'
     },
     {
       description: 'with partial componentName',
