@@ -30,6 +30,11 @@ describe('searchPatternFlyDocsTool, callback', () => {
 
   it.each([
     {
+      description: 'explicit valid version',
+      searchQuery: 'Button',
+      version: 'v6'
+    },
+    {
       description: 'default',
       searchQuery: 'Button'
     },

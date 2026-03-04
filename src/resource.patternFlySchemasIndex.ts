@@ -47,7 +47,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 
   assertInput(
-    !version && !normalizedVersion,
+    !version || Boolean(normalizedVersion),
     `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableSchemasVersions.join(', ')}`
   );
 

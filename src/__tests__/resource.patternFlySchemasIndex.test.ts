@@ -32,6 +32,13 @@ describe('resourceCallback', () => {
       description: 'default',
       variables: {},
       expected: '# PatternFly Component JSON Schemas Index for "v6"'
+    },
+    {
+      description: 'explicit valid version',
+      variables: {
+        version: 'v6'
+      },
+      expected: '# PatternFly Component JSON Schemas Index for "v6"'
     }
   ])('should return component schemas index, $description', async ({ variables, expected }) => {
     const result = await resourceCallback(undefined as any, variables);

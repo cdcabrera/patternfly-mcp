@@ -55,14 +55,14 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   });
 
   const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(version)) || latestSchemasVersion;
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 
   assertInput(
-    normalizedVersion,
+    !version || Boolean(normalizedVersion),
     `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableSchemasVersions.join(', ')}`
   );
 
-  const updatedVersion = normalizedVersion;
+  const updatedVersion = normalizedVersion || latestSchemasVersion;
   const updatedName = name.trim();
 
   const { byEntry } = await filterPatternFly.memo({

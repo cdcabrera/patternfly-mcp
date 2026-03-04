@@ -10,6 +10,8 @@ exports[`searchPatternFlyDocsTool should have a consistent return structure: str
 
 exports[`searchPatternFlyDocsTool, callback should parse parameters, default: search 1`] = `"# Search results for "Button". Showing 1 exact match."`;
 
+exports[`searchPatternFlyDocsTool, callback should parse parameters, explicit valid version: search 1`] = `"# Search results for "Button". Showing 1 exact match."`;
+
 exports[`searchPatternFlyDocsTool, callback should parse parameters, with "*" searchQuery all: search 1`] = `"# Search results for "all" resources. Only showing the first 10 results. There are 546 potential match variations. Try searching with a more specific query."`;
 
 exports[`searchPatternFlyDocsTool, callback should parse parameters, with "all" searchQuery all: search 1`] = `"# Search results for "all" resources. Only showing the first 10 results. There are 546 potential match variations. Try searching with a more specific query."`;

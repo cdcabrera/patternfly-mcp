@@ -25,6 +25,7 @@ describe('resourceCallback', () => {
   });
 
   it.each([
+    { description: 'no version', variables: { name: 'Button' } },
     {
       description: 'default',
       variables: {
@@ -54,6 +55,14 @@ describe('resourceCallback', () => {
 
   it.each([
     {
+      description: 'invalid version',
+      error: 'Invalid PatternFly version',
+      variables: {
+        name: 'Button',
+        version: 'v5'
+      }
+    },
+    {
       description: 'with missing or undefined name',
       error: 'must be a string',
       variables: {}
@@ -61,27 +70,39 @@ describe('resourceCallback', () => {
     {
       description: 'with null name',
       error: 'must be a string',
-      variables: { name: null }
+      variables: {
+        name: null
+      }
     },
     {
       description: 'with empty name',
       error: 'must be a string',
-      variables: { name: '' }
+      variables: {
+        name: ''
+      }
     },
     {
       description: 'with non-string name',
       error: 'must be a string',
-      variables: { name: 123 }
+      variables: {
+        name: 123
+      }
     },
     {
       description: 'non-existent name',
       error: 'No component JSON schemas found',
-      variables: { name: 'loremIpsum', version: 'v6' }
+      variables: {
+        name: 'loremIpsum',
+        version: 'v6'
+      }
     },
     {
       description: 'found but no schema',
       error: 'No component JSON schemas found',
-      variables: { name: 'table', version: 'v6' }
+      variables: {
+        name: 'table',
+        version: 'v6'
+      }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);

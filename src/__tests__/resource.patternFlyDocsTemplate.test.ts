@@ -44,6 +44,12 @@ describe('resourceCallback', () => {
 
   it.each([
     {
+      description: 'no version',
+      variables: {
+        name: 'Button'
+      }
+    },
+    {
       description: 'default',
       variables: {
         name: 'Button',
@@ -85,24 +91,43 @@ describe('resourceCallback', () => {
 
   it.each([
     {
+      description: 'invalid version',
+      error: 'Invalid PatternFly version',
+      variables: {
+        name: 'Button',
+        version: 'v5'
+      }
+    },
+    {
       description: 'with missing or undefined name',
       error: 'must be a string',
-      variables: { version: 'v6' }
+      variables: {
+        version: 'v6'
+      }
     },
     {
       description: 'with null name',
       error: 'must be a string',
-      variables: { name: null, version: 'v6' }
+      variables: {
+        name: null,
+        version: 'v6'
+      }
     },
     {
       description: 'with empty name',
       error: 'must be a string',
-      variables: { name: '', version: 'v6' }
+      variables: {
+        name: '',
+        version: 'v6'
+      }
     },
     {
       description: 'with non-string name',
       error: 'must be a string',
-      variables: { name: 123, version: 'v6' }
+      variables: {
+        name: 123,
+        version: 'v6'
+      }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
     const mockContent = `Mock content for ${variables.name}`;
