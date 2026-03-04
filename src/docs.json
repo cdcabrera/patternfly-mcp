@@ -1,9 +1,9 @@
 {
   "version": "1",
-  "generated": "2026-02-18T00:00:00.000Z",
+  "generated": "2026-03-04T00:00:00.000Z",
   "meta": {
-    "totalEntries": 115,
-    "totalDocs": 267,
+    "totalEntries": 128,
+    "totalDocs": 305,
     "source": "patternfly-mcp-internal"
   },
   "docs": {
@@ -2904,6 +2904,412 @@
         "category": "grammar",
         "source": "github",
         "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/content-design/grammar/units-and-symbols.md",
+        "version": "v6"
+      }
+    ],
+    "DesignTokens": [
+      {
+        "displayName": "Design tokens",
+        "description": "Design tokens overview.",
+        "pathSlug": "design-tokens-overview",
+        "section": "foundations-and-styles",
+        "category": "design-tokens",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/tokens.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Design Tokens for design",
+        "description": "Design guidance for using design tokens with Figma and PatternFly.",
+        "pathSlug": "design-tokens-design",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/design.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Design tokens for development",
+        "description": "Development guidance for using design tokens.",
+        "pathSlug": "design-tokens-development",
+        "section": "foundations-and-styles",
+        "category": "react",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/develop.md",
+        "version": "v6"
+      }
+    ],
+    "Colors": [
+      {
+        "displayName": "Color palettes",
+        "description": "Color guidelines for brand and PatternFly.",
+        "pathSlug": "colors",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/colors/colors.md",
+        "version": "v6"
+      }
+    ],
+    "Iconography": [
+      {
+        "displayName": "Iconography",
+        "description": "Icon guidelines overview.",
+        "pathSlug": "iconography",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/iconography/iconography.md",
+        "version": "v6"
+      }
+    ],
+    "Motion": [
+      {
+        "displayName": "Motion guidelines",
+        "description": "Motion guidelines overview.",
+        "pathSlug": "motion",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/motion.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Motion for development",
+        "description": "Development guidelines for animations (motion).",
+        "pathSlug": "motion-development",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/motion/motion-development.md",
+        "version": "v6"
+      }
+    ],
+    "Spacers": [
+      {
+        "displayName": "Spacers",
+        "description": "Spacer guidelines and dimension tokens.",
+        "pathSlug": "spacers",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/spacers/spacers.md",
+        "version": "v6"
+      }
+    ],
+    "Theming": [
+      {
+        "displayName": "Theming",
+        "description": "Theming overview.",
+        "pathSlug": "theming",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/theming.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Dark theme",
+        "description": "Dark theme mode developer handbook.",
+        "pathSlug": "dark-theme-development",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/dark-theme-handbook.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "High contrast",
+        "description": "High contrast mode, improving component contrast through visual accessibility, developers handbook.",
+        "pathSlug": "high-contrast-development",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/theming/high-contrast-handbook.md",
+        "version": "v6"
+      }
+    ],
+    "Typography": [
+      {
+        "displayName": "Typography",
+        "description": "Typography principles and standards, including token values and usage information.",
+        "pathSlug": "typography",
+        "section": "foundations-and-styles",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/foundations-and-styles/styles/typography/typography.md",
+        "version": "v6"
+      }
+    ],
+    "Accessibility": [
+      {
+        "displayName": "Accessibility",
+        "description": "Accessibility standards in components and design.",
+        "pathSlug": "accessibility",
+        "section": "components",
+        "category": "accessibility",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/accessibility/accessibility.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Accessibility for designers",
+        "description": "Accessibility standards in visual design.",
+        "pathSlug": "accessibility-design",
+        "section": "components",
+        "category": "accessibility",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/accessibility/design.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Accessibility for developers",
+        "description": "Accessibility standards in development.",
+        "pathSlug": "accessibility-development",
+        "section": "components",
+        "category": "accessibility",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/accessibility/develop.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Accessibility testing",
+        "description": "Accessibility testing for products.",
+        "pathSlug": "accessibility-testing",
+        "section": "components",
+        "category": "accessibility",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/accessibility/test-your-product.md",
+        "version": "v6"
+      }
+    ],
+    "RightToLeft": [
+      {
+        "displayName": "Right-to-left (RTL) and left-to-right (LTR)",
+        "description": "Internationalization for products.",
+        "pathSlug": "rtl-ltr",
+        "section": "content-design",
+        "category": "writing-guides",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/developer-guides/rtl-handbook.md",
+        "version": "v6"
+      }
+    ],
+    "Patterns": [
+      {
+        "displayName": "Actions",
+        "description": "The best practices for designing processes that a user can trigger by clicking or selecting a UI element, such as a button or link.",
+        "pathSlug": "actions",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/actions/actions.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Bulk selection",
+        "description": "A defined method for users to select or deselect multiple items within complex content views or data tables.",
+        "pathSlug": "bulk-selection",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/bulk-selection/bulk-selection.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Card view",
+        "description": "A structured layout designed to display a grid of cards in a gallery, optimizing for browsing and interaction.",
+        "pathSlug": "card-view",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/card-view/card-view.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Component usage and behavior",
+        "description": "Guidance on how to choose between similar components and use them appropriately based on specific user contexts and use cases.",
+        "pathSlug": "component-usage-behavior",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/usage-and-behavior.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Dashboard",
+        "description": "A highly customizable layout that serves as a high-level overview of key metrics or performance indicators.",
+        "pathSlug": "dashboard",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/dashboard/dashboard.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Filters",
+        "description": "The design rules for implementing filtering mechanisms that allow users to narrow down content from large datasets or complex views.",
+        "pathSlug": "filters",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/filters/filters.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Primary-detail",
+        "description": "A two-pane layout that shows a list of items and corresponding details for the currently selected item.",
+        "pathSlug": "primary-detail",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/primary-detail/primary-detail.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Status and severity",
+        "description": "Guidance on the consistent and accessible use of color and iconography to communicate status and severity across the UI.",
+        "pathSlug": "status-severity",
+        "section": "patterns",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/patterns/status-and-severity/status-and-severity.md",
+        "version": "v6"
+      }
+    ],
+    "AI": [
+      {
+        "displayName": "AI overview",
+        "description": "Ethical design principles and best practices for using AI with PatternFly, focusing on accountability, explainability, transparency, fairness, and human-centeredness.",
+        "pathSlug": "ai",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/ai.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Rapid prototyping",
+        "description": "A workflow for rapidly prototyping PatternFly UIs directly in code using AI-powered development tools.",
+        "pathSlug": "rapid-prototyping",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/rapid-prototyping.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Starting a new prototype",
+        "description": "How to get started with new AI-assisted PatternFly prototypes using the React seed app.",
+        "pathSlug": "new-prototypes",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/new-prototypes.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Enhancing existing projects",
+        "description": "Guidelines for integrating AI tools into existing PatternFly projects for rapid development.",
+        "pathSlug": "enhancing-existing-projects",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/enhancing-existing-projects.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "AI-assisted code migration",
+        "description": "A guide for using AI to accelerate migrating legacy code to PatternFly React components.",
+        "pathSlug": "ai-assisted-code-migration",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/rapid-prototyping/migrating-to-patternfly.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Conversation design",
+        "description": "Principles and best practices for human-centered conversational interfaces like chatbots and voicebots.",
+        "pathSlug": "conversation-design",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/conversation-design/conversation-design.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Generative UIs overview",
+        "description": "Overview of Generative UI (GenUI) approach, dynamically adapting UI elements based on AI context.",
+        "pathSlug": "generative-uis",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/generative-uis/about-generative-ui.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Compass",
+        "description": "PatternFly's Generative UI exploration for dynamic and personalized user experiences.",
+        "pathSlug": "compass",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/generative-uis/compass/Compass.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Compass handbook",
+        "description": "Developer handbook for building generative UI layouts using Compass components.",
+        "pathSlug": "compass-handbook",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/Compass/CompassHandbook.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "React Flow",
+        "description": "Integrating React Flow for node-based generative UI exploration in Compass.",
+        "pathSlug": "react-flow",
+        "section": "ai",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/AI/generative-uis/compass/ReactFlow.md",
+        "version": "v6"
+      }
+    ],
+    "Extensions": [
+      {
+        "displayName": "Extensions overview",
+        "description": "Holistic solutions addressing specific, cross-project use cases by utilizing multiple PatternFly components.",
+        "pathSlug": "extensions",
+        "section": "extensions",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/extensions/extensions.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Log viewer",
+        "description": "A specialized interface for visualizing and monitoring project logs in real time.",
+        "pathSlug": "log-viewer",
+        "section": "extensions",
+        "category": "design-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/3f5653a2742910515279c5c32cde9f2f6a87ca79/packages/documentation-site/patternfly-docs/content/extensions/log-viewer/log-viewer.md",
+        "version": "v6"
+      }
+    ],
+    "OpenUIAutomation": [
+      {
+        "displayName": "Open UI Automation",
+        "description": "Open UI Automation (OUIA) is a specification for standardizing how UIs expose attributes for automated testing.",
+        "pathSlug": "openui-automation",
+        "section": "components",
+        "category": "react",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/ddd0696796134c7d0f9583ce56e26b0df47156cb/packages/react-core/src/helpers/OUIA/OUIA.md",
         "version": "v6"
       }
     ]
