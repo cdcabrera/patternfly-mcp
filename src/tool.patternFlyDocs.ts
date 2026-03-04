@@ -11,7 +11,8 @@ import {
   assertInput,
   assertInputStringLength,
   assertInputStringArrayEntryLength,
-  assertInputStringNumberEnumLike
+  assertInputStringNumberEnumLike,
+  assertInputUrlWhiteListed
 } from './server.assertions';
 
 /**
@@ -41,7 +42,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       assertInput(
         !(new RegExp('patternfly://', 'i').test(name)),
         stringJoin.basic(
-          'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used with MCP resources directly.',
+          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
           'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
         )
       );
@@ -61,10 +62,18 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       assertInput(
         !urlList.some(url => new RegExp('patternfly://', 'i').test(url)),
         stringJoin.basic(
-          'Direct "patternfly://" URIs are not supported as tool inputs, and are intended to be used with MCP resources directly.',
+          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
           'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
         )
       );
+
+      if (options.mode !== 'test') {
+        assertInputUrlWhiteListed(
+          urlList,
+          options.patternflyOptions.urlWhitelist,
+          { inputDisplayName: 'urlList' }
+        );
+      }
     }
 
     if (isVersion) {
@@ -84,10 +93,17 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
     const isLatestVersion = latestVersion === updatedVersion;
 
-    // Reconsider filtering here, it's too restrictive
-    // const filteredUrlList = updatedUrlList.filter(url => byPath[url]?.version === updatedVersion);
-    // updatedUrlList.length = 0;
-    // updatedUrlList.push(...filteredUrlList);
+    // Reconsider filtering here
+    // if (options.mode !== 'test') {
+    /*
+    if (pfVersion) {
+      const filteredUrlList = updatedUrlList.filter(url => byPath[url]?.version === updatedVersion);
+
+      updatedUrlList.length = 0;
+      updatedUrlList.push(...filteredUrlList);
+    }
+     */
+    // }
 
     const updatedName = name?.trim();
 
@@ -119,8 +135,19 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     try {
       const processedDocs = await processDocsFunction.memo(updatedUrlList);
+      const primaryDocs: ProcessedDoc[] = [];
+      const secondaryDocs: ProcessedDoc[] = [];
 
-      docs.push(...processedDocs);
+      // url => byPath[url]?.version === updatedVersion
+      processedDocs.forEach(doc => {
+        if (doc.path && byPath[doc.path]) {
+          primaryDocs.push(doc);
+        } else {
+          secondaryDocs.push(doc);
+        }
+      });
+
+      docs.push(...primaryDocs.sort(), ...secondaryDocs.sort());
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
@@ -156,7 +183,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     for (const doc of docs) {
-      const patternFlyEntry = doc?.path ? byPath[doc.path] : undefined;
+      const patternFlyEntry = doc.path ? byPath[doc.path] : undefined;
       const entryName = patternFlyEntry?.name;
       const docTitle = patternFlyEntry
         ? `# Documentation for ${patternFlyEntry.displayName || entryName} [${setCategoryDisplayLabel(patternFlyEntry)}]`

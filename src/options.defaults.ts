@@ -182,6 +182,7 @@ interface ModeOptions {
  * @property default.versionStrategy Strategy to use when multiple PatternFly versions are detected.
  *    - 'highest': Use the highest major version found.
  *    - 'lowest': Use the lowest major version found.
+ * @property urlWhitelist List of allowed URLs to fetch PatternFly resources from.
  */
 interface PatternFlyOptions {
   availableResourceVersions: ('6.0.0')[];
@@ -193,7 +194,8 @@ interface PatternFlyOptions {
     latestSchemasVersion: 'v6';
     versionWhitelist: string[];
     versionStrategy: 'highest' | 'lowest';
-  }
+  },
+  urlWhitelist: string[];
 }
 
 /**
@@ -424,7 +426,12 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
       '@patternfly/patternfly'
     ],
     versionStrategy: 'highest'
-  }
+  },
+  urlWhitelist: [
+    'https://patternfly.org',
+    'https://github.com/patternfly',
+    'https://raw.githubusercontent.com/patternfly'
+  ]
 };
 
 /**

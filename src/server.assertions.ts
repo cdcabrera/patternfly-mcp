@@ -1,5 +1,6 @@
 import assert from 'node:assert';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { isWhitelistedUrl, stringJoin } from './server.helpers';
 
 /**
  * MCP assert. Centralizes and throws an error if the validation fails.
@@ -135,10 +136,46 @@ function assertInputStringNumberEnumLike(
   mcpAssert(isValid, updatedDescription, errorCode);
 }
 
+/**
+ * Assert/validate that a given input URL string, or array of URL strings, is whitelisted against a provided list of URLs.
+ *
+ * @param input - Input URL string, or array of URL strings, to validate.
+ * @param whitelist - The list of allowed URLs to compare against.
+ * @param [options] - Validation options
+ * @param [options.inputDisplayName] - Optional display name for the input parameter, used in error messages.
+ * @param [options.message] - Optional custom error message to override the default message.
+ * @param [options.urlDisplayMaxLength] - Optional maximum length of an invalid URL to display in error messages
+ */
+function assertInputUrlWhiteListed(
+  input: unknown,
+  whitelist: string[],
+  { inputDisplayName, message, urlDisplayMaxLength = 50 }: { inputDisplayName?: string, message?: string, urlDisplayMaxLength?: number } = {}
+): asserts input is string | string[] {
+  const updatedInput = Array.isArray(input) ? input : [input];
+  const invalidUrls: unknown[] = [];
+
+  updatedInput.forEach(url => {
+    if (!isWhitelistedUrl(url, whitelist)) {
+      invalidUrls.push(url);
+    }
+  });
+
+  mcpAssert(
+    invalidUrls.length === 0,
+    () => message || stringJoin.newline(
+      `Access denied: "${inputDisplayName || 'URL input'}" must be within the whitelisted URLs.`,
+      `Use official PatternFly documentation sources.`,
+      ...invalidUrls.map(invalid => `Invalid URL: ${String(invalid).slice(0, urlDisplayMaxLength)}...`)
+    ),
+    ErrorCode.InvalidParams
+  );
+}
+
 export {
   assertInput,
   assertInputString,
   assertInputStringLength,
   assertInputStringArrayEntryLength,
-  assertInputStringNumberEnumLike
+  assertInputStringNumberEnumLike,
+  assertInputUrlWhiteListed
 };

@@ -417,6 +417,47 @@ const generateHash = (anyValue: unknown): string => {
 };
 
 /**
+ * Check if a string URL matches a whitelist entry
+ *
+ * @param url - string URL to check
+ * @param whitelist - List of whitelist entries
+ * @param options - Options for URL validation
+ * @param options.allowedProtocols - List of allowed protocols for URL validation
+ *
+ * @returns `true` if the URL matches any whitelist entry
+ */
+const isWhitelistedUrl = (url: string, whitelist: string[], { allowedProtocols = ['http', 'https'] } = {}) => {
+  if (typeof url !== 'string' || !isUrl(url, { allowedProtocols })) {
+    return false;
+  }
+
+  try {
+    const { host, pathname } = new URL(url);
+    const updatedHost = host.toLowerCase();
+    const updatedPath = pathname.toLowerCase();
+
+    return whitelist.some(entry => {
+      const listUrl = new URL(entry);
+      const listHost = listUrl.host.toLowerCase();
+      const listPath = listUrl.pathname.toLowerCase();
+
+      const hostMatch = updatedHost === listHost || updatedHost.endsWith(`.${listHost}`);
+      let pathMatch = listPath === '/' || updatedPath === listPath;
+
+      if (!pathMatch) {
+        const checkDir = (listPath.endsWith('/') && listPath) || `${listPath}/`;
+
+        pathMatch = pathname.startsWith(checkDir);
+      }
+
+      return hostMatch && pathMatch;
+    });
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Join an array of values with a separator, optionally filtering out falsy values.
  *
  * - `stringJoin.basic` Join argument values with a single space separator
@@ -505,6 +546,7 @@ export {
   isPromise,
   isReferenceLike,
   isUrl,
+  isWhitelistedUrl,
   mergeObjects,
   portValid,
   stringJoin,
