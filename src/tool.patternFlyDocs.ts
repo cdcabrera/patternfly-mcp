@@ -89,29 +89,14 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     }
 
     const updatedUrlList: string[] = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
-    const { latestVersion, byPath } = await getPatternFlyMcpResources.memo();
-    const updatedVersion = (await normalizeEnumeratedPatternFlyVersion(version)) || latestVersion;
-    const isLatestVersion = latestVersion === updatedVersion;
-
-    // Reconsider filtering here
-    // if (options.mode !== 'test') {
-    /*
-    if (pfVersion) {
-      const filteredUrlList = updatedUrlList.filter(url => byPath[url]?.version === updatedVersion);
-
-      updatedUrlList.length = 0;
-      updatedUrlList.push(...filteredUrlList);
-    }
-     */
-    // }
-
+    const { latestSchemasVersion, byPath } = await getPatternFlyMcpResources.memo();
+    const normalizedVersion = (await normalizeEnumeratedPatternFlyVersion(version));
     const updatedName = name?.trim();
 
     if (updatedName) {
-      const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName, { version: updatedVersion });
+      const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName, { version: normalizedVersion });
 
       assertInput(
-        // exactMatches.length > 0 && exactMatches.every(match => Boolean(match.versions[updatedVersion]?.urls.length)),
         exactMatches.length > 0 && exactMatches.every(match => match.entries.some(entry => Boolean(entry.path))),
         () => {
           const suggestions = searchResults.map(result => result.item).slice(0, 3);
@@ -124,7 +109,6 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         ErrorCode.InvalidParams
       );
 
-      // updatedUrlList.push(...exactMatches.flatMap(match => match.versions[updatedVersion]?.urls).filter(Boolean));
       updatedUrlList.push(...exactMatches.flatMap(match => match.entries.map(entry => entry.path)).filter(Boolean));
     }
 
@@ -137,17 +121,29 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       const processedDocs = await processDocsFunction.memo(updatedUrlList);
       const primaryDocs: ProcessedDoc[] = [];
       const secondaryDocs: ProcessedDoc[] = [];
+      const tertiaryDocs: ProcessedDoc[] = [];
 
-      // url => byPath[url]?.version === updatedVersion
       processedDocs.forEach(doc => {
-        if (doc.path && byPath[doc.path]) {
-          primaryDocs.push(doc);
+        const docEntry = (doc.path && byPath[doc.path]) || undefined;
+
+        if (docEntry) {
+          if (!normalizedVersion || docEntry.version === normalizedVersion) {
+            primaryDocs.push(doc);
+          } else {
+            secondaryDocs.push(doc);
+          }
         } else {
-          secondaryDocs.push(doc);
+          tertiaryDocs.push(doc);
         }
       });
 
-      docs.push(...primaryDocs.sort(), ...secondaryDocs.sort());
+      const sortByPath = (a: ProcessedDoc, b: ProcessedDoc) => (a.path || '').localeCompare(b.path || '');
+
+      docs.push(
+        ...primaryDocs.sort(sortByPath),
+        ...secondaryDocs.sort(sortByPath),
+        ...tertiaryDocs.sort(sortByPath)
+      );
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
@@ -157,7 +153,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     if (docs.length === 0) {
       const nameFilter = `**Name**: ${updatedName || '*'}`;
-      const versionFilter = `**PatternFly Version**: ${updatedVersion || '*'}`;
+      const versionFilter = `**PatternFly Version**: ${normalizedVersion || '*'}`;
       const urlListBlock = updatedUrlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
       const urlListFilter = stringJoin.newline(
         `**URL List**:`,
@@ -185,8 +181,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     for (const doc of docs) {
       const patternFlyEntry = doc.path ? byPath[doc.path] : undefined;
       const entryName = patternFlyEntry?.name;
+      const entryVersion = patternFlyEntry?.version;
+      const entryVersionDisplay = (entryVersion && `(${entryVersion}) `) || '';
       const docTitle = patternFlyEntry
-        ? `# Documentation for ${patternFlyEntry.displayName || entryName} [${setCategoryDisplayLabel(patternFlyEntry)}]`
+        ? `# Documentation for ${patternFlyEntry.displayName || entryName} ${entryVersionDisplay}[${setCategoryDisplayLabel(patternFlyEntry)}]`
         : `# Content for ${doc.path}`;
 
       docResults.push(stringJoin.newline(
@@ -196,13 +194,13 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         doc.content
       ));
 
-      if (isLatestVersion && entryName && !schemasSeen.has(entryName)) {
+      if (latestSchemasVersion === entryVersion && entryName && !schemasSeen.has(entryName)) {
         schemasSeen.add(entryName);
         const componentSchema = await getPatternFlyComponentSchema.memo(entryName);
 
         if (componentSchema) {
           schemaResults.push(stringJoin.newline(
-            `# Component Schema for ${entryName}`,
+            `# Component Schema for ${entryName} ${entryVersionDisplay}`,
             `This machine-readable JSON schema defines the component's props, types, and validation rules.`,
             '```json',
             JSON.stringify(componentSchema, null, 2),

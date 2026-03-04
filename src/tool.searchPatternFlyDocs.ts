@@ -38,11 +38,11 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const pfVersion = await normalizeEnumeratedPatternFlyVersion(version);
+    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
 
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
-      { version: pfVersion },
+      { version: normalizedVersion },
       { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
     );
 
@@ -82,7 +82,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       parseResults = searchResults.filter(result => result.distance === 1);
     }
 
-    const searchTitlePatternFly = pfVersion ? `PatternFly version "${pfVersion}" and ` : '';
+    const searchTitlePatternFly = normalizedVersion ? `PatternFly version "${normalizedVersion}" and ` : '';
 
     let searchTitle = stringJoin.basic(
       `# Search results for ${searchTitlePatternFly}"${searchQuery}".`,
