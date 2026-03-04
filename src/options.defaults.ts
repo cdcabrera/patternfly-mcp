@@ -434,7 +434,7 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     'https://github.com/patternfly',
     'https://raw.githubusercontent.com/patternfly'
   ],
-  urlWhiteListProtocols: ['http:', 'https:']
+  urlWhiteListProtocols: ['http', 'https']
 };
 
 /**

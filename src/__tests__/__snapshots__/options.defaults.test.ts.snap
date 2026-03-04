@@ -69,8 +69,8 @@ exports[`options defaults should return specific properties: defaults 1`] = `
       ],
     },
     "urlWhiteListProtocols": [
-      "http:",
-      "https:",
+      "http",
+      "https",
     ],
     "urlWhitelist": [
       "https://patternfly.org",
