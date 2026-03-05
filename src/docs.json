@@ -2225,7 +2225,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/bullseye.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/bullseye.md",
         "version": "v6"
       },
       {
@@ -2247,7 +2247,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/flex.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/flex.md",
         "version": "v6"
       },
       {
@@ -2269,7 +2269,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/gallery.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/gallery.md",
         "version": "v6"
       },
       {
@@ -2291,7 +2291,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/grid.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/grid.md",
         "version": "v6"
       },
       {
@@ -2313,7 +2313,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/level.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/level.md",
         "version": "v6"
       },
       {
@@ -2335,7 +2335,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/split.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/split.md",
         "version": "v6"
       },
       {
@@ -2357,7 +2357,7 @@
         "section": "layouts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/layouts/stack.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/foundations-and-styles/layouts/stack.md",
         "version": "v6"
       },
       {
