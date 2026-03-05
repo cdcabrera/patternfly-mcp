@@ -118,9 +118,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         `    - **Name**: ${result.name}`,
         urlList.length ? `    - **URLs**:` : undefined,
         urlList.length ? urlList.join('\n') : undefined,
-        uri || uriSchemas ? `  **Resources**:` : undefined,
-        uri ? `    - **URI**: ${uri}` : undefined,
-        uriSchemas ? `    - **JSON Schemas**: ${uriSchemas}` : undefined
+        uri || uriSchemas ? `    - **Resources**:` : undefined,
+        uri ? `      - **URI**: ${uri}` : undefined,
+        uriSchemas ? `      - **JSON Schemas**: ${uriSchemas}` : undefined
       ) + '\n';
     });
 

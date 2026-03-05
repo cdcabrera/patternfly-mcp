@@ -158,9 +158,11 @@ exports[`runServer should attempt to run server, create transport, connect, and 
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -220,9 +222,11 @@ exports[`runServer should attempt to run server, disable SIGINT handler: diagnos
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -277,9 +281,11 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -348,9 +354,11 @@ exports[`runServer should attempt to run server, register a tool: diagnostics 1`
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -430,9 +438,11 @@ exports[`runServer should attempt to run server, register multiple tools: diagno
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -495,9 +505,11 @@ exports[`runServer should attempt to run server, use custom options: diagnostics
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -566,9 +578,11 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
@@ -641,9 +655,11 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
       },
       {
         "capabilities": {
+          "completions": {},
           "resources": {},
           "tools": {},
         },
+        "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.",
       },
     ],
   ],
