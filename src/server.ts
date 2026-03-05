@@ -244,7 +244,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
           tools: {},
           resources: {},
           ...(enableProtocolLogging ? { logging: {} } : {})
-        }
+        },
+        instructions: options.serverOptions.instructions
       }
     );
 
