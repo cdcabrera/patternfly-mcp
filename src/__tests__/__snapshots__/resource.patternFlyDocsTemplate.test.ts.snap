@@ -7,11 +7,17 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
   "name": "patternfly-docs-template",
   "uri": ResourceTemplate {
     "_callbacks": {
-      "list": undefined,
+      "complete": {
+        "category": [Function],
+        "name": [Function],
+        "section": [Function],
+        "version": [Function],
+      },
+      "list": [Function],
     },
     "_uriTemplate": UriTemplate {
       "parts": [
-        "patternfly://docs/",
+        "patternfly://docs//",
         {
           "exploded": false,
           "name": "name",
@@ -20,8 +26,18 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
           ],
           "operator": "",
         },
+        {
+          "exploded": false,
+          "name": "version",
+          "names": [
+            "version",
+            "category",
+            "section",
+          ],
+          "operator": "?",
+        },
       ],
-      "template": "patternfly://docs/{name}",
+      "template": "patternfly://docs//{name}{?version,category,section}",
     },
   },
 }

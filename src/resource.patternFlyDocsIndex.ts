@@ -1,11 +1,44 @@
+import {
+  ResourceTemplate,
+  type CompleteResourceTemplateCallback
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
+import { memo } from './server.caching';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { buildSearchString } from './server.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { getOptions, runWithOptions } from './options.context';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import {
+  getPatternFlyVersionContext,
+  normalizeEnumeratedPatternFlyVersion
+} from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
+
+/**
+ * Extended callback type that combines the `CompleteResourceTemplateCallback` type
+ * and an additional `memo` property.
+ *
+ * @extends CompleteResourceTemplateCallback
+ */
+type ExtendedCompleteResourceTemplateCallback = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
+
+/**
+ * List resources result type.
+ *
+ * @note This is temporary until MCP SDK exports ListResourcesResult.
+ *
+ * @property uri - The fully qualified URI of the resource.
+ * @property name - A human-readable name for the resource.
+ * @property [mimeType] - The MIME type of the content.
+ * @property [description] - A brief hint for the model.
+ */
+type PatterFlyListResourceResult = {
+  uri: string;
+  name: string;
+  mimeType?: string;
+  description?: string;
+};
 
 /**
  * Name of the resource.
@@ -15,7 +48,7 @@ const NAME = 'patternfly-docs-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/index';
+const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section}';
 
 /**
  * Resource configuration.
@@ -24,6 +57,204 @@ const CONFIG = {
   title: 'PatternFly Documentation Index',
   description: 'A comprehensive list of PatternFly documentation links, organized by components, layouts, charts, and guidance files.',
   mimeType: 'text/markdown'
+};
+
+/**
+ * List resources callback for the URI template.
+ *
+ * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
+ */
+const listResources = async () => {
+  const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
+  const resources: PatterFlyListResourceResult[] = [];
+
+  Object.entries(byVersion)
+    .filter(([version]) => availableVersions.includes(version))
+    .sort(([a], [b]) => b.localeCompare(a))
+    .forEach(([version, entries]) => {
+      const seenIndex = new Set<string>();
+      const versionResource: PatterFlyListResourceResult[] = [];
+
+      entries
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(entry => {
+          if (!seenIndex.has(entry.name)) {
+            seenIndex.add(entry.name);
+
+            versionResource.push({
+              uri: entry.uri,
+              mimeType: 'text/markdown',
+              name: `${entry.name} (${version})`,
+              description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
+            });
+          }
+        });
+
+      resources.push(...versionResource);
+    });
+
+  return {
+    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
+  };
+};
+
+/**
+ * Memoized version of listResources.
+ */
+listResources.memo = memo(listResources);
+
+/**
+ * Name completion callback for the URI template.
+ *
+ * @note If version is not available, the latest version is used to refine the search results
+ * since it aligns with the default behavior of the PatternFly documentation.
+ *
+ * @param value - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available names.
+ */
+const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, category, section } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
+
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  const normalizedName = normalizedValue;
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const names = new Set<string>();
+
+  byEntry.forEach(result => names.add(result.name));
+
+  return Array.from(names).sort();
+};
+
+/**
+ * Memoized version of uriNameComplete.
+ */
+uriNameComplete.memo = memo(uriNameComplete);
+
+/**
+ * Category completion callback for the URI template.
+ *
+ * @param value - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available categories, or an empty list.
+ */
+const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, section, name } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
+
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+  const normalizedCategory = normalizedValue; // typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const categories = new Set<string>();
+
+  byEntry.forEach(entry => categories.add(entry.category));
+
+  return Array.from(categories).sort();
+};
+
+uriCategoryComplete.memo = memo(uriCategoryComplete);
+
+/**
+ * Section completion callback for the URI template.
+ *
+ * @param value - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available sections, or an empty list.
+ */
+const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version, category, name } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
+
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = normalizedValue;
+  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const sections = new Set<string>();
+
+  byEntry.forEach(entry => sections.add(entry.section));
+
+  return Array.from(sections).sort();
+};
+
+/**
+ * Memoized version of uriSectionComplete.
+ */
+uriSectionComplete.memo = memo(uriSectionComplete);
+
+/**
+ * Name completion callback for the URI template.
+ *
+ * @note Currently, we don't run a full version list, just the latest. In the future, we
+ * should be pulling versions from the available documentation.
+ *
+ * @param value - The value to complete.
+ * @returns The list of available versions, or an empty list.
+ */
+const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) => {
+  const { availableVersions } = await getPatternFlyVersionContext.memo();
+  let normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
+
+  if (!normalizedVersion) {
+    return availableVersions;
+  }
+
+  normalizedVersion = await normalizeEnumeratedPatternFlyVersion(normalizedVersion);
+
+  return availableVersions.filter(version => normalizedVersion === version);
+
+  /*
+  const { section, category, name } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
+
+  const normalizedVersion = normalizedValue;
+  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
+  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
+  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    category: normalizedCategory,
+    section: normalizedSection,
+    name: normalizedName
+  });
+
+  const versions = new Set<string>();
+
+  byEntry.forEach(entry => versions.add(entry.version));
+
+  return Array.from(versions).sort();
+   */
 };
 
 /**
@@ -143,15 +374,29 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  */
 const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
   NAME,
-  URI_TEMPLATE,
+  new ResourceTemplate(URI_TEMPLATE, {
+    list: async () => runWithOptions(options, async () => listResources.memo()),
+    complete: {
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+    }
+  }),
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
 ];
 
 export {
   patternFlyDocsIndexResource,
+  listResources,
   resourceCallback,
+  uriCategoryComplete,
+  uriNameComplete,
+  uriSectionComplete,
+  uriVersionComplete,
   NAME,
   URI_TEMPLATE,
-  CONFIG
+  CONFIG,
+  type ExtendedCompleteResourceTemplateCallback,
+  type PatterFlyListResourceResult
 };

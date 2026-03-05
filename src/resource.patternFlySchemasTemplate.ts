@@ -1,4 +1,7 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  type CompleteResourceTemplateCallback,
+  ResourceTemplate
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { getOptions, runWithOptions } from './options.context';
 import { filterPatternFly } from './patternFly.search';
@@ -8,6 +11,7 @@ import {
   type PatternFlyComponentSchema
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { listResources, uriVersionComplete } from './resource.patternFlySchemasIndex';
 import { assertInput, assertInputStringLength } from './server.assertions';
 
 /**
@@ -18,7 +22,7 @@ const NAME = 'patternfly-schemas-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://schemas/{name}';
+const URI_TEMPLATE = 'patternfly://schemas/{name}{?version}';
 
 /**
  * Resource configuration.
@@ -27,6 +31,35 @@ const CONFIG = {
   title: 'PatternFly Component Schema',
   description: 'Retrieve the JSON Schema for a specific PatternFly component by name',
   mimeType: 'application/json'
+};
+
+/**
+ * Name completion callback for the URI template.
+ *
+ * @param value - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available names.
+ */
+const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
+  const { version } = context?.arguments || {};
+
+  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
+  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
+
+  const { byEntry } = await filterPatternFly.memo({
+    version: normalizedVersion,
+    name: normalizedValue
+  });
+
+  const names = new Set<string>();
+
+  byEntry.forEach(result => {
+    if (result.uriSchemas) {
+      names.add(result.name);
+    }
+  });
+
+  return Array.from(names).sort();
 };
 
 /**
@@ -42,17 +75,17 @@ const CONFIG = {
 const resourceCallback = async (passedUri: URL, variables: Record<string, string>, options = getOptions()) => {
   const { version, name } = variables || {};
 
+  assertInputStringLength(name, {
+    ...options.minMax.inputStrings,
+    inputDisplayName: 'name'
+  });
+
   if (version) {
     assertInputStringLength(version, {
       ...options.minMax.inputStrings,
       inputDisplayName: 'version'
     });
   }
-
-  assertInputStringLength(name, {
-    ...options.minMax.inputStrings,
-    inputDisplayName: 'name'
-  });
 
   const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
@@ -119,7 +152,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlySchemasTemplateResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: undefined
+    list: async () => runWithOptions(options, async () => listResources.memo()),
+    complete: {
+      name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+    }
   }),
   CONFIG,
   async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
@@ -128,6 +165,7 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
 export {
   patternFlySchemasTemplateResource,
   resourceCallback,
+  uriNameComplete,
   NAME,
   URI_TEMPLATE,
   CONFIG
