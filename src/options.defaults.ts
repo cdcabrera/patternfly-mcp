@@ -33,6 +33,7 @@ import { type ToolModule } from './server.toolsUser';
  * @property resourceModules - Array for programmatic registration of resource provider modules, similar to `toolModules` but
  *     for MCP resources and currently only internal.
  * @property separator - Default string delimiter.
+ * @property serverOptions - Server-instance options.
  * @property {StatsOptions} stats - Stats options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
  * @property {ToolModule|ToolModule[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
@@ -62,6 +63,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   resourceModules: unknown | unknown[];
   separator: string;
+  serverOptions: ServerOptions;
   stats: StatsOptions;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   toolModules: ToolModule | ToolModule[];
@@ -245,6 +247,16 @@ interface LoggingSession extends LoggingOptions {
 }
 
 /**
+ * MCP Server instance options.
+ *
+ * @interface ServerOptions
+ * @property instructions Instructions for the MCP server.
+ */
+interface ServerOptions {
+  instructions: string;
+}
+
+/**
  * Base stats options.
  */
 type StatsOptions = {
@@ -398,6 +410,13 @@ const TOOL_MEMO_OPTIONS = {
 };
 
 /**
+ * Default server instance options.
+ */
+const SERVER_OPTIONS: ServerOptions = {
+  instructions: 'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.'
+};
+
+/**
  * Default stats options.
  */
 const STATS_OPTIONS: StatsOptions = {
@@ -498,6 +517,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   repoName: basename(process.cwd() || '').trim(),
   repoResources: REPO_RESOURCES,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
+  serverOptions: SERVER_OPTIONS,
   stats: STATS_OPTIONS,
   resourceModules: [],
   toolMemoOptions: TOOL_MEMO_OPTIONS,
