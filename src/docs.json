@@ -2117,7 +2117,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/tooltip-chart/tooltip-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/tooltip-chart/tooltip-chart.md",
         "version": "v6"
       },
       {
@@ -2391,7 +2391,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/area-chart/area-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/area-chart/area-chart.md",
         "version": "v6"
       },
       {
@@ -2413,7 +2413,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/bar-chart/bar-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/bar-chart/bar-chart.md",
         "version": "v6"
       },
       {
@@ -2447,7 +2447,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/bullet-chart/bullet-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/bullet-chart/bullet-chart.md",
         "version": "v6"
       },
       {
@@ -2469,7 +2469,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/donut-chart/donut-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/donut-chart/donut-chart.md",
         "version": "v6"
       },
       {
@@ -2491,7 +2491,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/donut-utilization-chart/donut-utilization-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/donut-utilization-chart/donut-utilization-chart.md",
         "version": "v6"
       },
       {
@@ -2513,7 +2513,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/line-chart/line-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/line-chart/line-chart.md",
         "version": "v6"
       },
       {
@@ -2535,7 +2535,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/pie-chart/pie-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/pie-chart/pie-chart.md",
         "version": "v6"
       },
       {
@@ -2557,7 +2557,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/scatter-chart/scatter-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/scatter-chart/scatter-chart.md",
         "version": "v6"
       },
       {
@@ -2579,7 +2579,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/sparkline-chart/sparkline-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/sparkline-chart/sparkline-chart.md",
         "version": "v6"
       },
       {
@@ -2601,7 +2601,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/stacked-chart/stacked-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/stacked-chart/stacked-chart.md",
         "version": "v6"
       },
       {
@@ -2623,7 +2623,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/threshold-chart/threshold-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/threshold-chart/threshold-chart.md",
         "version": "v6"
       },
       {
@@ -2645,7 +2645,7 @@
         "section": "charts",
         "category": "design-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/fb05713aba75998b5ecf5299ee3c1a259119bd74/packages/documentation-site/patternfly-docs/content/design-guidelines/charts/legend-chart/legend-chart.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/12d5a8f22d00fdb490bd49bd8867a500b0e42494/packages/documentation-site/patternfly-docs/content/components/charts/legend-chart/legend-chart.md",
         "version": "v6"
       },
       {
