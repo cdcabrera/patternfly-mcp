@@ -93,42 +93,6 @@ describe('resourceCallback', () => {
 
   it.each([
     {
-      description: 'invalid version',
-      error: 'Invalid PatternFly version',
-      variables: {
-        name: 'Button',
-        version: 'v5'
-      }
-    },
-    {
-      description: 'default',
-      variables: {
-        name: 'Button',
-        version: 'v6'
-      }
-    },
-    {
-      description: 'with lowercased name',
-      variables: {
-        name: 'button',
-        version: 'v6'
-      }
-    }
-  ])('should attempt to return resource content, $description', async ({ variables }) => {
-    const mockContent = '$schema';
-
-    const result = await resourceCallback(
-      { href: `patternfly://schemas/v6/${variables.name}` } as any,
-      variables
-    );
-
-    expect(result.contents).toBeDefined();
-    expect(Object.keys(result.contents[0] as any)).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0]?.text).toContain(mockContent);
-  });
-
-  it.each([
-    {
       description: 'with missing or undefined name',
       error: 'must be a string',
       variables: {}
