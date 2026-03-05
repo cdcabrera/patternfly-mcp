@@ -17,6 +17,8 @@ describe('docs.json', () => {
         baseHashes.add(entry.path.split('/patternfly/patternfly-org/')[1]?.split('/')[0]);
       } else if (entry.path.includes('/patternfly/patternfly-react/')) {
         baseHashes.add(entry.path.split('/patternfly/patternfly-react/')[1]?.split('/')[0]);
+      } else {
+        baseHashes.add(`new-resource-${entry.path}`);
       }
     });
 
@@ -33,11 +35,13 @@ describe('docs.json', () => {
 
     /**
      * Confirm total docs count matches metadata
+     * Update the JSON metadata accordingly
      */
     expect(totalDocs).toBe(docs.meta.totalDocs);
 
     /**
      * Confirm unique links against metadata totals
+     * Update the JSON metadata accordingly
      */
     expect(allLinks.size).toBe(flatDocs.length);
     expect(allLinks.size).toBe(docs.meta.totalDocs);
