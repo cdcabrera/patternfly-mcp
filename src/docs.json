@@ -3309,7 +3309,7 @@
         "section": "components",
         "category": "react",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/ddd0696796134c7d0f9583ce56e26b0df47156cb/packages/react-core/src/helpers/OUIA/OUIA.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-core/src/helpers/OUIA/OUIA.md",
         "version": "v6"
       }
     ]
