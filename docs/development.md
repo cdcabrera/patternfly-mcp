@@ -88,21 +88,21 @@ npx @modelcontextprotocol/inspector-cli \
 
 The `start()` function accepts an optional `PfMcpOptions` object for programmatic configuration. Use these options to customize behavior, transport, and logging for embedded instances.
 
-| Option                     | Type                                     | Description                                                           | Default            |
-|:---------------------------|:-----------------------------------------|:----------------------------------------------------------------------|:-------------------|
-| `toolModules`              | `ToolModule \| ToolModule[]`             | Array of tool modules or paths to external tool plugins to be loaded. | `[]`               |
-| `isHttp`                   | `boolean`                                | Enable HTTP transport mode.                                           | `false`            |
-| `http.port`                | `number`                                 | Port for HTTP transport.                                              | `8080`             |
-| `http.host`                | `string`                                 | Host to bind to.                                                      | `127.0.0.1`        |
-| `http.allowedOrigins`      | `string[]`                               | List of allowed CORS origins.                                         | `[]`               |
-| `http.allowedHosts`        | `string[]`                               | List of allowed host headers.                                         | `[]`               |
-| `pluginIsolation`          | `'none' \| 'strict'`                     | Isolation preset for external tools-as-plugins.                       | `'strict'`         |
-| `logging.level`            | `'debug' \| 'info' \| 'warn' \| 'error'` | Set the logging level.                                                | `'info'`           |
-| `logging.stderr`           | `boolean`                                | Enable terminal logging to stderr.                                    | `false`            |
-| `logging.protocol`         | `boolean`                                | Forward logs to MCP clients.                                          | `false`            |
-| `mode`                     | `'cli' \| 'programmatic' \| 'test'`      | Specifies the operation mode.                                         | `'programmatic'`   |
-| `modeOptions.test.baseUrl` | `string`                                 | Base URL for fixture/mock servers in `test` mode.                     | `undefined`        |
-| `docsPaths`                | `string[]`                               | Whitelist of local documentation directories resolved by `documentation:` slug. When empty (default), the slug is dormant. | `[]` |
+| Option                     | Type                                     | Description                                                                                                                | Default          |
+|:---------------------------|:-----------------------------------------|:---------------------------------------------------------------------------------------------------------------------------|:-----------------|
+| `toolModules`              | `ToolModule \| ToolModule[]`             | Array of tool modules or paths to external tool plugins to be loaded.                                                      | `[]`             |
+| `isHttp`                   | `boolean`                                | Enable HTTP transport mode.                                                                                                | `false`          |
+| `http.port`                | `number`                                 | Port for HTTP transport.                                                                                                   | `8080`           |
+| `http.host`                | `string`                                 | Host to bind to.                                                                                                           | `127.0.0.1`      |
+| `http.allowedOrigins`      | `string[]`                               | List of allowed CORS origins.                                                                                              | `[]`             |
+| `http.allowedHosts`        | `string[]`                               | List of allowed host headers.                                                                                              | `[]`             |
+| `pluginIsolation`          | `'none' \| 'strict'`                     | Isolation preset for external tools-as-plugins.                                                                            | `'strict'`       |
+| `logging.level`            | `'debug' \| 'info' \| 'warn' \| 'error'` | Set the logging level.                                                                                                     | `'info'`         |
+| `logging.stderr`           | `boolean`                                | Enable terminal logging to stderr.                                                                                         | `false`          |
+| `logging.protocol`         | `boolean`                                | Forward logs to MCP clients.                                                                                               | `false`          |
+| `mode`                     | `'cli' \| 'programmatic' \| 'test'`      | Specifies the operation mode.                                                                                              | `'programmatic'` |
+| `modeOptions.test.baseUrl` | `string`                                 | Base URL for fixture/mock servers in `test` mode.                                                                          | `undefined`      |
+| `docsPaths`                | `string[]`                               | Whitelist of local documentation directories resolved by `documentation:` slug. When empty (default), the slug is dormant. | `[]`             |
 
 #### Example usage
 
