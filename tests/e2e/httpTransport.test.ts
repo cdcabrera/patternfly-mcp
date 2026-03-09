@@ -79,6 +79,7 @@ describe('Builtin tools, HTTP transport', () => {
   });
 
   it('should concatenate headers and separator with two local files', async () => {
+    const URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/`;
     const req = {
       jsonrpc: '2.0',
       id: 1,
@@ -87,8 +88,9 @@ describe('Builtin tools, HTTP transport', () => {
         name: 'usePatternFlyDocs',
         arguments: {
           urlList: [
-            'documentation/guidelines/README.md',
-            'documentation:components/README.md'
+            // README.md matches /README\.md/ route in fetchMock
+            `${URL_MOCK}README.md`,
+            `${URL_MOCK}AboutModal.md`
           ]
         }
       }

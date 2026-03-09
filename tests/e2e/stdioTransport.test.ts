@@ -85,8 +85,9 @@ describe('Builtin tools, STDIO', () => {
         name: 'usePatternFlyDocs',
         arguments: {
           urlList: [
-            'documentation/guidelines/README.md',
-            'documentation:components/README.md'
+            // README.md matches /README\.md/ route in fetchMock
+            `${URL_MOCK}README.md`,
+            `${URL_MOCK}AboutModal.md`
           ]
         }
       }

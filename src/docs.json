@@ -1,9 +1,9 @@
 {
   "version": "1",
-  "generated": "2026-03-05T00:00:00.000Z",
+  "generated": "2026-03-09T00:00:00.000Z",
   "meta": {
     "totalEntries": 130,
-    "totalDocs": 311,
+    "totalDocs": 315,
     "source": "patternfly-mcp-internal"
   },
   "docs": {
@@ -1847,6 +1847,16 @@
         "source": "github",
         "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/476782a298df81cb78de7f3cd804f3ff8f33993c/packages/react-table/src/components/Table/examples/Table.md",
         "version": "v6"
+      },
+      {
+        "displayName": "Table Rules",
+        "description": "Table usage and best practices for PatternFly React.",
+        "pathSlug": "table-rules",
+        "section": "components",
+        "category": "react",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/components/data-display/table.md",
+        "version": "v6"
       }
     ],
     "Tabs": [
@@ -2666,8 +2676,8 @@
         "pathSlug": "charts",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:charts/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/charts/README.md",
         "version": "v6"
       }
     ],
@@ -2678,8 +2688,8 @@
         "pathSlug": "chatbot",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:chatbot/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/chatbot/README.md",
         "version": "v6"
       }
     ],
@@ -2690,8 +2700,8 @@
         "pathSlug": "component-groups",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:component-groups/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/component-groups/README.md",
         "version": "v6"
       }
     ],
@@ -2702,28 +2712,28 @@
         "pathSlug": "guidelines",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:guidelines/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/guidelines/README.md",
         "version": "v6"
       },
       {
-        "displayName": "React Components",
-        "description": "AI guidance for PatternFly React Components.",
-        "pathSlug": "components",
+        "displayName": "Styling Standards",
+        "description": "CSS and styling requirements for PatternFly React.",
+        "pathSlug": "styling-standards",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:components/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/guidelines/styling-standards.md",
         "version": "v6"
       },
       {
-        "displayName": "React Resources",
-        "description": "AI guidance for PatternFly React Resources.",
-        "pathSlug": "resources",
+        "displayName": "AI Prompt Guidance",
+        "description": "How to write effective AI prompts for PatternFly development.",
+        "pathSlug": "ai-prompt-guidance",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:resources/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/guidelines/ai-prompt-guidance.md",
         "version": "v6"
       },
       {
@@ -2732,8 +2742,28 @@
         "pathSlug": "setup",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:setup/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/setup/README.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "Quick Start",
+        "description": "Essential setup steps for PatternFly React projects.",
+        "pathSlug": "quick-start",
+        "section": "guidelines",
+        "category": "react",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/setup/quick-start.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "External Links",
+        "description": "Comprehensive list of official PatternFly documentation and resources.",
+        "pathSlug": "external-links",
+        "section": "resources",
+        "category": "react",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/resources/external-links.md",
         "version": "v6"
       },
       {
@@ -2742,8 +2772,8 @@
         "pathSlug": "troubleshooting",
         "section": "guidelines",
         "category": "react",
-        "source": "local",
-        "path": "documentation:troubleshooting/README.md",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/troubleshooting/common-issues.md",
         "version": "v6"
       }
     ],
@@ -3374,6 +3404,16 @@
         "category": "development-guidelines",
         "source": "github",
         "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/get-started/develop.md",
+        "version": "v6"
+      },
+      {
+        "displayName": "PatternFly React Development Rules",
+        "description": "Essential rules and guidelines for AI coders working with PatternFly React applications.",
+        "pathSlug": "development-rules",
+        "section": "get-started",
+        "category": "development-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/README.md",
         "version": "v6"
       }
     ]

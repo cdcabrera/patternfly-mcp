@@ -16,25 +16,17 @@ exports[`Builtin resources, HTTP transport should expose expected resources and 
 `;
 
 exports[`Builtin tools, HTTP transport should concatenate headers and separator with two local files 1`] = `
-"# Documentation for React Components (v6) [AI Guidance]
-Source: documentation:components/README.md
+"# Content for http://127.0.0.1:52468/AboutModal.md
+Source: http://127.0.0.1:52468/AboutModal.md
 
-# PatternFly Development Rules
-            This is a generated offline fixture used by the MCP external URLs test.
+# Test Document
 
-            Essential rules and guidelines working with PatternFly applications.
-
-            ## Quick Navigation
-
-            ### 🚀 Setup & Environment
-            - **Setup Rules** - Project initialization requirements
-            - **Quick Start** - Essential setup steps
-            - **Environment Rules** - Development configuration
+This is a test document for mocking remote HTTP requests.
 
 ---
 
-# Content for documentation/guidelines/README.md
-Source: documentation/guidelines/README.md
+# Content for http://127.0.0.1:52468/README.md
+Source: http://127.0.0.1:52468/README.md
 
 # PatternFly Development Rules
             This is a generated offline fixture used by the MCP external URLs test.

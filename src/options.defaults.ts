@@ -1,4 +1,4 @@
-import { basename, join, resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
 import { type ToolModule } from './server.toolsUser';
@@ -11,7 +11,7 @@ import { type ToolModule } from './server.toolsUser';
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
- * @property docsPath - Path to the documentation directory.
+ * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
  * @property docsPathSlug - Local docs slug. Used for resolving local stored documentation.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
@@ -42,7 +42,7 @@ import { type ToolModule } from './server.toolsUser';
 interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextPath: string;
   contextUrl: string;
-  docsPath: string;
+  docsPaths: string[];
   docsPathSlug: string;
   http: HttpOptions;
   isHttp: boolean;
@@ -480,7 +480,7 @@ const getNodeMajorVersion = (nodeVersion = process.versions.node) => {
 const DEFAULT_OPTIONS: DefaultOptions = {
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
-  docsPath: (process.env.NODE_ENV === 'local' && '/documentation') || join(resolve(process.cwd()), 'documentation'),
+  docsPaths: [],
   docsPathSlug: 'documentation:',
   isHttp: false,
   http: HTTP_OPTIONS,
