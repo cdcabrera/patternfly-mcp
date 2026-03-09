@@ -30,6 +30,8 @@ import { type ToolModule } from './server.toolsUser';
  * @property repoName - Name of the repository.
  * @property {RepoResources} repoResources - Repository resources.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
+ * @property resourceModules - Array for programmatic registration of resource provider modules, similar to `toolModules` but
+ *     for MCP resources and currently only internal.
  * @property separator - Default string delimiter.
  * @property {StatsOptions} stats - Stats options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.

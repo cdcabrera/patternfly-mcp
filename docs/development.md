@@ -79,7 +79,7 @@ npx @modelcontextprotocol/inspector-cli \
   --cli \
   --method tools/call \
   --tool-name usePatternFlyDocs \
-  --tool-arg urlList='["documentation/guidelines/README.md"]'
+  --tool-arg name="Button"
 ```
 
 ## Programmatic usage
@@ -102,7 +102,7 @@ The `start()` function accepts an optional `PfMcpOptions` object for programmati
 | `logging.protocol`         | `boolean`                                | Forward logs to MCP clients.                                          | `false`            |
 | `mode`                     | `'cli' \| 'programmatic' \| 'test'`      | Specifies the operation mode.                                         | `'programmatic'`   |
 | `modeOptions.test.baseUrl` | `string`                                 | Base URL for fixture/mock servers in `test` mode.                     | `undefined`        |
-| `docsPath`                 | `string`                                 | Path to the documentation directory.                                  | (Internal default) |
+| `docsPaths`                | `string[]`                               | Whitelist of local documentation directories resolved by `documentation:` slug. When empty (default), the slug is dormant. | `[]` |
 
 #### Example usage
 
@@ -123,6 +123,10 @@ const options: PfMcpOptions = {
 
 const server: PfMcpInstance = await start(options);
 ```
+
+#### About pinned documentation sources
+
+The documentation catalog `src/docs.json` pins remote resources to specific commit SHAs (or explicit refs) for stability and reproducibility. This avoids unexpected upstream changes from breaking results. The `searchPatternFlyDocs` tool handles these lookups transparently for the user.
 
 **Example: Programmatic test mode**
 ```typescript

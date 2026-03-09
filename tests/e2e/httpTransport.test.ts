@@ -78,7 +78,7 @@ describe('Builtin tools, HTTP transport', () => {
     expect({ toolNames }).toMatchSnapshot('tools');
   });
 
-  it('should concatenate headers and separator with two local files', async () => {
+  it('should concatenate headers and separator with two fixture server routes', async () => {
     const URL_MOCK = `${FETCH_MOCK?.fixture?.baseUrl}/`;
     const req = {
       jsonrpc: '2.0',

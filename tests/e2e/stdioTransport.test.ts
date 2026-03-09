@@ -76,7 +76,7 @@ describe('Builtin tools, STDIO', () => {
     expect({ toolNames }).toMatchSnapshot();
   });
 
-  it('should concatenate headers and separator with two local files', async () => {
+  it('should concatenate headers and separator with two fixture server routes', async () => {
     const req = {
       jsonrpc: '2.0',
       id: 1,
