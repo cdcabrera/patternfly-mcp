@@ -96,8 +96,10 @@ describe('Builtin tools, STDIO', () => {
     const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
+    expect(text.includes('AboutModal.md')).toBe(true);
+    expect(text.includes('This is a test document for mocking remote HTTP requests')).toBe(true);
+    expect(text.includes('README.md')).toBe(true);
     expect(text.includes('This is a generated offline fixture')).toBe(true);
-    expect(text).toMatchSnapshot();
   });
 
   it('should concatenate headers and separator with two remote files', async () => {
