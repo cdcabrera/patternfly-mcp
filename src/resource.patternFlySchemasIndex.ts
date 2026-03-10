@@ -46,30 +46,25 @@ const listResources = async () => {
   Array.from(byVersionComponentNames)
     .filter(([version]) => availableSchemasVersions.includes(version))
     .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version, components]) => {
-      const versionResource: PatterFlyListResourceResult[] = [];
-
-      Object.entries(components)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .forEach(([name, component]) => {
-          const displayName = component.displayName;
-          const isSchemasAvailable = component.isSchemasAvailable || false;
-
-          if (isSchemasAvailable) {
-            versionResource.push({
-              uri: `patternfly://schemas/${version}/${name}`,
-              mimeType: 'application/json',
-              name: `${displayName} (${version})`,
-              description: `JSON component schemas for PatternFly version "${version}" of "${displayName}"`
-            });
-          }
-        });
-
-      resources.push(...versionResource);
+    .forEach(([version]) => {
+      resources.push({
+        uri: `patternfly://schemas/index?version=${version}`,
+        mimeType: 'application/json',
+        name: `JSON Component Schemas Index (${version})`,
+        description: `JSON component schemas for PatternFly version ${version}.`
+      });
     });
 
   return {
-    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
+    resources: [
+      {
+        uri: 'patternfly://schemas/index',
+        mimeType: 'text/markdown',
+        name: 'JSON Component Schemas Index (Latest)',
+        description: 'JSON component schemas entry point for the latest PatternFly version. This is the recommended starting point.'
+      },
+      ...resources.sort((a, b) => a.name.localeCompare(b.name))
+    ]
   };
 };
 
