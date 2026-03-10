@@ -8,7 +8,6 @@ import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import {
-  listResources,
   uriCategoryComplete,
   uriNameComplete,
   uriSectionComplete,
@@ -174,7 +173,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo()),
+    list: undefined,
     complete: {
       category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
       name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),

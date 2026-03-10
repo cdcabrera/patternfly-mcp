@@ -11,7 +11,7 @@ import {
   type PatternFlyComponentSchema
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { listResources, uriVersionComplete } from './resource.patternFlySchemasIndex';
+import { uriVersionComplete } from './resource.patternFlySchemasIndex';
 import { assertInput, assertInputStringLength } from './server.assertions';
 
 /**
@@ -152,7 +152,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlySchemasTemplateResource = (options = getOptions()): McpResource => [
   NAME,
   new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo()),
+    list: undefined,
     complete: {
       name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
       version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
