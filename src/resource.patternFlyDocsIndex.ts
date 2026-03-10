@@ -13,7 +13,7 @@ import {
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion
 } from './patternFly.helpers';
-import { filterPatternFly } from './patternFly.search';
+import {filterPatternFly, FilterPatternFlyFilters} from './patternFly.search';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -100,19 +100,46 @@ const listResources = async () => {
  */
 listResources.memo = memo(listResources);
 
+const paramCompletion = async (filters: FilterPatternFlyFilters) => {
+  const { byEntry } = await filterPatternFly.memo(filters);
+
+  const names = new Set<string>();
+  const categories = new Set<string>();
+  const sections = new Set<string>();
+  const versions = new Set<string>();
+
+  for (const entry of byEntry) {
+    names.add(entry.name);
+    categories.add(entry.category);
+    sections.add(entry.section);
+    versions.add(entry.version);
+  }
+
+  return {
+    names: Array.from(names).sort(),
+    categories: Array.from(categories).sort(),
+    sections: Array.from(sections).sort(),
+    versions: Array.from(versions).sort()
+  };
+};
+
 /**
  * Name completion callback for the URI template.
  *
  * @note If version is not available, the latest version is used to refine the search results
  * since it aligns with the default behavior of the PatternFly documentation.
  *
- * @param value - The value to complete.
+ * @param name - The value to complete.
  * @param context - The completion context.
  * @returns The list of available names.
  */
-const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
   const { version, category, section } = context?.arguments || {};
 
+  const { names } = await paramCompletion({ category, name, section, version });
+
+  return names;
+  /*
   const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
 
   const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
@@ -132,6 +159,8 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (value: 
   byEntry.forEach(result => names.add(result.name));
 
   return Array.from(names).sort();
+
+   */
 };
 
 /**
@@ -142,12 +171,17 @@ uriNameComplete.memo = memo(uriNameComplete);
 /**
  * Category completion callback for the URI template.
  *
- * @param value - The value to filter-by/complete.
+ * @param category - The value to filter-by/complete.
  * @param context - The completion context containing arguments for the URI template.
  * @returns The list of available categories, or an empty list.
  */
-const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
   const { version, section, name } = context?.arguments || {};
+
+  const { categories } = await paramCompletion({ category, name, section, version });
+
+  return categories;
+  /*
 
   const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
 
@@ -168,6 +202,7 @@ const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (val
   byEntry.forEach(entry => categories.add(entry.category));
 
   return Array.from(categories).sort();
+  */
 };
 
 uriCategoryComplete.memo = memo(uriCategoryComplete);
@@ -175,13 +210,18 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
 /**
  * Section completion callback for the URI template.
  *
- * @param value - The value to filter-by/complete.
+ * @param section - The value to filter-by/complete.
  * @param context - The completion context containing arguments for the URI template.
  * @returns The list of available sections, or an empty list.
  */
-const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown, context) => {
+const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (section: string, context) => {
   const { version, category, name } = context?.arguments || {};
 
+  const { sections } = await paramCompletion({ category, name, section, version });
+
+  return sections;
+
+  /*
   const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
 
   const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
@@ -201,6 +241,7 @@ const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (valu
   byEntry.forEach(entry => sections.add(entry.section));
 
   return Array.from(sections).sort();
+   */
 };
 
 /**
@@ -214,10 +255,18 @@ uriSectionComplete.memo = memo(uriSectionComplete);
  * @note Currently, we don't run a full version list, just the latest. In the future, we
  * should be pulling versions from the available documentation.
  *
- * @param value - The value to complete.
+ * @param version - The value to complete.
+ * @param context - The completion context containing arguments for the URI template.
  * @returns The list of available versions, or an empty list.
  */
-const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) => {
+const uriVersionComplete: CompleteResourceTemplateCallback = async (version: string, context) => {
+  const { section, category, name } = context?.arguments || {};
+
+  const { versions } = await paramCompletion({ category, name, section, version });
+
+  return versions;
+
+  /*
   const { availableVersions } = await getPatternFlyVersionContext.memo();
   let normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
 
@@ -228,6 +277,7 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
   normalizedVersion = await normalizeEnumeratedPatternFlyVersion(normalizedVersion);
 
   return availableVersions.filter(version => normalizedVersion === version);
+   */
 
   /*
   const { section, category, name } = context?.arguments || {};
