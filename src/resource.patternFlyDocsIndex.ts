@@ -9,11 +9,8 @@ import { assertInput, assertInputStringLength } from './server.assertions';
 import { buildSearchString } from './server.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { getOptions, runWithOptions } from './options.context';
-import {
-  getPatternFlyVersionContext,
-  normalizeEnumeratedPatternFlyVersion
-} from './patternFly.helpers';
-import {filterPatternFly, FilterPatternFlyFilters} from './patternFly.search';
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -100,6 +97,11 @@ const listResources = async () => {
  */
 listResources.memo = memo(listResources);
 
+/**
+ * Centralized completion logic for PatternFly documentation resources.
+ *
+ * @param {FilterPatternFlyFilters} filters
+ */
 const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   const { byEntry } = await filterPatternFly.memo(filters);
 
@@ -139,28 +141,6 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: s
   const { names } = await paramCompletion({ category, name, section, version });
 
   return names;
-  /*
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
-
-  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
-  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
-  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
-  const normalizedName = normalizedValue;
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: normalizedVersion,
-    category: normalizedCategory,
-    section: normalizedSection,
-    name: normalizedName
-  });
-
-  const names = new Set<string>();
-
-  byEntry.forEach(result => names.add(result.name));
-
-  return Array.from(names).sort();
-
-   */
 };
 
 /**
@@ -181,28 +161,6 @@ const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (cat
   const { categories } = await paramCompletion({ category, name, section, version });
 
   return categories;
-  /*
-
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
-
-  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
-  const normalizedCategory = normalizedValue; // typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
-  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
-  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: normalizedVersion,
-    category: normalizedCategory,
-    section: normalizedSection,
-    name: normalizedName
-  });
-
-  const categories = new Set<string>();
-
-  byEntry.forEach(entry => categories.add(entry.category));
-
-  return Array.from(categories).sort();
-  */
 };
 
 uriCategoryComplete.memo = memo(uriCategoryComplete);
@@ -220,28 +178,6 @@ const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (sect
   const { sections } = await paramCompletion({ category, name, section, version });
 
   return sections;
-
-  /*
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
-
-  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
-  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
-  const normalizedSection = normalizedValue;
-  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: normalizedVersion,
-    category: normalizedCategory,
-    section: normalizedSection,
-    name: normalizedName
-  });
-
-  const sections = new Set<string>();
-
-  byEntry.forEach(entry => sections.add(entry.section));
-
-  return Array.from(sections).sort();
-   */
 };
 
 /**
@@ -265,43 +201,6 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (version: str
   const { versions } = await paramCompletion({ category, name, section, version });
 
   return versions;
-
-  /*
-  const { availableVersions } = await getPatternFlyVersionContext.memo();
-  let normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
-
-  if (!normalizedVersion) {
-    return availableVersions;
-  }
-
-  normalizedVersion = await normalizeEnumeratedPatternFlyVersion(normalizedVersion);
-
-  return availableVersions.filter(version => normalizedVersion === version);
-   */
-
-  /*
-  const { section, category, name } = context?.arguments || {};
-
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : undefined;
-
-  const normalizedVersion = normalizedValue;
-  const normalizedCategory = typeof category === 'string' ? category?.trim()?.toLowerCase() : undefined;
-  const normalizedSection = typeof section === 'string' ? section?.trim()?.toLowerCase() : undefined;
-  const normalizedName = typeof name === 'string' ? name?.trim()?.toLowerCase() : '';
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: normalizedVersion,
-    category: normalizedCategory,
-    section: normalizedSection,
-    name: normalizedName
-  });
-
-  const versions = new Set<string>();
-
-  byEntry.forEach(entry => versions.add(entry.version));
-
-  return Array.from(versions).sort();
-   */
 };
 
 /**
