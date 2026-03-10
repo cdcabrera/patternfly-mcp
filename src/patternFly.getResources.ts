@@ -382,7 +382,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const version = (entry.version || 'unknown').toLowerCase();
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && byVersionSchemaNames.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
-      const uri = `patternfly://docs/${version}/${name}`;
+      const uri = `patternfly://docs/${name}?version=${version}`;
 
       pathIndex.add(path);
 
@@ -397,7 +397,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       let uriSchemas;
 
       if (isSchemasAvailable) {
-        uriSchemas = `patternfly://schemas/${version}/${name}`;
+        uriSchemas = `patternfly://schemas/${name}?version=${version}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
       }

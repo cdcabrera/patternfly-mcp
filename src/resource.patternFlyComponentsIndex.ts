@@ -43,28 +43,25 @@ const listResources = async () => {
   Array.from(byVersionComponentNames)
     .filter(([version]) => availableVersions.includes(version))
     .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version, components]) => {
-      const versionResource: PatterFlyListResourceResult[] = [];
-
-      Object.entries(components)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .forEach(([name, component]) => {
-          const displayName = component.displayName;
-          const isSchemasAvailable = component.isSchemasAvailable || false;
-
-          versionResource.push({
-            uri: `patternfly://docs/${version}/${name}`,
-            mimeType: 'text/markdown',
-            name: `${displayName} (${version})`,
-            description: `Component documentation for PatternFly version "${version}" of "${displayName}.${isSchemasAvailable ? ' (JSON Schema available)' : ''}"`
-          });
-        });
-
-      resources.push(...versionResource);
+    .forEach(([version]) => {
+      resources.push({
+        uri: `patternfly://components/index?version=${version}`,
+        mimeType: 'text/markdown',
+        name: `Component Index (${version})`,
+        description: `Component documentation entry point for PatternFly version ${version}. Filter by category if needed.`
+      });
     });
 
   return {
-    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
+    resources: [
+      {
+        uri: 'patternfly://components/index',
+        mimeType: 'text/markdown',
+        name: 'Components Index (Latest)',
+        description: 'Component documentation entry point for the latest PatternFly version. This is the recommended starting point.'
+      },
+      ...resources.sort((a, b) => a.name.localeCompare(b.name))
+    ]
   };
 };
 

@@ -60,7 +60,9 @@ const CONFIG = {
 };
 
 /**
- * List resources callback for the URI template.
+ * List resources callback for the URI template by available versions only.
+ *
+ * @note It's important to keep lists focused and concise, avoid listing all resources.
  *
  * @returns {Promise<PatterFlyListResourceResult>} The list of available resources.
  */
@@ -71,30 +73,25 @@ const listResources = async () => {
   Object.entries(byVersion)
     .filter(([version]) => availableVersions.includes(version))
     .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version, entries]) => {
-      const seenIndex = new Set<string>();
-      const versionResource: PatterFlyListResourceResult[] = [];
-
-      entries
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach(entry => {
-          if (!seenIndex.has(entry.name)) {
-            seenIndex.add(entry.name);
-
-            versionResource.push({
-              uri: entry.uri,
-              mimeType: 'text/markdown',
-              name: `${entry.name} (${version})`,
-              description: `Documentation for PatternFly version "${version}" of "${entry.name}"`
-            });
-          }
-        });
-
-      resources.push(...versionResource);
+    .forEach(([version]) => {
+      resources.push({
+        uri: `patternfly://docs/index?version=${version}`,
+        mimeType: 'text/markdown',
+        name: `Docs Index (${version})`,
+        description: `Documentation entry point for PatternFly version ${version}. Filter by category or section if needed.`
+      });
     });
 
   return {
-    resources: resources.sort((a, b) => a.name.localeCompare(b.name))
+    resources: [
+      {
+        uri: 'patternfly://docs/index',
+        mimeType: 'text/markdown',
+        name: 'Docs Index (Latest)',
+        description: 'Documentation entry point for the latest PatternFly version. This is the recommended starting point.'
+      },
+      ...resources.sort((a, b) => a.name.localeCompare(b.name))
+    ]
   };
 };
 
