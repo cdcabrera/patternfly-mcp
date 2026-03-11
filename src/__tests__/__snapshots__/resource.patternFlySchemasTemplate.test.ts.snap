@@ -8,23 +8,15 @@ exports[`patternFlySchemasTemplateResource should have a consistent return struc
   "uri": ResourceTemplate {
     "_callbacks": {
       "complete": {
+        "category": [Function],
         "name": [Function],
         "version": [Function],
       },
-      "list": [Function],
+      "list": undefined,
     },
     "_uriTemplate": UriTemplate {
       "parts": [
         "patternfly://schemas/",
-        {
-          "exploded": false,
-          "name": "version",
-          "names": [
-            "version",
-          ],
-          "operator": "",
-        },
-        "/",
         {
           "exploded": false,
           "name": "name",
@@ -33,8 +25,17 @@ exports[`patternFlySchemasTemplateResource should have a consistent return struc
           ],
           "operator": "",
         },
+        {
+          "exploded": false,
+          "name": "version",
+          "names": [
+            "version",
+            "category",
+          ],
+          "operator": "?",
+        },
       ],
-      "template": "patternfly://schemas/{version}/{name}",
+      "template": "patternfly://schemas/{name}{?version,category}",
     },
   },
 }

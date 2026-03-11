@@ -13,11 +13,11 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
         "section": [Function],
         "version": [Function],
       },
-      "list": [Function],
+      "list": undefined,
     },
     "_uriTemplate": UriTemplate {
       "parts": [
-        "patternfly://docs//",
+        "patternfly://docs/",
         {
           "exploded": false,
           "name": "name",
@@ -37,7 +37,7 @@ exports[`patternFlyDocsTemplateResource should have a consistent return structur
           "operator": "?",
         },
       ],
-      "template": "patternfly://docs//{name}{?version,category,section}",
+      "template": "patternfly://docs/{name}{?version,category,section}",
     },
   },
 }

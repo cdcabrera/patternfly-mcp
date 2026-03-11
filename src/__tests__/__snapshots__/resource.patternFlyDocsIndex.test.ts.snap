@@ -22,13 +22,13 @@ exports[`patternFlyDocsIndexResource should have a consistent return structure: 
           "name": "version",
           "names": [
             "version",
-            "section",
             "category",
+            "section",
           ],
           "operator": "?",
         },
       ],
-      "template": "patternfly://docs/index{?version,section,category}",
+      "template": "patternfly://docs/index{?version,category,section}",
     },
   },
 }

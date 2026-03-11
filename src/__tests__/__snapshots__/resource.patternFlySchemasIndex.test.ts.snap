@@ -8,6 +8,7 @@ exports[`patternFlySchemasIndexResource should have a consistent return structur
   "uri": ResourceTemplate {
     "_callbacks": {
       "complete": {
+        "category": [Function],
         "version": [Function],
       },
       "list": [Function],
@@ -20,11 +21,12 @@ exports[`patternFlySchemasIndexResource should have a consistent return structur
           "name": "version",
           "names": [
             "version",
+            "category",
           ],
           "operator": "?",
         },
       ],
-      "template": "patternfly://schemas/index{?version}",
+      "template": "patternfly://schemas/index{?version,category}",
     },
   },
 }

@@ -1,4 +1,5 @@
 import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
 /**
  * Centralized completion logic for PatternFly resources.
@@ -6,7 +7,8 @@ import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.sea
  * @param {FilterPatternFlyFilters} filters
  */
 const paramCompletion = async (filters: FilterPatternFlyFilters) => {
-  const { byEntry } = await filterPatternFly.memo(filters);
+  const normalizedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(filters.version)) || filters.version;
+  const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion });
 
   const names = new Set<string>();
   const categories = new Set<string>();
