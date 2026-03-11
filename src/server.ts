@@ -1,5 +1,6 @@
 import { McpServer, type ResourceTemplate, type ResourceMetadata } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { registerResource } from './mcpSdk';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
@@ -296,8 +297,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
       log.info(`Registered resource: ${name}`);
 
-      // Note: uri is being cast as any to bypass a type mismatch introduced at the MCP SDK level. Rereview when SDK is updated.
-      server?.registerResource(name, uri as any, config, (...args: unknown[]) =>
+      registerResource(server, name, uri, config, (...args: unknown[]) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
             log.debug(
