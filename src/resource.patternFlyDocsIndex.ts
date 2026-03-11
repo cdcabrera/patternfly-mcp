@@ -3,12 +3,11 @@ import {
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
-import { stringJoin } from './server.helpers';
 import { memo } from './server.caching';
+import { buildSearchString, stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
-import { buildSearchString } from './server.helpers';
-import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { getOptions, runWithOptions } from './options.context';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
 import { paramCompletion } from './resource.helpers';

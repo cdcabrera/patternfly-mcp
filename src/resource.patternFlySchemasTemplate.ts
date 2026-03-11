@@ -1,8 +1,7 @@
-import {
-  type CompleteResourceTemplateCallback,
-  ResourceTemplate
-} from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
+import { memo } from './server.caching';
+import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { filterPatternFly } from './patternFly.search';
 import {
@@ -11,8 +10,9 @@ import {
   type PatternFlyComponentSchema
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { uriVersionComplete } from './resource.patternFlySchemasIndex';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
+import { type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
+import { paramCompletion } from './resource.helpers';
 
 /**
  * Name of the resource template.
@@ -22,7 +22,7 @@ const NAME = 'patternfly-schemas-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://schemas/{name}{?version}';
+const URI_TEMPLATE = 'patternfly://schemas/{name}{?version,category}';
 
 /**
  * Resource configuration.
@@ -36,31 +36,22 @@ const CONFIG = {
 /**
  * Name completion callback for the URI template.
  *
- * @param value - The value to complete.
+ * @param name - The value to complete.
  * @param context - The completion context.
  * @returns The list of available names.
  */
-const uriNameComplete: CompleteResourceTemplateCallback = async (value: unknown, context) => {
-  const { version } = context?.arguments || {};
+const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
+  const { version, category } = context?.arguments || {};
+  const section = 'components';
+  const { names } = await paramCompletion({ category, name, section, version });
 
-  const normalizedValue = typeof value === 'string' ? value?.trim()?.toLowerCase() : '';
-  const normalizedVersion = typeof version === 'string' ? version?.trim()?.toLowerCase() : undefined;
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: normalizedVersion,
-    name: normalizedValue
-  });
-
-  const names = new Set<string>();
-
-  byEntry.forEach(result => {
-    if (result.uriSchemas) {
-      names.add(result.name);
-    }
-  });
-
-  return Array.from(names).sort();
+  return names;
 };
+
+/**
+ * Memoized version of uriNameComplete.
+ */
+uriNameComplete.memo = memo(uriNameComplete);
 
 /**
  * Resource callback for the documentation template.
@@ -154,8 +145,9 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
   new ResourceTemplate(URI_TEMPLATE, {
     list: undefined,
     complete: {
-      name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+      name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
     }
   }),
   CONFIG,

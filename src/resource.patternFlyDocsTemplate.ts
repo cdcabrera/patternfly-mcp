@@ -7,13 +7,13 @@ import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { filterPatternFly } from './patternFly.search';
 import {
   uriCategoryComplete,
   uriNameComplete,
   uriSectionComplete,
   uriVersionComplete
 } from './resource.patternFlyDocsIndex';
-import { filterPatternFly } from './patternFly.search';
 
 /**
  * Name of the resource template.
