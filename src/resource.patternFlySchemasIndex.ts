@@ -1,13 +1,13 @@
-import {
-  ResourceTemplate,
-  type CompleteResourceTemplateCallback
-} from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
+import {
+  type PatterFlyListResourceResult,
+  type ExtendedCompleteResourceTemplateCallback
+} from './resource.patternFlyDocsIndex';
 import {
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion
@@ -76,12 +76,12 @@ listResources.memo = memo(listResources);
 /**
  * Name completion callback for the URI schemas template.
  *
- * @note Schemas has limited version support.
+ * @note Schemas has limited version support we consider this unique for now.
  *
  * @param value - The value to complete.
  * @returns The list of available versions, or an empty list.
  */
-const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unknown) => {
+const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (value: unknown) => {
   const { availableSchemasVersions } = await getPatternFlyVersionContext.memo();
   let normalizedVersion = typeof value === 'string' ? value.trim().toLowerCase() : undefined;
 
@@ -93,6 +93,11 @@ const uriVersionComplete: CompleteResourceTemplateCallback = async (value: unkno
 
   return availableSchemasVersions.filter(version => normalizedVersion === version);
 };
+
+/**
+ * Memoized version of uriVersionComplete.
+ */
+uriVersionComplete.memo = memo(uriVersionComplete);
 
 /**
  * Resource callback for the documentation index.
@@ -183,7 +188,7 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
   new ResourceTemplate(URI_TEMPLATE, {
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
     }
   }),
   CONFIG,

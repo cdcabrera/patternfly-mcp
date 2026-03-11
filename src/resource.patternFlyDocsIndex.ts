@@ -10,7 +10,8 @@ import { buildSearchString } from './server.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
+import { filterPatternFly } from './patternFly.search';
+import { paramCompletion } from './resource.helpers';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -98,34 +99,6 @@ const listResources = async () => {
 listResources.memo = memo(listResources);
 
 /**
- * Centralized completion logic for PatternFly documentation resources.
- *
- * @param {FilterPatternFlyFilters} filters
- */
-const paramCompletion = async (filters: FilterPatternFlyFilters) => {
-  const { byEntry } = await filterPatternFly.memo(filters);
-
-  const names = new Set<string>();
-  const categories = new Set<string>();
-  const sections = new Set<string>();
-  const versions = new Set<string>();
-
-  for (const entry of byEntry) {
-    names.add(entry.name);
-    categories.add(entry.category);
-    sections.add(entry.section);
-    versions.add(entry.version);
-  }
-
-  return {
-    names: Array.from(names).sort(),
-    categories: Array.from(categories).sort(),
-    sections: Array.from(sections).sort(),
-    versions: Array.from(versions).sort()
-  };
-};
-
-/**
  * Name completion callback for the URI template.
  *
  * @note If version is not available, the latest version is used to refine the search results
@@ -137,7 +110,6 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
   const { version, category, section } = context?.arguments || {};
-
   const { names } = await paramCompletion({ category, name, section, version });
 
   return names;
@@ -157,12 +129,14 @@ uriNameComplete.memo = memo(uriNameComplete);
  */
 const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
   const { version, section, name } = context?.arguments || {};
-
   const { categories } = await paramCompletion({ category, name, section, version });
 
   return categories;
 };
 
+/**
+ * Memoized version of uriCategoryComplete.
+ */
 uriCategoryComplete.memo = memo(uriCategoryComplete);
 
 /**
@@ -174,7 +148,6 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  */
 const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (section: string, context) => {
   const { version, category, name } = context?.arguments || {};
-
   const { sections } = await paramCompletion({ category, name, section, version });
 
   return sections;
@@ -188,20 +161,21 @@ uriSectionComplete.memo = memo(uriSectionComplete);
 /**
  * Name completion callback for the URI template.
  *
- * @note Currently, we don't run a full version list, just the latest. In the future, we
- * should be pulling versions from the available documentation.
- *
  * @param version - The value to complete.
  * @param context - The completion context containing arguments for the URI template.
  * @returns The list of available versions, or an empty list.
  */
-const uriVersionComplete: CompleteResourceTemplateCallback = async (version: string, context) => {
+const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
   const { section, category, name } = context?.arguments || {};
-
   const { versions } = await paramCompletion({ category, name, section, version });
 
   return versions;
 };
+
+/**
+ * Memoized version of uriVersionComplete.
+ */
+uriVersionComplete.memo = memo(uriVersionComplete);
 
 /**
  * Resource callback for the documentation index.
@@ -325,7 +299,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
     complete: {
       category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
       section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
     }
   }),
   CONFIG,

@@ -175,10 +175,10 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
   new ResourceTemplate(URI_TEMPLATE, {
     list: undefined,
     complete: {
-      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
-      name: async (...args) => runWithOptions(options, async () => uriNameComplete(...args)),
-      section: async (...args) => runWithOptions(options, async () => uriSectionComplete(...args)),
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+      name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
+      section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
     }
   }),
   CONFIG,

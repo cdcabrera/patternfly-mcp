@@ -7,7 +7,11 @@ import { getOptions, runWithOptions } from './options.context';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { filterPatternFly } from './patternFly.search';
-import { uriCategoryComplete, uriVersionComplete, type PatterFlyListResourceResult } from './resource.patternFlyDocsIndex';
+import {
+  type PatterFlyListResourceResult,
+  type ExtendedCompleteResourceTemplateCallback
+} from './resource.patternFlyDocsIndex';
+import { paramCompletion } from './resource.helpers';
 
 /**
  * Name of the resource.
@@ -69,6 +73,46 @@ const listResources = async () => {
  * Memoized version of listResources.
  */
 listResources.memo = memo(listResources);
+
+/**
+ * Category completion callback for the URI template.
+ *
+ * @param category - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available categories, or an empty list.
+ */
+const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
+  const { version, name } = context?.arguments || {};
+  const section = 'components';
+  const { categories } = await paramCompletion({ category, name, section, version });
+
+  return categories;
+};
+
+/**
+ * Memoized version of uriCategoryComplete.
+ */
+uriCategoryComplete.memo = memo(uriCategoryComplete);
+
+/**
+ * Name completion callback for the URI template.
+ *
+ * @param version - The value to complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available versions, or an empty list.
+ */
+const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
+  const { category, name } = context?.arguments || {};
+  const section = 'components';
+  const { versions } = await paramCompletion({ category, name, section, version });
+
+  return versions;
+};
+
+/**
+ * Memoized version of uriVersionComplete.
+ */
+uriVersionComplete.memo = memo(uriVersionComplete);
 
 /**
  * Resource callback for the documentation index.
@@ -143,8 +187,8 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
   new ResourceTemplate(URI_TEMPLATE, {
     list: async () => runWithOptions(options, async () => listResources.memo()),
     complete: {
-      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete(...args)),
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete(...args))
+      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
     }
   }),
   CONFIG,
@@ -155,6 +199,8 @@ export {
   patternFlyComponentsIndexResource,
   listResources,
   resourceCallback,
+  uriCategoryComplete,
+  uriVersionComplete,
   NAME,
   URI_TEMPLATE,
   CONFIG
