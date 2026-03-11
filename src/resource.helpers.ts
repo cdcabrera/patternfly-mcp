@@ -7,8 +7,8 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
  * @param {FilterPatternFlyFilters} filters
  */
 const paramCompletion = async (filters: FilterPatternFlyFilters) => {
-  const normalizedVersion = (await normalizeEnumeratedPatternFlyVersion.memo(filters.version)) || filters.version;
-  const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion });
+  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(filters.version);
+  const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion || filters.version });
 
   const names = new Set<string>();
   const categories = new Set<string>();
