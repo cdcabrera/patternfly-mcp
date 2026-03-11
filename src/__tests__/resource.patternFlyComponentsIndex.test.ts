@@ -25,9 +25,11 @@ describe('listResources', () => {
 
     expect(resources.resources).toBeDefined();
 
+    console.warn(resources.resources);
+
     const everyResourceSameProperties = resources.resources.every((obj: any) =>
       Boolean(obj.uri) &&
-      /^patternfly:\/\/docs\//.test(obj.uri) &&
+      /^patternfly:\/\/components\//.test(obj.uri) &&
       Boolean(obj.name) &&
       Boolean(obj.mimeType) &&
       Boolean(obj.description));
