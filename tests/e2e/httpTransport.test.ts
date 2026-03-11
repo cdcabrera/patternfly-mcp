@@ -1,4 +1,11 @@
 /**
+ * Testing Decision: E2E Resource Strictness
+ *
+ * The MCP server supports flexible discovery URIs for LLM interaction, but the
+ * E2E tests purposefully use parameter-dependent, version-pinned URIs. Currently,
+ * the intent is to validate the strictest possible path to ensure transport behavior.
+ */
+/**
  * Requires: npm run build prior to running Jest.
  * - If typings are needed, use public types from dist to avoid type identity mismatches between src and dist
  */
@@ -205,8 +212,8 @@ describe('Builtin resources, HTTP transport', () => {
     expect(content.mimeType).toBe('text/markdown');
   });
 
-  it('should read the patternfly-docs-index', async () => {
-    const uri = 'patternfly://docs/index?version=v6';
+  it('should read the patternfly-docs-index with query params', async () => {
+    const uri = 'patternfly://docs/index?version=v6&category=accessibility&section=components';
     const response = await CLIENT?.send({
       method: 'resources/read',
       params: { uri }
@@ -218,7 +225,7 @@ describe('Builtin resources, HTTP transport', () => {
   });
 
   it('should read a doc through a template', async () => {
-    const uri = 'patternfly://docs/button?version=v6';
+    const uri = 'patternfly://docs/button?version=v6&category=react&section=components';
     const response = await CLIENT?.send({
       method: 'resources/read',
       params: { uri }
@@ -230,7 +237,7 @@ describe('Builtin resources, HTTP transport', () => {
   });
 
   it('should read the patternfly-schemas-index', async () => {
-    const uri = 'patternfly://schemas/index?version=v6';
+    const uri = 'patternfly://schemas/index?version=v6&category=react';
     const response = await CLIENT?.send({
       method: 'resources/read',
       params: { uri }
