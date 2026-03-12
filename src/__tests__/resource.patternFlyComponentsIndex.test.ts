@@ -43,14 +43,14 @@ describe('resourceCallback', () => {
     {
       description: 'default',
       variables: {},
-      expected: '# PatternFly Component Names Index for "v6"'
+      expected: '# PatternFly Components Index for "v6"'
     },
     {
       description: 'explicit valid version',
       variables: {
         version: 'v6'
       },
-      expected: '# PatternFly Component Names Index for "v6"'
+      expected: '# PatternFly Components Index for "v6"'
     },
     {
       description: 'category',

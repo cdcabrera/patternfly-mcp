@@ -1,3 +1,4 @@
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
 
@@ -9,15 +10,21 @@ const NAME = 'patternfly-context';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://context';
+const URI_TEMPLATE = new ResourceTemplate('patternfly://context', { list: undefined, complete: {} });
 
 /**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Design System Context',
-  description: 'Information about PatternFly design system and how to use this MCP server',
-  mimeType: 'text/markdown'
+  description: 'Information about the PatternFly design system and how to use this MCP server.',
+  mimeType: 'text/markdown',
+  icons: [
+    {
+      src: 'https://www.patternfly.org/assets/images/patternfly-logo.svg',
+      mimeType: 'image/svg+xml'
+    }
+  ]
 };
 
 /**

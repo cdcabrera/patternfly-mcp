@@ -158,20 +158,28 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([_name, data], index) => {
       const searchString = buildSearchString({
-        version: updatedVersion,
         category
       }, { prefix: true });
 
       return `${index + 1}. [${data.name} (${updatedVersion})](${data.uri}${searchString || ''})`;
     });
 
+  const usageGuide = stringJoin.newline(
+    '## Usage Guide',
+    'Component URIs follow the pattern: `patternfly://docs/{name}`',
+    '- **Optional Parameters**: `version` (v6|latest), `category`',
+    '- **Example**: `patternfly://docs/button?version=v6`',
+    '---'
+  );
+
   return {
     contents: [{
       uri: passedUri?.toString() || 'patternfly://components/index',
       mimeType: 'text/markdown',
       text: stringJoin.newline(
-        `# PatternFly Component Names Index for "${updatedVersion}"`,
+        `# PatternFly Components Index for "${updatedVersion}"`,
         '',
+        usageGuide,
         '',
         ...docsIndex || []
       )

@@ -267,9 +267,18 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
+  const usageGuide = stringJoin.newline(
+    '## Usage Guide',
+    'Resource URIs follow the pattern: `patternfly://docs/{name}`',
+    '- **Optional Parameters**: `version` (v6|latest), `category`, `section`',
+    '- **Example**: `patternfly://docs/button?category=accessibility`',
+    '---'
+  );
+
   const allDocs = stringJoin.newline(
     `# PatternFly Documentation Index for "${updatedVersion}"`,
     '',
+    usageGuide,
     '',
     ...(docsIndex || [])
   );

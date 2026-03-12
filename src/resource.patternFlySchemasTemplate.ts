@@ -32,7 +32,9 @@ const URI_TEMPLATE = 'patternfly://schemas/{name}{?version,category}';
  */
 const CONFIG = {
   title: 'PatternFly Component Schema',
-  description: 'Retrieve the JSON Schema for a specific PatternFly component by name',
+  description: `Retrieve the JSON Schema for a specific PatternFly component by name.
+Template: ${URI_TEMPLATE}
+Supports optional query parameters: version (v6|latest) and category.`,
   mimeType: 'application/json'
 };
 

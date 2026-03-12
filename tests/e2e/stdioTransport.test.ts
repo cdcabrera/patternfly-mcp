@@ -195,7 +195,7 @@ describe('Builtin resources, STDIO', () => {
     const updatedTemplates = templates?.result?.resourceTemplates || [];
     const templateNames = updatedTemplates.map((template: any) => template.uriTemplate).sort();
 
-    expect(resourceNames).toContain('patternfly://context');
+    expect(templateNames).toContain('patternfly://context');
     expect(templateNames).toContain('patternfly://components/index{?version,category}');
   });
 

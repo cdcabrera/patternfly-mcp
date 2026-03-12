@@ -413,7 +413,7 @@ const TOOL_MEMO_OPTIONS = {
  * Default server instance options.
  */
 const SERVER_OPTIONS: ServerOptions = {
-  instructions: 'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development.'
+  instructions: 'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development. Doc resources support optional query params: version (v6|latest), category, and section. Example: patternfly://docs/button?category=accessibility.'
 };
 
 /**

@@ -33,7 +33,9 @@ const URI_TEMPLATE = 'patternfly://docs/{name}{?version,category,section}';
  */
 const CONFIG = {
   title: 'PatternFly Documentation Page',
-  description: 'Retrieve specific PatternFly documentation by name or path',
+  description: `Retrieve specific PatternFly documentation by name or path.
+Template: ${URI_TEMPLATE}
+Supports optional query parameters: version (v6|latest), category, and section.`,
   mimeType: 'text/markdown'
 };
 

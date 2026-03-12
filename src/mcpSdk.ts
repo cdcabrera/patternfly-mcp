@@ -51,11 +51,22 @@ const registerResource = (
   }
 
   if (uriOrTemplate instanceof ResourceTemplate) {
+    const templateStr = uriOrTemplate.uriTemplate?.toString();
+
+    if (!templateStr) {
+      server.registerResource(name, uriOrTemplate, config, callback);
+
+      return;
+    }
+
     // Register the original template first. MCP SDK matcher limitation.
     server.registerResource(name, uriOrTemplate, config, callback);
 
-    const templateStr = uriOrTemplate.uriTemplate.toString();
     const [remainingBaseUri, remainingUri] = templateStr.split('{?');
+
+    if (!remainingUri) {
+      return;
+    }
     // Technically, the hash should fall after a query, just a precaution
     const baseUri = remainingBaseUri?.split('{#')?.[0];
     const searchUri = remainingUri?.split('}')?.[0]?.toLowerCase();
