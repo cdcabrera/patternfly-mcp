@@ -1,4 +1,9 @@
-import { McpServer, type ResourceTemplate, type ResourceMetadata } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  McpServer,
+  type CompleteResourceTemplateCallback,
+  type ResourceTemplate,
+  type ResourceMetadata
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerResource } from './mcpSdk';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
@@ -54,12 +59,14 @@ type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: stri
 /**
  * A resource registered with the MCP server.
  *
- * - `name`: Registered name of the resource.
- * - `uriOrTemplate`: URI string or template.
- * - `config`: Resource configuration metadata.
- * - `handler`: Resource handler function.
- * - `metadata`: Optional **internal metadata** object. NOT used by the standard MCP SDK
+ * 0. `name`: Registered name of the resource.
+ * 1. `uriOrTemplate`: URI string or template.
+ * 2. `config`: Resource configuration metadata.
+ * 3. `handler`: Resource handler function.
+ * 4. `metadata`: Optional **internal metadata** object. NOT used by the standard MCP SDK
  *     resource registry.
+ *    - `metadata.complete`: Callback functions for resource read operations completion
+ *    - `metadata.registerAllSearchCombinations`: Whether to register all search parameter permutations or not.
  */
 type McpResource = [
   name: string,
@@ -67,6 +74,10 @@ type McpResource = [
   config: ResourceMetadata,
   handler: (...args: any[]) => any | Promise<any>,
   metadata?: {
+    registerAllSearchCombinations?: boolean | undefined;
+    complete: {
+      [key: string]: CompleteResourceTemplateCallback;
+    } | undefined;
     [key: string]: unknown;
   } | undefined
 ];
