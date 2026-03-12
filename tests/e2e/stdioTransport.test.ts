@@ -1,9 +1,10 @@
 /**
  * Testing Decision: E2E Resource Strictness
  *
- * The MCP server supports flexible discovery URIs for LLM interaction, but the
- * E2E tests purposefully use parameter-dependent, version-pinned URIs. Currently,
- * the intent is to validate the strictest possible path to ensure transport behavior.
+ * The MCP server supports flexible discovery URIs for LLM interaction
+ * to compensate for an MCP SDK limitation regarding MCP resource templates and
+ * ALL search params being required. We've attempted to cover most of the
+ * search parameter variations, altering them can still cause test failures.
  */
 /**
  *  Requires: npm run build prior to running Jest.
