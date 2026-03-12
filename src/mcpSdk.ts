@@ -53,6 +53,8 @@ const registerResource = (
   }
 
   if (uriOrTemplate instanceof ResourceTemplate) {
+    // server.registerResource(name, uriOrTemplate, config, callback);
+
     const templateStr = uriOrTemplate.uriTemplate.toString();
     const [remainingBaseUri, remainingUri] = templateStr.split('{?');
     // Technically, the hash should fall after a query, just a precaution
@@ -67,7 +69,7 @@ const registerResource = (
       // Register combinations
       const register = (incrementalParams: string[]) => {
         const newUri = incrementalParams.length ? `${baseUri}{?${incrementalParams.join(',')}}` : baseUri;
-        const newName = incrementalParams.length ? `${name}-${incrementalParams.join('-')}` : name;
+        const newName = incrementalParams.length ? `${name}-${incrementalParams.join('-')}` : `${name}-empty`;
         const newList = incrementalParams.length === 0 ? metadata?.list : undefined;
 
         const resourceTemplate = new ResourceTemplate(newUri, {
@@ -80,24 +82,71 @@ const registerResource = (
         server.registerResource(newName, resourceTemplate, config, callback);
       };
 
-      // Loop all search combinations, including empty, if specified
+      // Variation for all combos
+      const paramAllCombinations = (params: string[]) =>
+        params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
+
+      // Variation for incremental combos
+      const paramIncrementalCombinations = (params: string[]) =>
+        params.reduce((acc, val) => {
+          const lastArray = acc[acc.length - 1] || [];
+
+          acc.push([...lastArray, val]);
+
+          return acc;
+        }, [[]] as string[][]);
+
+      // Register all but the full combination, let that pass through and register last
       if (metadata?.registerAllSearchCombinations) {
-        const paramCombinations = (params: string[]) =>
-          params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
-
-        paramCombinations(searchParams).forEach(combination => register(combination));
-
-        return;
+        paramAllCombinations(searchParams)
+          .filter(combination => combination.length < searchParams.length)
+          .forEach(combination => register(combination));
+      } else {
+        paramIncrementalCombinations(searchParams)
+          .filter(combination => combination.length < searchParams.length)
+          .forEach(combination => register(combination));
       }
-
-      // Register an empty search combination
-      register([]);
-
-      // Then loop incremental search combinations
-      searchParams.forEach((param, index) => register(searchParams.slice(0, index + 1)));
-
-      return;
     }
+
+    /*
+      // Loop all search combinations, including an empty search combination
+      if (metadata?.registerAllSearchCombinations) {
+
+        paramAllCombinations(searchParams)
+          // .filter(params => params.length !== searchParams.length)
+          .filter(combination => combination.length < searchParams.length)
+          .forEach(combination => register(combination));
+
+      // Or loop incremental search combinations, including an empty search combination
+      } else {
+        const paramCombinations = (params: string[]) =>
+          params.reduce((acc, val) => {
+            const lastArray = acc[acc.length - 1] || [];
+
+            acc.push([...lastArray, val]);
+            // return [...acc, [...lastArray, val]];
+            return acc;
+          }, [] as string[][]);
+          // return params.reduce((acc, val) => {
+          //  return acc.concat(acc[acc.length - 1] || [], val);
+          // }, [[]]);
+
+          /*
+            const lastArray = acc.length ? acc[acc.length - 1] : [];
+
+            acc.push([...(lastArray as string[]), val]);
+
+            return acc;
+            * /
+        };
+
+        // Register empty
+        register([]);
+
+        // Incremental search combinations
+        searchParams.slice(0, searchParams.length - 1).forEach((param, index) => register(searchParams.slice(0, index + 1)));
+      }
+      */
   }
 
   // Register a string or fallthrough URI
