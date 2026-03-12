@@ -1,11 +1,11 @@
 import {
   ResourceTemplate,
   type McpServer,
-  type ResourceMetadata,
-  type ReadResourceCallback, CompleteResourceTemplateCallback
+  //   type ResourceMetadata,
+  // type ReadResourceCallback,
+  type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { McpResource } from "./server";
-import {URI_TEMPLATE} from "./resource.patternFlyDocsIndex";
+import { type McpResource } from './server';
 
 // Helper to get all combinations of an array
 // const getCombinations = (params: string[]) =>
@@ -20,7 +20,11 @@ import {URI_TEMPLATE} from "./resource.patternFlyDocsIndex";
  * What's registered:
  * - `original`: The original string or template URI which typically includes ALL parameters.
  * - `base URI`: Template base URI, sans hash, search params
- * - `single params URIs`: URIs with only one parameter included
+ * - `incremental params URIs`: URIs that incrementally add search params
+ *
+ * Optional registration:
+ * - `all permutations`: Disabled by default, allows creating all search parameter permutations
+ *     of resources for registration.
  *
  * Why we only register this limited set of URIs:
  * - To avoid excessive resource registration.
@@ -32,10 +36,14 @@ import {URI_TEMPLATE} from "./resource.patternFlyDocsIndex";
  *
  * @param {McpServer} server - MCP Server instance
  * @param name - Resource name
- * @param {string | ResourceTemplate} uriOrTemplate - URI or ResourceTemplate
- * @param {ResourceMetadata} config - Resource metadata configuration
- * @param {ReadResourceCallback} callback - Callback function for resource read operations
- * @param metadata
+ * @param uriOrTemplate - URI or ResourceTemplate
+ * @param config - Resource metadata configuration
+ * @param callback - Callback function for resource read operations
+ * @param metadata - McpResource metadata. Currently, leveraged for passing the `complete` callbacks
+ *     so they can be recreated under the different search parameter resource variations.
+ * @param [options] - Options for resource registration
+ * @param [options.useIncrementalSearchParams=true] - Whether to register incremental search params
+ *     or all-combinations
  */
 const registerResource = (
   server: McpServer,
@@ -43,7 +51,8 @@ const registerResource = (
   uriOrTemplate: McpResource[1],
   config: McpResource[2],
   callback: McpResource[3],
-  metadata: McpResource[4]
+  metadata: McpResource[4],
+  { useIncrementalSearchParams = true }: { useIncrementalSearchParams?: boolean } = {}
 ) => {
   if (!server) {
     return;
@@ -65,15 +74,27 @@ const registerResource = (
       const allVariableNames = uriOrTemplate.uriTemplate.variableNames;
       const searchParams = allVariableNames.filter(name => searchUri.includes(name.toLowerCase()));
 
-      searchParams.forEach((param, index) => {
-        const incrementalParams = searchParams.slice(0, index + 1);
+      const register = (incrementalParams: string[]) => {
         const resourceTemplate = new ResourceTemplate(`${baseUri}{?${incrementalParams.join(',')}}`, {
           list: undefined,
-          complete: metadata.complete as { [variable: string]: CompleteResourceTemplateCallback; }
+          complete: metadata.complete as {
+            [variable: string]: CompleteResourceTemplateCallback;
+          }
         });
 
         server.registerResource(`${name}-${incrementalParams.join('-')}`, resourceTemplate, config, callback);
-      });
+      };
+
+      if (useIncrementalSearchParams) {
+        searchParams.forEach((param, index) => register(searchParams.slice(0, index + 1)));
+
+        return;
+      }
+
+      const getCombinations = (params: string[]) =>
+        params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
+
+      getCombinations(searchParams).forEach(combination => register(combination));
 
       return;
     }
