@@ -48,11 +48,16 @@ const NAME = 'patternfly-docs-index';
 const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section}';
 
 /**
+ * URI description for the resource.
+ */
+const URI_DESCRIPTION = `Filter by PatternFly version, category, and section, ${URI_TEMPLATE}`;
+
+/**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Documentation Index',
-  description: 'A comprehensive list of PatternFly documentation links, organized by components, layouts, charts, and guidance files.',
+  description: `A list of PatternFly documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown'
 };
 
@@ -75,7 +80,7 @@ const listResources = async () => {
         uri: `patternfly://docs/index?version=${version}`,
         mimeType: 'text/markdown',
         name: `Docs Index (${version})`,
-        description: `Documentation entry point for PatternFly version ${version}. Filter by category or section if needed.`
+        description: `Documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
       });
     });
 
@@ -85,7 +90,7 @@ const listResources = async () => {
         uri: 'patternfly://docs/index',
         mimeType: 'text/markdown',
         name: 'Docs Index (Latest)',
-        description: 'Documentation entry point for the latest PatternFly version. This is the recommended starting point.'
+        description: `Documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
       },
       ...resources.sort((a, b) => a.name.localeCompare(b.name))
     ]
@@ -267,18 +272,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  const usageGuide = stringJoin.newline(
-    '## Usage Guide',
-    'Resource URIs follow the pattern: `patternfly://docs/{name}`',
-    '- **Optional Parameters**: `version` (v6|latest), `category`, `section`',
-    '- **Example**: `patternfly://docs/button?category=accessibility`',
-    '---'
-  );
-
   const allDocs = stringJoin.newline(
     `# PatternFly Documentation Index for "${updatedVersion}"`,
     '',
-    usageGuide,
     '',
     ...(docsIndex || [])
   );
@@ -337,6 +333,7 @@ export {
   uriVersionComplete,
   NAME,
   URI_TEMPLATE,
+  URI_DESCRIPTION,
   CONFIG,
   type ExtendedCompleteResourceTemplateCallback,
   type PatterFlyListResourceResult

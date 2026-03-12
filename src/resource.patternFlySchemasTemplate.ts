@@ -28,13 +28,16 @@ const NAME = 'patternfly-schemas-template';
 const URI_TEMPLATE = 'patternfly://schemas/{name}{?version,category}';
 
 /**
+ * URI description for the resource.
+ */
+const URI_DESCRIPTION = `Filter by PatternFly version, and category, ${URI_TEMPLATE}`;
+
+/**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Component Schema',
-  description: `Retrieve the JSON Schema for a specific PatternFly component by name.
-Template: ${URI_TEMPLATE}
-Supports optional query parameters: version (v6|latest) and category.`,
+  description: `Retrieve the JSON Schema for a specific PatternFly component by name. ${URI_DESCRIPTION}`,
   mimeType: 'application/json'
 };
 
@@ -177,5 +180,6 @@ export {
   uriNameComplete,
   NAME,
   URI_TEMPLATE,
+  URI_DESCRIPTION,
   CONFIG
 };

@@ -5,17 +5,6 @@ exports[`patternFlyContextResource should have a consistent return structure: st
   "config": true,
   "handler": [Function],
   "name": "patternfly-context",
-  "uri": ResourceTemplate {
-    "_callbacks": {
-      "complete": {},
-      "list": undefined,
-    },
-    "_uriTemplate": UriTemplate {
-      "parts": [
-        "patternfly://context",
-      ],
-      "template": "patternfly://context",
-    },
-  },
+  "uri": "patternfly://context",
 }
 `;

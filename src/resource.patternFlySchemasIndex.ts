@@ -24,11 +24,16 @@ const NAME = 'patternfly-schemas-index';
 const URI_TEMPLATE = 'patternfly://schemas/index{?version,category}';
 
 /**
+ * URI description for the resource.
+ */
+const URI_DESCRIPTION = `Filter by PatternFly version, and category, ${URI_TEMPLATE}`;
+
+/**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Component Schemas Index',
-  description: 'A list of all PatternFly component names available for JSON Schema retrieval',
+  description: `A list of all PatternFly component names available for JSON Schema retrieval. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown'
 };
 
@@ -49,7 +54,7 @@ const listResources = async () => {
         uri: `patternfly://schemas/index?version=${version}`,
         mimeType: 'application/json',
         name: `JSON Component Schemas Index (${version})`,
-        description: `JSON component schemas for PatternFly version ${version}.`
+        description: `JSON component schemas for PatternFly version ${version}. ${URI_DESCRIPTION}`
       });
     });
 
@@ -59,7 +64,7 @@ const listResources = async () => {
         uri: 'patternfly://schemas/index',
         mimeType: 'text/markdown',
         name: 'JSON Component Schemas Index (Latest)',
-        description: 'JSON component schemas entry point for the latest PatternFly version. This is the recommended starting point.'
+        description: `JSON component schemas entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
       },
       ...resources.sort((a, b) => a.name.localeCompare(b.name))
     ]
@@ -186,5 +191,6 @@ export {
   resourceCallback,
   NAME,
   URI_TEMPLATE,
+  URI_DESCRIPTION,
   CONFIG
 };

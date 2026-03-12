@@ -52,27 +52,17 @@ const registerResource = (
 
   if (uriOrTemplate instanceof ResourceTemplate) {
     const templateStr = uriOrTemplate.uriTemplate?.toString();
+    const [remainingBaseUri, remainingUri] = templateStr?.split('{?') || [];
 
-    if (!templateStr) {
-      server.registerResource(name, uriOrTemplate, config, callback);
-
-      return;
-    }
-
-    // Register the original template first. MCP SDK matcher limitation.
-    server.registerResource(name, uriOrTemplate, config, callback);
-
-    const [remainingBaseUri, remainingUri] = templateStr.split('{?');
-
-    if (!remainingUri) {
-      return;
-    }
     // Technically, the hash should fall after a query, just a precaution
     const baseUri = remainingBaseUri?.split('{#')?.[0];
     const searchUri = remainingUri?.split('}')?.[0]?.toLowerCase();
 
-    // Register all combinations OR incremental search params
-    if (baseUri && searchUri && metadata?.complete) {
+    // Register initial, then all combinations OR incremental search params
+    if (baseUri && searchUri) {
+      // Register the original template first. MCP SDK matcher limitation.
+      server.registerResource(name, uriOrTemplate, config, callback);
+
       const allVariableNames = uriOrTemplate.uriTemplate.variableNames;
       const searchParams = allVariableNames.filter(param => searchUri.includes(param.toLowerCase()));
 
@@ -80,12 +70,11 @@ const registerResource = (
       const register = (incrementalParams: string[]) => {
         const newUri = incrementalParams.length ? `${baseUri}{?${incrementalParams.join(',')}}` : baseUri;
         const newName = incrementalParams.length ? `${name}-${incrementalParams.join('-')}` : `${name}-empty`;
+        const complete = metadata?.complete && { complete: metadata.complete };
 
         const resourceTemplate = new ResourceTemplate(newUri, {
           list: undefined,
-          complete: metadata.complete as {
-            [variable: string]: CompleteResourceTemplateCallback;
-          }
+          ...complete
         });
 
         server.registerResource(newName, resourceTemplate, config, callback);

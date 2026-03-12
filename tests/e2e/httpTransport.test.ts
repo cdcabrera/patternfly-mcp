@@ -1,11 +1,4 @@
 /**
- * Testing Decision: E2E Resource Strictness
- *
- * The MCP server supports flexible discovery URIs for LLM interaction, but the
- * E2E tests purposefully use parameter-dependent, version-pinned URIs. Currently,
- * the intent is to validate the strictest possible path to ensure transport behavior.
- */
-/**
  * Requires: npm run build prior to running Jest.
  * - If typings are needed, use public types from dist to avoid type identity mismatches between src and dist
  */
@@ -197,7 +190,7 @@ describe('Builtin resources, HTTP transport', () => {
     const updatedTemplates = templates?.result?.resourceTemplates || [];
     const templateNames = updatedTemplates.map((template: any) => template.uriTemplate).sort();
 
-    expect(templateNames).toContain('patternfly://context');
+    expect(resourceNames).toContain('patternfly://context');
     expect(templateNames).toContain('patternfly://components/index{?version,category}');
   });
 

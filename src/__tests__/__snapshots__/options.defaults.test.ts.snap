@@ -112,7 +112,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
 
 ",
   "serverOptions": {
-    "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, or PatternFly components and frontend development. Doc resources support optional query params: version (v6|latest), category, and section. Example: patternfly://docs/button?category=accessibility.",
+    "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, PatternFly components, and frontend development.",
   },
   "stats": {
     "reportIntervalMs": {

@@ -26,12 +26,14 @@ const NAME = 'patternfly-components-index';
  */
 const URI_TEMPLATE = 'patternfly://components/index{?version,category}';
 
+const URI_DESCRIPTION = `Filter by PatternFly version, and category, ${URI_TEMPLATE}`;
+
 /**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Components Index',
-  description: 'A list of all PatternFly component names available for documentation retrieval',
+  description: `A list of all PatternFly component names available for documentation retrieval. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown'
 };
 
@@ -55,7 +57,7 @@ const listResources = async () => {
         uri: `patternfly://components/index?version=${version}`,
         mimeType: 'text/markdown',
         name: `Component Index (${version})`,
-        description: `Component documentation entry point for PatternFly version ${version}. Filter by category if needed.`
+        description: `Component documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
       });
     });
 
@@ -65,7 +67,7 @@ const listResources = async () => {
         uri: 'patternfly://components/index',
         mimeType: 'text/markdown',
         name: 'Components Index (Latest)',
-        description: 'Component documentation entry point for the latest PatternFly version. This is the recommended starting point.'
+        description: `Component documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
       },
       ...resources.sort((a, b) => a.name.localeCompare(b.name))
     ]
@@ -158,19 +160,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([_name, data], index) => {
       const searchString = buildSearchString({
+        version: updatedVersion,
         category
       }, { prefix: true });
 
       return `${index + 1}. [${data.name} (${updatedVersion})](${data.uri}${searchString || ''})`;
     });
-
-  const usageGuide = stringJoin.newline(
-    '## Usage Guide',
-    'Component URIs follow the pattern: `patternfly://docs/{name}`',
-    '- **Optional Parameters**: `version` (v6|latest), `category`',
-    '- **Example**: `patternfly://docs/button?version=v6`',
-    '---'
-  );
 
   return {
     contents: [{
@@ -179,7 +174,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       text: stringJoin.newline(
         `# PatternFly Components Index for "${updatedVersion}"`,
         '',
-        usageGuide,
         '',
         ...docsIndex || []
       )
@@ -226,5 +220,6 @@ export {
   uriVersionComplete,
   NAME,
   URI_TEMPLATE,
+  URI_DESCRIPTION,
   CONFIG
 };

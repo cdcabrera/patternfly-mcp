@@ -1,12 +1,4 @@
 /**
- * Testing Decision: E2E Resource Strictness
- *
- * The MCP server supports flexible discovery URIs for LLM interaction
- * to compensate for an MCP SDK limitation regarding MCP resource templates and
- * ALL search params being required. We've attempted to cover most of the
- * search parameter variations, altering them can still cause test failures.
- */
-/**
  *  Requires: npm run build prior to running Jest.
  * - If typings are needed, use public types from dist to avoid type identity mismatches between src and dist
  * - We're unable to mock fetch for stdio since it runs in a separate process, so we run a server and use that path for mocking external URLs.
@@ -195,7 +187,7 @@ describe('Builtin resources, STDIO', () => {
     const updatedTemplates = templates?.result?.resourceTemplates || [];
     const templateNames = updatedTemplates.map((template: any) => template.uriTemplate).sort();
 
-    expect(templateNames).toContain('patternfly://context');
+    expect(resourceNames).toContain('patternfly://context');
     expect(templateNames).toContain('patternfly://components/index{?version,category}');
   });
 

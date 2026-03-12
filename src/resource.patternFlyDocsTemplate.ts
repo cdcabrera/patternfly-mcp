@@ -29,13 +29,16 @@ const NAME = 'patternfly-docs-template';
 const URI_TEMPLATE = 'patternfly://docs/{name}{?version,category,section}';
 
 /**
+ * URI description for the resource.
+ */
+const URI_DESCRIPTION = `Filter by PatternFly version, category, and section, ${URI_TEMPLATE}`;
+
+/**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Documentation Page',
-  description: `Retrieve specific PatternFly documentation by name or path.
-Template: ${URI_TEMPLATE}
-Supports optional query parameters: version (v6|latest), category, and section.`,
+  description: `Retrieve specific PatternFly documentation by name or path. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown'
 };
 
@@ -208,5 +211,6 @@ export {
   resourceCallback,
   NAME,
   URI_TEMPLATE,
+  URI_DESCRIPTION,
   CONFIG
 };

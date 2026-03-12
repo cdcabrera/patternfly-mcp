@@ -1,4 +1,3 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
 
@@ -10,7 +9,7 @@ const NAME = 'patternfly-context';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = new ResourceTemplate('patternfly://context', { list: undefined, complete: {} });
+const URI_TEMPLATE = 'patternfly://context';
 
 /**
  * Resource configuration.
@@ -18,13 +17,7 @@ const URI_TEMPLATE = new ResourceTemplate('patternfly://context', { list: undefi
 const CONFIG = {
   title: 'PatternFly Design System Context',
   description: 'Information about the PatternFly design system and how to use this MCP server.',
-  mimeType: 'text/markdown',
-  icons: [
-    {
-      src: 'https://www.patternfly.org/assets/images/patternfly-logo.svg',
-      mimeType: 'image/svg+xml'
-    }
-  ]
+  mimeType: 'text/markdown'
 };
 
 /**
@@ -50,16 +43,19 @@ const patternFlyContextResource = (): McpResource => [
     const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
 **What is PatternFly?**
-PatternFly provides React components, design guidelines, and development tools for creating enterprise applications. It is used by Red Hat and other organizations to build consistent UIs with reusable components.
+PatternFly provides React components, design guidelines, and development tools for creating enterprise applications. It is used by Red Hat and other organizations to build consistent UIs with reusable components and design principles.
 
 **Key Features:**
 - React component library with TypeScript support
 - Design guidelines and accessibility standards
 - JSON Schema validation for component props
-- Comprehensive documentation and examples
+- Comprehensive documentation, examples, and AI guidance
 
 **PatternFly MCP Server:**
-This MCP server provides tools to access PatternFly documentation, component schemas, and design guidelines. Use the available tools to fetch documentation, search for component information, and retrieve component prop definitions.`;
+This MCP server provides tools and resources to access all PatternFly documentation resources ranging from design to development.
+- **MCP tools:** Can be used to search, fetch and display available documentation resources.
+- **MCP resources:** Can be used to list, filter and display available documentation resources.
+`;
 
     return {
       contents: [
