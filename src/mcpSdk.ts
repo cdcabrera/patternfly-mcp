@@ -39,11 +39,9 @@ import { type McpResource } from './server';
  * @param uriOrTemplate - URI or ResourceTemplate
  * @param config - Resource metadata configuration
  * @param callback - Callback function for resource read operations
- * @param metadata - McpResource metadata. Currently, leveraged for passing the `complete` callbacks
- *     so they can be recreated under the different search parameter resource variations.
- * @param [options] - Options for resource registration
- * @param [options.useIncrementalSearchParams=true] - Whether to register incremental search params
- *     or all-combinations
+ * @param metadata - McpResource metadata
+ * - `metadata.complete`: Callback functions for resource read operations completion
+ * - `metadata.useAllCombinations`: Whether to register all search parameter permutations or not.
  */
 const registerResource = (
   server: McpServer,
@@ -51,8 +49,8 @@ const registerResource = (
   uriOrTemplate: McpResource[1],
   config: McpResource[2],
   callback: McpResource[3],
-  metadata: McpResource[4],
-  { useIncrementalSearchParams = true }: { useIncrementalSearchParams?: boolean } = {}
+  metadata: McpResource[4]
+  // { useIncrementalSearchParams = true }: { useIncrementalSearchParams?: boolean } = {}
 ) => {
   if (!server) {
     return;
@@ -85,16 +83,16 @@ const registerResource = (
         server.registerResource(`${name}-${incrementalParams.join('-')}`, resourceTemplate, config, callback);
       };
 
-      if (useIncrementalSearchParams) {
-        searchParams.forEach((param, index) => register(searchParams.slice(0, index + 1)));
+      if (metadata?.useAllCombinations) {
+        const getCombinations = (params: string[]) =>
+          params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
+
+        getCombinations(searchParams).forEach(combination => register(combination));
 
         return;
       }
 
-      const getCombinations = (params: string[]) =>
-        params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
-
-      getCombinations(searchParams).forEach(combination => register(combination));
+      searchParams.forEach((param, index) => register(searchParams.slice(0, index + 1)));
 
       return;
     }
