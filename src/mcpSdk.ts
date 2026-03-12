@@ -3,7 +3,8 @@ import {
   type McpServer,
   //   type ResourceMetadata,
   // type ReadResourceCallback,
-  type CompleteResourceTemplateCallback
+  type CompleteResourceTemplateCallback,
+  type ListResourcesCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 
@@ -54,33 +55,32 @@ const registerResource = (
   if (uriOrTemplate instanceof ResourceTemplate) {
     const templateStr = uriOrTemplate.uriTemplate.toString();
     const [remainingBaseUri, remainingUri] = templateStr.split('{?');
-    // Technically the hash should fall after a query, just a precaution
+    // Technically, the hash should fall after a query, just a precaution
     const baseUri = remainingBaseUri?.split('{#')?.[0];
     const searchUri = remainingUri?.split('}')?.[0]?.toLowerCase();
 
-    // Register the template's base URI
-    if (baseUri) {
-      server.registerResource(name, baseUri, config, callback);
-    }
-
-    // Register incremental search params instead of every potential combination.
-    if (searchUri && metadata?.complete) {
+    // Register all combinations OR incremental search params
+    if (baseUri && searchUri && metadata?.complete) {
       const allVariableNames = uriOrTemplate.uriTemplate.variableNames;
       const searchParams = allVariableNames.filter(name => searchUri.includes(name.toLowerCase()));
 
+      // Register combinations
       const register = (incrementalParams: string[]) => {
-        if (incrementalParams.length) {
-          const resourceTemplate = new ResourceTemplate(`${baseUri}{?${incrementalParams.join(',')}}`, {
-            list: undefined,
-            complete: metadata.complete as {
-              [variable: string]: CompleteResourceTemplateCallback;
-            }
-          });
+        const newUri = incrementalParams.length ? `${baseUri}{?${incrementalParams.join(',')}}` : baseUri;
+        const newName = incrementalParams.length ? `${name}-${incrementalParams.join('-')}` : name;
+        const newList = incrementalParams.length === 0 ? metadata?.list : undefined;
 
-          server.registerResource(`${name}-${incrementalParams.join('-')}`, resourceTemplate, config, callback);
-        }
+        const resourceTemplate = new ResourceTemplate(newUri, {
+          list: newList as ListResourcesCallback | undefined,
+          complete: metadata.complete as {
+            [variable: string]: CompleteResourceTemplateCallback;
+          }
+        });
+
+        server.registerResource(newName, resourceTemplate, config, callback);
       };
 
+      // Loop all search combinations, including empty, if specified
       if (metadata?.registerAllSearchCombinations) {
         const paramCombinations = (params: string[]) =>
           params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
@@ -90,6 +90,10 @@ const registerResource = (
         return;
       }
 
+      // Register an empty search combination
+      register([]);
+
+      // Then loop incremental search combinations
       searchParams.forEach((param, index) => register(searchParams.slice(0, index + 1)));
 
       return;

@@ -175,6 +175,7 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
     CONFIG,
     callback,
     {
+      list,
       complete
     }
   ];

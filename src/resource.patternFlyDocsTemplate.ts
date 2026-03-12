@@ -195,6 +195,7 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
     CONFIG,
     callback,
     {
+      list,
       complete,
       registerAllSearchCombinations: true
     }

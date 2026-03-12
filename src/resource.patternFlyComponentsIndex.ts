@@ -205,6 +205,7 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
     CONFIG,
     callback,
     {
+      list,
       complete
     }
   ];
