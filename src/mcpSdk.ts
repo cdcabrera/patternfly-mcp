@@ -2,9 +2,10 @@ import {
   ResourceTemplate,
   type McpServer,
   type ResourceMetadata,
-  type ReadResourceCallback
+  type ReadResourceCallback, CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { McpResource } from "./server";
+import {URI_TEMPLATE} from "./resource.patternFlyDocsIndex";
 
 // Helper to get all combinations of an array
 // const getCombinations = (params: string[]) =>
@@ -59,26 +60,30 @@ const registerResource = (
       server.registerResource(name, baseUri, config, callback);
     }
 
-    // Register each single search param
-    if (searchUri) {
+    // Register incremental search params instead of every potential combination.
+    if (searchUri && metadata?.complete) {
       const allVariableNames = uriOrTemplate.uriTemplate.variableNames;
       const searchParams = allVariableNames.filter(name => searchUri.includes(name.toLowerCase()));
 
-      searchParams.forEach(param => {
-        server.registerResource(`${name}-${param}`, , config, callback);
+      searchParams.forEach((param, index) => {
+        const incrementalParams = searchParams.slice(0, index + 1);
+        const resourceTemplate = new ResourceTemplate(`${baseUri}{?${incrementalParams.join(',')}}`, {
+          list: undefined,
+          complete: metadata.complete as { [variable: string]: CompleteResourceTemplateCallback; }
+        });
+
+        server.registerResource(`${name}-${incrementalParams.join('-')}`, resourceTemplate, config, callback);
       });
+
+      return;
     }
   }
 
-  // Register the original string/template URI
+  // Register a string or fallthrough URI
   // Note: uri is being cast as any to bypass a type mismatch introduced at the MCP SDK level. Rereview when SDK is updated.
   server.registerResource(name, uriOrTemplate as any, config, callback);
 
-
-
-
-
-
+/*
 
   const uriTemplate = (uri as ResourceTemplate).uriTemplate;
   const parts = (uriTemplate as any).parts as Array<string | { operator: string; names: string[] }>;
@@ -117,7 +122,7 @@ const registerResource = (
       // Suppress 'list' on variations to prevent catalog clutter
       list: undefined
     }) as any, config, callback);
-     */
+     * /
   }
 
 

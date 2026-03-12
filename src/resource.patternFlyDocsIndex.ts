@@ -291,19 +291,36 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlyDocsIndexResource = (options = getOptions()): McpResource => [
-  NAME,
-  new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo()),
-    complete: {
-      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
-      section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
+const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
+  const list = async () => runWithOptions(options, async () => listResources.memo());
+
+  const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
+    category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+    section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
+    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
+  };
+
+  const callback: McpResource[3] = async (uri, variables) =>
+    runWithOptions(options, async () => resourceCallback(uri, variables, options));
+
+  return [
+    NAME,
+    new ResourceTemplate(URI_TEMPLATE, {
+      list,
+      complete
+    }),
+    CONFIG,
+    callback,
+    {
+      name: NAME,
+      uri: URI_TEMPLATE,
+      list,
+      complete,
+      config: CONFIG,
+      callback
     }
-  }),
-  CONFIG,
-  async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
-];
+  ];
+};
 
 export {
   patternFlyDocsIndexResource,
