@@ -4,42 +4,120 @@ import {
   type ResourceMetadata,
   type ReadResourceCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpResource } from "./server";
+
+// Helper to get all combinations of an array
+// const getCombinations = (params: string[]) =>
+// params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
 
 /**
  * Register an MCP resource.
  *
- * Capable of registering each resource variation indicated when a URI template is used,
+ * Capable of registering specific resource variations indicated when a URI template is used,
  * making the parameterized URIs for query/search strings optional instead of required.
+ *
+ * What's registered:
+ * - `original`: The original string or template URI which typically includes ALL parameters.
+ * - `base URI`: Template base URI, sans hash, search params
+ * - `single params URIs`: URIs with only one parameter included
+ *
+ * Why we only register this limited set of URIs:
+ * - To avoid excessive resource registration.
+ * - Combinations of URIs build quickly the more params you have. We attempt to register the most common ones
+ *     `single params`, `no params`, and `all params`.
  *
  * @note This is a work-around for the MCP SDK's current strict URI Template matching requirements,
  * remove accordingly.
  *
- * @param server
- * @param name
- * @param uri
- * @param config
- * @param callback
+ * @param {McpServer} server - MCP Server instance
+ * @param name - Resource name
+ * @param {string | ResourceTemplate} uriOrTemplate - URI or ResourceTemplate
+ * @param {ResourceMetadata} config - Resource metadata configuration
+ * @param {ReadResourceCallback} callback - Callback function for resource read operations
+ * @param metadata
  */
 const registerResource = (
   server: McpServer,
-  name: string,
-  uri: string | ResourceTemplate,
-  config: ResourceMetadata,
-  callback: ReadResourceCallback // (...args: unknown[]) => unknown | Promise<unknown>,
-  // templateOptions: unknown = {}
+  name: McpResource[0],
+  uriOrTemplate: McpResource[1],
+  config: McpResource[2],
+  callback: McpResource[3],
+  metadata: McpResource[4]
 ) => {
   if (!server) {
     return;
   }
 
-  // const [baseUri = '', baseUriParams = ''] = (uri as string)?.split('{?') || [];
-  // const uriParams: string[] | undefined = baseUriParams.split('}')[0]?.split(',')?.map(param => param.trim());
+  if (uriOrTemplate instanceof ResourceTemplate) {
+    const templateStr = uriOrTemplate.uriTemplate.toString();
+    const [remainingBaseUri, remainingUri] = templateStr.split('{?');
+    const baseUri = remainingBaseUri?.split('{')?.[0];
+    const searchUri = remainingUri?.split('}')?.[0]?.toLowerCase();
 
-  if (!uriParams?.length) {
-    // Note: uri is being cast as any to bypass a type mismatch introduced at the MCP SDK level. Rereview when SDK is updated.
+    // Register the template's base URI
+    if (baseUri) {
+      server.registerResource(name, baseUri, config, callback);
+    }
+
+    // Register each single search param
+    if (searchUri) {
+      const allVariableNames = uriOrTemplate.uriTemplate.variableNames;
+      const searchParams = allVariableNames.filter(name => searchUri.includes(name.toLowerCase()));
+
+      searchParams.forEach(param => {
+        server.registerResource(`${name}-${param}`, , config, callback);
+      });
+    }
+  }
+
+  // Register the original string/template URI
+  // Note: uri is being cast as any to bypass a type mismatch introduced at the MCP SDK level. Rereview when SDK is updated.
+  server.registerResource(name, uriOrTemplate as any, config, callback);
+
+
+
+
+
+
+
+  const uriTemplate = (uri as ResourceTemplate).uriTemplate;
+  const parts = (uriTemplate as any).parts as Array<string | { operator: string; names: string[] }>;
+  const queryPart = parts.find(part =>
+    typeof part === 'object' && (part.operator === '?' || part.operator === '&')) as { operator: string; names: string[] } | undefined;
+
+  if (!queryPart) {
+    // Standard registration for static URIs or templates without query params
     server.registerResource(name, uri as any, config, callback);
 
     return;
+  }
+
+  const baseUri = parts
+    .filter(p => typeof p === 'string' || (typeof p === 'object' && p.operator !== '?' && p.operator !== '&'))
+    .map(p => typeof p === 'string' ? p : `{${p.operator}${p.names.join(',')}}`)
+    .join('');
+
+  const operator = queryPart.operator;
+  const params = queryPart.names;
+
+  // 1. Register the static base (e.g., 'patternfly://docs/index')
+  if (operator === '?') {
+    server.registerResource(`${name}-base`, baseUri as any, config, callback);
+  }
+
+  // 2. Register incremental variations (e.g., {?v}, {?v,c}, {?v,c,s})
+  for (let i = 1; i <= params.length; i++) {
+    const subParams = params.slice(0, i).join(',');
+    const subTemplate = `${baseUri}{${operator}${subParams}}`;
+
+    /*
+    server.registerResource(`${name}-var-${i}`, new ResourceTemplate(subTemplate, {
+      // Re-apply completions from the original template
+      complete: (template as any)._callbacks?.complete,
+      // Suppress 'list' on variations to prevent catalog clutter
+      list: undefined
+    }) as any, config, callback);
+     */
   }
 
 

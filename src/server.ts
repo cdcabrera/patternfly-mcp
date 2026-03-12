@@ -53,12 +53,22 @@ type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: stri
 
 /**
  * A resource registered with the MCP server.
+ *
+ * - `name`: Registered name of the resource.
+ * - `uriOrTemplate`: URI string or template.
+ * - `config`: Resource configuration metadata.
+ * - `handler`: Resource handler function.
+ * - `metadata`: Optional **internal metadata** object. NOT used by the standard MCP SDK
+ *     resource registry.
  */
 type McpResource = [
   name: string,
   uriOrTemplate: string | ResourceTemplate,
   config: ResourceMetadata,
-  handler: (...args: any[]) => any | Promise<any>
+  handler: (...args: any[]) => any | Promise<any>,
+  metadata?: {
+    [key: string]: unknown;
+  } | undefined
 ];
 
 /**
@@ -293,25 +303,27 @@ const runServer = async (options: ServerOptions = getOptions(), {
     }
 
     updatedResources.forEach(resourceCreator => {
-      const [name, uri, config, callback] = resourceCreator(options);
+      const [name, uri, config, callback, metadata] = resourceCreator(options);
 
       log.info(`Registered resource: ${name}`);
 
-      registerResource(server, name, uri, config, (...args: unknown[]) =>
-        runWithSession(session, async () =>
-          runWithOptions(options, async () => {
-            log.debug(
-              `Running resource "${name}"`,
-              `isArgs = ${args?.length > 0}`
-            );
+      if (server) {
+        registerResource(server, name, uri, config, (...args: unknown[]) =>
+          runWithSession(session, async () =>
+            runWithOptions(options, async () => {
+              log.debug(
+                `Running resource "${name}"`,
+                `isArgs = ${args?.length > 0}`
+              );
 
-            const timedReport = stat.traffic();
-            const resourceResult = await callback(...args);
+              const timedReport = stat.traffic();
+              const resourceResult = await callback(...args);
 
-            timedReport({ resource: name });
+              timedReport({ resource: name });
 
-            return resourceResult;
-          })));
+              return resourceResult;
+            })), metadata);
+      }
     });
 
     updatedTools.forEach(toolCreator => {
