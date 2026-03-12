@@ -1,4 +1,7 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  ResourceTemplate,
+  type CompleteResourceTemplateCallback
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
@@ -152,18 +155,30 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlySchemasIndexResource = (options = getOptions()): McpResource => [
-  NAME,
-  new ResourceTemplate(URI_TEMPLATE, {
-    list: async () => runWithOptions(options, async () => listResources.memo()),
-    complete: {
-      category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
-      version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
+const patternFlySchemasIndexResource = (options = getOptions()): McpResource => {
+  const list = async () => runWithOptions(options, async () => listResources.memo());
+
+  const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
+    category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
+  };
+
+  const callback: McpResource[3] = async (uri, variables) =>
+    runWithOptions(options, async () => resourceCallback(uri, variables, options));
+
+  return [
+    NAME,
+    new ResourceTemplate(URI_TEMPLATE, {
+      list,
+      complete
+    }),
+    CONFIG,
+    callback,
+    {
+      complete
     }
-  }),
-  CONFIG,
-  async (uri, variables) => runWithOptions(options, async () => resourceCallback(uri, variables, options))
-];
+  ];
+};
 
 export {
   patternFlySchemasIndexResource,

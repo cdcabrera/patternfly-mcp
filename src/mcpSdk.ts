@@ -59,7 +59,8 @@ const registerResource = (
   if (uriOrTemplate instanceof ResourceTemplate) {
     const templateStr = uriOrTemplate.uriTemplate.toString();
     const [remainingBaseUri, remainingUri] = templateStr.split('{?');
-    const baseUri = remainingBaseUri?.split('{')?.[0];
+    // Technically the hash should fall after a query, just a precaution
+    const baseUri = remainingBaseUri?.split('{#')?.[0];
     const searchUri = remainingUri?.split('}')?.[0]?.toLowerCase();
 
     // Register the template's base URI
@@ -73,17 +74,19 @@ const registerResource = (
       const searchParams = allVariableNames.filter(name => searchUri.includes(name.toLowerCase()));
 
       const register = (incrementalParams: string[]) => {
-        const resourceTemplate = new ResourceTemplate(`${baseUri}{?${incrementalParams.join(',')}}`, {
-          list: undefined,
-          complete: metadata.complete as {
-            [variable: string]: CompleteResourceTemplateCallback;
-          }
-        });
+        if (incrementalParams.length) {
+          const resourceTemplate = new ResourceTemplate(`${baseUri}{?${incrementalParams.join(',')}}`, {
+            list: undefined,
+            complete: metadata.complete as {
+              [variable: string]: CompleteResourceTemplateCallback;
+            }
+          });
 
-        server.registerResource(`${name}-${incrementalParams.join('-')}`, resourceTemplate, config, callback);
+          server.registerResource(`${name}-${incrementalParams.join('-')}`, resourceTemplate, config, callback);
+        }
       };
 
-      if (metadata?.useAllCombinations) {
+      if (metadata?.registerAllSearchCombinations) {
         const getCombinations = (params: string[]) =>
           params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
 

@@ -312,12 +312,8 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
     CONFIG,
     callback,
     {
-      name: NAME,
-      uri: URI_TEMPLATE,
-      list,
       complete,
-      config: CONFIG,
-      callback
+      registerAllSearchCombinations: true
     }
   ];
 };
