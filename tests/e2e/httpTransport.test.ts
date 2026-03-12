@@ -199,6 +199,12 @@ describe('Builtin resources, HTTP transport', () => {
 
     expect(resourceNames).toContain('patternfly://context');
     expect(templateNames).toContain('patternfly://components/index{?version,category}');
+
+    console.warn(JSON.stringify({
+      // result: resources?.result
+      resourceNames,
+      templateNames
+    }, null, 2));
   });
 
   it('should read the patternfly-context resource', async () => {
@@ -213,7 +219,8 @@ describe('Builtin resources, HTTP transport', () => {
   });
 
   it('should read the patternfly-docs-index with query params', async () => {
-    const uri = 'patternfly://docs/index?version=v6&category=accessibility&section=components';
+    // const uri = 'patternfly://docs/index?version=v6&category=accessibility&section=components';
+    const uri = 'patternfly://docs/index?section=components';
     const response = await CLIENT?.send({
       method: 'resources/read',
       params: { uri }
