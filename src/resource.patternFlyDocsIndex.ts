@@ -50,7 +50,7 @@ const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section}';
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly version, category, and section, ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly version, category, and section. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -291,6 +291,26 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
+ * Generates the specific metadata content for the Docs Index.
+ *
+ * @param version - The PatternFly version to filter by.
+ * @param lists - The available categories, sections, and versions for filtering.
+ * @param _version
+ * @param lists.categories
+ * @param lists.sections
+ * @param lists.versions
+ */
+const getDocsMetaContent = async (_version: string | undefined, { categories, sections, versions }: any) => ({
+  title: 'Documentation Index',
+  description: 'Use these parameters to filter the PatternFly documentation index.',
+  params: [
+    { name: 'version', values: versions, description: 'Specify the PatternFly version.' },
+    { name: 'category', values: categories, description: 'Filter content by topical category.' },
+    { name: 'section', values: sections, description: 'Filter content by organizational area.' }
+  ]
+});
+
+/**
  * Resource creator for the documentation index.
  *
  * @param options - Global options
@@ -318,7 +338,9 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
     callback,
     {
       complete,
-      registerAllSearchCombinations: true
+      registerAllSearchCombinations: true,
+      enableMeta: true,
+      metaHandler: getDocsMetaContent
     }
   ];
 };

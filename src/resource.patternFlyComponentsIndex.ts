@@ -29,7 +29,7 @@ const URI_TEMPLATE = 'patternfly://components/index{?version,category}';
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly version, and category, ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly version and category. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -185,6 +185,21 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
+ * Generates the specific metadata content for the Components Index.
+ *
+ * @param {string} [_version]
+ * @param {any} lists
+ */
+const getComponentsMetaContent = async (_version: string | undefined, { categories, versions }: any) => ({
+  title: 'Components Index',
+  description: 'Use these parameters to filter the list of PatternFly components.',
+  params: [
+    { name: 'version', values: versions, description: 'Specify the PatternFly version.' },
+    { name: 'category', values: categories, description: 'Filter content by topical category.' }
+  ]
+});
+
+/**
  * Resource creator for the component schemas index.
  *
  * @param options - Global options
@@ -210,7 +225,9 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
     CONFIG,
     callback,
     {
-      complete
+      complete,
+      enableMeta: true,
+      metaHandler: getComponentsMetaContent
     }
   ];
 };

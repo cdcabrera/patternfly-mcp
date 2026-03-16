@@ -6,6 +6,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerResource } from './mcpSdk';
+import { registerResourceMeta } from './server.resourceMeta';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
 import { componentSchemasTool } from './tool.componentSchemas';
@@ -75,6 +76,8 @@ type McpResource = [
   handler: (...args: any[]) => any | Promise<any>,
   metadata?: {
     registerAllSearchCombinations?: boolean | undefined;
+    enableMeta?: boolean | undefined;
+    metaHandler?: ((version: string | undefined, params: any) => any | Promise<any>) | undefined;
     complete?: {
       [key: string]: CompleteResourceTemplateCallback;
     } | undefined;
@@ -315,26 +318,29 @@ const runServer = async (options: ServerOptions = getOptions(), {
     }
 
     updatedResources.forEach(resourceCreator => {
-      const [name, uri, config, callback, metadata] = resourceCreator(options);
+      const resource = resourceCreator(options);
+      const [name, uri, config, callback, metadata] = resource;
 
       log.info(`Registered resource: ${name}`);
 
+      const baseCallback = (...args: any[]) =>
+        runWithSession(session, async () =>
+          runWithOptions(options, async () => {
+            log.debug(
+              `Running resource "${name}"`,
+              `isArgs = ${args?.length > 0}`
+            );
+
+            const timedReport = stat.traffic();
+            const resourceResult = await callback(...args);
+
+            timedReport({ resource: name });
+
+            return resourceResult;
+          }));
+
       if (server) {
-        registerResource(server, name, uri, config, (...args: unknown[]) =>
-          runWithSession(session, async () =>
-            runWithOptions(options, async () => {
-              log.debug(
-                `Running resource "${name}"`,
-                `isArgs = ${args?.length > 0}`
-              );
-
-              const timedReport = stat.traffic();
-              const resourceResult = await callback(...args);
-
-              timedReport({ resource: name });
-
-              return resourceResult;
-            })), metadata);
+        registerResource(server, ...registerResourceMeta(server, name, uri, config, baseCallback, metadata, options, session));
       }
     });
 
