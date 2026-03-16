@@ -462,6 +462,38 @@ const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProto
 };
 
 /**
+ * Generates all possible string combinations from a list of strings.
+ *
+ * @example Recombine a list of values into all possible combinations
+ * // [a, b, c]
+ * [[], [a], [a, b], [a, b, c], [b], [b, c], [c], [c, a]]
+ *
+ * @param values - List of string values.
+ * @returns Array of string combinations.
+ */
+const listAllCombinations = (values: string[]): string[][] =>
+  values.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
+
+/**
+ * Generates incremental combinations of a list of strings, preserving order.
+ *
+ * @example Recombine a list of values into all incremental combinations
+ * // [a, b, c]
+ * [[], [a], [a, b], [a, b, c]]
+ *
+ * @param values - List of string values.
+ * @returns Array of incremental string combinations.
+ */
+const listIncrementalCombinations = (values: string[]): string[][] =>
+  values.reduce((acc, val) => {
+    const lastArray = acc[acc.length - 1] || [];
+
+    acc.push([...lastArray, val]);
+
+    return acc;
+  }, [[]] as string[][]);
+
+/**
  * Join an array of values with a separator, optionally filtering out falsy values.
  *
  * - `stringJoin.basic` Join argument values with a single space separator
@@ -551,6 +583,8 @@ export {
   isReferenceLike,
   isUrl,
   isWhitelistedUrl,
+  listAllCombinations,
+  listIncrementalCombinations,
   mergeObjects,
   portValid,
   stringJoin,

@@ -1,5 +1,6 @@
 import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './server';
+import { listAllCombinations, listIncrementalCombinations } from './server.helpers';
 
 /**
  * Register an MCP resource.
@@ -80,25 +81,11 @@ const registerResource = (
         server.registerResource(newName, resourceTemplate, config, callback);
       };
 
-      // Variation for all combos, including empty
-      const paramAllCombinations = (params: string[]) =>
-        params.reduce((acc, val) => acc.concat(acc.map(prev => [...prev, val])), [[]] as string[][]);
-
-      // Variation for incremental combos, including empty
-      const paramIncrementalCombinations = (params: string[]) =>
-        params.reduce((acc, val) => {
-          const lastArray = acc[acc.length - 1] || [];
-
-          acc.push([...lastArray, val]);
-
-          return acc;
-        }, [[]] as string[][]);
-
       // Register the remaining combinations
       // Reverse order, limitation with the MCP SDK, most params match first
       const combinations = metadata?.registerAllSearchCombinations
-        ? paramAllCombinations(searchParams)
-        : paramIncrementalCombinations(searchParams);
+        ? listAllCombinations(searchParams)
+        : listIncrementalCombinations(searchParams);
 
       combinations
         .filter(combination => combination.length < searchParams.length)
