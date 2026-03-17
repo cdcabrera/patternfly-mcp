@@ -494,6 +494,31 @@ const listIncrementalCombinations = (values: string[]): string[][] =>
   }, [[]] as string[][]);
 
 /**
+ * Basic split for URIs to find base and search.
+ *
+ * @note We only support a single `{?...}` query segment. Using `{?a}{?b}{?c}` will fail. Make sure
+ * resource URIs are set to use a single `{?a,b,c}` segment.
+ *
+ * @param uri - The URI to split
+ * @returns Object containing `base` and `search` URI parts
+ */
+const splitUri = (uri: string) => {
+  const [remainingBaseUri, remainingUri] = uri?.split('{?') || [];
+  const baseUri = remainingBaseUri?.split('{#')?.[0];
+  const searchUri = remainingUri
+    ?.split('}')?.[0]
+    ?.toLowerCase()
+    ?.split(',')
+    ?.map(param => param.trim())
+    ?.filter(Boolean);
+
+  return {
+    base: baseUri,
+    search: searchUri
+  };
+};
+
+/**
  * Join an array of values with a separator, optionally filtering out falsy values.
  *
  * - `stringJoin.basic` Join argument values with a single space separator
@@ -587,6 +612,7 @@ export {
   listIncrementalCombinations,
   mergeObjects,
   portValid,
+  splitUri,
   stringJoin,
   timeoutFunction
 };
