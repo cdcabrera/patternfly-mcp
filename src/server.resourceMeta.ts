@@ -8,6 +8,15 @@ import {
 } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 
+/**
+ * Generate a basic Markdown table with optional content wrapping.
+ *
+ * @param columnHeaders - Column headers for the table.
+ * @param rows - Rows of data to include in the table.
+ * @param [options] - Options for table generation.
+ * @param [options.wrapContents] - Optional array of booleans that aligns to each column and indicates whether to wrap the content.
+ * @returns A Markdown table string.
+ */
 const generateMarkdownTable = (columnHeaders: string[], rows: (string | string[])[][], { wrapContents = [] }: { wrapContents?: boolean[] } = {}) => {
   const wrapValue = (value: string | string[], index: number) => {
     if (!wrapContents[index]) {
@@ -35,11 +44,12 @@ const generateMarkdownTable = (columnHeaders: string[], rows: (string | string[]
 /**
  * Generate a standardized metadata table for resource discovery.
  *
- * @param options
- * @param options.title
- * @param options.description
- * @param options.params
- * @param options.exampleUris
+ * @param settings
+ * @param settings.title - Resource title or name.
+ * @param settings.description - Resource description.
+ * @param settings.params - Parameter details for the resource.
+ * @param [settings.exampleUris] - Example URIs for the resource.
+ * @returns Markdown content for resource metadata.
  */
 const generateMetaContent = ({ title, description, params, exampleUris = [] }: {
   title: string;
@@ -82,10 +92,10 @@ const generateMetaContent = ({ title, description, params, exampleUris = [] }: {
 /**
  * Get all registered URI variations for a template.
  *
- * @param {string} baseUri - The base URI string.
- * @param {string[]} params - The variable names.
- * @param {boolean} [allCombos=false] - Whether to generate all permutations.
- * @returns {string[]} Array of formatted URI examples.
+ * @param baseUri - The base URI string.
+ * @param params - The variable names.
+ * @param [allCombos=false] - Whether to generate all permutations.
+ * @returns Array of formatted URI examples.
  */
 const getUriVariations = (baseUri: string, params: string[], allCombos = false): string[] => {
   const combinations = allCombos ? listAllCombinations(params) : listIncrementalCombinations(params);
@@ -101,9 +111,18 @@ const getUriVariations = (baseUri: string, params: string[], allCombos = false):
   });
 };
 
+/**
+ * Enhances and generates meta-resources for a set of resources.
+ *
+ * - Adds a new meta-resource if a configuration is provided
+ * - Modifies the original resource to indicate a meta-resource is available
+ *
+ * @param {McpResourceCreator[]} resources - List of resource creators to process and enhance.
+ * @param [options] - Optional settings.
+ * @returns {McpResourceCreator[]} An updated list of resource creators, including any added or modified meta-resources.
+ */
 const setMetaResources = (resources: McpResourceCreator[], options = getOptions()) => {
   const updatedResources: McpResourceCreator[] = [];
-  // resources.filter(resource => resource[4]?.enableMeta);
 
   resources.forEach(resourceCreator => {
     const [name, uriOrTemplate, config, callback, metadata] = resourceCreator(options);
@@ -120,26 +139,14 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
 
     const tempOriginaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
     const { base: originalBaseUri } = splitUri(tempOriginaUri);
-    // let originalBaseUri: string | undefined;
-    // let searchUri: string[] | undefined;
 
     if (metaUri) {
       const { base } = splitUri(metaUri);
 
       baseUri = base;
-      // searchUri = search;
-    } else {
-      // metaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-      // const tempUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-      // const { base } = splitUri(tempUri);
-      // baseUri = originalBaseUri;
-
-      if (originalBaseUri) {
-        baseUri = `${originalBaseUri}/meta`;
-        metaUri = `${baseUri}{?version}`;
-      }
-
-      // searchUri = search;
+    } else if (originalBaseUri) {
+      baseUri = `${originalBaseUri}/meta`;
+      metaUri = `${baseUri}{?version}`;
     }
 
     if (!baseUri || !metaUri || !originalBaseUri) {
@@ -149,13 +156,11 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     }
 
     // Generate possible combinations of URIs
-    // const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || searchUri || [];
     const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || (metadata.complete && Object.keys(metadata.complete)) || [];
     const exampleUris = getUriVariations(originalBaseUri, searchParams, Boolean(metadata.registerAllSearchCombinations)).map(uri => {
       const searchParams = uri.split('?')[1];
 
       return {
-        // label: uri === baseUri ? 'Base View' : `Filtered View ${searchParams ? `(${searchParams})` : ''}`,
         label: !searchParams ? 'Base View' : `Filtered View (${searchParams})`,
         uri
       };
@@ -169,7 +174,6 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     const metaTitle = metadata.metaConfig.title || `${config.title} Metadata`;
     const metaDescription = metadata.metaConfig.description || `Discovery manual for ${config.title}.`;
     const metaMimeType = metadata.metaConfig.mimeType || 'text/markdown';
-    // let metaHandler: Promise<{ name: string; values: string[]; description: string }[]> | undefined; // = metadata.metaConfig.metaHandler;
     let metaHandler = metadata.metaConfig.metaHandler;
 
     if (!metaHandler && metadata.complete) {
@@ -197,7 +201,6 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       const metaCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
           const { version } = variables || {};
-          // const params = await paramCompletion({ version });
           const params = await metaHandler?.(version) || [];
 
           return {
@@ -206,12 +209,10 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
                 uri: passedUri?.toString(),
                 mimeType: metaMimeType,
                 text: generateMetaContent({
-                  // params: [],
                   title: metaTitle,
                   description: metaDescription,
                   params,
                   exampleUris
-                  // ...metaTableOptions
                 })
               }
             ]
@@ -239,18 +240,13 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
           const result = await callback(passedUri, variables);
 
           const { version } = variables || {};
-          // const params = await paramCompletion({ version });
           const params = await metaHandler?.(version) || [];
 
           if (result.contents) {
             result.contents.push({
-              // uri: `${baseUri}/meta${version ? `?version=${version}` : ''}`,
               uri: `${baseUri}${version ? `?version=${version}` : ''}`,
               mimeType: metaMimeType,
-              // mimeType: 'text/markdown',
               text: generateMetaContent({
-                // ...metaTableOptions,
-                // exampleUris
                 title: metaTitle,
                 description: metaDescription,
                 params,
