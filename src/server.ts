@@ -58,6 +58,37 @@ type McpTool = [
 type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: string };
 
 /**
+ * A resource metadata configuration for the MCP server.
+ *
+ * @property registerAllSearchCombinations - Whether to register all search combinations for the resource.
+ * @property metaConfig - Optional configuration for generating a metadata resource. Being defined
+ *     (e.g. `{ metadata: { metaConfig: {} }}`) means a meta-resource will be generated for the related MCP resource.
+ * @property metaConfig.uri - Optional URI template for the metadata resource, otherwise generated.
+ * @property metaConfig.name - Optional name for the metadata resource, otherwise generated.
+ * @property metaConfig.title - Optional title for the metadata resource, otherwise generated.
+ * @property metaConfig.description - Optional description for the metadata resource, otherwise generated.
+ * @property metaConfig.mimeType - Optional mimeType for the metadata resource, defaults to `text/markdown`.
+ * @property metaConfig.metaHandler - Optional custom metadata handler for display meta-resource content typically dependent on
+ *    your mimeType. (e.g., string/Markdown, object/JSON)
+ * @property complete - Callback functions for resource completion.
+ */
+interface McpResourceMetadata {
+  registerAllSearchCombinations?: boolean | undefined;
+  metaConfig?: {
+    uri?: string;
+    name?: string;
+    title?: string;
+    description?: string;
+    mimeType?: 'text/markdown' | 'application/json';
+    metaHandler?: (version: string) => Promise<unknown> | unknown
+  };
+  complete?: {
+    [key: string]: CompleteResourceTemplateCallback;
+  } | undefined;
+  [key: string]: unknown;
+}
+
+/**
  * A resource registered with the MCP server.
  *
  * 0. `name`: Registered name of the resource.
@@ -66,31 +97,13 @@ type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: stri
  * 3. `handler`: Resource handler function.
  * 4. `metadata`: Optional **internal metadata** object. NOT used by the standard MCP SDK
  *     resource registry.
- *    - `metadata.complete`: Callback functions for resource read operations completion
- *    - `metadata.registerAllSearchCombinations`: Whether to register all search parameter permutations or not.
  */
 type McpResource = [
   name: string,
   uriOrTemplate: string | ResourceTemplate,
   config: ResourceMetadata,
   handler: (...args: any[]) => any | Promise<any>,
-  metadata?: {
-    registerAllSearchCombinations?: boolean | undefined;
-    // enableMeta?: boolean | undefined;
-    // metaHandler?: ((version: string | undefined, params: any) => any | Promise<any>) | undefined;
-    metaConfig?: {
-      uri?: string;
-      name?: string;
-      title?: string;
-      description?: string;
-      mimeType?: string;
-      metaHandler?: (version: string) => Promise<{ name: string; values: string[]; description: string }[]>;
-    };
-    complete?: {
-      [key: string]: CompleteResourceTemplateCallback;
-    } | undefined;
-    [key: string]: unknown;
-  } | undefined
+  metadata?: McpResourceMetadata | undefined
 ];
 
 /**
@@ -527,6 +540,7 @@ export {
   type McpToolCreator,
   type McpResource,
   type McpResourceCreator,
+  type McpResourceMetadata,
   type ServerInstance,
   type ServerLogEvent,
   type ServerOnLog,
