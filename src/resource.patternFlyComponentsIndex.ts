@@ -185,24 +185,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
- * Generates the specific metadata content for the Components Index.
+ * Resource creator for the component schemas index and metadata resources.
  *
- * @param {string} [_version]
- * @param {any} lists
- */
-/*
-const getComponentsMetaContent = async (_version: string | undefined, { categories, versions }: any) => ({
-  title: 'Components Index',
-  description: 'Use these parameters to filter the list of PatternFly components.',
-  params: [
-    { name: 'version', values: versions, description: 'Specify the PatternFly version.' },
-    { name: 'category', values: categories, description: 'Filter content by topical category.' }
-  ]
-});
-*/
-
-/**
- * Resource creator for the component schemas index.
+ * @note The `metaConfig` determines if a metadata resource is generated. Remove
+ * the config to disable it.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
@@ -228,8 +214,6 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
     callback,
     {
       complete,
-      // enableMeta: true,
-      // metaHandler: getComponentsMetaContent
       metaConfig: {
         uri: 'patternfly://components/meta{?version}',
         title: 'Components Index Metadata',

@@ -291,30 +291,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
- * Generates the specific metadata content for the Docs Index.
+ * Resource creator for the documentation index and metadata resources.
  *
- * @param version - The PatternFly version to filter by.
- * @param lists - The available categories, sections, and versions for filtering.
- * @param _version
- * @param lists.categories
- * @param lists.sections
- * @param lists.versions
- */
-/*
-const getDocsMetaContent = async (_version: string | undefined, { categories, sections, versions }: any) => ({
-  uri: 'patternfly://docs/meta',
-  title: 'Documentation Index Metadata',
-  description: 'Use these parameters to filter the PatternFly documentation index.',
-  params: [
-    { name: 'version', values: versions, description: 'Specify the PatternFly version.' },
-    { name: 'category', values: categories, description: 'Filter content by topical category.' },
-    { name: 'section', values: sections, description: 'Filter content by organizational area.' }
-  ]
-});
-*/
-
-/**
- * Resource creator for the documentation index.
+ * @note The `metaConfig` determines if a metadata resource is generated. Remove
+ * the config to disable it.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
@@ -342,12 +322,10 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
     {
       complete,
       registerAllSearchCombinations: true,
-      // metaHandler: getDocsMetaContent,
       metaConfig: {
         uri: 'patternfly://docs/meta{?version}',
         title: 'Documentation Index Metadata',
         description: 'Use these parameters to filter the PatternFly documentation index.'
-        // callback: getDocsMetaContent
       }
     }
   ];

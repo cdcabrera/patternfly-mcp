@@ -152,27 +152,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
- * Generates the specific metadata content for the Schemas Index.
- *
- * @param {string} [_version]
- * @param {any} lists
- */
-/*
-const getSchemasMetaContent = async (_version: string | undefined, { categories, versions }: any) => ({
-  title: 'Component Schemas Index',
-  description: 'Use these parameters to filter the list of PatternFly component schemas.',
-  params: [
-    { name: 'version', values: versions, description: 'Specify the PatternFly version.' },
-    { name: 'category', values: categories, description: 'Filter content by topical category.' }
-  ]
-});
-*/
-
-/**
- * Resource creator for the component schemas index.
+ * Resource creator for the component schemas index and metadata resources.
  *
  * @note This resource is being considered for deprecation in favor of a more
  * all encompassing resource, like "resource.patternFlyComponentsIndex."
+ *
+ * @note The `metaConfig` determines if a metadata resource is generated. Remove
+ * the config to disable it.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
