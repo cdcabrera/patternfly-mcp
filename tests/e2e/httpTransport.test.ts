@@ -212,6 +212,19 @@ describe('Builtin resources, HTTP transport', () => {
     expect(content.mimeType).toBe('text/markdown');
   });
 
+  it('should read the patternfly-docs-index-meta', async () => {
+    const uri = 'patternfly://docs/meta';
+    const response = await CLIENT?.send({
+      method: 'resources/read',
+      params: { uri }
+    });
+    const content = response?.result.contents[0];
+
+    expect(content).toMatchSnapshot();
+    // expect(content.uri).toBe(uri);
+    // expect(content.text).toContain('PatternFly Documentation Index');
+  });
+
   it('should read the patternfly-docs-index with query params', async () => {
     const uri = 'patternfly://docs/index?version=v6&category=accessibility&section=components';
     const response = await CLIENT?.send({

@@ -21,7 +21,7 @@ const generateMarkdownTable = (columnHeaders: string[], rows: (string | string[]
     return `\`${value}\``;
   };
 
-  const tableRows = rows.map(row => row.map((cell, index) => `| ${wrapValue(cell, index)} |`).join(''));
+  const tableRows = rows.map(row => `| ${row.slice(0, columnHeaders.length).map((cell, index) => wrapValue(cell, index)).join(' | ')} |`);
   const tableHeader = `| ${columnHeaders.join(' | ')} |`;
   const tableSeparator = `| ${columnHeaders.map(() => ':---').join(' | ')} |`;
 
@@ -55,7 +55,7 @@ const generateMetaContent = ({ title, description, params, exampleUris = [] }: {
 
     table = stringJoin.newline(
       '',
-      '### Available Parameters',
+      '## Available Parameters',
       '',
       generateMarkdownTable(['Parameter', 'Valid Values', 'Description'], tableRows, { wrapContents: [true, true, false] })
     );
@@ -66,13 +66,13 @@ const generateMetaContent = ({ title, description, params, exampleUris = [] }: {
 
     examples = stringJoin.newline(
       '',
-      '### Available Patterns',
+      '## Available Patterns',
       ...exampleUriLines
     );
   }
 
   return stringJoin.newline(
-    `# Resource Metadata: ${title}`,
+    `# ${title}`,
     description,
     table,
     examples
@@ -117,6 +117,10 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     const isResourceTemplate = uriOrTemplate instanceof ResourceTemplate;
     let metaUri = metadata.metaConfig.uri;
     let baseUri: string | undefined;
+
+    const tempOriginaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
+    const { base: originalBaseUri } = splitUri(tempOriginaUri);
+    // let originalBaseUri: string | undefined;
     // let searchUri: string[] | undefined;
 
     if (metaUri) {
@@ -126,20 +130,19 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       // searchUri = search;
     } else {
       // metaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-      const tempUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-      const { base } = splitUri(tempUri);
+      // const tempUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
+      // const { base } = splitUri(tempUri);
+      // baseUri = originalBaseUri;
 
-      baseUri = base;
-
-      if (base) {
-        baseUri = `${base}/meta`;
+      if (originalBaseUri) {
+        baseUri = `${originalBaseUri}/meta`;
         metaUri = `${baseUri}{?version}`;
       }
 
       // searchUri = search;
     }
 
-    if (!baseUri || !metaUri) {
+    if (!baseUri || !metaUri || !originalBaseUri) {
       updatedResources.push(resourceCreator);
 
       return;
@@ -148,10 +151,15 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     // Generate possible combinations of URIs
     // const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || searchUri || [];
     const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || (metadata.complete && Object.keys(metadata.complete)) || [];
-    const exampleUris = getUriVariations(baseUri, searchParams, Boolean(metadata.registerAllSearchCombinations)).map(uri => ({
-      label: uri === baseUri ? 'Base View' : `Filtered View (${uri.split('?')[1]})`,
-      uri
-    }));
+    const exampleUris = getUriVariations(originalBaseUri, searchParams, Boolean(metadata.registerAllSearchCombinations)).map(uri => {
+      const searchParams = uri.split('?')[1];
+
+      return {
+        // label: uri === baseUri ? 'Base View' : `Filtered View ${searchParams ? `(${searchParams})` : ''}`,
+        label: !searchParams ? 'Base View' : `Filtered View (${searchParams})`,
+        uri
+      };
+    });
 
     const metaName = metadata.metaConfig.name || `${name}-meta`;
     const metaResourceTemplate = new ResourceTemplate(metaUri, {
