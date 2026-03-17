@@ -157,6 +157,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @param {string} [_version]
  * @param {any} lists
  */
+/*
 const getSchemasMetaContent = async (_version: string | undefined, { categories, versions }: any) => ({
   title: 'Component Schemas Index',
   description: 'Use these parameters to filter the list of PatternFly component schemas.',
@@ -165,6 +166,7 @@ const getSchemasMetaContent = async (_version: string | undefined, { categories,
     { name: 'category', values: categories, description: 'Filter content by topical category.' }
   ]
 });
+*/
 
 /**
  * Resource creator for the component schemas index.
@@ -196,8 +198,11 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
     callback,
     {
       complete,
-      enableMeta: true,
-      metaHandler: getSchemasMetaContent
+      metaConfig: {
+        uri: 'patternfly://schemas/meta{?version}',
+        title: 'Component Schemas Index Metadata',
+        description: 'Use these parameters to filter the list of PatternFly component schemas.'
+      }
     }
   ];
 };

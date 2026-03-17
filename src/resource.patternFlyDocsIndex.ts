@@ -300,8 +300,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @param lists.sections
  * @param lists.versions
  */
+/*
 const getDocsMetaContent = async (_version: string | undefined, { categories, sections, versions }: any) => ({
-  title: 'Documentation Index',
+  uri: 'patternfly://docs/meta',
+  title: 'Documentation Index Metadata',
   description: 'Use these parameters to filter the PatternFly documentation index.',
   params: [
     { name: 'version', values: versions, description: 'Specify the PatternFly version.' },
@@ -309,6 +311,7 @@ const getDocsMetaContent = async (_version: string | undefined, { categories, se
     { name: 'section', values: sections, description: 'Filter content by organizational area.' }
   ]
 });
+*/
 
 /**
  * Resource creator for the documentation index.
@@ -339,8 +342,13 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
     {
       complete,
       registerAllSearchCombinations: true,
-      enableMeta: true,
-      metaHandler: getDocsMetaContent
+      // metaHandler: getDocsMetaContent,
+      metaConfig: {
+        uri: 'patternfly://docs/meta{?version}',
+        title: 'Documentation Index Metadata',
+        description: 'Use these parameters to filter the PatternFly documentation index.'
+        // callback: getDocsMetaContent
+      }
     }
   ];
 };
