@@ -1,14 +1,36 @@
-import { type McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { log } from './logger';
-import { type McpResource } from './server';
+import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type McpResource, type McpResourceCreator } from './server';
 import {
   listAllCombinations,
   listIncrementalCombinations,
+  splitUri,
   stringJoin
 } from './server.helpers';
-import { paramCompletion } from './resource.helpers';
-import { type GlobalOptions, type AppSession } from './options';
-import { runWithOptions, runWithSession } from './options.context';
+import { getOptions, runWithOptions } from './options.context';
+
+const generateMarkdownTable = (columnHeaders: string[], rows: (string | string[])[][], { wrapContents = [] }: { wrapContents?: boolean[] } = {}) => {
+  const wrapValue = (value: string | string[], index: number) => {
+    if (!wrapContents[index]) {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(val => `\`${val}\``).join(', ');
+    }
+
+    return `\`${value}\``;
+  };
+
+  const tableRows = rows.map(row => `| ${row.slice(0, columnHeaders.length).map((cell, index) => wrapValue(cell, index)).join(' | ')} |`);
+  const tableHeader = `| ${columnHeaders.join(' | ')} |`;
+  const tableSeparator = `| ${columnHeaders.map(() => ':---').join(' | ')} |`;
+
+  return stringJoin.newline(
+    tableHeader,
+    tableSeparator,
+    ...tableRows
+  );
+};
 
 /**
  * Generate a standardized metadata table for resource discovery.
@@ -19,31 +41,41 @@ import { runWithOptions, runWithSession } from './options.context';
  * @param options.params
  * @param options.exampleUris
  */
-const generateMetaTable = (options: {
+const generateMetaContent = ({ title, description, params, exampleUris = [] }: {
   title: string;
   description: string;
   params: { name: string; values: string[]; description: string }[];
-  exampleUris: { label: string; uri: string }[];
+  exampleUris?: { label: string; uri: string }[];
 }) => {
-  const tableRows = options.params.map(
-    param => `| \`${param.name}\` | ${param.values.map(value => `\`${value}\``).join(', ')} | ${param.description} |`
-  );
+  let table = '';
+  let examples = '';
 
-  const exampleLines = options.exampleUris.map(example => `- **${example.label}**: \`${example.uri}\``);
+  if (params.length) {
+    const tableRows = params.map(({ name, values, description }) => [name, values, description]);
+
+    table = stringJoin.newline(
+      '',
+      '## Available Parameters',
+      '',
+      generateMarkdownTable(['Parameter', 'Valid Values', 'Description'], tableRows, { wrapContents: [true, true, false] })
+    );
+  }
+
+  if (exampleUris.length) {
+    const exampleUriLines = exampleUris.map(example => `- **${example.label}**: \`${example.uri}\``);
+
+    examples = stringJoin.newline(
+      '',
+      '## Available Patterns',
+      ...exampleUriLines
+    );
+  }
 
   return stringJoin.newline(
-    `# Resource Metadata: ${options.title}`,
-    options.description,
-    '',
-    '### Available Parameters',
-    '',
-    '| Parameter | Valid Values | Description |',
-    '| :--- | :--- | :--- |',
-    ...tableRows,
-    '',
-    '### Example URIs',
-    'If your client does not support interactive completions, use these patterns:',
-    ...exampleLines
+    `# ${title}`,
+    description,
+    table,
+    examples
   );
 };
 
@@ -58,114 +90,185 @@ const generateMetaTable = (options: {
 const getUriVariations = (baseUri: string, params: string[], allCombos = false): string[] => {
   const combinations = allCombos ? listAllCombinations(params) : listIncrementalCombinations(params);
 
-  return combinations.map(combo => (combo.length ? `${baseUri}?${combo.map(param => `${param}=...`).join('&')}` : baseUri));
+  return combinations.map(combo => {
+    let str = baseUri;
+
+    if (combo.length) {
+      str += `?${combo.map(param => `${param}=...`).join('&')}`;
+    }
+
+    return str;
+  });
 };
 
-/**
- * Wrap a resource registration with automatic metadata registration.
- * If `metadata.enableMeta` is true, it registers a /meta resource and enhances the callback.
- *
- * @param {McpServer} server - MCP Server instance
- * @param name - Resource name
- * @param uriOrTemplate - URI or ResourceTemplate
- * @param config - Resource metadata configuration
- * @param callback - Callback function for resource read operations
- * @param metadata - McpResource metadata
- * @param {GlobalOptions} options - Global options
- * @param {AppSession} session - App session
- * @returns {McpResource} The (potentially enhanced) resource details
- */
-const registerResourceMeta = (
-  server: McpServer,
-  name: McpResource[0],
-  uriOrTemplate: McpResource[1],
-  config: McpResource[2],
-  callback: McpResource[3],
-  metadata: McpResource[4],
-  options: GlobalOptions,
-  session: AppSession
-): McpResource => {
-  if (metadata?.enableMeta && metadata.metaHandler) {
-    const baseUri = (uriOrTemplate instanceof ResourceTemplate
-      ? uriOrTemplate.uriTemplate?.toString()?.split('{?')[0]
-      : (uriOrTemplate as string).split('?')[0]) || '';
+const setMetaResources = (resources: McpResourceCreator[], options = getOptions()) => {
+  const updatedResources: McpResourceCreator[] = [];
+  // resources.filter(resource => resource[4]?.enableMeta);
 
-    const metaName = `${name}-meta`;
-    const metaUri = `${baseUri}/meta{?version}`;
+  resources.forEach(resourceCreator => {
+    const [name, uriOrTemplate, config, callback, metadata] = resourceCreator(options);
 
-    const searchParams = uriOrTemplate instanceof ResourceTemplate ? uriOrTemplate.uriTemplate?.variableNames || [] : [];
+    if (!metadata?.metaConfig) {
+      updatedResources.push(resourceCreator);
+
+      return;
+    }
+
+    const isResourceTemplate = uriOrTemplate instanceof ResourceTemplate;
+    let metaUri = metadata.metaConfig.uri;
+    let baseUri: string | undefined;
+
+    const tempOriginaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
+    const { base: originalBaseUri } = splitUri(tempOriginaUri);
+    // let originalBaseUri: string | undefined;
+    // let searchUri: string[] | undefined;
+
+    if (metaUri) {
+      const { base } = splitUri(metaUri);
+
+      baseUri = base;
+      // searchUri = search;
+    } else {
+      // metaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
+      // const tempUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
+      // const { base } = splitUri(tempUri);
+      // baseUri = originalBaseUri;
+
+      if (originalBaseUri) {
+        baseUri = `${originalBaseUri}/meta`;
+        metaUri = `${baseUri}{?version}`;
+      }
+
+      // searchUri = search;
+    }
+
+    if (!baseUri || !metaUri || !originalBaseUri) {
+      updatedResources.push(resourceCreator);
+
+      return;
+    }
 
     // Generate possible combinations of URIs
-    const exampleUris = getUriVariations(baseUri, searchParams, Boolean(metadata.registerAllSearchCombinations)).map(uri => ({
-      label: uri === baseUri ? 'Base View' : `Filtered View (${uri.split('?')[1]})`,
-      uri
-    }));
+    // const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || searchUri || [];
+    const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || (metadata.complete && Object.keys(metadata.complete)) || [];
+    const exampleUris = getUriVariations(originalBaseUri, searchParams, Boolean(metadata.registerAllSearchCombinations)).map(uri => {
+      const searchParams = uri.split('?')[1];
 
-    // Register the sibling /meta resource
-    const metaResourceTemplate = new ResourceTemplate(metaUri, {
-      list: undefined,
-      ...(metadata.complete ? { complete: metadata.complete } : {})
+      return {
+        // label: uri === baseUri ? 'Base View' : `Filtered View ${searchParams ? `(${searchParams})` : ''}`,
+        label: !searchParams ? 'Base View' : `Filtered View (${searchParams})`,
+        uri
+      };
     });
 
-    log.info(`Registered resource: ${metaName}`);
-    server.registerResource(
-      metaName,
-      metaResourceTemplate,
-      {
-        title: `${config.title} Metadata`,
-        description: `Discovery manual for ${config.title}.`
-      },
-      async (uri: URL, variables: any) =>
-        runWithSession(session, async () =>
-          runWithOptions(options, async () => {
-            const { version } = variables as { version?: string };
-            const params = await paramCompletion({ version });
-            const metaTableOptions = await metadata.metaHandler!(version, params);
+    const metaName = metadata.metaConfig.name || `${name}-meta`;
+    const metaResourceTemplate = new ResourceTemplate(metaUri, {
+      list: undefined
+      // ...(metadata.complete ? { complete: metadata.complete } : {})
+    });
+    const metaTitle = metadata.metaConfig.title || `${config.title} Metadata`;
+    const metaDescription = metadata.metaConfig.description || `Discovery manual for ${config.title}.`;
+    const metaMimeType = metadata.metaConfig.mimeType || 'text/markdown';
+    // let metaHandler: Promise<{ name: string; values: string[]; description: string }[]> | undefined; // = metadata.metaConfig.metaHandler;
+    let metaHandler = metadata.metaConfig.metaHandler;
 
-            return {
-              contents: [
-                {
-                  uri: uri.toString(),
-                  mimeType: 'text/markdown',
-                  text: generateMetaTable({
-                    ...metaTableOptions,
-                    exampleUris
-                  })
-                }
-              ]
-            };
-          }))
-    );
+    if (!metaHandler && metadata.complete) {
+      metaHandler = async (version: string) => {
+        const params = [];
 
-    // Enhance the primary callback to bundle metadata
-    const enhancedCallback = async (uri: URL, variables: any) => {
-      const result = await callback(uri, variables);
+        for (const prop in metadata.complete) {
+          const name = prop;
+          const description = `Filter by ${name}`;
+          let values: string[] = [];
 
-      return runWithSession(session, async () =>
-        runWithOptions(options, async () => {
-          const { version } = variables as { version?: string };
-          const params = await paramCompletion({ version });
-          const metaTableOptions = await metadata.metaHandler!(version, params);
+          if (metadata.complete[prop]) {
+            values = await metadata.complete[prop]('', { arguments: { version } });
+          }
+
+          params.push({ name, values, description });
+        }
+
+        return params;
+      };
+    }
+
+    // Create a new meta-resource
+    const metaResource = (opts = options): McpResource => {
+      const metaCallback: McpResource[3] = async (passedUri, variables) =>
+        runWithOptions(opts, async () => {
+          const { version } = variables || {};
+          // const params = await paramCompletion({ version });
+          const params = await metaHandler?.(version) || [];
+
+          return {
+            contents: [
+              {
+                uri: passedUri?.toString(),
+                mimeType: metaMimeType,
+                text: generateMetaContent({
+                  // params: [],
+                  title: metaTitle,
+                  description: metaDescription,
+                  params,
+                  exampleUris
+                  // ...metaTableOptions
+                })
+              }
+            ]
+          };
+        });
+
+      return [
+        metaName,
+        metaResourceTemplate,
+        {
+          title: metaTitle,
+          description: metaDescription,
+          mimeType: metaMimeType
+        },
+        metaCallback
+      ];
+    };
+
+    updatedResources.push(metaResource);
+
+    // Add the meta-resource enhancement to the existing resource
+    const enhancedResource = (opts = options): McpResource => {
+      const metaEnhancedCallback: McpResource[3] = async (passedUri, variables) =>
+        runWithOptions(opts, async () => {
+          const result = await callback(passedUri, variables);
+
+          const { version } = variables || {};
+          // const params = await paramCompletion({ version });
+          const params = await metaHandler?.(version) || [];
 
           if (result.contents) {
             result.contents.push({
-              uri: `${baseUri}/meta${version ? `?version=${version}` : ''}`,
-              mimeType: 'text/markdown',
-              text: generateMetaTable({
-                ...metaTableOptions,
+              // uri: `${baseUri}/meta${version ? `?version=${version}` : ''}`,
+              uri: `${baseUri}${version ? `?version=${version}` : ''}`,
+              mimeType: metaMimeType,
+              // mimeType: 'text/markdown',
+              text: generateMetaContent({
+                // ...metaTableOptions,
+                // exampleUris
+                title: metaTitle,
+                description: metaDescription,
+                params,
                 exampleUris
               })
             });
           }
 
           return result;
-        }));
+        });
+
+      return [name, uriOrTemplate, config, metaEnhancedCallback, metadata];
     };
 
-    return [name, uriOrTemplate, config, enhancedCallback, metadata];
-  }
+    updatedResources.push(enhancedResource);
+  });
 
-  return [name, uriOrTemplate, config, callback, metadata];
+  return updatedResources;
 };
 
-export { generateMetaTable, getUriVariations, registerResourceMeta };
+export { generateMetaContent, generateMarkdownTable, getUriVariations, setMetaResources };
