@@ -137,8 +137,8 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     let metaUri = metadata.metaConfig.uri;
     let baseUri: string | undefined;
 
-    const tempOriginaUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-    const { base: originalBaseUri } = splitUri(tempOriginaUri);
+    const tempOriginalUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
+    const { base: originalBaseUri } = splitUri(tempOriginalUri);
 
     if (metaUri) {
       const { base } = splitUri(metaUri);
