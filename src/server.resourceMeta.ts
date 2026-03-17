@@ -226,23 +226,6 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       return;
     }
 
-    // const isResourceTemplate = uriOrTemplate instanceof ResourceTemplate;
-    /*
-    let metaUri = metadata.metaConfig.uri;
-    let baseUri: string | undefined;
-
-    const tempOriginalUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-    const { base: originalBaseUri } = splitUri(tempOriginalUri);
-
-    if (metaUri) {
-      const { base } = splitUri(metaUri);
-
-      baseUri = base;
-    } else if (originalBaseUri) {
-      baseUri = `${originalBaseUri}/meta`;
-      metaUri = `${baseUri}{?version}`;
-    }
-    */
     // Get a URI breakdown
     const uriBreakdown = getUriBreakdown({ uriOrTemplate, configUri: metadata.metaConfig.uri, complete: metadata.complete });
 
@@ -259,11 +242,13 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       // ...(metadata.complete ? { complete: metadata.complete } : {})
     });
 
+    // Set basic meta-properties from config or create them.
     const metaName = metadata.metaConfig.name || `${name}-meta`;
     const metaTitle = metadata.metaConfig.title || `${config.title} Metadata`;
     const metaDescription = metadata.metaConfig.description || `Discovery manual for ${config.title}.`;
     const metaMimeType = metadata.metaConfig.mimeType || 'text/markdown';
 
+    // Set the meta-handler from config or create one.
     const metaHandler = metadata.metaConfig.metaHandler || setMetaHandler({
       baseUri: uriBreakdown.baseOriginalUri,
       searchParams: uriBreakdown.searchParams,
