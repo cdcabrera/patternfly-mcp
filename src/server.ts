@@ -84,6 +84,7 @@ type McpResource = [
       title?: string;
       description?: string;
       mimeType?: string;
+      metaHandler?: (version: string) => Promise<{ name: string; values: string[]; description: string }[]>;
     };
     complete?: {
       [key: string]: CompleteResourceTemplateCallback;
