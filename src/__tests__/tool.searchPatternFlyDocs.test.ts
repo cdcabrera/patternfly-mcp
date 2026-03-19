@@ -61,20 +61,26 @@ describe('searchPatternFlyDocsTool, callback', () => {
     {
       description: 'with made up componentName',
       searchQuery: 'lorem ipsum dolor sit amet'
-    },
-    {
-      description: 'with "*" searchQuery all',
-      searchQuery: '*'
-    },
-    {
-      description: 'with "all" searchQuery all',
-      searchQuery: 'ALL'
     }
   ])('should parse parameters, $description', async ({ searchQuery }) => {
     const [_name, _schema, callback] = searchPatternFlyDocsTool();
     const result = await callback({ searchQuery });
 
     expect(result.content[0].text.split('\n')[0]).toMatchSnapshot('search');
+  });
+
+  it.each([
+    { description: 'with "*" searchQuery all', searchQuery: '*' },
+    { description: 'with "all" searchQuery all', searchQuery: 'ALL' }
+  ])('should parse parameters, $description', async ({ searchQuery }) => {
+    const [_name, _schema, callback] = searchPatternFlyDocsTool();
+    const result = await callback({ searchQuery });
+    const firstLine = result.content[0].text.split('\n')[0];
+
+    // Assert format without pinning doc count (avoids snapshot updates when adding docs)
+    expect(firstLine).toMatch(
+      /^# Search results for PatternFly version "v6" and "all" resources\. Only showing the first \d+ results\. There are \d+ potential match variations\. Try searching with a more specific query\.$/
+    );
   });
 
   it.each([

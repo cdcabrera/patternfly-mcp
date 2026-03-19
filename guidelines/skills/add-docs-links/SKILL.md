@@ -9,6 +9,8 @@ description: Adds documentation links to src/docs.json in a structured way. Use 
 
 Apply this skill when the user wants to add or register new documentation links in `src/docs.json`. Trigger phrases include: "add documentation links", "add doc entries", "register docs", "update docs.json", "contribute to docs.json", or "update the documentation catalog" (e.g. new component docs, new sources, or new versions).
 
+**User input:** The user can provide **any GitHub link** to the doc (blob or raw). You will do the rest: convert blob URLs to raw URLs, choose an existing ref from `docs.json` when possible, verify the URL is reachable, add the entry in the correct shape, update `meta`, and update any affected snapshots (see step 7).
+
 ## Workflow
 
 1. **Resolve the raw URL and ref (git hash/branch)**
@@ -40,6 +42,7 @@ Apply this skill when the user wants to add or register new documentation links 
 
 7. **Run unit tests**
    - From repo root: `npm test` (or `jest --selectProjects unit --roots=src/`). The `docs.json` test (`src/__tests__/docs.json.test.ts`) automatically validates: no duplicate `path` values (with a clear error listing duplicates and where they appear), correct `meta.totalEntries` and `meta.totalDocs`, and base-hash count. Fix any failures.
+   - The search-tool test (`src/__tests__/tool.searchPatternFlyDocs.test.ts`) uses a **pattern assertion** (regex) for the "all" / wildcard result line instead of a snapshot, so adding docs does not require snapshot updates.
    - If adding a new ref that increases the number of distinct base hashes, the test expects `baseHashes.size` to be 5; coordinate with the team before changing that expectation.
 
 **CI / daily audit:** A GitHub workflow (`.github/workflows/audit.yml`) runs a **daily audit** and also on pull requests that change `src/docs.json` or `tests/audit/**`. It runs the link-audit tests under `tests/audit/` (e.g. `docs.audit.test.ts`), which sample links from `docs.json` and verify they are reachable (HTTP 2xx). New links you add may be sampled and checked; broken or unreachable links can be caught by this workflow.
@@ -63,11 +66,12 @@ See [reference.md](reference.md) for full schema and examples.
 
 ## Quick Checks
 
+- [ ] User provided a GitHub link (blob or raw) — you convert to raw URL and resolve ref; no need to ask for a raw URL.
 - [ ] `path` is within the URL whitelist (see `src/options.defaults.ts` → `patternflyOptions.urlWhitelist`); only `https://patternfly.org`, `https://github.com/patternfly`, or `https://raw.githubusercontent.com/patternfly` (and paths under them).
 - [ ] Raw URL uses an existing ref from `docs.json` when possible (keeps base-hash count).
 - [ ] Raw URL returns 2xx when fetched.
 - [ ] New `path` is not already in `docs.json` (enforced by `docs.json.test.ts` when you run `npm test`).
 - [ ] New entry matches the entry format and is placed under the correct PascalCase key.
 - [ ] `meta.totalEntries` and `meta.totalDocs` updated.
-- [ ] `npm test` passes.
+- [ ] `npm test` passes (search-tool "all" message is asserted via regex, so no snapshot update needed when adding docs).
 - [ ] Optional: know that a daily CI audit (`.github/workflows/audit.yml`, `tests/audit/`) samples and checks link reachability.

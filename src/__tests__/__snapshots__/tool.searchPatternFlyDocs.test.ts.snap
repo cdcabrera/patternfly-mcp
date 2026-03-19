@@ -53,10 +53,6 @@ exports[`searchPatternFlyDocsTool, callback should have a specific markdown form
 
 exports[`searchPatternFlyDocsTool, callback should parse parameters, default: search 1`] = `"# Search results for PatternFly version "v6" and "Button". Showing 2 exact matches."`;
 
-exports[`searchPatternFlyDocsTool, callback should parse parameters, with "*" searchQuery all: search 1`] = `"# Search results for PatternFly version "v6" and "all" resources. Only showing the first 10 results. There are 806 potential match variations. Try searching with a more specific query."`;
-
-exports[`searchPatternFlyDocsTool, callback should parse parameters, with "all" searchQuery all: search 1`] = `"# Search results for PatternFly version "v6" and "all" resources. Only showing the first 10 results. There are 806 potential match variations. Try searching with a more specific query."`;
-
 exports[`searchPatternFlyDocsTool, callback should parse parameters, with explicit valid version: search 1`] = `"# Search results for PatternFly version "v6" and "Button". Showing 2 exact matches."`;
 
 exports[`searchPatternFlyDocsTool, callback should parse parameters, with lower case componentName: search 1`] = `"# Search results for PatternFly version "v6" and "button". Showing 2 exact matches."`;
