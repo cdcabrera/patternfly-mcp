@@ -47,6 +47,23 @@ Each entry in `docs.<ComponentName>[]`:
 - Pattern: `https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path-to-file}`
 - `ref`: branch name, tag (e.g. `v5`), or **commit SHA** (preferred for stability).
 - Example: `https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/components/about-modal/about-modal.md`
+- **Must be whitelisted:** see [URL whitelist](#url-whitelist-allowed-domains) below.
+
+## URL whitelist (allowed domains)
+
+External paths and references are limited by a PatternFly URL whitelist so the server only fetches from allowed origins.
+
+- **Defined in:** `src/options.defaults.ts` → `PATTERNFLY_OPTIONS` → `patternflyOptions.urlWhitelist`
+- **Used by:** `tool.patternFlyDocs` (validates `urlList` via `assertInputUrlWhiteListed`); matching logic in `server.helpers.ts` → `isWhitelistedUrl`.
+- **Default entries (prefix match):**
+  - `https://patternfly.org` — patternfly.org and subdomains (e.g. `www.patternfly.org`, `v6.docs.patternfly.org`)
+  - `https://github.com/patternfly` — any path under `github.com/patternfly`
+  - `https://raw.githubusercontent.com/patternfly` — any path under `raw.githubusercontent.com/patternfly` (e.g. `patternfly-org`, `patternfly-react`)
+- **Protocols:** `urlWhitelistProtocols` defaults to `['http', 'https']`; in practice use `https` for external doc links.
+
+Any new `path` in `docs.json` must match one of these prefixes (protocol + host + path prefix). URLs that do not match will be rejected when the tool is used with a `urlList` or when the server fetches by path.
+
+**Maintainer-controlled:** The whitelist is controlled at the maintainer level. It is recommended to avoid updating it; if it is modified, your contribution will be delayed while the new whitelisted domain is reviewed.
 
 ## Duplicate check
 

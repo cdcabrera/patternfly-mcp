@@ -16,9 +16,11 @@ Apply this skill when the user wants to add or register new documentation links 
    - Prefer using an **existing ref** already present in `src/docs.json` for that repo (keeps `baseHashes.size === 5` per project tests). Extract from an existing entry’s `path` (e.g. `2d5fec39ddb8aa32ce78c9a63cdfc1653692b193` or `v5`).
    - If a new ref is required: look up the GitHub commit SHA (e.g. via GitHub API `GET /repos/{owner}/{repo}/commits?sha={branch}` or repo’s default branch) and use that SHA or a stable tag in the raw URL.
 
-2. **Build the raw GitHub URL**
-   - Format: `https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path-to-file}`.
-   - Example: `https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39.../packages/documentation-site/patternfly-docs/content/components/alert/alert.md`.
+2. **Build the raw URL (must be whitelisted)**
+   - The `path` must fall within the PatternFly URL whitelist in `src/options.defaults.ts` (`patternflyOptions.urlWhitelist`). The server only allows fetching from those domains; tool inputs and doc references are validated against it. See [reference.md](reference.md#url-whitelist-allowed-domains).
+   - **Maintainer-controlled:** The whitelist is controlled at the maintainer level. It is recommended to avoid updating it; if it is modified, your contribution will be delayed while the new whitelisted domain is reviewed.
+   - Allowed bases: `https://patternfly.org`, `https://github.com/patternfly`, `https://raw.githubusercontent.com/patternfly` (any path under each). Use `https` only (`urlWhitelistProtocols`: `http`, `https`).
+   - For GitHub content use: `https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path-to-file}` (e.g. `patternfly/patternfly-org`, `patternfly/patternfly-react`).
 
 3. **Confirm the URL is reachable**
    - Before adding to `docs.json`, verify the raw URL returns HTTP 200–299 (e.g. `curl -sI -o /dev/null -w "%{http_code}" "<url>"` or use the project’s `tests/audit/utils/checkUrl.ts` logic). If unreachable, fix the ref/path or do not add.
@@ -58,6 +60,7 @@ See [reference.md](reference.md) for full schema and examples.
 
 ## Quick Checks
 
+- [ ] `path` is within the URL whitelist (see `src/options.defaults.ts` → `patternflyOptions.urlWhitelist`); only `https://patternfly.org`, `https://github.com/patternfly`, or `https://raw.githubusercontent.com/patternfly` (and paths under them).
 - [ ] Raw URL uses an existing ref from `docs.json` when possible (keeps base-hash count).
 - [ ] Raw URL returns 2xx when fetched.
 - [ ] New `path` is not already in `docs.json`.
