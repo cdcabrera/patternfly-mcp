@@ -7,7 +7,7 @@ description: Adds documentation links to src/docs.json in a structured way. Use 
 
 ## When to Use
 
-Apply this skill when the user wants to add or register new documentation links in `src/docs.json` (e.g. new component docs, new sources, or new versions).
+Apply this skill when the user wants to add or register new documentation links in `src/docs.json`. Trigger phrases include: "add documentation links", "add doc entries", "register docs", "update docs.json", "contribute to docs.json", or "update the documentation catalog" (e.g. new component docs, new sources, or new versions).
 
 ## Workflow
 
