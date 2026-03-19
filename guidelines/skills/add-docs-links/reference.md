@@ -46,7 +46,10 @@ Each entry in `docs.<ComponentName>[]`:
 ### path (raw URL)
 
 - Pattern: `https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path-to-file}`
-- `ref`: branch name, tag (e.g. `v5`), or **commit SHA** (preferred for stability).
+- `ref`: branch name, tag (e.g. `v5`), or **commit SHA** (preferred for v6 org/react-style links).
+
+**Why commit SHAs are used (instead of only `main` / a moving branch):** A pinned SHA makes the fetched doc **immutable** for that URL: the catalog always resolves to the same file content until someone intentionally updates the ref. Branch heads change as upstream merges; without a pin, links could silently point at different text, break if files move, or make audits and support harder to reason about. Tags (e.g. `v5`) can also pin a release line; the project still limits how many distinct refs it tracks (see unit test `baseHashes`).
+
 - Example: `https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/components/about-modal/about-modal.md`
 - **Must be whitelisted:** see [URL whitelist](#url-whitelist-allowed-domains) below.
 

@@ -13,6 +13,7 @@ Apply this skill when the user wants to add or register new documentation links 
 
 1. **Resolve the raw URL and ref (git hash/branch)**
    - Decide which GitHub repo and path the doc lives at (e.g. `patternfly/patternfly-org`, `patternfly/patternfly-react`).
+   - **Why SHAs:** Pinned commit SHAs keep each `path` tied to **immutable** content until the ref is deliberately updated; moving branches (e.g. `main`) would change what the same URL fetches over time and can break or confuse audits. See [reference.md](reference.md#path-raw-url) for the full rationale.
    - Prefer using an **existing ref** already present in `src/docs.json` for that repo (keeps `baseHashes.size === 5` per project tests). Extract from an existing entry’s `path` (e.g. `2d5fec39ddb8aa32ce78c9a63cdfc1653692b193` or `v5`).
    - If a new ref is required: look up the GitHub commit SHA (e.g. via GitHub API `GET /repos/{owner}/{repo}/commits?sha={branch}` or repo’s default branch) and use that SHA or a stable tag in the raw URL.
 
