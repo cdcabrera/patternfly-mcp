@@ -6,9 +6,9 @@ describe('docs.json', () => {
     expect(typeof docs.generated).toBe('string');
     expect(docs.generated.length).toBeGreaterThan(0);
 
-    const parsed = new Date(docs.generated as string).getTime();
+    const parsed = new Date(new Date(docs.generated).getTime()).toISOString();
 
-    expect(Number.isNaN(parsed)).toBe(false);
+    expect(parsed).toBe(docs.generated);
   });
 
   it('should have metadata reflective of its content and unique links per each entry', () => {

@@ -74,5 +74,5 @@ See [reference.md](reference.md) for full schema and examples.
 - [ ] New entry matches the entry format and is placed under the correct PascalCase key.
 - [ ] `meta.totalEntries` and `meta.totalDocs` updated.
 - [ ] Top-level `generated` set to current ISO timestamp.
-- [ ] `npm test` passes (search-tool "all" message is asserted via regex, so no snapshot update needed when adding docs).
+- [ ] `npm test` passes.
 - [ ] Optional: know that a daily CI audit (`.github/workflows/audit.yml`, `tests/audit/`) samples and checks link reachability.

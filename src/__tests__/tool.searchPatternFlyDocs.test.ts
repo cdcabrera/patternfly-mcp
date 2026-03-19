@@ -80,9 +80,10 @@ describe('searchPatternFlyDocsTool, callback', () => {
       searchQuery: 'ALL',
       expected: '# Search results for PatternFly version "v6" and "all" resources. Only showing the first'
     }
-  ])('should parse parameters, $description', async ({ searchQuery, expected }) => {
+  ])('should parse parameters, $description', async ({ searchQuery, version, expected }) => {
     const [_name, _schema, callback] = searchPatternFlyDocsTool();
-    const result = await callback({ searchQuery });
+    const updatedParams = version ? { searchQuery, version } : { searchQuery };
+    const result = await callback(updatedParams);
     const firstLine = result.content[0].text.split('\n')[0];
 
     expect(firstLine).toContain(expected);
@@ -117,8 +118,7 @@ describe('searchPatternFlyDocsTool, callback', () => {
     }
   ])('should handle errors, $description', async ({ error, searchQuery, version }) => {
     const [_name, _schema, callback] = searchPatternFlyDocsTool();
-
-    const updatedParams = version !== null ? { searchQuery, version } : { searchQuery };
+    const updatedParams = version ? { searchQuery, version } : { searchQuery };
 
     await expect(callback(updatedParams)).rejects.toThrow(McpError);
     await expect(callback(updatedParams)).rejects.toThrow(error);
