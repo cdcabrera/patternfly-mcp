@@ -25,8 +25,8 @@ Apply this skill when the user wants to add or register new documentation links 
 3. **Confirm the URL is reachable**
    - Before adding to `docs.json`, verify the raw URL returns HTTP 200–299 (e.g. `curl -sI -o /dev/null -w "%{http_code}" "<url>"` or use the project’s `tests/audit/utils/checkUrl.ts` logic). If unreachable, fix the ref/path or do not add.
 
-4. **Check for duplicates**
-   - Scan `src/docs.json`: collect all `path` values (e.g. iterate `docs.docs` → each entry’s `path`). Do **not** add an entry whose `path` already exists; the unit test forbids duplicate paths.
+4. **Avoid duplicate paths**
+   - Each `path` must be unique across all entries. **Duplicates are automatically checked by the unit tests:** `src/__tests__/docs.json.test.ts` builds a map of every `path` and fails if any path appears in more than one entry, reporting which path is duplicated and in which component/category entries. Run `npm test` (step 7) to confirm; you can optionally scan `docs.json` for an existing `path` before adding to avoid a test failure.
 
 5. **Add the new entry in the correct shape**
    - Use the [entry format](reference.md#entry-format). Insert the new entry into the array for the right component key (create the key if new). Keep keys in **PascalCase** (e.g. `AboutModal`, `Alert`).
@@ -38,8 +38,10 @@ Apply this skill when the user wants to add or register new documentation links 
    - Optionally set `meta.generated` to current ISO timestamp.
 
 7. **Run unit tests**
-   - From repo root: `npm test` (or `jest --selectProjects unit --roots=src/`). Fix any failures (e.g. duplicate path, wrong meta, or base hashes count).
-   - If adding a new ref that increases the number of distinct base hashes, the test in `src/__tests__/docs.json.test.ts` expects `baseHashes.size` to be 5; coordinate with the team before changing that expectation.
+   - From repo root: `npm test` (or `jest --selectProjects unit --roots=src/`). The `docs.json` test (`src/__tests__/docs.json.test.ts`) automatically validates: no duplicate `path` values (with a clear error listing duplicates and where they appear), correct `meta.totalEntries` and `meta.totalDocs`, and base-hash count. Fix any failures.
+   - If adding a new ref that increases the number of distinct base hashes, the test expects `baseHashes.size` to be 5; coordinate with the team before changing that expectation.
+
+**CI / daily audit:** A GitHub workflow (`.github/workflows/audit.yml`) runs a **daily audit** and also on pull requests that change `src/docs.json` or `tests/audit/**`. It runs the link-audit tests under `tests/audit/` (e.g. `docs.audit.test.ts`), which sample links from `docs.json` and verify they are reachable (HTTP 2xx). New links you add may be sampled and checked; broken or unreachable links can be caught by this workflow.
 
 ## Entry Format
 
@@ -63,7 +65,8 @@ See [reference.md](reference.md) for full schema and examples.
 - [ ] `path` is within the URL whitelist (see `src/options.defaults.ts` → `patternflyOptions.urlWhitelist`); only `https://patternfly.org`, `https://github.com/patternfly`, or `https://raw.githubusercontent.com/patternfly` (and paths under them).
 - [ ] Raw URL uses an existing ref from `docs.json` when possible (keeps base-hash count).
 - [ ] Raw URL returns 2xx when fetched.
-- [ ] New `path` is not already in `docs.json`.
+- [ ] New `path` is not already in `docs.json` (enforced by `docs.json.test.ts` when you run `npm test`).
 - [ ] New entry matches the entry format and is placed under the correct PascalCase key.
 - [ ] `meta.totalEntries` and `meta.totalDocs` updated.
 - [ ] `npm test` passes.
+- [ ] Optional: know that a daily CI audit (`.github/workflows/audit.yml`, `tests/audit/`) samples and checks link reachability.

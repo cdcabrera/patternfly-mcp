@@ -5,6 +5,7 @@
 - Catalog: `src/docs.json`
 - Unit test: `src/__tests__/docs.json.test.ts`
 - Link audit: `tests/audit/docs.audit.test.ts` (samples links and checks reachability)
+- **CI:** `.github/workflows/audit.yml` runs a daily audit (and on PRs that change `src/docs.json` or `tests/audit/**`), executing the audit tests so links in `docs.json` are periodically checked for reachability.
 
 ## Top-level structure
 
@@ -68,7 +69,7 @@ Any new `path` in `docs.json` must match one of these prefixes (protocol + host 
 ## Duplicate check
 
 - Every `path` in the file must be **unique** across all entries.
-- Before adding an entry, collect all `path` values (e.g. `Object.values(docs.docs).flat().map(e => e.path)`) and ensure the new `path` is not in that set.
+- **Automatically enforced by unit test:** `src/__tests__/docs.json.test.ts` builds a map of each `path` to the list of entries that use it; if any path has more than one entry, the test fails and reports each duplicate path and which component/category entries reference it. Run `npm test` to confirm no duplicates. Optionally, before adding an entry, collect all `path` values (e.g. `Object.values(docs.docs).flat().map(e => e.path)`) to avoid a failing test.
 
 ## GitHub ref (hash) lookup
 
