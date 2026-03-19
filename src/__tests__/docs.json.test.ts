@@ -6,9 +6,13 @@ describe('docs.json', () => {
     expect(typeof docs.generated).toBe('string');
     expect(docs.generated.length).toBeGreaterThan(0);
 
-    const parsed = new Date(new Date(docs.generated).getTime()).toISOString();
+    const rawDate = docs.generated;
+    const parsedDate = Date.parse(rawDate);
 
-    expect(parsed).toBe(docs.generated);
+    expect(Number.isNaN(parsedDate)).toBe(false);
+
+    // Canonical ISO 8601 UTC form from Date.prototype.toISOString()
+    expect(new Date(parsedDate).toISOString()).toBe(rawDate);
   });
 
   it('should have metadata reflective of its content and unique links per each entry', () => {
