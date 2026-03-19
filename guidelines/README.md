@@ -20,7 +20,7 @@ Agent-specific guidelines for the PatternFly MCP project, optimized for machine 
 
 - [Add docs links](./skills/add-docs-links/SKILL.md) - Add documentation links to `src/docs.json` in a structured way (format, duplicate check, URL confirmation, tests)
 
-**Note:** `guidelines/skills/` is the canonical location for skills. Repo symlinks (e.g. `.agent/skills` → `guidelines/skills`, `.claude/skills` → `guidelines/skills`) point here so Cursor/Claude and other agents can discover them.
+**Note:** `guidelines/skills/` is the canonical location for skills. Repo symlinks point here so agents can discover them: `.agents/skills` (Cursor), `.cursor/skills` (Cursor), `.claude/skills` (Claude). The `.agent/` directory (no “s”) is reserved for each developer’s local work and is off limits—do not use it for shared skills or guidelines.
 
 ## User Guide
 
@@ -40,7 +40,7 @@ Agents should use these phrases as signals to consult specific documentation and
 ## Guidelines Processing Order
 
 1. **Guidelines Directory** (all files in the `guidelines/` directory)
-2. **Local Guidelines** (`.agent/` directory)
+2. **Local guidelines** (`.agent/` directory)—reserved for each developer’s own content; gitignored and off limits for shared repo assets. Do not create or reference shared skills or guidelines in `.agent/`.
 
 ## Maintaining This Directory
 
