@@ -16,6 +16,12 @@ Agent-specific guidelines for the PatternFly MCP project, optimized for machine 
 - [Agent Coding](./agent_coding.md) - Coding standards
 - [Agent Testing](./agent_testing.md) - Testing procedures
 
+### Skills
+
+- [Add docs links](./skills/add-docs-links/SKILL.md) - Add documentation links to `src/docs.json` in a structured way (format, duplicate check, URL confirmation, tests)
+
+**Note:** `guidelines/skills/` is the canonical location for skills. Repo symlinks (e.g. `.agent/skills` → `guidelines/skills`, `.claude/skills` → `guidelines/skills`) point here so Cursor/Claude and other agents can discover them.
+
 ## User Guide
 
 ### Available Trigger Phrases
@@ -29,6 +35,7 @@ Agents should use these phrases as signals to consult specific documentation and
 | **"review tool usage"**             | Review `docs/usage.md` for built-in tools and configuration.                                                                                           |
 | **"review development guide"**      | Review `docs/development.md` for CLI, API, and plugin authoring.                                                                                       |
 | **"create an example tool plugin"** | Review `guidelines/agent_coding.md`, `docs/development.md`, `docs/examples/*`, and `src/*` for context, coding standards, and existing example formats. |
+| **"add documentation links"**      | Follow `guidelines/skills/add-docs-links/SKILL.md`: docs.json format, duplicate check, raw URL confirmation, then run unit tests and update meta. |
 
 ## Guidelines Processing Order
 

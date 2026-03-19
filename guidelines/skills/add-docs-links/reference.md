@@ -1,0 +1,87 @@
+# docs.json Reference
+
+## File location
+
+- Catalog: `src/docs.json`
+- Unit test: `src/__tests__/docs.json.test.ts`
+- Link audit: `tests/audit/docs.audit.test.ts` (samples links and checks reachability)
+
+## Top-level structure
+
+```json
+{
+  "version": "1",
+  "generated": "2026-03-09T00:00:00.000Z",
+  "meta": {
+    "totalEntries": 129,
+    "totalDocs": 320,
+    "source": "patternfly-mcp-internal"
+  },
+  "docs": {
+    "ComponentName": [ /* array of entries */ ]
+  }
+}
+```
+
+- `meta.totalEntries`: number of keys in `docs` (component count).
+- `meta.totalDocs`: total number of doc entries across all keys.
+- `docs`: keys are PascalCase component names; values are arrays of entry objects.
+
+## Entry format
+
+Each entry in `docs.<ComponentName>[]`:
+
+| Field         | Type   | Example |
+|---------------|--------|---------|
+| `displayName` | string | `"About Modal"` |
+| `description` | string | `"Design Guidelines for the about modal component."` |
+| `pathSlug`    | string | `"about-modal"` |
+| `section`     | string | `"components"` |
+| `category`    | string | `"design-guidelines"` \| `"accessibility"` \| `"react"` |
+| `source`      | string | `"github"` |
+| `path`        | string | Full raw GitHub URL (see below) |
+| `version`     | string | `"v6"` \| `"v5"` |
+
+### path (raw URL)
+
+- Pattern: `https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path-to-file}`
+- `ref`: branch name, tag (e.g. `v5`), or **commit SHA** (preferred for stability).
+- Example: `https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/components/about-modal/about-modal.md`
+
+## Duplicate check
+
+- Every `path` in the file must be **unique** across all entries.
+- Before adding an entry, collect all `path` values (e.g. `Object.values(docs.docs).flat().map(e => e.path)`) and ensure the new `path` is not in that set.
+
+## GitHub ref (hash) lookup
+
+- **Use existing refs**: Prefer the ref already used in `docs.json` for that repo (same owner/repo). Extract the ref from an existing `path`: the segment after `raw.githubusercontent.com/owner/repo/` and before the next `/`.
+- **New ref via API**: For branch `main` of `patternfly/patternfly-org`:
+  - `GET https://api.github.com/repos/patternfly/patternfly-org/commits/main` (or `commits?sha=main`) and use the response `sha` in the raw URL.
+- **Confirm raw URL**: After building the URL, fetch it (e.g. `curl -sI` or the project’s `checkUrl`) and ensure HTTP 200–299.
+
+## Unit test constraints
+
+From `src/__tests__/docs.json.test.ts`:
+
+1. No duplicate `path` values.
+2. `meta.totalEntries` === number of keys in `docs`.
+3. `meta.totalDocs` === total number of entries in all arrays.
+4. Number of unique “base hashes” (refs per repo) is **5** (v6 org, v6 react, v5 org, codemods, ai-helpers). When adding links, use existing refs so this count does not change unless the project explicitly adds a new source.
+
+## Example new entry
+
+```json
+{
+  "displayName": "New Component",
+  "description": "Design Guidelines for the new component.",
+  "pathSlug": "new-component",
+  "section": "components",
+  "category": "design-guidelines",
+  "source": "github",
+  "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/components/new-component/new-component.md",
+  "version": "v6"
+}
+```
+
+Place under `docs["NewComponent"]` (or the correct PascalCase key); create the key if it does not exist.
