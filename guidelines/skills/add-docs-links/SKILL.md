@@ -35,10 +35,10 @@ Apply this skill when the user wants to add or register new documentation links 
    - Use the [entry format](reference.md#entry-format). Insert the new entry into the array for the right component key (create the key if new). Keep keys in **PascalCase** (e.g. `AboutModal`, `Alert`).
    - Preserve existing ordering (e.g. alphabetical by key) if that’s the project convention.
 
-6. **Update `meta`**
+6. **Update `meta` and `generated`**
    - Recompute and set `meta.totalEntries` = number of top-level keys in `docs`.
    - Recompute and set `meta.totalDocs` = total number of entries across all keys.
-   - Optionally set `meta.generated` to current ISO timestamp.
+   - Set the top-level `generated` property to the current ISO timestamp (e.g. `new Date().toISOString()`) so the file reflects when it was last modified.
 
 7. **Run unit tests**
    - From repo root: `npm test` (or `jest --selectProjects unit --roots=src/`). The `docs.json` test (`src/__tests__/docs.json.test.ts`) automatically validates: no duplicate `path` values (with a clear error listing duplicates and where they appear), correct `meta.totalEntries` and `meta.totalDocs`, and base-hash count. Fix any failures.
@@ -73,5 +73,6 @@ See [reference.md](reference.md) for full schema and examples.
 - [ ] New `path` is not already in `docs.json` (enforced by `docs.json.test.ts` when you run `npm test`).
 - [ ] New entry matches the entry format and is placed under the correct PascalCase key.
 - [ ] `meta.totalEntries` and `meta.totalDocs` updated.
+- [ ] Top-level `generated` set to current ISO timestamp.
 - [ ] `npm test` passes (search-tool "all" message is asserted via regex, so no snapshot update needed when adding docs).
 - [ ] Optional: know that a daily CI audit (`.github/workflows/audit.yml`, `tests/audit/`) samples and checks link reachability.
