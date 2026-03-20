@@ -115,14 +115,33 @@ const getUriVariations = (baseUri: string, params: string[], allCombos = false):
   });
 };
 
-const setMetaHandler = ({ baseUri, searchParams, complete, registerAllSearchCombinations, title, description }: {
+const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, complete, registerAllSearchCombinations }: {
+  name: string;
   baseUri: string;
   searchParams: string[];
+  config: McpResource[2];
+  metaConfig: McpResourceMetadata['metaConfig'] | undefined;
   complete: McpResourceMetadata['complete'];
   registerAllSearchCombinations: McpResourceMetadata['registerAllSearchCombinations'];
-  title: McpResourceMetadata['metaConfig']['title'];
-  description: McpResourceMetadata['metaConfig']['description'];
 }) => {
+  // Set basic meta-properties from config or create them.
+  const metaName = metaConfig?.name || `${name}-meta`;
+  const metaTitle = metaConfig?.title || `${config.title} Metadata`;
+  const metaDescription = metaConfig?.description || `Discovery manual for ${config.title}.`;
+  const metaMimeType = metaConfig?.mimeType || 'text/markdown';
+  const metaHandler = metaConfig?.metaHandler;
+
+  /*
+  // Set the meta-handler from config or create one.
+  const metaHandler = metadata.metaConfig.metaHandler || setMetaHandler({
+    baseUri: uriBreakdown.baseOriginalUri,
+    searchParams: uriBreakdown.searchParams,
+    complete: metadata.complete,
+    registerAllSearchCombinations: metadata.registerAllSearchCombinations,
+    title: metaTitle,
+    description: metaDescription
+  });
+  */
   const exampleUris = getUriVariations(baseUri, searchParams, Boolean(registerAllSearchCombinations)).map(uri => {
     const searchParams = uri.split('?')[1];
 
@@ -132,7 +151,7 @@ const setMetaHandler = ({ baseUri, searchParams, complete, registerAllSearchComb
     };
   });
 
-  return async (version: string) => {
+  const generatedMetaHandler = async (version: string) => {
     const params = [];
 
     if (complete) {
@@ -150,11 +169,19 @@ const setMetaHandler = ({ baseUri, searchParams, complete, registerAllSearchComb
     }
 
     return generateMetaContent({
-      title,
-      description,
+      title: metaTitle,
+      description: metaDescription,
       params: params || [],
       exampleUris
     });
+  };
+
+  return {
+    metaName,
+    metaTitle,
+    metaDescription,
+    metaMimeType,
+    metaHandler: metaHandler || generatedMetaHandler
   };
 };
 
@@ -242,6 +269,18 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       // ...(metadata.complete ? { complete: metadata.complete } : {})
     });
 
+    // Set meta-properties
+    const { metaName, metaTitle, metaDescription, metaMimeType, metaHandler } = setMetadataOptions({
+      name,
+      baseUri: uriBreakdown.baseOriginalUri,
+      searchParams: uriBreakdown.searchParams,
+      metaConfig: metadata.metaconfig,
+      config,
+      complete: metadata.complete,
+      registerAllSearchCombinations: metadata.registerAllSearchCombinations
+    });
+
+    /*
     // Set basic meta-properties from config or create them.
     const metaName = metadata.metaConfig.name || `${name}-meta`;
     const metaTitle = metadata.metaConfig.title || `${config.title} Metadata`;
@@ -257,6 +296,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       title: metaTitle,
       description: metaDescription
     });
+    */
 
     // Create a new meta-resource
     const metaResource = (opts = options): McpResource => {
