@@ -186,7 +186,7 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
       complete,
       metaConfig: {
         uri: 'patternfly://schemas/meta{?version}',
-        title: 'Component Schemas Index Metadata',
+        title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly component schemas.'
       }
     }

@@ -324,7 +324,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
       registerAllSearchCombinations: true,
       metaConfig: {
         uri: 'patternfly://docs/meta{?version}',
-        title: 'Documentation Index Metadata',
+        title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the PatternFly documentation index.'
       }
     }

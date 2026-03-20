@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
-exports[`Builtin resources, HTTP transport should read the patternfly-docs-index-meta 1`] = `
+exports[`Builtin resources, HTTP transport should read the patternfly-docs-meta: meta output 1`] = `
 {
   "mimeType": "text/markdown",
-  "text": "# Documentation Index Metadata
+  "text": "# PatternFly Documentation Index Metadata
 Use these parameters to filter the PatternFly documentation index.
 
 ## Available Parameters

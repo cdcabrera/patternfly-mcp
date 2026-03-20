@@ -216,7 +216,7 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
       complete,
       metaConfig: {
         uri: 'patternfly://components/meta{?version}',
-        title: 'Components Index Metadata',
+        title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly components.'
       }
     }

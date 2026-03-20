@@ -228,6 +228,8 @@ const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
   let metaUri = configUri;
   let baseUri: string | undefined;
 
+  const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || (complete && Object.keys(complete)) || [];
+  const isMetaTemplate = isResourceTemplate || searchParams.length > 0;
   const tempOriginalUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
   const { base: baseOriginalUri } = splitUri(tempOriginalUri);
 
@@ -237,12 +239,11 @@ const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
     baseUri = base;
   } else if (baseOriginalUri) {
     baseUri = `${baseOriginalUri}/meta`;
-    metaUri = `${baseUri}{?version}`;
+    metaUri = isMetaTemplate ? `${baseUri}{?version}` : baseUri;
   }
 
-  const searchParams = (isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames) || (complete && Object.keys(complete)) || [];
-
   return {
+    isMetaTemplate,
     baseOriginalUri,
     baseUri,
     metaUri,
@@ -287,14 +288,16 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       return;
     }
 
-    // Create a new meta-resource template
-    // The need for "completion" on these resources is under review since the entire point
-    // of the `meta` resource is to provide a way to complete the resource's metadata without the
-    // need for completion for "lesser" MCP clients.
-    const metaResourceTemplate = new ResourceTemplate(uriBreakdown.metaUri, {
-      list: undefined
-      // ...(metadata.complete ? { complete: metadata.complete } : {})
-    });
+    // Create a new meta-resource or template
+    // We still allow version complete even though the intent of `meta` resource is to provide a
+    // way around completion for "lesser" MCP clients since technically, those clients can still
+    // pass a version parameter based on the meta URI template.
+    const metaResourceOrTemplate = uriBreakdown.isMetaTemplate
+      ? new ResourceTemplate(uriBreakdown.metaUri, {
+        list: undefined,
+        ...(metadata.complete?.version ? { complete: { version: metadata.complete.version } } : {})
+      })
+      : uriBreakdown.metaUri;
 
     // Set meta-properties
     const { metaName, metaTitle, metaDescription, metaMimeType, metaHandler } = setMetadataOptions({
@@ -328,7 +331,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
 
       return [
         metaName,
-        metaResourceTemplate,
+        metaResourceOrTemplate,
         {
           title: metaTitle,
           description: metaDescription,
