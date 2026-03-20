@@ -1,6 +1,12 @@
 import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type McpResource, type McpResourceCreator, type McpResourceMetadata } from './server';
 import {
+  type McpResource,
+  type McpResourceCreator,
+  type McpResourceMetadata,
+  type McpResourceMetadataMetaConfig
+} from './server';
+import {
+  isPromise,
   isPlainObject,
   listAllCombinations,
   listIncrementalCombinations,
@@ -8,6 +14,29 @@ import {
   stringJoin
 } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
+
+/**
+ * Type definition for options used in setting up resource metadata.
+ *
+ * @interface SetMetadataOptions
+ *
+ * @property name - The name of the resource.
+ * @property baseUri - The base URI for the resource.
+ * @property searchParams - List of search parameters for the resource.
+ * @property {McpResource[2]} config - Configuration for the resource.
+ * @property {McpResourceMetadataMetaConfig | undefined} metaConfig - Metadata configuration for the resource.
+ * @property {McpResourceMetadata['complete']} complete - Completion function for the resource metadata.
+ * @property {McpResourceMetadata['registerAllSearchCombinations']} registerAllSearchCombinations - Function to register all search combinations for the resource metadata.
+ */
+interface SetMetadataOptions {
+  name: string;
+  baseUri: string;
+  searchParams: string[];
+  config: McpResource[2];
+  metaConfig: McpResourceMetadataMetaConfig | undefined;
+  complete: McpResourceMetadata['complete'];
+  registerAllSearchCombinations: McpResourceMetadata['registerAllSearchCombinations'];
+}
 
 /**
  * Generate a basic Markdown table with optional content wrapping.
@@ -115,73 +144,65 @@ const getUriVariations = (baseUri: string, params: string[], allCombos = false):
   });
 };
 
-const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, complete, registerAllSearchCombinations }: {
-  name: string;
-  baseUri: string;
-  searchParams: string[];
-  config: McpResource[2];
-  metaConfig: McpResourceMetadata['metaConfig'] | undefined;
-  complete: McpResourceMetadata['complete'];
-  registerAllSearchCombinations: McpResourceMetadata['registerAllSearchCombinations'];
-}) => {
+/**
+ * Configures and returns metadata options based on the provided parameters and configuration.
+ *
+ * @param {SetMetadataOptions} settings - Settings for configuring metadata options.
+ * @returns An object containing the configured metadata options, including name, title, description, MIME type,
+ *     and meta-handler function.
+ */
+const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, complete, registerAllSearchCombinations }: SetMetadataOptions) => {
   // Set basic meta-properties from config or create them.
   const metaName = metaConfig?.name || `${name}-meta`;
   const metaTitle = metaConfig?.title || `${config.title} Metadata`;
   const metaDescription = metaConfig?.description || `Discovery manual for ${config.title}.`;
   const metaMimeType = metaConfig?.mimeType || 'text/markdown';
-  const metaHandler = metaConfig?.metaHandler;
+  let metaHandler = metaConfig?.metaHandler;
 
-  /*
-  // Set the meta-handler from config or create one.
-  const metaHandler = metadata.metaConfig.metaHandler || setMetaHandler({
-    baseUri: uriBreakdown.baseOriginalUri,
-    searchParams: uriBreakdown.searchParams,
-    complete: metadata.complete,
-    registerAllSearchCombinations: metadata.registerAllSearchCombinations,
-    title: metaTitle,
-    description: metaDescription
-  });
-  */
-  const exampleUris = getUriVariations(baseUri, searchParams, Boolean(registerAllSearchCombinations)).map(uri => {
-    const searchParams = uri.split('?')[1];
+  if (typeof metaHandler !== 'function' || !isPromise(metaHandler)) {
+    // Generated example URIs for fallback handler
+    const exampleUris = getUriVariations(baseUri, searchParams, Boolean(registerAllSearchCombinations)).map(uri => {
+      const searchParams = uri.split('?')[1];
 
-    return {
-      label: !searchParams ? 'Base View' : `Filtered View (${searchParams})`,
-      uri
-    };
-  });
-
-  const generatedMetaHandler = async (version: string) => {
-    const params = [];
-
-    if (complete) {
-      for (const prop in complete) {
-        const name = prop;
-        const description = `Filter by ${name}`;
-        let values: string[] = [];
-
-        if (complete[prop]) {
-          values = await complete[prop]('', { arguments: { version } });
-        }
-
-        params.push({ name, values, description });
-      }
-    }
-
-    return generateMetaContent({
-      title: metaTitle,
-      description: metaDescription,
-      params: params || [],
-      exampleUris
+      return {
+        label: !searchParams ? 'Base View' : `Filtered View (${searchParams})`,
+        uri
+      };
     });
-  };
+
+    // Fallback handler for generating metadata content
+    metaHandler = async (version: string) => {
+      const params = [];
+
+      if (complete) {
+        for (const prop in complete) {
+          const name = prop;
+          const description = `Filter by ${name}`;
+          let values: string[] = [];
+
+          if (complete[prop]) {
+            values = await complete[prop]('', { arguments: { version } });
+          }
+
+          params.push({ name, values, description });
+        }
+      }
+
+      return generateMetaContent({
+        title: metaTitle,
+        description: metaDescription,
+        params: params || [],
+        exampleUris
+      });
+    };
+  }
 
   return {
     metaName,
     metaTitle,
     metaDescription,
     metaMimeType,
-    metaHandler: metaHandler || generatedMetaHandler
+    metaHandler
   };
 };
 
@@ -200,7 +221,7 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
  */
 const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
   uriOrTemplate: string | ResourceTemplate,
-  configUri: McpResourceMetadata['metaConfig']['uri'],
+  configUri: McpResourceMetadataMetaConfig['uri'],
   complete: McpResourceMetadata['complete']
 }) => {
   const isResourceTemplate = uriOrTemplate instanceof ResourceTemplate;
@@ -235,6 +256,9 @@ const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
  * - Adds a new meta-resource if a configuration is provided
  * - Modifies the original resource to indicate a meta-resource is available
  *
+ * @note Review needing to apply session context. We currently don't apply it in `resource.*.ts`
+ * either, but it is applied in `server.ts`.
+ *
  * @param {McpResourceCreator[]} resources - List of resource creators to process and enhance.
  * @param [options] - Optional settings.
  * @returns {McpResourceCreator[]} An updated list of resource creators, including any added or modified meta-resources.
@@ -264,6 +288,9 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     }
 
     // Create a new meta-resource template
+    // The need for "completion" on these resources is under review since the entire point
+    // of the `meta` resource is to provide a way to complete the resource's metadata without the
+    // need for completion for "lesser" MCP clients.
     const metaResourceTemplate = new ResourceTemplate(uriBreakdown.metaUri, {
       list: undefined
       // ...(metadata.complete ? { complete: metadata.complete } : {})
@@ -274,29 +301,11 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       name,
       baseUri: uriBreakdown.baseOriginalUri,
       searchParams: uriBreakdown.searchParams,
-      metaConfig: metadata.metaconfig,
+      metaConfig: metadata.metaConfig,
       config,
       complete: metadata.complete,
       registerAllSearchCombinations: metadata.registerAllSearchCombinations
     });
-
-    /*
-    // Set basic meta-properties from config or create them.
-    const metaName = metadata.metaConfig.name || `${name}-meta`;
-    const metaTitle = metadata.metaConfig.title || `${config.title} Metadata`;
-    const metaDescription = metadata.metaConfig.description || `Discovery manual for ${config.title}.`;
-    const metaMimeType = metadata.metaConfig.mimeType || 'text/markdown';
-
-    // Set the meta-handler from config or create one.
-    const metaHandler = metadata.metaConfig.metaHandler || setMetaHandler({
-      baseUri: uriBreakdown.baseOriginalUri,
-      searchParams: uriBreakdown.searchParams,
-      complete: metadata.complete,
-      registerAllSearchCombinations: metadata.registerAllSearchCombinations,
-      title: metaTitle,
-      description: metaDescription
-    });
-    */
 
     // Create a new meta-resource
     const metaResource = (opts = options): McpResource => {
@@ -361,4 +370,11 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
   return updatedResources;
 };
 
-export { generateMetaContent, generateMarkdownTable, getUriVariations, setMetaHandler, setMetaResources };
+export {
+  generateMetaContent,
+  generateMarkdownTable,
+  getUriBreakdown,
+  getUriVariations,
+  setMetadataOptions,
+  setMetaResources
+};

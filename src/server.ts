@@ -58,30 +58,41 @@ type McpTool = [
 type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: string };
 
 /**
+ * The metadata configuration for an MCP resource. Defining these properties
+ * refines a generated MCP metadata resource for an MCP resource.
+ *
+ * @interface McpResourceMetadataMetaConfig
+ *
+ * @property [uri] - A string representing the URI of the resource.
+ * @property [name] - A string indicating the name of the resource.
+ * @property [title] - A string providing the title of the resource.
+ * @property [description] - A string detailing the description of the resource.
+ * @property [mimeType] - Specifies the MIME type of the resource. Acceptable values are:
+ *   - 'text/markdown'
+ *   - 'application/json'
+ * @property [metaHandler] - A function that processes metadata for the resource. It accepts a version string
+ *   as its argument and returns either a `Promise` resolving to an unknown value or a direct unknown value.
+ */
+interface McpResourceMetadataMetaConfig {
+  uri?: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  mimeType?: 'text/markdown' | 'application/json';
+  metaHandler?: (version: string) => Promise<unknown> | unknown
+}
+
+/**
  * A resource metadata configuration for the MCP server.
  *
  * @property registerAllSearchCombinations - Whether to register all search combinations for the resource.
  * @property metaConfig - Optional configuration for generating a metadata resource. Being defined
  *     (e.g. `{ metadata: { metaConfig: {} }}`) means a meta-resource will be generated for the related MCP resource.
- * @property metaConfig.uri - Optional URI template for the metadata resource, otherwise generated.
- * @property metaConfig.name - Optional name for the metadata resource, otherwise generated.
- * @property metaConfig.title - Optional title for the metadata resource, otherwise generated.
- * @property metaConfig.description - Optional description for the metadata resource, otherwise generated.
- * @property metaConfig.mimeType - Optional mimeType for the metadata resource, defaults to `text/markdown`.
- * @property metaConfig.metaHandler - Optional custom metadata handler for display meta-resource content typically dependent on
- *    your mimeType. (e.g., string/Markdown, object/JSON)
  * @property complete - Callback functions for resource completion.
  */
 interface McpResourceMetadata {
   registerAllSearchCombinations?: boolean | undefined;
-  metaConfig?: {
-    uri?: string;
-    name?: string;
-    title?: string;
-    description?: string;
-    mimeType?: 'text/markdown' | 'application/json';
-    metaHandler?: (version: string) => Promise<unknown> | unknown
-  };
+  metaConfig?: McpResourceMetadataMetaConfig;
   complete?: {
     [key: string]: CompleteResourceTemplateCallback;
   } | undefined;
@@ -315,7 +326,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
     log.info(`Server stats enabled.`);
 
     // Compose resources after logging is set up.
-    const updatedResources = await composeResources(resources);
+    let updatedResources = await composeResources(resources);
+
+    // Add dynamic metadata to resources
+    updatedResources = setMetaResources(updatedResources);
 
     // Combine built-in tools with custom ones after logging is set up.
     const updatedTools = await composeTools(tools);
@@ -338,7 +352,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
       getStatsSetup = () => statsTracker.getStats();
     }
 
-    setMetaResources(updatedResources).forEach(resourceCreator => {
+    // Apply MCP resources, if available
+    updatedResources.forEach(resourceCreator => {
       const [name, uri, config, callback, metadata] = resourceCreator(options);
 
       log.info(`Registered resource: ${name}`);
@@ -362,35 +377,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
       }
     });
 
-    /*
-    updatedResources.forEach(resourceCreator => {
-      const resource = resourceCreator(options);
-      const [name, uri, config, callback, metadata] = resource;
-
-      log.info(`Registered resource: ${name}`);
-
-      const baseCallback = (...args: any[]) =>
-        runWithSession(session, async () =>
-          runWithOptions(options, async () => {
-            log.debug(
-              `Running resource "${name}"`,
-              `isArgs = ${args?.length > 0}`
-            );
-
-            const timedReport = stat.traffic();
-            const resourceResult = await callback(...args);
-
-            timedReport({ resource: name });
-
-            return resourceResult;
-          }));
-
-      if (server) {
-        registerResource(server, ...registerResourceMeta(server, name, uri, config, baseCallback, metadata, options, session));
-      }
-    });
-     */
-
+    // Apply MCP tools, if available
     updatedTools.forEach(toolCreator => {
       const [name, schema, callback] = toolCreator(options);
       // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
@@ -541,6 +528,7 @@ export {
   type McpResource,
   type McpResourceCreator,
   type McpResourceMetadata,
+  type McpResourceMetadataMetaConfig,
   type ServerInstance,
   type ServerLogEvent,
   type ServerOnLog,
