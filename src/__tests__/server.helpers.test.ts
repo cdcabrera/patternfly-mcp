@@ -777,7 +777,7 @@ describe('listAllCombinations', () => {
     expect(result.length).toBe(expected.length);
 
     expected.forEach(combo => {
-      expect(result).toContainEqual(expect.arrayContaining(combo));
+      expect(result).toContainEqual(combo);
     });
   });
 });
