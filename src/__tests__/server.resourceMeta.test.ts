@@ -169,7 +169,7 @@ describe('setMetaResources', () => {
     expect(response).toMatchSnapshot();
   });
 
-  it('should attempt to return a resource with a promise callback', async () => {
+  it('should have the callback substituted if its a promise', async () => {
     const mockCallback = jest.fn();
     const callback = Promise.resolve(mockCallback);
     const uri = 'test://uri/index';
@@ -190,9 +190,6 @@ describe('setMetaResources', () => {
 
     expect(result.contents[0].text).toContain('# Test Metadata');
     expect(mockCallback).not.toHaveBeenCalled();
-    expect(response).toMatchSnapshot();
-    // expect(response[3].toString()).toMatchSnapshot();
-    // await expect(response[3]).resolves.toMatchSnapshot();
-    // expect(response).toMatchSnapshot();
+    expect(response).toMatchSnapshot('substituted');
   });
 });

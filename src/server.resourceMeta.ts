@@ -6,7 +6,6 @@ import {
   type McpResourceMetadataMetaConfig
 } from './server';
 import {
-  isPromise,
   isPlainObject,
   listAllCombinations,
   listIncrementalCombinations,
@@ -147,10 +146,9 @@ const getUriVariations = (baseUri: string, params: string[], allCombos = false):
 /**
  * Configures and returns metadata options based on the provided parameters and configuration.
  *
- * @note The `metaHandler` must be an asynchronous function (verified by `isPromise`). While the MCP
- * SDK technically allows synchronous functions, this project enforces async handlers to support
- * complex metadata generation (e.g., fetching documentation). If a provided handler is not a function
- * or not async-capable, a default fallback handler is used.
+ * @note The `metaHandler` must be a function (sync or async) to align with the MCP SDK.
+ * If a provided handler is not a function, a default fallback async handler is used,
+ * see type `McpResourceMetadataMetaConfig`.
  *
  * @param {SetMetadataOptions} settings - Settings for configuring metadata options.
  * @returns An object containing the configured metadata options.
@@ -163,7 +161,7 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
   const metaMimeType = metaConfig?.mimeType || 'text/markdown';
   let metaHandler = metaConfig?.metaHandler;
 
-  if (typeof metaHandler !== 'function' || !isPromise(metaHandler)) {
+  if (typeof metaHandler !== 'function') {
     // Generated example URIs for fallback handler
     const exampleUris = getUriVariations(baseUri, searchParams, Boolean(registerAllSearchCombinations)).map(uri => {
       const searchParams = uri.split('?')[1];
