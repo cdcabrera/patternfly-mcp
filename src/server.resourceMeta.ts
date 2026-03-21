@@ -147,9 +147,13 @@ const getUriVariations = (baseUri: string, params: string[], allCombos = false):
 /**
  * Configures and returns metadata options based on the provided parameters and configuration.
  *
+ * @note The `metaHandler` must be an asynchronous function (verified by `isPromise`). While the MCP
+ * SDK technically allows synchronous functions, this project enforces async handlers to support
+ * complex metadata generation (e.g., fetching documentation). If a provided handler is not a function
+ * or not async-capable, a default fallback handler is used.
+ *
  * @param {SetMetadataOptions} settings - Settings for configuring metadata options.
- * @returns An object containing the configured metadata options, including name, title, description, MIME type,
- *     and meta-handler function.
+ * @returns An object containing the configured metadata options.
  */
 const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, complete, registerAllSearchCombinations }: SetMetadataOptions) => {
   // Set basic meta-properties from config or create them.

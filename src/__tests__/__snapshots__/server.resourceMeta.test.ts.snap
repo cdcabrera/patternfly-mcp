@@ -42,6 +42,19 @@ exports[`getUriVariations should get URI variations, allCombos=true 1`] = `
 ]
 `;
 
+exports[`setMetaResources should attempt to return a resource with a promise callback 1`] = `
+[
+  "test-resource-meta",
+  "test://uri/index/meta",
+  {
+    "description": "Discovery manual for Test.",
+    "mimeType": "text/markdown",
+    "title": "Test Metadata",
+  },
+  [Function],
+]
+`;
+
 exports[`setMetaResources should attempt to return a resource, metaConfig is a template 1`] = `
 [
   "test-resource-meta",
