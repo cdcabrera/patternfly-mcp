@@ -187,7 +187,7 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
       const updatedParams = isPlainObject(passedParams) ? passedParams : {};
       const params = [];
 
-      if (complete) {
+      if (isPlainObject(complete)) {
         for (const prop in complete) {
           const name = prop;
           const description = `Filter by ${name}`;
