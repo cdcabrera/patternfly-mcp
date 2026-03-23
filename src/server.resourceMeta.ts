@@ -287,7 +287,7 @@ const getUriBreakdown = ({ uriOrTemplate, configUri, searchFields }: {
 
   if (metaSearchParams?.length) {
     // metaUri = isMetaTemplate ? `${metaBaseUri}{?${searchFields.join('&')}}` : metaBaseUri;
-    metaUri = `${metaBaseUri}{?${metaSearchParams.join('&')}}`;
+    metaUri = `${metaBaseUri}{?${metaSearchParams.join(',')}}`;
   }
 
   return {
