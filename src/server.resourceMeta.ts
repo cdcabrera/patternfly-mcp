@@ -1,5 +1,5 @@
 import {
-  CompleteResourceTemplateCallback,
+  type CompleteResourceTemplateCallback,
   ResourceTemplate
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
@@ -230,7 +230,6 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
  * @param options - Input options
  * @param options.uriOrTemplate - Original URI or a `ResourceTemplate` instance to parse.
  * @param options.configUri - Passed metadata configuration URI.
- * @param options.complete - Passed metadata "complete" settings associated with the resource.
  * @param options.searchFields - Passed metadata "searchFields" settings associated with the resource.
  * @returns An object containing the baseOriginalUri, baseUri, metaUri, and searchParams.
  *  - `baseOriginalUri` - Original URI base derived from the input.
@@ -238,52 +237,67 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
  *  - `metaUri` - Generated full metadata URI, combined with `baseUri`
  *  - `searchParams` - Array of search parameter names derived from the URI template or metadata "complete"
  */
-const getUriBreakdown = ({ uriOrTemplate, configUri, complete, searchFields }: {
+const getUriBreakdown = ({ uriOrTemplate, configUri, searchFields }: {
   uriOrTemplate: string | ResourceTemplate,
   configUri: McpResourceMetadataMetaConfig['uri'],
-  complete: McpResourceMetadata['complete'],
+  // complete: McpResourceMetadata['complete'],
   searchFields: McpResourceMetadataMetaConfig['searchFields']
 }) => {
   const isResourceTemplate = uriOrTemplate instanceof ResourceTemplate;
   let metaUri = configUri;
-  let baseUri: string | undefined;
+  let metaBaseUri: string | undefined;
 
   const tempOriginalUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
   // const { base: baseOriginalUri, search: searchKeys } = splitUri(tempOriginalUri);
   // const { base: baseOriginalUri, search: searchOriginalKeys } = splitUri(tempOriginalUri);
   // const { search: searchKeys } = metaUri ? splitUri(metaUri) : {};
-  const { base: baseOriginalUri, search: searchKeys } = splitUri(metaUri || tempOriginalUri);
+  const { base: originalBaseUri, search: searchOriginalKeys } = splitUri(tempOriginalUri);
+  const { search: metaSearchKeys } = metaUri ? splitUri(metaUri) : {};
 
   // const resourceKeys = isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames ? uriOrTemplate.uriTemplate?.variableNames : [];
   // const completeKeys = isPlainObject(complete) ? Object.keys(complete) : [];
   // const searchParams = (resourceKeys.length && resourceKeys) || (completeKeys.length && completeKeys) || searchKeys || [];
   // to strict const searchParams = searchFields || searchKeys?.filter(key => resourceKeys.includes(key) || completeKeys.includes(key)) || [];
   // const searchParams = searchFields || (searchKeys?.length && searchKeys) || (searchOriginalKeys?.length && searchOriginalKeys) || [];
-  const searchParams = searchFields || (searchKeys?.length && searchKeys) || [];
+  const originalSearchParams = (searchOriginalKeys?.length && searchOriginalKeys) || [];
+  // const tempMetaSearchParams = searchFields || (metaSearchKeys?.length && metaSearchKeys) || [];
+  const tempMetaSearchParams = (metaSearchKeys?.length && metaSearchKeys) || [];
+  const metaSearchParams = (Array.isArray(searchFields) && searchFields) || (metaUri && tempMetaSearchParams) || originalSearchParams;
+
+  // const metaSearchParams = (metaSearchKeys?.length && metaSearchKeys) || [];
 
   // const metaTemplateComplete = searchParams.filter(key => completeKeys.includes(key));
   // const metaTemplateCompleteKeys = searchParams.filter(key => completeKeys.includes(key));
-  const isMetaTemplate = isResourceTemplate || searchParams.length > 0;
+  const isMetaTemplate = isResourceTemplate || metaSearchParams.length > 0;
 
   if (metaUri) {
     const { base } = splitUri(metaUri);
 
-    baseUri = base;
-  } else if (baseOriginalUri) {
-    baseUri = `${baseOriginalUri}/meta`;
+    metaBaseUri = base;
+  } else if (originalBaseUri) {
+    metaBaseUri = `${originalBaseUri}/meta`;
     // metaUri = isMetaTemplate && searchParams.length ? `${baseUri}{?${searchParams.join('&')}}` : baseUri;
     // const templateParams = searchFields || searchParams;
     //  searchFields?.filter(field => completeKeys.includes(field)) || searchParams.filter(field => completeKeys.includes(field));
 
-    metaUri = isMetaTemplate && searchParams.length ? `${baseUri}{?${searchParams.join('&')}}` : baseUri;
+    // metaUri = isMetaTemplate && metaSearchParams.length ? `${baseUri}{?${metaSearchParams.join('&')}}` : baseUri;
+  }
+
+  metaUri = metaBaseUri;
+
+  if (metaSearchParams?.length) {
+    // metaUri = isMetaTemplate ? `${metaBaseUri}{?${searchFields.join('&')}}` : metaBaseUri;
+    metaUri = `${metaBaseUri}{?${metaSearchParams.join('&')}}`;
   }
 
   return {
     isMetaTemplate,
-    baseOriginalUri,
-    baseUri,
+    // baseOriginalUri,
+    originalBaseUri,
+    originalSearchParams,
+    metaBaseUri,
     metaUri,
-    searchParams
+    metaSearchParams
     // metaTemplateCompleteKeys
     // metaSearchParams
   };
@@ -320,12 +334,12 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     const uriBreakdown = getUriBreakdown({
       uriOrTemplate,
       configUri: metadata.metaConfig.uri,
-      complete: metadata.complete,
+      // complete: metadata.complete,
       searchFields: metadata.metaConfig.searchFields
     });
 
     // If no URI breakdown assume resource is still valid
-    if (!uriBreakdown.baseUri || !uriBreakdown.metaUri || !uriBreakdown.baseOriginalUri) {
+    if (!uriBreakdown.metaBaseUri || !uriBreakdown.metaUri || !uriBreakdown.originalBaseUri) {
       updatedResources.push(resourceCreator);
 
       return;
@@ -342,7 +356,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
 
       if (isPlainObject(metadata.complete)) {
         Object.entries(metadata.complete).forEach(([key, value]) => {
-          if (uriBreakdown.searchParams.includes(key)) {
+          if (uriBreakdown.metaSearchParams.includes(key)) {
             updatedComplete[key] = value;
           }
         });
@@ -367,9 +381,9 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     // Set meta-properties
     const { metaName, metaTitle, metaDescription, metaMimeType, metaHandler } = setMetadataOptions({
       name,
-      baseUri: uriBreakdown.baseOriginalUri,
+      baseUri: uriBreakdown.originalBaseUri,
       // metaSearchParams: uriBreakdown.metaSearchParams,
-      searchParams: uriBreakdown.searchParams,
+      searchParams: uriBreakdown.originalSearchParams,
       metaConfig: metadata.metaConfig,
       config,
       complete: metadata.complete,
@@ -426,7 +440,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
             const querySting = buildSearchString(variables);
 
             result.contents.push({
-              uri: querySting ? `${uriBreakdown.baseUri}${querySting}` : uriBreakdown.baseUri,
+              uri: querySting ? `${uriBreakdown.metaBaseUri}${querySting}` : uriBreakdown.metaBaseUri,
               // uri: `${uriBreakdown.baseUri}${uriBreakdown.searchParams.length ? `?${version}` : ''}`,
               // searchParams.length ? `${baseUri}{?${searchParams.join('&')}}` : baseUri;
               mimeType: metaMimeType,
