@@ -120,8 +120,16 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is a t
     "_uriTemplate": UriTemplate {
       "parts": [
         "test://uri/meta",
+        {
+          "exploded": false,
+          "name": "version",
+          "names": [
+            "version",
+          ],
+          "operator": "?",
+        },
       ],
-      "template": "test://uri/meta",
+      "template": "test://uri/meta{?version}",
     },
   },
   {
@@ -136,17 +144,7 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is a t
 exports[`setMetaResources should attempt to return a resource, metaConfig is almost a template 1`] = `
 [
   "test-resource-meta",
-  ResourceTemplate {
-    "_callbacks": {
-      "list": undefined,
-    },
-    "_uriTemplate": UriTemplate {
-      "parts": [
-        "test://lorem-ipsum/meta",
-      ],
-      "template": "test://lorem-ipsum/meta",
-    },
-  },
+  "test://lorem-ipsum/meta",
   {
     "description": "Discovery manual for Test.",
     "mimeType": "text/markdown",

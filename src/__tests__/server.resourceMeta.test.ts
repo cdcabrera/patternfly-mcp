@@ -76,7 +76,7 @@ describe('setMetadataOptions', () => {
     expect(options.metaTitle).toBe('Test Config Metadata');
     expect(typeof options.metaHandler).toBe('function');
 
-    const content = await options.metaHandler('v6');
+    const content = await options.metaHandler({ version: 'v6' });
 
     expect(content).toContain('# Test Config Metadata');
   });
@@ -93,7 +93,7 @@ describe('setMetadataOptions', () => {
       registerAllSearchCombinations: undefined
     });
 
-    const content = await options.metaHandler('v6');
+    const content = await options.metaHandler({ version: 'v6' });
 
     expect(content).toContain('# Test Config Metadata');
     expect(throwingComplete).toHaveBeenCalledTimes(1);
@@ -106,26 +106,58 @@ describe('getUriBreakdown', () => {
       description: 'static URI',
       uriOrTemplate: 'test://uri',
       configUri: undefined,
-      complete: undefined,
-      expected: { isMetaTemplate: false, metaUri: 'test://uri/meta' }
+      expected: {
+        isMetaTemplate: false,
+        metaBaseUri: 'test://uri/meta',
+        metaUri: 'test://uri/meta'
+      }
     },
     {
       description: 'template URI',
       uriOrTemplate: 'test://uri{?version}',
       configUri: undefined,
-      complete: { version: jest.fn() },
-      expected: { isMetaTemplate: true, metaUri: 'test://uri/meta{?version}' }
+      expected: {
+        isMetaTemplate: true,
+        metaBaseUri: 'test://uri/meta',
+        metaUri: 'test://uri/meta{?version}'
+      }
     },
     {
       description: 'configUri provided overrides derived meta URI',
       uriOrTemplate: 'test://uri{?version}',
       configUri: 'test://custom/meta{?version}',
-      complete: undefined,
-      expected: { isMetaTemplate: true, metaUri: 'test://custom/meta{?version}' }
+      expected: {
+        isMetaTemplate: true,
+        metaBaseUri: 'test://custom/meta',
+        metaUri: 'test://custom/meta{?version}'
+      }
+    },
+    {
+      description: 'searchFields provided, empty fields',
+      uriOrTemplate: 'test://uri{?version}',
+      configUri: 'test://custom/meta{?version}',
+      searchFields: [],
+      expected: {
+        isMetaTemplate: false,
+        metaBaseUri: 'test://custom/meta',
+        metaUri: 'test://custom/meta'
+      }
+    },
+    {
+      description: 'searchFields provided, added field',
+      uriOrTemplate: 'test://uri{?version}',
+      configUri: 'test://custom/meta{?version}',
+      searchFields: ['category'],
+      expected: {
+        isMetaTemplate: true,
+        metaBaseUri: 'test://custom/meta',
+        metaUri: 'test://custom/meta{?category}'
+      }
     }
-  ])('should breakdown URI, $description', ({ uriOrTemplate, configUri, complete, expected }) => {
-    const result = getUriBreakdown({ uriOrTemplate, configUri, complete } as any);
+  ])('should breakdown URI, $description', ({ uriOrTemplate, configUri, searchFields, expected }) => {
+    const result = getUriBreakdown({ uriOrTemplate, configUri, searchFields } as any);
 
+    expect(result.metaBaseUri).toBe(expected.metaBaseUri);
     expect(result.isMetaTemplate).toBe(expected.isMetaTemplate);
     expect(result.metaUri).toBe(expected.metaUri);
   });
