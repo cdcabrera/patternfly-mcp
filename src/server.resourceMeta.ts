@@ -228,11 +228,13 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
  * @param options.uriOrTemplate - Original URI or a `ResourceTemplate` instance to parse.
  * @param options.configUri - Passed metadata configuration URI.
  * @param options.searchFields - Passed metadata "searchFields" settings associated with the resource.
- * @returns An object containing the baseOriginalUri, baseUri, metaUri, and searchParams.
- *  - `baseOriginalUri` - Original URI base derived from the input.
- *  - `baseUri` - Generated base URI.
- *  - `metaUri` - Generated full metadata URI, combined with `baseUri`
- *  - `searchParams` - Array of search parameter names derived from the URI template or metadata "complete"
+ * @returns Breakdown used to build meta resources and templates.
+ *  - `isMetaTemplate` - Whether the meta resource uses a `ResourceTemplate` (query variables).
+ *  - `originalBaseUri` - Base URI of the source resource (before `/meta`), from the original template or string.
+ *  - `originalSearchParams` - Query parameter names from the source URI template `{?...}` segment.
+ *  - `metaBaseUri` - Static meta path (no `{?...}`), e.g. `originalBaseUri + '/meta'` or the base of `configUri`.
+ *  - `metaUri` - Full meta URI, either `metaBaseUri` or `metaBaseUri{?a,b,...}` when there are variables.
+ *  - `metaSearchParams` - Names included in the meta template; driven by `searchFields`, `configUri`, or the original template.
  */
 const getUriBreakdown = ({ uriOrTemplate, configUri, searchFields }: {
   uriOrTemplate: string | ResourceTemplate,
@@ -401,10 +403,10 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
 
           if (result.contents) {
             const updatedText = await resolveMetaText(variables);
-            const querySting = buildSearchString(variables);
+            const queryString = buildSearchString(variables, { prefix: true });
 
             result.contents.push({
-              uri: querySting ? `${uriBreakdown.metaBaseUri}${querySting}` : uriBreakdown.metaBaseUri,
+              uri: queryString ? `${uriBreakdown.metaBaseUri}${queryString}` : uriBreakdown.metaBaseUri,
               mimeType: metaMimeType,
               text: updatedText
             });
