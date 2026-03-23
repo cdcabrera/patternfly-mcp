@@ -98,7 +98,6 @@ Source: http://127.0.0.1:5010/notARealPath/README.md
 exports[`Builtin tools, STDIO should expose expected tools and stable shape 1`] = `
 {
   "toolNames": [
-    "componentSchemas",
     "searchPatternFlyDocs",
     "usePatternFlyDocs",
   ],
@@ -138,8 +137,6 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
   "[INFO]: Registered tool: usePatternFlyDocs
 ",
   "[INFO]: Registered tool: searchPatternFlyDocs
-",
-  "[INFO]: Registered tool: componentSchemas
 ",
   "[INFO]: @patternfly/patternfly-mcp server running on stdio transport
 ",
