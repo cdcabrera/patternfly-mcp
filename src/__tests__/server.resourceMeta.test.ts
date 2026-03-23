@@ -76,7 +76,7 @@ describe('setMetadataOptions', () => {
     expect(options.metaTitle).toBe('Test Config Metadata');
     expect(typeof options.metaHandler).toBe('function');
 
-    const content = await options.metaHandler('v6');
+    const content = await options.metaHandler({ version: 'v6' });
 
     expect(content).toContain('# Test Config Metadata');
   });
@@ -93,7 +93,7 @@ describe('setMetadataOptions', () => {
       registerAllSearchCombinations: undefined
     });
 
-    const content = await options.metaHandler('v6');
+    const content = await options.metaHandler({ version: 'v6' });
 
     expect(content).toContain('# Test Config Metadata');
     expect(throwingComplete).toHaveBeenCalledTimes(1);

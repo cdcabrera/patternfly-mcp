@@ -1,4 +1,7 @@
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import {
+  CompleteResourceTemplateCallback,
+  ResourceTemplate
+} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   type McpResource,
   type McpResourceCreator,
@@ -6,6 +9,7 @@ import {
   type McpResourceMetadataMetaConfig
 } from './server';
 import {
+  buildSearchString,
   isPlainObject,
   listAllCombinations,
   listIncrementalCombinations,
@@ -179,8 +183,12 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
     });
 
     // Fallback handler for generating metadata content
-    metaHandler = async (version: string | undefined) => {
+    metaHandler = async (passedParams: Record<string, string> | undefined) => {
+      const updatedParams = isPlainObject(passedParams) ? passedParams : {};
       const params = [];
+      // const activeFields = metaSearchParams;
+      // const activeFields = metaConfig?.searchFields || (complete ? Object.keys(complete) : []);
+      // const activeFields = searchParams;
 
       if (complete) {
         for (const prop in complete) {
@@ -190,7 +198,7 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
 
           if (complete[prop]) {
             try {
-              values = await complete[prop]('', { arguments: { version: version || '' } });
+              values = await complete[prop]('', { arguments: { ...updatedParams } });
             } catch {}
           }
 
@@ -223,28 +231,38 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
  * @param options.uriOrTemplate - Original URI or a `ResourceTemplate` instance to parse.
  * @param options.configUri - Passed metadata configuration URI.
  * @param options.complete - Passed metadata "complete" settings associated with the resource.
+ * @param options.searchFields - Passed metadata "searchFields" settings associated with the resource.
  * @returns An object containing the baseOriginalUri, baseUri, metaUri, and searchParams.
  *  - `baseOriginalUri` - Original URI base derived from the input.
  *  - `baseUri` - Generated base URI.
  *  - `metaUri` - Generated full metadata URI, combined with `baseUri`
  *  - `searchParams` - Array of search parameter names derived from the URI template or metadata "complete"
  */
-const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
+const getUriBreakdown = ({ uriOrTemplate, configUri, complete, searchFields }: {
   uriOrTemplate: string | ResourceTemplate,
   configUri: McpResourceMetadataMetaConfig['uri'],
-  complete: McpResourceMetadata['complete']
+  complete: McpResourceMetadata['complete'],
+  searchFields: McpResourceMetadataMetaConfig['searchFields']
 }) => {
   const isResourceTemplate = uriOrTemplate instanceof ResourceTemplate;
   let metaUri = configUri;
   let baseUri: string | undefined;
 
   const tempOriginalUri = isResourceTemplate ? uriOrTemplate.uriTemplate?.toString() : uriOrTemplate;
-  const { base: baseOriginalUri, search: searchKeys } = splitUri(tempOriginalUri);
+  // const { base: baseOriginalUri, search: searchKeys } = splitUri(tempOriginalUri);
+  // const { base: baseOriginalUri, search: searchOriginalKeys } = splitUri(tempOriginalUri);
+  // const { search: searchKeys } = metaUri ? splitUri(metaUri) : {};
+  const { base: baseOriginalUri, search: searchKeys } = splitUri(metaUri || tempOriginalUri);
 
-  const resourceKeys = isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames ? uriOrTemplate.uriTemplate?.variableNames : [];
-  const completeKeys = isPlainObject(complete) ? Object.keys(complete) : [];
+  // const resourceKeys = isResourceTemplate && uriOrTemplate.uriTemplate?.variableNames ? uriOrTemplate.uriTemplate?.variableNames : [];
+  // const completeKeys = isPlainObject(complete) ? Object.keys(complete) : [];
+  // const searchParams = (resourceKeys.length && resourceKeys) || (completeKeys.length && completeKeys) || searchKeys || [];
+  // to strict const searchParams = searchFields || searchKeys?.filter(key => resourceKeys.includes(key) || completeKeys.includes(key)) || [];
+  // const searchParams = searchFields || (searchKeys?.length && searchKeys) || (searchOriginalKeys?.length && searchOriginalKeys) || [];
+  const searchParams = searchFields || (searchKeys?.length && searchKeys) || [];
 
-  const searchParams = (resourceKeys.length && resourceKeys) || (completeKeys.length && completeKeys) || searchKeys || [];
+  // const metaTemplateComplete = searchParams.filter(key => completeKeys.includes(key));
+  // const metaTemplateCompleteKeys = searchParams.filter(key => completeKeys.includes(key));
   const isMetaTemplate = isResourceTemplate || searchParams.length > 0;
 
   if (metaUri) {
@@ -253,7 +271,11 @@ const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
     baseUri = base;
   } else if (baseOriginalUri) {
     baseUri = `${baseOriginalUri}/meta`;
-    metaUri = isMetaTemplate && completeKeys.includes('version') ? `${baseUri}{?version}` : baseUri;
+    // metaUri = isMetaTemplate && searchParams.length ? `${baseUri}{?${searchParams.join('&')}}` : baseUri;
+    // const templateParams = searchFields || searchParams;
+    //  searchFields?.filter(field => completeKeys.includes(field)) || searchParams.filter(field => completeKeys.includes(field));
+
+    metaUri = isMetaTemplate && searchParams.length ? `${baseUri}{?${searchParams.join('&')}}` : baseUri;
   }
 
   return {
@@ -262,6 +284,8 @@ const getUriBreakdown = ({ uriOrTemplate, configUri, complete }: {
     baseUri,
     metaUri,
     searchParams
+    // metaTemplateCompleteKeys
+    // metaSearchParams
   };
 };
 
@@ -293,7 +317,12 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     }
 
     // Get a URI breakdown
-    const uriBreakdown = getUriBreakdown({ uriOrTemplate, configUri: metadata.metaConfig.uri, complete: metadata.complete });
+    const uriBreakdown = getUriBreakdown({
+      uriOrTemplate,
+      configUri: metadata.metaConfig.uri,
+      complete: metadata.complete,
+      searchFields: metadata.metaConfig.searchFields
+    });
 
     // If no URI breakdown assume resource is still valid
     if (!uriBreakdown.baseUri || !uriBreakdown.metaUri || !uriBreakdown.baseOriginalUri) {
@@ -306,17 +335,40 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     // We still allow version complete even though the intent of `meta` resource is to provide a
     // way around completion for "lesser" MCP clients since technically, those clients can still
     // pass a version parameter based on the meta URI template.
+    let metaResourceOrTemplate: string | ResourceTemplate = uriBreakdown.metaUri;
+
+    if (uriBreakdown.isMetaTemplate) {
+      const updatedComplete: { [variable: string]: CompleteResourceTemplateCallback; } = {};
+
+      if (isPlainObject(metadata.complete)) {
+        Object.entries(metadata.complete).forEach(([key, value]) => {
+          if (uriBreakdown.searchParams.includes(key)) {
+            updatedComplete[key] = value;
+          }
+        });
+      }
+
+      metaResourceOrTemplate = new ResourceTemplate(uriBreakdown.metaUri, {
+        list: undefined,
+        ...(Object.keys(updatedComplete).length ? { complete: updatedComplete } : {})
+      });
+    }
+
+    /*
     const metaResourceOrTemplate = uriBreakdown.isMetaTemplate
       ? new ResourceTemplate(uriBreakdown.metaUri, {
         list: undefined,
-        ...(metadata.complete?.version ? { complete: { version: metadata.complete.version } } : {})
+        ...()
+        // ...(metadata.complete?.version ? { complete: { version: metadata.complete.version } } : {})
       })
       : uriBreakdown.metaUri;
+     */
 
     // Set meta-properties
     const { metaName, metaTitle, metaDescription, metaMimeType, metaHandler } = setMetadataOptions({
       name,
       baseUri: uriBreakdown.baseOriginalUri,
+      // metaSearchParams: uriBreakdown.metaSearchParams,
       searchParams: uriBreakdown.searchParams,
       metaConfig: metadata.metaConfig,
       config,
@@ -325,8 +377,8 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     });
 
     // Resolve and serialize meta handler output
-    const resolveMetaText = async (version: string | undefined) => {
-      const resourceText = await metaHandler(version);
+    const resolveMetaText = async (params: Record<string, string> = {}) => {
+      const resourceText = await metaHandler(params);
 
       return isPlainObject(resourceText) || Array.isArray(resourceText)
         ? JSON.stringify(resourceText, null, 2)
@@ -337,8 +389,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
     const metaResource = (opts = options): McpResource => {
       const metaCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
-          const { version } = variables || {};
-          const updatedText = await resolveMetaText(version);
+          const updatedText = await resolveMetaText(variables);
 
           return {
             contents: [
@@ -368,13 +419,16 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       const metaEnhancedCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
           const result = await callback(passedUri, variables);
-          const { version } = variables || {};
+          // const { version } = variables || {};
 
           if (result.contents) {
-            const updatedText = await resolveMetaText(version);
+            const updatedText = await resolveMetaText(variables);
+            const querySting = buildSearchString(variables);
 
             result.contents.push({
-              uri: `${uriBreakdown.baseUri}${version ? `?version=${version}` : ''}`,
+              uri: querySting ? `${uriBreakdown.baseUri}${querySting}` : uriBreakdown.baseUri,
+              // uri: `${uriBreakdown.baseUri}${uriBreakdown.searchParams.length ? `?${version}` : ''}`,
+              // searchParams.length ? `${baseUri}{?${searchParams.join('&')}}` : baseUri;
               mimeType: metaMimeType,
               text: updatedText
             });

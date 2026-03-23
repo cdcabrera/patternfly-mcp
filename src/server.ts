@@ -67,11 +67,12 @@ type McpToolCreator = ((options?: GlobalOptions) => McpTool) & { toolName?: stri
  * @property [name] - A string indicating the name of the resource.
  * @property [title] - A string providing the title of the resource.
  * @property [description] - A string detailing the description of the resource.
+ * @property [searchFields] - An array of strings specifying which search fields should be completed automatically.
  * @property [mimeType] - Specifies the MIME type of the resource. Acceptable values are:
  *   - 'text/markdown'
  *   - 'application/json'
  * @property [metaHandler] - A function that processes metadata for the resource. It accepts an optional
- *   version string as its argument and returns either a `Promise` resolving to an unknown value or a
+ *   object as its argument for passing parameters and returns either a `Promise` resolving to an unknown value or a
  *   direct unknown value.
  */
 interface McpResourceMetadataMetaConfig {
@@ -79,8 +80,9 @@ interface McpResourceMetadataMetaConfig {
   name?: string;
   title?: string;
   description?: string;
+  searchFields?: string[] | undefined;
   mimeType?: 'text/markdown' | 'application/json';
-  metaHandler?: (version: string | undefined) => Promise<unknown> | unknown;
+  metaHandler?: (params: Record<string, string> | undefined) => Promise<unknown> | unknown;
 }
 
 /**
