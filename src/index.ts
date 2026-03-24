@@ -1,4 +1,4 @@
-import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides, type GlobalOptions } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -9,9 +9,19 @@ import {
   type ServerLogEvent,
   type ServerStatReport,
   type ServerStats,
-  type ServerGetStats,
-  type ServerOptions
+  type ServerGetStats
 } from './server';
+import {
+  runDocs,
+  type DocsInstance,
+  type DocsSettings,
+  type DocsOnLog,
+  type DocsOnLogHandler,
+  type DocsLogEvent,
+  type DocsStatReport,
+  type DocsStats,
+  type DocsGetStats
+} from './docs';
 import {
   createMcpTool,
   type ToolCreator,
@@ -33,70 +43,77 @@ type PfMcpOptions = DefaultOptionsOverrides;
  * @property {boolean} allowProcessExit - Override process exits. Useful for tests
  *     or programmatic use to avoid exiting.
  *     - Setting directly overrides `mode` property defaults.
- *     - When `mode=cli` or `mode=programmatic` or `undefined`, defaults to `true`.
+ *     - When `mode=cli`, `mode=programmatic`, `mode=docs`, or `undefined`, defaults to `true`.
  *     - When `mode=test`, defaults to `false`.
  */
-type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
+type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'> | Pick<DocsSettings, 'allowProcessExit'>;
 
 /**
- * Server instance with shutdown capability
+ * Interchangeable Server or Docs instance with shutdown capability.
  *
  * @alias ServerInstance
+ * @alias DocsInstance
  */
-type PfMcpInstance = ServerInstance;
+type PfMcpInstance = ServerInstance | DocsInstance;
 
 /**
- * Subscribes a handler function, `PfMcpOnLogHandler`, to server logs. Automatically unsubscribed on server shutdown.
+ * Subscribes a handler function, `PfMcpOnLogHandler`, to logs. Automatically unsubscribed on shutdown.
  *
  * @alias ServerOnLog
+ * @alias DocsOnLog
  */
-type PfMcpOnLog = ServerOnLog;
+type PfMcpOnLog = ServerOnLog | DocsOnLog;
 
 /**
- * The handler function passed by `onLog`, `PfMcpOnLog`, to subscribe to server logs. Automatically unsubscribed on server shutdown.
+ * The handler function passed by `onLog`, `PfMcpOnLog`, to subscribe to logs. Automatically unsubscribed on shutdown.
  *
  * @alias ServerOnLogHandler
+ * @alias DocsOnLogHandler
  */
-type PfMcpOnLogHandler = ServerOnLogHandler;
+type PfMcpOnLogHandler = ServerOnLogHandler | DocsOnLogHandler;
 
 /**
  * The log event passed to the `onLog` handler, `PfMcpOnLogHandler`.
  *
  * @alias ServerLogEvent
+ * @alias DocsLogEvent
  */
-type PfMcpLogEvent = ServerLogEvent;
+type PfMcpLogEvent = ServerLogEvent | DocsLogEvent;
 
 /**
- * Get statistics about the server.
+ * Get statistics about the server or docs instance.
  *
  * @alias ServerGetStats
+ * @alias DocsGetStats
  */
-type PfMcpGetStats = ServerGetStats;
+type PfMcpGetStats = ServerGetStats | DocsGetStats;
 
 /**
- * Statistics about the server.
+ * Statistics about the server or docs instance.
  *
  * @alias ServerStats
+ * @alias DocsStats
  */
-type PfMcpStats = ServerStats;
+type PfMcpStats = ServerStats | DocsStats;
 
 /**
- * Statistics report about the server.
+ * Statistics report about the server or docs instance.
  *
  * @alias ServerStatReport
+ * @alias DocsStatReport
  */
-type PfMcpStatReport = ServerStatReport;
+type PfMcpStatReport = ServerStatReport | DocsStatReport;
 
 /**
- * Main function - Programmatic and CLI entry point with optional overrides
+ * Main function - Programmatic and CLI entry point with optional overrides.
  *
  * @param [pfMcpOptions] - User configurable options
  * @param [pfMcpSettings] - MCP server settings
  *
- * @returns {Promise<PfMcpInstance>} Server-instance with shutdown capability
+ * @returns {Promise<PfMcpInstance>} Server or documentation build instance with shutdown capability.
  *
  * @throws {Error} If `allowProcessExit` is set to `false` an error will be thrown rather than exiting
- *     the process. Server errors are noted as options or start failures.
+ *     the process. Server and documentation errors are noted as options or start failures.
  *
  * @example Programmatic: A MCP server with STDIO (Standard Input Output) transport.
  * import { start } from '@patternfly/patternfly-mcp';
@@ -144,6 +161,14 @@ type PfMcpStatReport = ServerStatReport;
  * if (isRunning()) {
  *   stop();
  * }
+ *
+ * @example Programmatic: A PatternFly documentation build.
+ * import { start } from '@patternfly/patternfly-mcp';
+ * const { stop, isRunning } = await start({ mode: 'docs' });
+ *
+ * if (isRunning()) {
+ *   stop();
+ * }
  */
 const main = async (
   pfMcpOptions: PfMcpOptions = {},
@@ -154,7 +179,7 @@ const main = async (
 
   // Check early for allowing process exits
   let updatedAllowProcessExit = allowProcessExit ?? programmaticMode !== 'test';
-  let mergedOptions: ServerOptions;
+  let mergedOptions: GlobalOptions;
 
   // If allowed, exit the process on error otherwise log then throw the error.
   const processExit = (message: string, error: unknown) => {
@@ -177,18 +202,22 @@ const main = async (
     // Finalize exit policy after merging options
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
   } catch (error) {
-    processExit('Set options error, failed to start server:', error);
+    processExit('Set options error, failed to start:', error);
   }
 
   try {
     // Generate session options
     const session = getSessionOptions();
 
-    // Start the server, apply session values, then apply merged options to ensure stable hashing.
-    return await runWithSession(session, async () =>
-      await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
+    // Apply session values, then apply merged options to ensure stable hashing.
+    return await runWithSession(session, async () => {
+      // Start docs build mode or start the server
+      const runInstance = mergedOptions.mode === 'docs' ? runDocs.memo : runServer.memo;
+
+      return await runInstance(mergedOptions, { allowProcessExit: updatedAllowProcessExit });
+    });
   } catch (error) {
-    processExit('Failed to start server:', error);
+    processExit(`Failed to start:`, error);
   }
 
   // Unreachable, processExit exits or throws. Kept for type satisfaction.
