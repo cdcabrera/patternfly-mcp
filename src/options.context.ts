@@ -180,6 +180,18 @@ const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
 };
 
 /**
+ * Get documentation logging options from the current context.
+ *
+ * @param {AppSession} [session] - Session options to use in context.
+ * @returns {LoggingSession} Logging options from context.
+ */
+const getDocsLoggerOptions = (session = getSessionOptions()): LoggingSession => {
+  const { logging: base, mode } = getOptions();
+
+  return { ...base, channelName: `${CHANNEL_BASENAME}:${mode}:log:${session.sessionId}` };
+};
+
+/**
  * Get stat channel options from the current context.
  *
  * @param {AppSession} [options] - Session options to use in context.
@@ -219,6 +231,7 @@ const runWithOptions = async <TReturn>(
 };
 
 export {
+  getDocsLoggerOptions,
   getLoggerOptions,
   getOptions,
   getPublicSessionHash,
