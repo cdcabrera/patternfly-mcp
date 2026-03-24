@@ -26,6 +26,7 @@ import { getNodeMajorVersion } from './options.helpers';
  *    - `cli`: Command-line interface mode.
  *    - `programmatic`: Programmatic interaction mode where the application is used as a library or API.
  *    - `test`: Testing or debugging mode.
+ *    - `docs`: Documentation mode for building PatternFly documentation.
  * @property {ModeOptions} modeOptions - Mode-specific options.
  * @property name - Name of the package.
  * @property nodeEngine - Minimum Node.js version requirement from package.json.
@@ -62,7 +63,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   isHttp: boolean;
   logging: TLogOptions;
   minMax: MinMax;
-  mode: 'cli' | 'programmatic' | 'test';
+  mode: 'cli' | 'programmatic' | 'test' | 'docs';
   modeOptions: ModeOptions;
   name: string;
   nodeEngine: string | undefined;
@@ -176,6 +177,7 @@ interface ModeOptions {
   test?: {
     baseUrl?: string | undefined;
   } | undefined;
+  docs?: object | undefined;
 }
 
 /**
@@ -210,6 +212,10 @@ interface PatternFlyOptions {
     latestSchemasVersion: 'v6';
     versionWhitelist: string[];
     versionStrategy: 'highest' | 'lowest';
+  },
+  api: {
+    expireDays: number;
+    endpoints: WhitelistUrl[];
   },
   urlWhitelist: WhitelistUrl[];
   urlWhitelistProtocols: string[];
@@ -361,7 +367,8 @@ const MIN_MAX: MinMax = {
 const MODE_OPTIONS: ModeOptions = {
   cli: {},
   programmatic: {},
-  test: {}
+  test: {},
+  docs: {}
 };
 
 /**
@@ -457,9 +464,9 @@ const XHR_FETCH_OPTIONS: XhrFetchOptions = {
 };
 
 /**
- * Base logging channel name. Fixed to avoid user override.
+ * Base diagnostics channel name. Fixed to avoid user override and channel collisions.
  */
-const LOG_BASENAME = 'pf-mcp:log';
+const CHANNEL_BASENAME = 'pf-mcp';
 
 /**
  * Default PatternFly-specific options.
@@ -478,8 +485,15 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     ],
     versionStrategy: 'highest'
   },
+  api: {
+    expireDays: 14,
+    endpoints: [
+      'https://patternfly-doc-core.pages.dev/api/v6'
+    ]
+  },
   urlWhitelist: [
     'https://patternfly.org',
+    'https://patternfly-doc-core.pages.dev',
     'https://github.com/patternfly',
     'https://raw.githubusercontent.com/patternfly'
   ],
@@ -498,7 +512,7 @@ const URL_REGEX = /^(https?:)\/\//i;
  * - Unit tests default to `programmatic` mode
  * - E2E tests generally use `test` mode
  */
-const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
+const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test', 'docs'];
 
 /**
  * Available context management settings.
@@ -556,8 +570,8 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 
 export {
   DEFAULT_OPTIONS,
+  CHANNEL_BASENAME,
   CONTEXT_MANAGEMENT,
-  LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
   type DefaultOptions,

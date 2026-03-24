@@ -115,16 +115,19 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * @param options - Options
  * @returns The fetched content as a string.
  */
-const fetchUrlFunction = async (url: string, options = getOptions()) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.xhrFetch.timeoutMs);
+const fetchUrlFunction = async (url: string, options: any = getOptions()) => {
+  const controller = options.signal ? null : new AbortController();
+  const signal = options.signal || controller?.signal;
+  const timeout = signal ? null : setTimeout(() => controller?.abort(), options.xhrFetch.timeoutMs);
 
-  // Allow the process to exit
-  timeout.unref();
+  if (timeout) {
+    // Allow the process to exit
+    timeout.unref();
+  }
 
   try {
     const response = await fetch(url, {
-      signal: controller.signal,
+      signal,
       headers: { Accept: 'text/plain, text/markdown, */*' }
     });
 
@@ -134,7 +137,9 @@ const fetchUrlFunction = async (url: string, options = getOptions()) => {
 
     return await response.text();
   } finally {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 };
 
@@ -227,18 +232,18 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  * @param options - Options
  * @returns Resolves to an object containing the loaded content and the resolved path.
  */
-const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+const loadFileFetch = async (pathOrUrl: string, options: any = getOptions()) => {
   if (options.mode === 'test') {
-    const mockContent = await mockPathOrUrlFunction(pathOrUrl);
+    const mockContent = await mockPathOrUrlFunction(pathOrUrl, options);
 
     return { content: mockContent, resolvedPath: pathOrUrl };
   }
 
-  const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
+  const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl, {}, options);
   let content;
 
   if (isUrl(updatedPathOrUrl)) {
-    content = await fetchUrlFunction.memo(updatedPathOrUrl);
+    content = await fetchUrlFunction.memo(updatedPathOrUrl, options);
   } else {
     content = await readLocalFileFunction.memo(updatedPathOrUrl);
   }
