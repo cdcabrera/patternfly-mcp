@@ -1,5 +1,5 @@
 import diagnostics_channel from 'node:diagnostics_channel';
-import { healthReport, statsReport, transportReport, createServerStats } from '../server.stats';
+import { healthReport, statsReport, createDocsStats } from '../docs.stats';
 import { getStatsOptions } from '../options.context';
 
 describe('healthReport', () => {
@@ -22,39 +22,16 @@ describe('healthReport', () => {
 describe('statsReport', () => {
   const statsOptions = getStatsOptions();
 
-  it.each([
-    { description: 'stdio', httpPort: undefined },
-    { description: 'http', httpPort: 3030 }
-  ])('should generate a stats report, $description', ({ httpPort }) => {
-    const report = statsReport({ httpPort }, statsOptions);
+  it('should generate a docs stats report', () => {
+    const report = statsReport(statsOptions);
 
     expect(Object.keys(report)).toEqual(expect.arrayContaining(['timestamp', 'reports']));
-    expect(Object.keys(report.reports.transport).includes('port')).toBe(httpPort !== undefined);
-
-    expect(report.reports.transport.channelId).toBe(statsOptions.channels.transport);
     expect(report.reports.health.channelId).toBe(statsOptions.channels.health);
     expect(report.reports.traffic.channelId).toBe(statsOptions.channels.traffic);
   });
 });
 
-describe('transportReport', () => {
-  const statsOptions = getStatsOptions();
-
-  it('should generate a transport report', () => {
-    const type = 'transport';
-    const channelName = statsOptions.channels[type];
-    const channel = diagnostics_channel.channel(channelName);
-    const handler = jest.fn();
-
-    channel.subscribe(handler);
-
-    transportReport({ httpPort: 9999 }, statsOptions);
-
-    expect(Object.keys(handler.mock.calls[0][0])).toEqual(expect.arrayContaining(['timestamp', 'type', 'method', 'port']));
-  });
-});
-
-describe('createServerStats', () => {
+describe('createDocsStats', () => {
   const statsOptions = getStatsOptions();
 
   beforeEach(() => {
@@ -66,21 +43,19 @@ describe('createServerStats', () => {
   });
 
   it('should resolve stats promise after startStats is called', async () => {
-    const tracker = createServerStats(statsOptions, { isHttp: true } as any);
-    const httpHandle = { port: 9999, close: jest.fn() };
+    const tracker = createDocsStats(statsOptions);
 
-    tracker.startStats(httpHandle as any);
+    tracker.startStats();
 
     const stats = await tracker.getStats();
 
-    expect(stats.reports.transport.port).toBe(9999);
-    expect(stats.reports.transport.method).toBe('http');
+    expect(stats.reports.health.channelId).toBe(statsOptions.channels.health);
 
     tracker.unsubscribe();
   });
 
   it('should correctly clean up timers on unsubscribe', () => {
-    const tracker = createServerStats();
+    const tracker = createDocsStats();
     const spy = jest.spyOn(Promise, 'allSettled');
 
     tracker.unsubscribe();

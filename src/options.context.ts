@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } from './options';
 import {
   DEFAULT_OPTIONS,
-  LOG_BASENAME,
+  CHANNEL_BASENAME,
   MODE_LEVELS,
   type LoggingSession,
   type StatsSession
@@ -33,8 +33,9 @@ const getPublicSessionHash = (sessionId: string): string =>
  * @returns {AppSession} Immutable session with a session ID and channel name.
  */
 const initializeSession = (): AppSession => {
+  const { mode } = getOptions();
   const sessionId = (process.env.NODE_ENV === 'local' && '1234d567-1ce9-123d-1413-a1234e56c789') || randomUUID();
-  const channelName = `${LOG_BASENAME}:${sessionId}`;
+  const channelName = `${CHANNEL_BASENAME}:${mode}:log:${sessionId}`;
   const publicSessionId = getPublicSessionHash(sessionId);
 
   return freezeObject({ sessionId, channelName, publicSessionId });
@@ -142,18 +143,30 @@ const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
 };
 
 /**
+ * Get documentation logging options from the current context.
+ *
+ * @param {AppSession} [session] - Session options to use in context.
+ * @returns {LoggingSession} Logging options from context.
+ */
+const getDocsLoggerOptions = (session = getSessionOptions()): LoggingSession => {
+  const { logging: base, mode } = getOptions();
+
+  return { ...base, channelName: `${CHANNEL_BASENAME}:${mode}:log:${session.sessionId}` };
+};
+
+/**
  * Get stat channel options from the current context.
  *
  * @param {AppSession} [options] - Session options to use in context.
  * @returns {StatsSession} Stats options from context.
  */
 const getStatsOptions = (options = getSessionOptions()): StatsSession => {
-  const base = getOptions().stats;
+  const { stats: base, mode } = getOptions();
   const publicSessionId = options.publicSessionId;
-  const health = `pf-mcp:stats:health:${publicSessionId}`;
-  const session = `pf-mcp:stats:session:${publicSessionId}`;
-  const transport = `pf-mcp:stats:transport:${publicSessionId}`;
-  const traffic = `pf-mcp:stats:traffic:${publicSessionId}`;
+  const health = `${CHANNEL_BASENAME}:${mode}:stats:health:${publicSessionId}`;
+  const session = `${CHANNEL_BASENAME}:${mode}:stats:session:${publicSessionId}`;
+  const transport = `${CHANNEL_BASENAME}:${mode}:stats:transport:${publicSessionId}`;
+  const traffic = `${CHANNEL_BASENAME}:${mode}:stats:traffic:${publicSessionId}`;
   const channels = { health, transport, traffic, session };
 
   return { ...base, publicSessionId, channels };
@@ -181,6 +194,7 @@ const runWithOptions = async <TReturn>(
 };
 
 export {
+  getDocsLoggerOptions,
   getLoggerOptions,
   getOptions,
   getPublicSessionHash,
