@@ -1,6 +1,6 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { processDocsFunction } from '../server.getResources';
-import { getPatternFlyComponentSchema, getPatternFlyMcpResources } from '../patternFly.getResources';
+import { getPatternFlyComponentSchema, getPatternFlyMcpResources, setCategoryDisplayLabel } from '../patternFly.getResources';
 import { searchPatternFly } from '../patternFly.search';
 import { isPlainObject } from '../server.helpers';
 import { usePatternFlyDocsTool } from '../tool.patternFlyDocs';
@@ -17,6 +17,7 @@ const mockProcessDocs = processDocsFunction as jest.MockedFunction<typeof proces
 const mockComponentSchema = getPatternFlyComponentSchema as jest.MockedFunction<typeof getPatternFlyComponentSchema>;
 const mockGetResources = getPatternFlyMcpResources as jest.MockedFunction<typeof getPatternFlyMcpResources>;
 const mockSearch = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
+const mockSetCategoryLabel = setCategoryDisplayLabel as jest.MockedFunction<typeof setCategoryDisplayLabel>;
 
 describe('usePatternFlyDocsTool', () => {
   beforeEach(() => {
@@ -50,6 +51,8 @@ describe('usePatternFlyDocsTool, callback', () => {
       exactMatches: [{ entries: [{ path: 'components/loremButton.md' }] }],
       searchResults: []
     } as any);
+
+    mockSetCategoryLabel.mockImplementation(entry => entry?.category || 'Documentation');
   });
 
   it.each([

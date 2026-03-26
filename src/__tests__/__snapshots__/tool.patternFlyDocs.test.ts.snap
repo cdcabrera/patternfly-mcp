@@ -19,7 +19,7 @@ exports[`usePatternFlyDocsTool, callback should attempt to parse parameters, wit
 exports[`usePatternFlyDocsTool, callback should have a specific markdown format: Button 1`] = `
 [
   {
-    "text": "# Documentation for Button (v6) [undefined]
+    "text": "# Documentation for Button (v6) [Documentation]
 Source: components/loremButton.md
 
 lorem documentation content
