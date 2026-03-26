@@ -125,6 +125,50 @@ describe('Builtin tools, STDIO', () => {
     expect(text.includes('This is a generated offline fixture')).toBe(true);
     expect(text).toMatchSnapshot();
   });
+
+  it.each([
+    {
+      description: 'exact match for Button',
+      searchQuery: 'Button',
+      expectedText: '# Search results for PatternFly version "v6" and "Button". Showing'
+    },
+    {
+      description: 'case-insensitive match',
+      searchQuery: 'button',
+      expectedText: '# Search results for PatternFly version "v6" and "button". Showing'
+    },
+    {
+      description: 'wildcard search',
+      searchQuery: '*',
+      expectedText: '# Search results for PatternFly version "v6" and "all" resources. Only showing the first'
+    },
+    {
+      description: 'fuzzy search for partial name',
+      searchQuery: 'ton',
+      expectedText: '# Search results for PatternFly version "v6" and "ton". Showing'
+    },
+    {
+      description: 'explicit version search',
+      searchQuery: 'Button',
+      version: 'v6',
+      expectedText: '# Search results for PatternFly version "v6" and "Button". Showing'
+    }
+  ])('should perform searchPatternFlyDocs: $description', async ({ searchQuery, version, expectedText }) => {
+    const req = {
+      method: 'tools/call',
+      params: {
+        name: 'searchPatternFlyDocs',
+        arguments: version ? { searchQuery, version } : { searchQuery }
+      }
+    };
+
+    const response = await CLIENT.send(req);
+    const text = response?.result?.content?.[0]?.text || '';
+
+    expect(response?.result?.isError).toBeUndefined();
+    expect(text).toContain(expectedText);
+    expect(text.split('\n').filter((str: string) => /^\d/.test(str))).toMatchSnapshot();
+  });
 });
 
 describe('Builtin resources, STDIO', () => {

@@ -104,6 +104,57 @@ exports[`Builtin tools, STDIO should expose expected tools and stable shape 1`] 
 }
 `;
 
+exports[`Builtin tools, STDIO should perform searchPatternFlyDocs: case-insensitive match 1`] = `
+[
+  "1. **button**:",
+  "2. **patterns**:",
+]
+`;
+
+exports[`Builtin tools, STDIO should perform searchPatternFlyDocs: exact match for Button 1`] = `
+[
+  "1. **button**:",
+  "2. **patterns**:",
+]
+`;
+
+exports[`Builtin tools, STDIO should perform searchPatternFlyDocs: explicit version search 1`] = `
+[
+  "1. **button**:",
+  "2. **patterns**:",
+]
+`;
+
+exports[`Builtin tools, STDIO should perform searchPatternFlyDocs: fuzzy search for partial name 1`] = `
+[
+  "1. **aboutmodalboxclosebutton**:",
+  "2. **alertactionclosebutton**:",
+  "3. **alerttoggleexpandbutton**:",
+  "4. **button**:",
+  "5. **clipboardcopybutton**:",
+  "6. **datalistdragbutton**:",
+  "7. **descriptionlisttermhelptextbutton**:",
+  "8. **drawerclosebutton**:",
+  "9. **modalboxclosebutton**:",
+  "10. **multiplefileuploadbutton**:",
+]
+`;
+
+exports[`Builtin tools, STDIO should perform searchPatternFlyDocs: wildcard search 1`] = `
+[
+  "1. **aboutmodal**:",
+  "2. **aboutmodalbox**:",
+  "3. **aboutmodalboxbrand**:",
+  "4. **aboutmodalboxclosebutton**:",
+  "5. **aboutmodalboxcontent**:",
+  "6. **aboutmodalboxheader**:",
+  "7. **accessibility**:",
+  "8. **accordion**:",
+  "9. **accordioncontent**:",
+  "10. **accordionexpandablecontentbody**:",
+]
+`;
+
 exports[`Logging should allow setting logging options, default 1`] = `[]`;
 
 exports[`Logging should allow setting logging options, stderr 1`] = `
