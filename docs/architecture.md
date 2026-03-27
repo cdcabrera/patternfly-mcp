@@ -109,11 +109,11 @@ flowchart TD
       G1B(["API synchronization process"])
     end
     D1 <--> G1
-    subgraph H1["Agentless client layer"]
-      H1A(["CLI & Automation integration"])
-    end
-    A1 <--> H1
   end
+  subgraph H1["Agentless client layer"]
+    H1A(["CLI & Automation integration"])
+  end
+  A1 <--> H1
   B1(["Local and remote external tools, prompts, resources"])
   B1 <--> D1
 ```
