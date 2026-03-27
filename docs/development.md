@@ -124,6 +124,10 @@ const options: PfMcpOptions = {
 const server: PfMcpInstance = await start(options);
 ```
 
+#### About pinned documentation sources
+
+The documentation catalog `src/docs.json` pins remote resources to specific commit SHAs (or explicit refs) for stability and reproducibility. This avoids unexpected upstream changes from breaking results. The `searchPatternFlyDocs` tool handles these lookups transparently for the user.
+
 #### Environmental Requirements
 
 - **Node.js 20+**: Required to run the core MCP server.
@@ -294,17 +298,17 @@ The server provides two isolation modes for external plugins via the `--plugin-i
 - **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
 - **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
 
-### Dynamic Documentation & Background Processes
+### Dynamic Documentation & Background Processes (In-progress)
 
-The server is moving toward a dynamic model where documentation is synchronized with the PatternFly API in real-time.
+The server is moving toward a dynamic model where documentation is synchronized with the PatternFly API in real-time. This work is currently in-progress.
 
-#### Child Process Lifecycle
+#### Child Process Lifecycle (Future)
 
-To maintain high performance and isolation, the server spawns background child processes for heavy tasks:
-- **API Synchronization**: A dedicated process that spiders the PatternFly documentation and updates the local cache (`cache/api.dynamic.json`).
-- **Tools Host**: An isolated process that executes external tool plugins.
+To maintain high performance and isolation, the server utilizes background child processes for specific tasks, with more robust management planned:
+- **Tools Host (Current)**: An isolated process that executes external tool plugins.
+- **API Synchronization (Future)**: A dedicated process that spiders the PatternFly documentation and updates the local cache (`cache/api.dynamic.json`).
 
-These processes are managed by a central lifecycle controller that ensures they are properly initialized, monitored for health, and gracefully terminated when the main server stops.
+The management of these processes will be consolidated into a central lifecycle controller that ensures they are properly initialized, monitored for health, and gracefully terminated when the main server stops. For more information on the implementation roadmap, see the [architecture documentation](./architecture.md#roadmap).
 
 ### Authoring Tools
 
