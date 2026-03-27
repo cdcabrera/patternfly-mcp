@@ -298,12 +298,6 @@ The server provides two isolation modes for external plugins via the `--plugin-i
 - **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
 - **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
 
-### Dynamic Documentation & Background Processes
-
-The server is evolving toward a dynamic model with enhanced background process management. These features are currently in various stages of development and planning.
-
-For more information on our development roadmap, including "in-progress" and "future" work, please refer to the [Architecture & Roadmap](./architecture.md#roadmap) documentation.
-
 ### Authoring Tools
 
 We recommend using the `createMcpTool` helper to define tools. It ensures your tools are properly normalized for the server.
@@ -389,3 +383,8 @@ See [examples/toolPluginHelloWorld.js](examples/toolPluginHelloWorld.js) for a b
 - **Missing tools/resources**: Verify the server started successfully and check logs with `--log-stderr`.
 - **Type errors**: Ensure TypeScript types are installed: `npm install --save-dev @types/node`
 
+
+
+## In-progress and future work
+
+For more information on our development roadmap, including "in-progress" and "future" work, please refer to the [Architecture & Roadmap](./architecture.md#roadmap) documentation.
