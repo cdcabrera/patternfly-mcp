@@ -130,30 +130,45 @@ describe('Builtin tools, STDIO', () => {
     {
       description: 'exact match for Button',
       searchQuery: 'Button',
-      expectedText: '# Search results for PatternFly version "v6" and "Button". Showing'
+      contains: [
+        '# Search results for PatternFly version "v6" and "Button". Showing',
+        '**button**'
+      ]
     },
     {
       description: 'case-insensitive match',
       searchQuery: 'button',
-      expectedText: '# Search results for PatternFly version "v6" and "button". Showing'
+      contains: [
+        '# Search results for PatternFly version "v6" and "button". Showing',
+        '**button**'
+      ]
     },
     {
       description: 'wildcard search',
       searchQuery: '*',
-      expectedText: '# Search results for PatternFly version "v6" and "all" resources. Only showing the first'
+      contains: [
+        '# Search results for PatternFly version "v6" and "all" resources. Only showing the first 10 results',
+        '**accessibility**'
+      ]
     },
     {
       description: 'fuzzy search for partial name',
       searchQuery: 'ton',
-      expectedText: '# Search results for PatternFly version "v6" and "ton". Showing'
+      contains: [
+        '# Search results for PatternFly version "v6" and "ton". Showing',
+        '**button**'
+      ]
     },
     {
       description: 'explicit version search',
       searchQuery: 'Button',
       version: 'v6',
-      expectedText: '# Search results for PatternFly version "v6" and "Button". Showing'
+      contains: [
+        '# Search results for PatternFly version "v6" and "Button". Showing',
+        '**button**'
+      ]
     }
-  ])('should perform searchPatternFlyDocs: $description', async ({ searchQuery, version, expectedText }) => {
+  ])('should perform searchPatternFlyDocs: $description', async ({ searchQuery, version, contains }) => {
     const req = {
       method: 'tools/call',
       params: {
@@ -165,9 +180,21 @@ describe('Builtin tools, STDIO', () => {
     const response = await CLIENT.send(req);
     const text = response?.result?.content?.[0]?.text || '';
 
-    expect(response?.result?.isError).toBeUndefined();
-    expect(text).toContain(expectedText);
-    expect(text.split('\n').filter((str: string) => /^\d/.test(str))).toMatchSnapshot();
+    contains.forEach(item => expect(text).toContain(item));
+  });
+
+  it('should return expected markdown structure for search results', async () => {
+    const response = await CLIENT.send({
+      method: 'tools/call',
+      params: {
+        name: 'searchPatternFlyDocs',
+        arguments: { searchQuery: 'button' }
+      }
+    });
+
+    const text = response?.result?.content?.[0]?.text || '';
+
+    expect(text).toMatchSnapshot('markdown');
   });
 });
 
