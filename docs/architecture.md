@@ -15,9 +15,10 @@ The current PatternFly MCP server provides a hybrid documentation system that wi
 #### Discovery Layer (Resource Metadata)
 
 Instead of a standalone "discovery" tool, the server implements a robust **Resource Metadata system**. This system:
-- Generates automated indexes for all available documentation (`patternfly://docs/index`) and schemas (`patternfly://schemas/index`).
-- Supports completion logic for MCP clients, allowing users to browse available resources effortlessly.
+- Generates automated indexes for all available documentation (`patternfly://docs/index`), components (`patternfly://components/index`), and schemas (`patternfly://schemas/index`).
+- Supports completion logic for MCP clients, allowing LLMs and users to browse available resources effortlessly.
 - Provides parameterized URI templates (RFC 6570) like `patternfly://docs/{name}` for direct, predictable access.
+- Provides generated `meta` resources that document available MCP resource template parameters for MCP clients that do not have completion (`patternfly://docs/meta`, `patternfly://components/meta`, `patternfly://schemas/meta`).
 
 > This discovery layer treats the MCP server as a living library. It enables the server to provide updates for all built-in tools and resources while maintaining a tailored experience based on user patterns (e.g., tailoring responses for designers vs. developers).
 
