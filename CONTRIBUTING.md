@@ -142,6 +142,23 @@ npm run test:integration
 
 This mode leverages the `--mode test` and `--mode-test-url` flags to redirect resource lookups to a fixture server instead of live or local resources.
 
+## Maintenance: Node.js engine bumps
+
+The `Node.js` engine requirements are updated on a predictable biannual schedule to ensure the server remains secure, leverages modern runtime features, and provides stability for consumers.
+
+### Schedule and process
+- **Timing**: Bumps are generally targeted for **Spring (April/May)** and **Fall (October/November)**, aligned with the [Node.js release schedule](https://nodejs.org/en/about/previous-releases) as versions enter or exit LTS.
+- **Security**: Out-of-band updates may be performed if critical security considerations arise.
+- **Version Targets**:
+  - Focus on the latest **even-numbered (LTS/Stable)** versions (e.g., bumping to 22, 24, or 26).
+  - GitHub Workflows should be updated to include the latest available even version.
+
+### Acceptance criteria for bumps
+- Update `package.json` engine requirements.
+- Update related GitHub Action workflows (CI/CD).
+- Update "Environmental Requirements" in documentation.
+- Ensure all tests pass on the new target version.
+
 ## AI agent
 
 ### User Section

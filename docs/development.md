@@ -7,6 +7,8 @@ Complete guide to using the PatternFly MCP Server for development including CLI 
 - [Programmatic Usage](#programmatic-usage)
 - [Tool Plugins](#tool-plugins)
 - [Initial Troubleshooting](#initial-troubleshooting)
+- [Project Maintenance](#project-maintenance)
+- [In-progress and future work](#in-progress-and-future-work)
 
 ## CLI Usage
 
@@ -127,6 +129,11 @@ const server: PfMcpInstance = await start(options);
 #### About pinned documentation sources
 
 The documentation catalog `src/docs.json` pins remote resources to specific commit SHAs (or explicit refs) for stability and reproducibility. This avoids unexpected upstream changes from breaking results. The `searchPatternFlyDocs` tool handles these lookups transparently for the user.
+
+#### Environmental Requirements
+
+- **Node.js 20+**: Required to run the core MCP server.
+- **Node.js 22+**: Required for loading external tool plugins (`--tool`) and for developers working on advanced process isolation features.
 
 **Example: Programmatic test mode**
 ```typescript
@@ -378,3 +385,10 @@ See [examples/toolPluginHelloWorld.js](examples/toolPluginHelloWorld.js) for a b
 - **Missing tools/resources**: Verify the server started successfully and check logs with `--log-stderr`.
 - **Type errors**: Ensure TypeScript types are installed: `npm install --save-dev @types/node`
 
+## Project Maintenance
+
+For information on how we manage project dependencies, including our biannual Node.js engine bump schedule, please refer to the [Maintenance section in CONTRIBUTING.md](../CONTRIBUTING.md#maintenance-nodejs-engine-bumps).
+
+## In-progress and future work
+
+For more information on our development roadmap, including "in-progress" and "future" work, please refer to the [Architecture & Roadmap](./architecture.md#roadmap) documentation.

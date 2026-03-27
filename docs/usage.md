@@ -62,15 +62,31 @@ Fetch full documentation and component JSON schemas for specific PatternFly URLs
 
 ## Built-in resources
 
-> MCP resources represent indexed collections of documentation.
+> MCP resources represent indexed collections of documentation and machine-readable metadata.
 
-The server exposes this resource-centric architecture via the `patternfly://` URI scheme:
+The server exposes a resource-centric architecture via the `patternfly://` URI scheme. These resources can be used directly by MCP clients or referenced by tools to provide context.
 
-- **`patternfly://context`**: General PatternFly MCP server context and high-level rules.
-- **`patternfly://docs/index`**: Index of all available documentation pages.
-- **`patternfly://docs/{name}`**: Documentation for a specific component (e.g., `patternfly://docs/Button`).
-- **`patternfly://schemas/index`**: Index of all available component schemas.
-- **`patternfly://schemas/{name}`**: JSON Schema for a specific component (e.g., `patternfly://schemas/Button`).
+### Discovery resources
+
+Use these indexes to discover what is available in the library:
+
+- **`patternfly://docs/index{?version,category,section}`**: A comprehensive index of all available PatternFly documentation pages.
+- **`patternfly://components/index{?version,category}`**: A list of all available PatternFly component names.
+- **`patternfly://components/meta{?version}`**: Metadata discovery for components, helpful for understanding available filter parameters.
+- **`patternfly://schemas/index{?version,category}`**: An index of all available component JSON schemas.
+
+### Component and Documentation resources
+
+Access specific component documentation or technical specifications using the following URI templates (RFC 6570):
+
+- **`patternfly://docs/{name}{?version,category,section}`**: Full human-readable documentation for a specific component (e.g., `patternfly://docs/Button`) or guideline.
+- **`patternfly://schemas/{name}{?version,category}`**: Machine-readable JSON Schema for a specific component, detailing props, types, and validation rules (e.g., `patternfly://schemas/Button`).
+
+### Context and guidelines
+
+- **`patternfly://context`**: General PatternFly MCP server context, including high-level development rules and accessibility guidelines.
+
+> **Tip for LLMs**: When a user asks about a component you aren't familiar with, first check `patternfly://docs/index` to find the correct name, then read the documentation via `patternfly://docs/{Name}`. Use `patternfly://components/index` for a cleaner list of component-only names.
 
 ## MCP client configuration
 

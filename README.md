@@ -2,9 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides access to PatternFly rules and documentation, built with Node.js.
 
-The PatternFly MCP server is a comprehensive library resource for PatternFly.
-It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development. 
-[Read more about our roadmap and how we've structured the server in our architecture docs](./docs/architecture.md).
+The PatternFly MCP server is a comprehensive library resource for PatternFly. It is currently moving toward a **dynamic API-driven model**, ensuring documentation and component schemas are always synchronized with the latest PatternFly releases.
+
+It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development.
+[Read more about our architecture and roadmap](./docs/architecture.md).
 
 ## Requirements
 - [Node.js 20+](https://nodejs.org/)
