@@ -131,7 +131,7 @@ The documentation catalog `src/docs.json` pins remote resources to specific comm
 #### Environmental Requirements
 
 - **Node.js 20+**: Required to run the core MCP server.
-- **Node.js 22+**: Required for loading external tool plugins (`--tool`) and for developers working on the background synchronization features, as it relies on advanced process isolation and permission models.
+- **Node.js 22+**: Required for loading external tool plugins (`--tool`) and for developers working on advanced process isolation features.
 
 **Example: Programmatic test mode**
 ```typescript
@@ -298,17 +298,11 @@ The server provides two isolation modes for external plugins via the `--plugin-i
 - **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
 - **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
 
-### Dynamic Documentation & Background Processes (In-progress)
+### Dynamic Documentation & Background Processes
 
-The server is moving toward a dynamic model where documentation is synchronized with the PatternFly API in real-time. This work is currently in-progress.
+The server is evolving toward a dynamic model with enhanced background process management. These features are currently in various stages of development and planning.
 
-#### Child Process Lifecycle (Future)
-
-To maintain high performance and isolation, the server utilizes background child processes for specific tasks, with more robust management planned:
-- **Tools Host (Current)**: An isolated process that executes external tool plugins.
-- **API Synchronization (Future)**: A dedicated process that spiders the PatternFly documentation and updates the local cache (`cache/api.dynamic.json`).
-
-The management of these processes will be consolidated into a central lifecycle controller that ensures they are properly initialized, monitored for health, and gracefully terminated when the main server stops. For more information on the implementation roadmap, see the [architecture documentation](./architecture.md#roadmap).
+For more information on our development roadmap, including "in-progress" and "future" work, please refer to the [Architecture & Roadmap](./architecture.md#roadmap) documentation.
 
 ### Authoring Tools
 
