@@ -6,17 +6,11 @@ The PatternFly MCP server is centered around the concept of a library for all th
 
 ### The library, PatternFly integration
 
-The PatternFly MCP server provides a hybrid documentation system that merges baseline guidelines with dynamic content. It is centered around a **Resource Metadata** discovery layer that powers the following core tools:
+The current PatternFly MCP server provides a hybrid documentation system that will merge baseline guidelines with dynamic content. It is centered around a **Resource Metadata** discovery layer that powers the following core concepts:
 
 - **Searching for resources**: Querying the library for relevant documentation and components.
 - **Reading resources**: Accessing full documentation and machine-readable schemas.
-- **Discovering resources**: Navigating the library via automated indexes and URI templates.
-
-#### Hybrid Documentation Model
-
-The library maintains a balance between being stable and current:
-- **Baseline Data**: Core guidelines and accessibility standards integrated directly into the server.
-- **Dynamic Content**: Component documentation and schemas synced from the PatternFly implementation, ensuring the LLM always has access to the latest props and patterns.
+- **Discovering resources**: Navigating the library via resource indexes and URI templates.
 
 #### Discovery Layer (Resource Metadata)
 
@@ -26,6 +20,12 @@ Instead of a standalone "discovery" tool, the server implements a robust **Resou
 - Provides parameterized URI templates (RFC 6570) like `patternfly://docs/{name}` for direct, predictable access.
 
 > This discovery layer treats the MCP server as a living library. It enables the server to provide updates for all built-in tools and resources while maintaining a tailored experience based on user patterns (e.g., tailoring responses for designers vs. developers).
+
+#### Hybrid documentation model (In-progress)
+
+We'll be introducing our hybrid documentation model in upcoming releases. This concept balances stability and currentness by integrating core guidelines and standards directly into the server while syncing from the latest available PatternFly implementation.
+- **Baseline Data**: Core guidelines and standards integrated directly into the server for standalone purposes, quick starts, and immediate access.
+- **Dynamic Content**: Content synced from the latest available PatternFly implementation while you work, ensuring the LLM always has access to the latest documentation and patterns.
 
 ### Tools, resources, and prompts as customizable plugins
 
@@ -72,13 +72,14 @@ flowchart TD
 Our roadmap focuses on expanding the server's reach and providing a more integrated development experience.
 
 #### In-progress
-- **PatternFly API Integration**: A JSON API for documentation, components, and patterns that ensures the server is always in sync with the latest releases.
-- **Child Process Lifecycle Management**: Background processes for API synchronization and tool isolation.
+- **Hybrid documentation model**: A JSON API for documentation, components, and patterns that ensures the server is always in sync with the latest releases.
+   - **PatternFly API Integration**: Embedded integration into the server for standalone purposes, quick starts, and immediate access.
+   - **Child Process Lifecycle Management**: Background process while you work for API synchronization.
 
 #### Future goals
 - **Resource-Tool Integration**: Directly integrate MCP resources into tool responses to reduce token counts and allow tools to accept URI links as inputs.
-- **Agentless MCP Client**: An MCP client for use without an LLM, allowing PatternFly tooling to integrate into CLI tools and CI/CD pipelines.
 - **Environment & Analysis Tooling**: A third built-in tool focused on environment snapshots, code analysis, and whitelisted resource access for local project analysis.
+- **Agentless MCP Client**: An MCP client for use without an LLM, allowing PatternFly tooling to integrate into CLI tools and CI/CD pipelines.
 - **YAML Configuration**: Remote tool, resource, and prompt plugins configured via YAML.
 - **Resource/Helper Sharing**: Mechanisms to share resources and helper functions across external tool plugins.
 
