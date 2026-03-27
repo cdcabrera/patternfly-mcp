@@ -124,9 +124,10 @@ const options: PfMcpOptions = {
 const server: PfMcpInstance = await start(options);
 ```
 
-#### About pinned documentation sources
+#### Environmental Requirements
 
-The documentation catalog `src/docs.json` pins remote resources to specific commit SHAs (or explicit refs) for stability and reproducibility. This avoids unexpected upstream changes from breaking results. The `searchPatternFlyDocs` tool handles these lookups transparently for the user.
+- **Node.js 20+**: Required to run the core MCP server.
+- **Node.js 22+**: Required for loading external tool plugins (`--tool`) and for developers working on the background synchronization features, as it relies on advanced process isolation and permission models.
 
 **Example: Programmatic test mode**
 ```typescript
@@ -292,6 +293,18 @@ The server provides two isolation modes for external plugins via the `--plugin-i
 - **`Tool Config`**: The authoring object format `{ name, description, inputSchema, handler }`.
 - **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
 - **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
+
+### Dynamic Documentation & Background Processes
+
+The server is moving toward a dynamic model where documentation is synchronized with the PatternFly API in real-time.
+
+#### Child Process Lifecycle
+
+To maintain high performance and isolation, the server spawns background child processes for heavy tasks:
+- **API Synchronization**: A dedicated process that spiders the PatternFly documentation and updates the local cache (`cache/api.dynamic.json`).
+- **Tools Host**: An isolated process that executes external tool plugins.
+
+These processes are managed by a central lifecycle controller that ensures they are properly initialized, monitored for health, and gracefully terminated when the main server stops.
 
 ### Authoring Tools
 
