@@ -146,6 +146,8 @@ This mode leverages the `--mode test` and `--mode-test-url` flags to redirect re
 
 The `Node.js` engine requirements are updated on a predictable biannual schedule to ensure the server remains secure, leverages modern runtime features, and provides stability for consumers.
 
+> Our engine requirements are intended to be the minimum to run the MCP server. They are not intended to be a maximum, as newer versions may introduce breaking changes or require additional configuration.
+
 ### Schedule and process
 - **Timing**: Bumps are generally targeted for **Spring (April/May)** and **Fall (October/November)**, aligned with the [Node.js release schedule](https://nodejs.org/en/about/previous-releases) as versions enter or exit LTS.
 - **Security**: Out-of-band updates may be performed if critical security considerations arise.

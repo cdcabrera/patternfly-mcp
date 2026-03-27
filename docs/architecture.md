@@ -77,7 +77,7 @@ Our roadmap focuses on expanding the server's reach and providing a more integra
    - **PatternFly API Integration**: Embedded integration into the server for standalone purposes, quick starts, and immediate access.
    - **Child Process Lifecycle Management**: Background process while you work for API synchronization.
 
-#### Future goals
+#### In-planning and under review
 - **Resource-Tool Integration**: Directly integrate MCP resources into tool responses to reduce token counts and allow tools to accept URI links as inputs.
 - **Environment & Analysis Tooling**: A third built-in tool focused on environment snapshots, code analysis, and whitelisted resource access for local project analysis.
 - **Agentless MCP Client**: An MCP client for use without an LLM, allowing PatternFly tooling to integrate into CLI tools and CI/CD pipelines.

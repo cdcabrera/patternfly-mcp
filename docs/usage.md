@@ -64,7 +64,7 @@ Fetch full documentation and component JSON schemas for specific PatternFly URLs
 
 > MCP resources represent indexed collections of documentation and machine-readable metadata.
 
-The server exposes a resource-centric architecture via the `patternfly://` URI scheme. These resources can be used directly by MCP clients or referenced by tools to provide context.
+The server exposes a resource-centric architecture via the `patternfly://` URI scheme. MCP clients can use these resources directly.
 
 ### Discovery resources
 
