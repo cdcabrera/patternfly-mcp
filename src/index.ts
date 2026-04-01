@@ -184,10 +184,19 @@ const main = async (
 
       createLogger();
 
-      const instance = await buildPatternFlyDocs(mergedOptions);
+      const instance = await buildPatternFlyDocs(mergedOptions, {
+        allowProcessExit: updatedAllowProcessExit
+      });
 
       if (updatedAllowProcessExit) {
-        process.exit(0);
+        // We still need to wait for completion if we ARE going to exit
+        const checkCompletion = setInterval(() => {
+          if (!instance.isRunning()) {
+            clearInterval(checkCompletion);
+            process.exit(0);
+          }
+        }, 100);
+        return instance as any;
       }
 
       return instance as any;

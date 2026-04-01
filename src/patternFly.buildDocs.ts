@@ -27,23 +27,36 @@ interface DocsInstance {
 }
 
 /**
+ * Settings for documentation build.
+ */
+interface DocsSettings {
+  allowProcessExit?: boolean;
+}
+
+/**
  * Recursively spider through documentation API segments.
  *
  * @param baseUrl - The current URL to spider
  * @param parts - Accumulated path parts (e.g., [version, section, page])
  * @param context - Shared context for the spider run
  * @param context.version
+ * @param context.running
+ * @param context.abortController
  * @param catalog - The catalog to populate
  * @returns A promise that resolves when the current segment and its children are processed
  */
 const spiderSegments = async (
   baseUrl: string,
   parts: string[],
-  context: { version: string },
+  context: { version: string; running: () => boolean; abortController: AbortController },
   catalog: PatternFlyMcpDocsCatalog
 ): Promise<void> => {
+  if (!context.running()) {
+    return;
+  }
+
   try {
-    const { content, resolvedPath } = await loadFileFetch(baseUrl);
+    const { content, resolvedPath } = await loadFileFetch(baseUrl, { signal: context.abortController.signal });
     let segments: unknown;
 
     try {
@@ -61,7 +74,10 @@ const spiderSegments = async (
       const section = parts[1] || 'other';
       const category = parts[parts.length - 1] || 'general';
 
-      const unifiedName = toCamelCase(page);
+      const unifiedName = category === 'react'
+        ? toCamelCase(page)
+        : toCamelCase(`${page}_${category}`);
+
       const entry: PatternFlyMcpDocsCatalogDoc = {
         displayName: `${toDisplayName(page)} (${toDisplayName(category)})`,
         description: `PatternFly ${toDisplayName(section)} documentation for ${page} (${category}).`,
@@ -88,6 +104,10 @@ const spiderSegments = async (
     const childSegments = segments as string[];
 
     for (const segment of childSegments) {
+      if (!context.running()) {
+        break;
+      }
+
       await spiderSegments(joinUrl(baseUrl, segment), [...parts, segment], context, catalog);
     }
   } catch (error) {
@@ -100,11 +120,16 @@ const spiderSegments = async (
  * Consumes the PatternFly Astro API to generate a dynamic api.json catalog.
  *
  * @param options - Global options for the build
+ * @param _settings - Optional settings for the build
  * @returns A promise that resolves to a DocsInstance
  */
-const buildPatternFlyDocs = async (options: GlobalOptions = getOptions()): Promise<DocsInstance> => {
+const buildPatternFlyDocs = async (
+  options: GlobalOptions = getOptions(),
+  _settings: DocsSettings = {}
+): Promise<DocsInstance> => {
   const session = getSessionOptions();
   let running = true;
+  const abortController = new AbortController();
   const startTime = Date.now();
 
   const stats: DocsStats = {
@@ -128,54 +153,65 @@ const buildPatternFlyDocs = async (options: GlobalOptions = getOptions()): Promi
   const buildPromise = runWithSession(session, async () => {
     log.info('Build docs', 'Starting PatternFly documentation build...');
 
-    const { patternflyOptions, contextPath } = options;
-    const { endpoints } = patternflyOptions.api;
+    try {
+      const { patternflyOptions, contextPath } = options;
+      const { endpoints } = patternflyOptions.api;
 
-    for (const [version, apiBase] of Object.entries(endpoints)) {
-      if (!apiBase) {
-        continue;
+      for (const [version, apiBase] of Object.entries(endpoints)) {
+        if (!apiBase || !running) {
+          continue;
+        }
+
+        log.info('Build docs', `Processing version ${version} from ${apiBase}`);
+
+        const context = {
+          version,
+          running: () => running,
+          abortController
+        };
+
+        // Ensure we don't double up on the version if it's already in the apiBase
+        const rootUrl = apiBase.includes(version)
+          ? apiBase
+          : joinUrl(apiBase, version);
+
+        // Recursively spider from the version root
+        await spiderSegments(rootUrl, [version], context, catalog);
       }
 
-      log.info('Build docs', `Processing version ${version} from ${apiBase}`);
+      stats.totalEntries = catalog.meta.totalDocs;
+      stats.lastBuildRun = Date.now() - startTime;
+      catalog.meta.lastBuildRun = stats.lastBuildRun;
 
-      const context = {
-        version
-      };
+      const cacheDir = join(contextPath, 'cache');
 
-      // Ensure we don't double up on the version if it's already in the apiBase
-      const rootUrl = apiBase.includes(version)
-        ? apiBase
-        : joinUrl(apiBase, version);
+      if (!existsSync(cacheDir)) {
+        mkdirSync(cacheDir, { recursive: true });
+      }
 
-      // Recursively spider from the version root
-      await spiderSegments(rootUrl, [version], context, catalog);
+      const cachePath = join(cacheDir, 'api.dynamic.json');
+
+      writeFileSync(cachePath, JSON.stringify(catalog, null, 2));
+
+      log.info('Build docs', `Build complete. Generated ${catalog.meta.totalDocs} entries in ${stats.lastBuildRun}ms.`);
+      log.info('Build docs', `Cache written to ${cachePath}`);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        log.info('Build docs', 'Build aborted.');
+      } else {
+        log.error('Build docs', `Build failed: ${formatUnknownError(error)}`);
+      }
+    } finally {
+      running = false;
     }
-
-    stats.totalEntries = catalog.meta.totalDocs;
-    stats.lastBuildRun = Date.now() - startTime;
-    catalog.meta.lastBuildRun = stats.lastBuildRun;
-
-    const cacheDir = join(contextPath, 'cache');
-
-    if (!existsSync(cacheDir)) {
-      mkdirSync(cacheDir, { recursive: true });
-    }
-
-    const cachePath = join(cacheDir, 'api.dynamic.json');
-
-    writeFileSync(cachePath, JSON.stringify(catalog, null, 2));
-
-    log.info('Build docs', `Build complete. Generated ${catalog.meta.totalDocs} entries in ${stats.lastBuildRun}ms.`);
-    log.info('Build docs', `Cache written to ${cachePath}`);
-
-    running = false;
   });
 
-  // Revisit this, blocking the output is counter to what we want. Firs round, for this mode, we wait for completion to satisfy the CLI
-  await buildPromise;
-
   return {
-    stop: async () => { running = false; },
+    stop: async () => {
+      running = false;
+      abortController.abort();
+      await buildPromise;
+    },
     isRunning: () => running,
     getStats: async () => stats,
     onLog: handler => subscribeToChannel(handler)
