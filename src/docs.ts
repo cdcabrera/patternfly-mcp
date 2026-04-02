@@ -3,7 +3,6 @@ import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { createDocsStats, type Stats } from './docs.stats';
 import { stat, type StatReport } from './stats';
-import { createServerStats } from './server.stats';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 // import { sendDocsHostShutdown } from './patternFly.docs';
@@ -142,7 +141,7 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
       );
     }
 
-    const statsTracker = createServerStats();
+    const statsTracker = createDocsStats();
 
     log.info(`Docs stats enabled.`);
 
