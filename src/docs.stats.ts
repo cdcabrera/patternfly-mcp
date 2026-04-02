@@ -1,4 +1,4 @@
-import { getDocsStatsOptions } from './options.context';
+import { getStatsOptions } from './options.context';
 import { publish, type StatReport } from './stats';
 import { type StatsSession, DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
@@ -58,7 +58,7 @@ const statsReport = (statsOptions: StatsSession): DocsStats => ({
  *  - `getStats`: Resolve docs stats and channel IDs.
  *  - `unsubscribe`: Cleans up timers and resources.
  */
-const createDocsStats = (statsOptions = getDocsStatsOptions()) => {
+const createDocsStats = (statsOptions = getStatsOptions()) => {
   // Start the health report
   const healthTimer = healthReport(statsOptions);
   let resolveStatsPromise: (value: DocsStats) => void;

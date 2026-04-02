@@ -1,9 +1,9 @@
 import diagnostics_channel from 'node:diagnostics_channel';
 import { healthReport, statsReport, createDocsStats } from '../docs.stats';
-import { getDocsStatsOptions } from '../options.context';
+import { getStatsOptions } from '../options.context';
 
 describe('healthReport', () => {
-  const statsOptions = getDocsStatsOptions();
+  const statsOptions = getStatsOptions();
 
   it('should generate a health report', () => {
     const type = 'health';
@@ -22,7 +22,7 @@ describe('healthReport', () => {
 });
 
 describe('statsReport', () => {
-  const statsOptions = getDocsStatsOptions();
+  const statsOptions = getStatsOptions();
 
   it('should generate a docs stats report', () => {
     const report = statsReport(statsOptions);
@@ -34,7 +34,7 @@ describe('statsReport', () => {
 });
 
 describe('createDocsStats', () => {
-  const statsOptions = getDocsStatsOptions();
+  const statsOptions = getStatsOptions();
 
   beforeEach(() => {
     jest.useFakeTimers();

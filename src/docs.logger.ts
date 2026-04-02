@@ -1,4 +1,4 @@
-import { getDocsLoggerOptions } from './options.context';
+import { getLoggerOptions } from './options.context';
 import { DEFAULT_OPTIONS, type LoggingSession } from './options.defaults';
 import { createLogger, log, subscribeToChannel, type LogEvent, type Unsubscribe } from './logger';
 import { memo } from './server.caching';
@@ -11,7 +11,7 @@ import { memo } from './server.caching';
  *   - `subscribe`: Registers a new log event handler if a valid handler function is provided.
  *   - `unsubscribe`: Unsubscribes and cleans up all available registered loggers and handlers.
  */
-const createDocsLogger = (loggingSession: LoggingSession = getDocsLoggerOptions()) => {
+const createDocsLogger = (loggingSession: LoggingSession = getLoggerOptions()) => {
   // Track active subscribers to unsubscribe on docs shutdown
   const unsubscribeLoggerFuncs: Unsubscribe[] = [];
 
