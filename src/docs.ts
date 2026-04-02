@@ -1,12 +1,14 @@
 import { log, type LogEvent } from './logger';
 import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
+import { createDocsLogger } from './docs.logger';
 import { createDocsStats, type Stats } from './docs.stats';
 import { stat, type StatReport } from './stats';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 // import { sendDocsHostShutdown } from './patternFly.docs';
 import { sendDocsHostShutdown } from './docs.spider';
+import { runSpider, type DocsSpider } from './docs.getResources';
 
 /**
  * Docs options. Equivalent to GlobalOptions.
@@ -98,6 +100,7 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
   let unsubscribeDocsStats: (() => void) | null = null;
   let sigintHandler: (() => void) | null = null;
   let running = false;
+  const abortController = new AbortController();
   let onLogSetup: DocsOnLog = () => () => {};
   let getStatsSetup: DocsGetStats = () => Promise.resolve({} as DocsStats);
 
@@ -130,7 +133,7 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
 
   try {
     // Setup docs logging.
-    const loggerSubUnsub = createDocsLogger.memo(spider);
+    const loggerSubUnsub = createDocsLogger.memo();
 
     log.info(`Docs logging enabled.`);
 
@@ -174,7 +177,19 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
 
     log.info(`${options.name} PatternFly docs build running`);
 
-    spider = runSpider();
+    const version = 'v6';
+    const baseUrl = options.patternflyOptions.api.endpoints[version];
+
+    spider = {
+      close: async () => {
+        abortController.abort();
+      }
+    };
+
+    void runSpider(baseUrl, version, {
+      running: () => running,
+      abortController
+    });
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
     throw error;

@@ -81,7 +81,7 @@ describe('main', () => {
 
     await expect(async () => main()).rejects.toThrow(error.message);
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to start server:', error);
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to start:', error);
     expect(processExitSpy).toHaveBeenCalledWith(1);
   });
 
@@ -89,25 +89,25 @@ describe('main', () => {
     {
       description: 'parseCliOptions',
       error: new Error('Failed to parse CLI options'),
-      message: 'Set options error, failed to start server:',
+      message: 'Set options error, failed to start:',
       method: main
     },
     {
       description: 'setOptions',
       error: new Error('Failed to set options'),
-      message: 'Set options error, failed to start server:',
+      message: 'Set options error, failed to start:',
       method: main
     },
     {
       description: 'parseCliOptions, with start alias',
       error: new Error('Failed to parse CLI options'),
-      message: 'Set options error, failed to start server:',
+      message: 'Set options error, failed to start:',
       method: start
     },
     {
       description: 'setOptions, with start alias',
       error: new Error('Failed to set options'),
-      message: 'Set options error, failed to start server:',
+      message: 'Set options error, failed to start:',
       method: start
     }
   ])('should handle errors, $description', async ({ error, message, method }) => {

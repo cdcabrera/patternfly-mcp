@@ -4,6 +4,7 @@ import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } fro
 import {
   DEFAULT_OPTIONS,
   LOG_BASENAME,
+  DOCS_LOG_BASENAME,
   MODE_LEVELS,
   type LoggingSession,
   type StatsSession
@@ -142,6 +143,18 @@ const getLoggerOptions = (session = getSessionOptions()): LoggingSession => {
 };
 
 /**
+ * Get documentation logging options from the current context.
+ *
+ * @param {AppSession} [session] - Session options to use in context.
+ * @returns {LoggingSession} Logging options from context.
+ */
+const getDocsLoggerOptions = (session = getSessionOptions()): LoggingSession => {
+  const base = getOptions().logging;
+
+  return { ...base, channelName: `${DOCS_LOG_BASENAME}:${session.sessionId}` };
+};
+
+/**
  * Get stat channel options from the current context.
  *
  * @param {AppSession} [options] - Session options to use in context.
@@ -154,6 +167,24 @@ const getStatsOptions = (options = getSessionOptions()): StatsSession => {
   const session = `pf-mcp:stats:session:${publicSessionId}`;
   const transport = `pf-mcp:stats:transport:${publicSessionId}`;
   const traffic = `pf-mcp:stats:traffic:${publicSessionId}`;
+  const channels = { health, transport, traffic, session };
+
+  return { ...base, publicSessionId, channels };
+};
+
+/**
+ * Get documentation stat channel options from the current context.
+ *
+ * @param {AppSession} [options] - Session options to use in context.
+ * @returns {StatsSession} Stats options from context.
+ */
+const getDocsStatsOptions = (options = getSessionOptions()): StatsSession => {
+  const base = getOptions().stats;
+  const publicSessionId = options.publicSessionId;
+  const health = `pf-mcp:docs:stats:health:${publicSessionId}`;
+  const session = `pf-mcp:docs:stats:session:${publicSessionId}`;
+  const transport = `pf-mcp:docs:stats:transport:${publicSessionId}`;
+  const traffic = `pf-mcp:docs:stats:traffic:${publicSessionId}`;
   const channels = { health, transport, traffic, session };
 
   return { ...base, publicSessionId, channels };
@@ -181,6 +212,8 @@ const runWithOptions = async <TReturn>(
 };
 
 export {
+  getDocsLoggerOptions,
+  getDocsStatsOptions,
   getLoggerOptions,
   getOptions,
   getPublicSessionHash,

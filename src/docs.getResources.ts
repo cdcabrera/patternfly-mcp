@@ -12,17 +12,33 @@ import { loadFileFetch } from './server.getResources';
  * @param context.version
  * @param context.running
  * @param context.abortController
+ * @param context.visited - Set of visited URLs to prevent cycles
+ * @param context.throttleMs - Delay between requests in milliseconds
  * @param catalog - The catalog to populate
  * @returns A promise that resolves when the current segment and its children are processed
  */
 const spiderSegments = async (
   baseUrl: string,
   parts: string[],
-  context: { version: string; running: () => boolean; abortController: AbortController },
+  context: {
+    version: string;
+    running: () => boolean;
+    abortController: AbortController;
+    visited: Set<string>;
+    throttleMs: number;
+  },
   catalog: PatternFlyMcpDocsCatalog
 ): Promise<void> => {
-  if (!context.running()) {
+  const normalizedUrl = new URL(baseUrl).toString();
+
+  if (!context.running() || context.visited.has(normalizedUrl)) {
     return;
+  }
+  context.visited.add(normalizedUrl);
+
+  // Throttling
+  if (context.throttleMs > 0) {
+    await new Promise(resolve => setTimeout(resolve, context.throttleMs));
   }
 
   try {
@@ -85,6 +101,58 @@ const spiderSegments = async (
   }
 };
 
-const runSpider = async () => {};
+/**
+ * Placeholder for DocsSpider type, to be implemented in Phase 2.
+ */
+type DocsSpider = {
+  close(): Promise<void>;
+};
 
-export { spiderSegments, runSpider };
+/**
+ * Run the documentation spider to build a catalog.
+ *
+ * @param baseUrl - The root API URL to start spidering from
+ * @param version - The PatternFly version being spidered (e.g., 'v6')
+ * @param options - Spider options
+ * @param options.running - Callback to check if spider should continue
+ * @param options.abortController - Optional AbortController for cancellation
+ * @param options.throttleMs - Optional delay between requests
+ * @returns The populated documentation catalog
+ */
+const runSpider = async (
+  baseUrl: string,
+  version: string,
+  options: {
+    running: () => boolean;
+    abortController?: AbortController;
+    throttleMs?: number;
+  }
+): Promise<PatternFlyMcpDocsCatalog> => {
+  const catalog: PatternFlyMcpDocsCatalog = {
+    meta: {
+      totalEntries: 0,
+      totalDocs: 0,
+      source: 'api',
+      updatedAt: new Date().toISOString()
+    },
+    docs: {}
+  };
+
+  const context = {
+    version,
+    running: options.running,
+    abortController: options.abortController || new AbortController(),
+    visited: new Set<string>(),
+    throttleMs: options.throttleMs || 0
+  };
+
+  log.info('Build docs', `Starting API spider for PatternFly ${version} at ${baseUrl}`);
+
+  await spiderSegments(baseUrl, [version], context, catalog);
+
+  log.info('Build docs', `API spider completed. Added ${catalog.meta.totalDocs} documents.`);
+
+  return catalog;
+};
+
+export { spiderSegments, runSpider, type DocsSpider };

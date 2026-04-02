@@ -449,6 +449,11 @@ const XHR_FETCH_OPTIONS: XhrFetchOptions = {
 const LOG_BASENAME = 'pf-mcp:log';
 
 /**
+ * Base documentation logging channel name. Fixed to avoid user override.
+ */
+const DOCS_LOG_BASENAME = 'pf-mcp:docs:log';
+
+/**
  * Default PatternFly-specific options.
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
@@ -548,6 +553,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 export {
   DEFAULT_OPTIONS,
   LOG_BASENAME,
+  DOCS_LOG_BASENAME,
   MODE_LEVELS,
   getNodeMajorVersion,
   type DefaultOptions,
