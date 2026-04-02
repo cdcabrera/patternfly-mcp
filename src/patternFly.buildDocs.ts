@@ -8,6 +8,19 @@ import { toCamelCase, toDisplayName, joinUrl } from './server.helpers';
 import { loadFileFetch } from './server.getResources';
 
 /**
+ * Settings for documentation build.
+ *
+ * @interface DocsSettings
+ *
+ * @property [enableSigint] - Indicates whether SIGINT signal handling is enabled.
+ * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
+ */
+interface DocsSettings {
+  enableSigint?: boolean;
+  allowProcessExit?: boolean;
+}
+
+/**
  * Statistics for the documentation build.
  */
 interface DocsStats {
@@ -16,21 +29,36 @@ interface DocsStats {
   lastBuildRun: number;
 }
 
+type DocsGetStats = () => Promise<DocsStats>;
+
+/**
+ * A handler function to subscribe to doc build logs. Automatically unsubscribed on shutdown.
+ *
+ * @param entry
+ */
+type DocsOnLogHandler = (entry: LogEvent) => void;
+
+/**
+ * Subscribe a handler function to doc build logs. Automatically unsubscribed on shutdown.
+ *
+ * @param {DocsOnLogHandler} handler - The function responsible for handling log events.
+ * @returns A cleanup function that unregisters the logging handler when called.
+ */
+type DocsOnLog = (handler: DocsOnLogHandler) => () => void;
+
 /**
  * Interface for a documentation build instance.
+ *
+ * @property stop - Stops the doc build, gracefully.
+ * @property isRunning - Indicates whether the doc build is running.
+ * @property {ServerGetStats} getStats - Resolves doc build stats.
+ * @property {ServerOnLog} onLog - Subscribes to doc build logs. Automatically unsubscribed on shutdown.
  */
 interface DocsInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
-  getStats(): Promise<DocsStats>;
-  onLog(handler: (entry: LogEvent) => void): () => void;
-}
-
-/**
- * Settings for documentation build.
- */
-interface DocsSettings {
-  allowProcessExit?: boolean;
+  getStats: DocsGetStats;
+  onLog: DocsOnLog;
 }
 
 /**
