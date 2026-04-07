@@ -41,7 +41,7 @@ interface DeferTaskOptions {
   cancelMs?: number;
   debug?: DeferTaskDebugHandler;
   timeoutMs?: number;
-  repeat?: number;
+  repeat?: number | undefined;
   errorMessage?: string;
 }
 
@@ -56,12 +56,12 @@ const deferTask = <TReturn>(
   {
     cancelMs,
     debug = () => {},
-    repeat,
+    repeat = 1,
     timeoutMs,
     errorMessage = 'Task timed out'
   }: DeferTaskOptions = {}
 ): DeferTaskHandle<TReturn> => {
-  const updatedRepeat = repeat ?? 1;
+  const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
   const updatedTimeoutMs = timeoutMs ?? 1000;
   const state: { isRunning: boolean; count: number; promise?: Promise<TReturn> | undefined } = {
     isRunning: true,
@@ -73,7 +73,7 @@ const deferTask = <TReturn>(
   const task = async (): Promise<TReturn> => {
     state.count += 1;
 
-    const shouldRepeat = state.isRunning && state.count < updatedRepeat;
+    const shouldRepeat = state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat);
     const startFunc = timeoutFunction(func, { timeout: updatedTimeoutMs, errorMessage });
 
     debug({

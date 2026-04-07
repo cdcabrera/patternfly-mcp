@@ -13,11 +13,9 @@ describe('healthReport', () => {
 
     channel.subscribe(handler);
 
-    const report = healthReport({ isRunning: true }, statsOptions);
+    healthReport({ isRunning: () => true }, statsOptions);
 
     expect(Object.keys(handler.mock.calls[0][0])).toEqual(expect.arrayContaining(['timestamp', 'type', 'memory', 'uptime']));
-
-    clearTimeout(report);
   });
 });
 
@@ -50,11 +48,9 @@ describe('transportReport', () => {
 
     channel.subscribe(handler);
 
-    const report = transportReport({ httpPort: 9999, isRunning: true }, statsOptions);
+    transportReport({ httpPort: 9999, isRunning: () => true }, statsOptions);
 
     expect(Object.keys(handler.mock.calls[0][0])).toEqual(expect.arrayContaining(['timestamp', 'type', 'method', 'port']));
-
-    clearTimeout(report);
   });
 });
 

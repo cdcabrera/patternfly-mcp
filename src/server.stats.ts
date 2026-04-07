@@ -5,6 +5,7 @@ import {
 import { type HttpServerHandle } from './server.http';
 import { publish, type StatReport } from './stats';
 import { type StatsSession } from './options.defaults';
+import { deferTask, type DeferTaskHandle } from './server.task';
 
 /**
  * Transport-specific telemetry report.
@@ -42,21 +43,16 @@ interface Stats {
  * @param params - Report parameters.
  * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout|undefined} Timer handle for the recurring health report.
  */
-const healthReport = ({ isRunning }: { isRunning?: boolean } = {}, statsOptions: StatsSession) => {
-  if (!isRunning) {
-    return undefined;
+const healthReport = ({ isRunning }: { isRunning?: undefined | (() => boolean) } = {}, statsOptions: StatsSession) => {
+  if (isRunning === undefined || !isRunning()) {
+    return;
   }
 
   publish('health', {
     memory: process.memoryUsage(),
     uptime: process.uptime()
-  });
-
-  return setTimeout(() => {
-    healthReport({ isRunning }, statsOptions);
-  }, statsOptions?.reportIntervalMs.health).unref();
+  }, statsOptions);
 };
 
 /**
@@ -89,21 +85,19 @@ const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, stats
  * @param params.httpPort - HTTP server port if available.
  * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout|undefined} Timer handle for the recurring transport report.
  */
-const transportReport = ({ httpPort, isRunning }: { httpPort?: number | undefined, isRunning?: boolean } = {}, statsOptions: StatsSession) => {
-  if (!isRunning) {
-    return undefined;
+const transportReport = (
+  { httpPort, isRunning }: { httpPort?: number | undefined, isRunning?: undefined | (() => boolean) } = {},
+  statsOptions: StatsSession
+) => {
+  if (isRunning === undefined || !isRunning()) {
+    return;
   }
 
   publish('transport', {
     method: httpPort ? 'http' : 'stdio',
     port: httpPort
-  });
-
-  return setTimeout(() => {
-    transportReport({ httpPort, isRunning }, statsOptions);
-  }, statsOptions?.reportIntervalMs.transport).unref();
+  }, statsOptions);
 };
 
 /**
@@ -119,12 +113,9 @@ const transportReport = ({ httpPort, isRunning }: { httpPort?: number | undefine
  *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
-  // Fallback for canceled timers
-  const state: { isRunning: boolean } = { isRunning: false };
+  let healthTask: DeferTaskHandle<void>;
+  let transportTask: DeferTaskHandle<void> | undefined;
 
-  // Start the health report
-  const healthTimer = healthReport({ isRunning: state.isRunning }, statsOptions);
-  let transportTimer: NodeJS.Timeout | undefined;
   let resolveStatsPromise: (value: Stats) => void;
 
   const statsPromise: Promise<Stats> = new Promise(resolve => {
@@ -146,16 +137,29 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
      * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server if available.
      */
     setStats: (httpHandle?: HttpServerHandle | null) => {
-      if (transportTimer) {
-        clearTimeout(transportTimer);
-      }
-
-      state.isRunning = true;
-
       const httpPort = options.isHttp ? httpHandle?.port : undefined;
       const stats = statsReport({ httpPort }, statsOptions);
 
-      transportTimer = transportReport({ httpPort, isRunning: state.isRunning }, statsOptions);
+      // Start the health report. Defining repeat as undefined keeps the loop infinite.
+      healthTask = deferTask(
+        () => healthReport({ isRunning: healthTask.isRunning }, statsOptions),
+        {
+          timeoutMs: statsOptions.reportIntervalMs.health,
+          repeat: undefined
+        }
+      );
+
+      // Start the transport report. Defining repeat as undefined keeps the loop infinite.
+      transportTask = deferTask(
+        () => transportReport({ httpPort, isRunning: transportTask?.isRunning }, statsOptions),
+        {
+          timeoutMs: statsOptions.reportIntervalMs.transport,
+          repeat: undefined
+        }
+      );
+
+      void healthTask.start();
+      void transportTask.start();
 
       resolveStatsPromise(stats);
     },
@@ -163,15 +167,7 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
     /**
      * Cleans up timers and resources.
      */
-    unsubscribe: () => {
-      state.isRunning = false;
-
-      if (transportTimer) {
-        clearTimeout(transportTimer);
-      }
-
-      clearTimeout(healthTimer);
-    }
+    unsubscribe: async () => Promise.allSettled([healthTask?.stop(), transportTask?.stop()])
   };
 };
 
