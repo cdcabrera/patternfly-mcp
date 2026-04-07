@@ -1,6 +1,6 @@
+import { stat, writeFile, rename } from 'node:fs/promises';
 import { buildDocs, needsUpdate } from '../docs.spider';
 import { runSpider } from '../docs.getResources';
-import { stat, writeFile, rename } from 'node:fs/promises';
 import { getOptions } from '../options.context';
 import { log } from '../logger';
 
@@ -33,20 +33,25 @@ describe('docs.spider', () => {
     it('should return true if file does not exist', async () => {
       mockStat.mockRejectedValue(new Error('ENOENT'));
       const result = await needsUpdate('/path/to/file', 1);
+
       expect(result).toBe(true);
     });
 
     it('should return true if file is older than expireDays', async () => {
       const oldTime = Date.now() - (2 * 24 * 60 * 60 * 1000);
+
       mockStat.mockResolvedValue({ mtimeMs: oldTime });
       const result = await needsUpdate('/path/to/file', 1);
+
       expect(result).toBe(true);
     });
 
     it('should return false if file is newer than expireDays', async () => {
       const newTime = Date.now() - (0.5 * 24 * 60 * 60 * 1000);
+
       mockStat.mockResolvedValue({ mtimeMs: newTime });
       const result = await needsUpdate('/path/to/file', 1);
+
       expect(result).toBe(false);
     });
   });
@@ -54,6 +59,7 @@ describe('docs.spider', () => {
   describe('buildDocs', () => {
     it('should skip update if not forced and not expired', async () => {
       const newTime = Date.now();
+
       mockStat.mockResolvedValue({ mtimeMs: newTime });
 
       await buildDocs();

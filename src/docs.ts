@@ -3,9 +3,9 @@ import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { createDocsLogger } from './docs.logger';
 import { createDocsStats, type Stats } from './docs.stats';
-import { stat, type StatReport } from './stats';
+import { type StatReport } from './stats';
 import { memo } from './server.caching';
-import { DEFAULT_OPTIONS } from './options.defaults';
+// import { DEFAULT_OPTIONS } from './options.defaults';
 // import { sendDocsHostShutdown } from './patternFly.docs';
 import { sendDocsHostShutdown } from './docs.spider';
 import { runSpider, type DocsSpider } from './docs.getResources';
@@ -93,7 +93,8 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
   enableSigint = true,
   allowProcessExit = true
 }: DocsSettings = {}): Promise<DocsInstance> => {
-  const session = getSessionOptions();
+  // const session = getSessionOptions();
+  getSessionOptions();
 
   let spider: DocsSpider | null = null;
   let unsubscribeDocsLogger: (() => void) | null = null;

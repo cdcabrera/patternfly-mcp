@@ -1,5 +1,5 @@
 import { getStatsOptions } from './options.context';
-import { publish, type StatReport } from './stats';
+import { publish } from './stats';
 import { type StatsSession, DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 
@@ -71,6 +71,7 @@ const createDocsStats = (statsOptions = getStatsOptions()) => {
   resolveStatsPromise!(statsReport(statsOptions));
 
   return {
+
     /**
      * Returns the docs stats and channel IDs.
      *

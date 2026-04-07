@@ -111,8 +111,8 @@ type DocsSpider = {
 /**
  * Run the documentation spider to build a catalog.
  *
- * @param baseUrl - The root API URL to start spidering from
- * @param version - The PatternFly version being spidered (e.g., 'v6')
+ * @param baseUrl - The root API URL to start crawling from
+ * @param version - The PatternFly version being crawled (e.g., 'v6')
  * @param options - Spider options
  * @param options.running - Callback to check if spider should continue
  * @param options.abortController - Optional AbortController for cancellation

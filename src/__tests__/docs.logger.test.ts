@@ -1,5 +1,5 @@
 import diagnostics_channel from 'node:diagnostics_channel';
-import { getDocsLoggerOptions, setOptions } from '../options.context';
+import { setOptions } from '../options.context';
 import { createDocsLogger } from '../docs.logger';
 import { log } from '../logger';
 
@@ -54,7 +54,9 @@ describe('createDocsLogger', () => {
     const mockHandlerOne = jest.fn();
     const mockHandlerTwo = jest.fn();
     const unsubscribeMockHandlerOne = subscribeCallOne(mockHandlerOne);
-    const unsubscribeMockHandlerTwo = subscribeCallTwo(mockHandlerTwo);
+
+    subscribeCallTwo(mockHandlerTwo);
+    // const unsubscribeMockHandlerTwo = ;
 
     log.debug('docs a');
 

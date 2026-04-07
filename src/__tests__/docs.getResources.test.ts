@@ -39,6 +39,7 @@ describe('docs.getResources', () => {
 
       expect(catalog.meta.totalDocs).toBe(1);
       const unifiedName = toCamelCase('button');
+
       expect(catalog.docs[unifiedName]).toBeDefined();
       expect(catalog.docs[unifiedName][0].category).toBe('react');
     });
@@ -82,6 +83,7 @@ describe('docs.getResources', () => {
       mockLoadFileFetch.mockResolvedValue({ content: JSON.stringify([]), resolvedPath: baseUrl });
 
       const start = Date.now();
+
       await spiderSegments(baseUrl, ['v6'], context, catalog);
       const duration = Date.now() - start;
 
@@ -92,6 +94,7 @@ describe('docs.getResources', () => {
   describe('runSpider', () => {
     it('should orchestrate the spider run and return a populated catalog', async () => {
       const baseUrl = 'https://api.test/v6';
+
       mockLoadFileFetch.mockResolvedValue({ content: JSON.stringify([]), resolvedPath: baseUrl });
 
       const catalog = await runSpider(baseUrl, 'v6', { running: () => true });

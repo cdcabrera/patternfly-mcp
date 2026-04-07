@@ -42,17 +42,19 @@ const buildDocs = async ({
   const apiOptions = patternflyOptions.api;
   const catalogPath = join(contextPath, 'src', 'api.json');
 
-  if (!force && !(await needsUpdate(catalogPath, apiOptions.expireDays))) {
+  if (!force && !await needsUpdate(catalogPath, apiOptions.expireDays)) {
     log.info('Build docs', 'Documentation catalog is up to date.');
+
     return;
   }
 
-  // Currently only v6 spidering is supported as per options
+  // Currently, only v6 crawling is supported as per options
   const version = 'v6';
   const baseUrl = apiOptions.endpoints[version];
 
   if (!baseUrl) {
     log.error('Build docs', `No API endpoint found for version ${version}`);
+
     return;
   }
 
@@ -61,11 +63,13 @@ const buildDocs = async ({
 
     if (!running()) {
       log.info('Build docs', 'Build docs cancelled.');
+
       return;
     }
 
     // Atomic write: write to .tmp then rename
     const tmpPath = `${catalogPath}.tmp`;
+
     await writeFile(tmpPath, JSON.stringify(catalog, null, 2));
     await rename(tmpPath, catalogPath);
 
