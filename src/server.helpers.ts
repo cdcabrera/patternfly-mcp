@@ -617,6 +617,7 @@ const buildSearchString = (
  * @param settings - Timeout settings
  * @param settings.timeout - Timeout in milliseconds (default: `10_000`)
  * @param settings.errorMessage - Error message to use if timeout occurs (default: `'Call timed out'`)
+ * @returns A Promise that resolves with the result of the function or Promise, or rejects with a timeout error
  */
 const timeoutFunction = async <TReturn>(
   func: Promise<TReturn> | (() => TReturn | Promise<TReturn>),

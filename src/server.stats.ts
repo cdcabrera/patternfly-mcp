@@ -39,17 +39,23 @@ interface Stats {
 /**
  * Reports server health metrics (e.g., memory usage and uptime).
  *
+ * @param params - Report parameters.
+ * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout} Timer handle for the recurring health report.
+ * @returns {NodeJS.Timeout|undefined} Timer handle for the recurring health report.
  */
-const healthReport = (statsOptions: StatsSession) => {
+const healthReport = ({ isRunning }: { isRunning?: boolean } = {}, statsOptions: StatsSession) => {
+  if (!isRunning) {
+    return undefined;
+  }
+
   publish('health', {
     memory: process.memoryUsage(),
     uptime: process.uptime()
   });
 
   return setTimeout(() => {
-    healthReport(statsOptions);
+    healthReport({ isRunning }, statsOptions);
   }, statsOptions?.reportIntervalMs.health).unref();
 };
 
@@ -81,17 +87,22 @@ const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, stats
  *
  * @param params - Report parameters.
  * @param params.httpPort - HTTP server port if available.
+ * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
- * @returns {NodeJS.Timeout} Timer handle for the recurring transport report.
+ * @returns {NodeJS.Timeout|undefined} Timer handle for the recurring transport report.
  */
-const transportReport = ({ httpPort }: { httpPort?: number | undefined } = {}, statsOptions: StatsSession) => {
+const transportReport = ({ httpPort, isRunning }: { httpPort?: number | undefined, isRunning?: boolean } = {}, statsOptions: StatsSession) => {
+  if (!isRunning) {
+    return undefined;
+  }
+
   publish('transport', {
     method: httpPort ? 'http' : 'stdio',
     port: httpPort
   });
 
   return setTimeout(() => {
-    transportReport({ httpPort }, statsOptions);
+    transportReport({ httpPort, isRunning }, statsOptions);
   }, statsOptions?.reportIntervalMs.transport).unref();
 };
 
@@ -108,8 +119,11 @@ const transportReport = ({ httpPort }: { httpPort?: number | undefined } = {}, s
  *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
+  // Fallback for canceled timers
+  const state: { isRunning: boolean } = { isRunning: false };
+
   // Start the health report
-  const healthTimer = healthReport(statsOptions);
+  const healthTimer = healthReport({ isRunning: state.isRunning }, statsOptions);
   let transportTimer: NodeJS.Timeout | undefined;
   let resolveStatsPromise: (value: Stats) => void;
 
@@ -136,10 +150,12 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
         clearTimeout(transportTimer);
       }
 
+      state.isRunning = true;
+
       const httpPort = options.isHttp ? httpHandle?.port : undefined;
       const stats = statsReport({ httpPort }, statsOptions);
 
-      transportTimer = transportReport({ httpPort }, statsOptions);
+      transportTimer = transportReport({ httpPort, isRunning: state.isRunning }, statsOptions);
 
       resolveStatsPromise(stats);
     },
@@ -148,6 +164,8 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
      * Cleans up timers and resources.
      */
     unsubscribe: () => {
+      state.isRunning = false;
+
       if (transportTimer) {
         clearTimeout(transportTimer);
       }
