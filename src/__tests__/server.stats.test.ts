@@ -65,11 +65,11 @@ describe('createServerStats', () => {
     jest.useRealTimers();
   });
 
-  it('should resolve stats promise after setStats is called', async () => {
+  it('should resolve stats promise after startStats is called', async () => {
     const tracker = createServerStats(statsOptions, { isHttp: true } as any);
     const httpHandle = { port: 9999, close: jest.fn() };
 
-    tracker.setStats(httpHandle as any);
+    tracker.startStats(httpHandle as any);
 
     const stats = await tracker.getStats();
 
@@ -81,7 +81,7 @@ describe('createServerStats', () => {
 
   it('should correctly clean up timers on unsubscribe', () => {
     const tracker = createServerStats();
-    const spy = jest.spyOn(global, 'clearTimeout');
+    const spy = jest.spyOn(Promise, 'allSettled');
 
     tracker.unsubscribe();
 

@@ -13,11 +13,9 @@ describe('healthReport', () => {
 
     channel.subscribe(handler);
 
-    const report = healthReport(statsOptions);
+    healthReport({ isRunning: () => true }, statsOptions);
 
     expect(Object.keys(handler.mock.calls[0][0])).toEqual(expect.arrayContaining(['timestamp', 'type', 'memory', 'uptime']));
-
-    clearTimeout(report);
   });
 });
 
@@ -44,8 +42,10 @@ describe('createDocsStats', () => {
     jest.useRealTimers();
   });
 
-  it('should resolve stats promise immediately', async () => {
+  it('should resolve stats promise after startStats is called', async () => {
     const tracker = createDocsStats(statsOptions);
+
+    tracker.startStats();
 
     const stats = await tracker.getStats();
 
@@ -56,7 +56,7 @@ describe('createDocsStats', () => {
 
   it('should correctly clean up timers on unsubscribe', () => {
     const tracker = createDocsStats();
-    const spy = jest.spyOn(global, 'clearTimeout');
+    const spy = jest.spyOn(Promise, 'allSettled');
 
     tracker.unsubscribe();
 

@@ -2,6 +2,7 @@ import { getStatsOptions } from './options.context';
 import { publish } from './stats';
 import { type StatsSession, DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
+import { deferTask, type DeferTaskHandle } from './server.task';
 
 /**
  * Documentation build stats.
@@ -22,18 +23,20 @@ interface DocsStats {
 /**
  * Reports docs health metrics.
  *
+ * @param params - Report parameters.
+ * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
  * @returns {NodeJS.Timeout} Timer handle for the recurring health report.
  */
-const healthReport = (statsOptions: StatsSession) => {
+const healthReport = ({ isRunning }: { isRunning?: undefined | (() => boolean) } = {}, statsOptions: StatsSession) => {
+  if (isRunning === undefined || !isRunning()) {
+    return;
+  }
+
   publish('health', {
     memory: process.memoryUsage(),
     uptime: process.uptime()
   }, statsOptions);
-
-  return setTimeout(() => {
-    healthReport(statsOptions);
-  }, statsOptions?.reportIntervalMs.health).unref();
 };
 
 /**
@@ -59,16 +62,13 @@ const statsReport = (statsOptions: StatsSession): DocsStats => ({
  *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createDocsStats = (statsOptions = getStatsOptions()) => {
-  // Start the health report
-  const healthTimer = healthReport(statsOptions);
-  let resolveStatsPromise: (value: DocsStats) => void;
+  let healthTask: DeferTaskHandle<void>;
+
+  let resolveStatsPromise: ((value: DocsStats) => void);
 
   const statsPromise: Promise<DocsStats> = new Promise(resolve => {
     resolveStatsPromise = resolve;
   });
-
-  // Immediately resolve with current report
-  resolveStatsPromise!(statsReport(statsOptions));
 
   return {
 
@@ -80,11 +80,27 @@ const createDocsStats = (statsOptions = getStatsOptions()) => {
     getStats: (): Promise<DocsStats> => statsPromise,
 
     /**
+     * Start the report timer.
+     */
+    startStats: () => {
+      const stats = statsReport(statsOptions);
+
+      // Start the health report. Defining repeat as undefined keeps the loop infinite.
+      healthTask = deferTask(() => healthReport({ isRunning: healthTask.isRunning }, statsOptions), {
+        timeoutMs: statsOptions.reportIntervalMs.health,
+        repeat: undefined // Infinite
+      });
+
+      void healthTask.start();
+
+      // Immediately resolve with current report
+      resolveStatsPromise(stats);
+    },
+
+    /**
      * Cleans up timers and resources.
      */
-    unsubscribe: () => {
-      clearTimeout(healthTimer);
-    }
+    unsubscribe: async () => Promise.allSettled([healthTask?.stop()])
   };
 };
 

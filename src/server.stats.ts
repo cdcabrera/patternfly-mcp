@@ -136,7 +136,7 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
      *
      * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server if available.
      */
-    setStats: (httpHandle?: HttpServerHandle | null) => {
+    startStats: (httpHandle?: HttpServerHandle | null) => {
       const httpPort = options.isHttp ? httpHandle?.port : undefined;
       const stats = statsReport({ httpPort }, statsOptions);
 
