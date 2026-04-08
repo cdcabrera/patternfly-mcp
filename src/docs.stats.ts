@@ -1,6 +1,6 @@
 import { getStatsOptions } from './options.context';
 import { publish } from './stats';
-import { type StatsSession } from './options.defaults';
+import {DEFAULT_OPTIONS, type StatsSession} from './options.defaults';
 import { deferTask, type DeferTaskHandle } from './server.task';
 
 /**
@@ -22,21 +22,25 @@ interface DocsStats {
 /**
  * Reports docs health metrics.
  *
- * @param params - Report parameters.
- * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
  * @returns {NodeJS.Timeout} Timer handle for the recurring health report.
  */
-const healthReport = ({ isRunning }: { isRunning?: undefined | (() => boolean) } = {}, statsOptions: StatsSession) => {
-  if (isRunning === undefined || !isRunning()) {
-    return;
-  }
-
+const healthReport = (statsOptions: StatsSession) => {
   publish('health', {
     memory: process.memoryUsage(),
     uptime: process.uptime()
   }, statsOptions);
 };
+
+/**
+ * Task for `healthReport`.
+ *
+ * @note `undefined` repeat means the task will run indefinitely.
+ */
+healthReport.deferTask = deferTask(healthReport, {
+  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
+  repeat: undefined
+});
 
 /**
  * Creates a docs stats report object.
@@ -85,10 +89,7 @@ const createDocsStats = (statsOptions = getStatsOptions()) => {
       const stats = statsReport(statsOptions);
 
       // Start the health report. Defining repeat as undefined keeps the loop infinite.
-      healthTask = deferTask(() => healthReport({ isRunning: healthTask.isRunning }, statsOptions), {
-        timeoutMs: statsOptions.reportIntervalMs.health,
-        repeat: undefined // Infinite
-      });
+      healthTask = healthReport.deferTask(statsOptions);
 
       void healthTask.start();
 

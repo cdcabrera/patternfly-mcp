@@ -24,7 +24,7 @@ type DeferTaskDebugHandler = (info: { type: string; value: unknown; [key: string
  */
 interface DeferTaskHandle<TReturn> {
   isRunning: () => boolean;
-  start: () => Promise<TReturn>;
+  start: () => Promise<TReturn | undefined>;
   stop: () => Promise<void>;
 }
 
@@ -70,7 +70,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     const state: {
       isRunning: boolean;
       count: number;
-      promise?: Promise<TReturn> | undefined
+      promise?: Promise<TReturn | undefined> | undefined
     } = {
       isRunning: true,
       count: 0,
@@ -78,11 +78,11 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     };
 
     // Run, repeat, or return passed func.
-    const task = async (): Promise<TReturn> => {
+    const task = async (): Promise<TReturn | undefined> => {
       state.count += 1;
 
       const shouldRepeat = state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat);
-      const startFunc = timeoutFunction(() => updatedFunc(...args), {
+      const startFunc = timeoutFunction(() => (state.isRunning ? updatedFunc(...args) : undefined), {
         timeout: updatedTimeoutMs,
         errorMessage
       });
@@ -123,7 +123,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       },
       start: async () => {
         state.isRunning = true;
-        let updatedTask: Promise<TReturn>;
+        let updatedTask: Promise<TReturn | undefined>;
 
         debug({
           type: 'start',

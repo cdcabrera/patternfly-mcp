@@ -35,7 +35,7 @@ describe('deferTask', () => {
     }
   ])('should execute a task, $description', async ({ mockFunc, options, expected }) => {
     const debug = jest.fn();
-    const handle = deferTask(mockFunc, { debug, timeoutMs: 10, ...options });
+    const handle = deferTask(mockFunc, { debug, timeoutMs: 10, ...options })();
 
     handle.isRunning();
     const result = await handle.start();
@@ -48,7 +48,7 @@ describe('deferTask', () => {
   it('should stop a task', async () => {
     const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockReturnValue('stopped');
-    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 5, timeoutMs: 100 });
+    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 5, timeoutMs: 100 })();
 
     handle.start();
     expect(handle.isRunning()).toBe(true);
@@ -63,7 +63,7 @@ describe('deferTask', () => {
 
   it('should cancel a task', async () => {
     const mockFunc = jest.fn().mockReturnValue('lorem ipsum');
-    const handle = deferTask(mockFunc, { repeat: 3, cancelMs: 100, timeoutMs: 200 });
+    const handle = deferTask(mockFunc, { repeat: 3, cancelMs: 100, timeoutMs: 200 })();
 
     handle.start();
 
@@ -74,7 +74,7 @@ describe('deferTask', () => {
   it('should enforce a timeout', async () => {
     const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 500)));
-    const handle = deferTask(mockFunc, { debug: mockDebug, timeoutMs: 100, errorMessage: 'Too slow' });
+    const handle = deferTask(mockFunc, { debug: mockDebug, timeoutMs: 100, errorMessage: 'Too slow' })();
 
     const result = handle.start();
 

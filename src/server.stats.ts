@@ -4,7 +4,7 @@ import {
 } from './options.context';
 import { type HttpServerHandle } from './server.http';
 import { publish, type StatReport } from './stats';
-import { type StatsSession } from './options.defaults';
+import { DEFAULT_OPTIONS, type StatsSession } from './options.defaults';
 import { deferTask, type DeferTaskHandle } from './server.task';
 
 /**
@@ -40,20 +40,24 @@ interface Stats {
 /**
  * Reports server health metrics (e.g., memory usage and uptime).
  *
- * @param params - Report parameters.
- * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
  */
-const healthReport = ({ isRunning }: { isRunning?: undefined | (() => boolean) } = {}, statsOptions: StatsSession) => {
-  if (isRunning === undefined || !isRunning()) {
-    return;
-  }
-
+const healthReport = (statsOptions: StatsSession) => {
   publish('health', {
     memory: process.memoryUsage(),
     uptime: process.uptime()
   }, statsOptions);
 };
+
+/**
+ * Task for `healthReport`.
+ *
+ * @note `undefined` repeat means the task will run indefinitely.
+ */
+healthReport.deferTask = deferTask(healthReport, {
+  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
+  repeat: undefined
+});
 
 /**
  * Creates a server stats report object.
@@ -83,22 +87,27 @@ const statsReport = ({ httpPort }: { httpPort?: number | undefined } = {}, stats
  *
  * @param params - Report parameters.
  * @param params.httpPort - HTTP server port if available.
- * @param params.isRunning - Are stats running?
  * @param statsOptions - Session-specific stats options.
  */
 const transportReport = (
-  { httpPort, isRunning }: { httpPort?: number | undefined, isRunning?: undefined | (() => boolean) } = {},
+  { httpPort }: { httpPort?: number | undefined } = {},
   statsOptions: StatsSession
 ) => {
-  if (isRunning === undefined || !isRunning()) {
-    return;
-  }
-
   publish('transport', {
     method: httpPort ? 'http' : 'stdio',
     port: httpPort
   }, statsOptions);
 };
+
+/**
+ * Task for `transportReport`.
+ *
+ * @note `undefined` repeat means the task will run indefinitely.
+ */
+transportReport.deferTask = deferTask(transportReport, {
+  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
+  repeat: undefined
+});
 
 /**
  * Creates a telemetry tracker for a server instance.
@@ -141,22 +150,10 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
       const stats = statsReport({ httpPort }, statsOptions);
 
       // Start the health report. Defining repeat as undefined keeps the loop infinite.
-      healthTask = deferTask(
-        () => healthReport({ isRunning: healthTask.isRunning }, statsOptions),
-        {
-          timeoutMs: statsOptions.reportIntervalMs.health,
-          repeat: undefined
-        }
-      );
+      healthTask = healthReport.deferTask(statsOptions);
 
       // Start the transport report. Defining repeat as undefined keeps the loop infinite.
-      transportTask = deferTask(
-        () => transportReport({ httpPort, isRunning: transportTask?.isRunning }, statsOptions),
-        {
-          timeoutMs: statsOptions.reportIntervalMs.transport,
-          repeat: undefined
-        }
-      );
+      transportTask = transportReport.deferTask({ httpPort }, statsOptions);
 
       void healthTask.start();
       void transportTask.start();

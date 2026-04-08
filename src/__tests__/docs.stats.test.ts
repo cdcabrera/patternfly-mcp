@@ -13,7 +13,7 @@ describe('healthReport', () => {
 
     channel.subscribe(handler);
 
-    healthReport({ isRunning: () => true }, statsOptions);
+    healthReport(statsOptions);
 
     expect(Object.keys(handler.mock.calls[0][0])).toEqual(expect.arrayContaining(['timestamp', 'type', 'memory', 'uptime']));
   });
