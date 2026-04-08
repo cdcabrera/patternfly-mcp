@@ -1,4 +1,4 @@
-import { timeoutFunction } from './server.helpers';
+import {isAsync, isPromise, timeoutFunction} from './server.helpers';
 import { log } from './logger';
 
 /**
@@ -51,8 +51,8 @@ interface DeferTaskOptions {
  * @param func - The function or promise to be run
  * @param {DeferTaskOptions} [options={}] - Configurable options.
  */
-const deferTask = <TReturn>(
-  func: (() => TReturn | Promise<TReturn>) | Promise<TReturn>,
+const deferTask = <TArgs extends unknown[], TReturn>(
+  func: ((...args: TArgs) => TReturn | Promise<TReturn>) | Promise<TReturn>,
   {
     cancelMs,
     debug = () => {},
@@ -60,96 +60,108 @@ const deferTask = <TReturn>(
     timeoutMs,
     errorMessage = 'Task timed out'
   }: DeferTaskOptions = {}
-): DeferTaskHandle<TReturn> => {
+) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
   const updatedTimeoutMs = timeoutMs ?? 1000;
-  const state: { isRunning: boolean; count: number; promise?: Promise<TReturn> | undefined } = {
-    isRunning: true,
-    count: 0,
-    promise: undefined
-  };
+  const updatedFunc = async (...args: TArgs) =>
+    (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
 
-  // Run, repeat, or return passed func.
-  const task = async (): Promise<TReturn> => {
-    state.count += 1;
+  return (...args: TArgs): DeferTaskHandle<TReturn> => {
+    const state: {
+      isRunning: boolean;
+      count: number;
+      promise?: Promise<TReturn> | undefined
+    } = {
+      isRunning: true,
+      count: 0,
+      promise: undefined
+    };
 
-    const shouldRepeat = state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat);
-    const startFunc = timeoutFunction(func, { timeout: updatedTimeoutMs, errorMessage });
+    // Run, repeat, or return passed func.
+    const task = async (): Promise<TReturn> => {
+      state.count += 1;
 
-    debug({
-      type: 'run',
-      value: () => ({ ...state })
-    });
-
-    const result = await startFunc.catch(error => {
-      state.isRunning = false;
-
-      debug({
-        type: 'run:error',
-        value: () => ({ ...state, error })
+      const shouldRepeat = state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat);
+      const startFunc = timeoutFunction(() => updatedFunc(...args), {
+        timeout: updatedTimeoutMs,
+        errorMessage
       });
 
-      log.error('Defer task error', error);
-
-      return Promise.reject(error);
-    });
-
-    if (shouldRepeat) {
-      return task();
-    }
-
-    return result;
-  };
-
-  return {
-    isRunning: () => {
       debug({
-        type: 'isRunning',
+        type: 'run',
         value: () => ({ ...state })
       });
 
-      return state.isRunning;
-    },
-    start: async () => {
-      state.isRunning = true;
-      let updatedTask: Promise<TReturn>;
+      const result = await startFunc.catch(error => {
+        state.isRunning = false;
 
-      debug({
-        type: 'start',
-        value: () => ({ ...state })
-      });
-
-      if (cancelMs !== undefined) {
-        updatedTask = timeoutFunction(() => {
-          state.isRunning = false;
-
-          return task();
-        }, { timeout: cancelMs, errorMessage: 'Task canceled' });
-      } else {
-        updatedTask = task();
-      }
-
-      state.promise = updatedTask;
-
-      return state.promise;
-    },
-    stop: async () => {
-      state.isRunning = false;
-
-      debug({
-        type: 'stop',
-        value: () => ({ ...state })
-      });
-
-      await state.promise?.catch(error => {
         debug({
-          type: 'stop:error',
+          type: 'run:error',
           value: () => ({ ...state, error })
         });
 
-        console.error('Defer task stopped with error', error);
+        log.error('Defer task error', error);
+
+        return Promise.reject(error);
       });
-    }
+
+      if (shouldRepeat) {
+        return task();
+      }
+
+      return result;
+    };
+
+    return {
+      isRunning: () => {
+        debug({
+          type: 'isRunning',
+          value: () => ({ ...state })
+        });
+
+        return state.isRunning;
+      },
+      start: async () => {
+        state.isRunning = true;
+        let updatedTask: Promise<TReturn>;
+
+        debug({
+          type: 'start',
+          value: () => ({ ...state })
+        });
+
+        if (cancelMs !== undefined) {
+          updatedTask = timeoutFunction(() => {
+            state.isRunning = false;
+
+            return task();
+          }, { timeout: cancelMs, errorMessage: 'Task canceled' });
+        } else {
+          updatedTask = task();
+        }
+
+        state.promise = updatedTask;
+
+        return state.promise;
+      },
+      stop: async () => {
+        state.isRunning = false;
+
+        debug({
+          type: 'stop',
+          value: () => ({ ...state })
+        });
+
+        await state.promise?.catch(error => {
+          debug({
+            type: 'stop:error',
+            value: () => ({ ...state, error })
+          });
+
+          console.error('Defer task stopped with error', error);
+        });
+      }
+    };
   };
 };
 
