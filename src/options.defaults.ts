@@ -209,10 +209,7 @@ interface PatternFlyOptions {
   },
   api: {
     expireDays: number;
-    endpoints: {
-      v6: WhitelistUrl;
-      v5?: WhitelistUrl;
-    }
+    endpoints: WhitelistUrl[];
   },
   urlWhitelist: WhitelistUrl[];
   urlWhitelistProtocols: string[];
@@ -467,9 +464,9 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   },
   api: {
     expireDays: 14,
-    endpoints: {
-      v6: 'https://patternfly-doc-core.pages.dev/api/v6'
-    }
+    endpoints: [
+      'https://patternfly-doc-core.pages.dev/api/v6'
+    ]
   },
   urlWhitelist: [
     'https://patternfly.org',
