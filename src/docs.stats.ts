@@ -1,7 +1,6 @@
 import { getStatsOptions } from './options.context';
 import { publish } from './stats';
-import { type StatsSession, DEFAULT_OPTIONS } from './options.defaults';
-import { memo } from './server.caching';
+import { type StatsSession } from './options.defaults';
 import { deferTask, type DeferTaskHandle } from './server.task';
 
 /**
@@ -103,10 +102,5 @@ const createDocsStats = (statsOptions = getStatsOptions()) => {
     unsubscribe: async () => Promise.allSettled([healthTask?.stop()])
   };
 };
-
-/**
- * Memoize the docs stats.
- */
-createDocsStats.memo = memo(createDocsStats, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 export { createDocsStats, healthReport, statsReport, type DocsStats as Stats };
