@@ -1,5 +1,10 @@
 import { log, type LogEvent } from './logger';
-import { getOptions, getSessionOptions } from './options.context';
+import {
+  getOptions,
+  getSessionOptions,
+  runWithOptions,
+  runWithSession
+} from './options.context';
 import { type GlobalOptions } from './options';
 import { createDocsLogger } from './docs.logger';
 import { createDocsStats, type Stats } from './docs.stats';
@@ -93,15 +98,13 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
   enableSigint = true,
   allowProcessExit = true
 }: DocsSettings = {}): Promise<DocsInstance> => {
-  // const session = getSessionOptions();
-  getSessionOptions();
+  const session = getSessionOptions();
 
   let spider: DocsSpider | null = null;
   let unsubscribeDocsLogger: (() => void) | null = null;
   let unsubscribeDocsStats: (() => void) | null = null;
   let sigintHandler: (() => void) | null = null;
   let running = false;
-  const abortController = new AbortController();
   let onLogSetup: DocsOnLog = () => () => {};
   let getStatsSetup: DocsGetStats = () => Promise.resolve({} as DocsStats);
 
@@ -117,7 +120,7 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
       }
 
       log.debug('...closing docs build');
-      await spider?.close();
+      await spider?.stop();
       running = false;
 
       await sendDocsHostShutdown();
@@ -147,6 +150,8 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
 
     const statsTracker = createDocsStats();
 
+    statsTracker.startStats();
+
     log.info(`Docs stats enabled.`);
 
     if (loggerSubUnsub) {
@@ -174,23 +179,13 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
       process.on('SIGINT', sigintHandler);
     }
 
-    running = true;
-
     log.info(`${options.name} PatternFly docs build running`);
 
-    const version = 'v6';
-    const baseUrl = options.patternflyOptions.api.endpoints[version];
-
-    spider = {
-      close: async () => {
-        abortController.abort();
-      }
-    };
-
-    void runSpider(baseUrl, version, {
-      running: () => running,
-      abortController
-    });
+    runWithSession(session, () =>
+      runWithOptions(options, () => {
+        spider = runSpider();
+        running = spider?.isRunning();
+      }));
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
     throw error;
@@ -202,7 +197,7 @@ const runDocs = async (options: GlobalOptions = getOptions(), {
     },
 
     isRunning(): boolean {
-      return running;
+      return spider?.isRunning();
     },
 
     async getStats(): Promise<DocsStats> {
