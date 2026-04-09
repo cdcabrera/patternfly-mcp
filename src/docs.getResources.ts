@@ -148,6 +148,8 @@ const runSpider = async (
 
   log.info('Build docs', `Starting API spider for PatternFly ${version} at ${baseUrl}`);
 
+  // Review, let's avoid abortcontroller and just return stop/cancel from spider segments
+  // we've created a level of prop drilling that needs to be addressed/removed
   await spiderSegments(baseUrl, [version], context, catalog);
 
   log.info('Build docs', `API spider completed. Added ${catalog.meta.totalDocs} documents.`);
