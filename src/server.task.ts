@@ -1,4 +1,4 @@
-import {isAsync, isPromise, timeoutFunction} from './server.helpers';
+import { isAsync, isPromise, timeoutFunction } from './server.helpers';
 import { log } from './logger';
 
 /**
@@ -79,10 +79,24 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
     // Run, repeat, or return passed func.
     const task = async (): Promise<TReturn | undefined> => {
-      state.count += 1;
 
       const shouldRepeat = state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat);
-      const startFunc = timeoutFunction(() => (state.isRunning ? updatedFunc(...args) : undefined), {
+      // const startFunc = timeoutFunction(() => (state.isRunning ? updatedFunc(...args) : Promise.reject(new Error('Canceled'))), {
+      const startFunc = timeoutFunction(() => {
+        if (state.isRunning) {
+          state.count += 1;
+
+          return updatedFunc(...args);
+        }
+
+        debug({
+          type: 'run:stopped',
+          value: () => ({ ...state })
+        });
+
+        // return Promise.resolve(undefined);
+        return undefined;
+      }, {
         timeout: updatedTimeoutMs,
         errorMessage
       });
@@ -132,10 +146,26 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
         if (cancelMs !== undefined) {
           updatedTask = timeoutFunction(() => {
+            const response = task();
+
             state.isRunning = false;
 
-            return task();
-          }, { timeout: cancelMs, errorMessage: 'Task canceled' });
+            return response;
+          }, {
+            timeout: cancelMs,
+            errorMessage: 'Task canceled'
+          }).catch(error => {
+            state.isRunning = false;
+
+            debug({
+              type: 'run:cancel',
+              value: () => ({ ...state, error })
+            });
+
+            log.error('Defer task canceled', error);
+
+            return Promise.reject(error);
+          });
         } else {
           updatedTask = task();
         }
