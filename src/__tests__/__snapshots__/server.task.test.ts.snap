@@ -1,5 +1,42 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`deferTask should cancel a task 1`] = `
+[
+  {
+    "type": "start",
+    "value": {
+      "count": 1,
+      "isRunning": false,
+      "promise": Promise {},
+    },
+  },
+  {
+    "type": "run",
+    "value": {
+      "count": 1,
+      "isRunning": false,
+      "promise": Promise {},
+    },
+  },
+  {
+    "type": "run:stopped",
+    "value": {
+      "count": 1,
+      "isRunning": false,
+      "promise": Promise {},
+    },
+  },
+  {
+    "type": "run",
+    "value": {
+      "count": 1,
+      "isRunning": false,
+      "promise": Promise {},
+    },
+  },
+]
+`;
+
 exports[`deferTask should enforce a timeout 1`] = `
 [
   [

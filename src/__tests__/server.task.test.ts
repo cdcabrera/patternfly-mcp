@@ -57,15 +57,20 @@ describe('deferTask', () => {
     expect(handle.isRunning()).toBe(false);
 
     expect(mockDebug.mock.calls).toMatchSnapshot();
-
     expect(mockFunc).toHaveBeenCalledTimes(1);
   });
 
   it('should cancel a task', async () => {
+    const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockReturnValue('lorem ipsum');
-    const handle = deferTask(mockFunc, { repeat: 3, cancelMs: 100, timeoutMs: 200 })();
+    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 3, cancelMs: 100, timeoutMs: 110 })();
 
-    handle.start();
+    await Promise.allSettled([
+      handle.start(),
+      jest.advanceTimersByTimeAsync(85)
+    ]);
+
+    expect(mockDebug.mock.calls.map(arr => ({ type: arr[0].type, value: arr[0].value() }))).toMatchSnapshot();
 
     expect(handle.isRunning()).toBe(false);
     expect(mockFunc).toHaveBeenCalledTimes(1);
