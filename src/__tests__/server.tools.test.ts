@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { resolve } from 'node:path';
 import { spawn } from 'child_process';
 import { log } from '../logger';
@@ -579,9 +580,9 @@ describe('composeTools', () => {
   const MockLog = jest.mocked(log);
 
   // Mock default creators
-  const loremIpsum = () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}];
-  const dolorSitAmet = () => ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: {} }, () => {}];
-  const consecteturAdipiscingElit = () => ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: {} }, () => {}];
+  const loremIpsum = () => ['loremIpsum', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
+  const dolorSitAmet = () => ['dolorSitAmet', { description: 'dolor sit amet', inputSchema: z.object({}) }, () => {}];
+  const consecteturAdipiscingElit = () => ['consecteturAdipiscingElit', { description: 'consectetur adipiscing elit', inputSchema: z.object({}) }, () => {}];
 
   loremIpsum.toolName = 'loremIpsum';
   dolorSitAmet.toolName = 'dolorSitAmet';
@@ -615,13 +616,13 @@ describe('composeTools', () => {
       nodeVersion: 22,
       modules: [
         (() => {
-          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}];
+          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
 
           (testing as any).toolName = 'lorem';
 
           return testing;
         })(),
-        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
+        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} }
       ],
       expectedModuleCount: 5
     },
@@ -629,8 +630,8 @@ describe('composeTools', () => {
       description: 'inline creators, missing toolNames',
       nodeVersion: 22,
       modules: [
-        () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
-        () => ['dolor', { description: 'sit amet', inputSchema: { type: 'object', properties: {} } }, () => {}]
+        () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}],
+        () => ['dolor', { description: 'sit amet', inputSchema: z.object({}) }, () => {}]
       ],
       expectedModuleCount: 3
     },
@@ -639,14 +640,14 @@ describe('composeTools', () => {
       nodeVersion: 22,
       modules: [
         (() => {
-          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}];
+          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
 
           (testing as any).toolName = 'lorem';
 
           return testing;
         })(),
-        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
-        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
+        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} }
       ],
       expectedModuleCount: 5
     },
@@ -685,13 +686,13 @@ describe('composeTools', () => {
       nodeVersion: 22,
       modules: [
         (() => {
-          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}];
+          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
 
           (testing as any).toolName = 'lorem';
 
           return testing;
         })(),
-        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools'
       ],
@@ -701,7 +702,7 @@ describe('composeTools', () => {
       description: 'inline and file package creators duplicate builtin creators',
       nodeVersion: 22,
       modules: [
-        ['loremIpsum', { description: 'lorem ipsum', inputSchema: {} }, () => {}],
+        ['loremIpsum', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}],
         'dolorSitAmet'
       ],
       expectedModuleCount: 3
@@ -710,8 +711,8 @@ describe('composeTools', () => {
       description: 'inline and file package creators, duplicates',
       nodeVersion: 22,
       modules: [
-        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: {}, handler: () => {} },
-        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: z.object({}), handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools',
         'DOLOR   '
@@ -722,8 +723,8 @@ describe('composeTools', () => {
       description: 'inline and file package creators, duplicates, Node.js 20',
       nodeVersion: 20,
       modules: [
-        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: {}, handler: () => {} },
-        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} },
+        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: z.object({}), handler: () => {} },
+        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools',
         'DOLOR   '

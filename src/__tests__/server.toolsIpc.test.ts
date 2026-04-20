@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { type ChildProcess } from 'node:child_process';
 import {
   send,
@@ -211,7 +212,7 @@ describe('isManifestResult', () => {
         t: 'manifest:result',
         id: 'test-id',
         tools: [
-          { id: 'tool1', name: 'Tool1', description: 'Description', inputSchema: {} }
+          { id: 'tool1', name: 'Tool1', description: 'Description', inputSchema: z.object({}) }
         ]
       },
       expectedId: 'test-id',

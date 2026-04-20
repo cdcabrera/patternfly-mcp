@@ -100,11 +100,11 @@ describe('normalizeTupleSchema', () => {
   it.each([
     {
       description: 'valid JSON schema with description',
-      schema: { description: '  hello  ', inputSchema: { type: 'object', properties: {} } }
+      schema: { description: '  hello  ', inputSchema: z.object({}) }
     },
     {
       description: 'valid JSON schema without description',
-      schema: { inputSchema: { type: 'object', properties: {} } }
+      schema: { inputSchema: z.object({}) }
     },
     {
       description: 'non-object',
@@ -133,7 +133,7 @@ describe('normalizeTuple', () => {
   it.each([
     {
       description: 'basic',
-      tuple: ['loremIpsum', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}]
+      tuple: ['loremIpsum', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}]
     },
     {
       description: 'untrimmed name, zod schema, async handler',
@@ -174,7 +174,7 @@ describe('normalizeObject', () => {
   it.each([
     {
       description: 'basic',
-      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
+      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: z.object({}), handler: () => {} }
     },
     {
       description: 'untrimmed name, zod schema, async handler',
@@ -573,27 +573,27 @@ describe('normalizeTools', () => {
     },
     {
       description: 'inline function',
-      config: () => ['a', { inputSchema: {} }, () => {}]
+      config: () => ['a', { inputSchema: z.object({}) }, () => {}]
     },
     {
       description: 'array of inline function',
-      config: [() => ['a', { inputSchema: {} }, () => {}]]
+      config: [() => ['a', { inputSchema: z.object({}) }, () => {}]]
     },
     {
       description: 'inline tuple',
-      config: ['a', { description: 'a', inputSchema: {} }, () => {}]
+      config: ['a', { description: 'a', inputSchema: z.object({}) }, () => {}]
     },
     {
       description: 'inline object',
-      config: { name: 'a', description: 'a', inputSchema: {}, handler: () => {} }
+      config: { name: 'a', description: 'a', inputSchema: z.object({}), handler: () => {} }
     },
     {
       description: 'array of inline configurations',
       config: [
         './fixtures/tool.mjs',
-        () => ['a', { inputSchema: {} }, () => {}],
-        { name: 'b', description: 'b', inputSchema: {}, handler: () => {} },
-        ['c', { description: 'c', inputSchema: {} }, () => {}]
+        () => ['a', { inputSchema: z.object({}) }, () => {}],
+        { name: 'b', description: 'b', inputSchema: z.object({}), handler: () => {} },
+        ['c', { description: 'c', inputSchema: z.object({}) }, () => {}]
       ]
     }
   ])('should use memoization consistently with contextPath and contextUrl results, $description', ({ config }) => {
