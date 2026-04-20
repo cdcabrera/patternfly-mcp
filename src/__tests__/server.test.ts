@@ -181,6 +181,31 @@ describe('runServer', () => {
     await serverInstance.stop();
   });
 
+  it('should skip registration of internal tools with non-Zod schemas', async () => {
+    const tools = [
+      jest.fn().mockReturnValue([
+        'badTool',
+        { description: 'Bad Tool', inputSchema: {} },
+        jest.fn()
+      ])
+    ];
+
+    const serverInstance = await runServer(
+      { ...DEFAULT_OPTIONS, name: 'test-skip-server' } as any,
+      { tools, allowProcessExit: false }
+    );
+
+    expect(mockServer.registerTool).not.toHaveBeenCalledWith(
+      expect.stringContaining('badTool')
+    );
+
+    expect(MockLog.warn).toHaveBeenCalledWith(
+      expect.stringContaining('has a non Zod inputSchema. Skipping registration.')
+    );
+
+    await serverInstance.stop();
+  });
+
   it.each([
     {
       description: 'stdio stop server',
