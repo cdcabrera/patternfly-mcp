@@ -324,13 +324,49 @@ describe('makeProxyCreators', () => {
       tools: []
     },
     {
-      description: 'basic',
+      description: 'plain object',
+      tools: [
+        {
+          id: 'loremIpsum',
+          name: 'Lorem Ipsum',
+          description: 'Lorem ipsum dolor sit amet',
+          inputSchema: {},
+          source: ''
+        }
+      ]
+    },
+    {
+      description: 'JSON schema',
+      tools: [
+        {
+          id: 'loremIpsum',
+          name: 'Lorem Ipsum',
+          description: 'Lorem ipsum dolor sit amet',
+          inputSchema: { type: 'object', prop: {} },
+          source: ''
+        }
+      ]
+    },
+    {
+      description: 'Zod',
       tools: [
         {
           id: 'loremIpsum',
           name: 'Lorem Ipsum',
           description: 'Lorem ipsum dolor sit amet',
           inputSchema: z.object({}),
+          source: ''
+        }
+      ]
+    },
+    {
+      description: 'raw Zod',
+      tools: [
+        {
+          id: 'loremIpsum',
+          name: 'Lorem Ipsum',
+          description: 'Lorem ipsum dolor sit amet',
+          inputSchema: { prop: z.object({}) },
           source: ''
         }
       ]

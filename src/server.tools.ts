@@ -19,7 +19,7 @@ import {
 import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, sanitizeStaticToolName, type NormalizedToolEntry } from './server.toolsUser';
-import { jsonSchemaToZod } from './server.schema';
+import { jsonSchemaToZod, normalizeInputSchema } from './server.schema';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -343,7 +343,7 @@ const makeProxyCreators = (
   const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
   // Rebuild Zod schema from serialized JSON.
-  const zodSchemaStrict = jsonSchemaToZod(tool.inputSchema);
+  const zodSchemaStrict = normalizeInputSchema(tool.inputSchema);
   let zodSchema = zodSchemaStrict;
 
   // Rebuild Zod schema again for compatibility.
