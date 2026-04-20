@@ -327,6 +327,7 @@ const spawnToolsHost = async (
  * - Parent does not perform validation; the child validates with Zod at invocation.
  * - A minimal Zod inputSchema from the parent is required to trigger the MCP SDK parameter
  *    validation.
+ * - Descriptors from the manifest are JSON. `normalizeInputSchema` is used defensively.
  * - There is an unreachable defensive check in `makeProxyCreators` that ensures the Zod schema
  *    always returns a value.
  * - Invocation errors from the child preserve `error.code` and `error.details` for debugging.
@@ -342,7 +343,7 @@ const makeProxyCreators = (
   const name = tool.name;
   const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
-  // Rebuild Zod schema from serialized JSON.
+  // Rebuild Zod schema from serialized JSON. Defensive use of `normalizeInputSchema` also allows for Zod and raw Zod shapes.
   const zodSchemaStrict = normalizeInputSchema(tool.inputSchema, { returnValue: undefined });
   let zodSchema = zodSchemaStrict;
 
