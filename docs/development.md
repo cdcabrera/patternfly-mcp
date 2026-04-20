@@ -126,6 +126,13 @@ const options: PfMcpOptions = {
 const server: PfMcpInstance = await start(options);
 ```
 
+#### Notes on MCP tool schemas
+1. Internally, the MCP tool schemas require Zod. Failure to use Zod will result in the MCP tool being logged and skipped during registration.
+2. Externally, MCP tools-as-plugins can be `JSON` or Zod.
+
+> **Tools-as-plugins**
+> The server attempts to normalize external tools-as-plugins plain JSON schemas to facilitate consumer flexibility.
+
 #### About pinned documentation sources
 
 The documentation catalog `src/docs.json` pins remote resources to specific commit SHAs (or explicit refs) for stability and reproducibility. This avoids unexpected upstream changes from breaking results. The `searchPatternFlyDocs` tool handles these lookups transparently for the user.
@@ -276,6 +283,8 @@ See [examples/](examples/) for more programmatic usage examples.
 ## MCP tool plugins
 
 You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out-of-process in an isolated **Tools Host** to ensure security and stability.
+
+> While we recommend using `createMcpTool` for automatic normalization, external plugins are purposefully flexible. They can use plain JSON schemas for `inputSchema`, and the server will handle the conversion to Zod automatically during the loading process.
 
 ### Tool plugin runtime requirements
 

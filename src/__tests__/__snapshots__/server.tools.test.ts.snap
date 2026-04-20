@@ -464,7 +464,13 @@ exports[`makeProxyCreators should attempt to invoke a creator then throw an erro
 
 exports[`makeProxyCreators should attempt to return proxy creators, a function wrapper per tool, basic 1`] = `
 {
-  "debug": [],
+  "debug": [
+    [
+      "Tool "Lorem Ipsum" from unknown source failed strict JSON to Zod reconstruction.",
+      "Using fallback best effort schema. Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.",
+      "[ZOD_SCHEMA: defined: true]",
+    ],
+  ],
   "output": [
     [
       "Lorem Ipsum",
@@ -489,14 +495,14 @@ exports[`makeProxyCreators should attempt to return proxy creators, a function w
 {
   "debug": [
     [
-      "Tool "Lorem Ipsum" from unknown source failed strict JSON to Zod reconstruction.",
+      "Tool "Dolor Sit" from unknown source failed strict JSON to Zod reconstruction.",
       "Using fallback best effort schema. Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.",
       "[ZOD_SCHEMA: defined: true]",
     ],
   ],
   "output": [
     [
-      "Lorem Ipsum",
+      "Dolor Sit",
       {
         "description": "Lorem ipsum dolor sit amet",
         "inputSchema": "isZod = true",
@@ -511,14 +517,14 @@ exports[`makeProxyCreators should attempt to return proxy creators, a function w
 {
   "debug": [
     [
-      "Tool "Lorem Ipsum" from unknown source failed strict JSON to Zod reconstruction.",
+      "Tool "Amet" from unknown source failed strict JSON to Zod reconstruction.",
       "Using fallback best effort schema. Review the tool's inputSchema and ensure it is a valid JSON or Zod schema.",
       "[ZOD_SCHEMA: defined: true]",
     ],
   ],
   "output": [
     [
-      "Lorem Ipsum",
+      "Amet",
       {
         "description": "Lorem ipsum dolor sit amet",
         "inputSchema": "isZod = true",
