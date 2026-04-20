@@ -315,6 +315,18 @@ describe('normalizeInputSchema', () => {
 
     expect(isZodSchema(result)).toBe(false);
   });
+
+  it('should return the specified returnValue when normalization fails', () => {
+    const result = normalizeInputSchema('not-a-schema', { returnValue: undefined });
+
+    expect(result).toBeUndefined();
+  });
+
+  it('should return the original value when no returnValue is provided', () => {
+    const result = normalizeInputSchema('not-a-schema');
+
+    expect(result).toBe('not-a-schema');
+  });
 });
 
 describe('zodToJsonSchema', () => {

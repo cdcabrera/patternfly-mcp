@@ -343,7 +343,7 @@ const makeProxyCreators = (
   const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
   // Rebuild Zod schema from serialized JSON.
-  const zodSchemaStrict = normalizeInputSchema(tool.inputSchema);
+  const zodSchemaStrict = normalizeInputSchema(tool.inputSchema, { returnValue: undefined });
   let zodSchema = zodSchemaStrict;
 
   // Rebuild Zod schema again for compatibility.
