@@ -1,6 +1,6 @@
-import { z } from 'zod';
 import { resolve } from 'node:path';
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
+import { z } from 'zod';
 import { log } from '../logger';
 import {
   getBuiltInToolNames,
@@ -330,7 +330,7 @@ describe('makeProxyCreators', () => {
           id: 'loremIpsum',
           name: 'Lorem Ipsum',
           description: 'Lorem ipsum dolor sit amet',
-          inputSchema: {},
+          inputSchema: z.object({}),
           source: ''
         }
       ]
@@ -407,7 +407,7 @@ describe('makeProxyCreators', () => {
         id: 'loremIpsum',
         name: 'Lorem Ipsum',
         description: 'Lorem ipsum dolor sit amet',
-        inputSchema: {},
+        inputSchema: z.object({}),
         source: ''
       }
     ];
@@ -739,7 +739,7 @@ describe('composeTools', () => {
     };
     const filePackageToolModules: any[] = modules;
     const mockFilePackageTools = filePackageToolModules.filter(tool => typeof tool === 'string')
-      .map(name => ({ name, description: name, inputSchema: {}, source: name }));
+      .map(name => ({ name, description: name, inputSchema: z.object({}), source: name }));
 
     const sessionId = 'test-session-id';
 
@@ -776,7 +776,7 @@ describe('composeTools', () => {
       }
     };
     const filePackageToolModules: any[] = ['file:///test/module.js', '@patternfly/woot'];
-    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, description: tool, inputSchema: {}, source: tool }));
+    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, description: tool, inputSchema: z.object({}), source: tool }));
     const sessionId = 'test-session-id';
 
     MockSpawn.mockReturnValueOnce(mockChild as any);

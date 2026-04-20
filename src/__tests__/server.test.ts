@@ -202,10 +202,7 @@ describe('runServer', () => {
     );
 
     expect(MockLog.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Skipping registration for "badTool"')
-    );
-    expect(MockLog.warn).toHaveBeenCalledWith(
-      expect.stringContaining('non Zod inputSchema')
+      expect.stringContaining('has a non Zod inputSchema. Skipping registration.')
     );
   });
 

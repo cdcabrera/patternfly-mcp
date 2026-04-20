@@ -126,6 +126,9 @@ const options: PfMcpOptions = {
 const server: PfMcpInstance = await start(options);
 ```
 
+#### Note on Schemas
+When passing tools directly to the programmatic API (e.g., via `toolModules` without using `createMcpTool`), you should ensure that `inputSchema` is a Zod schema. While the server attempts to normalize plain JSON schemas in most cases, using Zod schemas directly is recommended for performance and to avoid registration warnings.
+
 #### About pinned documentation sources
 
 The documentation catalog `src/docs.json` pins remote resources to specific commit SHAs (or explicit refs) for stability and reproducibility. This avoids unexpected upstream changes from breaking results. The `searchPatternFlyDocs` tool handles these lookups transparently for the user.
@@ -277,6 +280,8 @@ See [examples/](examples/) for more programmatic usage examples.
 
 You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out-of-process in an isolated **Tools Host** to ensure security and stability.
 
+While we recommend using `createMcpTool` for better type safety and automatic normalization, external plugins are flexible: they can use plain JSON schemas for `inputSchema`, and the server will handle the conversion to Zod automatically during the loading process.
+
 ### Tool plugin runtime requirements
 
 - **Node.js >= 22**: Loading external tool plugins (`--tool`) requires Node.js version 22 or higher due to the use of advanced process isolation and ESM module loading features.
@@ -294,7 +299,7 @@ The server provides two isolation modes for external plugins via the `--plugin-i
 
 ### Terminology
 
-- **`Tool`**: The low-level tuple format `[name, schema, handler]`.
+- **`Tool`**: The low-level tuple format `[name, schema, handler]`. In this format, `schema.inputSchema` must be a Zod schema for internal use, or a JSON Schema for external plugins.
 - **`Tool Config`**: The authoring object format `{ name, description, inputSchema, handler }`.
 - **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
 - **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
