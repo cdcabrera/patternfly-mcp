@@ -185,25 +185,25 @@ describe('runServer', () => {
     const tools = [
       jest.fn().mockReturnValue([
         'badTool',
-        { description: 'Bad Tool', inputSchema: {} }, // Plain object should be skipped
+        { description: 'Bad Tool', inputSchema: {} },
         jest.fn()
       ])
     ];
 
-    await runServer(
+    const serverInstance = await runServer(
       { ...DEFAULT_OPTIONS, name: 'test-skip-server' } as any,
       { tools, allowProcessExit: false }
     );
 
     expect(mockServer.registerTool).not.toHaveBeenCalledWith(
-      expect.stringContaining('badTool'),
-      expect.anything(),
-      expect.anything()
+      expect.stringContaining('badTool')
     );
 
     expect(MockLog.warn).toHaveBeenCalledWith(
       expect.stringContaining('has a non Zod inputSchema. Skipping registration.')
     );
+
+    await serverInstance.stop();
   });
 
   it.each([

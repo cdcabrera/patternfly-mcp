@@ -126,8 +126,12 @@ const options: PfMcpOptions = {
 const server: PfMcpInstance = await start(options);
 ```
 
-#### Note on Schemas
-When passing tools directly to the programmatic API (e.g., via `toolModules` without using `createMcpTool`), you should ensure that `inputSchema` is a Zod schema. While the server attempts to normalize plain JSON schemas in most cases, using Zod schemas directly is recommended for performance and to avoid registration warnings.
+#### Notes on MCP tool schemas
+1. Internally, the MCP tool schemas require Zod. Failure to use Zod will result in the MCP tool being logged and skipped during registration.
+2. Externally, MCP tools-as-plugins can be `JSON` or Zod.
+
+> **Tools-as-plugins**
+> The server attempts to normalize external tools-as-plugins plain JSON schemas to facilitate consumer flexibility.
 
 #### About pinned documentation sources
 
@@ -280,7 +284,7 @@ See [examples/](examples/) for more programmatic usage examples.
 
 You can extend the server's capabilities by loading **Tool Plugins** at startup. These plugins run out-of-process in an isolated **Tools Host** to ensure security and stability.
 
-While we recommend using `createMcpTool` for better type safety and automatic normalization, external plugins are flexible: they can use plain JSON schemas for `inputSchema`, and the server will handle the conversion to Zod automatically during the loading process.
+> While we recommend using `createMcpTool` for automatic normalization, external plugins are purposefully flexible. They can use plain JSON schemas for `inputSchema`, and the server will handle the conversion to Zod automatically during the loading process.
 
 ### Tool plugin runtime requirements
 
@@ -299,7 +303,7 @@ The server provides two isolation modes for external plugins via the `--plugin-i
 
 ### Terminology
 
-- **`Tool`**: The low-level tuple format `[name, schema, handler]`. In this format, `schema.inputSchema` must be a Zod schema for internal use, or a JSON Schema for external plugins.
+- **`Tool`**: The low-level tuple format `[name, schema, handler]`.
 - **`Tool Config`**: The authoring object format `{ name, description, inputSchema, handler }`.
 - **`Tool Factory`**: A function wrapper `(options) => Tool` (internal).
 - **`Tool Module`**: The programmatic result of `createMcpTool`, representing a collection of tools.
