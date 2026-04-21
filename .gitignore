@@ -58,6 +58,9 @@ coverage/
 # Yarn Integrity file
 .yarn-integrity
 
+# Release blog drafts (local only; see guidelines/skills/release-blog-post)
+blog/
+
 # agent
 .archive
 .agent

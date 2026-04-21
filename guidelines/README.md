@@ -19,6 +19,7 @@ Agent-specific guidelines for the PatternFly MCP project, optimized for machine 
 ### Skills
 
 - [Add docs links](./skills/add-docs-links/SKILL.md) - Add documentation links to `src/docs.json` in a structured way (format, duplicate check, URL confirmation, tests)
+- [Release blog post](./skills/release-blog-post/SKILL.md) - Draft a release announcement from `CHANGELOG.md` and current repo docs; write gitignored `blog/YYYY-MM-DD-release-<semver>.<ext>` (default `.md`)
 
 **Note:** `guidelines/skills/` is the canonical location for skills. Repo symlinks point here so agents can discover them: `.agents/skills` (Cursor), `.claude/skills` (Claude). The `.agent/` directory (no “s”) is reserved for each developer’s local work and is off limits—do not use it for shared skills or guidelines.
 
@@ -36,6 +37,7 @@ Agents should use these phrases as signals to consult specific documentation and
 | **"review development guide"**      | Review `docs/development.md` for CLI, API, and plugin authoring.                                                                                       |
 | **"create an example tool plugin"** | Review `guidelines/agent_coding.md`, `docs/development.md`, `docs/examples/*`, and `src/*` for context, coding standards, and existing example formats. |
 | **"add documentation links"** / **"add doc entries"** / **"register docs"** / **"update docs.json"** / **"contribute to docs.json"** | Follow `guidelines/skills/add-docs-links/SKILL.md`: docs.json format, duplicate check, raw URL confirmation, then run unit tests and update meta. |
+| **"blog"** / **"blog post"** / **"release post"** / **"release blog"** (announcement for a version) | Follow `guidelines/skills/release-blog-post/SKILL.md`: read current `CHANGELOG.md` and docs; save to gitignored `blog/YYYY-MM-DD-release-<semver>.<ext>`; verify paths before linking. |
 
 ## Guidelines Processing Order
 
