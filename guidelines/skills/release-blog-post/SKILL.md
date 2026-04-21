@@ -7,7 +7,7 @@ description: "Drafts a per-release blog article from current repository document
 
 ## When to use
 
-The user wants a **release-facing article** (blog, release notes narrative, announcement) for a specific version or tag. Output format is **Markdown by default**; switch if they ask (HTML, email, social thread outline, etc.).
+The user wants a **release-facing article** (blog, release notes narrative, announcement) for a specific version or tag. Output format is **Markdown by default**; switch if they ask (HTML, email, social thread outline, etc.). For a **multi-era** or git-history narrative (origins, how the project evolved), use [historical-articles](../historical-articles/SKILL.md) instead.
 
 ## Principles
 
