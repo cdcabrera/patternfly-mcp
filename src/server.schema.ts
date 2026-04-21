@@ -124,11 +124,14 @@ const jsonSchemaToZod = (
  *
  * @param inputSchema - Input schema (Zod schema, ZodRawShapeCompat, or plain JSON Schema)
  * @param settings - Optional settings
- * @param settings.returnValue - Apply a specific value for return.
+ * @param settings.returnUndefined - Return `undefined` instead of the original value.
  * @returns Returns a Zod instance for known inputs such as "Zod schema", "raw shape", or "JSON Schema", or the original value otherwise.
  *     When provided `settings.returnValue` takes precedence over the original value.
  */
-const normalizeInputSchema = (inputSchema: unknown, settings: { returnValue?: unknown } = {}): z.ZodTypeAny | unknown => {
+const normalizeInputSchema = (
+  inputSchema: unknown,
+  { returnUndefined }: { returnUndefined?: boolean } = {}
+): z.ZodTypeAny | unknown => {
   // If it's already a Zod schema or a ZodRawShapeCompat (object with Zod schemas as values), return as-is
   if (isZodSchema(inputSchema)) {
     return inputSchema;
@@ -141,7 +144,7 @@ const normalizeInputSchema = (inputSchema: unknown, settings: { returnValue?: un
 
   // If it's a plain JSON Schema object, convert to Zod
   if (isPlainObject(inputSchema)) {
-    const result = jsonSchemaToZod(inputSchema);
+    const result = jsonSchemaToZod(inputSchema, { failFast: true });
 
     if (result) {
       return result;
@@ -149,8 +152,8 @@ const normalizeInputSchema = (inputSchema: unknown, settings: { returnValue?: un
   }
 
   // Force a return value
-  if ('returnValue' in settings) {
-    return settings.returnValue;
+  if (returnUndefined) {
+    return undefined;
   }
 
   // Fallback: return as-is (might be undefined or other types)

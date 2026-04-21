@@ -316,16 +316,33 @@ describe('normalizeInputSchema', () => {
     expect(isZodSchema(result)).toBe(false);
   });
 
-  it('should return the specified returnValue when normalization fails', () => {
-    const result = normalizeInputSchema('not-a-schema', { returnValue: undefined });
+  it.each([
+    {
+      description: 'pass through',
+      input: 'not-a-schema',
+      params: {},
+      expected: 'not-a-schema'
+    },
+    {
+      description: 'returnUndefined set',
+      input: 'not-a-schema',
+      params: {
+        returnUndefined: false
+      },
+      expected: 'not-a-schema'
+    },
+    {
+      description: 'returnUndefined, undefined',
+      input: 'not-a-schema',
+      params: {
+        returnUndefined: true
+      },
+      expected: undefined
+    }
+  ])('should return undefined when specified, $description', ({ input, params, expected }) => {
+    const result = normalizeInputSchema(input, { ...params });
 
-    expect(result).toBeUndefined();
-  });
-
-  it('should return the original value when no returnValue is provided', () => {
-    const result = normalizeInputSchema('not-a-schema');
-
-    expect(result).toBe('not-a-schema');
+    expect(result).toBe(expected);
   });
 });
 

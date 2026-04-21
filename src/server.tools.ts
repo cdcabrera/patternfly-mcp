@@ -344,7 +344,7 @@ const makeProxyCreators = (
   const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
   // Rebuild Zod schema from serialized JSON. Defensive use of `normalizeInputSchema` also allows for Zod and raw Zod shapes.
-  const zodSchemaStrict = normalizeInputSchema(tool.inputSchema, { returnValue: undefined });
+  const zodSchemaStrict = normalizeInputSchema(tool.inputSchema, { returnUndefined: true });
   let zodSchema = zodSchemaStrict;
 
   // Rebuild Zod schema again for compatibility.
