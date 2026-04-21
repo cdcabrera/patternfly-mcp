@@ -412,7 +412,10 @@ exports[`normalizeTuple should normalize the config, basic 1`] = `
     "loremIpsum",
     {
       "description": "lorem ipsum",
-      "inputSchema": "isZod = true",
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+      },
     },
     [Function],
   ],
@@ -472,6 +475,19 @@ exports[`normalizeTupleSchema should normalize object, valid JSON schema with de
 `;
 
 exports[`normalizeTupleSchema should normalize object, valid JSON schema without description 1`] = `
+{
+  "inputSchema": "isZod = true",
+}
+`;
+
+exports[`normalizeTupleSchema should normalize object, valid Zod schema with description 1`] = `
+{
+  "description": "hello",
+  "inputSchema": "isZod = true",
+}
+`;
+
+exports[`normalizeTupleSchema should normalize object, valid Zod schema without description 1`] = `
 {
   "inputSchema": "isZod = true",
 }

@@ -212,7 +212,7 @@ describe('isManifestResult', () => {
         t: 'manifest:result',
         id: 'test-id',
         tools: [
-          { id: 'tool1', name: 'Tool1', description: 'Description', inputSchema: z.object({}) }
+          { id: 'tool1', name: 'Tool1', description: 'Description', inputSchema: {} }
         ]
       },
       expectedId: 'test-id',

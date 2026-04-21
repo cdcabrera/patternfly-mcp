@@ -443,7 +443,7 @@ describe('makeProxyCreators', () => {
         id: 'loremIpsum',
         name: 'Lorem Ipsum',
         description: 'Lorem ipsum dolor sit amet',
-        inputSchema: z.object({}),
+        inputSchema: {},
         source: ''
       }
     ];
@@ -652,13 +652,13 @@ describe('composeTools', () => {
       nodeVersion: 22,
       modules: [
         (() => {
-          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
+          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}];
 
           (testing as any).toolName = 'lorem';
 
           return testing;
         })(),
-        { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} }
+        { name: 'dolor', description: 'sit amet', inputSchema: {}, handler: () => {} }
       ],
       expectedModuleCount: 5
     },
@@ -666,7 +666,7 @@ describe('composeTools', () => {
       description: 'inline creators, missing toolNames',
       nodeVersion: 22,
       modules: [
-        () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}],
+        () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}],
         () => ['dolor', { description: 'sit amet', inputSchema: z.object({}) }, () => {}]
       ],
       expectedModuleCount: 3
@@ -676,7 +676,7 @@ describe('composeTools', () => {
       nodeVersion: 22,
       modules: [
         (() => {
-          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
+          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}];
 
           (testing as any).toolName = 'lorem';
 
@@ -722,7 +722,7 @@ describe('composeTools', () => {
       nodeVersion: 22,
       modules: [
         (() => {
-          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: z.object({}) }, () => {}];
+          const testing = () => ['lorem', { description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} } }, () => {}];
 
           (testing as any).toolName = 'lorem';
 
@@ -747,7 +747,7 @@ describe('composeTools', () => {
       description: 'inline and file package creators, duplicates',
       nodeVersion: 22,
       modules: [
-        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: z.object({}), handler: () => {} },
+        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: {}, handler: () => {} },
         { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools',
@@ -759,7 +759,7 @@ describe('composeTools', () => {
       description: 'inline and file package creators, duplicates, Node.js 20',
       nodeVersion: 20,
       modules: [
-        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: z.object({}), handler: () => {} },
+        { name: '@patternfly/tools', description: 'lorem ipsum', inputSchema: {}, handler: () => {} },
         { name: 'dolor', description: 'sit amet', inputSchema: z.object({}), handler: () => {} },
         'file:///test/module.js',
         '@patternfly/tools',
@@ -775,7 +775,7 @@ describe('composeTools', () => {
     };
     const filePackageToolModules: any[] = modules;
     const mockFilePackageTools = filePackageToolModules.filter(tool => typeof tool === 'string')
-      .map(name => ({ name, description: name, inputSchema: z.object({}), source: name }));
+      .map(name => ({ name, description: name, inputSchema: {}, source: name }));
 
     const sessionId = 'test-session-id';
 
@@ -812,7 +812,7 @@ describe('composeTools', () => {
       }
     };
     const filePackageToolModules: any[] = ['file:///test/module.js', '@patternfly/woot'];
-    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, description: tool, inputSchema: z.object({}), source: tool }));
+    const mockFilePackageTools = filePackageToolModules.map(tool => ({ name: tool, description: tool, inputSchema: {}, source: tool }));
     const sessionId = 'test-session-id';
 
     MockSpawn.mockReturnValueOnce(mockChild as any);
