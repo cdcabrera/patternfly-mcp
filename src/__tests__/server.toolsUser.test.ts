@@ -182,7 +182,7 @@ describe('normalizeObject', () => {
   it.each([
     {
       description: 'basic',
-      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: z.object({}), handler: () => {} }
+      obj: { name: 'loremIpsum', description: 'lorem ipsum', inputSchema: { type: 'object', properties: {} }, handler: () => {} }
     },
     {
       description: 'untrimmed name, zod schema, async handler',

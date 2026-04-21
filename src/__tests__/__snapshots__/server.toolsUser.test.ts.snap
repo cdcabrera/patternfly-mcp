@@ -253,7 +253,10 @@ exports[`normalizeObject should normalize the config, basic 1`] = `
   "original": {
     "description": "lorem ipsum",
     "handler": [Function],
-    "inputSchema": "isZod = true",
+    "inputSchema": {
+      "properties": {},
+      "type": "object",
+    },
     "name": "loremIpsum",
   },
   "toolName": "loremIpsum",
