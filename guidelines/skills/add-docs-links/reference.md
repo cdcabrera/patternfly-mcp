@@ -50,7 +50,7 @@ Each entry in `docs.<ComponentName>[]`:
 - Pattern: `https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{path-to-file}`
 - `ref`: branch name, tag (e.g. `v5`), or **commit SHA** (preferred for v6 org/react-style links).
 
-**Why commit SHAs are used (instead of only `main` / a moving branch):** A pinned SHA makes the fetched doc **immutable** for that URL: the catalog always resolves to the same file content until someone intentionally updates the ref. Branch heads change as upstream merges; without a pin, links could silently point at different text, break if files move, or make audits and support harder to reason about. Tags (e.g. `v5`) can also pin a release line; the project still limits how many distinct refs it tracks (see unit test `baseHashes`).
+**Why commit SHAs are used (instead of only `main` / a moving branch):** A pinned SHA makes the fetched doc **immutable** for that URL: the catalog always resolves to the same file content until someone intentionally updates the ref. Branch heads change as upstream merges; without a pin, links could silently point at different text, break if files move, or make audits and support harder to reason about. Tags (e.g. `v5`) can also pin a release line. **How many distinct `patternfly/<repo>` ref segments are allowed** is enforced in `src/__tests__/docs.json.test.ts` (`baseHashes`)—that test is the source of truth, not a number written in this skill.
 
 - Example: `https://raw.githubusercontent.com/patternfly/patternfly-org/2d5fec39ddb8aa32ce78c9a63cdfc1653692b193/packages/documentation-site/patternfly-docs/content/components/about-modal/about-modal.md`
 - **Must be whitelisted:** see [URL whitelist](#url-whitelist-allowed-domains) below.
@@ -78,7 +78,7 @@ Any new `path` in `docs.json` must match one of these prefixes (protocol + host 
 
 ## GitHub ref (hash) lookup
 
-- **Use existing refs**: Prefer the ref already used in `docs.json` for that repo (same owner/repo). Extract the ref from an existing `path`: the segment after `raw.githubusercontent.com/owner/repo/` and before the next `/`.
+- **Use existing refs**: Prefer the ref already used in `docs.json` for that repo (same owner/repo). Extract the ref from an existing `path`: the segment after `raw.githubusercontent.com/owner/repo/` and before the next `/`. That keeps pins consistent; if you add a **new** `patternfly/<repo>` to the catalog, see **Unit test constraints** below and align `docs.json.test.ts`.
 - **New ref via API**: For branch `main` of `patternfly/patternfly-org`:
   - `GET https://api.github.com/repos/patternfly/patternfly-org/commits/main` (or `commits?sha=main`) and use the response `sha` in the raw URL.
 - **Confirm raw URL**: After building the URL, fetch it (e.g. `curl -sI` or the project’s `checkUrl`) and ensure HTTP 200–299.
@@ -90,7 +90,7 @@ From `src/__tests__/docs.json.test.ts`:
 1. No duplicate `path` values.
 2. `meta.totalEntries` === number of keys in `docs`.
 3. `meta.totalDocs` === total number of entries in all arrays.
-4. Number of unique “base hashes” (refs per repo) is **5** (v6 org, v6 react, v5 org, codemods, ai-helpers). When adding links, use existing refs so this count does not change unless the project explicitly adds a new source.
+4. **Distinct refs across PatternFly raw URLs** — For `https://raw.githubusercontent.com/patternfly/<repo>/…`, the test treats the first path segment after `<repo>/` (branch, tag, or SHA) as part of a bounded set of “base refs” per repo. **Do not hardcode a count in documentation.** Open `src/__tests__/docs.json.test.ts`, find `baseHashes` and `expect(baseHashes.size)`, and read the block comment there: that is the only place the allowed count should be updated when the catalog intentionally gains a new `patternfly/<repo>` (or ref policy changes). Prefer reusing an existing ref for a repo already in the catalog so you do not need to touch the assertion.
 
 ## Example new entry
 

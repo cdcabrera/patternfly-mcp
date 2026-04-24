@@ -9,14 +9,14 @@ description: Maintains the PatternFly MCP documentation catalog in src/docs.json
 
 User wants to **add**, **change**, or **remove** entries in `src/docs.json`, or fix broken / unreachable catalog links. They may paste **any GitHub URL** (blob or raw); you convert blob → raw, pick refs, verify reachability, shape entries, update `meta` and `generated`, and run tests.
 
-For **editing or removing**: locate the entry by `path` or component key; after changes, recompute `meta.totalEntries`, `meta.totalDocs`, set `generated` to current ISO time, run `npm test`. Same constraints as adds (whitelist, unique `path`, base-hash count).
+For **editing or removing**: locate the entry by `path` or component key; after changes, recompute `meta.totalEntries`, `meta.totalDocs`, set `generated` to current ISO time, run `npm test`. Same constraints as adds (whitelist, unique `path`, distinct-ref guard in `docs.json.test.ts`).
 
 ## Workflow
 
 1. **Resolve the raw URL and ref (git hash/branch)**
    - Decide repo and file path (e.g. `patternfly/patternfly-org`, `patternfly/patternfly-react`).
    - **Why SHAs:** Pinned commit SHAs keep each `path` immutable until deliberately updated. See [reference.md](reference.md#path-raw-url).
-   - Prefer an **existing ref** already in `docs.json` for that repo (keeps `baseHashes.size === 5` in unit tests). Extract from an existing entry’s `path`.
+   - Prefer an **existing ref** already in `docs.json` for the same `patternfly/<repo>` (stable pins, less churn). Extract it from any existing entry’s `path`. If you add URLs under a **new** `patternfly/<repo>` not yet used in the catalog, the distinct-ref assertion in `src/__tests__/docs.json.test.ts` may need updating—read that file (`baseHashes`), do not guess a number from this skill.
    - If a new ref is required: resolve SHA (e.g. GitHub API `GET /repos/{owner}/{repo}/commits?sha={branch}`) or use a stable tag in the raw URL.
 
 2. **Build the raw URL (must be whitelisted)**
@@ -41,7 +41,7 @@ For **editing or removing**: locate the entry by `path` or component key; after 
 
 7. **Run unit tests and snapshots**
    - From repo root: `npm test` (or `jest --selectProjects unit --roots=src/`).
-   - `docs.json.test.ts` validates duplicates, `meta`, and base-hash count. Coordinate before changing the expected base-hash count.
+   - `docs.json.test.ts` validates duplicates, `meta`, and how many distinct pinned refs appear across `raw.githubusercontent.com/patternfly/<repo>/…` URLs (`baseHashes`). The **expected count lives only in that test**; update it when the catalog intentionally adds a new repo/ref family, and note that in the PR.
    - If snapshots fail after catalog changes, update them intentionally—common: `src/__tests__/docs.embedded.test.ts` (`EMBEDDED_DOCS`), and tool/resource tests under `src/__tests__/` that snapshot docs-derived output (e.g. `tool.patternFlyDocs.test.ts`, `tool.searchPatternFlyDocs.test.ts`, `resource.patternFlyDocs*.test.ts`). Use the project’s usual Jest update flow (e.g. `npm test -- -u` scoped to the failing file).
 
 **CI:** `.github/workflows/audit.yml` runs on PRs touching `src/docs.json` or `tests/audit/**` and samples links for reachability (`tests/audit/`).
@@ -54,4 +54,5 @@ For **editing or removing**: locate the entry by `path` or component key; after 
 - [ ] No duplicate `path` values.
 - [ ] Entry shape matches [reference.md](reference.md#entry-format); correct PascalCase key.
 - [ ] `meta.totalEntries`, `meta.totalDocs`, and `generated` updated.
+- [ ] If you introduced a new `patternfly/<repo>` raw host path, `docs.json.test.ts` still matches the catalog (`baseHashes` / `expect(baseHashes.size)`).
 - [ ] `npm test` passes; snapshots updated only where catalog-driven output changed.

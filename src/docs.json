@@ -1,9 +1,9 @@
 {
   "version": "1",
-  "generated": "2026-03-09T00:00:00.000Z",
+  "generated": "2026-04-24T13:55:54.578Z",
   "meta": {
-    "totalEntries": 129,
-    "totalDocs": 320,
+    "totalEntries": 130,
+    "totalDocs": 321,
     "source": "patternfly-mcp-internal"
   },
   "docs": {
@@ -3430,6 +3430,18 @@
         "category": "react",
         "source": "github",
         "path": "https://raw.githubusercontent.com/patternfly/pf-codemods/63df51df5cc6af2f3d83de4c0991c9e65625675f/packages/pf-codemods/README.md",
+        "version": "v6"
+      }
+    ],
+    "PatternFlyCli": [
+      {
+        "displayName": "PatternFly CLI",
+        "description": "README for the official PatternFly CLI (installation, commands, and usage).",
+        "pathSlug": "patternfly-cli",
+        "section": "get-started",
+        "category": "development-guidelines",
+        "source": "github",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-cli/168a7cce0abf20591fdaf65d12d90029f901fd5b/README.md",
         "version": "v6"
       }
     ],
