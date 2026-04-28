@@ -7,6 +7,11 @@
 const INDEX_BLOCKLIST_WORDS = ['patternfly', 'component', 'components', 'documentation', 'example', 'examples'];
 
 /**
+ * Technical terms and acronyms that should be exempt from length and noise filtering.
+ */
+const INDEX_EXCEPTION_WORDS = ['cli', 'css', 'ai', 'rtl', 'ltr'];
+
+/**
  * Noise words that are common and do not add significant value to search results.
  */
 const INDEX_NOISE_WORDS = [
@@ -112,4 +117,4 @@ const INDEX_NOISE_WORDS = [
   'you'
 ];
 
-export { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS };
+export { INDEX_BLOCKLIST_WORDS, INDEX_EXCEPTION_WORDS, INDEX_NOISE_WORDS };

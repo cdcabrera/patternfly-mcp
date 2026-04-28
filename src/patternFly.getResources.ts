@@ -15,7 +15,11 @@ import {
   type PatternFlyMcpDocsCatalogEntry,
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
-import { INDEX_BLOCKLIST_WORDS, INDEX_NOISE_WORDS } from './docs.filterWords';
+import {
+  INDEX_BLOCKLIST_WORDS,
+  INDEX_EXCEPTION_WORDS,
+  INDEX_NOISE_WORDS
+} from './docs.filterWords';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -304,13 +308,24 @@ getPatternFlyComponentNames.memo = memo(getPatternFlyComponentNames);
  *
  * @param keywordsMap - Available keywords by resource name.
  * @param settings - Settings object
+ * @param settings.exceptionList - List of words to exempt from filtering.
  * @param settings.filterList - List of words to filter out from keywords.
  */
-const filterKeywords = (keywordsMap: PatternFlyMcpKeywordsMap, { filterList = INDEX_NOISE_WORDS } = {}) => {
+const filterKeywords = (
+  keywordsMap: PatternFlyMcpKeywordsMap,
+  { exceptionList = INDEX_EXCEPTION_WORDS, filterList = INDEX_NOISE_WORDS } = {}
+) => {
   const filteredKeywords: PatternFlyMcpKeywordsMap = new Map();
 
   for (const [keyword, versionMap] of keywordsMap) {
     const updatedKeyword = keyword.toLowerCase().trim();
+
+    // Exception match, never filter these out.
+    if (exceptionList.includes(updatedKeyword)) {
+      filteredKeywords.set(keyword, versionMap);
+      continue;
+    }
+
     const isVariant = filterList.some(word => {
       const updatedWord = word.toLowerCase().trim();
 
@@ -345,11 +360,12 @@ const filterKeywords = (keywordsMap: PatternFlyMcpKeywordsMap, { filterList = IN
  * @param params.version - Version of the resource associated with the keyword.
  * @param settings - Settings object
  * @param settings.blockList - List of words to block from indexing.
+ * @param settings.exceptionList - List of words to exempt from filtering.
  */
 const mutateKeyWordsMap = (
   keywordsMap: PatternFlyMcpKeywordsMap,
   { keyword, name, version }: { keyword: string, name: string, version: string },
-  { blockList = INDEX_BLOCKLIST_WORDS } = {}
+  { blockList = INDEX_BLOCKLIST_WORDS, exceptionList = INDEX_EXCEPTION_WORDS } = {}
 ) => {
   const normalizedKeyword = keyword.toLowerCase().trim();
   const initialSplit = normalizedKeyword.split(' ').filter(Boolean);
@@ -378,7 +394,10 @@ const mutateKeyWordsMap = (
     const splitKeywords = initialSplit.map(word => word.trim().replace(/[()|"'<>@#!,.;:]/g, ''));
 
     for (const word of splitKeywords) {
-      if (word.length <= 3 || blockList.find(blockedWord => blockedWord === word.toLowerCase())) {
+      const isException = exceptionList.includes(word.toLowerCase());
+      const isBlocked = blockList.includes(word.toLowerCase());
+
+      if (!isException && (word.length <= 3 || isBlocked)) {
         continue;
       }
 
@@ -481,6 +500,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version]?.push(extendedEntry);
 
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
+
+      if (entry.displayName) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.displayName, name, version });
+      }
 
       if (entry.category) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.category, name, version });
