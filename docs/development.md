@@ -69,7 +69,7 @@ The `@modelcontextprotocol/inspector` is the recommended way to visualize the se
 
 1. **Start the Inspector**:
    ```bash
-   npx -y @modelcontextprotocol/inspector npx @patternfly/patternfly-mcp
+   npx -y @modelcontextprotocol/inspector node dist/cli.js
    ```
 2. **Interact**: The inspector opens a web interface (typically at `http://localhost:5173`) where you can list tools, execute them, and view resource contents.
 
@@ -77,7 +77,7 @@ The `@modelcontextprotocol/inspector` is the recommended way to visualize the se
 ```bash
 npx @modelcontextprotocol/inspector-cli \
   --config ./mcp-config.json \
-  --server patternfly-docs \
+  --server patternfly-mcp \
   --cli \
   --method tools/call \
   --tool-name usePatternFlyDocs \

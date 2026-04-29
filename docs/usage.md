@@ -101,7 +101,7 @@ Most MCP clients use JSON configuration to specify how the server is started. Be
 ```json
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": ["-y", "@patternfly/patternfly-mcp@latest"],
       "description": "PatternFly React development rules and documentation"
@@ -115,7 +115,7 @@ Most MCP clients use JSON configuration to specify how the server is started. Be
 ```json
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": ["-y", "@patternfly/patternfly-mcp@latest", "--http", "--port", "8080"],
       "description": "PatternFly docs (HTTP transport)"
@@ -129,7 +129,7 @@ Most MCP clients use JSON configuration to specify how the server is started. Be
 ```json
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": [
         "-y",
@@ -148,7 +148,7 @@ Most MCP clients use JSON configuration to specify how the server is started. Be
 ```json
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": [
         "-y",

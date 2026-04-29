@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": ["@patternfly/patternfly-mcp"],
       "description": "PatternFly development rules and documentation"
