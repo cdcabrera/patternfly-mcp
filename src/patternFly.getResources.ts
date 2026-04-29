@@ -351,7 +351,7 @@ const filterKeywords = (
 };
 
 /**
- * Update the keywords map with the given keyword.
+ * Mutate the `keywordsMap` with the given keyword.
  *
  * @param keywordsMap - Available keywords by resource name.
  * @param params - Params object
@@ -360,12 +360,14 @@ const filterKeywords = (
  * @param params.version - Version of the resource associated with the keyword.
  * @param settings - Settings object
  * @param settings.blockList - List of words to block from indexing.
- * @param settings.exceptionList - List of words to exempt from filtering.
+ * @param settings.exceptionList - List of words to exempt from filtering. `blocklist` words
+ *     are prioritized over `exceptionList` words.
+ * @param settings.lengthFilter - Word length filter for reducing keyword noise.
  */
 const mutateKeyWordsMap = (
   keywordsMap: PatternFlyMcpKeywordsMap,
   { keyword, name, version }: { keyword: string, name: string, version: string },
-  { blockList = INDEX_BLOCKLIST_WORDS, exceptionList = INDEX_EXCEPTION_WORDS } = {}
+  { blockList = INDEX_BLOCKLIST_WORDS, exceptionList = INDEX_EXCEPTION_WORDS, lengthFilter = 3 } = {}
 ) => {
   const normalizedKeyword = keyword.toLowerCase().trim();
   const initialSplit = normalizedKeyword.split(' ').filter(Boolean);
@@ -394,10 +396,13 @@ const mutateKeyWordsMap = (
     const splitKeywords = initialSplit.map(word => word.trim().replace(/[()|"'<>@#!,.;:]/g, ''));
 
     for (const word of splitKeywords) {
-      const isException = exceptionList.includes(word.toLowerCase());
-      const isBlocked = blockList.includes(word.toLowerCase());
+      const lowerWord = word.toLowerCase();
 
-      if (!isException && (word.length <= 3 || isBlocked)) {
+      if (blockList.includes(lowerWord)) {
+        continue;
+      }
+
+      if (word.length <= lengthFilter && !exceptionList.includes(lowerWord)) {
         continue;
       }
 
@@ -585,6 +590,7 @@ export {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
   getPatternFlyComponentNames,
+  mutateKeyWordsMap,
   setCategoryDisplayLabel,
   type PatternFlyMcpComponentNames,
   type PatternFlyMcpComponentNamesByVersion,
