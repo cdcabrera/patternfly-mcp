@@ -67,22 +67,16 @@ npx @patternfly/patternfly-mcp --mode test --mode-test-url "http://localhost:300
 
 The `@modelcontextprotocol/inspector` is the recommended way to visualize the server's interface.
 
-1. **Start the Inspector**:
+1. **Build the PatternFly MCP**:
+   ```bash
+   npm install
+   npm run build
+   ```
+2. **Start the Inspector**:
    ```bash
    npx -y @modelcontextprotocol/inspector node dist/cli.js
    ```
-2. **Interact**: The inspector opens a web interface (typically at `http://localhost:5173`) where you can list tools, execute them, and view resource contents.
-
-**Example with repository context:**
-```bash
-npx @modelcontextprotocol/inspector-cli \
-  --config ./mcp-config.json \
-  --server patternfly-mcp \
-  --cli \
-  --method tools/call \
-  --tool-name usePatternFlyDocs \
-  --tool-arg name="Button"
-```
+3. **Interact**: The inspector opens a web interface (typically at `http://localhost:5173`) where you can list tools, resources, and prompts, then execute and view their responses.
 
 ## Programmatic usage
 
