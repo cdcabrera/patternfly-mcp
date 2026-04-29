@@ -22,7 +22,7 @@ Minimal configuration
 ```json
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": ["-y", "@patternfly/patternfly-mcp@latest"],
       "description": "PatternFly rules and documentation"
@@ -35,7 +35,7 @@ HTTP transport mode
 ```json
 {
   "mcpServers": {
-    "patternfly-docs": {
+    "patternfly-mcp": {
       "command": "npx",
       "args": ["-y", "@patternfly/patternfly-mcp@latest", "--http", "--port", "8080"],
       "description": "PatternFly docs (HTTP transport)"
