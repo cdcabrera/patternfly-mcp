@@ -23,7 +23,7 @@ PR tips
 1. `> [test prompt]`
 -->
 <!--
-### Check the feature
+### Check the work
 1. update the NPM packages with `$ npm install`
 1. `$ npm run build`
 1. `npx -y @modelcontextprotocol/inspector node dist/cli.js`
