@@ -176,41 +176,57 @@ You can extend the server's capabilities by loading custom **Tool Plugins** at s
 
 ## Troubleshooting
 
-This guide is designed to help both technical and non-technical users—such as designers and executives—resolve common environment-related issues when using the PatternFly MCP.
+This guide is designed to help resolve common environment-related issues across macOS, Linux, and Windows.
+
+> **Note on Operating Systems**: Our development and debugging workflows are primarily confirmed on **macOS and Linux**. While we provide instructions for **Windows**, these commands are run at your own discretion; we hold no liability for unintended outcomes. If you are unsure, we highly recommend you confirm with your IT or system administrator before running them.
 
 ### 1. Verify Node.js Version
-The PatternFly MCP server requires **Node.js 20 or higher**. If the server fails to start or your AI assistant cannot connect to it, please check your version.
+The PatternFly MCP server requires **Node.js 20 or higher**.
 
-- **How to check**: Open the **Terminal** app on your Mac and type `node -v`.
+- **How to check**:
+  - **macOS/Linux**: Open **Terminal** and type `node -v`.
+  - **Windows**: Open **PowerShell** or **Command Prompt** and type `node -v`.
 - **Requirement**: You should see a version starting with `v20`, `v22`, or higher.
 - **Solution**: If your version is lower than 20, please download and install the latest "LTS" (Long Term Support) version from [nodejs.org](https://nodejs.org/).
 
-### 2. Reset the npx Cache (macOS)
-If you are using `npx` to run the server (the default for most users) and you are not seeing the latest features or encounter an `ERR_MODULE_NOT_FOUND` error, your Mac may be holding onto a "stale" or outdated version of the software in its cache.
+### 2. Reset the npx Cache
+If you encounter an `ERR_MODULE_NOT_FOUND` error or don't see the latest features, your system may be using a "stale" or corrupted version in its cache.
 
-- **The Fix**: Run the following command in your Terminal to force a fresh download the next time the server starts:
-  ```bash
-  rm -rf ~/.npm/_npx
+#### **macOS and Linux**
+Run this command in your **Terminal**:
+```bash
+rm -rf ~/.npm/_npx
+```
+
+#### **Windows**
+Run the appropriate command for your terminal:
+- **PowerShell**:
+  ```powershell
+  Remove-Item -Recurse -Force "$env:LOCALAPPDATA\npm-cache\_npx"
   ```
-- **Next Step**: Restart your MCP client (e.g., Claude Desktop, IDE, or Cursor) to ensure it pulls the latest version.
-
-### 3. Configuration Best Practices
-To ensure you always have the latest PatternFly documentation and rules, your configuration should use the `@latest` tag. This is the most reliable way for non-developers to stay up to date.
-
-- **Recommended Configuration Snippet**:
-  ```json
-  "patternfly-mcp": {
-    "command": "npx",
-    "args": ["-y", "@patternfly/patternfly-mcp@latest"],
-    "description": "PatternFly rules and documentation"
-  }
+- **Command Prompt (CMD)**:
+  ```cmd
+  rd /s /q "%LocalAppData%\npm-cache\_npx"
   ```
-- **Why this matters**: Using `@latest` tells the system to check for updates automatically, ensuring you are always working with the most current PatternFly specifications.
 
-### 4. "Command not found: npx"
-If you receive an error stating that `npx` is not a recognized command, it typically means Node.js is not yet installed on your machine.
+**Next Step**: Restart your MCP client (e.g., Claude Desktop, IDE, or Cursor) to force a fresh download.
 
-- **Solution**: Installing Node.js from the [official website](https://nodejs.org/) will automatically add the `npx` command to your system.
+### 3. Windows-Specific: Symbolic Links
+If you are developing locally or have cloned the repository on Windows, you may encounter issues with "missing" files in `.agent/skills`. This is often due to Git not creating symbolic links correctly on Windows.
+
+- **The Fix**: Enable **Developer Mode** in Windows Settings (Privacy & security → For developers).
+- **Git Config**: Run `git config --global core.symlinks true` and then re-clone the repository or run `git checkout .` to restore the links.
+
+### 4. Configuration Best Practices
+To ensure you always have the latest PatternFly documentation, use the `@latest` tag in your configuration:
+
+```json
+"patternfly-mcp": {
+  "command": "npx",
+  "args": ["-y", "@patternfly/patternfly-mcp@latest"],
+  "description": "PatternFly rules and documentation"
+}
+```
 
 ### 5. Common Error: `ERR_MODULE_NOT_FOUND`
-If you see a wall of text in your logs containing `Error [ERR_MODULE_NOT_FOUND]`, there's a high probability it indicates a corrupted `npx` cache following a PatternFly MCP version update. Please follow the [Reset the npx Cache](#2-reset-the-npx-cache-macos) steps above.
+If your logs show `Error [ERR_MODULE_NOT_FOUND]`, there's a high probability it indicates a corrupted cache following a PatternFly MCP version update. Please follow the [Reset the npx Cache](#2-reset-the-npx-cache) steps above for your specific operating system.
