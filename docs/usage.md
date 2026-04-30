@@ -232,3 +232,10 @@ Using `@latest` tells the system to check for updates periodically, helping to e
 
 ### 5. Common Error: `ERR_MODULE_NOT_FOUND`
 If your logs show `Error [ERR_MODULE_NOT_FOUND]`, it likely indicates a corrupted cache following a PatternFly MCP version update. Please follow the [Reset the npx Cache](#2-reset-the-npx-cache) steps above for your specific operating system.
+
+### 6. Community Support
+If you have tried the steps above and are still encountering issues, or if you have specific questions about using PatternFly with your AI assistant, the following community resources are available:
+
+- **[PatternFly Slack](https://patternfly.slack.com/)**: Join our Slack community for real-time support and conversation.
+- **[GitHub Discussions](https://github.com/orgs/patternfly/discussions)**: A great place to ask questions, share ideas, and see how others are leveraging PatternFly.
+- **[PatternFly on Medium](https://medium.com/patternfly)**: Read articles and deep-dives into PatternFly design and development practices.
