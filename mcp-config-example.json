@@ -3,7 +3,7 @@
     "patternfly-mcp": {
       "command": "npx",
       "args": ["@patternfly/patternfly-mcp"],
-      "description": "PatternFly development rules and documentation"
+      "description": "PatternFly rules and documentation"
     }
   }
 }
