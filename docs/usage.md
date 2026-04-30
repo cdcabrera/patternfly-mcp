@@ -178,7 +178,7 @@ You can extend the server's capabilities by loading custom **Tool Plugins** at s
 
 This guide is designed to help resolve common environment-related issues across macOS, Linux, and Windows.
 
-> **Note on Operating Systems**: Our development and debugging workflows are primarily confirmed on **macOS and Linux**. While we provide instructions for **Windows**, these commands are run at your own discretion; we hold no liability for unintended outcomes. If you are unsure, we highly recommend you confirm with your IT or system administrator before running them.
+> **Note on Operating Systems**: Our primary development and testing environments are **macOS and Linux**. While we provide instructions for **Windows**, these commands are run at your own discretion. If you are unsure, please verify them with your IT or system administrator before proceeding.
 
 ### 1. Verify Node.js Version
 The PatternFly MCP server requires **Node.js 20 or higher**.
@@ -218,7 +218,7 @@ If you are developing locally or have cloned the repository on Windows, you may 
 - **Git Config**: Run `git config --global core.symlinks true` and then re-clone the repository or run `git checkout .` to restore the links.
 
 ### 4. Configuration Best Practices
-To ensure you always have the latest PatternFly documentation, use the `@latest` tag in your configuration:
+To ensure you stay up to date with the latest PatternFly documentation, use the `@latest` tag in your configuration:
 
 ```json
 "patternfly-mcp": {
@@ -228,5 +228,7 @@ To ensure you always have the latest PatternFly documentation, use the `@latest`
 }
 ```
 
+Using `@latest` tells the system to check for updates periodically, helping to ensure you are working with the most current PatternFly specifications.
+
 ### 5. Common Error: `ERR_MODULE_NOT_FOUND`
-If your logs show `Error [ERR_MODULE_NOT_FOUND]`, there's a high probability it indicates a corrupted cache following a PatternFly MCP version update. Please follow the [Reset the npx Cache](#2-reset-the-npx-cache) steps above for your specific operating system.
+If your logs show `Error [ERR_MODULE_NOT_FOUND]`, it likely indicates a corrupted cache following a PatternFly MCP version update. Please follow the [Reset the npx Cache](#2-reset-the-npx-cache) steps above for your specific operating system.
