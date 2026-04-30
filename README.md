@@ -38,7 +38,7 @@ HTTP transport mode
     "patternfly-mcp": {
       "command": "npx",
       "args": ["-y", "@patternfly/patternfly-mcp@latest", "--http", "--port", "8080"],
-      "description": "PatternFly docs (HTTP transport)"
+      "description": "PatternFly rules and documentation (HTTP transport)"
     }
   }
 }
