@@ -8,18 +8,41 @@ describe('getNodeMajorVersion', () => {
 
   it.each([
     {
-      description: 'number',
-      value: 1_000_000
+      description: 'number failure',
+      value: 1_000_000,
+      expected: 0
     },
     {
       description: 'string',
-      value: 'lorem ipsum'
+      value: 'lorem ipsum',
+      expected: 0
     },
     {
-      description: 'null',
-      value: null
+      description: 'null failure',
+      value: null,
+      expected: 0
+    },
+    {
+      description: 'undefined failure',
+      value: undefined,
+      expected: 0
+    },
+    {
+      description: 'NaN failure',
+      value: NaN,
+      expected: 0
+    },
+    {
+      description: 'operators',
+      value: '<=20',
+      expected: 20
+    },
+    {
+      description: 'operators and semver',
+      value: '<=20.0.1',
+      expected: 20
     }
-  ])('should handle basic failure, $description', ({ value }) => {
-    expect(getNodeMajorVersion(value as any)).toBe(0);
+  ])('should handle, $description', ({ value, expected }) => {
+    expect(getNodeMajorVersion(value as any)).toBe(expected);
   });
 });
