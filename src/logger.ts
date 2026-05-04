@@ -149,16 +149,19 @@ const publish = (level: LogLevel, options: LoggingSession = getLoggerOptions(), 
   const channelName = options?.channelName;
   const timestamp = Date.now();
   const event: LogEvent = { level, time: timestamp };
+  const argsFilter = (value: unknown) => value !== undefined && value !== 'undefined' && value !== null && value !== '';
 
   // If first arg is a string, treat it as the message and capture rest as args
   if (typeof msg === 'string') {
     event.msg = msg;
 
-    if (args.length) {
-      event.args = args;
+    const filteredArgs = args.filter(argsFilter);
+
+    if (filteredArgs.length) {
+      event.args = filteredArgs;
     }
   } else {
-    const arr = [msg, ...args].filter(value => value !== undefined);
+    const arr = [msg, ...args].filter(argsFilter);
 
     if (arr.length) {
       event.args = arr as unknown[];
