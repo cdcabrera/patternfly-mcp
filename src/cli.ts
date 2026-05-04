@@ -33,10 +33,10 @@ const run = async (): Promise<void> => {
     let error;
 
     if (!envNodeMajorVersion) {
-      // Environment not broadcasting version?
+      // Environment not broadcasting version. Missing or falsy
       error = new Error('Unable to determine environment Node.js version. Update Node.js and try again.');
     } else if (!appMinNodeMajorVersion) {
-      // Have options or package.json engine been modified?
+      // Options or package.json engine been modified. Missing or falsy
       error = new Error('Unable to determine server engine Node.js version requirements. Confirm engine available.');
     } else {
       // Everything else
@@ -46,7 +46,9 @@ const run = async (): Promise<void> => {
     }
 
     processExit(`${appName} failed to start. Engine requirements not met.`, error);
-    process.exit(1);
+
+    // Unreachable, processExit exits. Kept for readability.
+    return;
   }
 
   let main: typeof import('./index').main;

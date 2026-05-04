@@ -34,7 +34,7 @@ describe('CLI', () => {
       version: '14.0.0'
     },
     {
-      description: 'undefined',
+      description: 'undefined or missing',
       expected: 'Unable to determine environment Node.js',
       version: undefined
     }
