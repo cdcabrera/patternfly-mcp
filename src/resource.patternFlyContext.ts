@@ -1,6 +1,6 @@
 import { type McpResource } from './server';
 import { stringJoin } from './server.helpers';
-import { DEFAULT_OPTIONS } from './options.defaults';
+import { getOptions, runWithOptions } from './options.context';
 
 /**
  * Name of the resource.
@@ -22,9 +22,9 @@ const CONFIG = {
 };
 
 /**
- * Resource creator for context.
+ * Resource callback for the documentation index.
  *
- * @note Consider adding an environment snapshot here once contextual MCP tooling is available.
+ * @note Consider refining the environment snapshot here once contextual MCP tooling is available.
  *   ```
  *   const environmentSnapshot = stringJoin.newline(
  *     `### Environment Snapshot`,
@@ -35,19 +35,16 @@ const CONFIG = {
  *  ```
  *
  * @param passedUri - URI of the resource.
- * @returns {McpResource} The resource definition tuple
+ * @param options - Options for the resource.
+ * @returns The resource contents.
  */
-const patternFlyContextResource = (): McpResource => [
-  NAME,
-  URI_TEMPLATE,
-  CONFIG,
-  async (passedUri: URL) => {
-    const troubleshooting = stringJoin.newlineFiltered(
-      DEFAULT_OPTIONS.repoTroubleshoot && `- **Troubleshooting guidance:** ${DEFAULT_OPTIONS.repoTroubleshoot}`,
-      DEFAULT_OPTIONS.repoBugs && `- **Report bugs:** ${DEFAULT_OPTIONS.repoBugs}`
-    );
+const resourceCallback = async (passedUri: URL, options = getOptions()) => {
+  const troubleshooting = stringJoin.newlineFiltered(
+    options.repoSupport && `- **Troubleshooting guidance:** ${options.repoSupport}`,
+    options.repoBugs && `- **Report bugs:** ${options.repoBugs}`
+  );
 
-    const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
+  const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
 **What is PatternFly?**
 PatternFly provides React components, design guidelines, and development tools for creating enterprise applications. It is used by Red Hat and other organizations to build consistent UIs with reusable components and design principles.
@@ -64,23 +61,46 @@ This MCP server provides tools and resources to access all PatternFly documentat
 - **MCP resources:** Can be used to list, filter and display available documentation resources.
 
 **Environment:**
-- **MCP Server Mode:** ${DEFAULT_OPTIONS.mode}
-- **MCP Server Version:** ${DEFAULT_OPTIONS.version}
-- **Node.js Major Version:** ${DEFAULT_OPTIONS.nodeVersion}
+- **MCP Server Mode:** ${options.mode}
+- **MCP Server Version:** ${options.version || 'Unknown'}
+- **Node.js Major Version:** ${options.nodeVersion || 'Unknown'}
 
 ${(troubleshooting && stringJoin.newline('**Troubleshooting:**', troubleshooting)) || ''}
 `;
 
-    return {
-      contents: [
-        {
-          uri: passedUri?.toString(),
-          mimeType: 'text/markdown',
-          text: stringJoin.basic(context)
-        }
-      ]
-    };
-  }
-];
+  return {
+    contents: [
+      {
+        uri: passedUri?.toString(),
+        mimeType: 'text/markdown',
+        text: stringJoin.basic(context)
+      }
+    ]
+  };
+};
 
-export { patternFlyContextResource, NAME, URI_TEMPLATE, CONFIG };
+/**
+ * Resource creator for context.
+ *
+ * @param options - Global options
+ * @returns {McpResource} The resource definition tuple
+ */
+const patternFlyContextResource = (options = getOptions()): McpResource => {
+  const callback: McpResource[3] = async uri =>
+    runWithOptions(options, async () => resourceCallback(uri));
+
+  return [
+    NAME,
+    URI_TEMPLATE,
+    CONFIG,
+    callback
+  ];
+};
+
+export {
+  patternFlyContextResource,
+  resourceCallback,
+  NAME,
+  URI_TEMPLATE,
+  CONFIG
+};

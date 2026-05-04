@@ -33,7 +33,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property repoBugs - Bugs URL of the repository.
  * @property repoName - Name of the repository.
  * @property {RepoResources} repoResources - Repository resources.
- * @property repoTroubleshoot - Troubleshooting URL of the repository.
+ * @property repoSupport - Troubleshooting URL of the repository.
  * @property {typeof RESOURCE_MEMO_OPTIONS} resourceMemoOptions - Resource-level memoization options.
  * @property resourceModules - Array for programmatic registration of resource provider modules, similar to `toolModules` but
  *     for MCP resources and currently only internal.
@@ -68,7 +68,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   repoBugs: string | undefined;
   repoName: string | undefined;
   repoResources: RepoResources;
-  repoTroubleshoot: string | undefined;
+  repoSupport: string | undefined;
   resourceMemoOptions: Partial<typeof RESOURCE_MEMO_OPTIONS>;
   resourceModules: unknown | unknown[];
   separator: string;
@@ -488,6 +488,10 @@ const URL_REGEX = /^(https?:)\/\//i;
 
 /**
  * Available operational modes for the MCP server.
+ *
+ * @note Testing doesn't always use the expected mode
+ * - Unit tests default to `programmatic` mode
+ * - E2E tests generally use `test` mode
  */
 const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 
@@ -518,7 +522,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   pluginIsolation: 'strict',
   pluginHost: PLUGIN_HOST_OPTIONS,
   repoBugs: packageJson.bugs?.url,
-  repoTroubleshoot: packageJson.support?.url,
+  repoSupport: packageJson.support?.url,
   repoName: basename(process.cwd() || '').trim(),
   repoResources: REPO_RESOURCES,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,

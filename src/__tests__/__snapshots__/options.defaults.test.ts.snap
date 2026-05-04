@@ -93,7 +93,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "git": "git+https://github.com/patternfly/patternfly-mcp.git",
     "homepage": "https://github.com/patternfly/patternfly-mcp#readme",
   },
-  "repoTroubleshoot": "https://github.com/patternfly/patternfly-mcp/tree/main/docs#-usage",
+  "repoSupport": "https://github.com/patternfly/patternfly-mcp/blob/main/docs/usage.md#troubleshooting",
   "resourceMemoOptions": {
     "default": {
       "cacheLimit": 3,

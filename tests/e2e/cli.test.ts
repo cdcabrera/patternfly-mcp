@@ -27,11 +27,22 @@ describe('CLI', () => {
     await client.close();
   });
 
-  it('should exit when node version check fails', async () => {
+  it.each([
+    {
+      description: 'basic',
+      expected: 'Node.js version 14 found',
+      version: '14.0.0'
+    },
+    {
+      description: 'undefined',
+      expected: 'Unable to determine environment Node.js',
+      version: undefined
+    }
+  ])('should exit when node version check fails, $description', async ({ expected, version }) => {
     const child = spawn('node', [
       '--input-type=module',
       '-e',
-      "Object.defineProperty(process.versions, 'node', {value: '14.0.0'}); import('./dist/cli.js')"
+      `Object.defineProperty(process.versions, 'node', {value: '${version}'}); import('./dist/cli.js')`
     ]);
 
     let stderr = '';
@@ -45,8 +56,10 @@ describe('CLI', () => {
     });
 
     expect(exitCode).toBe(1);
+    expect(stderr).toContain('Troubleshooting Guide');
+    expect(stderr).toContain('To report bugs');
     expect(stderr).toContain('Engine requirements not met');
-    expect(stderr).toContain('Node.js version 14 found');
+    expect(stderr).toContain(expected);
   });
 
   it('should show troubleshooting links on runtime error', async () => {

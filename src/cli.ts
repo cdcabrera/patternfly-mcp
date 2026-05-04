@@ -9,26 +9,16 @@ import { getNodeMajorVersion } from './options.helpers';
 const run = async (): Promise<void> => {
   const appBugs = packageJson.bugs?.url;
   const appName = packageJson.name;
-  const appTroubleshoot = packageJson.support?.url;
+  const appSupport = packageJson.support?.url;
   const appMinNodeMajorVersion = getNodeMajorVersion(packageJson.engines?.node);
   const envNodeMajorVersion = getNodeMajorVersion(process.versions?.node || process.version);
-
-  // Quick Node.js confirmation
-  if (envNodeMajorVersion < appMinNodeMajorVersion) {
-    const error = new Error(
-      `Node.js version ${envNodeMajorVersion} found but ${appMinNodeMajorVersion} or higher is required. Update Node.js and try again.`
-    );
-
-    console.error(`${appName} failed to start. Engine requirements not met.`, error.message);
-    process.exit(1);
-  }
 
   // Exit the process on error.
   const processExit = (message: string, error: unknown): never => {
     console.error(message, error instanceof Error ? error.message : error);
 
-    if (appTroubleshoot) {
-      console.error(`\nFor help, visit the Troubleshooting Guide:\n${appTroubleshoot}`);
+    if (appSupport) {
+      console.error(`\nFor help, visit the Troubleshooting Guide:\n${appSupport}`);
     }
 
     if (appBugs) {
@@ -37,6 +27,27 @@ const run = async (): Promise<void> => {
     console.error('');
     process.exit(1);
   };
+
+  // Node.js confirmations
+  if (!envNodeMajorVersion || !appMinNodeMajorVersion || envNodeMajorVersion < appMinNodeMajorVersion) {
+    let error;
+
+    if (!envNodeMajorVersion) {
+      // Environment not broadcasting version?
+      error = new Error('Unable to determine environment Node.js version. Update Node.js and try again.');
+    } else if (!appMinNodeMajorVersion) {
+      // Have options or package.json engine been modified?
+      error = new Error('Unable to determine server engine Node.js version requirements. Confirm engine available.');
+    } else {
+      // Everything else
+      error = new Error(
+        `Node.js version ${envNodeMajorVersion} found but ${appMinNodeMajorVersion} or higher is required. Update Node.js and try again.`
+      );
+    }
+
+    processExit(`${appName} failed to start. Engine requirements not met.`, error);
+    process.exit(1);
+  }
 
   let main: typeof import('./index').main;
 
@@ -47,6 +58,7 @@ const run = async (): Promise<void> => {
   } catch (error) {
     processExit(`Failed to load ${appName}`, error);
 
+    // Unreachable, processExit exits. Kept for type satisfaction.
     return;
   }
 
