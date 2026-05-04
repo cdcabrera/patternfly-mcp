@@ -432,7 +432,7 @@ const TOOL_MEMO_OPTIONS = {
  */
 const SERVER_INSTANCE_OPTIONS: ServerInstanceOptions = {
   instructions:
-    'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, PatternFly components, and frontend development. For MCP server environment information read the patternfly://context resource.'
+    'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, PatternFly components, and frontend development. Use patternfly://context for server environment and troubleshooting links if runtime issues occur.'
 };
 
 /**

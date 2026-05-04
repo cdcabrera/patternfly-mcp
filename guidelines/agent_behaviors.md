@@ -56,6 +56,7 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
   - Warn users when a proposed solution requires disabling isolation.
 - **State Management**: Use `.agent/` directory for local guidance and state; maintain context; preserve session information.
 - **Security Awareness**: Be mindful of path traversal and isolation levels when working with external tools and resource loading.
+- **Troubleshooting Reference**: When encountering environment or runtime issues, consult the [Troubleshooting section in docs/usage.md](../docs/usage.md#troubleshooting) for common fixes such as Node.js upgrades, cache resets, and Windows-specific symlink issues.
 
 ## 3. Trigger-Based Workflows
 

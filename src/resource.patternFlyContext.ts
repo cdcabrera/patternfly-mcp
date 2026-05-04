@@ -17,7 +17,7 @@ const URI_TEMPLATE = 'patternfly://context';
  */
 const CONFIG = {
   title: 'PatternFly Design System Context',
-  description: 'Information about the PatternFly design system and how to use this MCP server. And MCP server environment information.',
+  description: 'Information about the PatternFly design system and how to use this MCP server, including environment and troubleshooting information.',
   mimeType: 'text/markdown'
 };
 
