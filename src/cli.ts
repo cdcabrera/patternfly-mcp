@@ -18,20 +18,24 @@ const run = async (): Promise<void> => {
     const errorMsg = error instanceof Error ? error.message : error;
     const msg = [message];
 
-    if (errorMsg && errorMsg !== 'undefined') {
-      msg.push(String(errorMsg));
+    if (errorMsg && String(errorMsg).trim() !== 'undefined' && String(errorMsg).trim() !== 'null') {
+      msg.push(String(errorMsg).trim());
     }
 
-    if (appSupport) {
+    if (appSupport && String(appSupport).trim() !== 'undefined') {
       msg.push(`For help, visit the Troubleshooting Guide:\n${appSupport}`);
     }
 
-    if (appBugs) {
+    if (appBugs && String(appBugs).trim() !== 'undefined') {
       msg.push(`To report bugs:\n${appBugs}`);
     }
 
     // Use console.error directly, filtered to avoid undefined
-    const finalMsg = msg.filter(Boolean).join('\n\n').trim();
+    const finalMsg = msg
+      .filter(Boolean)
+      .map(item => String(item).trim())
+      .filter(item => item !== 'undefined' && item !== 'null' && item !== '')
+      .join('\n\n');
 
     if (finalMsg) {
       console.error(`\n${finalMsg}\n`);

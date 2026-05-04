@@ -125,13 +125,13 @@ const formatLogEvent = (event: LogEvent) => {
   const message = event?.msg || '';
 
   const rest = (event?.args || []).map(arg => {
-    if (arg === undefined || arg === null || arg === 'undefined') {
+    if (arg === undefined || arg === null || String(arg).trim() === 'undefined' || String(arg).trim() === 'null') {
       return '';
     }
     try {
-      return typeof arg === 'string' ? arg : JSON.stringify(arg);
+      return typeof arg === 'string' ? arg.trim() : JSON.stringify(arg);
     } catch {
-      return String(arg);
+      return String(arg).trim();
     }
   }).filter(Boolean).join(' ');
 
