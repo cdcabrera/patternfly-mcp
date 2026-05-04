@@ -124,13 +124,16 @@ const formatLogEvent = (event: LogEvent) => {
   const eventLevel = `[${level}]`;
   const message = event?.msg || '';
 
-  const rest = event?.args?.map(arg => {
+  const rest = (event?.args || []).map(arg => {
+    if (arg === undefined || arg === null || arg === 'undefined') {
+      return '';
+    }
     try {
       return typeof arg === 'string' ? arg : JSON.stringify(arg);
     } catch {
       return String(arg);
     }
-  }).join(' ') || '';
+  }).filter(Boolean).join(' ');
 
   const separator = rest ? '\t:' : '';
 

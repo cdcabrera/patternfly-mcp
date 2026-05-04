@@ -519,12 +519,22 @@ runServer.memo = memo(
               await server.stop();
             } catch (error) {
               // Avoid engaging the contextual log channel on rollout.
-              console.error(`Error stopping server: ${error}`);
+              if (error && error !== 'undefined') {
+                console.error(`Error stopping server: ${error}`);
+              } else {
+                console.error('Error stopping server');
+              }
             }
           }
         } else {
           // Avoid engaging the contextual log channel on rollout.
-          console.error(`Error cleaning up server: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
+          const errorMsg = result?.reason?.message || result?.reason;
+
+          if (errorMsg && errorMsg !== 'undefined') {
+            console.error(`Error cleaning up server: ${errorMsg}`);
+          } else {
+            console.error('Error cleaning up server');
+          }
         }
       }
     }

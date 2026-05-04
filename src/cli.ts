@@ -15,10 +15,12 @@ const run = async (): Promise<void> => {
 
   // Exit the process on error.
   const processExit = (message: string, error: unknown): never => {
-    // console.error(message, error instanceof Error ? error.message : error);
-    const msg = [];
+    const errorMsg = error instanceof Error ? error.message : error;
+    const msg = [message];
 
-    msg.push(message, error instanceof Error ? error.message : error);
+    if (errorMsg && errorMsg !== 'undefined') {
+      msg.push(String(errorMsg));
+    }
 
     if (appSupport) {
       msg.push(`For help, visit the Troubleshooting Guide:\n${appSupport}`);
@@ -28,8 +30,11 @@ const run = async (): Promise<void> => {
       msg.push(`To report bugs:\n${appBugs}`);
     }
 
-    if (msg.length) {
-      console.error(`\n${msg.join('\n\n')}\n`);
+    // Use console.error directly, filtered to avoid undefined
+    const finalMsg = msg.filter(Boolean).join('\n\n').trim();
+
+    if (finalMsg) {
+      console.error(`\n${finalMsg}\n`);
     }
 
     process.exit(1);
