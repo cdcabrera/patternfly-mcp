@@ -431,7 +431,8 @@ const TOOL_MEMO_OPTIONS = {
  * Default server instance options.
  */
 const SERVER_INSTANCE_OPTIONS: ServerInstanceOptions = {
-  instructions: 'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, PatternFly components, and frontend development.'
+  instructions:
+    'Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, PatternFly components, and frontend development. For MCP server environment information read the patternfly://context resource.'
 };
 
 /**
