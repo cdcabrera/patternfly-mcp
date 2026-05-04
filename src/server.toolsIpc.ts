@@ -74,13 +74,14 @@ type ToolDescriptor = {
  * @property {ToolDescriptor[]} tools - List of available tools.
  * @property ok - Success flag.
  * @property result - Result of the operation.
+ * @property skillArtifactMap - Optional map of URI to `{ mimeType, text }` for `patternfly://skills/*` bodies (stripped from client result).
  * @property {SerializedError} error - Error descriptor.
  */
 type IpcResponse =
   | { t: 'hello:ack'; id: string } |
   { t: 'load:ack'; id: string; warnings: string[]; errors: string[] } |
   { t: 'manifest:result'; id: string; tools: ToolDescriptor[] } |
-  { t: 'invoke:result'; id: string; ok: true; result: unknown } |
+  { t: 'invoke:result'; id: string; ok: true; result: unknown; skillArtifactMap?: Record<string, unknown> } |
   { t: 'invoke:result'; id: string; ok: false; error: SerializedError } |
   { t: 'shutdown:ack'; id: string };
 
@@ -223,7 +224,7 @@ const isManifestResult = (expectedId: string) => (message: any): message is {
  * @param expectedId
  */
 const isInvokeResult = (expectedId: string) => (message: any): message is
-  { t: 'invoke:result'; id: string; ok: true; result: unknown } |
+  { t: 'invoke:result'; id: string; ok: true; result: unknown; skillArtifactMap?: Record<string, unknown> } |
   { t: 'invoke:result'; id: string; ok: false; error: SerializedError } => {
   if (!message || message.t !== 'invoke:result') {
     return false;

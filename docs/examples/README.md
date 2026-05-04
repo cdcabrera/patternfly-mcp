@@ -7,6 +7,7 @@ PatternFly MCP code examples for tooling plugins and development use cases.
 - **[embeddedInlineTool.ts](embeddedInlineTool.ts)** - Embedding the server and using a custom inline tool to make your own MCP server
 - **[toolPluginGitStatus.js](toolPluginGitStatus.js)** - A custom tool using Git
 - **[toolPluginHelloWorld.js](toolPluginHelloWorld.js)** - A basic JS tool plugin example
+- **[toolPluginSkillWorkflowPoc.js](toolPluginSkillWorkflowPoc.js)** - POC: add-docs-links skill as two tools (entry + step workflow) with `patternfly://skills/{id}` previews and full bodies via MCP resources
 
 ## Adding new example guidance
 

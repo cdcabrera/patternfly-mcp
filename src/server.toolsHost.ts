@@ -17,6 +17,34 @@ import {
 import { isPlainObject } from './server.helpers';
 
 /**
+ * @internal Convention for external tool plugins: attach full skill bodies keyed by
+ * `patternfly://skills/...` URI. Stripped from the MCP `result` before it reaches the client.
+ */
+const PF_SKILL_ARTIFACT_KEY = '_pfSkillArtifactMap';
+
+const splitInvokeResultAndSkillArtifacts = (
+  raw: unknown
+): { clientResult: unknown; skillArtifactMap?: Record<string, unknown> } => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { clientResult: raw };
+  }
+
+  const obj = raw as Record<string, unknown>;
+
+  if (!(PF_SKILL_ARTIFACT_KEY in obj)) {
+    return { clientResult: raw };
+  }
+
+  const { [PF_SKILL_ARTIFACT_KEY]: artifacts, ...rest } = obj;
+
+  if (!artifacts || typeof artifacts !== 'object' || Array.isArray(artifacts)) {
+    return { clientResult: rest };
+  }
+
+  return { clientResult: rest, skillArtifactMap: artifacts as Record<string, unknown> };
+};
+
+/**
  * SubType of IpcRequest for "hello" requests.
  */
 type HelloRequest = Extract<IpcRequest, { t: 'hello' }>;
@@ -376,7 +404,20 @@ const requestInvoke = async (state: HostState, request: InvokeRequest) => {
     if (!settled) {
       settled = true;
       clearTimeout(timer);
-      process.send?.({ t: 'invoke:result', id: request.id, ok: true, result });
+      const { clientResult, skillArtifactMap } = splitInvokeResultAndSkillArtifacts(result);
+      const payload: {
+        t: 'invoke:result';
+        id: string;
+        ok: true;
+        result: unknown;
+        skillArtifactMap?: Record<string, unknown>;
+      } = { t: 'invoke:result', id: request.id, ok: true, result: clientResult };
+
+      if (skillArtifactMap && Object.keys(skillArtifactMap).length > 0) {
+        payload.skillArtifactMap = skillArtifactMap;
+      }
+
+      process.send?.(payload);
     }
   } catch (error) {
     if (!settled) {

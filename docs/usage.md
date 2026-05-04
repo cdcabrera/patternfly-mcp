@@ -174,6 +174,10 @@ You can extend the server's capabilities by loading custom **Tool Plugins** at s
 
 [See development documentation for tool plugins.](./development.md#mcp-tool-plugins)
 
+### Skill workflow POC
+
+The repo ships an optional example plugin, [toolPluginSkillWorkflowPoc.js](./examples/toolPluginSkillWorkflowPoc.js), that demonstrates **step workflows** plus **`patternfly://skills/{id}`** resources (preview in the tool result, full body via `resources/read`). Configuration is the same as any local `--tool` path; see [Skill workflow POC](./development.md#skill-workflow-poc) for build commands, isolation flags, and cache behavior.
+
 ## Troubleshooting
 
 These are **first-step checks** for common setup problems, not full diagnostics. If something still fails, use the community links at the end of this section or ask your IT team, especially on **Windows**, where permissions, security software, and Git setup vary and may be beyond simple troubleshooting.

@@ -20,6 +20,7 @@ import { getOptions, getSessionOptions } from './options.context';
 import { setToolOptions } from './options.tools';
 import { normalizeTools, sanitizeStaticToolName, type NormalizedToolEntry } from './server.toolsUser';
 import { jsonSchemaToZod, normalizeInputSchema } from './server.schema';
+import { registerSkillArtifacts, clearSkillArtifactsForSession } from './server.skillArtifacts';
 
 /**
  * Handle for a spawned Tools Host process.
@@ -405,6 +406,14 @@ const makeProxyCreators = (
       throw invocationError;
     }
 
+    if (response.ok === true) {
+      const sm = response.skillArtifactMap;
+
+      if (sm && typeof sm === 'object' && !Array.isArray(sm) && Object.keys(sm).length > 0) {
+        registerSkillArtifacts(getSessionOptions().sessionId, sm);
+      }
+    }
+
     return response.result;
   };
 
@@ -470,6 +479,7 @@ const sendToolsHostShutdown = async (
 
     if (confirmHandle?.child === child) {
       activeHostsBySession.delete(sessionId);
+      clearSkillArtifactsForSession(sessionId);
     }
 
     resolveIt?.();

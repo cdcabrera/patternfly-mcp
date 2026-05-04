@@ -15,6 +15,7 @@ import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
 import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
 import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
 import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
+import { patternFlySkillsResource } from './resource.patternFlySkills';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
@@ -222,7 +223,8 @@ const builtinResources: McpResourceCreator[] = [
   patternFlyDocsIndexResource,
   patternFlyDocsTemplateResource,
   patternFlySchemasIndexResource,
-  patternFlySchemasTemplateResource
+  patternFlySchemasTemplateResource,
+  patternFlySkillsResource
 ];
 
 /**

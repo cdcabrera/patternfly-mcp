@@ -391,6 +391,26 @@ These terms describe **how tools and their related properties are represented** 
 - **`Zod schema`**: A Zod schema instance. Loosely detected with `isZodSchema`.
 - **`Raw Zod shape` (`ZodRawShapeCompat`)**: A **non-empty** plain object whose **values** are Zod schemas; keys are field names. An empty `{}` is **not** a raw Zod shape. Detected with `isZodRawShape`.
 
+## Skill workflow POC
+
+Proof-of-concept for **session-scoped skill artifacts** and a two-part agent flow (entry tool + workflow tool), using the local [add-docs-links skill](../guidelines/skills/add-docs-links/SKILL.md) as the sample.
+
+### Behavior
+
+- External tool handlers in the **Tools Host** may return `_pfSkillArtifactMap` next to a normal MCP tool result (`content`, etc.). The host **strips** `_pfSkillArtifactMap` before the result is returned to the MCP client; the map is sent on the same IPC message so the **parent** process can register full bodies keyed by full URI (for example `patternfly://skills/<workflowId>-reference`).
+- The built-in resource template **`patternfly://skills/{id}`** reads those bodies for the current async session. Tool responses can still embed **`type: "resource"`** items with a **short preview** in `resource.text` while agents fetch the **full** markdown via **`resources/read`** on the same URI.
+- **Limits**: Bodies are stored in memory per session (max **64** URIs; oldest evicted when over cap). They are **cleared** when the Tools Host for that session shuts down.
+
+### Try the example
+
+From the repository root, after `npm run build`:
+
+```bash
+node dist/cli.js --log-stderr --tool ./docs/examples/toolPluginSkillWorkflowPoc.js
+```
+
+The workflow tool reads `guidelines/skills/add-docs-links/reference.md` on certain steps. Under **`--plugin-isolation strict`**, the file must be readable within the host allowlist (the example path is under the repo). If reads fail, use **`--plugin-isolation none`** for local development only—the same trade-off as [toolPluginGitStatus.js](examples/toolPluginGitStatus.js).
+
 ## Initial troubleshooting
 
 ### Tool plugins
