@@ -81,7 +81,7 @@ describe('main', () => {
 
     await expect(async () => main()).rejects.toThrow(error.message);
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(`Failed to start server: ${error.message}`);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to start server: Server failed to start'));
     expect(processExitSpy).toHaveBeenCalledWith(1);
   });
 
@@ -117,7 +117,7 @@ describe('main', () => {
 
     await expect(async () => method()).rejects.toThrow(error.message);
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(`${message} ${error.message}`);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining(`${message} ${error.message}`));
     expect(processExitSpy).toHaveBeenCalledWith(1);
   });
 

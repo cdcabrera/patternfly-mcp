@@ -119,21 +119,28 @@ const formatUnknownError = (value: unknown): string => {
  *
  * @param event - Log event to format
  */
+/**
+ * Formats a log event into a string for terminal output.
+ *
+ * @param event - The log event to format
+ * @returns {string} The formatted log message
+ */
 const formatLogEvent = (event: LogEvent) => {
-  const level = event?.level?.toUpperCase() || 'INFO';
+  const level = (event?.level || 'INFO').toUpperCase();
   const eventLevel = `[${level}]`;
   const message = event?.msg || '';
 
-  const rest = (event?.args || []).map(arg => {
-    if (arg === undefined || arg === null || String(arg).trim() === 'undefined' || String(arg).trim() === 'null') {
-      return '';
-    }
-    try {
-      return typeof arg === 'string' ? arg.trim() : JSON.stringify(arg);
-    } catch {
-      return String(arg).trim();
-    }
-  }).filter(Boolean).join(' ');
+  const rest = (event?.args || [])
+    .filter(arg => arg !== undefined && arg !== null)
+    .map(arg => {
+      try {
+        return typeof arg === 'string' ? arg : JSON.stringify(arg);
+      } catch {
+        return String(arg);
+      }
+    })
+    .filter(val => val !== undefined && val !== null && val !== 'undefined' && val !== 'null')
+    .join(' ') || '';
 
   const separator = rest ? '\t:' : '';
 
@@ -152,19 +159,16 @@ const publish = (level: LogLevel, options: LoggingSession = getLoggerOptions(), 
   const channelName = options?.channelName;
   const timestamp = Date.now();
   const event: LogEvent = { level, time: timestamp };
-  const argsFilter = (value: unknown) => value !== undefined && value !== 'undefined' && value !== null && value !== '';
 
   // If first arg is a string, treat it as the message and capture rest as args
   if (typeof msg === 'string') {
     event.msg = msg;
 
-    const filteredArgs = args.filter(argsFilter);
-
-    if (filteredArgs.length) {
-      event.args = filteredArgs;
+    if (args.length) {
+      event.args = args;
     }
   } else {
-    const arr = [msg, ...args].filter(argsFilter);
+    const arr = [msg, ...args].filter(value => value !== undefined);
 
     if (arr.length) {
       event.args = arr as unknown[];

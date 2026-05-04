@@ -159,14 +159,10 @@ const main = async (
   // If allowed, exit the process on error otherwise log then throw the error.
   const processExit = (message: string, error: unknown) => {
     const errorMsg = error instanceof Error ? error.message : error;
-    const cleanErrorMsg = errorMsg && String(errorMsg).trim() !== 'undefined' && String(errorMsg).trim() !== 'null'
-      ? String(errorMsg).trim()
-      : '';
+    const finalMsg = [message, errorMsg].filter(Boolean).join(' ');
 
-    if (cleanErrorMsg) {
-      console.error(`${message} ${cleanErrorMsg}`);
-    } else {
-      console.error(message);
+    if (finalMsg) {
+      console.error(finalMsg);
     }
 
     if (updatedAllowProcessExit) {
@@ -180,10 +176,10 @@ const main = async (
     // Parse CLI options
     const { mode: cliMode, ...cliOptions } = parseCliOptions();
 
-    // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
     mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
 
     // Finalize exit policy after merging options
+
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
   } catch (error) {
     processExit('Set options error, failed to start server:', error);
