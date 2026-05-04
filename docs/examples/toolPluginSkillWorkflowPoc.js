@@ -1,11 +1,14 @@
 /**
  * POC: skill workflow (add-docs-links) as external tools + session skill resources.
  *
+ * Workflow step text is loaded from `guidelines/skills/add-docs-links/SKILL.md`
+ * (## Workflow section); not hardcoded in this file.
+ *
  * Run from repo root after build:
  *   node dist/cli.js --log-stderr --tool ./docs/examples/toolPluginSkillWorkflowPoc.js
  *
  * On first run you may need `--plugin-isolation none` so the host can read
- * `guidelines/skills/add-docs-links/reference.md` (see docs/development.md).
+ * skill files under `guidelines/skills/add-docs-links/` (see docs/development.md).
  *
  * Node.js >= 22 for external tool plugins.
  */
@@ -25,33 +28,96 @@ const workflows = new Map();
 /** @type {Map<string, string>} */
 const referenceFullByWorkflow = new Map();
 
-const STEP_COUNT = 8;
+/** @type {string[] | null} */
+let workflowStepsCache = null;
 
-const STEP_GUIDES = [
-  `**Step 1 — Resolve raw URL and ref**  
-Map GitHub links to a **raw** \`https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{file}\` URL. Prefer the same ref already used in \`docs.json\` for that repo. For a new \`patternfly/<repo>\`, open \`src/__tests__/docs.json.test.ts\` if \`baseHashes\` may need updating — do not guess counts from the skill text alone.`,
+/**
+ * Slice of SKILL.md from "## Workflow" up to (but not including) the next "## " heading.
+ *
+ * @param {string} markdown - Full SKILL.md body
+ * @returns {string}
+ */
+const extractWorkflowSection = markdown => {
+  const start = markdown.match(/^## Workflow\s*$/m);
 
-  `**Step 2 — Whitelist**  
-Each \`path\` must match \`patternflyOptions.urlWhitelist\` in \`src/options.defaults.ts\`. HTTPS only. Do not widen the whitelist in a catalog-only PR. See the linked **reference** resource for allowed domains.`,
+  if (!start || start.index === undefined) {
+    return '';
+  }
 
-  `**Step 3 — Reachability**  
-Verify HTTP **2xx** for each URL (for example \`curl -sI\`). Do not add dead links.`,
+  const from = start.index + start[0].length;
+  const tail = markdown.slice(from);
+  const nextHeading = tail.match(/\n## (?!Workflow\b)/m);
 
-  `**Step 4 — Unique \`path\`**  
-Each \`path\` must appear exactly once in the whole catalog.`,
+  return nextHeading ? tail.slice(0, nextHeading.index) : tail;
+};
 
-  `**Step 5 — Placement in \`docs\`**  
-New top-level keys: append as the **last** property inside \`"docs"\`. New rows in an existing array: append to the **end** unless the user specifies order.`,
+/**
+ * Split workflow section into one markdown string per numbered top-level item (1. … 2. …).
+ * Trailing lines after the last number (e.g. **CI:**) stay attached to that step.
+ *
+ * @param {string} section
+ * @returns {string[]}
+ */
+const parseNumberedWorkflowSteps = section => {
+  const lines = section.split('\n');
 
-  `**Step 6 — Entry shape**  
-Match field types to **reference.md — Entry format**. Copy \`section\` / \`category\` from the closest similar row when unsure.`,
+  /** @type {string[][]} */
+  const chunks = [];
 
-  `**Step 7 — \`meta\` and \`generated\`**  
-\`meta.totalEntries\` = number of keys in \`docs\`. \`meta.totalDocs\` = total objects across arrays. \`generated\` = \`new Date().toISOString()\`.`,
+  /** @type {string[]} */
+  let current = [];
 
-  `**Step 8 — Tests**  
-From repo root: \`npm test\` or scoped Jest. Update snapshots only where catalog-driven output changed. CI: \`.github/workflows/audit.yml\` on PRs touching \`src/docs.json\`.`
-];
+  for (const line of lines) {
+    const isNewStep = /^\d+\.\s/.test(line);
+
+    if (isNewStep) {
+      if (current.length) {
+        chunks.push(current);
+      }
+
+      current = [line];
+    } else if (current.length) {
+      current.push(line);
+    }
+  }
+
+  if (current.length) {
+    chunks.push(current);
+  }
+
+  return chunks.map(buf => buf.join('\n').trim()).filter(Boolean);
+};
+
+/**
+ * @returns {Promise<string[]>}
+ */
+const getWorkflowStepsFromSkill = async () => {
+  if (workflowStepsCache) {
+    return workflowStepsCache;
+  }
+
+  const markdown = await readFile(join(skillDir, 'SKILL.md'), 'utf8');
+  const section = extractWorkflowSection(markdown);
+  const steps = parseNumberedWorkflowSteps(section);
+
+  if (steps.length === 0) {
+    throw new Error(
+      'add-docs-links POC: could not parse any numbered steps from ## Workflow in SKILL.md'
+    );
+  }
+
+  workflowStepsCache = steps;
+
+  return workflowStepsCache;
+};
+
+/**
+ * True when the step text points agents at reference.md (whitelist, entry format, etc.).
+ *
+ * @param {string} stepMarkdown
+ */
+const stepMentionsReferenceMd = stepMarkdown =>
+  /\[reference\.md\]|`reference\.md`|reference\.md#/i.test(stepMarkdown);
 
 const previewSlice = (text, max = 220) => {
   const t = text.replace(/\s+/g, ' ').trim();
@@ -83,6 +149,16 @@ const entryTool = {
     additionalProperties: false
   },
   async handler() {
+    let stepCountNote = 'the numbered steps in SKILL.md';
+
+    try {
+      const steps = await getWorkflowStepsFromSkill();
+
+      stepCountNote = String(steps.length);
+    } catch {
+      // keep generic note if SKILL.md cannot be read yet
+    }
+
     const text = [
       '## PatternFly skill: add-docs-links (entry)',
       '',
@@ -90,7 +166,13 @@ const entryTool = {
       '',
       '### Workflow contract',
       '1. Call **patternflySkillWorkflow_addDocsLinks** with `{ "action": "start" }` to obtain a `workflowId`.',
-      '2. For each numbered step, do the work in your environment, then call **patternflySkillWorkflow_addDocsLinks** with `{ "action": "advance", "workflowId": "<id>", "stepCompleted": true }`.',
+      [
+        '2. The server loads **',
+        stepCountNote,
+        '** workflow steps from `guidelines/skills/add-docs-links/SKILL.md` (section `## Workflow`). ',
+        'For each step, do the work, then call **patternflySkillWorkflow_addDocsLinks** with ',
+        '`{ "action": "advance", "workflowId": "<id>", "stepCompleted": true }`.'
+      ].join(''),
       '3. Use **patternflySkillWorkflow_addDocsLinks** `{ "action": "status", "workflowId": "<id>" }` if you need the current step.',
       '4. When a response includes `type: "resource"` with `patternfly://skills/...`, treat the inline `text` as a **preview**; call MCP **resources/read** on the same URI for the **full** body (cached for this session).',
       '',
@@ -107,7 +189,7 @@ const entryTool = {
 const workflowTool = {
   name: 'patternflySkillWorkflow_addDocsLinks',
   description:
-    'Step-driven workflow for the add-docs-links skill. Session state in the tools host; registers full reference.md for MCP resources/read on steps that need it.',
+    'Step-driven workflow for the add-docs-links skill. Steps are read from SKILL.md ## Workflow; session state lives in the tools host; registers full reference.md when a step cites it.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -129,6 +211,28 @@ const workflowTool = {
     additionalProperties: false
   },
   async handler(args = {}) {
+    let guides;
+
+    try {
+      guides = await getWorkflowStepsFromSkill();
+    } catch (err) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: [
+              '**Workflow unavailable** — could not read or parse `guidelines/skills/add-docs-links/SKILL.md`.',
+              '',
+              String(err?.message || err),
+              '',
+              'Ensure the plugin runs from the repo (or paths are readable) and try `--plugin-isolation none` for local development.'
+            ].join('\n')
+          }
+        ]
+      };
+    }
+
+    const stepCount = guides.length;
     const { action, workflowId, stepCompleted } = args;
 
     if (action === 'status') {
@@ -150,7 +254,7 @@ const workflowTool = {
         content: [
           {
             type: 'text',
-            text: `**Status** — workflow \`${workflowId}\` is on **step ${st.step} / ${STEP_COUNT}**.\n\n${STEP_GUIDES[st.step - 1]}`
+            text: `**Status** — workflow \`${workflowId}\` is on **step ${st.step} / ${stepCount}**.\n\n${guides[st.step - 1]}`
           }
         ]
       };
@@ -168,7 +272,7 @@ const workflowTool = {
             text: [
               `Started workflow \`${id}\` (add-docs-links).`,
               '',
-              STEP_GUIDES[0],
+              guides[0],
               '',
               'When step 1 is done in your workspace, call this tool with:',
               `\`{ "action": "advance", "workflowId": "${id}", "stepCompleted": true }\``
@@ -204,7 +308,7 @@ const workflowTool = {
         };
       }
 
-      if (st.step > STEP_COUNT) {
+      if (st.step > stepCount) {
         return {
           content: [
             {
@@ -217,7 +321,7 @@ const workflowTool = {
 
       st.step += 1;
 
-      if (st.step > STEP_COUNT) {
+      if (st.step > stepCount) {
         workflows.delete(workflowId);
         referenceFullByWorkflow.delete(workflowId);
 
@@ -238,13 +342,13 @@ const workflowTool = {
       }
 
       const lines = [
-        `Now on **step ${st.step} / ${STEP_COUNT}** (after your confirmation).`,
+        `Now on **step ${st.step} / ${stepCount}** (after your confirmation).`,
         '',
-        STEP_GUIDES[st.step - 1],
+        guides[st.step - 1],
         ''
       ];
 
-      if (st.step < STEP_COUNT) {
+      if (st.step < stepCount) {
         lines.push(
           'When this step is done, call:',
           `\`{ "action": "advance", "workflowId": "${workflowId}", "stepCompleted": true }\``
@@ -260,7 +364,7 @@ const workflowTool = {
       /** @type {Record<string, { mimeType: string; text: string }>} */
       const _pfSkillArtifactMap = {};
 
-      if (st.step === 2 || st.step === 6) {
+      if (stepMentionsReferenceMd(guides[st.step - 1])) {
         const full = await loadReferenceFull(workflowId);
         const uri = referenceUri(workflowId);
 

@@ -393,7 +393,7 @@ These terms describe **how tools and their related properties are represented** 
 
 ## Skill workflow POC
 
-Proof-of-concept for **session-scoped skill artifacts** and a two-part agent flow (entry tool + workflow tool), using the local [add-docs-links skill](../guidelines/skills/add-docs-links/SKILL.md) as the sample.
+Proof-of-concept for **session-scoped skill artifacts** and a two-part agent flow (entry tool + workflow tool), using the local [add-docs-links skill](../guidelines/skills/add-docs-links/SKILL.md) as the sample. The example plugin reads **numbered steps from the `## Workflow` section of `SKILL.md`** at runtime (not a hardcoded copy), and attaches **full `reference.md`** via `patternfly://skills/...` when the current step text cites `reference.md`.
 
 ### Behavior
 
