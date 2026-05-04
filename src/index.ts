@@ -158,11 +158,7 @@ const main = async (
 
   // If allowed, exit the process on error otherwise log then throw the error.
   const processExit = (message: string, error: unknown) => {
-    if (error) {
-      console.error(message, error);
-    } else {
-      console.error(message);
-    }
+    console.error(message, error);
 
     if (updatedAllowProcessExit) {
       process.exit(1);

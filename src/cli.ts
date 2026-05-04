@@ -15,20 +15,21 @@ const run = async (): Promise<void> => {
 
   // Exit the process on error.
   const processExit = (message: string, error: unknown): never => {
-    const errorMsg = error instanceof Error ? error.message : error;
+    // console.error(message, error instanceof Error ? error.message : error);
+    const msg = [];
 
-    if (errorMsg) {
-      console.error(message, errorMsg);
-    } else {
-      console.error(message);
-    }
+    msg.push(message, error instanceof Error ? error.message : error);
 
     if (appSupport) {
-      console.error(`\nFor help, visit the Troubleshooting Guide:\n${appSupport}\n`);
+      msg.push(`For help, visit the Troubleshooting Guide:\n${appSupport}`);
     }
 
     if (appBugs) {
-      console.error(`\nTo report bugs:\n${appBugs}\n`);
+      msg.push(`To report bugs:\n${appBugs}`);
+    }
+
+    if (msg.length) {
+      console.error(`\n${msg.join('\n\n')}\n`);
     }
 
     process.exit(1);
