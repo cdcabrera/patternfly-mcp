@@ -22,16 +22,6 @@ import {
   type ToolInternalOptions
 } from './server.toolsUser';
 
-import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
-import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
-import { browsePatternFlyTool } from './tool.browsePatternFly';
-import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
-import { patternFlyContextResource } from './resource.patternFlyContext';
-import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
-import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
-import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
-import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
-
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
  */
@@ -40,11 +30,13 @@ type PfMcpOptions = DefaultOptionsOverrides;
 /**
  * Additional settings for programmatic control.
  *
- * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
- * @property {McpToolCreator[]} [tools] - An optional array of tool creators used by the server.
- * @property {McpResourceCreator[]} [resources] - An optional array of resource creators used by the server.
+ * @property {boolean} allowProcessExit - Override process exits. Useful for tests
+ *     or programmatic use to avoid exiting.
+ *     - Setting directly overrides `mode` property defaults.
+ *     - When `mode=cli` or `mode=programmatic` or `undefined`, defaults to `true`.
+ *     - When `mode=test`, defaults to `false`.
  */
-type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit' | 'tools' | 'resources'>;
+type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 
 /**
  * Server instance with shutdown capability
@@ -188,34 +180,13 @@ const main = async (
     processExit('Set options error, failed to start server:', error);
   }
 
-  // Use PatternFly specific tools and resources as defaults
-  const {
-    tools = [
-      usePatternFlyDocsTool,
-      searchPatternFlyDocsTool,
-      browsePatternFlyTool
-    ],
-    resources = [
-      patternFlyContextResource,
-      patternFlyComponentsIndexResource,
-      patternFlyDocsIndexResource,
-      patternFlyDocsTemplateResource,
-      patternFlySchemasIndexResource,
-      patternFlySchemasTemplateResource
-    ]
-  } = pfMcpSettings;
-
   try {
     // Generate session options
     const session = getSessionOptions();
 
     // Start the server, apply session values, then apply merged options to ensure stable hashing.
     return await runWithSession(session, async () =>
-      await runServer.memo(mergedOptions, {
-        allowProcessExit: updatedAllowProcessExit,
-        tools,
-        resources
-      }));
+      await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
   } catch (error) {
     processExit('Failed to start server:', error);
   }
