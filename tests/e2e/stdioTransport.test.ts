@@ -407,6 +407,10 @@ describe('Logging', () => {
     {
       description: 'with mcp protocol',
       args: ['--log-protocol']
+    },
+    {
+      description: 'with experimental flag',
+      args: ['--experimental-context-management']
     }
   ])('should allow setting logging options, $description', async ({ args }) => {
     const serverArgs = [...args];
@@ -521,5 +525,52 @@ describe('Tools', () => {
     const resp: any = await CLIENT.send(req);
 
     expect(resp.result.isError).toBe(true);
+  });
+});
+
+describe('token-saver mode', () => {
+  let CLIENT: StdioTransportClient;
+
+  beforeAll(async () => {
+    CLIENT = await startServer({
+      args: ['--experimental-context-management', 'token-saver']
+    });
+  });
+
+  afterAll(async () => {
+    if (CLIENT) {
+      await CLIENT.close();
+    }
+  });
+
+  it('should only expose browsePatternFly tool', async () => {
+    const response = await CLIENT.send({
+      method: 'tools/list',
+      params: {}
+    });
+    const tools = response?.result?.tools || [];
+    const toolNames = tools.map((tool: any) => tool.name);
+
+    expect(toolNames).toEqual(['browsePatternFly']);
+  });
+
+  it('should return McpResource links from browsePatternFly', async () => {
+    const response = await CLIENT.send({
+      method: 'tools/call',
+      params: {
+        name: 'browsePatternFly',
+        arguments: {
+          query: 'Button'
+        }
+      }
+    });
+
+    const content = response?.result?.content || [];
+
+    expect(content.length).toBeGreaterThan(0);
+    content.forEach((item: any) => {
+      expect(item.type).toBe('resource');
+      expect(item.resource.uri).toMatch(/^patternfly:\/\/docs\//);
+    });
   });
 });

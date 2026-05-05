@@ -2,10 +2,12 @@
 
 exports[`options defaults should return specific properties: defaults 1`] = `
 {
+  "contextManagement": "default",
   "contextPath": "/",
   "contextUrl": "file:///",
   "docsPathSlug": "documentation:",
   "docsPaths": [],
+  "experimental": [],
   "http": {
     "allowedHosts": [],
     "allowedOrigins": [],

@@ -25,6 +25,7 @@ export type StartHttpServerOptions = {
   logging?: Partial<PfMcpOptions['logging']> & { level?: LoggingLevel };
   toolModules?: PfMcpOptions['toolModules'];
   modeOptions?: PfMcpOptions['modeOptions'];
+  experimentalContextManagement?: PfMcpOptions['experimentalContextManagement'];
 };
 
 export type StartHttpServerSettings = PfMcpSettings;
@@ -73,6 +74,7 @@ export const startServer = async (
   const updatedOptions: PfMcpOptions = {
     isHttp: true,
     ...options,
+    experimentalContextManagement: options.experimentalContextManagement || 'default',
     http: {
       port: 8000,
       host: '127.0.0.1',

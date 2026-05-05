@@ -1,4 +1,11 @@
-import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import {
+  parseCliOptions,
+  parseProgrammaticOptions,
+  type CliOptions,
+  type DefaultOptions,
+  type DefaultOptionsOverrides,
+  type MakeExperimental
+} from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -23,9 +30,34 @@ import {
 } from './server.toolsUser';
 
 /**
- * Options for "programmatic" use. Extends the `DefaultOptions` interface.
+ * Options currently in experimental status.
+ *
+ * @note Use the internal key name here.
  */
-type PfMcpOptions = DefaultOptionsOverrides;
+const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
+  'contextManagement'
+]);
+
+/**
+ * Options for "cli" use. An aspect of the `DefaultOptions` interface.
+ *
+ * @alias CliOptions
+ */
+type PfMcpCliOptions = MakeExperimental<CliOptions, 'contextManagement'>;
+
+/**
+ * Deprecated `CliOptions` name. Use `PfMcpCliOptions` instead.
+ *
+ * @alias CliOptions
+ */
+type DeprecatedCliOptions = PfMcpCliOptions;
+
+/**
+ * Options for "programmatic" use. Limits the `DefaultOptions` interface.
+ *
+ * @alias DefaultOptionsOverrides
+ */
+type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'contextManagement'>;
 
 /**
  * Additional settings for programmatic control.
@@ -168,11 +200,16 @@ const main = async (
   };
 
   try {
-    // Parse CLI options
-    const { mode: cliMode, ...cliOptions } = parseCliOptions();
+    const { options: cliOptions, experimentalOptions: cliExp } = parseCliOptions(process.argv, EXPERIMENTAL_OPTIONS);
+    const { options: progOptions, experimentalOptions: progExp } = parseProgrammaticOptions(options, EXPERIMENTAL_OPTIONS);
 
     // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
-    mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
+    mergedOptions = setOptions({
+      ...cliOptions,
+      ...progOptions,
+      experimental: [...new Set([...cliExp, ...progExp])],
+      mode: cliOptions.mode ?? programmaticMode
+    }, EXPERIMENTAL_OPTIONS);
 
     // Finalize exit policy after merging options
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
@@ -199,7 +236,8 @@ export {
   createMcpTool,
   main,
   main as start,
-  type CliOptions,
+  type DeprecatedCliOptions as CliOptions,
+  type PfMcpCliOptions,
   type PfMcpOptions,
   type PfMcpSettings,
   type PfMcpInstance,
