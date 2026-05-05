@@ -10,6 +10,9 @@ import { getNodeMajorVersion } from './options.helpers';
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
+ * @property contextManagement - Strategy for managing agent context and response sizes.
+ *    - 'default': Standard text-heavy responses.
+ *    - 'token-saver': High-efficiency mode using McpResource links.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
@@ -48,6 +51,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property xhrFetch - XHR and Fetch options.
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
+  contextManagement: 'default' | 'token-saver';
   contextPath: string;
   contextUrl: string;
   docsPaths: string[];
@@ -82,10 +86,22 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
 }
 
 /**
+ * Convert specific options towards an "experimental-" prefix for consumers.
+ *
+ * @example Use
+ * type ExperimentalKeys = 'loremOption' | 'ipsumOption';
+ *
+ * type PfMcpOptions = MakeExperimental<Pick<DefaultOptionsOverrides, ExperimentalKeys>>;
+ */
+type MakeExperimental<T, K extends keyof T> = T & {
+  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
+};
+
+/**
  * Overrides for default options. Exposed to the consumer/user.
  */
 type DefaultOptionsOverrides = Partial<
-  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
+  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules' | 'contextManagement'>
 > & {
   mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
@@ -93,6 +109,7 @@ type DefaultOptionsOverrides = Partial<
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
   toolModules?: ToolModule | ToolModule[] | undefined;
+  contextManagement?: DefaultOptions['contextManagement'] | undefined;
 };
 
 /**
@@ -497,6 +514,25 @@ const URL_REGEX = /^(https?:)\/\//i;
 const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 
 /**
+ * Available context management settings.
+ */
+const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 'token-saver'];
+
+/**
+ * Available plugin isolation settings.
+ */
+const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
+
+/**
+ * Options currently in experimental status.
+ *
+ * @note Use the internal key name here.
+ */
+const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
+  'contextManagement'
+]);
+
+/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @note `maxDocsToLoad` and `recommendedMaxDocsToLoad` should be generated from the length
@@ -535,14 +571,19 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   separator: DEFAULT_SEPARATOR,
   urlRegex: URL_REGEX,
   version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
-  xhrFetch: XHR_FETCH_OPTIONS
+  xhrFetch: XHR_FETCH_OPTIONS,
+  contextManagement: 'default'
 };
 
 export {
   DEFAULT_OPTIONS,
+  CONTEXT_MANAGEMENT,
+  EXPERIMENTAL_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
+  PLUGIN_ISOLATION,
   type DefaultOptions,
+  type MakeExperimental,
   type DefaultOptionsOverrides,
   type HttpOptions,
   type LoggingOptions,

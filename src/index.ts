@@ -1,4 +1,9 @@
-import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import {
+  parseCliOptions,
+  type CliOptions as InternalCliOptions,
+  type DefaultOptionsOverrides,
+  type MakeExperimental
+} from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -22,10 +27,12 @@ import {
   type ToolInternalOptions
 } from './server.toolsUser';
 
+type CliOptions = MakeExperimental<InternalCliOptions, 'contextManagement'>;
+
 /**
  * Options for "programmatic" use. Extends the `DefaultOptions` interface.
  */
-type PfMcpOptions = DefaultOptionsOverrides;
+type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'contextManagement'>;
 
 /**
  * Additional settings for programmatic control.
