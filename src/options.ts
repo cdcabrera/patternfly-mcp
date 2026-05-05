@@ -1,6 +1,8 @@
 import {
   DEFAULT_OPTIONS,
+  CONTEXT_MANAGEMENT,
   MODE_LEVELS,
+  PLUGIN_ISOLATION,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type LoggingOptions,
@@ -26,19 +28,18 @@ type GlobalOptions = DefaultOptions;
 
 /**
  * Options parsed from CLI arguments
+ *
+ * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
+ * to 'strict' when external tools are requested, otherwise 'none'.
  */
 type CliOptions = {
   mode?: DefaultOptions['mode'];
   modeOptions?: Partial<ModeOptions>;
+  contextManagement: DefaultOptions['contextManagement'] | undefined;
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
   toolModules: string[];
-
-  /**
-   * Isolation preset for external plugins (CLI-provided). If omitted, defaults
-   * to 'strict' when external tools are requested, otherwise 'none'.
-   */
   pluginIsolation: 'none' | 'strict' | undefined;
 };
 
@@ -210,18 +211,23 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     }
   }
 
+  const contextManagementIndex = argv.indexOf('--context-management');
+  let contextManagement: CliOptions['contextManagement'] = DEFAULT_OPTIONS.contextManagement;
+
+  if (contextManagementIndex >= 0) {
+    const maybeStrategy = String(argv[contextManagementIndex + 1] || '').toLowerCase();
+
+    contextManagement = CONTEXT_MANAGEMENT.find(value => value === maybeStrategy);
+  }
+
   // Parse isolation preset: --plugin-isolation <none|strict>
-  let pluginIsolation: CliOptions['pluginIsolation'];// = DEFAULT_OPTIONS.pluginIsolation;
+  let pluginIsolation: CliOptions['pluginIsolation'];
   const isolationIndex = argv.indexOf('--plugin-isolation');
 
   if (isolationIndex >= 0) {
     const val = String(argv[isolationIndex + 1] || '').toLowerCase();
 
-    switch (val) {
-      case 'none':
-      case 'strict':
-        pluginIsolation = val;
-    }
+    pluginIsolation = PLUGIN_ISOLATION.find(value => value === val);
   }
 
   return {
@@ -231,7 +237,8 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     isHttp,
     http,
     toolModules,
-    pluginIsolation
+    pluginIsolation,
+    contextManagement
   };
 };
 
