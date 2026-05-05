@@ -7,14 +7,6 @@ import {
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerResource } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
-import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
-import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
-import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
-import { patternFlyContextResource } from './resource.patternFlyContext';
-import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
-import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
-import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
-import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
@@ -48,7 +40,13 @@ type McpTool = [
     description: string;
     inputSchema: any;
   },
-  handler: (arg?: unknown) => any | Promise<any>
+  handler: (arg?: unknown) => any | Promise<any>,
+
+  config?: {
+
+    /** Optional callback to determine if the tool should be registered */
+    shouldRegister?: (options: GlobalOptions) => boolean;
+  }
 ];
 
 /**
@@ -202,30 +200,6 @@ interface ServerInstance {
 }
 
 /**
- * Built-in tools.
- *
- * Array of built-in tools
- */
-const builtinTools: McpToolCreator[] = [
-  usePatternFlyDocsTool,
-  searchPatternFlyDocsTool
-];
-
-/**
- * Built-in resources.
- *
- * Array of built-in resources
- */
-const builtinResources: McpResourceCreator[] = [
-  patternFlyContextResource,
-  patternFlyComponentsIndexResource,
-  patternFlyDocsIndexResource,
-  patternFlyDocsTemplateResource,
-  patternFlySchemasIndexResource,
-  patternFlySchemasTemplateResource
-];
-
-/**
  * Create and run the MCP server, register tools, and return a handle.
  *
  *  - Built-in and inline tools are realized in-process
@@ -243,8 +217,8 @@ const builtinResources: McpResourceCreator[] = [
  * @returns Server instance with `stop()`, `getStats()` `isRunning()`, and `onLog()` subscription.
  */
 const runServer = async (options: ServerOptions = getOptions(), {
-  tools = builtinTools,
-  resources = builtinResources,
+  tools = [],
+  resources = [],
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
@@ -337,7 +311,13 @@ const runServer = async (options: ServerOptions = getOptions(), {
     updatedResources = setMetaResources(updatedResources);
 
     // Combine built-in tools with custom ones after logging is set up.
-    const updatedTools = await composeTools(tools);
+    const toolsToRegister = (await composeTools(tools))
+      .map(creator => creator(options))
+      .filter(tool => {
+        const [, , , config] = tool;
+
+        return config?.shouldRegister ? config.shouldRegister(options) : true;
+      });
 
     if (loggerSubUnsub) {
       const { subscribe, unsubscribe } = loggerSubUnsub;
@@ -383,8 +363,8 @@ const runServer = async (options: ServerOptions = getOptions(), {
     });
 
     // Apply MCP tools, if available
-    updatedTools.forEach(toolCreator => {
-      const [name, schema, callback] = toolCreator(options);
+    toolsToRegister.forEach(tool => {
+      const [name, schema, callback] = tool;
       // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
       const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
       const isSchemaDefined = schema?.inputSchema !== undefined;
@@ -533,7 +513,6 @@ runServer.memo = memo(
 
 export {
   runServer,
-  builtinTools,
   type McpTool,
   type McpToolCreator,
   type McpResource,

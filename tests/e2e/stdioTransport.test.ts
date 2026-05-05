@@ -523,3 +523,50 @@ describe('Tools', () => {
     expect(resp.result.isError).toBe(true);
   });
 });
+
+describe('token-saver mode', () => {
+  let CLIENT: StdioTransportClient;
+
+  beforeAll(async () => {
+    CLIENT = await startServer({
+      args: ['--context-management', 'token-saver']
+    });
+  });
+
+  afterAll(async () => {
+    if (CLIENT) {
+      await CLIENT.close();
+    }
+  });
+
+  it('should only expose browsePatternFly tool', async () => {
+    const response = await CLIENT.send({
+      method: 'tools/list',
+      params: {}
+    });
+    const tools = response?.result?.tools || [];
+    const toolNames = tools.map((tool: any) => tool.name);
+
+    expect(toolNames).toEqual(['browsePatternFly']);
+  });
+
+  it('should return McpResource links from browsePatternFly', async () => {
+    const response = await CLIENT.send({
+      method: 'tools/call',
+      params: {
+        name: 'browsePatternFly',
+        arguments: {
+          query: 'Button'
+        }
+      }
+    });
+
+    const content = response?.result?.content || [];
+
+    expect(content.length).toBeGreaterThan(0);
+    content.forEach((item: any) => {
+      expect(item.type).toBe('resource');
+      expect(item.resource.uri).toMatch(/^patternfly:\/\/docs\//);
+    });
+  });
+});

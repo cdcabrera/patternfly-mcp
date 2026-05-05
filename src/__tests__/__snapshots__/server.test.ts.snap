@@ -16,39 +16,6 @@ exports[`runServer should allow server to be stopped, http stop server: diagnost
       "No external tools loaded.",
     ],
     [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
-    ],
-    [
-      "Registered tool: usePatternFlyDocs",
-    ],
-    [
-      "Registered tool: searchPatternFlyDocs",
-    ],
-    [
       "test-server server running on HTTP transport",
     ],
     [
@@ -78,39 +45,6 @@ exports[`runServer should allow server to be stopped, stdio stop server: diagnos
       "No external tools loaded.",
     ],
     [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
-    ],
-    [
-      "Registered tool: usePatternFlyDocs",
-    ],
-    [
-      "Registered tool: searchPatternFlyDocs",
-    ],
-    [
       "test-server server running on stdio transport",
     ],
     [
@@ -138,33 +72,6 @@ exports[`runServer should attempt to run server, create transport, connect, and 
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
     ],
     [
       "test-server-4 server running on stdio transport",
@@ -213,33 +120,6 @@ exports[`runServer should attempt to run server, disable SIGINT handler: diagnos
       "No external tools loaded.",
     ],
     [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
-    ],
-    [
       "test-server-7 server running on stdio transport",
     ],
   ],
@@ -279,33 +159,6 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
     ],
     [
       "test-server-8 server running on stdio transport",
@@ -352,33 +205,6 @@ exports[`runServer should attempt to run server, register a tool: diagnostics 1`
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
     ],
     [
       "Registered tool: loremIpsum",
@@ -433,33 +259,6 @@ exports[`runServer should attempt to run server, register multiple tools: diagno
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
     ],
     [
       "Registered tool: loremIpsum",
@@ -523,33 +322,6 @@ exports[`runServer should attempt to run server, use custom options: diagnostics
       "No external tools loaded.",
     ],
     [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
-    ],
-    [
       "test-server-3 server running on stdio transport",
     ],
   ],
@@ -596,39 +368,6 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
       "No external tools loaded.",
     ],
     [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
-    ],
-    [
-      "Registered tool: usePatternFlyDocs",
-    ],
-    [
-      "Registered tool: searchPatternFlyDocs",
-    ],
-    [
       "test-server-2 server running on HTTP transport",
     ],
   ],
@@ -655,10 +394,7 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
       [Function],
     ],
   ],
-  "registerTool": [
-    "usePatternFlyDocs",
-    "searchPatternFlyDocs",
-  ],
+  "registerTool": [],
 }
 `;
 
@@ -676,39 +412,6 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Registered resource: patternfly-context",
-    ],
-    [
-      "Registered resource: patternfly-components-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-components-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-docs-index",
-    ],
-    [
-      "Registered resource: patternfly-docs-template",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index-meta",
-    ],
-    [
-      "Registered resource: patternfly-schemas-index",
-    ],
-    [
-      "Registered resource: patternfly-schemas-template",
-    ],
-    [
-      "Registered tool: usePatternFlyDocs",
-    ],
-    [
-      "Registered tool: searchPatternFlyDocs",
     ],
     [
       "test-server-1 server running on stdio transport",
@@ -737,10 +440,7 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
       [Function],
     ],
   ],
-  "registerTool": [
-    "usePatternFlyDocs",
-    "searchPatternFlyDocs",
-  ],
+  "registerTool": [],
 }
 `;
 

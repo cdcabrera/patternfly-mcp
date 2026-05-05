@@ -40,6 +40,7 @@ type CliOptions = {
    * to 'strict' when external tools are requested, otherwise 'none'.
    */
   pluginIsolation: 'none' | 'strict' | undefined;
+  contextManagement: DefaultOptions['contextManagement'];
 };
 
 /**
@@ -210,6 +211,15 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     }
   }
 
+  const contextManagementIndex = argv.indexOf('--context-management');
+  let contextManagement: CliOptions['contextManagement'] = DEFAULT_OPTIONS.contextManagement;
+
+  if (contextManagementIndex >= 0) {
+    const maybeStrategy = String(argv[contextManagementIndex + 1] || '').toLowerCase();
+
+    contextManagement = maybeStrategy === 'token-saver' ? 'token-saver' : 'default';
+  }
+
   // Parse isolation preset: --plugin-isolation <none|strict>
   let pluginIsolation: CliOptions['pluginIsolation'];// = DEFAULT_OPTIONS.pluginIsolation;
   const isolationIndex = argv.indexOf('--plugin-isolation');
@@ -231,7 +241,8 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     isHttp,
     http,
     toolModules,
-    pluginIsolation
+    pluginIsolation,
+    contextManagement
   };
 };
 
