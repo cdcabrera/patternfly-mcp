@@ -20,7 +20,9 @@ import { listAllCombinations, listIncrementalCombinations, splitUri } from './se
  *    - `schema.description` `{string}`: Concise description of functionality for the tool.
  *    - `schema.inputSchema` `{*}`: Internally, a raw Zod schema. Externally, a JSON or raw Zod schema. External tools are
  *       converted to Zod for user convenience.
- * 2. `handler` `{Function}`: Tool handler function for returning content.
+ * 2. `handler` `{Function}`: Resource handler function for returning content.
+ * 3. `config` `{Object}`: Tool configuration.
+ *    - `config.shouldRegister`: Optional callback to determine if the tool should be registered.
  */
 type McpTool = [
   name: string,
@@ -28,7 +30,10 @@ type McpTool = [
     description: string;
     inputSchema: any;
   },
-  handler: (arg?: unknown) => any | Promise<any>
+  handler: (arg?: unknown) => any | Promise<any>,
+  config?: {
+    shouldRegister?: (options: GlobalOptions) => boolean | Promise<boolean>;
+  }
 ];
 
 /**

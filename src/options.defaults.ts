@@ -10,7 +10,9 @@ import { getNodeMajorVersion } from './options.helpers';
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
- * @property contextManagement - Context management strategy, either 'default' or 'token-saver'.
+ * @property contextManagement - Strategy for managing agent context and response sizes.
+ *    - 'default': Standard text-heavy responses.
+ *    - 'token-saver': High-efficiency mode using McpResource links.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
@@ -487,14 +489,14 @@ const URL_REGEX = /^(https?:)\/\//i;
 const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 
 /**
+ * Available context management settings.
+ */
+const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 'token-saver'];
+
+/**
  * Available plugin isolation settings.
  */
 const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
-
-/**
- * Available context management strategies.
- */
-const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 'token-saver'];
 
 /**
  * Global default options. Base defaults before CLI/programmatic overrides.
