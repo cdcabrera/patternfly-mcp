@@ -13,6 +13,7 @@ import {
   listAllCombinations,
   listIncrementalCombinations,
   mergeObjects,
+  parseUri,
   portValid,
   splitUri,
   stringJoin,
@@ -947,6 +948,65 @@ describe('portValid', () => {
     }
   ])('should validate a port, $description', ({ port, expected }) => {
     expect(portValid(port)).toBe(expected);
+  });
+});
+
+describe('parseUri', () => {
+  it.each([
+    {
+      description: 'absolute URI without prefix',
+      uri: 'patternfly://docs/button?v=1',
+      expected: {
+        protocol: 'patternfly:',
+        hostname: 'docs',
+        path: 'button',
+        params: { v: '1' }
+      }
+    },
+    {
+      description: 'relative URI with prefix',
+      uri: 'docs/button',
+      options: { prefix: 'patternfly://' },
+      expected: {
+        protocol: 'patternfly:',
+        hostname: 'docs',
+        path: 'button',
+        params: {}
+      }
+    },
+    {
+      description: 'absolute URI with ignored prefix',
+      uri: 'https://google.com/search?q=test',
+      options: { prefix: 'patternfly://' },
+      expected: {
+        protocol: 'https:',
+        hostname: 'google.com',
+        path: 'search',
+        params: { q: 'test' }
+      }
+    },
+    {
+      description: 'invalid URI',
+      uri: 'not a uri',
+      expected: undefined
+    },
+    {
+      description: 'relative URI without prefix',
+      uri: 'docs/button',
+      expected: undefined
+    },
+    {
+      description: 'absolute URI without hostname',
+      uri: 'patternfly:docs/button',
+      expected: {
+        protocol: 'patternfly:',
+        hostname: '',
+        path: 'docs/button',
+        params: {}
+      }
+    }
+  ])('should parse a URI, $description', ({ uri, options, expected }) => {
+    expect(parseUri(uri, options)).toEqual(expected);
   });
 });
 

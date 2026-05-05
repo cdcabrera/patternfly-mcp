@@ -29,7 +29,7 @@ const browsePatternFlyTool = (options = getOptions()): McpTool => {
     const trimmedQuery = query.trim();
 
     // 1. Check if it's an internal URI
-    const internalUri = parseUri(trimmedQuery);
+    const internalUri = parseUri(trimmedQuery, { prefix: 'patternfly://' });
 
     if (internalUri) {
       if (internalUri.hostname === 'docs') {

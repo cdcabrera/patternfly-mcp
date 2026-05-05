@@ -466,6 +466,39 @@ const listIncrementalCombinations = (values: string[]): string[][] =>
   }, [[]] as string[][]);
 
 /**
+ * Generic URI parser with prefix/protocol support.
+ *
+ * @param uri - URI to parse
+ * @param [options] - Configuration options
+ * @param [options.prefix] - Optional prefix or base URL to use for parsing.
+ * @returns Object containing URI parts, or `undefined` if parsing fails.
+ */
+const parseUri = (uri: string, { prefix }: { prefix?: string } = {}) => {
+  try {
+    let url: URL;
+
+    try {
+      url = new URL(uri);
+    } catch (err) {
+      if (prefix) {
+        url = new URL(`${prefix}${uri}`);
+      } else {
+        throw err;
+      }
+    }
+
+    return {
+      protocol: url.protocol,
+      hostname: url.hostname,
+      path: url.pathname.replace(/^\//, ''),
+      params: Object.fromEntries(url.searchParams)
+    };
+  } catch {
+    return undefined;
+  }
+};
+
+/**
  * Basic split for URIs to find base and search.
  *
  * @note We only support a single `{?...}` query segment. Using `{?a}{?b}{?c}` will fail. Make sure
@@ -597,32 +630,6 @@ const timeoutFunction = async <TReturn>(
     if (funcTimer) {
       clearTimeout(funcTimer);
     }
-  }
-};
-
-/**
- * Generic URI parser with prefix/protocol support.
- *
- * @param uri - URI to parse
- * @param [options] - Configuration options
- * @param [options.prefix='patternfly:'] - Protocol/prefix to match.
- */
-const parseUri = (uri: string, { prefix = 'patternfly:' }: { prefix?: string } = {}) => {
-  try {
-    const url = new URL(uri);
-
-    if (url.protocol !== prefix) {
-      return null;
-    }
-
-    return {
-      protocol: url.protocol,
-      hostname: url.hostname, // e.g., 'docs', 'schemas', 'session'
-      path: url.pathname.replace(/^\//, ''),
-      params: Object.fromEntries(url.searchParams)
-    };
-  } catch {
-    return null;
   }
 };
 
