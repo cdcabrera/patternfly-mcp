@@ -7,6 +7,14 @@ import {
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerResource } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
+import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
+import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
+import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
+import { patternFlyContextResource } from './resource.patternFlyContext';
+import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
+import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
+import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
+import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
@@ -33,6 +41,15 @@ import { stat, type StatReport } from './stats';
  * `inputSchema`. Input schemas are actually reconstructed as part of the
  * tools-as-plugins architecture to help guarantee that a minimal tool schema is
  * always available and minimally valid.
+ *
+ * 0. `name` `{string}`: Name of the tool.
+ * 1. `schema` `{Object}`: Descriptions and schemas provided to allow parameter input and outputs in a standardized format.
+ *    - `schema.description` `{string}`: Concise description of functionality for the tool.
+ *    - `schema.inputSchema` `{*}`: Internally, a raw Zod schema. Externally, a JSON or raw Zod schema. External tools are
+ *       converted to Zod for user convenience.
+ * 2. `handler` `{Function}`: Resource handler function for returning content.
+ * 3. `config` `{Object}`: Tool configuration.
+ *    - `config.shouldRegister`: Optional callback to determine if the tool should be registered.
  */
 type McpTool = [
   name: string,
@@ -41,10 +58,7 @@ type McpTool = [
     inputSchema: any;
   },
   handler: (arg?: unknown) => any | Promise<any>,
-
   config?: {
-
-    /** Optional callback to determine if the tool should be registered */
     shouldRegister?: (options: GlobalOptions) => boolean;
   }
 ];
@@ -200,6 +214,30 @@ interface ServerInstance {
 }
 
 /**
+ * Built-in tools.
+ *
+ * Array of built-in tools
+ */
+const builtinTools: McpToolCreator[] = [
+  usePatternFlyDocsTool,
+  searchPatternFlyDocsTool
+];
+
+/**
+ * Built-in resources.
+ *
+ * Array of built-in resources
+ */
+const builtinResources: McpResourceCreator[] = [
+  patternFlyContextResource,
+  patternFlyComponentsIndexResource,
+  patternFlyDocsIndexResource,
+  patternFlyDocsTemplateResource,
+  patternFlySchemasIndexResource,
+  patternFlySchemasTemplateResource
+];
+
+/**
  * Create and run the MCP server, register tools, and return a handle.
  *
  *  - Built-in and inline tools are realized in-process
@@ -311,13 +349,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
     updatedResources = setMetaResources(updatedResources);
 
     // Combine built-in tools with custom ones after logging is set up.
-    const toolsToRegister = (await composeTools(tools))
-      .map(creator => creator(options))
-      .filter(tool => {
-        const [, , , config] = tool;
-
-        return config?.shouldRegister ? config.shouldRegister(options) : true;
-      });
+    const updatedTools = await composeTools(tools);
 
     if (loggerSubUnsub) {
       const { subscribe, unsubscribe } = loggerSubUnsub;
@@ -363,62 +395,75 @@ const runServer = async (options: ServerOptions = getOptions(), {
     });
 
     // Apply MCP tools, if available
-    toolsToRegister.forEach(tool => {
-      const [name, schema, callback] = tool;
-      // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
-      const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
-      const isSchemaDefined = schema?.inputSchema !== undefined;
+    updatedTools
+      .map(creator => creator(options))
+      .filter(tool => {
+        const [, , , config] = tool;
+        const shouldRegister = config?.shouldRegister;
 
-      if (!isZod) {
-        log.warn(`Tool "${name}" has a non Zod inputSchema. Skipping registration.`);
-        log.debug(
-          `Tool "${name}" has received a non Zod inputSchema from the tool pipeline.`,
-          `This will cause unexpected issues, such as failure to pass arguments.`,
-          `MCP SDK requires Zod. Kneel before Zod.`
-        );
+        if (shouldRegister) {
+          return runWithSession(session, async () =>
+            runWithOptions(options, async () => shouldRegister(options)));
+        }
 
-        return;
-      }
+        return true;
+      })
+      .forEach(tool => {
+        const [name, schema, callback] = tool;
+        // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
+        const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
+        const isSchemaDefined = schema?.inputSchema !== undefined;
 
-      // Lightweight check for malformed schemas that bypass validation.
-      const isContextLike = (value: unknown) => isPlainObject(value) && 'requestId' in value && 'signal' in value;
+        if (!isZod) {
+          log.warn(`Tool "${name}" has a non Zod inputSchema. Skipping registration.`);
+          log.debug(
+            `Tool "${name}" has received a non Zod inputSchema from the tool pipeline.`,
+            `This will cause unexpected issues, such as failure to pass arguments.`,
+            `MCP SDK requires Zod. Kneel before Zod.`
+          );
 
-      try {
-        server?.registerTool(name, schema, (args: unknown = {}, ..._args: unknown[]) =>
-          runWithSession(session, async () =>
-            runWithOptions(options, async () => {
+          return;
+        }
+
+        // Lightweight check for malformed schemas that bypass validation.
+        const isContextLike = (value: unknown) => isPlainObject(value) && 'requestId' in value && 'signal' in value;
+
+        try {
+          server?.registerTool(name, schema, (args: unknown = {}, ..._args: unknown[]) =>
+            runWithSession(session, async () =>
+              runWithOptions(options, async () => {
               // Basic track for remaining args to account for future MCP SDK alterations.
-              log.debug(
-                `Running tool "${name}"`,
-                `isArgs = ${args !== undefined}`,
-                `isRemainingArgs = ${_args?.length > 0}`
-              );
-
-              const timedReport = stat.traffic();
-              const isContextLikeArgs = isContextLike(args);
-
-              // Log potential Zod validation errors triggered by context fail.
-              if (isContextLikeArgs) {
                 log.debug(
-                  `Tool "${name}" handler received a context like object as the first parameter.`,
-                  'If this is unexpected this is likely an undefined schema or a schema not registering as Zod.',
-                  'Review the related schema definition and ensure it is defined and valid.',
-                  `Schema is Defined = ${isSchemaDefined}; Schema is Zod = ${isZod}; Context like = ${isContextLikeArgs};`
+                  `Running tool "${name}"`,
+                  `isArgs = ${args !== undefined}`,
+                  `isRemainingArgs = ${_args?.length > 0}`
                 );
-              }
 
-              const toolResult = await callback(args);
+                const timedReport = stat.traffic();
+                const isContextLikeArgs = isContextLike(args);
 
-              timedReport({ tool: name });
+                // Log potential Zod validation errors triggered by context fail.
+                if (isContextLikeArgs) {
+                  log.debug(
+                    `Tool "${name}" handler received a context like object as the first parameter.`,
+                    'If this is unexpected this is likely an undefined schema or a schema not registering as Zod.',
+                    'Review the related schema definition and ensure it is defined and valid.',
+                    `Schema is Defined = ${isSchemaDefined}; Schema is Zod = ${isZod}; Context like = ${isContextLikeArgs};`
+                  );
+                }
 
-              return toolResult;
-            })));
+                const toolResult = await callback(args);
 
-        log.info(`Registered tool: ${name}`);
-      } catch (error) {
-        log.error(`Failed to register tool "${name}":`, error);
-      }
-    });
+                timedReport({ tool: name });
+
+                return toolResult;
+              })));
+
+          log.info(`Registered tool: ${name}`);
+        } catch (error) {
+          log.error(`Failed to register tool "${name}":`, error);
+        }
+      });
 
     if (enableSigint && !sigintHandler) {
       sigintHandler = () => {
@@ -512,6 +557,8 @@ runServer.memo = memo(
 );
 
 export {
+  builtinTools,
+  builtinResources,
   runServer,
   type McpTool,
   type McpToolCreator,
