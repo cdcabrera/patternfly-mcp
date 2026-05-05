@@ -38,14 +38,6 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         ...options.minMax.inputStrings,
         inputDisplayName: 'name'
       });
-
-      assertInput(
-        !new RegExp('patternfly://', 'i').test(name),
-        stringJoin.basic(
-          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
-          'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
-        )
-      );
     }
 
     if (isUrlList) {
@@ -57,14 +49,6 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       assertInput(
         urlList.length <= options.minMax.docsToLoad.max,
         `"urlList" must be an array with a maximum length of ${options.minMax.docsToLoad.max} items.`
-      );
-
-      assertInput(
-        !urlList.some(url => new RegExp('patternfly://', 'i').test(url)),
-        stringJoin.basic(
-          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
-          'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
-        )
       );
 
       if (options.mode !== 'test') {
@@ -242,7 +226,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
           .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
     },
-    callback
+    callback,
+    {
+      shouldRegister: opts => opts.contextManagement === 'default' || opts.contextManagement === undefined
+    }
   ];
 };
 

@@ -1,5 +1,6 @@
 import {
   DEFAULT_OPTIONS,
+  CONTEXT_MANAGEMENT,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
   type DefaultOptions,
@@ -49,10 +50,11 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
  * @note Overrides for default options.
  */
 type ProgrammaticOptions = Partial<
-  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
+  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'contextManagement' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
   mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
+  contextManagement?: DefaultOptions['contextManagement'] | undefined;
   http?: Partial<HttpOptions>;
   logging?: Partial<LoggingOptions>;
   pluginIsolation?: 'none' | 'strict' | undefined;
@@ -68,6 +70,7 @@ type ProgrammaticOptions = Partial<
 type CliOptions = {
   mode?: DefaultOptions['mode'];
   modeOptions?: Partial<ModeOptions>;
+  contextManagement?: DefaultOptions['contextManagement'] | undefined;
   http: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
@@ -107,6 +110,7 @@ type ParsedOptions<T> = {
  * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
  * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
  *     specification is a local module name or path.
+ * - `--context-management <default|token-saver>`: Focus agent context and response sizes using MCP resources (`token-saver`) or use the default Markdown responses.
  *
  * @note Review removing `programmatic` mode from this function path.
  *
@@ -129,7 +133,8 @@ const parseCliOptions = (
     isHttp: argv.includes('--http'),
     http: {},
     toolModules: [],
-    pluginIsolation: undefined
+    pluginIsolation: undefined,
+    contextManagement: DEFAULT_OPTIONS.contextManagement
   };
   const usedExperimentalOptions: string[] = [];
 
@@ -237,6 +242,18 @@ const parseCliOptions = (
               result.toolModules.push(trimmed);
             }
           });
+          i += 1;
+        }
+        break;
+
+      case '--context-management':
+        if (hasValue) {
+          const strategy = next.toLowerCase();
+          const match = CONTEXT_MANAGEMENT.find(value => value === strategy);
+
+          if (match) {
+            result.contextManagement = match;
+          }
           i += 1;
         }
         break;
