@@ -79,6 +79,7 @@ const defineOption = <const C extends boolean, const E extends boolean = false>(
 const SET_OPTIONS = {
   mode: defineOption({ cli: true })<DefaultOptions['mode']>(),
   modeOptions: defineOption({ cli: true })<Partial<ModeOptions>>(),
+  contextManagement: defineOption({ cli: true, experimental: true })<DefaultOptions['contextManagement']>(),
   http: defineOption({ cli: true })<Partial<HttpOptions>>(),
   isHttp: defineOption({ cli: true })<boolean>(),
   logging: defineOption({ cli: true })<Partial<LoggingOptions>>(),

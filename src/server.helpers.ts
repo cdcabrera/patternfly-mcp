@@ -466,6 +466,48 @@ const listIncrementalCombinations = (values: string[]): string[][] =>
   }, [[]] as string[][]);
 
 /**
+ * URL and URI parser with prefix/protocol support.
+ *
+ * @param url - URL or URI to parse
+ * @param [options] - Configuration options
+ * @param [options.prefix] - Optional filtering URL prefix sans-colon and slashes (e.g. "http" vs. "http://").
+ *     This will match against the provided URI. If the URI does not start with the prefix, `undefined` is returned.
+ * @param [options.isStrict] - If `true`, only strict URL and path validation is performed. Default: `true`
+ * @returns Object containing URI parts, or `undefined` if parsing fails.
+ */
+const parseUrl = (url: string, { prefix, isStrict = true }: { prefix?: string, isStrict?: boolean } = {}) => {
+  const isPrefix = typeof prefix === 'string' && prefix.length > 0 && !prefix.includes(':') && !prefix.includes('/');
+  const opts = isPrefix ? { allowedProtocols: [prefix] } : {};
+  const isUri = isUrl(url, { ...opts, isStrict });
+
+  if (isUri) {
+    const updatedUrl = new URL(url);
+
+    return {
+      protocol: updatedUrl.protocol,
+      hostname: updatedUrl.hostname,
+      path: updatedUrl.pathname.replace(/^\//, ''),
+      params: Object.fromEntries(updatedUrl.searchParams)
+    };
+  }
+
+  if (isPrefix && isPath(url, { isStrict })) {
+    try {
+      const updatedUrl = new URL(`${prefix}://${url}`);
+
+      return {
+        protocol: updatedUrl.protocol,
+        hostname: updatedUrl.hostname,
+        path: updatedUrl.pathname.replace(/^\//, ''),
+        params: Object.fromEntries(updatedUrl.searchParams)
+      };
+    } catch {}
+  }
+
+  return undefined;
+};
+
+/**
  * Basic split for URIs to find base and search.
  *
  * @note We only support a single `{?...}` query segment. Using `{?a}{?b}{?c}` will fail. Make sure
@@ -617,6 +659,7 @@ export {
   listAllCombinations,
   listIncrementalCombinations,
   mergeObjects,
+  parseUrl,
   portValid,
   splitUri,
   stringJoin,
