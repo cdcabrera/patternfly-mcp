@@ -600,6 +600,32 @@ const timeoutFunction = async <TReturn>(
   }
 };
 
+/**
+ * Generic URI parser with prefix/protocol support.
+ *
+ * @param uri - URI to parse
+ * @param [options] - Configuration options
+ * @param [options.prefix='patternfly:'] - Protocol/prefix to match.
+ */
+const parseUri = (uri: string, { prefix = 'patternfly:' }: { prefix?: string } = {}) => {
+  try {
+    const url = new URL(uri);
+
+    if (url.protocol !== prefix) {
+      return null;
+    }
+
+    return {
+      protocol: url.protocol,
+      hostname: url.hostname, // e.g., 'docs', 'schemas', 'session'
+      path: url.pathname.replace(/^\//, ''),
+      params: Object.fromEntries(url.searchParams)
+    };
+  } catch {
+    return null;
+  }
+};
+
 export {
   buildSearchString,
   freezeObject,
@@ -617,6 +643,7 @@ export {
   listAllCombinations,
   listIncrementalCombinations,
   mergeObjects,
+  parseUri,
   portValid,
   splitUri,
   stringJoin,

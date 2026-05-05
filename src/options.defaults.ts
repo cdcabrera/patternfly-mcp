@@ -79,6 +79,13 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   urlRegex: RegExp;
   version: string;
   xhrFetch: XhrFetchOptions;
+
+  /**
+   * Strategy for managing agent context and response sizes.
+   * 'default': Standard text-heavy responses.
+   * 'token-saver': High-efficiency mode using McpResource links.
+   */
+  contextManagement: 'default' | 'token-saver';
 }
 
 /**
@@ -535,7 +542,8 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   separator: DEFAULT_SEPARATOR,
   urlRegex: URL_REGEX,
   version: (process.env.NODE_ENV === 'local' && '0.0.0') || packageJson.version,
-  xhrFetch: XHR_FETCH_OPTIONS
+  xhrFetch: XHR_FETCH_OPTIONS,
+  contextManagement: 'default'
 };
 
 export {

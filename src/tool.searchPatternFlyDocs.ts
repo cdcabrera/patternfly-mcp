@@ -169,7 +169,10 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
     },
-    callback
+    callback,
+    {
+      shouldRegister: opts => opts.contextManagement === 'default'
+    }
   ];
 };
 
