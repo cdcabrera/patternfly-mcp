@@ -475,17 +475,8 @@ const listIncrementalCombinations = (values: string[]): string[][] =>
  */
 const parseUri = (uri: string, { prefix }: { prefix?: string } = {}) => {
   try {
-    let url: URL;
-
-    try {
-      url = new URL(uri);
-    } catch (err) {
-      if (prefix) {
-        url = new URL(`${prefix}${uri}`);
-      } else {
-        throw err;
-      }
-    }
+    const targetUri = isUrl(uri, { isStrict: false }) ? uri : prefix ? `${prefix}${uri}` : uri;
+    const url = new URL(targetUri);
 
     return {
       protocol: url.protocol,
