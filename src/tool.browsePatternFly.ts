@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './server';
 import { getOptions } from './options.context';
-import { parseUri } from './server.helpers';
+import { parseUrl } from './server.helpers';
 import { registerSessionResource } from './server.session';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
@@ -29,7 +29,7 @@ const browsePatternFlyTool = (options = getOptions()): McpTool => {
     const trimmedQuery = query.trim();
 
     // 1. Check if it's an internal URI
-    const internalUri = parseUri(trimmedQuery, { prefix: 'patternfly://' });
+    const internalUri = parseUrl(trimmedQuery, { prefix: 'patternfly', isStrict: false });
 
     if (internalUri) {
       if (internalUri.hostname === 'docs') {

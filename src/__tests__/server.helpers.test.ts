@@ -13,7 +13,7 @@ import {
   listAllCombinations,
   listIncrementalCombinations,
   mergeObjects,
-  parseUri,
+  parseUrl,
   portValid,
   splitUri,
   stringJoin,
@@ -951,11 +951,12 @@ describe('portValid', () => {
   });
 });
 
-describe('parseUri', () => {
+describe('parseUrl', () => {
   it.each([
     {
       description: 'absolute URI without prefix',
       uri: 'patternfly://docs/button?v=1',
+      options: { isStrict: false },
       expected: {
         protocol: 'patternfly:',
         hostname: 'docs',
@@ -966,7 +967,7 @@ describe('parseUri', () => {
     {
       description: 'relative URI with prefix',
       uri: 'docs/button',
-      options: { prefix: 'patternfly://' },
+      options: { prefix: 'patternfly', isStrict: false },
       expected: {
         protocol: 'patternfly:',
         hostname: 'docs',
@@ -998,6 +999,7 @@ describe('parseUri', () => {
     {
       description: 'absolute URI without hostname',
       uri: 'patternfly:docs/button',
+      options: { isStrict: false },
       expected: {
         protocol: 'patternfly:',
         hostname: '',
@@ -1006,7 +1008,7 @@ describe('parseUri', () => {
       }
     }
   ])('should parse a URI, $description', ({ uri, options, expected }) => {
-    expect(parseUri(uri, options)).toEqual(expected);
+    expect(parseUrl(uri, options)).toEqual(expected);
   });
 });
 
