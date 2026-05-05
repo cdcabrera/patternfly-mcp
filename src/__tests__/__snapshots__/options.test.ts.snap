@@ -4,6 +4,7 @@ exports[`parseCliOptions should attempt to parse args with --allowed-hosts 1`] =
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {
       "allowedHosts": [
         "localhost",
@@ -33,6 +34,7 @@ exports[`parseCliOptions should attempt to parse args with --allowed-origins 1`]
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {
       "allowedOrigins": [
         "https://app.com",
@@ -62,6 +64,7 @@ exports[`parseCliOptions should attempt to parse args with --http and --host 1`]
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {
       "host": "0.0.0.0",
     },
@@ -88,6 +91,7 @@ exports[`parseCliOptions should attempt to parse args with --http and --port 1`]
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {
       "port": 6000,
     },
@@ -114,6 +118,7 @@ exports[`parseCliOptions should attempt to parse args with --http and invalid --
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {
       "port": 0,
     },
@@ -140,6 +145,7 @@ exports[`parseCliOptions should attempt to parse args with --http flag 1`] = `
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": true,
     "logging": {
@@ -164,6 +170,7 @@ exports[`parseCliOptions should attempt to parse args with --log-level flag 1`] 
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": false,
     "logging": {
@@ -188,6 +195,7 @@ exports[`parseCliOptions should attempt to parse args with --log-stderr flag and
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": false,
     "logging": {
@@ -212,6 +220,7 @@ exports[`parseCliOptions should attempt to parse args with --tool 1`] = `
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": false,
     "logging": {
@@ -239,6 +248,7 @@ exports[`parseCliOptions should attempt to parse args with --verbose flag 1`] = 
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": false,
     "logging": {
@@ -263,6 +273,7 @@ exports[`parseCliOptions should attempt to parse args with --verbose flag and --
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": false,
     "logging": {
@@ -287,6 +298,7 @@ exports[`parseCliOptions should attempt to parse args with other arguments 1`] =
 {
   "experimentalOptions": [],
   "options": {
+    "contextManagement": "default",
     "http": {},
     "isHttp": false,
     "logging": {
