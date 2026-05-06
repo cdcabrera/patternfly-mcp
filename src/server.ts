@@ -7,14 +7,6 @@ import {
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerResource } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
-import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
-import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
-import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
-import { patternFlyContextResource } from './resource.patternFlyContext';
-import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
-import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
-import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
-import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
 import { log, type LogEvent } from './logger';
@@ -33,6 +25,7 @@ import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject, timeoutFunction } from './server.helpers';
 import { createServerStats, type Stats } from './server.stats';
 import { stat, type StatReport } from './stats';
+import { builtinTools, builtinResources } from './options.registry';
 
 /**
  * A tool registered with the MCP server.
@@ -214,30 +207,6 @@ interface ServerInstance {
 }
 
 /**
- * Built-in tools.
- *
- * Array of built-in tools
- */
-const builtinTools: McpToolCreator[] = [
-  usePatternFlyDocsTool,
-  searchPatternFlyDocsTool
-];
-
-/**
- * Built-in resources.
- *
- * Array of built-in resources
- */
-const builtinResources: McpResourceCreator[] = [
-  patternFlyContextResource,
-  patternFlyComponentsIndexResource,
-  patternFlyDocsIndexResource,
-  patternFlyDocsTemplateResource,
-  patternFlySchemasIndexResource,
-  patternFlySchemasTemplateResource
-];
-
-/**
  * Create and run the MCP server, register tools, and return a handle.
  *
  *  - Built-in and inline tools are realized in-process
@@ -255,8 +224,8 @@ const builtinResources: McpResourceCreator[] = [
  * @returns Server instance with `stop()`, `getStats()` `isRunning()`, and `onLog()` subscription.
  */
 const runServer = async (options: ServerOptions = getOptions(), {
-  tools = [],
-  resources = [],
+  tools = builtinTools,
+  resources = builtinResources,
   enableSigint = true,
   allowProcessExit = true
 }: ServerSettings = {}): Promise<ServerInstance> => {
@@ -557,8 +526,6 @@ runServer.memo = memo(
 );
 
 export {
-  builtinTools,
-  builtinResources,
   runServer,
   type McpTool,
   type McpToolCreator,
