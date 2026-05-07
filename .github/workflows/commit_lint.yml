@@ -1,0 +1,39 @@
+name: Commit lint
+on:
+  pull_request:
+env:
+  BRANCH: ${{ github.base_ref }}
+
+jobs:
+  Commits:
+    if: |
+      github.event_name == 'push' ||
+      contains(github.event.pull_request.labels.*.name, 'bot:ready-for-testing') ||
+      contains(github.event.pull_request.labels.*.name, 'bot:maintainer-bypass')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Git commits
+        run: |
+          git remote add ssh-origin "https://github.com/$GITHUB_REPOSITORY"
+          git fetch ssh-origin
+          echo 'GIT_COMMITS<<EOF' >> $GITHUB_ENV
+          git cherry -v ssh-origin/${{ env.BRANCH }} | grep "+" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.x
+      - name: Lint
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const workflowCommitLint = await import(`${ github.workspace }/scripts/workflow.commitLint.js`);
+
+            const { resultsArray, resultsString } = workflowCommitLint(process.env.GIT_COMMITS)
+
+            if (resultsArray.length) {
+              core.setFailed(resultsString)
+            }

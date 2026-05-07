@@ -67,9 +67,10 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
   - Research the error
   - Identify conflict scenarios with code
   - Identify potential test cases
+  - Review [testing standards](../CONTRIBUTING.md#testing) and [agent testing guidelines](./agent_testing.md) for applicable testing tiers.
 
 2. **Test**
-  - Run typing, lint, unit and e2e tests
+  - Run typing, lint, unit, e2e, and specialized tests (e.g., `npm run test:scripts` for script changes).
   - Confirm conflicts
   - Test resolution options
 
@@ -81,6 +82,27 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 4. **Validate**
   - Test conflict resolution
   - Confirm approach
+
+### Trigger: "Contribute to the repository" / "Opening a pull request"
+
+1. **Review Standards**
+  - Study [CONTRIBUTING.md](../CONTRIBUTING.md) for project-wide guidelines.
+  - Review [GOVERNANCE.md](../GOVERNANCE.md) to understand the automated and human review layers.
+  - Open a GitHub issue BEFORE starting work to start a planning conversation.
+
+2. **Handshake Model**
+  - PRs from general contributors require an interactive handshake.
+  - After opening a PR, wait for the bot's "PR Contributor's Agreement" comment.
+  - **Action required**: Prompt the contributor to react with a 👍 (Thumbs Up) to the bot's comment to "unlock" the testing suite.
+  - Note: A 👎 (Thumbs Down) will pause all automation and apply the `bot:contributor-unconfirmed` label.
+
+3. **Validation & Gating**
+  - Automation gates sensitive tests behind the `bot:ready-for-testing` label.
+  - Address all feedback from the "PR Quality Guidance" bot comment before requesting a manual review.
+  - Follow the [Persona-based feedback](../CONTRIBUTING.md#pull-request-test-failures) from the bot.
+
+4. **Maintainer Bypass**
+  - If technical issues occur, a maintainer can use the `/bypass` command to unblock the PR.
 
 ## 4. Decision-Making Guidelines
 
