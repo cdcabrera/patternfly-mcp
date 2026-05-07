@@ -62,6 +62,29 @@ Our process follows the standard GitHub fork and pull request workflow.
 >    - `main` would be the default branch for development and feature work rebased from `stable` after release.
 >    - `stable` would be a branch used for stable releases/hashes, reference links, and only updated with release commits.
 
+### Contributor roles
+
+- **Core Contributors:** Maintainers listed in `CODEOWNERS` or with `MEMBER/OWNER` roles in the GitHub organization. Their focus is architecture, roadmap planning, maintenance, and feature contributions. 
+- **General Contributors:** Community members contributing via forks. All PRs from general contributors undergo automated validation and must pass the initial checks before being queued for review by maintainers.
+
+### Before you contribute
+
+> **Try customizing the server!**
+> The PatternFly MCP server is designed from the ground-up to be customizable. That customization allows the server to be [wrapped by a customized MCP server](./docs/development.md#programmatic-usage) and allows [MCP tool plugins](./docs/development.md#mcp-tool-plugins).
+
+#### Start a conversation
+In the age of agentic coding where your ideas can be up and working quickly, we encourage opening a GitHub issue before starting any work.
+
+Opening an issue first starts the planning conversation to have your idea integrated, push the PatternFly MCP forward collectively, and give you the recognition for your effort and planning without forcing a code review from maintainers. We want your planned idea, not our reactive interpretation. 
+
+Opening a PR without an issue has a higher likelihood your work will be flagged with automation, delayed for maintainer review, and potentially closed.
+
+> If you're leveraging the GitHub PR to provide us with file diffs, you can achieve the same Git diff applied by PRs by simply using the GitHub link format and applying it to your issue:
+> - `https://github.com/[BASE_OWNER]/[BASE_REPO]/compare/[BASE_BRANCH]...[FORK_OWNER]:[FORK_BRANCH]`
+>
+> **Example for this repository:**
+> - `https://github.com/patternfly/patternfly-mcp/compare/main...your-username:your-branch`
+
 #### Pull requests
 
 Development pull requests (PRs) should be opened against the default branch.
@@ -76,15 +99,16 @@ Development pull requests (PRs) should be opened against the default branch.
 >  - missing, relaxed, or removed linting, typings, and tests
 >  - overly complex TypeScript generics or generally over-the-top typings
 >  - dramatic unit test snapshot updates
+>  - favors naming unit test files after behavior instead of related filenames
 >  - affects any file not directly associated with the issue being resolved
 >  - affects "many" files
 >  - contains or is a minor grammatical fix
 >
 > You will be asked to either:
->  - open an issue instead of a PR
+>  - open an issue and close your PR
 >  - restructure your commits
 >  - break the work into multiple pull requests
->  - close the PR (typically, a last resort)
+>  - close the PR
 
 #### Pull request commits, messaging
 
@@ -95,11 +119,12 @@ Commit messages follow two basic guidelines:
 - No more than `65` characters for the first line.
 - Commit message formats follow the structure:
   ```
-  <type>(<optional scope>): <description> (#PR_NUMBER)
+  <type>(<optional scope>): <issue> <description> (#PR_NUMBER)
   ```
   Where:
   - **Type**: The type of work the commit resolves (e.g., `feat`, `fix`, `chore`, `docs`, `refactor`, `test`).
   - **Scope**: The optional area of code affected (directory, filename, or concept).
+  - **Issue**: Related story issue for the commit work. `feat` work requires an issue to pass validation and tracking metrics. Typically associated with the formats `issue/123` or `PF-123`. 
   - **Description**: What the commit work encompasses.
   - **#PR_NUMBER**: The pull request number. Typically added automatically during merge/squash operations. Including it manually is optional. It can help with traceability during review.
 
@@ -107,10 +132,17 @@ Commit messages follow two basic guidelines:
 > will be altered to reflect current guidelines.
 
 #### Pull request test failures
-Before any review takes place, all tests should pass. You may be asked to update your pull request to resolve any failing tests
-before a review.
 
-> If you are unsure why your tests are failing, you should [review testing documentation](#testing).
+To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated checks and tests have successfully passed.
+
+If automation does any of the following:
+- flags your work as "not ready for review"
+- applies status labels
+- fails
+
+Please follow the guidance provided by automation and resolve the issues. If your work is still failing, seek guidance before requesting a manual review.
+
+> If you are unsure why your tests are failing, we encourage you to [start a conversation](#start-a-conversation), and review both [pull request guidance](#pull-requests) and [testing documentation](#testing).
 
 
 ### Code style guidance and conventions
@@ -123,8 +155,14 @@ Basic code style guidelines are generally enforced by ESLint, but there are addi
 #### Functionality, testing
 - Functions should attempt to maintain a single responsibility.
 - Function annotations follow a minimal JSDoc style; descriptions are encouraged.
+- Unit test file names should have a corresponding file with the same name.
+- E2E test file names should be representative of the core functionality of the codebase.
+- E2E testing can integrate into the `test` mode provided by the codebase. Recreating this functionality with custom mocks and fixtures is discouraged.
 - Tests should focus on functionality.
-- Tests should not be written for external packages. That is the responsibility of the external package, or it shouldn't be used.
+- Tests should not be written for external packages. That is the responsibility of the external package, or it shouldn't be used. 
+
+#### Functionality, features, fixes, etc.
+- Existing functions should be prioritized for reuse over writing new functions that do the same thing
 
 #### TypeScript
 - Typings within the project may be generally loose for initial development but should be refined over time.

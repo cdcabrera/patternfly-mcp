@@ -1,0 +1,182 @@
+name: PR PreCheck
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  gatekeeper:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
+
+            const { login: author, type: authorType } = context.payload.pull_request.user;
+            const authorRole = context.payload.pull_request.author_association;
+
+            if (preCheck.coreContributors({ author, authorType, authorRole })) {
+              console.log(`Contributor found, skipping pre-checks: ${author}`);
+              return;
+            }
+
+            // Code freeze confirmation
+            const isFreezeActive = "${{ vars.RELEASE_FREEZE_ACTIVE }}" === "true";
+
+            if (isFreezeActive) {
+              const labelName = 'bot:code-freeze';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+            } else {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'bot:code-freeze'
+                });
+              } catch (e) {}
+            }
+
+            const body = context.payload.pull_request.body || "";
+            const fileCount = context.payload.pull_request.changed_files;
+            const { data: changedFiles } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
+            });
+            const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
+            const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
+            const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount });
+
+            if (preCheck.coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
+              const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+               `Bypass acknowledged, standing down!`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: errorComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: errorComment
+                });
+              }
+
+              return;
+            } else if (codeSignature.hasTell) {
+              const labelName = 'bot:breaking-potential';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+
+              // GraphQL Mutation to convert to Draft
+              const prNodeId = context.payload.pull_request.node_id;
+              const mutation = `mutation($id: ID!) {
+                convertPullRequestToDraft(input: { pullRequestId: $id }) {
+                  pullRequest { id isDraft }
+                }
+              }`;
+
+              await github.graphql(mutation, { id: prNodeId });
+
+              core.setFailed("PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require integration planning.");
+              return;
+            } else {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'bot:breaking-potential'
+                });
+              } catch (e) {}
+            }
+
+            if (codeSignature.errors.length > 0) {
+              const labelName = 'bot:needs-cleanup';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+
+              const botComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+                `Thank you for the PR! Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
+                `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+                `*This comment updates automatically.*`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: botComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: botComment
+                });
+              }
+
+              core.setFailed("PR pre-check requirements not met.");
+            } else if (codeSignature.hasFailed) {
+              const labelName = 'bot:needs-maintainer';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+
+              const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+                `${codeSignature.errors.map(err => `- ${err}`).join('\n')}`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: errorComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: errorComment
+                });
+              }
+            } else {
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: `### 🤖 PR Quality PreCheck\n${botCommentSignature}\nAll checks passed!`
+                });
+              }
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'bot:needs-cleanup'
+                });
+              } catch (e) {}
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'bot:needs-maintainer'
+                });
+              } catch (e) {}
+
+              const labelName = 'bot:ready-for-review';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+            }
