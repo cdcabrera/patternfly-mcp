@@ -40,7 +40,7 @@
     "test:lint": "eslint .",
     "test:lint-fix": "eslint . --fix",
     "test:spell-docs": "cspell './README.md' './CONTRIBUTING.md' './docs/**/*.md' './guidelines/**/*.md' './docs/**/*.ts' './docs/**/*.js' --config ./cspell.config.json --fail-fast",
-    "test:spell": "cspell './src/**/*.ts' './tests/**/*.ts' --exclude './src/**/*test*' --exclude './tests/**/*test*' --config ./cspell.config.json --fail-fast",
+    "test:spell": "cspell './src/**/*.ts' './scripts/**/*.js' './tests/**/*.ts' --exclude './src/**/*test*' --exclude './tests/**/*test*' --config ./cspell.config.json --fail-fast",
     "test:types": "tsc --noEmit",
     "prepare": "npm run build",
     "prepack": "npm run build"

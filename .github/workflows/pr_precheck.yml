@@ -1,0 +1,137 @@
+name: PR PreCheck
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  gatekeeper:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const prPreCheck = await import(`${ github.workspace }/scripts/workflow.prPreCheck.js`);
+
+            const { login: author, type: authorType } = context.payload.pull_request.user;
+            const authorRole = context.payload.pull_request.author_association;
+
+            if (prPreCheck.coreContributors({ author, authorType, authorRole })) {
+              console.log(`Contributor found, skipping pre-checks: ${author}`);
+              return;
+            }
+
+            // Code freeze confirmation
+            const isFreezeActive = "${{ vars.RELEASE_FREEZE_ACTIVE }}" === "true";
+
+            if (isFreezeActive) {
+              const labelName = 'hold:freeze';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+            } else {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'hold:freeze'
+                });
+              } catch (e) {}
+            }
+
+            const body = context.payload.pull_request.body || "";
+            const fileCount = context.payload.pull_request.changed_files;
+            const { data: changedFiles } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
+            });
+            const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
+            const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
+            const codeSignature = prPreCheck.signatureScan({ body, changedFiles, fileCount });
+
+            if (codeSignature.hasTell) {
+              const labelName = 'breaking:potential';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+
+              // GraphQL Mutation to convert to Draft
+              const prNodeId = context.payload.pull_request.node_id;
+              const mutation = `mutation($id: ID!) {
+                convertPullRequestToDraft(input: { pullRequestId: $id }) {
+                  pullRequest { id isDraft }
+                }
+              }`;
+
+              await github.graphql(mutation, { id: prNodeId });
+
+              core.setFailed("PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require integration planning.");
+              return;
+            } else {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'breaking:potential'
+                });
+              } catch (e) {}
+            }
+
+            if (codeSignature.errors.length > 0) {
+              const labelName = 'needs-contributor-cleanup';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+
+              const botComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+                `Thank you for the PR! Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are address you'll be queued for review:\n\n` +
+                `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+                `*This comment updates automatically.*`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: botComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: botComment
+                });
+              }
+
+              core.setFailed("PR pre-check requirements not met.");
+            } else {
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: `### 🤖 PR Quality PreCheck\n${botCommentSignature}\nAll checks passed!`
+                });
+              }
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'needs-contributor-cleanup'
+                });
+              } catch (e) {}
+
+              const labelName = 'contributor-ready';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+            }
