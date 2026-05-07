@@ -62,6 +62,11 @@ Our process follows the standard GitHub fork and pull request workflow.
 >    - `main` would be the default branch for development and feature work rebased from `stable` after release.
 >    - `stable` would be a branch used for stable releases/hashes, reference links, and only updated with release commits.
 
+### Contributor Roles
+
+- **Core Contributors:** Individuals listed in `CODEOWNERS` or with `MEMBER/OWNER` roles in the GitHub organization. They have the authority to merge changes and bypass certain automated "Gatekeeper" Draft-mode transitions.
+- **General Contributors:** Community members contributing via forks. All PRs from general contributors undergo stricter automated validation and must pass the "Gatekeeper" logic before being queued for human review.
+
 #### Pull requests
 
 Development pull requests (PRs) should be opened against the default branch.
@@ -79,6 +84,9 @@ Development pull requests (PRs) should be opened against the default branch.
 >  - affects any file not directly associated with the issue being resolved
 >  - affects "many" files
 >  - contains or is a minor grammatical fix
+>
+> [!IMPORTANT]
+> If your PR touches files in `src/server`, `.github`, or `scripts/`, it will be flagged as **breaking:potential** and moved to **Draft** by our security automation. This is a standard procedure to ensure core behavioral changes are intentional and safe.
 >
 > You will be asked to either:
 >  - open an issue instead of a PR

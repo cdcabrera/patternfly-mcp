@@ -9,4 +9,4 @@
 /.github/CODEOWNERS @cdcabrera
 
 # Automated dependency updates
-package*.json @cdcabrera
+package*.json @cdcabrera @jpuzz0 @dlabaj
