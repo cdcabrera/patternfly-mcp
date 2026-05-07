@@ -62,6 +62,29 @@ Our process follows the standard GitHub fork and pull request workflow.
 >    - `main` would be the default branch for development and feature work rebased from `stable` after release.
 >    - `stable` would be a branch used for stable releases/hashes, reference links, and only updated with release commits.
 
+### Contributor roles
+
+- **Core Contributors:** Maintainers listed in `CODEOWNERS` or with `MEMBER/OWNER` roles in the GitHub organization. Their focus is architecture, roadmap planning, maintenance, and feature contributions. 
+- **General Contributors:** Community members contributing via forks. All PRs from general contributors undergo automated validation and must pass the initial checks before being queued for review by maintainers.
+
+### Before you contribute
+
+> **Try customizing the server!**
+> The PatternFly MCP server is designed from the ground-up to be customizable. That customization allows the server to be [wrapped by a customized MCP server](./docs/development.md#programmatic-usage) and allows [MCP tool plugins](./docs/development.md#mcp-tool-plugins).
+
+#### Start a conversation
+We encourage opening a GitHub issue before starting any work.
+
+Opening an issue first helps ensure that a bug is actually a bug, that a type is intended, no-one is duplicating effort, and that your effort brings the PatternFly MCP forward. 
+
+Opening a PR without an issue has a higher likelihood your work will be flagged with automation, delayed for maintainer review, and potentially closed.
+
+> If you're leveraging the GitHub PR to provide us with file diffs, you can achieve the same Git diff applied by PRs by simply using the GitHub link format and applying it to your issue:
+> - `https://github.com/[BASE_OWNER]/[BASE_REPO]/compare/[BASE_BRANCH]...[FORK_OWNER]:[FORK_BRANCH]`
+>
+> **Example for this repository:**
+> - `https://github.com/patternfly/patternfly-mcp/compare/main...your-username:your-branch`
+
 #### Pull requests
 
 Development pull requests (PRs) should be opened against the default branch.
@@ -76,15 +99,16 @@ Development pull requests (PRs) should be opened against the default branch.
 >  - missing, relaxed, or removed linting, typings, and tests
 >  - overly complex TypeScript generics or generally over-the-top typings
 >  - dramatic unit test snapshot updates
+>  - favors naming unit test files after behavior instead of related filenames
 >  - affects any file not directly associated with the issue being resolved
 >  - affects "many" files
 >  - contains or is a minor grammatical fix
 >
 > You will be asked to either:
->  - open an issue instead of a PR
+>  - open an issue and close your PR
 >  - restructure your commits
 >  - break the work into multiple pull requests
->  - close the PR (typically, a last resort)
+>  - close the PR
 
 #### Pull request commits, messaging
 
@@ -95,11 +119,12 @@ Commit messages follow two basic guidelines:
 - No more than `65` characters for the first line.
 - Commit message formats follow the structure:
   ```
-  <type>(<optional scope>): <description> (#PR_NUMBER)
+  <type>(<optional scope>): <issue> <description> (#PR_NUMBER)
   ```
   Where:
   - **Type**: The type of work the commit resolves (e.g., `feat`, `fix`, `chore`, `docs`, `refactor`, `test`).
   - **Scope**: The optional area of code affected (directory, filename, or concept).
+  - **Issue**: Related story issue for the commit work. `feat` work requires an issue to pass validation and tracking metrics. Typically associated with the formats `issue/123` or `PF-123`. 
   - **Description**: What the commit work encompasses.
   - **#PR_NUMBER**: The pull request number. Typically added automatically during merge/squash operations. Including it manually is optional. It can help with traceability during review.
 
