@@ -19,8 +19,13 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
+            const LABEL_CODE_FREEZE = 'bot:code-freeze';
+            const LABEL_BREAKING_POTENTIAL = 'bot:breaking-potential';
+            const LABEL_NEEDS_CLEANUP = 'bot:needs-cleanup';
+            const LABEL_NEEDS_MAINTAINER = 'bot:needs-maintainer';
+            const LABEL_READY_FOR_REVIEW = 'bot:ready-for-review';
 
+            const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
             const { login: author, type: authorType } = context.payload.pull_request.user;
             const authorRole = context.payload.pull_request.author_association;
 
@@ -33,18 +38,15 @@ jobs:
             const isFreezeActive = "${{ vars.RELEASE_FREEZE_ACTIVE }}" === "true";
 
             if (isFreezeActive) {
-              const labelName = 'bot:code-freeze';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [labelName]
+                issue_number: context.issue.number, labels: [LABEL_CODE_FREEZE]
               }).catch(() => {});
             } else {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'bot:code-freeze'
-                });
-              } catch (e) {}
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_CODE_FREEZE
+              }).catch(() => {});
             }
 
             const body = context.payload.pull_request.body || "";
@@ -53,6 +55,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number,
+              per_page: 50
             });
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
@@ -79,10 +82,9 @@ jobs:
 
               return;
             } else if (codeSignature.hasTell) {
-              const labelName = 'bot:breaking-potential';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [labelName]
+                issue_number: context.issue.number, labels: [LABEL_BREAKING_POTENTIAL]
               }).catch(() => {});
 
               // GraphQL Mutation to convert to Draft
@@ -98,19 +100,16 @@ jobs:
               core.setFailed("PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require integration planning.");
               return;
             } else {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'bot:breaking-potential'
-                });
-              } catch (e) {}
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_BREAKING_POTENTIAL
+              }).catch(() => {});
             }
 
             if (codeSignature.errors.length > 0) {
-              const labelName = 'bot:needs-cleanup';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [labelName]
+                issue_number: context.issue.number, labels: [LABEL_NEEDS_CLEANUP]
               }).catch(() => {});
 
               const botComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
@@ -132,10 +131,9 @@ jobs:
 
               core.setFailed("PR pre-check requirements not met.");
             } else if (codeSignature.hasFailed) {
-              const labelName = 'bot:needs-maintainer';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [labelName]
+                issue_number: context.issue.number, labels: [LABEL_NEEDS_MAINTAINER]
               }).catch(() => {});
 
               const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
@@ -160,23 +158,18 @@ jobs:
                 });
               }
 
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'bot:needs-cleanup'
-                });
-              } catch (e) {}
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_NEEDS_CLEANUP
+              }).catch(() => {});
 
-              try {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'bot:needs-maintainer'
-                });
-              } catch (e) {}
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_NEEDS_MAINTAINER
+              }).catch(() => {});
 
-              const labelName = 'bot:ready-for-review';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [labelName]
+                issue_number: context.issue.number, labels: [LABEL_READY_FOR_REVIEW]
               }).catch(() => {});
             }

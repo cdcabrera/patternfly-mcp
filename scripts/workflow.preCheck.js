@@ -23,14 +23,14 @@ const coreContributors = ({ author, authorType, authorRole } = {}, { allowBot = 
   let isCodeOwner = false;
 
   for (const filePath of codeOwnersPaths) {
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf8');
+    if (!fs.existsSync(filePath)) {
+      continue;
+    }
 
-      if (new RegExp(`@${author}\\b`).test(content)) {
-        isCodeOwner = true;
-      }
+    const content = fs.readFileSync(filePath, 'utf8');
 
-      break;
+    if (new RegExp(`@${author}\\b`).test(content)) {
+      isCodeOwner = true;
     }
   }
 
@@ -49,7 +49,7 @@ const coreContributorsBypass = ({ comments } = {}) => {
   const bypassCommand = '/bypass';
 
   return updatedComments.some(comment =>
-    comment.body.trim().toLowerCase().startsWith(bypassCommand) &&
+    comment.body?.trim()?.toLowerCase()?.startsWith(bypassCommand) &&
     coreContributors({
       author: comment.user?.login || comment.author?.login,
       authorType: comment.user?.type || comment.author?.type,
@@ -100,8 +100,7 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
 
   // Make sure the contributor guidelines confirmation has been checked
   const contributorConfirmation = [
-    '[x] I have read the [contribution guidelines]',
-    '[X] I have read the [contribution guidelines]'
+    '[x] I have read the [contribution guidelines]'
   ];
 
   // Max file updates outside of core contributors before alerting.
@@ -144,7 +143,10 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
 
   try {
     const isMissingAgreement = typeof body === 'string' ? !contributorGuidelines.every(guideline => body.toLowerCase().includes(guideline)) : undefined;
-    const isMissingAgreementCheck = typeof body === 'string' ? contributorConfirmation.some(confirmation => body.toLowerCase().includes(confirmation)) : undefined;
+    const isMissingAgreementCheck =
+      typeof body === 'string'
+        ? !contributorConfirmation.some(confirmation => body.toLowerCase().includes(confirmation.toLowerCase()))
+        : undefined;
 
     const isMaxFilesUpdated = typeof fileCount === 'number' ? fileCount > fileChangeLimit : undefined;
     const isPrTemplateModified = typeof body === 'string' ? body.includes(prTemplateStr) === false : undefined;
@@ -181,7 +183,9 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
       hasFailed: false,
       hasTell: isGeneralModified && isMaxFilesUpdated === true && isPrTemplateModified === true && isSignatureModified
     };
-  } catch {}
+  } catch (e) {
+    console.error(`Workflow PreCheck signatureScan failed`, e?.message || e);
+  }
 
   return {
     errors: [

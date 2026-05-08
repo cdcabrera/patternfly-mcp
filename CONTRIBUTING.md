@@ -89,7 +89,13 @@ Opening a PR without an issue has a higher likelihood your work will be flagged 
 
 Development pull requests (PRs) should be opened against the default branch.
 
-> If your pull request work contains any of the following warning signs
+Pull requests from non-core contributors will be invited to agree to the contribution agreement in PR comments. Provide a thumbs up on your acceptance, and automation will start the validation process.
+
+##### The Contributor's agreement
+_I have read the contribution guidelines and fulfill them with this PR. I acknowledge my PR may be labeled, converted to draft, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation._
+
+> Automation looks for a few metrics related to the following warning signs
+>  - acceptance of the Contributor agreement
 >  - has no related issue
 >  - ignores existing code style
 >  - out-of-sync commits (not rebased against the default branch)
@@ -104,7 +110,7 @@ Development pull requests (PRs) should be opened against the default branch.
 >  - affects "many" files
 >  - contains or is a minor grammatical fix
 >
-> You will be asked to either:
+> If automation does not pass, your PR will not be prioritized, and you may be asked to:
 >  - open an issue and close your PR
 >  - restructure your commits
 >  - break the work into multiple pull requests
@@ -155,7 +161,7 @@ Basic code style guidelines are generally enforced by ESLint, but there are addi
 #### Functionality, testing
 - Functions should attempt to maintain a single responsibility.
 - Function annotations follow a minimal JSDoc style; descriptions are encouraged.
-- Unit test file names should have a corresponding file with the same name.
+- Unit test file names should have a corresponding file with the same name (e.g. `server.ts`, `server.test.ts`).
 - E2E test file names should be representative of the core functionality of the codebase.
 - E2E testing can integrate into the `test` mode provided by the codebase. Recreating this functionality with custom mocks and fixtures is discouraged.
 - Tests should focus on functionality.
