@@ -75,7 +75,7 @@ Our process follows the standard GitHub fork and pull request workflow.
 #### Start a conversation
 In the age of agentic coding where your ideas can be up and working quickly, we encourage opening a GitHub issue before starting any work.
 
-Opening an issue first starts the planning conversation to have your idea integrated, push the PatternFly MCP forward collectively, and give you the recognition for your effort and planning without forcing a code review from maintainers. We want your planned idea, not our reactive intrepreation. 
+Opening an issue first starts the planning conversation to have your idea integrated, push the PatternFly MCP forward collectively, and give you the recognition for your effort and planning without forcing a code review from maintainers. We want your planned idea, not our reactive interpretation. 
 
 Opening a PR without an issue has a higher likelihood your work will be flagged with automation, delayed for maintainer review, and potentially closed.
 
@@ -133,7 +133,7 @@ Commit messages follow two basic guidelines:
 
 #### Pull request test failures
 
-To ensure a smooth and efficient review process, maintainers will begin their evaluation once all automated checks and tests have successfully passed.
+To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated checks and tests have successfully passed.
 
 If automation does any of the following:
 - converts your work to draft

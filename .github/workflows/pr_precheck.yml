@@ -128,4 +128,10 @@ jobs:
                   issue_number: context.issue.number, name: 'needs-contributor-cleanup'
                 });
               } catch (e) {}
+
+              const labelName = 'contributor-ready';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
             }
