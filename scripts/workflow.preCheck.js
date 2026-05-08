@@ -9,14 +9,16 @@ import fs from 'node:fs';
  * @param params.author
  * @param params.authorType
  * @param params.authorRole
+ * @param options - Optional settings
+ * @param options.allowBot - Allow known bots to skip preCheck
  * @returns {boolean} A `boolean` indicating whether an author/contributor is allowed to skip pre-checks.
  */
-const coreContributors = ({ author, authorType, authorRole } = {}) => {
+const coreContributors = ({ author, authorType, authorRole } = {}, { allowBot = true } = {}) => {
   const bots = ['Bot', 'dependabot[bot]'];
   const contributors = ['OWNER', 'MEMBER'];
   const codeOwnersPaths = ['.github/CODEOWNERS', 'CODEOWNERS', 'docs/CODEOWNERS'];
 
-  const isBot = bots.includes(authorType) || bots.includes(author);
+  const isBot = allowBot && (bots.includes(authorType) || bots.includes(author));
   const isMaintainer = contributors.includes(authorRole);
   let isCodeOwner = false;
 
@@ -33,6 +35,26 @@ const coreContributors = ({ author, authorType, authorRole } = {}) => {
   }
 
   return isBot || isMaintainer || isCodeOwner;
+};
+
+/**
+ * Check if a maintainer has issued a `/bypass` command.
+ *
+ * @param {object} params
+ * @param {object[]} params.comments - List of PR comments.
+ * @returns {boolean} True if a valid bypass command is found.
+ */
+const coreContributorsBypass = ({ comments } = {}) => {
+  const updatedComments = Array.isArray(comments) ? comments : [];
+  const bypassCommand = '/bypass';
+
+  return updatedComments.some(comment =>
+    comment.body.trim().toLowerCase().startsWith(bypassCommand) &&
+    coreContributors({
+      author: comment.user?.login || comment.author?.login,
+      authorType: comment.user?.type || comment.author?.type,
+      authorRole: comment.author_association
+    }, { allowBot: false }));
 };
 
 /**
@@ -67,8 +89,8 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * @param params.fileCount
  * @returns {{commentSignature: string, errors: *[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
-const signatureScan = ({ body, changedFiles, fileCount }) => {
-  // Make sure this is within the PR template or we'll get false positives.
+const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
+  // Make sure this is within the PR template, or we'll get false positives.
   const prTemplateStr = '<!-- GH_PR_METADATA_V1_789 -->';
 
   // Make sure contributor guidelines confirmation exists
@@ -99,6 +121,7 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
     '.claude',
     '.cursor',
     '.junie',
+    'scripts/workflow',
     'src/cli',
     'src/declarations',
     'src/fixtures',
@@ -136,9 +159,9 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
     const errors = [];
 
     if (isMissingAgreement === true) {
-      errors.push(`⚠️ PR description is missing Contributor's agreement confirmation. Please restore and fill out the PR template and check the Contributor's agreement box.`);
+      errors.push(`⚠️ PR description is missing the Contributor's agreement confirmation. Please restore and fill out the PR template and check the Contributor's agreement box.`);
     } else if (isMissingAgreementCheck === true) {
-      errors.push(`⚠️ PR description needs Contributor's agreement checked. Please check the Contributor's agreement box to confirm you have read the Contributor's guidelines.`);
+      errors.push(`⚠️ PR description needs the Contributor's agreement checked. Please check the Contributor's agreement box to confirm you have read the Contributor's guidelines.`);
     }
 
     if (isMaxFilesUpdated === true) {
@@ -161,7 +184,9 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
   } catch {}
 
   return {
-    errors: [],
+    errors: [
+      `📡 Calling for backup! An unexpected hitch occurred during processing, and a maintainer has been notified.`
+    ],
     isGeneralModified: false,
     isMaxFilesUpdated: false,
     isPrTemplateModified: false,
@@ -171,4 +196,4 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
   };
 };
 
-export { coreContributors, signatureScan };
+export { coreContributors, coreContributorsBypass, signatureScan };

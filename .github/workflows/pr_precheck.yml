@@ -19,12 +19,12 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const prPreCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
+            const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
 
             const { login: author, type: authorType } = context.payload.pull_request.user;
             const authorRole = context.payload.pull_request.author_association;
 
-            if (prPreCheck.coreContributors({ author, authorType, authorRole })) {
+            if (preCheck.coreContributors({ author, authorType, authorRole })) {
               console.log(`Contributor found, skipping pre-checks: ${author}`);
               return;
             }
@@ -59,9 +59,26 @@ jobs:
             });
             const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
             const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
-            const codeSignature = prPreCheck.signatureScan({ body, changedFiles, fileCount });
+            const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount });
 
-            if (codeSignature.hasTell) {
+            if (preCheck.coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
+              const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+               `Bypass acknowledged, standing down!`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: errorComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: errorComment
+                });
+              }
+
+              return;
+            } else if (codeSignature.hasTell) {
               const labelName = 'bot:breaking-potential';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
@@ -97,7 +114,7 @@ jobs:
               }).catch(() => {});
 
               const botComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
-                `Thank you for the PR! Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are address you'll be queued for review:\n\n` +
+                `Thank you for the PR! Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
                 `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
                 `*This comment updates automatically.*`;
 
@@ -115,7 +132,26 @@ jobs:
 
               core.setFailed("PR pre-check requirements not met.");
             } else if (codeSignature.hasFailed) {
-              // something went wrong, lets add a label here and have the bot ask for help
+              const labelName = 'bot:needs-maintainer';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [labelName]
+              }).catch(() => {});
+
+              const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+                `${codeSignature.errors.map(err => `- ${err}`).join('\n')}`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: errorComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: errorComment
+                });
+              }
             } else {
               if (existingComment) {
                 await github.rest.issues.updateComment({
@@ -128,6 +164,13 @@ jobs:
                 await github.rest.issues.removeLabel({
                   owner: context.repo.owner, repo: context.repo.repo,
                   issue_number: context.issue.number, name: 'bot:needs-cleanup'
+                });
+              } catch (e) {}
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: 'bot:needs-maintainer'
                 });
               } catch (e) {}
 
