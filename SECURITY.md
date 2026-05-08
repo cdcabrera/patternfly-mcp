@@ -13,12 +13,12 @@ If you discover a security vulnerability in this repository, please report it re
 Security concerns for this MCP server include:
 - **Data Integrity:** Ensuring PatternFly documentation and schemas are accurate and untampered.
 - **Execution Safety:** Preventing malicious code execution through custom tool plugins.
-- **Path Escape:** Ensuring the server cannot be used to read sensitive files on the host system.
+- **Path Escape:** Ensuring the server cannot be used to read sensitive files on the host system via validated path resolution.
 
 ## Contribution Guardrails
 
-To maintain codebase integrity, we use an automated **Gatekeeper** (`pr_precheck.yml`):
-- PRs from non-core contributors that modify core behavior (e.g., `src/server`, `.github`, `tests/audit`) or exceed 15 files are automatically moved to **Draft**.
+To maintain codebase integrity, we use an automated **Gatekeeper** workflow:
+- PRs from non-core contributors that modify core behavior or exceed established file limits are automatically moved to **Draft**.
 - These PRs require explicit promotion and a secondary review by a Maintainer.
 
 ## Release Integrity

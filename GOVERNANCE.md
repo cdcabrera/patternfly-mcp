@@ -17,7 +17,7 @@ GitHub workflows perform checks for
 
 A maintainer reviews every PR for intent-level issues that automated tools miss:
 
-- **Intent-based Filtering:** Conditional pre-check labeling (`breaking:potential`, `needs-contributor-cleanup`) is leveraged to prioritize reviews and identify high-risk changes.
+- **Intent-based Filtering:** Automated labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact.
 - **Architectural Alignment:** Every PR is verified against the [planned architecture](./docs/architecture.md) to ensure long-term stability.
 - **Guideline Adherence Verification:** Maintainers verify that contributions follow established patterns and do not interfere with internal validation mechanisms designed to ensure contributors have performed a full context review.
 - **Credential & Secret Scanning:** Manual verification that no sensitive environment variables or keys are exposed in tests or documentation.
@@ -26,7 +26,7 @@ A maintainer reviews every PR for intent-level issues that automated tools miss:
 
 The PatternFly MCP server implements security at the execution level:
 - **Plugin Isolation:** By default, the server operates in `strict` isolation mode, sandboxing tool execution to prevent unauthorized filesystem or network access.
-- **Path Traversal Protection:** All resource lookups are constrained via `resolveLocalPathFunction` to ensure agents cannot escape the intended directory scope.
+- **Path Traversal Protection:** All resource lookups are constrained via a path normalization utility to ensure agents cannot escape the intended directory scope.
 
 ## What This Means in Practice
 

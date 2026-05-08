@@ -136,8 +136,8 @@ Commit messages follow two basic guidelines:
 To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated checks and tests have successfully passed.
 
 If automation does any of the following:
-- converts your work to draft
-- applies labels
+- flags your work as "not ready for review"
+- applies status labels
 - fails
 
 Please follow the guidance provided by automation and resolve the issues. If your work is still failing, seek guidance before requesting a manual review.
