@@ -19,7 +19,7 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
-            const prPreCheck = await import(`${ github.workspace }/scripts/workflow.prPreCheck.js`);
+            const prPreCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
 
             const { login: author, type: authorType } = context.payload.pull_request.user;
             const authorRole = context.payload.pull_request.author_association;
