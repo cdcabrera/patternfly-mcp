@@ -159,17 +159,17 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
     const errors = [];
 
     if (isMissingAgreement === true) {
-      errors.push(`⚠️ PR description is missing the Contributor's agreement confirmation. Please restore and fill out the PR template and check the Contributor's agreement box.`);
+      errors.push(`⚠️ I can't find the Contributor agreement confirmation in your description. Please restore the PR template and check the box.`);
     } else if (isMissingAgreementCheck === true) {
-      errors.push(`⚠️ PR description needs the Contributor's agreement checked. Please check the Contributor's agreement box to confirm you have read the Contributor's guidelines.`);
+      errors.push(`⚠️ I noticed the Contributor agreement hasn't been checked yet. Please check the box to confirm you've read the guidelines.`);
     }
 
     if (isMaxFilesUpdated === true) {
-      errors.push(`⚠️ PR contains a large number of files (${fileCount}/${fileChangeLimit}). Please keep your contribution focused on a specific update and reference the contribution guidelines regarding updates, planning, and opening issues for non-core contributors.`);
+      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.`);
     }
 
     if (isSignatureModified) {
-      errors.push(`⚠️ PR contains core modifications to behavior and testing: ${filesModified.join(', ')}. Please reference the contribution guidelines regarding updates, planning, and opening issues for non-core contributors`);
+      errors.push(`⚠️ I've detected core modifications to behavior or testing (${filesModified.join(', ')}). These changes usually require a bit more planning—check the guidelines for details.`);
     }
 
     return {
@@ -185,7 +185,7 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
 
   return {
     errors: [
-      `📡 Calling for backup! An unexpected hitch occurred during processing, and a maintainer has been notified.`
+      `📡 I'm calling for backup! I've encountered an unexpected hitch while processing your work, and I've notified a maintainer to assist you.`
     ],
     isGeneralModified: false,
     isMaxFilesUpdated: false,
