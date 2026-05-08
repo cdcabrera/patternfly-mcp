@@ -33,7 +33,7 @@ jobs:
             const isFreezeActive = "${{ vars.RELEASE_FREEZE_ACTIVE }}" === "true";
 
             if (isFreezeActive) {
-              const labelName = 'hold:freeze';
+              const labelName = 'bot:code-freeze';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, labels: [labelName]
@@ -42,7 +42,7 @@ jobs:
               try {
                 await github.rest.issues.removeLabel({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'hold:freeze'
+                  issue_number: context.issue.number, name: 'bot:code-freeze'
                 });
               } catch (e) {}
             }
@@ -62,7 +62,7 @@ jobs:
             const codeSignature = prPreCheck.signatureScan({ body, changedFiles, fileCount });
 
             if (codeSignature.hasTell) {
-              const labelName = 'breaking:potential';
+              const labelName = 'bot:breaking-potential';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, labels: [labelName]
@@ -84,13 +84,13 @@ jobs:
               try {
                 await github.rest.issues.removeLabel({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'breaking:potential'
+                  issue_number: context.issue.number, name: 'bot:breaking-potential'
                 });
               } catch (e) {}
             }
 
             if (codeSignature.errors.length > 0) {
-              const labelName = 'needs-contributor-cleanup';
+              const labelName = 'bot:needs-cleanup';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, labels: [labelName]
@@ -114,6 +114,8 @@ jobs:
               }
 
               core.setFailed("PR pre-check requirements not met.");
+            } else if (codeSignature.hasFailed) {
+              // something went wrong, lets add a label here and have the bot ask for help
             } else {
               if (existingComment) {
                 await github.rest.issues.updateComment({
@@ -125,11 +127,11 @@ jobs:
               try {
                 await github.rest.issues.removeLabel({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: 'needs-contributor-cleanup'
+                  issue_number: context.issue.number, name: 'bot:needs-cleanup'
                 });
               } catch (e) {}
 
-              const labelName = 'contributor-ready';
+              const labelName = 'bot:ready-for-review';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, labels: [labelName]

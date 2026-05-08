@@ -43,12 +43,20 @@ const coreContributors = ({ author, authorType, authorRole } = {}) => {
  * @returns {string[]} An array of value matches.
  */
 const doesListContainAnotherListValues = (listBase, listCheck) =>
-  listBase
-    .filter(file =>
-      listCheck.includes(file?.filename) ||
-      listCheck?.some(
-        item => file?.filename && (file.filename?.startsWith(item) || file.filename?.endsWith(item) || file.filename?.includes(item) || item.includes(file.filename))
-      )).map(file => file?.filename);
+  ((Array.isArray(listBase) && listBase) || [])
+    .filter(file => {
+      const updatedFileName = file?.filename?.trim()?.toLowerCase() || undefined;
+      const updatedListCheck = (Array.isArray(listCheck) && listCheck) || [];
+
+      if (!updatedFileName) {
+        return false;
+      }
+
+      return updatedListCheck.includes(updatedFileName) ||
+        updatedListCheck.some(
+          item => (updatedFileName.startsWith(item) || updatedFileName.endsWith(item) || updatedFileName.includes(item) || item.includes(updatedFileName))
+        );
+    }).map(file => file?.filename);
 
 /**
  * Scan available updates for signature using basic logic.
@@ -79,7 +87,10 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
 
   // Signature checks. This can be a list of existing or non-existent files, directories, and/or extensions.
   const fileAndDirsList = [
+    '.aiignore',
+    '.gitignore',
     '.js',
+    '.npmrc',
     '.sh',
     '__mocks__',
     '__fixtures__',
@@ -91,6 +102,7 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
     'src/cli',
     'src/declarations',
     'src/fixtures',
+    'src/patternFly.getResources',
     'src/mocks',
     'src/index',
     'src/mcpSdk',
@@ -107,42 +119,55 @@ const signatureScan = ({ body, changedFiles, fileCount }) => {
     'tests/e2e/__snapshots__/stdioTransport.test.ts.snap'
   ];
 
-  const isMissingAgreement = typeof body === 'string' ? !contributorGuidelines.every(guideline => body.toLowerCase().includes(guideline)) : undefined;
-  const isMissingAgreementCheck = typeof body === 'string' ? contributorConfirmation.some(confirmation => body.toLowerCase().includes(confirmation)) : undefined;
+  try {
+    const isMissingAgreement = typeof body === 'string' ? !contributorGuidelines.every(guideline => body.toLowerCase().includes(guideline)) : undefined;
+    const isMissingAgreementCheck = typeof body === 'string' ? contributorConfirmation.some(confirmation => body.toLowerCase().includes(confirmation)) : undefined;
 
-  const isMaxFilesUpdated = typeof fileCount === 'number' ? fileCount > fileChangeLimit : undefined;
-  const isPrTemplateModified = typeof body === 'string' ? body.includes(prTemplateStr) === false : undefined;
+    const isMaxFilesUpdated = typeof fileCount === 'number' ? fileCount > fileChangeLimit : undefined;
+    const isPrTemplateModified = typeof body === 'string' ? body.includes(prTemplateStr) === false : undefined;
 
-  const filesModified = doesListContainAnotherListValues(changedFiles, fileAndDirsList);
-  const isSignatureModified = filesModified.length > 0;
+    const filesModified = doesListContainAnotherListValues(changedFiles, fileAndDirsList);
+    const isSignatureModified = filesModified.length > 0;
 
-  const tellsModified = doesListContainAnotherListValues(changedFiles, generalList);
-  const isGeneralModified = tellsModified.length === generalList.length;
+    const tellsModified = doesListContainAnotherListValues(changedFiles, generalList);
+    const isGeneralModified = tellsModified.length === generalList.length;
 
-  // Aggregate errors
-  const errors = [];
+    // Aggregate errors
+    const errors = [];
 
-  if (isMissingAgreement === true) {
-    errors.push(`⚠️ PR description is missing Contributor's agreement confirmation. Please restore and fill out the PR template and check the Contributor's agreement.`);
-  } else if (isMissingAgreementCheck === true) {
-    errors.push(`⚠️ PR description needs Contributor's agreement checked. Please check the Contributor's agreement box to confirm you have read the Contributor's guidelines.`);
-  }
+    if (isMissingAgreement === true) {
+      errors.push(`⚠️ PR description is missing Contributor's agreement confirmation. Please restore and fill out the PR template and check the Contributor's agreement box.`);
+    } else if (isMissingAgreementCheck === true) {
+      errors.push(`⚠️ PR description needs Contributor's agreement checked. Please check the Contributor's agreement box to confirm you have read the Contributor's guidelines.`);
+    }
 
-  if (isMaxFilesUpdated === true) {
-    errors.push(`⚠️ PR contains a large number of files (${fileCount}/${fileChangeLimit}). Please keep your contribution focused on a specific update and reference the contribution guidelines regarding updates for features, refactors, performance, and fixes for non-core contributors.`);
-  }
+    if (isMaxFilesUpdated === true) {
+      errors.push(`⚠️ PR contains a large number of files (${fileCount}/${fileChangeLimit}). Please keep your contribution focused on a specific update and reference the contribution guidelines regarding updates, planning, and opening issues for non-core contributors.`);
+    }
 
-  if (isSignatureModified) {
-    errors.push(`⚠️ PR contains core modifications to behavior and testing: ${filesModified.join(', ')}. Please reference the contribution guidelines regarding updates for features, refactors, performance, and fixes for non-core contributors`);
-  }
+    if (isSignatureModified) {
+      errors.push(`⚠️ PR contains core modifications to behavior and testing: ${filesModified.join(', ')}. Please reference the contribution guidelines regarding updates, planning, and opening issues for non-core contributors`);
+    }
+
+    return {
+      errors,
+      isGeneralModified,
+      isMaxFilesUpdated: isMaxFilesUpdated === true,
+      isPrTemplateModified: isPrTemplateModified === true,
+      isSignatureModified,
+      hasFailed: false,
+      hasTell: isGeneralModified && isMaxFilesUpdated === true && isPrTemplateModified === true && isSignatureModified
+    };
+  } catch {}
 
   return {
-    errors,
-    isGeneralModified,
-    isMaxFilesUpdated: isMaxFilesUpdated === true,
-    isPrTemplateModified: isPrTemplateModified === true,
-    isSignatureModified,
-    hasTell: isGeneralModified && isMaxFilesUpdated === true && isPrTemplateModified === true && isSignatureModified
+    errors: [],
+    isGeneralModified: false,
+    isMaxFilesUpdated: false,
+    isPrTemplateModified: false,
+    isSignatureModified: false,
+    hasFailed: true,
+    hasTell: false
   };
 };
 
