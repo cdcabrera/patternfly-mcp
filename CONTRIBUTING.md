@@ -132,7 +132,7 @@ Commit messages follow two basic guidelines:
 > will be altered to reflect current guidelines.
 
 #### Pull request test failures
-Before any review takes place, all tests should pass. You may be asked to update your pull request to resolve any failing tests
+Before any review takes place by a maintainer, all automation should pass. You may be asked to update your pull request to resolve any failing automation
 before a review.
 
 > If you are unsure why your tests are failing, you should [review testing documentation](#testing).
@@ -148,8 +148,14 @@ Basic code style guidelines are generally enforced by ESLint, but there are addi
 #### Functionality, testing
 - Functions should attempt to maintain a single responsibility.
 - Function annotations follow a minimal JSDoc style; descriptions are encouraged.
+- Unit test file names should have a corresponding file with the same name.
+- E2E test file names should be representative of the core functionality of the codebase.
+- E2E testing can integrate into the `test` mode provided by the codebase. Recreating this functionality with custom mocks and fixtures is discouraged.
 - Tests should focus on functionality.
-- Tests should not be written for external packages. That is the responsibility of the external package, or it shouldn't be used.
+- Tests should not be written for external packages. That is the responsibility of the external package, or it shouldn't be used. 
+
+#### Functionality, features, fixes, etc.
+- Existing functions should be prioritized for reuse over writing new functions that do the same thing
 
 #### TypeScript
 - Typings within the project may be generally loose for initial development but should be refined over time.
