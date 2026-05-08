@@ -73,9 +73,9 @@ Our process follows the standard GitHub fork and pull request workflow.
 > The PatternFly MCP server is designed from the ground-up to be customizable. That customization allows the server to be [wrapped by a customized MCP server](./docs/development.md#programmatic-usage) and allows [MCP tool plugins](./docs/development.md#mcp-tool-plugins).
 
 #### Start a conversation
-We encourage opening a GitHub issue before starting any work.
+In the age of agentic coding where your ideas can be up and working quickly, we encourage opening a GitHub issue before starting any work.
 
-Opening an issue first helps ensure that a bug is actually a bug, that a type is intended, no-one is duplicating effort, and that your effort brings the PatternFly MCP forward. 
+Opening an issue first starts the planning conversation to have your idea integrated, push the PatternFly MCP forward collectively, and give you the recognition for your effort and planning without forcing a code review from maintainers. We want your planned idea, not our reactive intrepreation. 
 
 Opening a PR without an issue has a higher likelihood your work will be flagged with automation, delayed for maintainer review, and potentially closed.
 
@@ -132,10 +132,17 @@ Commit messages follow two basic guidelines:
 > will be altered to reflect current guidelines.
 
 #### Pull request test failures
-Before any review takes place by a maintainer, all automation should pass. You may be asked to update your pull request to resolve any failing automation
-before a review.
 
-> If you are unsure why your tests are failing, you should [review testing documentation](#testing).
+To ensure a smooth and efficient review process, maintainers will begin their evaluation once all automated checks and tests have successfully passed.
+
+If automation does any of the following:
+- converts your work to draft
+- applies labels
+- fails
+
+Please follow the guidance provided by automation and resolve the issues. If your work is still failing, seek guidance before requesting a manual review.
+
+> If you are unsure why your tests are failing, we encourage you to [start a conversation](#start-a-conversation), and review both [pull request guidance](#pull-requests) and [testing documentation](#testing).
 
 
 ### Code style guidance and conventions
