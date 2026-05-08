@@ -87,21 +87,12 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * @param params.body
  * @param params.changedFiles
  * @param params.fileCount
+ * @param params.handshakeStatus
  * @returns {{commentSignature: string, errors: *[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
-const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
+const signatureScan = ({ body, changedFiles, fileCount, handshakeStatus } = {}) => {
   // Make sure this is within the PR template, or we'll get false positives.
   const prTemplateStr = '<!-- GH_PR_METADATA_V1_789 -->';
-
-  // Make sure contributor guidelines confirmation exists
-  const contributorGuidelines = [
-    '] I have read the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and fulfill them with this PR. I acknowledge my PR may be labeled, converted to draft, and closed by automation or maintainers if it does not have a related GitHub issue, pass validation, and follow guidelines.'
-  ];
-
-  // Make sure the contributor guidelines confirmation has been checked
-  const contributorConfirmation = [
-    '[x] I have read the [contribution guidelines]'
-  ];
 
   // Max file updates outside of core contributors before alerting.
   const fileChangeLimit = 15;
@@ -142,12 +133,6 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
   ];
 
   try {
-    const isMissingAgreement = typeof body === 'string' ? !contributorGuidelines.every(guideline => body.toLowerCase().includes(guideline)) : undefined;
-    const isMissingAgreementCheck =
-      typeof body === 'string'
-        ? !contributorConfirmation.some(confirmation => body.toLowerCase().includes(confirmation.toLowerCase()))
-        : undefined;
-
     const isMaxFilesUpdated = typeof fileCount === 'number' ? fileCount > fileChangeLimit : undefined;
     const isPrTemplateModified = typeof body === 'string' ? body.includes(prTemplateStr) === false : undefined;
 
@@ -160,10 +145,11 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
     // Aggregate errors
     const errors = [];
 
-    if (isMissingAgreement === true) {
-      errors.push(`⚠️ I can't find the Contributor agreement confirmation in your description. Please restore the PR template and check the box.`);
-    } else if (isMissingAgreementCheck === true) {
-      errors.push(`⚠️ I noticed the Contributor agreement hasn't been checked yet. Please check the box to confirm you've read the guidelines.`);
+    // Handshake-specific messaging
+    if (handshakeStatus === 'declined') {
+      errors.push(`🚫 I've noticed you've declined the contributor agreement. I've paused all automation for this PR until you're ready to proceed.`);
+    } else if (handshakeStatus === 'pending') {
+      errors.push(`👋 I'm waiting for your handshake! Please give my comment below a 👍 to confirm you've read our guidelines and unlock the testing suite.`);
     }
 
     if (isMaxFilesUpdated === true) {
@@ -181,6 +167,8 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
       isPrTemplateModified: isPrTemplateModified === true,
       isSignatureModified,
       hasFailed: false,
+      hasHandshake: handshakeStatus === 'confirmed',
+      isDeclined: handshakeStatus === 'declined',
       hasTell: isGeneralModified && isMaxFilesUpdated === true && isPrTemplateModified === true && isSignatureModified
     };
   } catch (e) {

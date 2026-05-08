@@ -6,6 +6,7 @@ Every contribution passes through three layers before it can affect a user's sys
 
 GitHub workflows perform checks for
 
+- **The Handshake:** An interactive bot handshake ensures contributors have read and confirmed the contribution guidelines before deeper automation is unlocked.
 - Pull request (PR) pre-checks for labeling and contributor guidance.
 - Spelling and linting for most files
 - Unit testing

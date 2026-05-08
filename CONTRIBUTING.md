@@ -139,10 +139,11 @@ Commit messages follow two basic guidelines:
 
 #### Pull request test failures
 
-To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated checks and tests have successfully passed.
+To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated checks and tests have successfully passed. The first step to unlocking these tests is completing the interactive "Handshake" with our PR bot.
 
 If automation does any of the following:
 - flags your work as "not ready for review"
+- waits for your handshake (👍 reaction)
 - applies status labels
 - fails
 

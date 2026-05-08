@@ -23,7 +23,8 @@ jobs:
             const LABEL_BREAKING_POTENTIAL = 'bot:breaking-potential';
             const LABEL_NEEDS_CLEANUP = 'bot:needs-cleanup';
             const LABEL_NEEDS_MAINTAINER = 'bot:needs-maintainer';
-            const LABEL_READY_FOR_REVIEW = 'bot:ready-for-review';
+            const LABEL_CONFIRMED = 'bot:confirmed';
+            const LABEL_UNCONFIRMED = 'bot:unconfirmed';
 
             const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
             const { login: author, type: authorType } = context.payload.pull_request.user;
@@ -62,7 +63,49 @@ jobs:
             });
             const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
             const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
-            const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount });
+
+            let handshakeStatus = 'pending';
+            if (existingComment) {
+              const reactions = await github.rest.reactions.listForIssueComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existingComment.id
+              });
+
+              const authorReaction = reactions.data.find(r => r.user.login === author);
+              if (authorReaction?.content === '+1') handshakeStatus = 'confirmed';
+              if (authorReaction?.content === '-1') handshakeStatus = 'declined';
+            }
+
+            const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount, handshakeStatus });
+
+            if (codeSignature.hasHandshake) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [LABEL_CONFIRMED]
+              }).catch(() => {});
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_UNCONFIRMED
+              }).catch(() => {});
+            } else if (codeSignature.isDeclined) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
+              }).catch(() => {});
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_CONFIRMED
+              }).catch(() => {});
+            } else {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_CONFIRMED
+              }).catch(() => {});
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, name: LABEL_UNCONFIRMED
+              }).catch(() => {});
+            }
 
             if (preCheck.coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
               const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
@@ -154,7 +197,7 @@ jobs:
               if (existingComment) {
                 await github.rest.issues.updateComment({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  comment_id: existingComment.id, body: `### 🤖 PR Quality PreCheck\n${botCommentSignature}\nAll checks passed!`
+                  comment_id: existingComment.id, body: `### 🤖 PR Quality PreCheck\n${botCommentSignature}\nI've finished my initial scan and everything looks great! **Please give this comment a 👍 reaction** to confirm you've read our guidelines and "unlock" the integration tests.`
                 });
               }
 
@@ -166,10 +209,5 @@ jobs:
               await github.rest.issues.removeLabel({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, name: LABEL_NEEDS_MAINTAINER
-              }).catch(() => {});
-
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [LABEL_READY_FOR_REVIEW]
               }).catch(() => {});
             }

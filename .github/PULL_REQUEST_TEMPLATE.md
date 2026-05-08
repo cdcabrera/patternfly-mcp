@@ -1,6 +1,6 @@
 <!-- GH_PR_METADATA_V1_789 -->
 > **Contributor's agreement:**
-> - [ ] I have read the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and fulfill them with this PR. I acknowledge my PR may be labeled, converted to draft, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation.
+> I'm ready to help! Please check my comment below and give it a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.
 
 ## What is it?
 <!-- Summary of changes/additions/commits -->
