@@ -21,7 +21,7 @@ jobs:
           script: |
             const preCheck = await import(`${github.workspace}/scripts/workflow.preCheck.js`);
 
-            await preCheck.runGatekeeper({
+            await preCheck.start({
               isFreezeActive: '${{ vars.RELEASE_FREEZE_ACTIVE }}' === 'true',
               LABEL_CODE_FREEZE: 'bot:code-freeze',
               LABEL_BREAKING_POTENTIAL: 'bot:breaking-potential',
