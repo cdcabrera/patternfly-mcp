@@ -1,5 +1,6 @@
 <!-- GH_PR_METADATA_V1_789 -->
-<!-- Follow the automation guidance and give it a 👍 to confirm you've read our guidelines and unlock the testing suite. -->
+> **Contributor's agreement:**
+> I'm ready to help! Please check my comment below and give it a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.
 
 ## What is it?
 <!-- Summary of changes/additions/commits -->

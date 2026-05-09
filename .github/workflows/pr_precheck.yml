@@ -63,8 +63,67 @@ jobs:
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
             });
-            const botAgreementSignature = '<!-- precheck-bot-agreement-V1 -->';
-            const existingAgreement = comments.data.find(c => c.body.includes(botAgreementSignature));
+
+            // Agreement logic
+            const isConfirmed = context.payload.pull_request.labels.some(l => l.name === LABEL_CONFIRMED);
+
+            if (!isConfirmed) {
+              const agreementCommentSignature = '<!-- precheck-bot-agreement-V1 -->';
+              const existingAgreement = comments.data.find(c => c.body.includes(agreementCommentSignature));
+
+              if (!existingAgreement) {
+                const agreementComment = `### 🤖 PR Contributor's agreement\n${agreementCommentSignature}\n` +
+                  `I'm ready to help! Please give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: agreementComment
+                });
+
+                return;
+              }
+
+              const { data: reactions } = await github.rest.reactions.listForIssueComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existingAgreement.id
+              });
+
+              const authorReaction = reactions.find(r => r.user.login === author);
+
+              if (authorReaction?.content === '+1') {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, labels: [LABEL_CONFIRMED]
+                }).catch(() => {});
+
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: LABEL_UNCONFIRMED
+                }).catch(() => {});
+
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingAgreement.id
+                });
+              } else if (authorReaction?.content === '-1') {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
+                }).catch(() => {});
+
+                const declinedComment = `### 🤖 PR Contributor's agreement\n${agreementCommentSignature}\n` +
+                  `🚫 I've noticed you've declined the agreement. I've had to pause automation until you're ready to proceed. If you change your mind, just change your reaction to a 👍!`;
+
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingAgreement.id, body: declinedComment
+                });
+
+                return;
+              } else {
+                return;
+              }
+            }
 
             const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
             const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
@@ -89,87 +148,9 @@ jobs:
               return;
             }
 
-            if (!existingAgreement) {
-              const agreementComment = `### 🤖 PR Contributor's agreement\n${botAgreementSignature}\n` +
-                 `I'm ready to help! Give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
-
-              await github.rest.issues.createComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, body: agreementComment
-              });
-
-              return;
-            }
-
-            const { data: reactions } = await github.rest.reactions.listForIssueComment({
-              owner: context.repo.owner, repo: context.repo.repo,
-              comment_id: existingComment.id
-            });
-
-            const authorReaction = reactions.find(r => r.user.login === author);
-            const authorAgreement = authorReaction?.content || '0';
-            const agreement = preCheck.contributorAgreement({ agreement: authorAgreement });
-
-            if (agreement) {
-              if (existingAgreement) {
-                const agreementComment = `### 🤖 PR Contributor's agreement\n${botAgreementSignature}\n` +
-                   `Thank you for accepting the contribution guidelines! Starting the testing suite.`;
-
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, body: agreementComment
-                });
-              }
-            } else {
-              if (agreement === false) {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
-                }).catch(() => {});
-
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: LABEL_CONFIRMED
-                }).catch(() => {});
-
-              } else {
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: LABEL_CONFIRMED
-                }).catch(() => {});
-
-                await github.rest.issues.removeLabel({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, name: LABEL_UNCONFIRMED
-                }).catch(() => {});
-              }
-
-              if (existingAgreement) {
-                const agreementComment = `### 🤖 PR Contributor's agreement\n${botAgreementSignature}\n` +
-                   `When you're ready to continue give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
-
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, body: agreementComment
-                });
-              }
-
-              return;
-            }
-
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.issue.number, labels: [LABEL_CONFIRMED]
-            }).catch(() => {});
-
-            await github.rest.issues.removeLabel({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.issue.number, name: LABEL_UNCONFIRMED
-            }).catch(() => {});
-
+            // Signature checks found feature-like work, notify the user they may not be following guidance
             const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount });
 
-            // Signature checks found feature-like work, notify the user they may not be following guidance
             if (codeSignature.hasTell) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,

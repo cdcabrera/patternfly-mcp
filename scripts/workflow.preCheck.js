@@ -57,15 +57,6 @@ const coreContributorsBypass = ({ comments } = {}) => {
     }, { allowBot: false }));
 };
 
-const contributorAgreement = ({  } = {}) => {
-  // Handshake-specific messaging
-  if (handshakeStatus === 'declined') {
-    errors.push(`🚫 I've noticed you've declined the contributor agreement. I've paused all automation for this PR until you're ready to proceed.`);
-  } else if (handshakeStatus === 'pending') {
-    errors.push(`👋 I'm waiting for your handshake! Please give my comment below a 👍 to confirm you've read our guidelines and unlock the testing suite.`);
-  }
-};
-
 /**
  * Does one list contain another list's values?
  *
@@ -177,7 +168,7 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
 
   return {
     errors: [
-      `📡 I'm calling for backup! I've encountered an unexpected issue while processing your work? I've notified a maintainer to assist you.`
+      `📡 I'm calling for backup! I've encountered an unexpected hitch while processing your work, and I've notified a maintainer to assist you.`
     ],
     isGeneralModified: false,
     isMaxFilesUpdated: false,
