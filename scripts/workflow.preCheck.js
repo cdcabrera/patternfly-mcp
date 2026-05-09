@@ -178,25 +178,14 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
   };
 };
 
-/*
-const addRemoveLabels = async ({ add = [], remove = [] } = {}, { github, context } = {}) => {
-  const { owner, repo } = context?.repo || {};
-  const issueNumber = context?.issue?.number;
-  const addLabels = github?.rest?.issues?.addLabels;
-  const removeLabel = github?.rest?.issues?.removeLabel;
-
-  if (Array.isArray(add) && add.length && addLabels && issueNumber) {
-    await addLabels({ owner, repo, issue_number: issueNumber, labels: add }).catch(() => {});
-  }
-
-  if (Array.isArray(remove) && removeLabel && issueNumber) {
-    for (const label of remove) {
-      await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(() => {});
-    }
-  }
-};
-*/
-
+/**
+ * Set labels
+ *
+ * @param config
+ * @param config.github
+ * @param config.context
+ * @returns {{add: function(*): Promise<void>, remove: function(*): Promise<void>}}
+ */
 const setLabels = ({ github, context } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
@@ -219,7 +208,15 @@ const setLabels = ({ github, context } = {}) => {
   };
 };
 
-// Get an ID from issue number
+/**
+ * Get an ID from an issue number.
+ *
+ * @param signature
+ * @param config
+ * @param config.github
+ * @param config.context
+ * @returns {Promise<*>}
+ */
 const getCommentId = async (signature, { github, context } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
@@ -238,8 +235,15 @@ const getCommentId = async (signature, { github, context } = {}) => {
   return commentId;
 };
 
-// addUpdateRemoveComment
-// const addUpdateRemoveComment = async ({ body, isDelete, signature, neverUpdate } = {}, { github, context } = {}) => {
+/**
+ * Set comments
+ *
+ * @param config
+ * @param config.signature
+ * @param config.github
+ * @param config.context
+ * @returns {Promise<{add: function(*): Promise<*>, remove: function(): Promise<*>, existingCommentId: *, isComment: boolean}>}
+ */
 const setComment = async ({ signature, github, context } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
@@ -247,27 +251,7 @@ const setComment = async ({ signature, github, context } = {}) => {
   const deleteComment = github?.rest?.issues?.deleteComment;
   const updateComment = github?.rest?.issues?.updateComment;
 
-  // Normalize body
   const getBody = bod => String(bod ?? '') + signature;
-
-  /*
-  if (isDelete && deleteComment && existingComment) {
-    await deleteComment({ owner, repo, comment_id: existingComment.id });
-
-    return;
-  }
-
-  if (!neverUpdate && existingComment && updateComment && isBody) {
-    await updateComment({ owner, repo, comment_id: existingComment.id, body });
-
-    return;
-  }
-
-  if (!existingComment && createComment && issueNumber && isBody) {
-    await createComment({ owner, repo, issue_number: issueNumber, body });
-  }
-  */
-
   const commentId = await getCommentId(signature);
 
   return {
@@ -316,6 +300,14 @@ const getReactions = async ({ signature, github, context } = {}) => {
   };
 };
 
+/**
+ * Get a pull request context.
+ *
+ * @param context
+ * @param context.github
+ * @param context.context
+ * @returns {Promise<{}|{author: *, authorType: *, authorRole: *, description: string, fileCount: *, files: *, comments: *}>}
+ */
 const getPullRequest = async ({ github, context } = {}) => {
   try {
     const { login: author, type: authorType } = context.payload.pull_request.user;
@@ -513,4 +505,15 @@ const start = async ({
   await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER]);
 };
 
-export { coreContributors, coreContributorsBypass, signatureScan, start };
+export {
+  coreContributors,
+  coreContributorsBypass,
+  doesListContainAnotherListValues,
+  getCommentId,
+  getPullRequest,
+  getReactions,
+  setComment,
+  setLabels,
+  signatureScan,
+  start
+};
