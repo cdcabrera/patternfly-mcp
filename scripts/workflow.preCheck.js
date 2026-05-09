@@ -84,12 +84,12 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * Scan available updates for signature using basic logic.
  *
  * @param params - Passed code parameters for review.
- * @param params.body
- * @param params.changedFiles
+ * @param params.description
+ * @param params.files
  * @param params.fileCount
  * @returns {{commentSignature: string, errors: *[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
-const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
+const signatureScan = ({ description, files, fileCount } = {}) => {
   // Make sure this is within the PR template, or we'll get false positives.
   const prTemplateStr = '<!-- GH_PR_METADATA_V1_789 -->';
 
@@ -133,12 +133,12 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
 
   try {
     const isMaxFilesUpdated = typeof fileCount === 'number' ? fileCount > fileChangeLimit : undefined;
-    const isPrTemplateModified = typeof body === 'string' ? body.includes(prTemplateStr) === false : undefined;
+    const isPrTemplateModified = typeof description === 'string' ? description.includes(prTemplateStr) === false : undefined;
 
-    const filesModified = doesListContainAnotherListValues(changedFiles, fileAndDirsList);
+    const filesModified = doesListContainAnotherListValues(files, fileAndDirsList);
     const isSignatureModified = filesModified.length > 0;
 
-    const tellsModified = doesListContainAnotherListValues(changedFiles, generalList);
+    const tellsModified = doesListContainAnotherListValues(files, generalList);
     const isGeneralModified = tellsModified.length === generalList.length;
 
     // Aggregate errors
@@ -178,4 +178,339 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
   };
 };
 
-export { coreContributors, coreContributorsBypass, signatureScan };
+/*
+const addRemoveLabels = async ({ add = [], remove = [] } = {}, { github, context } = {}) => {
+  const { owner, repo } = context?.repo || {};
+  const issueNumber = context?.issue?.number;
+  const addLabels = github?.rest?.issues?.addLabels;
+  const removeLabel = github?.rest?.issues?.removeLabel;
+
+  if (Array.isArray(add) && add.length && addLabels && issueNumber) {
+    await addLabels({ owner, repo, issue_number: issueNumber, labels: add }).catch(() => {});
+  }
+
+  if (Array.isArray(remove) && removeLabel && issueNumber) {
+    for (const label of remove) {
+      await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(() => {});
+    }
+  }
+};
+*/
+
+const setLabels = ({ github, context } = {}) => {
+  const { owner, repo } = context?.repo || {};
+  const issueNumber = context?.issue?.number;
+  const addLabels = github?.rest?.issues?.addLabels;
+  const removeLabel = github?.rest?.issues?.removeLabel;
+
+  return {
+    add: async labels => {
+      if (Array.isArray(labels)) {
+        await addLabels({ owner, repo, issue_number: issueNumber, labels }).catch(() => {});
+      }
+    },
+    remove: async labels => {
+      if (Array.isArray(labels)) {
+        for (const label of labels) {
+          await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(() => {});
+        }
+      }
+    }
+  };
+};
+
+// Get an ID from issue number
+const getCommentId = async (signature, { github, context } = {}) => {
+  const { owner, repo } = context?.repo || {};
+  const issueNumber = context?.issue?.number;
+
+  const listComments = github?.rest?.issues?.listComments;
+  let commentId;
+
+  if (listComments && issueNumber) {
+    const { data: comments } = await listComments({ owner, repo, issue_number: issueNumber }) || {};
+
+    const foundComment = comments.find(comment => comment?.body?.includes(signature));
+
+    commentId = foundComment.id;
+  }
+
+  return commentId;
+};
+
+// addUpdateRemoveComment
+// const addUpdateRemoveComment = async ({ body, isDelete, signature, neverUpdate } = {}, { github, context } = {}) => {
+const setComment = async ({ signature, github, context } = {}) => {
+  const { owner, repo } = context?.repo || {};
+  const issueNumber = context?.issue?.number;
+  const createComment = github?.rest?.issues?.createComment;
+  const deleteComment = github?.rest?.issues?.deleteComment;
+  const updateComment = github?.rest?.issues?.updateComment;
+
+  // Normalize body
+  const getBody = bod => String(bod ?? '') + signature;
+
+  /*
+  if (isDelete && deleteComment && existingComment) {
+    await deleteComment({ owner, repo, comment_id: existingComment.id });
+
+    return;
+  }
+
+  if (!neverUpdate && existingComment && updateComment && isBody) {
+    await updateComment({ owner, repo, comment_id: existingComment.id, body });
+
+    return;
+  }
+
+  if (!existingComment && createComment && issueNumber && isBody) {
+    await createComment({ owner, repo, issue_number: issueNumber, body });
+  }
+  */
+
+  const commentId = await getCommentId(signature);
+
+  return {
+    add: async body => {
+      if (commentId) {
+        return updateComment({ owner, repo, comment_id: commentId, body: getBody(body) }).catch(() => {});
+      }
+
+      return createComment({ owner, repo, issue_number: issueNumber, body: getBody(body) }).catch(() => {});
+    },
+    remove: async () => deleteComment({ owner, repo, comment_id: commentId }).catch(() => {}),
+    existingCommentId: commentId,
+    isComment: commentId !== undefined
+  };
+};
+
+const getReactions = async ({ signature, github, context } = {}) => {
+  const { login: author } = context?.payload?.pull_request?.user || {};
+  const commentId = await getCommentId(signature);
+  const listForIssueComment = github?.rest?.reactions?.listForIssueComment;
+  let authorReaction = 0;
+
+  if (listForIssueComment) {
+    const { data: reactions } = await listForIssueComment({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      comment_id: commentId
+    }).catch(err => {
+      console.error(`getReactions failed for commentId ${commentId}`, err?.message || err);
+    });
+
+    const initialAuthorReaction = reactions.find(reaction => reaction?.user?.login === author);
+
+    switch (initialAuthorReaction?.content) {
+      case '-1':
+        authorReaction = -1;
+        break;
+      case '+1':
+        authorReaction = 1;
+        break;
+    }
+  }
+
+  return {
+    authorReaction
+  };
+};
+
+const getPullRequest = async ({ github, context } = {}) => {
+  try {
+    const { login: author, type: authorType } = context.payload.pull_request.user;
+    const authorRole = context.payload.pull_request.author_association;
+
+    const description = context.payload.pull_request.body || '';
+    const fileCount = context.payload.pull_request.changed_files;
+    const { data: files } = await github.rest.pulls.listFiles({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      pull_number: context.issue.number,
+      per_page: 50
+    });
+    const comments = await github.rest.issues.listComments({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      issue_number: context.issue.number
+    });
+
+    return {
+      author, authorType, authorRole, description, fileCount, files, comments
+    };
+  } catch (err) {
+    console.error('Failed to get pull request context', err?.message || err);
+  }
+
+  return {};
+};
+
+/**
+ * Start the pre-check process.
+ *
+ * @param config - Configuration params
+ * @param config.isFreezeActive - Is a code freeze active flag
+ * @param config.LABEL_CODE_FREEZE - Label string
+ * @param config.LABEL_BREAKING_POTENTIAL - Label string
+ * @param config.LABEL_NEEDS_CLEANUP - Label string
+ * @param config.LABEL_NEEDS_MAINTAINER - Label string
+ * @param config.LABEL_CONFIRMED - Label string
+ * @param config.LABEL_UNCONFIRMED - Label string
+ * @param config.LABEL_PRECHECKS_PASS - Label string
+ * @param config.LABEL_PRECHECKS_BYPASS - Label string
+ * @param env - Environment params
+ * @param env.github
+ * @param env.context
+ * @param env.core
+ * @returns {Promise<void>}
+ */
+const start = async ({
+  isFreezeActive,
+  LABEL_CODE_FREEZE,
+  LABEL_BREAKING_POTENTIAL,
+  LABEL_NEEDS_CLEANUP,
+  LABEL_NEEDS_MAINTAINER,
+  LABEL_CONFIRMED,
+  LABEL_UNCONFIRMED,
+  LABEL_PRECHECKS_PASS,
+  LABEL_PRECHECKS_BYPASS
+} = {}, { github, context, core } = {}) => {
+  const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles, comments } = await getPullRequest({ github, context });
+
+  if (coreContributors({ author, authorType, authorRole })) {
+    console.log(`Contributor found, skipping pre-checks: ${author}`);
+
+    return;
+  }
+
+  const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
+  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context });
+  const { add: addLabels, remove: removeLabels } = await setLabels({ github, context });
+
+  if (isFreezeActive) {
+    await addLabels([LABEL_CODE_FREEZE]);
+  } else {
+    await removeLabels([LABEL_CODE_FREEZE]);
+  }
+
+  // Core contributors bypass
+  if (coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
+    const bypassComment = `### 🤖 PR Quality Guidance\n` +
+      `Bypass acknowledged, standing down!\n\n` +
+      `_This comment updates automatically._`;
+
+    await addBotComment(bypassComment);
+    await addLabels([LABEL_PRECHECKS_BYPASS]);
+
+    return;
+  }
+
+  // Contributor's Agreement
+  const isConfirmed = context.payload.pull_request.labels.some(label => label.name === LABEL_CONFIRMED);
+
+  if (!isConfirmed) {
+    const agreementCommentSignature = '<!-- precheck-bot-agreement-V1 -->';
+    const { add: addAgreementComment, remove: removeAgreementComment, existingCommentId: agreementCommentId } =
+      await setComment({ signature: agreementCommentSignature, github, context });
+
+    if (!agreementCommentId) {
+      const agreementComment = `### 🤖 PR Contributor's Agreement\n\n` +
+        `I'm ready to help! Give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
+
+      await addAgreementComment(agreementComment);
+
+      return;
+    }
+
+    const { authorReaction } = getReactions({ github, context, signature: agreementCommentSignature });
+
+    // No reaction
+    if (authorReaction === 0) {
+      return;
+    }
+
+    // Thumbs down reaction
+    if (authorReaction === -1) {
+      const declinedComment = `### 🤖 PR Contributor's Agreement\n` +
+        `🚫 I noticed you declined the agreement so I paused automation. If you change your mind, just change your reaction to a 👍!`;
+
+      await addAgreementComment(declinedComment);
+      await addLabels([LABEL_UNCONFIRMED]);
+
+      return;
+    }
+
+    // Thumbs up reaction
+    if (authorReaction === 1) {
+      await removeAgreementComment();
+      await addLabels([LABEL_CONFIRMED]);
+      await removeLabels([LABEL_UNCONFIRMED]);
+    }
+  }
+
+  // Signature checks found feature-like work, notify the user they may not be following guidance
+  const codeSignature = signatureScan({ description: prDescription, files: prFiles, fileCount: prFileCount });
+
+  if (codeSignature.hasTell) {
+    // GraphQL Mutation to convert to Draft
+    const prNodeId = context.payload.pull_request.node_id;
+    const mutation = `mutation($id: ID!) {
+      convertPullRequestToDraft(input: { pullRequestId: $id }) {
+        pullRequest { id isDraft }
+      }
+    }`;
+
+    await github.graphql(mutation, { id: prNodeId });
+
+    const botComment = `### 🤖 PR Quality Guidance\n` +
+      `I noticed there's quite a bit of work here. I'm moving this over to a draft PR temporarily. Make sure you review the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) again.\n\n` +
+      `_This comment updates automatically._`;
+
+    await addBotComment(botComment);
+    await addLabels([LABEL_BREAKING_POTENTIAL]);
+
+    core.setFailed('PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.');
+
+    return;
+  } else {
+    await removeLabels([LABEL_BREAKING_POTENTIAL]);
+  }
+
+  // Signature checks found something, alert the contributor in good faith
+  if (codeSignature.errors.length > 0) {
+    const botComment = `### 🤖 PR Quality Guidance\n` +
+      `I found some issues with your work. Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
+      `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+      `_This comment updates automatically._`;
+
+    await addBotComment(botComment);
+    await addLabels([LABEL_NEEDS_CLEANUP]);
+
+    core.setFailed('PR pre-check requirements not met.');
+
+    return;
+  }
+
+  // Fallback if signature checks fail, alert the maintainers
+  if (codeSignature.hasFailed) {
+    const errorComment = `### 🤖 PR Quality Guidance\n` +
+      `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+      `_This comment updates automatically._`;
+
+    await addBotComment(errorComment);
+    await addLabels([LABEL_NEEDS_MAINTAINER]);
+
+    return;
+  }
+
+  // Confirm the work has passed pre-check
+  const successComment = `### 🤖 PR Quality Guidance\n` +
+    `I finished my scan and all pre-checks pass!\n\n` +
+    `_This comment updates automatically._`;
+
+  await addBotComment(successComment);
+  await addLabels([LABEL_PRECHECKS_PASS]);
+  await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER]);
+};
+
+export { coreContributors, coreContributorsBypass, signatureScan, start };
