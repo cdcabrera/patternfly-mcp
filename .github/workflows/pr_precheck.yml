@@ -23,8 +23,10 @@ jobs:
             const LABEL_BREAKING_POTENTIAL = 'bot:breaking-potential';
             const LABEL_NEEDS_CLEANUP = 'bot:needs-cleanup';
             const LABEL_NEEDS_MAINTAINER = 'bot:needs-maintainer';
+            const LABEL_READY_FOR_REVIEW = 'bot:ready-for-review';
             const LABEL_CONFIRMED = 'bot:confirmed';
             const LABEL_UNCONFIRMED = 'bot:unconfirmed';
+            const LABEL_MAINTAINER_READY = 'bot:maintainer-ready';
 
             const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
             const { login: author, type: authorType } = context.payload.pull_request.user;
@@ -61,70 +63,114 @@ jobs:
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
             });
+            const botAgreementSignature = '<!-- precheck-bot-agreement-V1 -->';
+            const existingAgreement = comments.data.find(c => c.body.includes(botAgreementSignature));
+
             const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
             const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
 
-            let handshakeStatus = 'pending';
-            if (existingComment) {
-              const reactions = await github.rest.reactions.listForIssueComment({
-                owner: context.repo.owner, repo: context.repo.repo,
-                comment_id: existingComment.id
-              });
-
-              const authorReaction = reactions.data.find(r => r.user.login === author);
-              if (authorReaction?.content === '+1') handshakeStatus = 'confirmed';
-              if (authorReaction?.content === '-1') handshakeStatus = 'declined';
-            }
-
-            const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount, handshakeStatus });
-
-            if (codeSignature.hasHandshake) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [LABEL_CONFIRMED]
-              }).catch(() => {});
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, name: LABEL_UNCONFIRMED
-              }).catch(() => {});
-            } else if (codeSignature.isDeclined) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
-              }).catch(() => {});
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, name: LABEL_CONFIRMED
-              }).catch(() => {});
-            } else {
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, name: LABEL_CONFIRMED
-              }).catch(() => {});
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, name: LABEL_UNCONFIRMED
-              }).catch(() => {});
-            }
-
+            // Core contributors bypass
             if (preCheck.coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
-              const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+              const bypassComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
                `Bypass acknowledged, standing down!`;
 
               if (existingComment) {
                 await github.rest.issues.updateComment({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  comment_id: existingComment.id, body: errorComment
+                  comment_id: existingComment.id, body: bypassComment
                 });
               } else {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, body: errorComment
+                  issue_number: context.issue.number, body: bypassComment
                 });
               }
 
               return;
-            } else if (codeSignature.hasTell) {
+            }
+
+            if (!existingAgreement) {
+              const agreementComment = `### 🤖 PR Contributor's agreement\n${botAgreementSignature}\n` +
+                 `I'm ready to help! Give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, body: agreementComment
+              });
+
+              return;
+            }
+
+            const { data: reactions } = await github.rest.reactions.listForIssueComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              comment_id: existingComment.id
+            });
+
+            const authorReaction = reactions.find(r => r.user.login === author);
+            const authorAgreement = authorReaction?.content || '0';
+            const agreement = preCheck.contributorAgreement({ agreement: authorAgreement });
+
+            if (agreement) {
+              if (existingAgreement) {
+                const agreementComment = `### 🤖 PR Contributor's agreement\n${botAgreementSignature}\n` +
+                   `Thank you for accepting the contribution guidelines! Starting the testing suite.`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: agreementComment
+                });
+              }
+            } else {
+              if (agreement === false) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
+                }).catch(() => {});
+
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: LABEL_CONFIRMED
+                }).catch(() => {});
+
+              } else {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: LABEL_CONFIRMED
+                }).catch(() => {});
+
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, name: LABEL_UNCONFIRMED
+                }).catch(() => {});
+              }
+
+              if (existingAgreement) {
+                const agreementComment = `### 🤖 PR Contributor's agreement\n${botAgreementSignature}\n` +
+                   `When you're ready to continue give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: agreementComment
+                });
+              }
+
+              return;
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, labels: [LABEL_CONFIRMED]
+            }).catch(() => {});
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: LABEL_UNCONFIRMED
+            }).catch(() => {});
+
+            const codeSignature = preCheck.signatureScan({ body, changedFiles, fileCount });
+
+            // Signature checks found feature-like work, notify the user they may not be following guidance
+            if (codeSignature.hasTell) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, labels: [LABEL_BREAKING_POTENTIAL]
@@ -149,6 +195,7 @@ jobs:
               }).catch(() => {});
             }
 
+            // Signature checks found something, alert the contributor in good faith
             if (codeSignature.errors.length > 0) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
@@ -173,7 +220,11 @@ jobs:
               }
 
               core.setFailed("PR pre-check requirements not met.");
-            } else if (codeSignature.hasFailed) {
+              return;
+            }
+
+            // Fallback if signature checks fail, alert the maintainers
+            if (codeSignature.hasFailed) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: context.issue.number, labels: [LABEL_NEEDS_MAINTAINER]
@@ -193,21 +244,37 @@ jobs:
                   issue_number: context.issue.number, body: errorComment
                 });
               }
-            } else {
-              if (existingComment) {
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  comment_id: existingComment.id, body: `### 🤖 PR Quality PreCheck\n${botCommentSignature}\nI've finished my initial scan and everything looks great! **Please give this comment a 👍 reaction** to confirm you've read our guidelines and "unlock" the integration tests.`
-                });
-              }
 
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, name: LABEL_NEEDS_CLEANUP
-              }).catch(() => {});
-
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: context.issue.number, name: LABEL_NEEDS_MAINTAINER
-              }).catch(() => {});
+              return;
             }
+
+            // Confirm the work has passed pre-check
+            const successComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
+               `I've finished my initial scan and all checks pass!`;
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existingComment.id, body: successComment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, body: successComment
+              });
+            }
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: LABEL_NEEDS_CLEANUP
+            }).catch(() => {});
+
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, name: LABEL_NEEDS_MAINTAINER
+            }).catch(() => {});
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, labels: [LABEL_MAINTAINER_READY]
+            }).catch(() => {});

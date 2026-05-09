@@ -57,6 +57,15 @@ const coreContributorsBypass = ({ comments } = {}) => {
     }, { allowBot: false }));
 };
 
+const contributorAgreement = ({  } = {}) => {
+  // Handshake-specific messaging
+  if (handshakeStatus === 'declined') {
+    errors.push(`🚫 I've noticed you've declined the contributor agreement. I've paused all automation for this PR until you're ready to proceed.`);
+  } else if (handshakeStatus === 'pending') {
+    errors.push(`👋 I'm waiting for your handshake! Please give my comment below a 👍 to confirm you've read our guidelines and unlock the testing suite.`);
+  }
+};
+
 /**
  * Does one list contain another list's values?
  *
@@ -90,7 +99,7 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * @param params.handshakeStatus
  * @returns {{commentSignature: string, errors: *[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
-const signatureScan = ({ body, changedFiles, fileCount, handshakeStatus } = {}) => {
+const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
   // Make sure this is within the PR template, or we'll get false positives.
   const prTemplateStr = '<!-- GH_PR_METADATA_V1_789 -->';
 
@@ -145,13 +154,6 @@ const signatureScan = ({ body, changedFiles, fileCount, handshakeStatus } = {}) 
     // Aggregate errors
     const errors = [];
 
-    // Handshake-specific messaging
-    if (handshakeStatus === 'declined') {
-      errors.push(`🚫 I've noticed you've declined the contributor agreement. I've paused all automation for this PR until you're ready to proceed.`);
-    } else if (handshakeStatus === 'pending') {
-      errors.push(`👋 I'm waiting for your handshake! Please give my comment below a 👍 to confirm you've read our guidelines and unlock the testing suite.`);
-    }
-
     if (isMaxFilesUpdated === true) {
       errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.`);
     }
@@ -167,8 +169,6 @@ const signatureScan = ({ body, changedFiles, fileCount, handshakeStatus } = {}) 
       isPrTemplateModified: isPrTemplateModified === true,
       isSignatureModified,
       hasFailed: false,
-      hasHandshake: handshakeStatus === 'confirmed',
-      isDeclined: handshakeStatus === 'declined',
       hasTell: isGeneralModified && isMaxFilesUpdated === true && isPrTemplateModified === true && isSignatureModified
     };
   } catch (e) {
@@ -177,7 +177,7 @@ const signatureScan = ({ body, changedFiles, fileCount, handshakeStatus } = {}) 
 
   return {
     errors: [
-      `📡 I'm calling for backup! I've encountered an unexpected hitch while processing your work, and I've notified a maintainer to assist you.`
+      `📡 I'm calling for backup! I've encountered an unexpected issue while processing your work? I've notified a maintainer to assist you.`
     ],
     isGeneralModified: false,
     isMaxFilesUpdated: false,
