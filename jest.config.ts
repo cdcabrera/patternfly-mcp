@@ -77,6 +77,13 @@ export default {
       roots: ['tests/audit'],
       testMatch: ['<rootDir>/tests/audit/**/*.test.ts'],
       ...baseConfig
+    },
+    {
+      displayName: 'scripts',
+      roots: ['tests/scripts'],
+      testMatch: ['<rootDir>/tests/scripts/**/*.test.js'],
+      testEnvironment: 'node',
+      transform: {}
     }
   ]
 };

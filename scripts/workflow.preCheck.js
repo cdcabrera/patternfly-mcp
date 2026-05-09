@@ -68,7 +68,7 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
   ((Array.isArray(listBase) && listBase) || [])
     .filter(file => {
       const updatedFileName = file?.filename?.trim()?.toLowerCase() || undefined;
-      const updatedListCheck = (Array.isArray(listCheck) && listCheck) || [];
+      const updatedListCheck = ((Array.isArray(listCheck) && listCheck) || []).map(item => item?.toLowerCase());
 
       if (!updatedFileName) {
         return false;
@@ -76,7 +76,7 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
 
       return updatedListCheck.includes(updatedFileName) ||
         updatedListCheck.some(
-          item => (updatedFileName.startsWith(item) || updatedFileName.endsWith(item) || updatedFileName.includes(item) || item.includes(updatedFileName))
+          item => (item && (updatedFileName.startsWith(item) || updatedFileName.endsWith(item) || updatedFileName.includes(item) || item.includes(updatedFileName)))
         );
     }).map(file => file?.filename);
 
