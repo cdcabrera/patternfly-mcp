@@ -87,7 +87,6 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * @param params.body
  * @param params.changedFiles
  * @param params.fileCount
- * @param params.handshakeStatus
  * @returns {{commentSignature: string, errors: *[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
 const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
@@ -150,7 +149,7 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
     }
 
     if (isSignatureModified) {
-      errors.push(`⚠️ I've detected core modifications to behavior or testing (${filesModified.join(', ')}). These changes usually require a bit more planning—check the guidelines for details.`);
+      errors.push(`⚠️ I've detected core modifications to behavior (${filesModified.join(', ')}). These changes usually require a bit more planning—check the guidelines for details.`);
     }
 
     return {
