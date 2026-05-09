@@ -252,7 +252,7 @@ const setComment = async ({ signature, github, context } = {}) => {
   const updateComment = github?.rest?.issues?.updateComment;
 
   const getBody = bod => String(bod ?? '') + signature;
-  const commentId = await getCommentId(signature);
+  const commentId = await getCommentId(signature, { github, context });
 
   return {
     add: async body => {
@@ -281,9 +281,9 @@ const getReactions = async ({ signature, github, context } = {}) => {
       comment_id: commentId
     }).catch(err => {
       console.error(`getReactions failed for commentId ${commentId}`, err?.message || err);
-    });
+    }) || {};
 
-    const initialAuthorReaction = reactions.find(reaction => reaction?.user?.login === author);
+    const initialAuthorReaction = reactions?.find(reaction => reaction?.user?.login === author);
 
     switch (initialAuthorReaction?.content) {
       case '-1':
@@ -321,7 +321,7 @@ const getPullRequest = async ({ github, context } = {}) => {
       pull_number: context.issue.number,
       per_page: 50
     });
-    const comments = await github.rest.issues.listComments({
+    const { data: comments } = await github.rest.issues.listComments({
       owner: context.repo.owner,
       repo: context.repo.repo,
       issue_number: context.issue.number
@@ -386,7 +386,7 @@ const start = async ({
   }
 
   // Core contributors bypass
-  if (coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
+  if (coreContributorsBypass({ author, authorType, authorRole, comments })) {
     const bypassComment = `### 🤖 PR Quality Guidance\n` +
       `Bypass acknowledged, standing down!\n\n` +
       `_This comment updates automatically._`;
@@ -414,7 +414,7 @@ const start = async ({
       return;
     }
 
-    const { authorReaction } = getReactions({ github, context, signature: agreementCommentSignature });
+    const { authorReaction } = await getReactions({ github, context, signature: agreementCommentSignature });
 
     // No reaction
     if (authorReaction === 0) {
