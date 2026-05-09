@@ -168,7 +168,7 @@ const signatureScan = ({ body, changedFiles, fileCount } = {}) => {
 
   return {
     errors: [
-      `📡 I'm calling for backup! I've encountered an unexpected hitch while processing your work, and I've notified a maintainer to assist you.`
+      `📡 I'm calling for backup! I encountered an unexpected issue while processing your work. A maintainer has been notified.`
     ],
     isGeneralModified: false,
     isMaxFilesUpdated: false,

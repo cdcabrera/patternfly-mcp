@@ -10,7 +10,8 @@ jobs:
   Integration-checks:
     if: |
       github.event_name == 'push' ||
-      contains(github.event.pull_request.labels.*.name, 'bot:confirmed')
+      contains(github.event.pull_request.labels.*.name, 'bot:ready-for-testing') ||
+      contains(github.event.pull_request.labels.*.name, 'bot:maintainer-bypass')
     runs-on: ubuntu-latest
     permissions:
       contents: read

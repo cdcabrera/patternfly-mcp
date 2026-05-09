@@ -23,10 +23,10 @@ jobs:
             const LABEL_BREAKING_POTENTIAL = 'bot:breaking-potential';
             const LABEL_NEEDS_CLEANUP = 'bot:needs-cleanup';
             const LABEL_NEEDS_MAINTAINER = 'bot:needs-maintainer';
-            const LABEL_READY_FOR_REVIEW = 'bot:ready-for-review';
-            const LABEL_CONFIRMED = 'bot:confirmed';
-            const LABEL_UNCONFIRMED = 'bot:unconfirmed';
-            const LABEL_MAINTAINER_READY = 'bot:maintainer-ready';
+            const LABEL_CONFIRMED = 'bot:contributor-confirmed';
+            const LABEL_UNCONFIRMED = 'bot:contributor-unconfirmed';
+            const LABEL_PRECHECKS_PASS = 'bot:ready-for-testing';
+            const LABEL_PRECHECKS_BYPASS = 'bot:maintainer-bypass';
 
             const preCheck = await import(`${ github.workspace }/scripts/workflow.preCheck.js`);
             const { login: author, type: authorType } = context.payload.pull_request.user;
@@ -36,6 +36,21 @@ jobs:
               console.log(`Contributor found, skipping pre-checks: ${author}`);
               return;
             }
+
+            const body = context.payload.pull_request.body || "";
+            const fileCount = context.payload.pull_request.changed_files;
+            const { data: changedFiles } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 50
+            });
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
+            });
+
+            const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
+            const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
 
             // Code freeze confirmation
             const isFreezeActive = "${{ vars.RELEASE_FREEZE_ACTIVE }}" === "true";
@@ -52,28 +67,42 @@ jobs:
               }).catch(() => {});
             }
 
-            const body = context.payload.pull_request.body || "";
-            const fileCount = context.payload.pull_request.changed_files;
-            const { data: changedFiles } = await github.rest.pulls.listFiles({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              per_page: 50
-            });
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number
-            });
+            // Core contributors bypass
+            if (preCheck.coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
+              const bypassComment = `### 🤖 PR Quality Guidance\n${botCommentSignature}\n` +
+               `Bypass acknowledged, standing down!\n\n` +
+                `_This comment updates automatically._`;
 
-            // Agreement logic
-            const isConfirmed = context.payload.pull_request.labels.some(l => l.name === LABEL_CONFIRMED);
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: bypassComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: bypassComment
+                });
+              }
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, labels: [LABEL_PRECHECKS_BYPASS]
+              }).catch(() => {});
+
+              return;
+            }
+
+            // Contributor's Agreement
+            const isConfirmed = context.payload.pull_request.labels.some(label => label.name === LABEL_CONFIRMED);
 
             if (!isConfirmed) {
               const agreementCommentSignature = '<!-- precheck-bot-agreement-V1 -->';
               const existingAgreement = comments.data.find(c => c.body.includes(agreementCommentSignature));
 
               if (!existingAgreement) {
-                const agreementComment = `### 🤖 PR Contributor's agreement\n${agreementCommentSignature}\n` +
-                  `I'm ready to help! Please give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
+                const agreementComment = `### 🤖 PR Contributor's Agreement\n${agreementCommentSignature}\n` +
+                  `I'm ready to help! Give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
 
                 await github.rest.issues.createComment({
                   owner: context.repo.owner, repo: context.repo.repo,
@@ -89,8 +118,33 @@ jobs:
               });
 
               const authorReaction = reactions.find(r => r.user.login === author);
+              const updatedReaction = authorReaction?.content || '0';
 
-              if (authorReaction?.content === '+1') {
+              // No reaction
+              if (updatedReaction === '0') {
+                return;
+              }
+
+              // Thumbs down reaction
+              if (updatedReaction === '-1') {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
+                }).catch(() => {});
+
+                const declinedComment = `### 🤖 PR Contributor's Agreement\n${agreementCommentSignature}\n` +
+                  `🚫 I noticed you declined the agreement so I paused automation. If you change your mind, just change your reaction to a 👍!`
+
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingAgreement.id, body: declinedComment
+                });
+
+                return;
+              }
+
+              // Thumbs up reaction
+              if (updatedReaction === '+1') {
                 await github.rest.issues.addLabels({
                   owner: context.repo.owner, repo: context.repo.repo,
                   issue_number: context.issue.number, labels: [LABEL_CONFIRMED]
@@ -105,47 +159,7 @@ jobs:
                   owner: context.repo.owner, repo: context.repo.repo,
                   comment_id: existingAgreement.id
                 });
-              } else if (authorReaction?.content === '-1') {
-                await github.rest.issues.addLabels({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, labels: [LABEL_UNCONFIRMED]
-                }).catch(() => {});
-
-                const declinedComment = `### 🤖 PR Contributor's agreement\n${agreementCommentSignature}\n` +
-                  `🚫 I've noticed you've declined the agreement. I've had to pause automation until you're ready to proceed. If you change your mind, just change your reaction to a 👍!`;
-
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  comment_id: existingAgreement.id, body: declinedComment
-                });
-
-                return;
-              } else {
-                return;
               }
-            }
-
-            const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
-            const existingComment = comments.data.find(c => c.body.includes(botCommentSignature));
-
-            // Core contributors bypass
-            if (preCheck.coreContributorsBypass({ author, authorType, authorRole, comments: comments.data })) {
-              const bypassComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
-               `Bypass acknowledged, standing down!`;
-
-              if (existingComment) {
-                await github.rest.issues.updateComment({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  comment_id: existingComment.id, body: bypassComment
-                });
-              } else {
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner, repo: context.repo.repo,
-                  issue_number: context.issue.number, body: bypassComment
-                });
-              }
-
-              return;
             }
 
             // Signature checks found feature-like work, notify the user they may not be following guidance
@@ -167,7 +181,23 @@ jobs:
 
               await github.graphql(mutation, { id: prNodeId });
 
-              core.setFailed("PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require integration planning.");
+              const botComment = `### 🤖 PR Quality Guidance\n${botCommentSignature}\n` +
+                `I noticed there's quite a bit of work here. I'm moving this over to a draft PR temporarily. Make sure you review the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) again.\n\n` +
+                `_This comment updates automatically._`;
+
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  comment_id: existingComment.id, body: botComment
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: context.issue.number, body: botComment
+                });
+              }
+
+              core.setFailed("PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.");
               return;
             } else {
               await github.rest.issues.removeLabel({
@@ -183,10 +213,10 @@ jobs:
                 issue_number: context.issue.number, labels: [LABEL_NEEDS_CLEANUP]
               }).catch(() => {});
 
-              const botComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
-                `Thank you for the PR! Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
+              const botComment = `### 🤖 PR Quality Guidance\n${botCommentSignature}\n` +
+                `I found some issues with your work. Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
                 `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
-                `*This comment updates automatically.*`;
+                `_This comment updates automatically._`;
 
               if (existingComment) {
                 await github.rest.issues.updateComment({
@@ -211,8 +241,9 @@ jobs:
                 issue_number: context.issue.number, labels: [LABEL_NEEDS_MAINTAINER]
               }).catch(() => {});
 
-              const errorComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
-                `${codeSignature.errors.map(err => `- ${err}`).join('\n')}`;
+              const errorComment = `### 🤖 PR Quality Guidance\n${botCommentSignature}\n` +
+                `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+                `_This comment updates automatically._`;
 
               if (existingComment) {
                 await github.rest.issues.updateComment({
@@ -230,8 +261,9 @@ jobs:
             }
 
             // Confirm the work has passed pre-check
-            const successComment = `### 🤖 PR Quality PreCheck\n${botCommentSignature}\n` +
-               `I've finished my initial scan and all checks pass!`;
+            const successComment = `### 🤖 PR Quality Guidance\n${botCommentSignature}\n` +
+               `I finished my scan and all pre-checks pass!\n\n` +
+                `_This comment updates automatically._`;
 
             if (existingComment) {
               await github.rest.issues.updateComment({
@@ -257,5 +289,5 @@ jobs:
 
             await github.rest.issues.addLabels({
               owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: context.issue.number, labels: [LABEL_MAINTAINER_READY]
+              issue_number: context.issue.number, labels: [LABEL_PRECHECKS_PASS]
             }).catch(() => {});
