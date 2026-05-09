@@ -270,7 +270,7 @@ const setComment = async ({ signature, github, context } = {}) => {
 
 const getReactions = async ({ signature, github, context } = {}) => {
   const { login: author } = context?.payload?.pull_request?.user || {};
-  const commentId = await getCommentId(signature);
+  const commentId = await getCommentId(signature, { github, context });
   const listForIssueComment = github?.rest?.reactions?.listForIssueComment;
   let authorReaction = 0;
 
@@ -386,7 +386,7 @@ const start = async ({
   }
 
   // Core contributors bypass
-  if (coreContributorsBypass({ author, authorType, authorRole, comments })) {
+  if (coreContributorsBypass({ comments })) {
     const bypassComment = `### 🤖 PR Quality Guidance\n` +
       `Bypass acknowledged, standing down!\n\n` +
       `_This comment updates automatically._`;
