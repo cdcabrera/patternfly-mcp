@@ -80,7 +80,7 @@ export default {
     },
     {
       displayName: 'scripts',
-      roots: ['<rootDir>/scripts', '<rootDir>tests/scripts'],
+      roots: ['<rootDir>/scripts', '<rootDir>/tests/scripts'],
       testMatch: ['<rootDir>/tests/scripts/**/*.test.ts'],
       ...baseConfig
     }

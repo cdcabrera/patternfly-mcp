@@ -1,6 +1,7 @@
 {
   "language": "en",
   "words": [
+    "aiignore",
     "amet",
     "codemods",
     "ized",
@@ -13,6 +14,8 @@
     "onsessioninitialized",
     "onsessionclosed",
     "patternfly",
+    "precheck",
+    "prechecks",
     "rereview",
     "rsort",
     "sparkline",
