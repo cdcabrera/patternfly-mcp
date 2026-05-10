@@ -78,13 +78,45 @@ describe('coreContributors', () => {
     expect(result).toBe(expected);
   });
 
-  it('should verify authors against CODEOWNERS file', () => {
-    const mockExistsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
-    const mockReadFileSyncSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue('package*.json @lorem');
-    const result = coreContributors({ author: 'lorem', authorRole: 'MEMBER', authorType: 'User' });
+  it.each([
+    {
+      description: 'codeowner, owner',
+      account: '@lorem',
+      params: {
+        author: 'lorem', authorRole: 'OWNER', authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'owner',
+      account: undefined,
+      params: {
+        author: 'lorem', authorRole: 'OWNER', authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'codeowner, member',
+      account: '@lorem',
+      params: {
+        author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'member',
+      account: undefined,
+      params: {
+        author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
+      },
+      expected: false
+    }
+  ])('should verify authors against CODEOWNERS file, $description', ({ account, params, expected }) => {
+    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mockReadFileSyncSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(account ? `package*.json ${account} @dolor-sit` : 'package*.json @dolor-sit');
+    const result = coreContributors(params);
 
-    expect(result).toBe(true);
-    expect(mockReadFileSyncSpy.mock.calls).toMatchSnapshot();
-    // expect(mockReadFileSyncSpy).toHaveBeenCalledWith(expect.stringContaining('CODEOWNERS'), 'utf8');
+    expect(result).toBe(expected);
+    expect(mockReadFileSyncSpy).toHaveBeenCalledWith(expect.stringContaining('CODEOWNERS'), 'utf8');
   });
 });

@@ -82,7 +82,6 @@ export default {
       displayName: 'scripts',
       roots: ['tests/scripts'],
       testMatch: ['<rootDir>/tests/scripts/**/*.test.ts'],
-      setupFilesAfterEnv: ['<rootDir>/tests/scripts/jest.setupTests.ts'],
       ...baseConfig
     }
   ]
