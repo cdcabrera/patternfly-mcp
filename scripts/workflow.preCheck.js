@@ -10,16 +10,17 @@ import fs from 'node:fs';
  * @param params.authorType
  * @param params.authorRole
  * @param options - Optional settings
- * @param options.allowBot - Allow known bots to skip preCheck
+ * @param options.allowBots - Allow known bots to skip preCheck
+ * @param options.allowMaintainers - Allow general members
  * @returns {boolean} A `boolean` indicating whether an author/contributor is allowed to skip pre-checks.
  */
-const coreContributors = ({ author, authorType, authorRole } = {}, { allowBot = true } = {}) => {
+const coreContributors = ({ author, authorType, authorRole } = {}, { allowBots = true, allowMaintainers = true } = {}) => {
   const bots = ['Bot', 'dependabot[bot]'];
-  const contributors = ['OWNER', 'MEMBER'];
-  const codeOwnersPaths = ['.github/CODEOWNERS', 'CODEOWNERS', 'docs/CODEOWNERS'];
+  const contributors = ['OWNER'];
+  const codeOwnersPaths = ['.github/CODEOWNERS', 'CODEOWNERS'];
 
-  const isBot = allowBot && (bots.includes(authorType) || bots.includes(author));
-  const isMaintainer = contributors.includes(authorRole);
+  const isBot = allowBots && (bots.includes(authorType) || bots.includes(author));
+  const isMaintainer = allowMaintainers && contributors.includes(authorRole);
   let isCodeOwner = false;
 
   for (const filePath of codeOwnersPaths) {
@@ -29,7 +30,8 @@ const coreContributors = ({ author, authorType, authorRole } = {}, { allowBot = 
 
     const content = fs.readFileSync(filePath, 'utf8');
 
-    if (new RegExp(`@${author}\\b`).test(content)) {
+    if (content.includes(`@${author}`)) {
+    // if (new RegExp(`@${author}\\b`).test(content)) {
       isCodeOwner = true;
     }
   }

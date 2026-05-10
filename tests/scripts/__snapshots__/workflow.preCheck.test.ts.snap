@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`coreContributors should verify authors against CODEOWNERS file 1`] = `
+[
+  [
+    ".github/CODEOWNERS",
+    "utf8",
+  ],
+  [
+    "CODEOWNERS",
+    "utf8",
+  ],
+]
+`;
