@@ -53,8 +53,8 @@ jobs:
         # Advisories are non-blocking for PRs
         continue-on-error: ${{ github.event_name == 'pull_request' }}
 
-  script-integrity-audit:
-    name: Script Integrity Audit
+  script-audit:
+    name: Script Audit
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,5 +67,5 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run script tests
+      - name: Run script audit
         run: npm run test:scripts

@@ -81,7 +81,7 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
     }).map(file => file?.filename);
 
 /**
- * Scan available updates for signature using basic logic.
+ * Scan PR for signatures using basic logic.
  *
  * @param params - Passed code parameters for review.
  * @param params.description
@@ -97,49 +97,76 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
   const fileChangeLimit = 15;
 
   // Signature checks. This can be a list of existing or non-existent files, directories, and/or extensions.
-  const fileAndDirsList = [
-    '.aiignore',
-    '.gitignore',
-    '.js',
-    '.npmrc',
-    '.sh',
-    '__mocks__',
-    '__fixtures__',
-    '.agents',
-    '.github',
-    '.claude',
-    '.cursor',
-    '.junie',
-    'scripts/workflow',
+  const coreList = [
     'src/cli',
     'src/declarations',
-    'src/fixtures',
-    'src/patternFly.getResources',
-    'src/mocks',
     'src/index',
     'src/mcpSdk',
+    'src/options.default',
+    'src/patternFly.getResources',
     'src/resource.',
-    'src/server',
+    'src/server.ts',
     'src/tool.',
     'tests/audit',
     'tests/e2e'
   ];
 
-  // Other signature checks.
-  const generalList = [
+  // generated check. This can be a list of existing or non-existent files, directories, and/or extensions.
+  const genList = [
     'tests/e2e/utils/stdioTransportClient.ts',
     'tests/e2e/__snapshots__/stdioTransport.test.ts.snap'
+  ];
+
+  // double check. This can be a list of existing or non-existent files, directories, and/or extensions.
+  const secList = [
+    '.github',
+    '.gitignore',
+    '.npmrc',
+    'package-lock.json',
+    'src/index',
+    'scripts/workflow'
+  ];
+
+  // more than needed. This can be a list of existing or non-existent files, directories, and/or extensions.
+  const extrasList = [
+    '__fixtures__',
+    '__mocks__',
+    '.js',
+    '.sh',
+    'src/fixtures',
+    'src/mocks',
+    'tests/e2e/utils/stdioTransportClient.ts',
+    'tests/e2e/__snapshots__/stdioTransport.test.ts.snap'
+  ];
+
+  // agent exceptions. This can be a list of existing or non-existent files, directories, and/or extensions.
+  const agentList = [
+    '.aiignore',
+    '.agents',
+    '.claude',
+    '.cursor',
+    '.junie',
+    'guidelines/'
   ];
 
   try {
     const isMaxFilesUpdated = typeof fileCount === 'number' ? fileCount > fileChangeLimit : undefined;
     const isPrTemplateModified = typeof description === 'string' ? description.includes(prTemplateStr) === false : undefined;
 
-    const filesModified = doesListContainAnotherListValues(files, fileAndDirsList);
-    const isSignatureModified = filesModified.length > 0;
+    const coreModified = doesListContainAnotherListValues(files, coreList);
+    const isCoreModified = coreModified.length > 0;
 
-    const tellsModified = doesListContainAnotherListValues(files, generalList);
-    const isGeneralModified = tellsModified.length === generalList.length;
+    const genModified = doesListContainAnotherListValues(files, genList);
+    const isGenModified = genModified.length > 0;
+
+    const secModified = doesListContainAnotherListValues(files, secList);
+    const isSecModified = secModified.length > 0;
+
+    const extraModified = doesListContainAnotherListValues(files, extrasList);
+    const isExtraModified = extraModified.length > 0;
+
+    const agentModified = doesListContainAnotherListValues(files, agentList);
+    const isAgentModified = agentModified.length > 0;
 
     // Aggregate errors
     const errors = [];
@@ -148,18 +175,33 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
       errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.`);
     }
 
-    if (isSignatureModified) {
-      errors.push(`⚠️ I've detected core modifications to behavior (${filesModified.join(', ')}). These changes usually require a bit more planning—check the guidelines for details.`);
+    if (isCoreModified) {
+      errors.push(`⚠️ I detected core file modifications (${coreModified.join(', ')}). These changes usually require a bit more planning—check the guidelines for details.`);
+    }
+
+    if (isExtraModified) {
+      errors.push(`⚠️ I've found a few file extras in your updates that may not be required (${extraModified.join(', ')}). Aligning to the codebase style and workflow means your effort is more likely to be reviewed.`);
+    }
+
+    if (isAgentModified) {
+      errors.push(`⚠️ I found local agent modifications in your changes (${agentModified.join(', ')}). These changes require a core contributor's involvement.`);
+    }
+
+    if (isSecModified) {
+      errors.push(`⚠️ I've found updates that may require a core contributors's involvement (${secModified.join(', ')}). I'll make sure they know.`);
     }
 
     return {
       errors,
-      isGeneralModified,
       isMaxFilesUpdated: isMaxFilesUpdated === true,
       isPrTemplateModified: isPrTemplateModified === true,
-      isSignatureModified,
+      isAgentModified,
+      isCoreModified,
+      isExtraModified,
+      isGenModified,
+      isSecModified,
       hasFailed: false,
-      hasTell: isGeneralModified && isMaxFilesUpdated === true && isPrTemplateModified === true && isSignatureModified
+      hasTell: isMaxFilesUpdated === true && isPrTemplateModified === true && isCoreModified && isGenModified
     };
   } catch (e) {
     console.error(`Workflow PreCheck signatureScan failed`, e?.message || e);
@@ -169,10 +211,13 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     errors: [
       `📡 I'm calling for backup! I encountered an unexpected issue while processing your work. A maintainer has been notified.`
     ],
-    isGeneralModified: false,
     isMaxFilesUpdated: false,
     isPrTemplateModified: false,
-    isSignatureModified: false,
+    isAgentModified: false,
+    isCoreModified: false,
+    isExtraModified: false,
+    isGenModified: false,
+    isSecModified: false,
     hasFailed: true,
     hasTell: false
   };
@@ -303,9 +348,9 @@ const getReactions = async ({ signature, github, context } = {}) => {
 /**
  * Get a pull request context.
  *
- * @param context
- * @param context.github
- * @param context.context
+ * @param config
+ * @param config.github
+ * @param config.context
  * @returns {Promise<{}|{author: *, authorType: *, authorRole: *, description: string, fileCount: *, files: *, comments: *}>}
  */
 const getPullRequest = async ({ github, context } = {}) => {
@@ -350,6 +395,7 @@ const getPullRequest = async ({ github, context } = {}) => {
  * @param config.LABEL_UNCONFIRMED - Label string
  * @param config.LABEL_PRECHECKS_PASS - Label string
  * @param config.LABEL_PRECHECKS_BYPASS - Label string
+ * @param config.LABEL_SEC - Label string
  * @param env - Environment params
  * @param env.github
  * @param env.context
@@ -365,7 +411,8 @@ const start = async ({
   LABEL_CONFIRMED,
   LABEL_UNCONFIRMED,
   LABEL_PRECHECKS_PASS,
-  LABEL_PRECHECKS_BYPASS
+  LABEL_PRECHECKS_BYPASS,
+  LABEL_SEC
 } = {}, { github, context, core } = {}) => {
   const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles, comments } = await getPullRequest({ github, context });
 
@@ -466,6 +513,11 @@ const start = async ({
     return;
   } else {
     await removeLabels([LABEL_BREAKING_POTENTIAL]);
+  }
+
+  // Sec check, once it's found, don't remove it
+  if (codeSignature.isSecModified) {
+    await addLabels([LABEL_SEC]);
   }
 
   // Signature checks found something, alert the contributor in good faith

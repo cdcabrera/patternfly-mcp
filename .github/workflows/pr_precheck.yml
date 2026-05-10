@@ -30,7 +30,8 @@ jobs:
               LABEL_CONFIRMED: 'bot:contributor-confirmed',
               LABEL_UNCONFIRMED: 'bot:contributor-unconfirmed',
               LABEL_PRECHECKS_PASS: 'bot:ready-for-testing',
-              LABEL_PRECHECKS_BYPASS: 'bot:maintainer-bypass'
+              LABEL_PRECHECKS_BYPASS: 'bot:maintainer-bypass',
+              LABEL_SEC: 'bot:needs-sec'
             }, {
               github,
               context,
