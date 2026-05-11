@@ -4,7 +4,12 @@ import {
   coreContributors,
   coreContributorsBypass,
   doesListContainAnotherListValues,
-  signatureScan
+  signatureScan,
+  getCommentId
+  // getPullRequest,
+  // getReactions,
+  // setLabels,
+  // setComment
 } from '../../scripts/workflow.preCheck.js';
 
 describe('coreContributors', () => {
@@ -322,3 +327,136 @@ describe('signatureScan', () => {
     expect(result).toMatchSnapshot();
   });
 });
+
+describe('getCommentId', () => {
+  it('should return the ID of a comment matching the signature', async () => {
+    // @ts-ignore
+    const listComments = jest.fn().mockResolvedValue({
+      data: [
+        { id: 101, body: 'some other comment' },
+        { id: 202, body: 'matching signature <!-- metadata -->' }
+      ]
+    } as any);
+
+    const github = {
+      rest: {
+        issues: {
+          listComments: listComments
+        }
+      }
+    };
+    const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 } };
+
+    const id = await getCommentId('<!-- metadata -->', { github, context });
+
+    expect(id).toBe(202);
+  });
+});
+
+/*
+describe('getPullRequest', () => {
+  it('should resolve and aggregate PR metadata and resources', async () => {
+    const github = {
+      rest: {
+        pulls: { listFiles: jest.fn().mockResolvedValue({ data: ['file1'] }) },
+        issues: { listComments: jest.fn().mockResolvedValue({ data: ['comment1'] }) }
+      }
+    } as any;
+    const context = {
+      payload: {
+        pull_request: {
+          user: { login: 'author1', type: 'User' },
+          author_association: 'MEMBER',
+          body: 'description',
+          changed_files: 10
+        }
+      },
+      repo: { owner: 'o', repo: 'r' },
+      issue: { number: 1 }
+    } as any;
+
+    const result = await getPullRequest({ github, context });
+
+    expect(result).toEqual(expect.objectContaining({
+      author: 'author1',
+      authorRole: 'MEMBER',
+      fileCount: 10,
+      files: ['file1'],
+      comments: ['comment1']
+    }));
+  });
+});
+
+describe('getReactions', () => {
+  it.each([
+    { content: '+1', expected: 1 },
+    { content: '-1', expected: -1 },
+    { content: 'heart', expected: 0 }
+  ])('should return $expected for reaction: $content', async ({ content, expected }) => {
+    const github = {
+      rest: {
+        issues: { listComments: jest.fn().mockResolvedValue({ data: [{ id: 1, body: 'sig' }] }) },
+        reactions: {
+          listForIssueComment: jest.fn().mockResolvedValue({
+            data: [{ user: { login: 'author1' }, content }]
+          })
+        }
+      }
+    } as any;
+    const context = {
+      payload: { pull_request: { user: { login: 'author1' } } },
+      repo: { owner: 'o', repo: 'r' },
+      issue: { number: 1 }
+    } as any;
+
+    const { authorReaction } = await getReactions({ signature: 'sig', github, context });
+
+    expect(authorReaction).toBe(expected);
+  });
+});
+
+describe('setLabels', () => {
+  it('should provide methods to add and remove labels atomically', async () => {
+    const github = {
+      rest: {
+        issues: {
+          addLabels: jest.fn().mockResolvedValue({}),
+          removeLabel: jest.fn().mockResolvedValue({})
+        }
+      }
+    } as any;
+    const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 } } as any;
+
+    const labels = setLabels({ github, context });
+
+    await labels.add(['label-a']);
+    await labels.remove(['label-b']);
+
+    expect(github.rest.issues.addLabels).toHaveBeenCalled();
+    expect(github.rest.issues.removeLabel).toHaveBeenCalled();
+  });
+});
+
+describe('setComment', () => {
+  it('should update an existing comment if a signature match is found', async () => {
+    const github = {
+      rest: {
+        issues: {
+          listComments: jest.fn().mockResolvedValue({ data: [{ id: 500, body: 'sig' }] }),
+          updateComment: jest.fn().mockResolvedValue({})
+        }
+      }
+    } as any;
+    const context = { repo: { owner: 'o', repo: 'r' } } as any;
+
+    const comment = await setComment({ signature: 'sig', github, context });
+
+    await comment.add('new body');
+
+    expect(github.rest.issues.updateComment).toHaveBeenCalledWith(expect.objectContaining({
+      comment_id: 500,
+      body: 'new bodysig'
+    }));
+  });
+});
+*/
