@@ -310,7 +310,7 @@ describe('signatureScan', () => {
       expected: 1
     },
     {
-      description: '"The Tell" (high impact check)',
+      description: '"The Tell"',
       params: {
         description: 'Missing metadata',
         files: [

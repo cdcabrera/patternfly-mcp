@@ -16,7 +16,7 @@ exports[`getPullRequest should resolve and aggregate PR metadata and resources: 
 }
 `;
 
-exports[`signatureScan should scan for signatures, "The Tell" (high impact check) 1`] = `
+exports[`signatureScan should scan for signatures, "The Tell" 1`] = `
 {
   "errors": [
     "⚠️ You've updated a lot of files (20/15). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.",
