@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+### 🤖 PR Quality Guidance
+I found some issues with your work. Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:
+
+- one
+- two
+
+_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md)_
+_This comment updates automatically._
+
 ## [1.0.1](https://github.com/patternfly/patternfly-mcp/compare/320c784093dc1498c70f99c4f4ff7374be295c02...5a63c12d88adf40fcc9c2cfa5d94b41ce142d543) (2026-04-27)
 
 

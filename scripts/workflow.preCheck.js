@@ -106,6 +106,7 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     '.github',
     '.gitignore',
     '.npmrc',
+    '.sh',
     'package-lock.json',
     'src/index',
     'scripts/workflow'
@@ -115,8 +116,6 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
   const extrasList = [
     '__fixtures__',
     '__mocks__',
-    '.js',
-    '.sh',
     'src/fixtures',
     'src/mocks'
   ];
@@ -162,7 +161,7 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     }
 
     if (isExtraModified) {
-      errors.push(`⚠️ I've found extras in your updates that may not be required (${extraModified.join(', ')}). Aligning to the codebase style and workflow means your effort is more likely to be reviewed.`);
+      errors.push(`⚠️ I've found extras in your updates that may not be required (${extraModified.join(', ')}).`);
     }
 
     if (isAgentModified) {
@@ -419,17 +418,6 @@ const start = async ({
     await addLabels([LABEL_PRECHECKS_PASS]);
 
     return;
-  } else {
-    // Or contributors get a contribution guide comment
-    const agreementComment = `### 🤖 PR Contributor's Agreement\n\n` +
-      `Thank you for the PR! If you haven't already, make sure to read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md).`;
-
-    const botAgreementSignature = '<!-- precheck-bot-agreement-V1 -->';
-    const { add: addBotAgreement, isComment: hasBotAgreementComment } = await setComment({ signature: botAgreementSignature, github, context });
-
-    if (!hasBotAgreementComment) {
-      await addBotAgreement(agreementComment);
-    }
   }
 
   // Signature checks found feature-like work, notify the user they may not be following guidance
@@ -439,8 +427,9 @@ const start = async ({
 
   if (codeSignature.hasTell) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
-      `I've moved this to **Draft** due to the scope of changes. Make sure you review the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md).\n\n` +
-      `_This comment updates automatically._`;
+      `I've moved this to **Draft** due to the scope of changes, and to avoid confusion.\n` +
+      `Once you've focused your changes I'll take another look.\n\n` +
+      `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
     await convertPrToDraft({ github, context });
     await addBotComment(botComment);
@@ -459,10 +448,9 @@ const start = async ({
   // Signature checks found something, alert the contributor in good faith
   if (codeSignature.errors.length > 0) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
-      `I found some issues with your work. Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
+      `I found some issues with your work. Once the following updates are addressed, you'll be queued for review:\n\n` +
       `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
-      `_Helpful hint, aiming for a fix or feature will help you focus the scope of your work!_` +
-      `_This comment updates automatically._`;
+      `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
     await addBotComment(botComment);
     await addLabels([LABEL_NEEDS_CLEANUP]);
@@ -484,7 +472,7 @@ const start = async ({
     // Or confirm the work has passed pre-check
     const successComment = `### 🤖 PR Quality Guidance\n` +
       `I finished my scan and all pre-checks pass!\n\n` +
-      `_This comment updates automatically._`;
+      `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
     await addBotComment(successComment);
     await addLabels([LABEL_PRECHECKS_PASS]);
