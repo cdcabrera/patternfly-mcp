@@ -62,28 +62,45 @@ Our process follows the standard GitHub fork and pull request workflow.
 >    - `main` would be the default branch for development and feature work rebased from `stable` after release.
 >    - `stable` would be a branch used for stable releases/hashes, reference links, and only updated with release commits.
 
-### Contributor roles
+#### Contributor roles
 
 - **Core Contributors:** Maintainers listed in `CODEOWNERS` or with `MEMBER/OWNER` roles in the GitHub organization. Their focus is architecture, roadmap planning, maintenance, and feature contributions. 
 - **General Contributors:** Community members contributing via forks. All PRs from general contributors undergo automated validation and must pass the initial checks before being queued for review by maintainers.
 
-### Before you contribute
+#### Before you contribute
 
-> **Try customizing the server!**
+> **Get a feature up and running. Try customizing the server!**
+>
 > The PatternFly MCP server is designed from the ground-up to be customizable. That customization allows the server to be [wrapped by a customized MCP server](./docs/development.md#programmatic-usage) and allows [MCP tool plugins](./docs/development.md#mcp-tool-plugins).
 
-#### Start a conversation
-In the age of agentic coding where your ideas can be up and working quickly, we encourage opening a GitHub issue before starting any work.
+##### Have a feature or found a bug? Start a conversation
+
+In the new age of agentic coding where your ideas can be up and working quickly, we encourage opening a GitHub issue before starting any work.
 
 Opening an issue first starts the planning conversation to have your idea integrated, push the PatternFly MCP forward collectively, and give you the recognition for your effort and planning without forcing a code review from maintainers. We want your planned idea, not our reactive interpretation. 
 
 Opening a PR without an issue has a higher likelihood your work will be flagged with automation, delayed for maintainer review, and potentially closed.
 
+> **Just want to show us your work?**
+>
 > If you're leveraging the GitHub PR to provide us with file diffs, you can achieve the same Git diff applied by PRs by simply using the GitHub link format and applying it to your issue:
 > - `https://github.com/[BASE_OWNER]/[BASE_REPO]/compare/[BASE_BRANCH]...[FORK_OWNER]:[FORK_BRANCH]`
 >
 > **Example for this repository:**
 > - `https://github.com/patternfly/patternfly-mcp/compare/main...your-username:your-branch`
+
+##### Want the PatternFly MCP to access your documentation?
+
+The PatternFly MCP primarily focuses on documentation found on the PatternFly GitHub organization. 
+
+**Guidelines for adding documentation references**:
+- **PatternFly subject**: Added documentation should concern PatternFly as the primary subject. Requests for additional subjects require an issue first.
+- **Specific domain**: Documentation is whitelisted to specific domains on purpose. Updates to this list require an issue first, for security.
+- **Production ready**: Documentation added to the PatternFly MCP resources should be production ready. Exposing draft documentation is a concern, and it is requested you open an issue first if you are unsure.
+- **Resource quality**: Documentation will be reviewed for quality and security. You will be providing a resource for every PatternFly MCP user.
+- **Release dependent**: Documentation merges may be placed on hold temporarily if it conflicts with any future PatternFly MCP release cycle.
+- **Agent skill**: An agent skill for a range of tools (e.g., Cursor, Claude, etc.) is provided for convenience to help update the related files
+   - [Update documentation SKILL](./guidelines/skills/add-docs-links)
 
 #### Pull requests
 
