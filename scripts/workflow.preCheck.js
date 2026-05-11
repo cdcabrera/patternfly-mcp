@@ -62,7 +62,7 @@ const coreContributorsBypass = ({ comments } = {}) => {
 /**
  * Does one list contain another list's values?
  *
- * @param {string[]} listBase - Base array of strings to match.
+ * @param {{ filename: string }[]} listBase - Base array of strings to match.
  * @param {string[]} listCheck - Array of strings to confirm matches in base.
  * @returns {string[]} An array of value matches.
  */
@@ -89,7 +89,7 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * @param params.description
  * @param params.files
  * @param params.fileCount
- * @returns {{commentSignature: string, errors: *[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
+ * @returns {{commentSignature: string, errors: string[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
 const signatureScan = ({ description, files, fileCount } = {}) => {
   // Make sure this is within the PR template, or we'll get false positives.
@@ -136,9 +136,7 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     '.js',
     '.sh',
     'src/fixtures',
-    'src/mocks',
-    'tests/e2e/utils/stdioTransportClient.ts',
-    'tests/e2e/__snapshots__/stdioTransport.test.ts.snap'
+    'src/mocks'
   ];
 
   // agent exceptions. This can be a list of existing or non-existent files, directories, and/or extensions.
@@ -182,7 +180,7 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     }
 
     if (isExtraModified) {
-      errors.push(`⚠️ I've found a few file extras in your updates that may not be required (${extraModified.join(', ')}). Aligning to the codebase style and workflow means your effort is more likely to be reviewed.`);
+      errors.push(`⚠️ I've found extras in your updates that may not be required (${extraModified.join(', ')}). Aligning to the codebase style and workflow means your effort is more likely to be reviewed.`);
     }
 
     if (isAgentModified) {

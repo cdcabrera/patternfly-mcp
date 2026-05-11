@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import { jest } from '@jest/globals';
-import { coreContributors, coreContributorsBypass } from '../../scripts/workflow.preCheck.js';
+import {
+  coreContributors,
+  coreContributorsBypass,
+  doesListContainAnotherListValues,
+  signatureScan
+} from '../../scripts/workflow.preCheck.js';
 
 describe('coreContributors', () => {
   afterEach(() => {
@@ -179,4 +184,141 @@ describe('coreContributorsBypass', () => {
   });
 });
 
+describe('doesListContainAnotherListValues', () => {
+  it.each([
+    {
+      description: 'empty lists',
+      listBase: [],
+      listCheck: ['src/'],
+      expected: []
+    },
+    {
+      description: 'exact match',
+      listBase: [{ filename: 'src/server.ts' }],
+      listCheck: ['src/server.ts'],
+      expected: ['src/server.ts']
+    },
+    {
+      description: 'case insensitivity',
+      listBase: [{ filename: 'src/SERVER.ts' }],
+      listCheck: ['SRC/server.TS'],
+      expected: ['src/SERVER.ts']
+    },
+    {
+      description: 'prefix/directory match',
+      listBase: [{ filename: 'src/cli.ts' }],
+      listCheck: ['src/cli'],
+      expected: ['src/cli.ts']
+    },
+    {
+      description: 'contains match',
+      listBase: [{ filename: 'some/path/scripts/workflow.script.js' }],
+      listCheck: ['scripts/workflow'],
+      expected: ['some/path/scripts/workflow.script.js']
+    },
+    {
+      description: 'multiple matches',
+      listBase: [
+        { filename: 'src/server.ts' },
+        { filename: 'tests/e2e/test.ts' }
+      ],
+      listCheck: ['src/', 'tests/e2e'],
+      expected: ['src/server.ts', 'tests/e2e/test.ts']
+    },
+    {
+      description: 'no match',
+      listBase: [{ filename: 'README.md' }],
+      listCheck: ['src/'],
+      expected: []
+    }
+  ])('should verify list containment, $description', ({ listBase, listCheck, expected }) => {
+    const result = doesListContainAnotherListValues(listBase, listCheck);
 
+    expect(result).toEqual(expected);
+  });
+});
+
+describe('signatureScan', () => {
+  it.each([
+    {
+      description: 'valid PR',
+      params: {
+        description: '<!-- GH_PR_METADATA_V1_789 -->',
+        files: [{ filename: 'src/patternfly.ts' }],
+        fileCount: 1
+      },
+      expected: 0
+    },
+    {
+      description: 'too many files',
+      params: {
+        description: '<!-- GH_PR_METADATA_V1_789 -->',
+        files: [],
+        fileCount: 16
+      },
+      expected: 1
+    },
+    {
+      description: 'missing template metadata',
+      params: {
+        description: 'Just a PR description',
+        files: [],
+        fileCount: 1
+      },
+      expected: 0
+    },
+    {
+      description: 'core modifications',
+      params: {
+        description: '<!-- GH_PR_METADATA_V1_789 -->',
+        files: [{ filename: 'src/server.ts' }],
+        fileCount: 1
+      },
+      expected: 1
+    },
+    {
+      description: 'security modifications',
+      params: {
+        description: '<!-- GH_PR_METADATA_V1_789 -->',
+        files: [{ filename: '.github/workflows/pr_precheck.yml' }],
+        fileCount: 1
+      },
+      expected: 1
+    },
+    {
+      description: 'agent modifications',
+      params: {
+        description: '<!-- GH_PR_METADATA_V1_789 -->',
+        files: [{ filename: '.aiignore' }],
+        fileCount: 1
+      },
+      expected: 1
+    },
+    {
+      description: 'extra/generated files',
+      params: {
+        description: '<!-- GH_PR_METADATA_V1_789 -->',
+        files: [{ filename: 'scripts/loremIpsum.sh' }],
+        fileCount: 1
+      },
+      expected: 1
+    },
+    {
+      description: '"The Tell" (high impact check)',
+      params: {
+        description: 'Missing metadata',
+        files: [
+          { filename: 'src/server.ts' },
+          { filename: 'tests/e2e/__snapshots__/stdioTransport.test.ts.snap' }
+        ],
+        fileCount: 20
+      },
+      expected: 2
+    }
+  ])('should scan for signatures, $description', ({ params, expected }) => {
+    const result = signatureScan(params);
+
+    expect(result.errors.length).toBe(expected);
+    expect(result).toMatchSnapshot();
+  });
+});

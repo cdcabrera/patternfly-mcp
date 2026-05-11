@@ -1,0 +1,134 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`signatureScan should scan for signatures, "The Tell" (high impact check) 1`] = `
+{
+  "errors": [
+    "⚠️ You've updated a lot of files (20/15). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.",
+    "⚠️ I detected core file modifications (src/server.ts, tests/e2e/__snapshots__/stdioTransport.test.ts.snap). These changes usually require a bit more planning—check the guidelines for details.",
+  ],
+  "hasFailed": false,
+  "hasTell": true,
+  "isAgentModified": false,
+  "isCoreModified": true,
+  "isExtraModified": false,
+  "isGenModified": true,
+  "isMaxFilesUpdated": true,
+  "isPrTemplateModified": true,
+  "isSecModified": false,
+}
+`;
+
+exports[`signatureScan should scan for signatures, agent modifications 1`] = `
+{
+  "errors": [
+    "⚠️ I found local agent modifications in your changes (.aiignore). These changes require a core contributor's involvement.",
+  ],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": true,
+  "isCoreModified": false,
+  "isExtraModified": false,
+  "isGenModified": false,
+  "isMaxFilesUpdated": false,
+  "isPrTemplateModified": false,
+  "isSecModified": false,
+}
+`;
+
+exports[`signatureScan should scan for signatures, core modifications 1`] = `
+{
+  "errors": [
+    "⚠️ I detected core file modifications (src/server.ts). These changes usually require a bit more planning—check the guidelines for details.",
+  ],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": false,
+  "isCoreModified": true,
+  "isExtraModified": false,
+  "isGenModified": false,
+  "isMaxFilesUpdated": false,
+  "isPrTemplateModified": false,
+  "isSecModified": false,
+}
+`;
+
+exports[`signatureScan should scan for signatures, extra/generated files 1`] = `
+{
+  "errors": [
+    "⚠️ I've found extras in your updates that may not be required (scripts/loremIpsum.sh). Aligning to the codebase style and workflow means your effort is more likely to be reviewed.",
+  ],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": false,
+  "isCoreModified": false,
+  "isExtraModified": true,
+  "isGenModified": false,
+  "isMaxFilesUpdated": false,
+  "isPrTemplateModified": false,
+  "isSecModified": false,
+}
+`;
+
+exports[`signatureScan should scan for signatures, missing template metadata 1`] = `
+{
+  "errors": [],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": false,
+  "isCoreModified": false,
+  "isExtraModified": false,
+  "isGenModified": false,
+  "isMaxFilesUpdated": false,
+  "isPrTemplateModified": true,
+  "isSecModified": false,
+}
+`;
+
+exports[`signatureScan should scan for signatures, security modifications 1`] = `
+{
+  "errors": [
+    "⚠️ I've found updates that may require a core contributors's involvement (.github/workflows/pr_precheck.yml). I'll make sure they know.",
+  ],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": false,
+  "isCoreModified": false,
+  "isExtraModified": false,
+  "isGenModified": false,
+  "isMaxFilesUpdated": false,
+  "isPrTemplateModified": false,
+  "isSecModified": true,
+}
+`;
+
+exports[`signatureScan should scan for signatures, too many files 1`] = `
+{
+  "errors": [
+    "⚠️ You've updated a lot of files (16/15). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.",
+  ],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": false,
+  "isCoreModified": false,
+  "isExtraModified": false,
+  "isGenModified": false,
+  "isMaxFilesUpdated": true,
+  "isPrTemplateModified": false,
+  "isSecModified": false,
+}
+`;
+
+exports[`signatureScan should scan for signatures, valid PR 1`] = `
+{
+  "errors": [],
+  "hasFailed": false,
+  "hasTell": false,
+  "isAgentModified": false,
+  "isCoreModified": false,
+  "isExtraModified": false,
+  "isGenModified": false,
+  "isMaxFilesUpdated": false,
+  "isPrTemplateModified": false,
+  "isSecModified": false,
+}
+`;
