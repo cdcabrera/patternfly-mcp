@@ -558,7 +558,7 @@ describe('start', () => {
     await start(config, { github, context, core });
 
     expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
-      body: expect.stringContaining("PR Contributor\'s Agreement")
+      body: expect.stringContaining("PR Contributor's Agreement")
     }));
 
     // Should stop before signature scan
