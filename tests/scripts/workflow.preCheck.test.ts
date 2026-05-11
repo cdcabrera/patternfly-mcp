@@ -505,3 +505,118 @@ describe('setComment', () => {
     }));
   });
 });
+
+describe('start', () => {
+  let github: any;
+  let context: any;
+  let core: any;
+  let config: any;
+
+  beforeEach(() => {
+    github = {
+      rest: {
+        pulls: { listFiles: jest.fn<any>().mockResolvedValue({ data: [] }) },
+        issues: {
+          listComments: jest.fn<any>().mockResolvedValue({ data: [] }),
+          addLabels: jest.fn<any>().mockResolvedValue({}),
+          removeLabel: jest.fn<any>().mockResolvedValue({}),
+          createComment: jest.fn<any>().mockResolvedValue({}),
+          updateComment: jest.fn<any>().mockResolvedValue({}),
+          deleteComment: jest.fn<any>().mockResolvedValue({})
+        },
+        reactions: { listForIssueComment: jest.fn<any>().mockResolvedValue({ data: [] }) }
+      },
+      graphql: jest.fn<any>().mockResolvedValue({})
+    };
+    context = {
+      payload: {
+        pull_request: {
+          user: { login: 'contributor', type: 'User' },
+          author_association: 'CONTRIBUTOR',
+          body: '<!-- GH_PR_METADATA_V1_789 -->',
+          changed_files: 1,
+          labels: []
+        }
+      },
+      repo: { owner: 'o', repo: 'r' },
+      issue: { number: 123 }
+    };
+    core = { setFailed: jest.fn(), log: jest.fn() };
+    config = {
+      isFreezeActive: false,
+      LABEL_CODE_FREEZE: 'bot:freeze',
+      LABEL_CONFIRMED: 'bot:confirmed',
+      LABEL_UNCONFIRMED: 'bot:unconfirmed',
+      LABEL_PRECHECKS_PASS: 'bot:pass',
+      LABEL_BREAKING_POTENTIAL: 'bot:breaking',
+      LABEL_NEEDS_CLEANUP: 'bot:cleanup',
+      LABEL_SEC: 'bot:sec'
+    };
+  });
+
+  it('should block and request a handshake if the contributor agreement is missing', async () => {
+    await start(config, { github, context, core });
+
+    expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
+      body: expect.stringContaining("PR Contributor\'s Agreement")
+    }));
+
+    // Should stop before signature scan
+    expect(github.rest.issues.addLabels).not.toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_PRECHECKS_PASS]
+    }));
+  });
+
+  it('should proceed to code scanning once a 👍 reaction is detected', async () => {
+    // 1. Existing agreement found
+    github.rest.issues.listComments.mockResolvedValue({
+      data: [{ id: 1, body: '<!-- precheck-bot-agreement-V1 -->' }]
+    });
+
+    // 2. Author has reacted with +1
+    github.rest.reactions.listForIssueComment.mockResolvedValue({
+      data: [{ user: { login: 'contributor' }, content: '+1' }]
+    });
+
+    await start(config, { github, context, core });
+
+    expect(github.rest.issues.deleteComment).toHaveBeenCalled();
+    expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_CONFIRMED]
+    }));
+    expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_PRECHECKS_PASS]
+    }));
+  });
+
+  it('should lock automation and apply unconfirmed label if agreement is declined (👎)', async () => {
+    github.rest.issues.listComments.mockResolvedValue({
+      data: [{ id: 1, body: '<!-- precheck-bot-agreement-V1 -->' }]
+    });
+    github.rest.reactions.listForIssueComment.mockResolvedValue({
+      data: [{ user: { login: 'contributor' }, content: '-1' }]
+    });
+
+    await start(config, { github, context, core });
+
+    expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_UNCONFIRMED]
+    }));
+    expect(github.rest.issues.updateComment).toHaveBeenCalledWith(expect.objectContaining({
+      body: expect.stringContaining('🚫 I noticed you declined')
+    }));
+  });
+
+  it('should clear old labels and notify success when all pre-checks pass', async () => {
+    context.payload.pull_request.labels = [{ name: config.LABEL_CONFIRMED }];
+
+    await start(config, { github, context, core });
+
+    expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_PRECHECKS_PASS]
+    }));
+    expect(github.rest.issues.removeLabel).toHaveBeenCalledWith(expect.objectContaining({
+      name: config.LABEL_NEEDS_CLEANUP
+    }));
+  });
+});
