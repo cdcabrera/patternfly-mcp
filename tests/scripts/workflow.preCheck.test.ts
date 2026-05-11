@@ -608,15 +608,30 @@ describe('start', () => {
   });
 
   it('should clear old labels and notify success when all pre-checks pass', async () => {
+    // Simulate an already-confirmed contributor
     context.payload.pull_request.labels = [{ name: config.LABEL_CONFIRMED }];
 
     await start(config, { github, context, core });
 
+    // 1. Verify Success Notification
+    expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
+      body: expect.stringContaining('I finished my scan and all pre-checks pass!')
+    }));
+
+    // 2. Verify Labeling
     expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
       labels: [config.LABEL_PRECHECKS_PASS]
     }));
-    expect(github.rest.issues.removeLabel).toHaveBeenCalledWith(expect.objectContaining({
-      name: config.LABEL_NEEDS_CLEANUP
-    }));
+
+    // 3. Verify Label Cleanup
+    const removedLabels = github.rest.issues.removeLabel.mock.calls.map((call: any) => call[0].name);
+
+    expect(removedLabels).toContain(config.LABEL_CODE_FREEZE);
+    expect(removedLabels).toContain(config.LABEL_BREAKING_POTENTIAL);
+    expect(removedLabels).toContain(config.LABEL_NEEDS_CLEANUP);
+    expect(removedLabels).toContain(config.LABEL_NEEDS_MAINTAINER);
+
+    // 4. Verify no failure was triggered
+    expect(core.setFailed).not.toHaveBeenCalled();
   });
 });
