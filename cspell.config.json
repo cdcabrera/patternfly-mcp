@@ -1,6 +1,7 @@
 {
   "language": "en",
   "words": [
+    "agentic",
     "aiignore",
     "amet",
     "codemods",
@@ -19,10 +20,12 @@
     "rereview",
     "rescan",
     "rsort",
+    "sandboxing",
     "sparkline",
     "streamable",
     "treeify",
     "unrepresentable",
-    "unsub"
+    "unsub",
+    "untampered"
   ]
 }
