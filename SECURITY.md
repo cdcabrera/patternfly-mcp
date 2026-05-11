@@ -19,7 +19,7 @@ Security concerns for this MCP server include:
 
 To maintain codebase integrity, we use an automated **Gatekeeper** workflow:
 - PRs from non-core contributors that modify core behavior or exceed established file limits are automatically moved to **Draft**.
-- These PRs require explicit promotion and a secondary review by a Maintainer.
+- These PRs require a secondary review by a Maintainer to be promoted from Draft status.
 
 ## Release Integrity
 

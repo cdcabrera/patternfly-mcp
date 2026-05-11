@@ -40,26 +40,6 @@ const coreContributors = ({ author, authorType, authorRole } = {}, { allowBots =
 };
 
 /**
- * Check if a maintainer has issued a `/bypass` command.
- *
- * @param {object} params
- * @param {object[]} params.comments - List of PR comments.
- * @returns {boolean} True if a valid bypass command is found.
- */
-const coreContributorsBypass = ({ comments } = {}) => {
-  const updatedComments = Array.isArray(comments) ? comments : [];
-  const bypassCommand = '/bypass';
-
-  return updatedComments.some(comment =>
-    comment.body?.trim()?.toLowerCase()?.startsWith(bypassCommand) &&
-    coreContributors({
-      author: comment.user?.login || comment.author?.login,
-      authorType: comment.user?.type || comment.author?.type,
-      authorRole: comment.author_association
-    }, { allowBot: false }));
-};
-
-/**
  * Does one list contain another list's values?
  *
  * @param {{ filename: string }[]} listBase - Base array of strings to match.
@@ -89,7 +69,9 @@ const doesListContainAnotherListValues = (listBase, listCheck) =>
  * @param params.description
  * @param params.files
  * @param params.fileCount
- * @returns {{commentSignature: string, errors: string[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, hasTell: boolean}} An `object` containing code scan results.
+ * @returns {{errors: string[], isMaxFilesUpdated: boolean, isPrTemplateModified: boolean, isAgentModified: boolean,
+ *     isCoreModified: boolean, isExtraModified: boolean, isGenModified: boolean, isSecModified: boolean,
+ *     hasFailed: boolean, hasTell: boolean}} An `object` containing code scan results.
  */
 const signatureScan = ({ description, files, fileCount } = {}) => {
   // Make sure this is within the PR template, or we'll get false positives.
@@ -355,6 +337,25 @@ const getReactions = async ({ signature, github, context } = {}) => {
 };
 
 /**
+ * Convert a PR to draft.
+ *
+ * @param config
+ * @param config.github
+ * @param config.context
+ * @returns {Promise<any>}
+ */
+const convertPrToDraft = async ({ github, context } = {}) => {
+  const prNodeId = context.payload.pull_request.node_id;
+  const mutation = `mutation($id: ID!) {
+      convertPullRequestToDraft(input: { pullRequestId: $id }) {
+        pullRequest { id isDraft }
+      }
+    }`;
+
+  return github.graphql(mutation, { id: prNodeId });
+};
+
+/**
  * Get a pull request context.
  *
  * @param config
@@ -395,16 +396,9 @@ const getPullRequest = async ({ github, context } = {}) => {
  * Start the pre-check process.
  *
  * @param config - Configuration params
- * @param config.isFreezeActive - Is a code freeze active flag
- * @param config.LABEL_CODE_FREEZE - Label string
- * @param config.LABEL_BREAKING_POTENTIAL - Label string
  * @param config.LABEL_NEEDS_CLEANUP - Label string
  * @param config.LABEL_NEEDS_MAINTAINER - Label string
- * @param config.LABEL_CONFIRMED - Label string
- * @param config.LABEL_UNCONFIRMED - Label string
  * @param config.LABEL_PRECHECKS_PASS - Label string
- * @param config.LABEL_PRECHECKS_BYPASS - Label string
- * @param config.LABEL_SEC - Label string
  * @param env - Environment params
  * @param env.github
  * @param env.context
@@ -412,121 +406,54 @@ const getPullRequest = async ({ github, context } = {}) => {
  * @returns {Promise<void>}
  */
 const start = async ({
-  isFreezeActive,
-  LABEL_CODE_FREEZE,
-  LABEL_BREAKING_POTENTIAL,
   LABEL_NEEDS_CLEANUP,
   LABEL_NEEDS_MAINTAINER,
-  LABEL_CONFIRMED,
-  LABEL_UNCONFIRMED,
-  LABEL_PRECHECKS_PASS,
-  LABEL_PRECHECKS_BYPASS,
-  LABEL_SEC
+  LABEL_PRECHECKS_PASS
 } = {}, { github, context, core } = {}) => {
-  const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles, comments } = await getPullRequest({ github, context });
-
-  if (coreContributors({ author, authorType, authorRole })) {
-    console.log(`Contributor found, skipping pre-checks: ${author}`);
-
-    return;
-  }
-
-  const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
-  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context });
+  const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles } = await getPullRequest({ github, context });
   const { add: addLabels, remove: removeLabels } = await setLabels({ github, context });
 
-  if (isFreezeActive) {
-    await addLabels([LABEL_CODE_FREEZE]);
-  } else {
-    await removeLabels([LABEL_CODE_FREEZE]);
-  }
-
-  // Core contributors bypass
-  if (coreContributorsBypass({ comments })) {
-    const bypassComment = `### 🤖 PR Quality Guidance\n` +
-      `Bypass acknowledged, standing down!\n\n` +
-      `_This comment updates automatically._`;
-
-    await addBotComment(bypassComment);
-    await addLabels([LABEL_PRECHECKS_BYPASS]);
+  // Core contributors get a pass
+  if (coreContributors({ author, authorType, authorRole })) {
+    console.log(`Contributor found, skipping pre-checks: ${author}`);
+    await addLabels([LABEL_PRECHECKS_PASS]);
 
     return;
-  }
+  } else {
+    // Or contributors get a contribution guide comment
+    const agreementComment = `### 🤖 PR Contributor's Agreement\n\n` +
+      `Thank you for the PR! If you haven't already, make sure to read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md).`;
 
-  // Contributor's Agreement
-  const isConfirmed = context.payload.pull_request.labels.some(label => label.name === LABEL_CONFIRMED);
+    const botAgreementSignature = '<!-- precheck-bot-agreement-V1 -->';
+    const { add: addBotAgreement, isComment: hasBotAgreementComment } = await setComment({ signature: botAgreementSignature, github, context });
 
-  if (!isConfirmed) {
-    const agreementCommentSignature = '<!-- precheck-bot-agreement-V1 -->';
-    const { add: addAgreementComment, remove: removeAgreementComment, existingCommentId: agreementCommentId } =
-      await setComment({ signature: agreementCommentSignature, github, context });
-
-    if (!agreementCommentId) {
-      const agreementComment = `### 🤖 PR Contributor's Agreement\n\n` +
-        `I'm ready to help! Give my comment a 👍 to confirm you've read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) and unlock the testing suite.`;
-
-      await addAgreementComment(agreementComment);
-
-      return;
-    }
-
-    const { authorReaction } = await getReactions({ github, context, signature: agreementCommentSignature });
-
-    // No reaction
-    if (authorReaction === 0) {
-      return;
-    }
-
-    // Thumbs down reaction
-    if (authorReaction === -1) {
-      const declinedComment = `### 🤖 PR Contributor's Agreement\n` +
-        `🚫 I noticed you declined the agreement, so I've paused automation. If you change your mind, just change your reaction to a 👍!`;
-
-      await addAgreementComment(declinedComment);
-      await addLabels([LABEL_UNCONFIRMED]);
-
-      return;
-    }
-
-    // Thumbs up reaction
-    if (authorReaction === 1) {
-      await removeAgreementComment();
-      await addLabels([LABEL_CONFIRMED]);
-      await removeLabels([LABEL_UNCONFIRMED]);
+    if (!hasBotAgreementComment) {
+      await addBotAgreement(agreementComment);
     }
   }
 
   // Signature checks found feature-like work, notify the user they may not be following guidance
   const codeSignature = signatureScan({ description: prDescription, files: prFiles, fileCount: prFileCount });
+  const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
+  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context });
 
   if (codeSignature.hasTell) {
-    // GraphQL Mutation to convert to Draft
-    const prNodeId = context.payload.pull_request.node_id;
-    const mutation = `mutation($id: ID!) {
-      convertPullRequestToDraft(input: { pullRequestId: $id }) {
-        pullRequest { id isDraft }
-      }
-    }`;
-
-    await github.graphql(mutation, { id: prNodeId });
-
     const botComment = `### 🤖 PR Quality Guidance\n` +
-      `I noticed there's quite a bit of work here. I'm moving this over to a draft PR temporarily. Make sure you review the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md) again.\n\n` +
+      `I've moved this to **Draft** due to the scope of changes. Make sure you review the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md).\n\n` +
       `_This comment updates automatically._`;
 
+    await convertPrToDraft({ github, context });
     await addBotComment(botComment);
-    await addLabels([LABEL_BREAKING_POTENTIAL]);
+    await addLabels([LABEL_NEEDS_CLEANUP]);
 
     core.setFailed('PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.');
 
     return;
-  } else {
-    await removeLabels([LABEL_BREAKING_POTENTIAL]);
   }
 
-  // Sec check, once it's found, don't remove it
+  // Sec check
   if (codeSignature.isSecModified) {
-    await addLabels([LABEL_SEC]);
+    await addLabels([LABEL_NEEDS_MAINTAINER]);
   }
 
   // Signature checks found something, alert the contributor in good faith
@@ -534,17 +461,18 @@ const start = async ({
     const botComment = `### 🤖 PR Quality Guidance\n` +
       `I found some issues with your work. Make sure you've reviewed the [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). Once the following updates are addressed, you'll be queued for review:\n\n` +
       `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+      `_Helpful hint, aiming for a fix or feature will help you focus the scope of your work!_` +
       `_This comment updates automatically._`;
 
     await addBotComment(botComment);
     await addLabels([LABEL_NEEDS_CLEANUP]);
 
-    core.setFailed('PR pre-check requirements not met.');
+    core.setFailed('PR pre-check requirements not met. Make sure to review the contributing guidelines.');
 
     return;
   }
 
-  // Fallback if signature checks fail, alert the maintainers
+  // Fallback if signature checks fail, alert the maintainers, non-blocking
   if (codeSignature.hasFailed) {
     const errorComment = `### 🤖 PR Quality Guidance\n` +
       `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
@@ -552,23 +480,20 @@ const start = async ({
 
     await addBotComment(errorComment);
     await addLabels([LABEL_NEEDS_MAINTAINER]);
+  } else {
+    // Or confirm the work has passed pre-check
+    const successComment = `### 🤖 PR Quality Guidance\n` +
+      `I finished my scan and all pre-checks pass!\n\n` +
+      `_This comment updates automatically._`;
 
-    return;
+    await addBotComment(successComment);
+    await addLabels([LABEL_PRECHECKS_PASS]);
+    await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER]);
   }
-
-  // Confirm the work has passed pre-check
-  const successComment = `### 🤖 PR Quality Guidance\n` +
-    `I finished my scan and all pre-checks pass!\n\n` +
-    `_This comment updates automatically._`;
-
-  await addBotComment(successComment);
-  await addLabels([LABEL_PRECHECKS_PASS]);
-  await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER]);
 };
 
 export {
   coreContributors,
-  coreContributorsBypass,
   doesListContainAnotherListValues,
   getCommentId,
   getPullRequest,

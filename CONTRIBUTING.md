@@ -105,7 +105,7 @@ The PatternFly MCP primarily focuses on documentation found on the PatternFly Gi
 
 Development pull requests (PRs) should be opened against the default branch.
 
-Pull requests from non-core contributors will be invited to agree to the contribution agreement in PR comments. Provide a thumbs up on your acceptance, and automation will start the validation process.
+Pull requests from non-core contributors will be invited to read the contribution agreement in PR comments.
 
 ##### The Contributor's agreement
 _I have read the contribution guidelines and fulfill them with this PR. I acknowledge my PR may be labeled, converted to draft, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation._
@@ -132,7 +132,7 @@ _I have read the contribution guidelines and fulfill them with this PR. I acknow
 >  - break the work into multiple pull requests
 >  - close the PR
 
-#### Pull request commits, messaging
+##### Pull request commits, messaging
 
 Your pull request should contain Git commit messaging that follows [conventional commit types](https://www.conventionalcommits.org/)
 to provide consistent history and help generate [CHANGELOG.md](./CHANGELOG.md) updates.
@@ -153,20 +153,13 @@ Commit messages follow two basic guidelines:
 > If your **pull request contains multiple commits**, they will be squashed into a single commit before merging, and the messaging
 > will be altered to reflect current guidelines.
 
-#### Pull request test failures
+##### Pull request test failures
 
-To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated checks and tests have successfully passed. The first step to unlocking these tests is completing the interactive "Handshake" with our PR bot.
-
-If automation does any of the following:
-- flags your work as "not ready for review"
-- waits for your handshake (👍 reaction)
-- applies status labels
-- fails
+To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated pre-checks and tests have successfully passed.
 
 Please follow the guidance provided by automation and resolve the issues. If your work is still failing, seek guidance before requesting a manual review.
 
 > If you are unsure why your tests are failing, we encourage you to [start a conversation](#have-a-feature-or-found-a-bug-start-a-conversation), and review both [pull request guidance](#pull-requests) and [testing documentation](#testing).
-
 
 ### Code style guidance and conventions
 Basic code style guidelines are generally enforced by ESLint, but there are additional guidelines.

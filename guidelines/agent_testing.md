@@ -72,10 +72,10 @@ Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requir
 Automation scripts in `scripts/` are critical to repository security. Changes to these scripts MUST be accompanied by updates to `tests/scripts/*.test.js`.
 
 **Key areas to test**:
-- Label management logic
-- Contributor and bot identification
-- Persona string accuracy
-- Failure fallback (📡 icon)
+- Label management logic.
+- Contributor and bot identification.
+- Failure fallback (📡 icon).
+- Informative error messaging.
 
 ### 6.2 Data and Resource Audit
 

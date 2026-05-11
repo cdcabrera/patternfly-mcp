@@ -21,20 +21,22 @@ const availableMessageTypes = [
 /**
  * Parse a commit message
  *
- * @param {string} message
+ * @param {object} params
+ * @param {string} params.hash
+ * @param {string} params.message
  * @param {Array} messageTypes
  * @returns {{scope: string, description: string, type: string, prNumber: string, hash: string,
  *     typeScope: string, isBreaking: boolean, original: string, message: string, length: number}}
  */
-const parseCommitMessage = (message, messageTypes = availableMessageTypes) => {
+const parseCommitMessage = ({ hash, message }, messageTypes = availableMessageTypes) => {
   let output;
 
-  const [hashTypeScope, ...descriptionEtAll] = message.trim().split(/:/);
+  const [baseTypeScope, ...descriptionEtAll] = message.trim().split(/:/);
   const [description, ...partialPr] = descriptionEtAll
     .join(' ')
     .trim()
     .split(/(\(#|#)/);
-  const [hash, ...typeScope] = hashTypeScope.replace(/!$/, '').trim().split(/\s/);
+  const typeScope = baseTypeScope.replace(/!$/, '').trim().split(/\s/);
   const [type, scope = ''] = typeScope.join(' ').trim().split('(');
 
   output = {
@@ -44,15 +46,15 @@ const parseCommitMessage = (message, messageTypes = availableMessageTypes) => {
     scope: scope.split(')')[0] || undefined,
     description: description.trim() || undefined,
     prNumber: (partialPr.join('(#').trim() || '').replace(/\D/g, '') || undefined,
-    isBreaking: /!$/.test(hashTypeScope)
+    isBreaking: /!$/.test(baseTypeScope)
   };
 
   if (!output.type || (output.type && !descriptionEtAll?.length)) {
-    const [hashFallback, ...descriptionEtAllFallback] = message.trim().split(/\s/);
+    const descriptionEtAllFallback = message.trim().split(/\s/);
     const [descriptionFallback, ...partialPrFallback] = descriptionEtAllFallback.join(' ').trim().split(/\(#/);
 
     output = {
-      hash: hashFallback,
+      hash,
       typeScope: undefined,
       type: undefined,
       scope: undefined,
@@ -70,14 +72,12 @@ const parseCommitMessage = (message, messageTypes = availableMessageTypes) => {
     .join(' ')
     .trim();
 
-  const out = {
+  return {
     ...output,
     messageLength: updatedMessage?.length || 0,
     message: updatedMessage,
     original: message
   };
-
-  return out;
 };
 
 /**
@@ -159,13 +159,10 @@ const workflowCommitLint = commits => {
 
   if (commits) {
     const updatedCommits = commits
-      .trim()
-      .replace(/\n/g, '')
-      .replace(/\+\s/g, '\n')
-      .replace(/\n/, '')
-      .split(/\n/g)
-      .filter(value => value !== '')
-      .map(message => parseCommitMessage(message));
+      .map(({ sha, commit } = {}) => parseCommitMessage({
+        hash: sha.substring(0, 7),
+        message: (commit.message || 'empty').split('\n')[0]
+      }));
     let filteredResults = messagesList(updatedCommits);
 
     filteredResults.forEach(obj => {

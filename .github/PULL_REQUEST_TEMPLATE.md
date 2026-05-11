@@ -1,13 +1,18 @@
 <!-- GH_PR_METADATA_V1_789 -->
-<!-- Follow the 🤖 PR quality guidance and give it a 👍 to confirm you've read our guidelines and unlock the testing suite. -->
+<!-- 
+Before you open a PR, make sure you have reviewed our contribution guidelines:
+https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md 
+-->
 
 ## What is it?
 <!-- Summary of changes/additions/commits -->
 
 ### Notes
+...
 
 ## How to test
 <!-- Are there directions to test/review? -->
+...
 
 <!--
 ### Check the work
