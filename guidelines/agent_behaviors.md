@@ -67,9 +67,10 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
   - Research the error
   - Identify conflict scenarios with code
   - Identify potential test cases
+  - Review [testing standards](../CONTRIBUTING.md#testing) and [agent testing guidelines](./agent_testing.md) for applicable testing tiers.
 
 2. **Test**
-  - Run typing, lint, unit and e2e tests
+  - Run typing, lint, unit, e2e, and specialized tests (e.g., `npm run test:scripts` for script changes).
   - Confirm conflicts
   - Test resolution options
 
@@ -81,6 +82,26 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 4. **Validate**
   - Test conflict resolution
   - Confirm approach
+
+### Trigger: "Contribute to the repository" / "Opening a pull request"
+
+1. **Review Standards**
+  - Study [CONTRIBUTING.md](../CONTRIBUTING.md) for project-wide guidelines.
+  - Review [GOVERNANCE.md](../GOVERNANCE.md) to understand the automated and human review layers.
+  - Open a GitHub issue BEFORE starting work to start a planning conversation.
+
+2. **Gatekeeper Model**
+  - PRs from general contributors require a Gatekeeper pre-check.
+  - After opening a PR, automation will provide immediate feedback in a "PR Quality Guidance" bot comment.
+  - **Action**: Monitor the bot comment for required cleanup. If Gatekeeper policy checks pass, the PR is summary labeled `bot:policy-ready`.
+  - **Policy Hold**: PRs from non-core contributors that modify core behavior or exceed established file limits are automatically placed on **Policy Hold** (labeled `bot:policy-hold`). These require a secondary review by a maintainer.
+  - **Fallback**: Gatekeeper supports a flexible messaging model. If direct PR feedback (labeling/commenting) is unavailable, agents and contributors should refer to the mirrored guidance and status in the workflow logs.
+
+3. **Validation & Gating**
+  - Address all feedback from the "PR Quality Guidance" bot comment before requesting a manual review.
+
+4. **Core Contributor Implicit Bypass**
+  - Core contributors (listed in `CODEOWNERS` or with `OWNER/MEMBER` roles) skip policy checks and receive the `bot:policy-ready` summary label immediately.
 
 ## 4. Decision-Making Guidelines
 
