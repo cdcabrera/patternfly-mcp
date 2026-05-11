@@ -5,11 +5,12 @@ import {
   coreContributorsBypass,
   doesListContainAnotherListValues,
   signatureScan,
-  getCommentId
-  // getPullRequest,
-  // getReactions,
-  // setLabels,
-  // setComment
+  getCommentId,
+  getPullRequest,
+  getReactions,
+  setLabels,
+  setComment,
+  start
 } from '../../scripts/workflow.preCheck.js';
 
 describe('coreContributors', () => {
@@ -328,13 +329,12 @@ describe('signatureScan', () => {
   });
 });
 
-describe('getCommentId', () => {
+describe('getCommentId,', () => {
   it('should return the ID of a comment matching the signature', async () => {
-    // @ts-ignore
-    const listComments = jest.fn().mockResolvedValue({
+    const listComments = jest.fn<any>().mockResolvedValue({
       data: [
         { id: 101, body: 'some other comment' },
-        { id: 202, body: 'matching signature <!-- metadata -->' }
+        { id: 202, body: 'matching signature <!-- metadata-123 -->' }
       ]
     } as any);
 
@@ -345,9 +345,9 @@ describe('getCommentId', () => {
         }
       }
     };
-    const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 } };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
 
-    const id = await getCommentId('<!-- metadata -->', { github, context });
+    const id = await getCommentId('<!-- metadata-123 -->', { github, context });
 
     expect(id).toBe(202);
   });
@@ -358,8 +358,8 @@ describe('getPullRequest', () => {
   it('should resolve and aggregate PR metadata and resources', async () => {
     const github = {
       rest: {
-        pulls: { listFiles: jest.fn().mockResolvedValue({ data: ['file1'] }) },
-        issues: { listComments: jest.fn().mockResolvedValue({ data: ['comment1'] }) }
+        pulls: { listFiles: jest.fn<any, any>().mockResolvedValue({ data: ['file1'] }) },
+        issues: { listComments: jest.fn<any, any>().mockResolvedValue({ data: ['comment1'] }) }
       }
     } as any;
     const context = {
@@ -395,9 +395,9 @@ describe('getReactions', () => {
   ])('should return $expected for reaction: $content', async ({ content, expected }) => {
     const github = {
       rest: {
-        issues: { listComments: jest.fn().mockResolvedValue({ data: [{ id: 1, body: 'sig' }] }) },
+        issues: { listComments: jest.fn<any, any>().mockResolvedValue({ data: [{ id: 1, body: 'sig' }] }) },
         reactions: {
-          listForIssueComment: jest.fn().mockResolvedValue({
+          listForIssueComment: jest.fn<any, any>().mockResolvedValue({
             data: [{ user: { login: 'author1' }, content }]
           })
         }
@@ -420,8 +420,8 @@ describe('setLabels', () => {
     const github = {
       rest: {
         issues: {
-          addLabels: jest.fn().mockResolvedValue({}),
-          removeLabel: jest.fn().mockResolvedValue({})
+          addLabels: jest.fn<any, any>().mockResolvedValue({}),
+          removeLabel: jest.fn<any, any>().mockResolvedValue({})
         }
       }
     } as any;
@@ -442,8 +442,8 @@ describe('setComment', () => {
     const github = {
       rest: {
         issues: {
-          listComments: jest.fn().mockResolvedValue({ data: [{ id: 500, body: 'sig' }] }),
-          updateComment: jest.fn().mockResolvedValue({})
+          listComments: jest.fn<any, any>().mockResolvedValue({ data: [{ id: 500, body: 'sig' }] }),
+          updateComment: jest.fn<any, any>().mockResolvedValue({})
         }
       }
     } as any;

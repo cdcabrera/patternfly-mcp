@@ -274,7 +274,7 @@ const getCommentId = async (signature, { github, context } = {}) => {
 
     const foundComment = comments.find(comment => comment?.body?.includes(signature));
 
-    commentId = foundComment.id;
+    commentId = foundComment?.id;
   }
 
   return commentId;
