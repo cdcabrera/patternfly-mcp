@@ -19,7 +19,9 @@ See the [Guidelines Index](./README.md#guidelines-index) for a complete list of 
 Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requirements.
 
 - **Unit Tests (`src/__tests__/*.test.ts`)**: Focus on individual module logic, helpers, and creator functions.
-- **E2E Tests (`tests/*.test.ts`)**: Validate full server lifecycle, transport (stdio/http), and tool/resource execution.
+- **E2E Tests (`tests/e2e/*.test.ts`)**: Validate full server lifecycle, transport (stdio/http), and tool/resource execution.
+- **Script Tests (`tests/scripts/*.test.js`)**: Verify GitHub Action scripts and pre-check logic.
+- **Audit Tests (`tests/audit/*.test.ts`)**: Verify documentation links and resource integrity.
 - **Integration Tests (`npm run test:integration`)**: Verify interactions between server components.
 
 ## 2. Testing Principles
@@ -57,6 +59,29 @@ Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requir
 ## 5. Execution
 
 - **Unit Tests**: `npm test`
-- **E2E/Integration**: `npm run test:integration`
+- **E2E Tests**: `npm run test:integration`
+- **Script Tests**: `npm run test:scripts`
+- **Audit Tests**: `npm run test:audit`
 - **Manual Verification**: Use the [MCP Inspector](../docs/development.md#testing-with-mcp-inspector) to manually verify tool and resource behavior.
 - **Coverage**: Ensure new logic is covered by at least one unit test.
+
+## 6. Script and Audit Testing
+
+### 6.1 Script Integrity
+
+Automation scripts in `scripts/` are critical to repository security. Changes to these scripts MUST be accompanied by updates to `tests/scripts/*.test.js`.
+
+**Key areas to test**:
+- Label management logic.
+- Contributor and bot identification.
+- Failure fallback (📡 icon).
+- Informative error messaging.
+
+### 6.2 Data and Resource Audit
+
+The `test:audit` suite ensures the integrity of external documentation links and resource metadata in `src/docs.json`.
+
+**When to run**:
+- When adding new PatternFly documentation links
+- When updating whitelisted domains
+- As part of the daily security check
