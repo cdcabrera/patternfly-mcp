@@ -331,37 +331,33 @@ describe('signatureScan', () => {
 
 describe('getCommentId,', () => {
   it('should return the ID of a comment matching the signature', async () => {
-    const listComments = jest.fn<any>().mockResolvedValue({
-      data: [
-        { id: 101, body: 'some other comment' },
-        { id: 202, body: 'matching signature <!-- metadata-123 -->' }
-      ]
-    } as any);
-
     const github = {
       rest: {
         issues: {
-          listComments: listComments
+          listComments: jest.fn<any>().mockResolvedValue({
+            data: [
+              { id: 101, body: 'some other comment' },
+              { id: 202, body: 'matching signature <!-- metadata-123 -->' }
+            ]
+          })
         }
       }
     };
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
-
     const id = await getCommentId('<!-- metadata-123 -->', { github, context });
 
     expect(id).toBe(202);
   });
 });
 
-/*
 describe('getPullRequest', () => {
   it('should resolve and aggregate PR metadata and resources', async () => {
     const github = {
       rest: {
-        pulls: { listFiles: jest.fn<any, any>().mockResolvedValue({ data: ['file1'] }) },
-        issues: { listComments: jest.fn<any, any>().mockResolvedValue({ data: ['comment1'] }) }
+        pulls: { listFiles: jest.fn<any>().mockResolvedValue({ data: ['file1'] }) },
+        issues: { listComments: jest.fn<any>().mockResolvedValue({ data: ['comment1'] }) }
       }
-    } as any;
+    };
     const context = {
       payload: {
         pull_request: {
@@ -371,33 +367,39 @@ describe('getPullRequest', () => {
           changed_files: 10
         }
       },
-      repo: { owner: 'o', repo: 'r' },
+      repo: { owner: 'lorem', repo: 'ipsum' },
       issue: { number: 1 }
-    } as any;
+    };
 
     const result = await getPullRequest({ github, context });
 
-    expect(result).toEqual(expect.objectContaining({
-      author: 'author1',
-      authorRole: 'MEMBER',
-      fileCount: 10,
-      files: ['file1'],
-      comments: ['comment1']
-    }));
+    expect(result).toMatchSnapshot('pr');
   });
 });
 
 describe('getReactions', () => {
   it.each([
-    { content: '+1', expected: 1 },
-    { content: '-1', expected: -1 },
-    { content: 'heart', expected: 0 }
-  ])('should return $expected for reaction: $content', async ({ content, expected }) => {
+    {
+      description: 'thumbs up',
+      content: '+1',
+      expected: 1
+    },
+    {
+      description: 'thumbs down',
+      content: '-1',
+      expected: -1
+    },
+    {
+      description: 'heart',
+      content: 'heart',
+      expected: 0
+    }
+  ])('should get a reaction: $description', async ({ content, expected }) => {
     const github = {
       rest: {
-        issues: { listComments: jest.fn<any, any>().mockResolvedValue({ data: [{ id: 1, body: 'sig' }] }) },
+        issues: { listComments: jest.fn<any>().mockResolvedValue({ data: [{ id: 1, body: 'sig' }] }) },
         reactions: {
-          listForIssueComment: jest.fn<any, any>().mockResolvedValue({
+          listForIssueComment: jest.fn<any>().mockResolvedValue({
             data: [{ user: { login: 'author1' }, content }]
           })
         }
@@ -405,7 +407,7 @@ describe('getReactions', () => {
     } as any;
     const context = {
       payload: { pull_request: { user: { login: 'author1' } } },
-      repo: { owner: 'o', repo: 'r' },
+      repo: { owner: 'lorem', repo: 'ipsum' },
       issue: { number: 1 }
     } as any;
 
@@ -416,16 +418,16 @@ describe('getReactions', () => {
 });
 
 describe('setLabels', () => {
-  it('should provide methods to add and remove labels atomically', async () => {
+  it('should provide methods to add and remove labels', async () => {
     const github = {
       rest: {
         issues: {
-          addLabels: jest.fn<any, any>().mockResolvedValue({}),
-          removeLabel: jest.fn<any, any>().mockResolvedValue({})
+          addLabels: jest.fn<any>().mockResolvedValue({}),
+          removeLabel: jest.fn<any>().mockResolvedValue({})
         }
       }
-    } as any;
-    const context = { repo: { owner: 'o', repo: 'r' }, issue: { number: 1 } } as any;
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } } as any;
 
     const labels = setLabels({ github, context });
 
@@ -442,21 +444,22 @@ describe('setComment', () => {
     const github = {
       rest: {
         issues: {
-          listComments: jest.fn<any, any>().mockResolvedValue({ data: [{ id: 500, body: 'sig' }] }),
-          updateComment: jest.fn<any, any>().mockResolvedValue({})
+          createComment: jest.fn<any>().mockResolvedValue({}),
+          listComments: jest.fn<any>().mockResolvedValue({ data: [{ id: 500, body: 'matching signature <!-- signature-123 -->' }] }),
+          updateComment: jest.fn<any>().mockResolvedValue({})
         }
       }
-    } as any;
-    const context = { repo: { owner: 'o', repo: 'r' } } as any;
-
-    const comment = await setComment({ signature: 'sig', github, context });
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
 
     await comment.add('new body');
 
-    expect(github.rest.issues.updateComment).toHaveBeenCalledWith(expect.objectContaining({
-      comment_id: 500,
-      body: 'new bodysig'
+    expect(github.rest.issues.createComment.mock).toMatchSnapshot('add');
+
+    expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
+      issue_number: 1,
+      body: 'new body<!-- signature-123 -->'
     }));
   });
 });
-*/

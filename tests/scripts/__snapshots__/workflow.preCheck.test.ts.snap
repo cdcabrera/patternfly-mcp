@@ -1,5 +1,31 @@
 // Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
+exports[`getPullRequest should resolve and aggregate PR metadata and resources: pr 1`] = `
+{
+  "author": "author1",
+  "authorRole": "MEMBER",
+  "authorType": "User",
+  "comments": [
+    "comment1",
+  ],
+  "description": "description",
+  "fileCount": 10,
+  "files": [
+    "file1",
+  ],
+}
+`;
+
+exports[`setComment should update an existing comment if a signature match is found: add 1`] = `
+{
+  "calls": [],
+  "contexts": [],
+  "instances": [],
+  "invocationCallOrder": [],
+  "results": [],
+}
+`;
+
 exports[`signatureScan should scan for signatures, "The Tell" (high impact check) 1`] = `
 {
   "errors": [
