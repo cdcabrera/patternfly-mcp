@@ -16,16 +16,6 @@ exports[`getPullRequest should resolve and aggregate PR metadata and resources: 
 }
 `;
 
-exports[`setComment should update an existing comment if a signature match is found: add 1`] = `
-{
-  "calls": [],
-  "contexts": [],
-  "instances": [],
-  "invocationCallOrder": [],
-  "results": [],
-}
-`;
-
 exports[`signatureScan should scan for signatures, "The Tell" (high impact check) 1`] = `
 {
   "errors": [

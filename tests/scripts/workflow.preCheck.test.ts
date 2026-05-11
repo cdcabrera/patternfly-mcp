@@ -329,7 +329,7 @@ describe('signatureScan', () => {
   });
 });
 
-describe('getCommentId,', () => {
+describe('getCommentId', () => {
   it('should return the ID of a comment matching the signature', async () => {
     const github = {
       rest: {
@@ -445,7 +445,9 @@ describe('setComment', () => {
       rest: {
         issues: {
           createComment: jest.fn<any>().mockResolvedValue({}),
-          listComments: jest.fn<any>().mockResolvedValue({ data: [{ id: 500, body: 'matching signature <!-- signature-123 -->' }] }),
+          listComments: jest.fn<any>().mockResolvedValue({
+            data: [{ id: 500, body: 'matching signature <!-- signature-123 -->' }]
+          }),
           updateComment: jest.fn<any>().mockResolvedValue({})
         }
       }
@@ -455,11 +457,51 @@ describe('setComment', () => {
 
     await comment.add('new body');
 
-    expect(github.rest.issues.createComment.mock).toMatchSnapshot('add');
+    expect(github.rest.issues.updateComment).toHaveBeenCalledWith(expect.objectContaining({
+      comment_id: 500,
+      body: 'new body<!-- signature-123 -->'
+    }));
+    expect(github.rest.issues.createComment).not.toHaveBeenCalled();
+  });
+
+  it('should create a new comment if no signature match is found', async () => {
+    const github = {
+      rest: {
+        issues: {
+          createComment: jest.fn<any>().mockResolvedValue({}),
+          listComments: jest.fn<any>().mockResolvedValue({ data: [] }),
+          updateComment: jest.fn<any>().mockResolvedValue({})
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
+
+    await comment.add('new body');
 
     expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
       issue_number: 1,
       body: 'new body<!-- signature-123 -->'
+    }));
+    expect(github.rest.issues.updateComment).not.toHaveBeenCalled();
+  });
+
+  it('should remove a comment if a signature match is found', async () => {
+    const github = {
+      rest: {
+        issues: {
+          listComments: jest.fn<any>().mockResolvedValue({ data: [{ id: 500, body: '<!-- signature-123 -->' }] }),
+          deleteComment: jest.fn<any>().mockResolvedValue({})
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
+
+    await comment.remove();
+
+    expect(github.rest.issues.deleteComment).toHaveBeenCalledWith(expect.objectContaining({
+      comment_id: 500
     }));
   });
 });
