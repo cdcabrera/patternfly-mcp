@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { jest } from '@jest/globals';
-import { coreContributors } from '../../scripts/workflow.preCheck.js';
+import { coreContributors, coreContributorsBypass } from '../../scripts/workflow.preCheck.js';
 
 describe('coreContributors', () => {
   afterEach(() => {
@@ -120,3 +120,63 @@ describe('coreContributors', () => {
     expect(mockReadFileSyncSpy).toHaveBeenCalledWith(expect.stringContaining('CODEOWNERS'), 'utf8');
   });
 });
+
+describe('coreContributorsBypass', () => {
+  it.each([
+    {
+      description: 'OWNER',
+      body: '/bypass',
+      authorRole: 'OWNER',
+      expected: true
+    },
+    {
+      description: 'OWNER, casing',
+      body: '/BYPASS',
+      authorRole: 'OWNER',
+      expected: true
+    },
+    {
+      description: 'OWNER, casing, spacing, copy',
+      body: '  /BYPASS lorem ipsum dolor sit',
+      authorRole: 'OWNER',
+      expected: true
+    },
+    {
+      description: 'OWNER, casing, spacing, copy with bypass',
+      body: 'lorem ipsum dolor sit /BYPASS',
+      authorRole: 'OWNER',
+      expected: false
+    },
+    {
+      description: 'OWNER, comment',
+      body: 'lorem ipsum dolor sit',
+      authorRole: 'OWNER',
+      expected: false
+    },
+    {
+      description: 'MEMBER',
+      body: '/bypass',
+      authorRole: 'MEMBER',
+      expected: false
+    },
+    {
+      description: 'CONTRIBUTOR',
+      body: '/bypass',
+      authorRole: 'CONTRIBUTOR',
+      expected: false
+    }
+  ])('should handle a bypass command, $description', ({ body, authorRole, expected }) => {
+    const comments = [
+      {
+        body,
+        author_association: authorRole,
+        user: { login: 'some-user' }
+      }
+    ];
+    const result = coreContributorsBypass({ comments });
+
+    expect(result).toBe(expected);
+  });
+});
+
+

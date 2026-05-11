@@ -315,6 +315,15 @@ const setComment = async ({ signature, github, context } = {}) => {
   };
 };
 
+/**
+ * Get a comment's reactions.
+ *
+ * @param config
+ * @param config.signature
+ * @param config.github
+ * @param config.context
+ * @returns {Promise<{authorReaction: number}>}
+ */
 const getReactions = async ({ signature, github, context } = {}) => {
   const { login: author } = context?.payload?.pull_request?.user || {};
   const commentId = await getCommentId(signature, { github, context });
