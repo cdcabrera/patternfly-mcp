@@ -554,6 +554,46 @@ describe('start', () => {
     };
   });
 
+  it('should skip pre-checks for core contributors', async () => {
+    // 1. Simulate an OWNER opening a PR
+    context.payload.pull_request.author_association = 'OWNER';
+
+    await start(config, { github, context, core });
+
+    // 2. Verify that it returned early before any bot comments or labels were added
+    expect(github.rest.issues.createComment).not.toHaveBeenCalled();
+    expect(github.rest.issues.addLabels).not.toHaveBeenCalled();
+    expect(core.setFailed).not.toHaveBeenCalled();
+  });
+
+  it('should acknowledge maintainer bypass command', async () => {
+    // 1. Mock a comment from a maintainer with the /bypass command
+    github.rest.issues.listComments.mockResolvedValue({
+      data: [{
+        body: '/bypass',
+        author_association: 'OWNER',
+        user: { login: 'maintainer-user', type: 'User' }
+      }]
+    });
+
+    await start(config, { github, context, core });
+
+    // 2. Verify the bypass comment was created (acknowledgment)
+    expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
+      body: expect.stringContaining('Bypass acknowledged, standing down!')
+    }));
+
+    // 3. Verify the bypass label was applied
+    expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_PRECHECKS_BYPASS]
+    }));
+
+    // 4. Verify that it stopped before running further quality or agreement checks
+    expect(github.rest.issues.addLabels).not.toHaveBeenCalledWith(expect.objectContaining({
+      labels: [config.LABEL_PRECHECKS_PASS]
+    }));
+  });
+
   it('should block and request a handshake if the contributor agreement is missing', async () => {
     await start(config, { github, context, core });
 
@@ -589,7 +629,7 @@ describe('start', () => {
     }));
   });
 
-  it('should lock automation and apply unconfirmed label if agreement is declined (👎)', async () => {
+  it('should lock automation and apply unconfirmed label if agreement is declined 👎', async () => {
     github.rest.issues.listComments.mockResolvedValue({
       data: [{ id: 1, body: '<!-- precheck-bot-agreement-V1 -->' }]
     });
