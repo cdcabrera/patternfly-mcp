@@ -46,6 +46,33 @@ describe('parseCommitMessage', () => {
         type: undefined,
         description: 'unknown: some message'
       }
+    },
+    {
+      description: 'issue number parsing',
+      message: 'feat(ui)!: issues/123 breaking change',
+      expected: {
+        type: 'feat',
+        description: 'issues/123 breaking change',
+        issueNumber: 'issues/123'
+      }
+    },
+    {
+      description: 'issue number parsing, misplaced',
+      message: 'feat(ui): a change issues/123',
+      expected: {
+        type: 'feat',
+        description: 'a change issues/123',
+        issueNumber: undefined
+      }
+    },
+    {
+      description: 'issue number parsing, jira',
+      message: 'feat(ui): jira-12345 a change',
+      expected: {
+        type: 'feat',
+        description: 'jira-12345 a change',
+        issueNumber: 'jira-12345'
+      }
     }
   ])('should parse $description', ({ message, expected }) => {
     const result = parseCommitMessage({ hash: 'abc1234', message }, MESSAGE_TYPES);
@@ -73,7 +100,7 @@ describe('messagesList', () => {
       }
     },
     {
-      description: 'BUG: validation masking (should show issue number error even if type is invalid)',
+      description: 'validation masking show issue number error even if type is invalid',
       parsed: [{
         type: undefined,
         scope: 'any',
@@ -82,14 +109,14 @@ describe('messagesList', () => {
         hash: 'abc1234',
         message: 'foo(any): no issue here'
       }],
-      options: { typeScopeExceptions: [], issueNumberExceptions: [] },
+      options: { typeScopeExceptions: [], issueNumberExceptions: ['feat'] },
       expected: {
         type: expect.stringContaining('INVALID: type'),
         issueNumber: expect.stringContaining('INVALID: issue number')
       }
     },
     {
-      description: 'BUG: brittle issue number regex (should allow issue number anywhere in description)',
+      description: 'issue number should not allow issue number anywhere in description)',
       parsed: [{
         type: 'feat',
         scope: 'any',
@@ -114,7 +141,23 @@ describe('messagesList', () => {
       }],
       options: { maxMessageLength: 50 },
       expected: {
-        length: 'INVALID: message length (100 > 50)'
+        length: 'INVALID: message length (100 > 50).'
+      }
+    },
+    {
+      description: 'message length validation, pr and issue number',
+      parsed: [{
+        type: 'feat',
+        description: 'issues/123 very long description',
+        messageLength: 100,
+        hash: 'abc1234',
+        message: 'feat: issues/123 very long description (#123)',
+        issueNumber: 'issues/123',
+        prNumber: '123'
+      }],
+      options: { maxMessageLength: 50 },
+      expected: {
+        length: 'INVALID: message length (100 > 50). PRs do not count towards message length. Issue numbers do not count towards message length.'
       }
     },
     {

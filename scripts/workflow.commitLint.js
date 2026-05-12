@@ -45,6 +45,13 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
     description = descriptionEtAll.replace(/\s\(#(\d+)\)$/, '').trim();
   }
 
+  const issueNumberMatch = description.match(/(^[a-zA-Z]+[/-]+[0-9]+)/);
+  let issueNumber = undefined;
+
+  if (issueNumberMatch) {
+    issueNumber = issueNumberMatch[1];
+  }
+
   const typeScope = baseTypeScope.replace(/!$/, '').trim();
   let type = typeScope;
   let scope = '';
@@ -62,6 +69,7 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
     type: messageTypes.includes(type) && type ? type : undefined,
     scope: scope.split(')')[0] || undefined,
     description,
+    issueNumber,
     prNumber,
     isBreaking: /!$/.test(baseTypeScope)
   };
@@ -69,6 +77,12 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
   if (!output.type || (output.type && !descriptionEtAll?.length)) {
     const descriptionEtAllFallback = message.trim().split(/\s/);
     const [descriptionFallback, ...partialPrFallback] = descriptionEtAllFallback.join(' ').trim().split(/\(#/);
+    const issueNumberMatchFallback = descriptionFallback.match(/(^[a-zA-Z]+[/-]+[0-9]+)/);
+    let issueNumberFallback = undefined;
+
+    if (issueNumberMatchFallback) {
+      issueNumberFallback = issueNumberMatchFallback[1];
+    }
 
     output = {
       hash,
@@ -76,6 +90,7 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
       type: undefined,
       scope: undefined,
       description: descriptionFallback.trim(),
+      issueNumber: issueNumberFallback,
       prNumber: (partialPrFallback.join('(#').trim() || '').replace(/\D/g, '') || undefined,
       isBreaking: undefined
     };
@@ -120,7 +135,7 @@ const messagesList = (
   } = {}
 ) =>
   parsedMessages.map(
-    ({ messageLength = 0, type = null, scope = null, description = null, message = null, hash = null }) => {
+    ({ messageLength = 0, type = null, scope = null, description = null, message = null, hash = null, issueNumber = null, prNumber = null }) => {
       const typeValid =
         (type && 'valid') || 'INVALID: type (expected known types and format "<type>:" or "<type>(<scope>):")';
 
@@ -139,19 +154,19 @@ const messagesList = (
         issueNumberException = issueNumberExceptions.includes(type);
       }
 
-      const isIssueNumber = /(^[a-zA-Z]+[/-]+[0-9]+)/.test(description);
-      // Note: skip issueNumber validation if typeValid fails, this is on purpose
       const issueNumberValid =
-        (typeValid !== 'valid' && 'valid') ||
         (issueNumberException && 'valid') ||
-        (isIssueNumber && 'valid') ||
-        'INVALID: issue number (expected format "<desc>/<number>" or "<desc>-<number>")';
+        (issueNumber && 'valid') ||
+        'INVALID: issue number (expected format "<desc>/<number>" or "<desc>-<number>" at beginning of description)';
 
       const descriptionValid = (description && 'valid') || 'INVALID: description (missing description)';
 
+      const adjustedMaxMessageLength = issueNumber ? issueNumber.length + 1 + maxMessageLength : maxMessageLength;
       const lengthValid =
-        (messageLength <= maxMessageLength && 'valid') ||
-        `INVALID: message length (${messageLength} > ${maxMessageLength})`;
+        (messageLength <= adjustedMaxMessageLength && 'valid') ||
+        `INVALID: message length (${messageLength} > ${maxMessageLength}).${
+          prNumber ? ' PRs do not count towards message length.' : ''}${
+          issueNumber ? ' Issue numbers do not count towards message length.' : ''}`;
 
       return {
         hash,
