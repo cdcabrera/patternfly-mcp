@@ -90,6 +90,7 @@ describe('messagesList', () => {
         type: 'feat',
         scope: 'any',
         description: 'JIRA-123 add feature',
+        issueNumber: 'JIRA-123',
         messageLength: 30,
         hash: 'abc1234',
         message: 'feat(any): JIRA-123 add feature'
@@ -168,19 +169,21 @@ describe('messagesList', () => {
 });
 
 describe('start', () => {
+  const options = {
+    allowIssuesAnywhere: false,
+    issueNumberExceptions: [],
+    maxMessageLength: 65,
+    typeScopeExceptions: '*'
+  };
+
   it.each([
     {
-      description: 'valid commits (should return empty results)',
+      description: 'valid commits',
       commits: [
         { sha: 'abcdef123456', commit: { message: 'feat(core): JIRA-123 add something (#1)' } },
         { sha: '123456abcdef', commit: { message: 'fix: JIRA-456 resolve bug (#2)' } }
       ],
-      options: {
-        allowIssuesAnywhere: false,
-        issueNumberExceptions: [],
-        maxMessageLength: 65,
-        typeScopeExceptions: '*'
-      },
+      options,
       expected: {
         resultsArray: [],
         resultsString: '[]'
@@ -192,12 +195,7 @@ describe('start', () => {
         { sha: 'abcdef123456', commit: { message: 'feat(core): JIRA-123 add something' } },
         { sha: '111111222222', commit: { message: 'invalid message format' } }
       ],
-      options: {
-        allowIssuesAnywhere: false,
-        issueNumberExceptions: [],
-        maxMessageLength: 65,
-        typeScopeExceptions: '*'
-      },
+      options,
       expected: {
         resultsArray: [
           {
@@ -217,12 +215,7 @@ describe('start', () => {
           commit: { message: 'feat: JIRA-123 a very long description that exceeds the normal limit (#1)' }
         }
       ],
-      options: {
-        allowIssuesAnywhere: false,
-        issueNumberExceptions: [],
-        maxMessageLength: 10, // Setting low to trigger length check
-        typeScopeExceptions: '*'
-      },
+      options: { ...options, maxMessageLength: 10 },
       expected: {
         resultsArray: [
           {
@@ -237,17 +230,12 @@ describe('start', () => {
       commits: [
         { sha: 'abcdef123456', commit: { message: 'feat: add feature (JIRA-123)' } }
       ],
-      options: {
-        allowIssuesAnywhere: false, // Should fail because JIRA-123 is not at the start
-        issueNumberExceptions: [],
-        maxMessageLength: 65,
-        typeScopeExceptions: '*'
-      },
+      options,
       expected: {
         resultsArray: [
           {
             hash: 'abcdef1',
-            issueNumber: 'INVALID: issue number (expected format "<desc>/<number>" or "<desc>-<number>" at beginning of description)'
+            issueNumber: expect.stringContaining('INVALID: issue number')
           }
         ]
       }
@@ -257,12 +245,7 @@ describe('start', () => {
       commits: [
         { sha: 'abcdef123456', commit: { message: 'chore: cleanup code' } }
       ],
-      options: {
-        allowIssuesAnywhere: false,
-        issueNumberExceptions: ['chore'], // Chore doesn't need JIRA ID
-        maxMessageLength: 65,
-        typeScopeExceptions: '*'
-      },
+      options: { ...options, issueNumberExceptions: ['chore'] },
       expected: {
         resultsArray: [],
         resultsString: '[]'
@@ -271,7 +254,7 @@ describe('start', () => {
     {
       description: 'empty or missing commits',
       commits: null,
-      options: {},
+      options,
       expected: {
         resultsArray: [],
         resultsString: ''

@@ -124,18 +124,17 @@ const messagesList = (
       const typeValid =
         (type && 'valid') || 'INVALID: type (expected known types and format "<type>:" or "<type>(<scope>):")';
 
-      let scopeException = !typeScopeExceptions || !typeScopeExceptions?.length || typeScopeExceptions === '*';
+      let scopeException = !typeScopeExceptions || typeScopeExceptions === '*';
 
-      if (!scopeException && Array.isArray(typeScopeExceptions)) {
+      if (!scopeException && Array.isArray(typeScopeExceptions) && typeScopeExceptions.length > 0) {
         scopeException = typeScopeExceptions.includes(type);
       }
 
       const scopeValid = (scopeException && 'valid') || (scope && 'valid') || 'INVALID: scope';
 
-      let issueNumberException =
-        !issueNumberExceptions || !issueNumberExceptions?.length || issueNumberExceptions === '*';
+      let issueNumberException = !issueNumberExceptions || issueNumberExceptions === '*';
 
-      if (!issueNumberException && Array.isArray(issueNumberExceptions)) {
+      if (!issueNumberException && Array.isArray(issueNumberExceptions) && issueNumberExceptions.length > 0) {
         issueNumberException = issueNumberExceptions.includes(type);
       }
 
