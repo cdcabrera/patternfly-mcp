@@ -20,7 +20,7 @@ Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requir
 
 - **Unit Tests (`src/__tests__/*.test.ts`)**: Focus on individual module logic, helpers, and creator functions.
 - **E2E Tests (`tests/e2e/*.test.ts`)**: Validate full server lifecycle, transport (stdio/http), and tool/resource execution.
-- **Script Tests (`tests/scripts/*.test.js`)**: Verify GitHub Action scripts and pre-check logic.
+- **Script Tests (`tests/scripts/*.test.ts`)**: Verify GitHub Action scripts and pre-check logic.
 - **Audit Tests (`tests/audit/*.test.ts`)**: Verify documentation links and resource integrity.
 - **Integration Tests (`npm run test:integration`)**: Verify interactions between server components.
 
@@ -69,7 +69,7 @@ Refer to [testing standards](../CONTRIBUTING.md#testing) for project-wide requir
 
 ### 6.1 Script Integrity
 
-Automation scripts in `scripts/` are critical to repository security. Changes to these scripts MUST be accompanied by updates to `tests/scripts/*.test.js`.
+Automation scripts in `scripts/` are critical to repository security. Changes to these scripts MUST be accompanied by updates to `tests/scripts/*.test.ts`.
 
 **Key areas to test**:
 - Label management logic.
