@@ -80,48 +80,9 @@ describe('coreContributors', () => {
         author: 'dolor-sit-user'
       },
       expected: false
-    },
-    {
-      description: 'codeowner with comma delimiter',
-      account: '@other, @lorem',
-      params: {
-        author: 'lorem',
-        authorRole: 'MEMBER',
-        authorType: 'User'
-      },
-      expected: true
-    },
-    {
-      description: 'codeowner with parentheses',
-      account: '(@lorem) @other',
-      params: {
-        author: 'lorem',
-        authorRole: 'MEMBER',
-        authorType: 'User'
-      },
-      expected: true
-    },
-    {
-      description: 'prevent partial name match (suffix)',
-      account: '@lorem-suffix',
-      params: {
-        author: 'lorem',
-        authorRole: 'MEMBER',
-        authorType: 'User'
-      },
-      expected: false
-    },
-    {
-      description: 'prevent partial name match (prefix)',
-      account: 'prefix-@lorem',
-      params: {
-        author: 'lorem',
-        authorRole: 'MEMBER',
-        authorType: 'User'
-      },
-      expected: false
     }
-  ])('should handle authors, $description', ({ params, expected }) => {
+  ])('should handle actual authors, $description', ({ params, expected }) => {
+    // This is a live test against the actual CODEOWNERS file
     const result = coreContributors(params);
 
     expect(result).toBe(expected);
@@ -159,8 +120,40 @@ describe('coreContributors', () => {
         author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
       },
       expected: false
+    },
+    {
+      description: 'codeowner with comma delimiter',
+      account: '@other, @lorem',
+      params: {
+        author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'codeowner with parentheses',
+      account: '(@lorem) @other',
+      params: {
+        author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'prevent partial name match (suffix)',
+      account: '@lorem-suffix',
+      params: {
+        author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
+      },
+      expected: false
+    },
+    {
+      description: 'prevent partial name match (prefix)',
+      account: 'prefix-@lorem',
+      params: {
+        author: 'lorem', authorRole: 'MEMBER', authorType: 'User'
+      },
+      expected: false
     }
-  ])('should verify authors against CODEOWNERS file, $description', ({ account, params, expected }) => {
+  ])('should verify simulated authors against a simulated CODEOWNERS file, $description', ({ account, params, expected }) => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mockReadFileSyncSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(account ? `package*.json ${account} @dolor-sit` : 'package*.json @dolor-sit');
     const result = coreContributors(params);
