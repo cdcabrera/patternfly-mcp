@@ -59,6 +59,7 @@ describe('parseCommitMessage', () => {
     {
       description: 'issue number parsing, misplaced',
       message: 'feat(ui): a change issues/123',
+      settings: { allowIssuesAnywhere: false },
       expected: {
         type: 'feat',
         description: 'a change issues/123',
@@ -74,8 +75,8 @@ describe('parseCommitMessage', () => {
         issueNumber: 'jira-12345'
       }
     }
-  ])('should parse $description', ({ message, expected }) => {
-    const result = parseCommitMessage({ hash: 'abc1234', message }, MESSAGE_TYPES);
+  ])('should parse $description', ({ message, settings, expected }) => {
+    const result = parseCommitMessage({ hash: 'abc1234', message }, { messageTypes: MESSAGE_TYPES, ...settings } as any);
 
     expect(result).toMatchObject(expected);
   });

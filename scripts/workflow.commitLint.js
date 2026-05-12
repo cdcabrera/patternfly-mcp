@@ -22,19 +22,22 @@ const MESSAGE_TYPES = [
  * Parse a commit message
  *
  * @param {object} params
- * @param {string} params.hash
- * @param {string} params.message
- * @param {Array} messageTypes
+ * @param {string} params.hash - Commit hash
+ * @param {string} params.message - Original commit message, typically the first line.
+ * @param {object} settings - Function settings
+ * @param {Array<string>} settings.messageTypes - List of available conventional commit types.
+ * @param {boolean} settings.allowIssuesAnywhere - Allow issue numbers to appear anywhere. Setting to `false`
+ *     limits the message placement to the beginning of the description.
  * @returns {{scope: string, description: string, type: string, prNumber: string, hash: string,
  *     typeScope: string, isBreaking: boolean, original: string, message: string, length: number}}
  */
-const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => {
+const parseCommitMessage = ({ hash, message }, { messageTypes = MESSAGE_TYPES, allowIssuesAnywhere = true } = {}) => {
   let output;
 
   const trimmedMessage = message.trim();
   const firstColonIndex = trimmedMessage.indexOf(':');
-  const baseTypeScope = trimmedMessage.substring(0, firstColonIndex);
-  const descriptionEtAll = trimmedMessage.substring(firstColonIndex + 1).trim();
+  const baseTypeScope = firstColonIndex > -1 ? trimmedMessage.substring(0, firstColonIndex) : '';
+  const descriptionEtAll = firstColonIndex > -1 ? trimmedMessage.substring(firstColonIndex + 1).trim() : trimmedMessage;
   const prMatch = descriptionEtAll.match(/\s\(#(\d+)\)$/);
 
   let prNumber = undefined;
@@ -45,11 +48,11 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
     description = descriptionEtAll.replace(/\s\(#(\d+)\)$/, '').trim();
   }
 
-  const issueNumberMatch = description.match(/(^[a-zA-Z]+[/-]+[0-9]+)/);
+  const issueNumberMatch = allowIssuesAnywhere ? description.match(/([a-zA-Z]+[/-]+[0-9]+)/) : description.match(/(^[a-zA-Z]+[/-]+[0-9]+)/);
   let issueNumber = undefined;
 
   if (issueNumberMatch) {
-    issueNumber = issueNumberMatch[1];
+    issueNumber = issueNumberMatch[0];
   }
 
   const typeScope = baseTypeScope.replace(/!$/, '').trim();
@@ -174,7 +177,7 @@ const start = commits => {
       .map(({ sha, commit } = {}) => parseCommitMessage({
         hash: sha.substring(0, 7),
         message: (commit.message || 'empty').split('\n')[0]
-      }));
+      }, { allowIssuesAnywhere: false }));
     let filteredResults = messagesList(updatedCommits);
 
     filteredResults.forEach(obj => {
