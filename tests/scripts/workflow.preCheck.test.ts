@@ -443,7 +443,7 @@ describe('start', () => {
     };
     core = { setFailed: jest.fn(), log: jest.fn() };
     config = {
-      LABEL_PRECHECKS_PASS: 'bot:ready-for-testing',
+      LABEL_PRECHECKS_PASS: 'bot:policy-ready',
       LABEL_NEEDS_CLEANUP: 'bot:needs-cleanup',
       LABEL_NEEDS_MAINTAINER: 'bot:needs-maintainer'
     };
