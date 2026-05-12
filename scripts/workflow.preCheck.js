@@ -153,23 +153,23 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     const errors = [];
 
     if (isMaxFilesUpdated === true) {
-      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.`);
+      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). **Resolution:** Please reduce the scope of these changes by splitting them into smaller, more focused PR contributions. If no issue exists your PR will be delayed for review, and may be closed.`);
     }
 
     if (isCoreModified) {
-      errors.push(`⚠️ I detected core file modifications (${coreModified.join(', ')}). These changes usually require a bit more planning—check the guidelines for details.`);
+      errors.push(`⚠️ I detected core file modifications. Updates to core files require an associated issue (${coreModified.join(', ')}). **Resolution:** Please link an issue in your PR description. If no issue exists your PR will be delayed for review, and may be closed.`);
     }
 
     if (isExtraModified) {
-      errors.push(`⚠️ I've found extras in your updates that may not be required (${extraModified.join(', ')}).`);
+      errors.push(`⚠️ I've found extra file updates. You may be attempting to tailor the codebase to your workflow (${extraModified.join(', ')}). **Resolution:** Please align to the codebase style and remove these changes. You can also provide an explanation in your PR description but expect a delay in review.`);
     }
 
     if (isAgentModified) {
-      errors.push(`⚠️ I found local agent modifications in your changes (${agentModified.join(', ')}). These changes require a core contributor's involvement.`);
+      errors.push(`⚠️ I found local agent modifications in your changes (${agentModified.join(', ')}). **Resolution:** Changes to agent guidelines require maintainer approval. Please remove these changes unless instructed otherwise.`);
     }
 
     if (isSecModified) {
-      errors.push(`⚠️ I've found updates that may require a core contributor's involvement (${secModified.join(', ')}). I'll make sure they know.`);
+      errors.push(`⚠️ I've found updates that may require a core contributor's involvement (${secModified.join(', ')}). **Resolution:** A core contributor must review these changes. You can remove these changes, or provide an explanation in your PR description and expect a delay in review.`);
     }
 
     return {
