@@ -152,8 +152,12 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     // Aggregate errors
     const errors = [];
 
+    if (isPrTemplateModified === true) {
+      errors.push(`⚠️ Pull Request template metadata is missing. **Resolution:** Please ensure you are using the official [Pull Request template](https://github.com/patternfly/patternfly-mcp/blob/main/.github/PULL_REQUEST_TEMPLATE.md). The template provides a consistent way to parse your updates.`);
+    }
+
     if (isMaxFilesUpdated === true) {
-      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). **Resolution:** Please reduce the scope of these changes by splitting them into smaller, more focused PR contributions. If no issue exists your PR will be delayed for review, and may be closed.`);
+      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). **Resolution:** Please reduce the scope of these changes by splitting them into smaller, more focused PR contributions.`);
     }
 
     if (isCoreModified) {
