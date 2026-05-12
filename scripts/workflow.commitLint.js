@@ -175,7 +175,7 @@ const messagesList = (
  * @param {number} options.maxMessageLength - See `messagesList` for behavior.
  * @param {Array<string>|string|undefined} options.typeScopeExceptions - See `messagesList` for behavior.
  * @returns {{resultsArray: Array<object>, resultsString: string}} Return linting results
- *    - `resultsArray`: An array of objects representing the validated parts of the message.
+ *    - `resultsArray`: An array of objects representing the "error validated" parts of the message.
  *    - `resultsString`: A `JSON.stringify` version of the `resultsArray` for display.
  */
 const start = (commits, { allowIssuesAnywhere, issueNumberExceptions, maxMessageLength, typeScopeExceptions } = {}) => {
