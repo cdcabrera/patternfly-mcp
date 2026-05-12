@@ -176,7 +176,7 @@ const messagesList = (
  *    - `resultsArray`: An array of objects representing the validated parts of the message.
  *    - `resultsString`: A `JSON.stringify` version of the `resultsArray` for display.
  */
-const start = (commits, { allowIssuesAnywhere, issueNumberExceptions, maxMessageLength, typeScopeExceptions = '*' } = {}) => {
+const start = (commits, { allowIssuesAnywhere, issueNumberExceptions, maxMessageLength, typeScopeExceptions } = {}) => {
   const lintResults = { resultsArray: [], resultsString: '' };
 
   if (commits) {

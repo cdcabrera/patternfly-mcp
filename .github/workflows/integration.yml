@@ -75,6 +75,7 @@ jobs:
                   allowIssuesAnywhere: false,
                   issueNumberExceptions: ['build', 'chore', 'ci', 'docs', 'fix', 'perf', 'refactor', 'test'],
                   maxMessageLength: 65,
+                  typeScopeExceptions = '*'
                 });
 
               if (resultsArray.length) {
