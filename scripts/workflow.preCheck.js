@@ -29,10 +29,14 @@ const coreContributors = ({ author, authorType, authorRole } = {}, { allowBots =
     }
 
     const content = fs.readFileSync(filePath, 'utf8');
+    const isAvailable = content
+      .split(/[\s,()]+/)
+      .filter(Boolean)
+      .includes(`@${author}`);
 
-    if (content.includes(`@${author}`)) {
-    // if (new RegExp(`@${author}\\b`).test(content)) {
+    if (isAvailable) {
       isCodeOwner = true;
+      break;
     }
   }
 

@@ -80,6 +80,46 @@ describe('coreContributors', () => {
         author: 'dolor-sit-user'
       },
       expected: false
+    },
+    {
+      description: 'codeowner with comma delimiter',
+      account: '@other, @lorem',
+      params: {
+        author: 'lorem',
+        authorRole: 'MEMBER',
+        authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'codeowner with parentheses',
+      account: '(@lorem) @other',
+      params: {
+        author: 'lorem',
+        authorRole: 'MEMBER',
+        authorType: 'User'
+      },
+      expected: true
+    },
+    {
+      description: 'prevent partial name match (suffix)',
+      account: '@lorem-suffix',
+      params: {
+        author: 'lorem',
+        authorRole: 'MEMBER',
+        authorType: 'User'
+      },
+      expected: false
+    },
+    {
+      description: 'prevent partial name match (prefix)',
+      account: 'prefix-@lorem',
+      params: {
+        author: 'lorem',
+        authorRole: 'MEMBER',
+        authorType: 'User'
+      },
+      expected: false
     }
   ])('should handle authors, $description', ({ params, expected }) => {
     const result = coreContributors(params);
