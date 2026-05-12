@@ -76,37 +76,6 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
     isBreaking: isType ? /!$/.test(baseTypeScope) : undefined
   };
 
-  if (!output.type || (output.type && !descriptionEtAll?.length)) {
-    const descriptionEtAllFallback = message.trim();
-    const prMatchFallback = descriptionEtAllFallback.match(/\s\(#(\d+)\)$/);
-
-    let prNumberFallback = undefined;
-    let descriptionFallback = descriptionEtAllFallback;
-
-    if (prMatchFallback) {
-      prNumberFallback = prMatchFallback[1];
-      descriptionFallback = descriptionEtAllFallback.replace(/\s\(#(\d+)\)$/, '').trim();
-    }
-
-    const issueNumberMatchFallback = descriptionFallback.match(/(^[a-zA-Z]+[/-]+[0-9]+)/);
-    let issueNumberFallback = undefined;
-
-    if (issueNumberMatchFallback) {
-      issueNumberFallback = issueNumberMatchFallback[1];
-    }
-
-    output = {
-      hash,
-      typeScope: undefined,
-      type: undefined,
-      scope: undefined,
-      description: descriptionFallback.trim(),
-      issueNumber: issueNumberFallback,
-      prNumber: prNumberFallback,
-      isBreaking: undefined
-    };
-  }
-
   const updatedMessage = [
     `${output.typeScope || ''}${(output.isBreaking && '!') || ''}${(output.typeScope && ':') || ''}`,
     output.description
