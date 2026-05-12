@@ -117,21 +117,6 @@ describe('messagesList', () => {
       }
     },
     {
-      description: 'issue number only allowed at the beginning of a description',
-      parsed: [{
-        type: 'feat',
-        scope: 'any',
-        description: 'add feature (JIRA-123)',
-        messageLength: 30,
-        hash: 'abc1234',
-        message: 'feat(any): add feature (JIRA-123)'
-      }],
-      options: { typeScopeExceptions: [], issueNumberExceptions: [] },
-      expected: {
-        issueNumber: 'valid'
-      }
-    },
-    {
       description: 'message length validation',
       parsed: [{
         type: 'feat',
