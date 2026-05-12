@@ -239,7 +239,7 @@ const setLabels = ({ github, context } = {}) => {
 };
 
 /**
- * Get an ID from an issue number.
+ * Get a comment ID from an issue number using a signature.
  *
  * @param signature
  * @param config

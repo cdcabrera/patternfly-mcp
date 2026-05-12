@@ -27,9 +27,10 @@ const MESSAGE_TYPES = [
  * @param {object} settings - Function settings
  * @param {Array<string>} settings.messageTypes - List of available conventional commit types.
  * @param {boolean} settings.allowIssuesAnywhere - Allow issue numbers to appear anywhere. Setting to `false`
- *     limits the message placement to the beginning of the description.
+ *     limits the issue number placement to the beginning of the description.
  * @returns {{scope: string, description: string, type: string, prNumber: string, hash: string,
- *     typeScope: string, isBreaking: boolean, original: string, message: string, length: number}}
+ *     typeScope: string, isBreaking: boolean, original: string, message: string, messageLength: number,
+ *     issueNumber: string}}
  */
 const parseCommitMessage = ({ hash, message }, { messageTypes = MESSAGE_TYPES, allowIssuesAnywhere = true } = {}) => {
   let output;
@@ -168,7 +169,7 @@ const messagesList = (
 /**
  * If commits exist, lint them.
  *
- * @param {Array<string>} commits
+ * @param {Array<object>} commits
  * @param {object} options - Configuration
  * @param {boolean} options.allowIssuesAnywhere - See `parseCommitMessage` for behavior.
  * @param {Array<string>} options.issueNumberExceptions - See `messagesList` for behavior.
@@ -195,6 +196,7 @@ const start = (commits, { allowIssuesAnywhere, issueNumberExceptions, maxMessage
       typeScopeExceptions
     });
 
+    // Mutate and filter valid commits out
     filteredResults.forEach(obj => {
       const updatedObj = obj;
 
