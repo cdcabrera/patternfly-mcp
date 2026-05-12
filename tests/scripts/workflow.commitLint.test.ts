@@ -1,4 +1,4 @@
-import { parseCommitMessage, messagesList, MESSAGE_TYPES } from '../../scripts/workflow.commitLint.js';
+import { messagesList, MESSAGE_TYPES, parseCommitMessage, start } from '../../scripts/workflow.commitLint.js';
 
 describe('parseCommitMessage', () => {
   it.each([
@@ -164,5 +164,127 @@ describe('messagesList', () => {
     const results = messagesList(parsed, options as any);
 
     expect(results[0]).toMatchObject(expected);
+  });
+});
+
+describe('start', () => {
+  it.each([
+    {
+      description: 'valid commits (should return empty results)',
+      commits: [
+        { sha: 'abcdef123456', commit: { message: 'feat(core): JIRA-123 add something (#1)' } },
+        { sha: '123456abcdef', commit: { message: 'fix: JIRA-456 resolve bug (#2)' } }
+      ],
+      options: {
+        allowIssuesAnywhere: false,
+        issueNumberExceptions: [],
+        maxMessageLength: 65,
+        typeScopeExceptions: '*'
+      },
+      expected: {
+        resultsArray: [],
+        resultsString: '[]'
+      }
+    },
+    {
+      description: 'mixed valid and invalid commits',
+      commits: [
+        { sha: 'abcdef123456', commit: { message: 'feat(core): JIRA-123 add something' } },
+        { sha: '111111222222', commit: { message: 'invalid message format' } }
+      ],
+      options: {
+        allowIssuesAnywhere: false,
+        issueNumberExceptions: [],
+        maxMessageLength: 65,
+        typeScopeExceptions: '*'
+      },
+      expected: {
+        resultsArray: [
+          {
+            hash: '1111112',
+            commit: 'invalid message format',
+            type: expect.stringContaining('INVALID: type'),
+            issueNumber: expect.stringContaining('INVALID: issue number')
+          }
+        ]
+      }
+    },
+    {
+      description: 'enforcing max message length with metadata bypass',
+      commits: [
+        {
+          sha: 'abcdef123456',
+          commit: { message: 'feat: JIRA-123 a very long description that exceeds the normal limit (#1)' }
+        }
+      ],
+      options: {
+        allowIssuesAnywhere: false,
+        issueNumberExceptions: [],
+        maxMessageLength: 10, // Setting low to trigger length check
+        typeScopeExceptions: '*'
+      },
+      expected: {
+        resultsArray: [
+          {
+            hash: 'abcdef1',
+            length: expect.stringContaining('INVALID: message length')
+          }
+        ]
+      }
+    },
+    {
+      description: 'handling allowIssuesAnywhere toggle',
+      commits: [
+        { sha: 'abcdef123456', commit: { message: 'feat: add feature (JIRA-123)' } }
+      ],
+      options: {
+        allowIssuesAnywhere: false, // Should fail because JIRA-123 is not at the start
+        issueNumberExceptions: [],
+        maxMessageLength: 65,
+        typeScopeExceptions: '*'
+      },
+      expected: {
+        resultsArray: [
+          {
+            hash: 'abcdef1',
+            issueNumber: 'INVALID: issue number (expected format "<desc>/<number>" or "<desc>-<number>" at beginning of description)'
+          }
+        ]
+      }
+    },
+    {
+      description: 'respecting issueNumberExceptions',
+      commits: [
+        { sha: 'abcdef123456', commit: { message: 'chore: cleanup code' } }
+      ],
+      options: {
+        allowIssuesAnywhere: false,
+        issueNumberExceptions: ['chore'], // Chore doesn't need JIRA ID
+        maxMessageLength: 65,
+        typeScopeExceptions: '*'
+      },
+      expected: {
+        resultsArray: [],
+        resultsString: '[]'
+      }
+    },
+    {
+      description: 'empty or missing commits',
+      commits: null,
+      options: {},
+      expected: {
+        resultsArray: [],
+        resultsString: ''
+      }
+    }
+  ])('should handle $description', ({ commits, options, expected }) => {
+    const result = start(commits as any, options as any);
+
+    if (expected.resultsArray) {
+      expect(result.resultsArray).toMatchObject(expected.resultsArray);
+    }
+    if (expected.resultsString !== undefined) {
+      expect(result.resultsString).toBe(expected.resultsString);
+    }
   });
 });
