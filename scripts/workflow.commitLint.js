@@ -54,7 +54,7 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
 
   const typeScope = baseTypeScope.replace(/!$/, '').trim();
   let type = typeScope;
-  let scope = '';
+  let scope = undefined;
 
   if (typeScope.includes('(')) {
     const [splitType, splitScope] = typeScope.split('(');
@@ -63,15 +63,17 @@ const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => 
     scope = splitScope?.split(')')?.[0]?.trim();
   }
 
+  const isType = messageTypes.includes(type) && type;
+
   output = {
     hash,
-    typeScope: typeScope || undefined,
-    type: messageTypes.includes(type) && type ? type : undefined,
-    scope: scope.split(')')[0] || undefined,
-    description,
+    typeScope: isType ? typeScope : undefined,
+    type: isType ? type : undefined,
+    scope: isType ? scope : undefined,
+    description: isType ? description : trimmedMessage,
     issueNumber,
     prNumber,
-    isBreaking: /!$/.test(baseTypeScope)
+    isBreaking: isType ? /!$/.test(baseTypeScope) : undefined
   };
 
   if (!output.type || (output.type && !descriptionEtAll?.length)) {
