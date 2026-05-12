@@ -54,24 +54,24 @@ jobs:
         with:
           script: |
             const path = require('path');
-            let workflowCommitLint;
+            let startFn;
             try {
               const scriptPath = path.resolve(process.env.GITHUB_WORKSPACE, 'scripts', 'workflow.commitLint.js');
               const module = await import(scriptPath);
-              workflowCommitLint = module.workflowCommitLint || module.default;
+              startFn = module.start || module.default;
             } catch (err) {
               console.error('Lint loading error.', err?.message || err);
               core.setFailed('Lint loading error. File is missing or unreadable. Has the file been checked in?');
             }
 
-            if (workflowCommitLint) {
+            if (startFn) {
               const { data: commits } = await github.rest.pulls.listCommits({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: context.issue.number,
               });
 
-              const { resultsArray, resultsString } = workflowCommitLint(commits);
+              const { resultsArray, resultsString } = startFn(commits);
 
               if (resultsArray.length) {
                 core.setFailed(resultsString);

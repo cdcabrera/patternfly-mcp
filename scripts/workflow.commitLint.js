@@ -4,7 +4,7 @@
  *
  * @type {Array<string>}
  */
-const availableMessageTypes = [
+const MESSAGE_TYPES = [
   'feat',
   'fix',
   'docs',
@@ -28,7 +28,7 @@ const availableMessageTypes = [
  * @returns {{scope: string, description: string, type: string, prNumber: string, hash: string,
  *     typeScope: string, isBreaking: boolean, original: string, message: string, length: number}}
  */
-const parseCommitMessage = ({ hash, message }, messageTypes = availableMessageTypes) => {
+const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => {
   let output;
 
   const [baseTypeScope, ...descriptionEtAll] = message.trim().split(/:/);
@@ -154,7 +154,7 @@ const messagesList = (
  * @param {string} commits
  * @returns {{resultsArray: Array, resultsString: string}}
  */
-const workflowCommitLint = commits => {
+const start = commits => {
   const lintResults = { resultsArray: [], resultsString: '' };
 
   if (commits) {
@@ -184,4 +184,4 @@ const workflowCommitLint = commits => {
   return lintResults;
 };
 
-export { workflowCommitLint as default, workflowCommitLint };
+export { messagesList, parseCommitMessage, start, MESSAGE_TYPES };
