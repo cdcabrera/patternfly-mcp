@@ -116,7 +116,7 @@ describe('messagesList', () => {
       }
     },
     {
-      description: 'issue number should not allow issue number anywhere in description)',
+      description: 'issue number only allowed at the beginning of a description',
       parsed: [{
         type: 'feat',
         scope: 'any',
