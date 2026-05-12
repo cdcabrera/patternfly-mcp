@@ -99,19 +99,21 @@ const parseCommitMessage = ({ hash, message }, { messageTypes = MESSAGE_TYPES, a
  * Apply valid/invalid checks.
  *
  * @param {Array} parsedMessages
- * @param {object} options Default options, update accordingly
- * @param {Array|string|undefined} options.issueNumberExceptions An "undefined" or "false" or "falsy" value
+ * @param {object} options - Default options, update accordingly
+ * @param {boolean} options.allowIssuesAnywhere - Updates related messaging. See `parseCommitMessage` for parsing behavior.
+ * @param {Array|string|undefined} options.issueNumberExceptions - An "undefined" or "false" or "falsy" value
  *     will ignore issue numbers. A string of "*" will allow every type. An array of issue types can be used
  *     to identify which commit message type scopes to ignore, i.e. ['chore', 'fix', 'build', 'perf'].
  *     See NPM conventional-commit-types for full listing options, https://bit.ly/2L0yr6I
- * @param {number} options.maxMessageLength Max length of the main message string. Messages considered "body"
+ * @param {number} options.maxMessageLength - Max length of the main message string. Messages considered "body"
  *     do not count against this limit.
- * @param {Array|string|undefined} options.typeScopeExceptions see options.issueNumberExceptions
+ * @param {Array<string>|string|undefined} options.typeScopeExceptions - see `options.issueNumberExceptions`
  * @returns {Array}
  */
 const messagesList = (
   parsedMessages,
   {
+    allowIssuesAnywhere = true,
     issueNumberExceptions = [],
     maxMessageLength = 65,
     typeScopeExceptions = '*'
@@ -140,6 +142,7 @@ const messagesList = (
       const issueNumberValid =
         (issueNumberException && 'valid') ||
         (issueNumber && 'valid') ||
+        (allowIssuesAnywhere && 'INVALID: issue number (expected format "<desc>/<number>" or "<desc>-<number>")') ||
         'INVALID: issue number (expected format "<desc>/<number>" or "<desc>-<number>" at beginning of description)';
 
       const descriptionValid = (description && 'valid') || 'INVALID: description (missing description)';
@@ -187,6 +190,7 @@ const start = (commits, { allowIssuesAnywhere, issueNumberExceptions, maxMessage
       }, { allowIssuesAnywhere }));
 
     let filteredResults = messagesList(updatedCommits, {
+      allowIssuesAnywhere,
       issueNumberExceptions,
       maxMessageLength,
       typeScopeExceptions
