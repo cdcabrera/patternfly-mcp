@@ -41,7 +41,7 @@ jobs:
               await startFn({
                   LABEL_NEEDS_CLEANUP: 'bot:needs-cleanup',
                   LABEL_NEEDS_MAINTAINER: 'bot:needs-maintainer',
-                  LABEL_PRECHECKS_PASS: 'bot:ready-for-testing'
+                  LABEL_PRECHECKS_PASS: 'bot:policy-ready'
                 }, {
                   github,
                   context,
@@ -81,7 +81,7 @@ jobs:
   Integration-checks:
     runs-on: ubuntu-latest
     needs: Gatekeeper
-    if: ${{ always() && (github.event_name == 'push' || needs.Gatekeeper.result == 'success') }}
+    if: ${{ always() && (github.event_name == 'push' || needs.Gatekeeper.result != 'cancelled') }}
     permissions:
       contents: read
     strategy:
