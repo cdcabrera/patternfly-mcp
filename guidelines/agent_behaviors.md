@@ -93,14 +93,13 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 2. **Gatekeeper Model**
   - PRs from general contributors require a Gatekeeper pre-check.
   - After opening a PR, automation will provide immediate feedback in a "PR Quality Guidance" bot comment.
-  - **Action**: Monitor the bot comment for required cleanup. If pre-checks pass, the PR is labeled `bot:ready-for-testing`.
+  - **Action**: Monitor the bot comment for required cleanup. If Gatekeeper policy checks pass, the PR is labeled `bot:policy-ready`.
 
 3. **Validation & Gating**
-  - Automation gates sensitive tests behind the `bot:ready-for-testing` label.
   - Address all feedback from the "PR Quality Guidance" bot comment before requesting a manual review.
 
 4. **Core Contributor Implicit Bypass**
-  - Core contributors (listed in `CODEOWNERS` or with `OWNER/MEMBER` roles) skip pre-checks and receive the `bot:ready-for-testing` label immediately.
+  - Core contributors (listed in `CODEOWNERS` or with `OWNER/MEMBER` roles) skip policy checks and receive the `bot:policy-ready` label immediately.
 
 ## 4. Decision-Making Guidelines
 
