@@ -19,8 +19,8 @@ exports[`getPullRequest should resolve and aggregate PR metadata and resources: 
 exports[`signatureScan should scan for signatures, "The Tell" 1`] = `
 {
   "errors": [
-    "⚠️ You've updated a lot of files (20/15). To keep things focused, please try to limit the scope of your PR as suggested in our guidelines.",
-    "⚠️ I detected core file modifications (src/server.ts, tests/e2e/__snapshots__/stdioTransport.test.ts.snap). These changes usually require a bit more planning—check the guidelines for details.",
+    "⚠️ You've updated a lot of files (20/15). **Resolution:** Please reduce the scope of these changes by splitting them into smaller, more focused PR contributions.",
+    "⚠️ I detected core file modifications. Updates to core files require an associated issue (src/server.ts, tests/e2e/__snapshots__/stdioTransport.test.ts.snap). **Resolution:** Please link an issue in your PR description. If no issue exists your PR will be delayed for review, and may be closed.",
   ],
   "hasFailed": false,
   "hasTell": true,
