@@ -112,7 +112,7 @@ const parseCommitMessage = ({ hash, message }, { messageTypes = MESSAGE_TYPES, a
 const messagesList = (
   parsedMessages,
   {
-    issueNumberExceptions = ['build', 'chore', 'ci', 'docs', 'fix', 'perf', 'refactor', 'test'],
+    issueNumberExceptions = [],
     maxMessageLength = 65,
     typeScopeExceptions = '*'
   } = {}
@@ -166,10 +166,17 @@ const messagesList = (
 /**
  * If commits exist, lint them.
  *
- * @param {string} commits
- * @returns {{resultsArray: Array, resultsString: string}}
+ * @param {Array<string>} commits
+ * @param {object} options - Configuration
+ * @param {boolean} options.allowIssuesAnywhere - See `parseCommitMessage` for behavior.
+ * @param {Array<string>} options.issueNumberExceptions - See `messagesList` for behavior.
+ * @param {number} options.maxMessageLength - See `messagesList` for behavior.
+ * @param {Array<string>|string|undefined} options.typeScopeExceptions - See `messagesList` for behavior.
+ * @returns {{resultsArray: Array<object>, resultsString: string}} Return linting results
+ *    - `resultsArray`: An array of objects representing the validated parts of the message.
+ *    - `resultsString`: A `JSON.stringify` version of the `resultsArray` for display.
  */
-const start = commits => {
+const start = (commits, { allowIssuesAnywhere, issueNumberExceptions, maxMessageLength, typeScopeExceptions = '*' } = {}) => {
   const lintResults = { resultsArray: [], resultsString: '' };
 
   if (commits) {
@@ -177,8 +184,13 @@ const start = commits => {
       .map(({ sha, commit } = {}) => parseCommitMessage({
         hash: sha.substring(0, 7),
         message: (commit.message || 'empty').split('\n')[0]
-      }, { allowIssuesAnywhere: false }));
-    let filteredResults = messagesList(updatedCommits);
+      }, { allowIssuesAnywhere }));
+
+    let filteredResults = messagesList(updatedCommits, {
+      issueNumberExceptions,
+      maxMessageLength,
+      typeScopeExceptions
+    });
 
     filteredResults.forEach(obj => {
       const updatedObj = obj;
