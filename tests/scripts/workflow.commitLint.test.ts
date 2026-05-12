@@ -13,7 +13,7 @@ describe('parseCommitMessage', () => {
       }
     },
     {
-      description: 'BUG: multiple colons in description (should not mutate description)',
+      description: 'multiple colons in description (should not mutate description)',
       message: 'feat: check: missing colon (#789)',
       expected: {
         type: 'feat',
@@ -22,7 +22,7 @@ describe('parseCommitMessage', () => {
       }
     },
     {
-      description: 'BUG: greedy PR extraction (should not merge description numbers)',
+      description: 'greedy PR extraction (should not merge description numbers)',
       message: 'fix: resolve 500 error (#123)',
       expected: {
         type: 'fix',

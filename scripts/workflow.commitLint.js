@@ -31,21 +31,38 @@ const MESSAGE_TYPES = [
 const parseCommitMessage = ({ hash, message }, messageTypes = MESSAGE_TYPES) => {
   let output;
 
-  const [baseTypeScope, ...descriptionEtAll] = message.trim().split(/:/);
-  const [description, ...partialPr] = descriptionEtAll
-    .join(' ')
-    .trim()
-    .split(/(\(#|#)/);
-  const typeScope = baseTypeScope.replace(/!$/, '').trim().split(/\s/);
-  const [type, scope = ''] = typeScope.join(' ').trim().split('(');
+  const trimmedMessage = message.trim();
+  const firstColonIndex = trimmedMessage.indexOf(':');
+  const baseTypeScope = trimmedMessage.substring(0, firstColonIndex);
+  const descriptionEtAll = trimmedMessage.substring(firstColonIndex + 1).trim();
+  const prMatch = descriptionEtAll.match(/\s\(#(\d+)\)$/);
+
+  let prNumber = undefined;
+  let description = descriptionEtAll;
+
+  if (prMatch) {
+    prNumber = prMatch[1];
+    description = descriptionEtAll.replace(/\s\(#(\d+)\)$/, '').trim();
+  }
+
+  const typeScope = baseTypeScope.replace(/!$/, '').trim();
+  let type = typeScope;
+  let scope = '';
+
+  if (typeScope.includes('(')) {
+    const [splitType, splitScope] = typeScope.split('(');
+
+    type = splitType?.trim();
+    scope = splitScope?.split(')')?.[0]?.trim();
+  }
 
   output = {
     hash,
-    typeScope: typeScope.join(' ').trim() || undefined,
-    type: (messageTypes.includes(type) && type) || undefined,
+    typeScope: typeScope || undefined,
+    type: messageTypes.includes(type) && type ? type : undefined,
     scope: scope.split(')')[0] || undefined,
-    description: description.trim() || undefined,
-    prNumber: (partialPr.join('(#').trim() || '').replace(/\D/g, '') || undefined,
+    description,
+    prNumber,
     isBreaking: /!$/.test(baseTypeScope)
   };
 
