@@ -6,8 +6,7 @@ Every contribution passes through three layers before it can affect a user's sys
 
 GitHub workflows perform checks for
 
-- **Informative Guidance**: An automated bot provides immediate feedback and links to contribution guidelines if a PR requires cleanup or deviates from standards.
-- **Quality Gates**: PR pre-checks for labeling, file limits, and core modifications.
+- **Policy Guidance**: An automated bot provides Gatekeeper policy feedback and links to contribution guidelines if a PR requires cleanup or deviates from policy standards.
 - Spelling and linting for most files
 - Unit testing
 - E2E testing

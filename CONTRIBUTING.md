@@ -112,7 +112,7 @@ _I have read the contribution guidelines and fulfill them with this PR. I acknow
 
 ##### PR Labels
 Automation manages the following labels to indicate PR state:
-- `bot:ready-for-testing`: All pre-checks passed; queued for downstream CI and review.
+- `bot:policy-ready`: Gatekeeper policy checks have passed. Any additional required checks should pass before the PR is ready for maintainer review.
 - `bot:needs-cleanup`: PR requires attention (e.g., failed scan, missing issue).
 - `bot:needs-maintainer`: An unexpected error occurred, or manual intervention is required.
 
@@ -160,7 +160,7 @@ Commit messages follow two basic guidelines:
 
 ##### Pull request test failures
 
-To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated pre-checks and tests have successfully passed.
+To ensure a smooth and efficient review process, maintainers will begin their evaluation only after all automated policy checks and any other required checks have all passed successfully.
 
 Please follow the guidance provided by automation and resolve the issues. If your work is still failing, seek guidance before requesting a manual review.
 
