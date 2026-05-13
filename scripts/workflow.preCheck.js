@@ -173,7 +173,7 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     }
 
     if (isSecModified) {
-      errors.push(`⚠️ I've found updates to security-sensitive files (${secModified.join(', ')}). **Resolution:** These changes require a core contributor's review. To speed up the process, please provide a clear explanation for these updates in your PR description.`);
+      errors.push(`⚠️ I've found updates to security-sensitive files (${secModified.join(', ')}). **Resolution:** These changes require a core contributor's review. You can remove these changes or provide a clear explanation for these updates in your PR description.`);
     }
 
     return {
@@ -388,7 +388,7 @@ const start = async ({
 
   if (codeSignature.hasTell) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
-      `I've flagged this PR for a **Policy Hold** to ensure alignment with our quality and architectural standards.\n\n` +
+      `I've flagged this PR for a **Policy Hold** to ensure alignment with our quality, security, and architectural standards.\n\n` +
       `**To resolve this hold and move forward**:\n` +
       `- Ensure your updates are associated with a GitHub issue (Step 1 of the [Contributor's Journey](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md#step-1-start-a-conversation)).\n` +
       `- Align with the codebase style and remove any excessive scope.\n` +
