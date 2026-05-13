@@ -157,23 +157,23 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
     const errors = [];
 
     if (isMaxFilesUpdated === true) {
-      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). **Resolution:** Please reduce the scope of these changes by splitting them into smaller, more focused PR contributions.`);
+      errors.push(`⚠️ You've updated a lot of files (${fileCount}/${fileChangeLimit}). **Resolution:** To ensure a smooth review, please consider reducing the scope of these changes by splitting them into smaller, more focused PR contributions.`);
     }
 
     if (isCoreModified) {
-      errors.push(`⚠️ I detected core file modifications. Updates to core files require an associated issue (${coreModified.join(', ')}). **Resolution:** Please link an issue in your PR description. If no issue exists your PR will be delayed for review, and may be closed.`);
+      errors.push(`⚠️ I detected core file modifications. To help us track and plan your work, please ensure these updates are associated with a GitHub issue (${coreModified.join(', ')}). **Resolution:** Link a GitHub issue in your PR description. Starting with an issue ensures your work is recognized and aligned with the roadmap.`);
     }
 
     if (isExtraModified) {
-      errors.push(`⚠️ I've found extra file updates. You may be attempting to tailor the codebase to your workflow (${extraModified.join(', ')}). **Resolution:** Please align to the codebase style and remove these changes. You can also provide an explanation in your PR description but expect a delay in review.`);
+      errors.push(`⚠️ I've found extra file updates that seem tailored to a specific workflow (${extraModified.join(', ')}). **Resolution:** Please align with the project's code style and remove these changes to maintain consistency.`);
     }
 
     if (isAgentModified) {
-      errors.push(`⚠️ I found local agent modifications in your changes (${agentModified.join(', ')}). **Resolution:** Changes to agent guidelines require maintainer approval. Please remove these changes unless instructed otherwise.`);
+      errors.push(`⚠️ I found modifications to agent guidelines (${agentModified.join(', ')}). **Resolution:** Changes to shared guidelines require architectural alignment. Please coordinate these updates through a GitHub issue first.`);
     }
 
     if (isSecModified) {
-      errors.push(`⚠️ I've found updates that may require a core contributor's involvement (${secModified.join(', ')}). **Resolution:** A core contributor must review these changes. You can remove these changes, or provide an explanation in your PR description and expect a delay in review.`);
+      errors.push(`⚠️ I've found updates to security-sensitive files (${secModified.join(', ')}). **Resolution:** These changes require a core contributor's review. To speed up the process, please provide a clear explanation for these updates in your PR description.`);
     }
 
     return {
@@ -388,12 +388,12 @@ const start = async ({
 
   if (codeSignature.hasTell) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
-      `I've flagged this PR for a **Policy Hold** due to a "Perfect Storm" of identified issues (core modifications, excessive scope, and template changes).\n\n` +
-      `**To resolve this hold**:\n` +
-      `- Ensure all updates are associated with a GitHub issue.\n` +
-      `- Align to the codebase style and remove excessive changes.\n` +
-      `- Split changes into smaller, focused PR contributions.\n\n` +
-      `Once you've focused your changes I'll take another look.\n\n` +
+      `I've flagged this PR for a **Policy Hold** to ensure alignment with our quality and architectural standards.\n\n` +
+      `**To resolve this hold and move forward**:\n` +
+      `- Ensure your updates are associated with a GitHub issue (Step 1 of the [Contributor's Journey](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md#step-1-start-a-conversation)).\n` +
+      `- Align with the codebase style and remove any excessive scope.\n` +
+      `- Consider splitting your changes into smaller, focused PR contributions.\n\n` +
+      `Starting with a conversation helps ensure your contribution is integrated smoothly. Once you've focused your changes, I'll take another look.\n\n` +
       `**Labels**: \`${LABEL_NEEDS_CLEANUP}\`, \`${LABEL_PRECHECKS_FAIL}\` \n\n` +
       `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
