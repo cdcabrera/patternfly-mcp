@@ -368,7 +368,7 @@ const start = async ({
   const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles } = await getPullRequest({ github, context });
   const { add: addLabels, remove: removeLabels } = await setLabels({ github, context });
 
-  core.notice('🤖 Gatekeeper policy checks are active! Please refer to the workflow logs and summaries for guidance.');
+  core.notice('🤖 Gatekeeper policy checks are active! Thank you for contributing! Please refer to the workflow logs and summaries for guidance. Proceeding with this work implies acceptance of the contribution agreement.');
 
   // Core contributors get a pass
   if (coreContributors({ author, authorType, authorRole })) {
