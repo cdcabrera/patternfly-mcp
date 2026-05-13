@@ -63,7 +63,7 @@ Our process follows the standard GitHub fork and pull request workflow.
 
 #### Contributor roles
 
-- **Core Contributors:** Maintainers listed in `CODEOWNERS` or with `MEMBER/OWNER` roles in the GitHub organization. Their focus is architecture, roadmap planning, maintenance, and feature contributions. 
+- **Core Contributors:** Maintainers listed in `CODEOWNERS`, which can include `MEMBER/OWNER` roles in the GitHub organization. Their focus is architecture, roadmap planning, maintenance, and feature contributions. 
 - **General Contributors:** Community members contributing via forks. All PRs from general contributors undergo automated validation and must pass the initial checks before being queued for review by maintainers.
 
 #### Before you contribute
