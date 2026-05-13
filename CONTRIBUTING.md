@@ -117,6 +117,8 @@ Automation manages the following labels to indicate PR state:
 - `bot:needs-cleanup`: PR requires attention (e.g., failed scan, missing issue).
 - `bot:needs-maintainer`: An unexpected error occurred, or manual intervention is required.
 
+> **Important**: For pull requests from forks, automated labeling and commenting may be restricted. Please refer to the **GitHub Actions Job Summary** for the `Gatekeeper` job to view your guidance and status.
+
 > Automation looks for a few metrics related to the following warning signs
 >  - has no related issue
 >  - ignores existing code style

@@ -214,9 +214,10 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
  * @param config
  * @param config.github
  * @param config.context
+ * @param config.core
  * @returns {{add: function(*): Promise<void>, remove: function(*): Promise<void>}}
  */
-const setLabels = ({ github, context } = {}) => {
+const setLabels = ({ github, context, core } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
   const addLabels = github?.rest?.issues?.addLabels;
@@ -226,7 +227,9 @@ const setLabels = ({ github, context } = {}) => {
     add: async labels => {
       if (Array.isArray(labels)) {
         await addLabels({ owner, repo, issue_number: issueNumber, labels }).catch(err => {
-          console.error(`Workflow add labels failed: ${labels.join(', ')}`, err?.message || err);
+          const msg = `Workflow add labels failed: ${labels.join(', ')}`;
+          console.error(msg, err?.message || err);
+          core?.notice(`${msg}. This is common for PRs from forks. Guidance will be provided in the workflow logs instead.`);
         });
       }
     },
@@ -234,7 +237,9 @@ const setLabels = ({ github, context } = {}) => {
       if (Array.isArray(labels)) {
         for (const label of labels) {
           await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(err => {
-            console.error(`Workflow remove label failed: ${label}`, err?.message || err);
+            const msg = `Workflow remove label failed: ${label}`;
+            console.error(msg, err?.message || err);
+            core?.notice(`${msg}. This is common for PRs from forks.`);
           });
         }
       }
@@ -276,9 +281,10 @@ const getCommentId = async (signature, { github, context } = {}) => {
  * @param config.signature
  * @param config.github
  * @param config.context
+ * @param config.core
  * @returns {Promise<{add: function(*): Promise<*>, remove: function(): Promise<*>, existingCommentId: *, isComment: boolean}>}
  */
-const setComment = async ({ signature, github, context } = {}) => {
+const setComment = async ({ signature, github, context, core } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
   const createComment = github?.rest?.issues?.createComment;
@@ -292,16 +298,22 @@ const setComment = async ({ signature, github, context } = {}) => {
     add: async body => {
       if (commentId) {
         return updateComment({ owner, repo, comment_id: commentId, body: getBody(body) }).catch(err => {
-          console.error(`Workflow update comment failed`, err?.message || err);
+          const msg = 'Workflow update comment failed';
+          console.error(msg, err?.message || err);
+          core?.notice(`${msg}. This is common for PRs from forks. Guidance will be provided in the workflow logs instead.`);
         });
       }
 
       return createComment({ owner, repo, issue_number: issueNumber, body: getBody(body) }).catch(err => {
-        console.error(`Workflow create comment failed`, err?.message || err);
+        const msg = 'Workflow create comment failed';
+        console.error(msg, err?.message || err);
+        core?.notice(`${msg}. This is common for PRs from forks. Guidance will be provided in the workflow logs instead.`);
       });
     },
     remove: async () => deleteComment({ owner, repo, comment_id: commentId }).catch(err => {
-      console.error(`Workflow remove comment failed`, err?.message || err);
+      const msg = 'Workflow remove comment failed';
+      console.error(msg, err?.message || err);
+      core?.notice(`${msg}. This is common for PRs from forks.`);
     }),
     existingCommentId: commentId,
     isComment: commentId !== undefined
@@ -366,7 +378,7 @@ const start = async ({
   LABEL_PRECHECKS_FAIL
 } = {}, { github, context, core } = {}) => {
   const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles } = await getPullRequest({ github, context });
-  const { add: addLabels, remove: removeLabels } = await setLabels({ github, context });
+  const { add: addLabels, remove: removeLabels } = await setLabels({ github, context, core });
 
   // Core contributors get a pass
   if (coreContributors({ author, authorType, authorRole })) {
@@ -379,7 +391,7 @@ const start = async ({
   // Signature checks found feature-like work, notify the user they may not be following guidance
   const codeSignature = signatureScan({ description: prDescription, files: prFiles, fileCount: prFileCount });
   const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
-  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context });
+  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context, core });
 
   if (codeSignature.hasTell) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
@@ -458,7 +470,14 @@ const start = async ({
 
     await addBotComment(successComment);
     await addLabels([LABEL_PRECHECKS_PASS]);
-    await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER, LABEL_PRECHECKS_FAIL]);
+
+    const labelsToRemove = [LABEL_NEEDS_CLEANUP, LABEL_PRECHECKS_FAIL];
+
+    if (!codeSignature.isSecModified) {
+      labelsToRemove.push(LABEL_NEEDS_MAINTAINER);
+    }
+
+    await removeLabels(labelsToRemove);
 
     core.notice(
       `PR Quality Guidance\n\n` +

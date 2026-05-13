@@ -362,13 +362,31 @@ describe('setLabels', () => {
     };
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } } as any;
 
-    const labels = setLabels({ github, context });
+    const core = { notice: jest.fn() } as any;
+    const labels = setLabels({ github, context, core });
 
     await labels.add(['label-a']);
     await labels.remove(['label-b']);
 
     expect(github.rest.issues.addLabels).toHaveBeenCalled();
     expect(github.rest.issues.removeLabel).toHaveBeenCalled();
+  });
+
+  it('should notify via core if adding labels fails', async () => {
+    const github = {
+      rest: {
+        issues: {
+          addLabels: jest.fn<any>().mockRejectedValue(new Error('Permission denied')),
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } } as any;
+    const core = { notice: jest.fn() } as any;
+
+    const labels = setLabels({ github, context, core });
+    await labels.add(['label-a']);
+
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Workflow add labels failed'));
   });
 });
 
@@ -386,7 +404,8 @@ describe('setComment', () => {
       }
     };
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
-    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
+    const core = { notice: jest.fn() } as any;
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core });
 
     await comment.add('new body');
 
@@ -408,7 +427,8 @@ describe('setComment', () => {
       }
     };
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
-    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
+    const core = { notice: jest.fn() } as any;
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core });
 
     await comment.add('new body');
 
@@ -429,13 +449,32 @@ describe('setComment', () => {
       }
     };
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
-    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
+    const core = { notice: jest.fn() } as any;
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core });
 
     await comment.remove();
 
     expect(github.rest.issues.deleteComment).toHaveBeenCalledWith(expect.objectContaining({
       comment_id: 500
     }));
+  });
+
+  it('should notify via core if commenting fails', async () => {
+    const github = {
+      rest: {
+        issues: {
+          createComment: jest.fn<any>().mockRejectedValue(new Error('Permission denied')),
+          listComments: jest.fn<any>().mockResolvedValue({ data: [] }),
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
+    const core = { notice: jest.fn() } as any;
+
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core });
+    await comment.add('new body');
+
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Workflow create comment failed'));
   });
 });
 
@@ -473,7 +512,7 @@ describe('start', () => {
       repo: { owner: 'o', repo: 'r' },
       issue: { number: 123 }
     };
-    core = { setFailed: jest.fn(), log: jest.fn() };
+    core = { setFailed: jest.fn(), log: jest.fn(), notice: jest.fn(), error: jest.fn() };
     config = {
       LABEL_PRECHECKS_PASS: 'bot:policy-ready',
       LABEL_NEEDS_CLEANUP: 'bot:needs-cleanup',
@@ -516,7 +555,7 @@ describe('start', () => {
       body: expect.stringContaining("I've flagged this PR for a **Policy Hold**")
     }));
 
-    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('PR placed on Policy Hold'));
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('This PR is flagged for a Policy Hold'));
   });
 
   it('should apply needs-cleanup label and fail if scan find errors', async () => {
@@ -534,7 +573,7 @@ describe('start', () => {
       body: expect.stringContaining('I found some issues with your work')
     }));
 
-    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('PR pre-check requirements not met'));
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('Issues were found'));
   });
 
   it('should apply needs-maintainer label for security-sensitive changes', async () => {

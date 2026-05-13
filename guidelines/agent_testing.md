@@ -74,7 +74,7 @@ Automation scripts in `scripts/` are critical to repository security. Changes to
 **Key areas to test**:
 - Label management logic.
 - Contributor and bot identification.
-- Failure fallback (📡 icon).
+- Mirroring via `core` notices and workflow log alerts (fallback mechanism).
 - Informative error messaging.
 
 ### 6.2 Data and Resource Audit

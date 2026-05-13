@@ -19,7 +19,7 @@ GitHub workflows perform checks for
 
 A maintainer reviews every PR for intent-level issues that automated tools miss:
 
-- **Intent-based Filtering:** Automated labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact.
+- **Intent-based Filtering:** Automated labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact. For contributions where automated labeling is restricted (e.g., from forks), maintainers utilize the status and summaries provided in the workflow logs for prioritization.
 - **Architectural Alignment:** Every PR is verified against the [planned architecture](./docs/architecture.md) to ensure long-term stability.
 - **Guideline Adherence Verification:** Maintainers verify that contributions follow established patterns and do not interfere with internal validation mechanisms designed to ensure contributors have performed a full context review.
 - **Credential & Secret Scanning:** Manual verification that no sensitive environment variables or keys are exposed in tests or documentation.
