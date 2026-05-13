@@ -108,11 +108,14 @@ Development pull requests (PRs) should be opened against the default branch.
 Pull requests from non-core contributors will be invited to read the contribution agreement in PR comments. Proceeding with the PR implies acceptance of these guidelines.
 
 ##### The Contributor's agreement
-_I have read the contribution guidelines and fulfill them with this PR. I acknowledge my PR may be labeled, converted to draft, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation._
+_I have read the contribution guidelines and fulfill them with this PR. I acknowledge my PR may be labeled, placed on policy hold, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation._
 
 ##### PR Labels
-Automation manages the following labels to indicate PR state:
+> **Important**: Gatekeeper supports a flexible messaging model. Organization contributors receive direct PR feedback, and community contributors can find identical guidance mirrored in the workflow logs and summary. Please refer to the **GitHub Actions Job Summary** for the `Gatekeeper` job to view your status. If policy checks and automation do not pass, your PR will not be prioritized.
+
+Automation manages the following summary labels to indicate PR state:
 - `bot:policy-ready`: Gatekeeper policy checks have passed. Any additional required checks should pass before the PR is ready for maintainer review.
+- `bot:policy-hold`: PR is temporarily on hold due to excessive scope or structural violations.
 - `bot:needs-cleanup`: PR requires attention (e.g., failed scan, missing issue).
 - `bot:needs-maintainer`: An unexpected error occurred, or manual intervention is required.
 
@@ -131,7 +134,7 @@ Automation manages the following labels to indicate PR state:
 >  - affects "many" files
 >  - contains or is a minor grammatical fix
 >
-> If automation does not pass, your PR will not be prioritized, and you may be asked to:
+> **If policy checks and automation do not pass, your PR will not be prioritized, and you may be asked to**:
 >  - open an issue and close your PR
 >  - restructure your commits
 >  - break the work into multiple pull requests

@@ -18,8 +18,9 @@ Security concerns for this MCP server include:
 ## Contribution Guardrails
 
 To maintain codebase integrity, we use an automated **Gatekeeper** workflow:
-- PRs from non-core contributors that modify core behavior or exceed established file limits are automatically moved to **Draft**.
-- These PRs require a secondary review by a Maintainer to be promoted from Draft status.
+- PRs from non-core contributors that modify core behavior or exceed established file limits are automatically placed on **Policy Hold**.
+- PRs from community contributors may refer to the mirrored guidance and status in the **GitHub Actions Job Summary** for policy feedback and PR status.
+- If automation is unresolved, these PRs require a secondary review by a Maintainer to be promoted from Policy Hold status.
 
 ## Release Integrity
 

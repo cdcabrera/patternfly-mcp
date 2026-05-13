@@ -75,6 +75,7 @@ Automation scripts in `scripts/` are critical to repository security. Changes to
 - Label management logic.
 - Contributor and bot identification.
 - Failure fallback (📡 icon).
+- Mirroring via `core` summaries, notices, warnings, and workflow log alerts (fallback mechanism).
 - Informative error messaging.
 
 ### 6.2 Data and Resource Audit

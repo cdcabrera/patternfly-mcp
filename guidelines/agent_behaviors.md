@@ -93,13 +93,15 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 2. **Gatekeeper Model**
   - PRs from general contributors require a Gatekeeper pre-check.
   - After opening a PR, automation will provide immediate feedback in a "PR Quality Guidance" bot comment.
-  - **Action**: Monitor the bot comment for required cleanup. If Gatekeeper policy checks pass, the PR is labeled `bot:policy-ready`.
+  - **Action**: Monitor the bot comment for required cleanup. If Gatekeeper policy checks pass, the PR is summary labeled `bot:policy-ready`.
+  - **Policy Hold**: PRs from non-core contributors that modify core behavior or exceed established file limits are automatically placed on **Policy Hold** (labeled `bot:policy-hold`). These require a secondary review by a maintainer.
+  - **Fallback**: Gatekeeper supports a flexible messaging model. If direct PR feedback (labeling/commenting) is unavailable, agents and contributors should refer to the mirrored guidance and status in the workflow logs.
 
 3. **Validation & Gating**
   - Address all feedback from the "PR Quality Guidance" bot comment before requesting a manual review.
 
 4. **Core Contributor Implicit Bypass**
-  - Core contributors (listed in `CODEOWNERS` or with `OWNER/MEMBER` roles) skip policy checks and receive the `bot:policy-ready` label immediately.
+  - Core contributors (listed in `CODEOWNERS` or with `OWNER/MEMBER` roles) skip policy checks and receive the `bot:policy-ready` summary label immediately.
 
 ## 4. Decision-Making Guidelines
 
