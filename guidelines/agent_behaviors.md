@@ -40,9 +40,9 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
 
 - **Sequential Processing**: Ask questions one at a time; process requests in logical order; complete one task before starting another.
 - **Architectural Alignment**: Always confirm changes against the [system architecture and roadmap](../docs/architecture.md) before proceeding with implementation.
-- **Reference-Based Implementation**: Review git history; study existing patterns (e.g., "creator" pattern for tools/resources); maintain code style consistency and follow [standard Git workflows](../CONTRIBUTING.md#using-git).
-- **Commit Messaging Standards**: Follow the project's [commit messaging standards](../CONTRIBUTING.md#pull-request-commits-messaging).
-- **Validation Required**: Follow checklists; verify requirements; test thoroughly. Review [pull request warning signs](../CONTRIBUTING.md#pull-requests) to avoid common pitfalls.
+- **Reference-Based Implementation**: Review git history; study existing patterns (e.g., "creator" pattern for tools/resources); maintain code style consistency and follow [standard Git workflows](../CONTRIBUTING.md#step-4-submitting-your-work).
+- **Commit Messaging Standards**: Follow the project's [commit messaging standards](../CONTRIBUTING.md#conventional-commits).
+- **Validation Required**: Follow checklists; verify requirements; test thoroughly. Review [pull request submission guidelines](../CONTRIBUTING.md#step-4-submitting-your-work) to avoid common pitfalls.
 - **Confirmation Required**: Confirm success; summarize changes; explain impact; verify understanding.
 - **Guidance Review Scope**: Unless the user explicitly asks, do not make recommendations on improving guidance if all you're asked to do is review guidance.
 - **Environment Awareness**: 
@@ -67,7 +67,7 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
   - Research the error
   - Identify conflict scenarios with code
   - Identify potential test cases
-  - Review [testing standards](../CONTRIBUTING.md#testing) and [agent testing guidelines](./agent_testing.md) for applicable testing tiers.
+  - Review [testing procedures](../CONTRIBUTING.md#step-3-development--testing) and [agent testing guidelines](./agent_testing.md) for applicable testing tiers.
 
 2. **Test**
   - Run typing, lint, unit, e2e, and specialized tests (e.g., `npm run test:scripts` for script changes).

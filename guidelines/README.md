@@ -19,6 +19,7 @@ Agent-specific guidelines for the PatternFly MCP project, optimized for machine 
 ### Skills
 
 - [Add docs links](./skills/add-docs-links/SKILL.md) - Add documentation links to `src/docs.json` in a structured way (format, duplicate check, URL confirmation, tests)
+- [Agentic coding and Planning](../CONTRIBUTING.md#step-1-start-a-conversation) - Step-by-step guidance on how to start a contribution.
 
 **Note:** `guidelines/skills/` is the canonical location for skills. Repo symlinks point here so agents can discover them: `.agents/skills` (Cursor), `.claude/skills` (Claude). The `.agent/` directory (no “s”) is reserved for each developer’s local work and is off limits—do not use it for shared skills or guidelines.
 

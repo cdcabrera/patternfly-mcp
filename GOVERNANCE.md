@@ -6,7 +6,7 @@ Every contribution passes through three layers before it can affect a user's sys
 
 GitHub workflows perform checks for
 
-- **Policy Guidance**: An automated bot provides Gatekeeper policy feedback and links to contribution guidelines if a PR requires cleanup or deviates from policy standards.
+- **Policy Guidance**: An automated bot provides Gatekeeper guidance and links to contribution guidelines to help your PR reach a review-ready state.
 - Spelling and linting for most files
 - Unit testing
 - E2E testing
@@ -19,7 +19,7 @@ GitHub workflows perform checks for
 
 A maintainer reviews every PR for intent-level issues that automated tools miss:
 
-- **Intent-based Filtering:** Automated labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact. For contributions where Gatekeeper utilizes job summary mirroring (e.g., community contributors), maintainers utilize the status and summaries provided in the workflow logs for prioritization.
+- **Intent-based Filtering:** Automated labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact. For contributions where Gatekeeper utilizes job summary mirroring, maintainers utilize the status and summaries provided in the workflow logs for prioritization.
 - **Architectural Alignment:** Every PR is verified against the [planned architecture](./docs/architecture.md) to ensure long-term stability.
 - **Guideline Adherence Verification:** Maintainers verify that contributions follow established patterns and do not interfere with internal validation mechanisms designed to ensure contributors have performed a full context review.
 - **Credential & Secret Scanning:** Manual verification that no sensitive environment variables or keys are exposed in tests or documentation.
