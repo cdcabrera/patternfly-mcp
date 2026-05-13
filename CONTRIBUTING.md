@@ -111,7 +111,7 @@ Pull requests from non-core contributors will be invited to read the contributio
 _I have read the contribution guidelines and fulfill them with this PR. I acknowledge my PR may be labeled, placed on policy hold, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation._
 
 ##### PR Labels
-> **Important**: Gatekeeper supports a flexible messaging model. Organization contributors receive direct PR feedback, and community contributors can find identical guidance mirrored in the workflow logs and summary. Please refer to the **GitHub Actions Job Summary** for the `Gatekeeper` job to view your status. If policy checks and automation do not pass, your PR will not be prioritized.
+> **Important**: Gatekeeper supports a flexible messaging model. Core Contributors receive direct PR feedback, and General Contributors can find identical guidance mirrored in the workflow logs and summary. Please refer to the **GitHub Actions Job Summary** for the `Gatekeeper` job to view your status. If policy checks and automation do not pass, your PR will not be prioritized.
 
 Automation manages the following summary labels to indicate PR state:
 - `bot:policy-ready`: Gatekeeper policy checks have passed. Any additional required checks should pass before the PR is ready for maintainer review.
