@@ -94,6 +94,7 @@ For a detailed overview of the system design and roadmap, see [docs/architecture
   - PRs from general contributors require a Gatekeeper pre-check.
   - After opening a PR, automation will provide immediate feedback in a "PR Quality Guidance" bot comment.
   - **Action**: Monitor the bot comment for required cleanup. If Gatekeeper policy checks pass, the PR is labeled `bot:policy-ready`.
+  - **Policy Hold**: PRs from non-core contributors that modify core behavior or exceed established file limits are automatically placed on **Policy Hold**, the PR is labeled `bot:policy-hold`. If automation is not resolved, these PRs require a secondary review by a maintainer.
 
 3. **Validation & Gating**
   - Address all feedback from the "PR Quality Guidance" bot comment before requesting a manual review.
