@@ -370,8 +370,8 @@ const start = async ({
 
   // Core contributors get a pass
   if (coreContributors({ author, authorType, authorRole })) {
-    console.log(`Contributor found, skipping pre-checks: ${author}`);
     await addLabels([LABEL_PRECHECKS_PASS]);
+    core.notice(`Contributor found, skipping pre-checks: ${author}`);
 
     return;
   }
@@ -394,7 +394,15 @@ const start = async ({
     await addBotComment(botComment);
     await addLabels([LABEL_NEEDS_CLEANUP, LABEL_PRECHECKS_FAIL]);
 
-    core.setFailed('PR placed on Policy Hold. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.');
+    core.setFailed(
+      `PR Quality Guidance.\n\n` +
+      `This PR is flagged for a Policy Hold due to a "Perfect Storm" of identified issues (core modifications, excessive scope, and template changes).\n` +
+      `To resolve this hold:\n` +
+      `- Ensure all updates are associated with a GitHub issue.\n` +
+      `- Align to the codebase style and remove excessive changes.\n` +
+      `- Split changes into smaller, focused PR contributions.\n\n` +
+      `Make sure to review the contributing guidelines.`
+    );
 
     return;
   }
@@ -414,7 +422,12 @@ const start = async ({
     await addBotComment(botComment);
     await addLabels([LABEL_NEEDS_CLEANUP]);
 
-    core.setFailed('PR pre-check requirements not met. Make sure to review the contributing guidelines.');
+    core.setFailed(
+      `PR Quality Guidance\n\n` +
+      `Issues were found. Once the following updates are addressed, you'll be queued for review` +
+      `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+      `Make sure to review the contributing guidelines.`
+    );
 
     return;
   }
@@ -427,6 +440,11 @@ const start = async ({
 
     await addBotComment(errorComment);
     await addLabels([LABEL_NEEDS_MAINTAINER]);
+
+    core.error(
+      `PR Quality Guidance\n\n` +
+      `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n`
+    );
   } else {
     // Or confirm the work has passed pre-check
     const successComment = `### 🤖 PR Quality Guidance\n` +
@@ -436,6 +454,12 @@ const start = async ({
     await addBotComment(successComment);
     await addLabels([LABEL_PRECHECKS_PASS]);
     await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER, LABEL_PRECHECKS_FAIL]);
+
+    core.notice(
+      `PR Quality Guidance\n\n` +
+      `I finished my scan and all pre-checks pass!\n\n` +
+      `Make sure to review the contributing guidelines.`
+    );
   }
 };
 
