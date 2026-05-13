@@ -1,6 +1,6 @@
 # Contributing to PatternFly MCP
 
-Welcome! This project thrives on community collaboration and shared quality standards. Our goal is to make PatternFly documentation and components easily accessible to AI agents and developers everywhere.
+Welcome! Our goal is to make PatternFly documentation and components easily accessible to AI agents and developers everywhere.
 
 Review these guidelines and our [planned architecture](./docs/architecture.md), [security policy](./SECURITY.md), and [governance policy](./GOVERNANCE.md) to ensure your contribution aligns with the project's goals.
 
@@ -28,7 +28,10 @@ Opening a PR without an issue has a higher likelihood your work will be flagged 
 If you're leveraging the GitHub PR to provide us with file diffs, you can achieve the same Git diff applied by PRs by simply using the GitHub link format and applying it to your issue:
 `https://github.com/patternfly/patternfly-mcp/compare/main...your-username:your-branch`
 
-#### Documentation Contributions
+#### Want the PatternFly MCP to access more documentation?
+Providing more documentation to the PatternFly MCP is what drives our unified library!
+
+We have a few simple guidelines to make sure your subject aligns with our intent:
 - **PatternFly Subject**: Added documentation should concern PatternFly as the primary subject.
 - **Security**: Documentation is whitelisted to specific domains. Updates require an issue first for security.
 - **Quality**: Resources should be production-ready and will be reviewed for quality and security.
@@ -39,7 +42,7 @@ If you're leveraging the GitHub PR to provide us with file diffs, you can achiev
 ### Step 2: Setting Up Your Workspace
 
 > **Get a feature up and running. Try customizing the server!**
-> The PatternFly MCP server is designed to be customizable. You can [wrap it](./docs/development.md#programmatic-usage) or add [MCP tool plugins](./docs/development.md#mcp-tool-plugins).
+> The PatternFly MCP server is designed to be customizable. You can [wrap it in your own application](./docs/development.md#programmatic-usage) or add [MCP tool plugins](./docs/development.md#mcp-tool-plugins).
 
 #### Tools
 - [Node.js](https://nodejs.org/en/download/package-manager) (See [Engine Bumps](#maintenance-nodejs-engine-bumps) for version info)
@@ -56,6 +59,7 @@ If you're leveraging the GitHub PR to provide us with file diffs, you can achiev
    npm run test:integration
    ```
 4. **Start the server**: `npm start`
+5. **Test with the inspector**: `npx -y @modelcontextprotocol/inspector node dist/cli.js`
 
 #### Windows and repository symlinks
 Some paths in this repo are **symbolic links**. On Windows:
@@ -83,10 +87,15 @@ Some paths in this repo are **symbolic links**. On Windows:
 
 ### Step 4: Submitting Your Work
 
+#### The Contributor's Agreement
+By submitting a Pull Request, you acknowledge the following:
+_"I have read the contribution guidelines and fulfill them with this PR. I acknowledge that my PR will be reviewed for alignment with the project's quality, security, and architectural standards."_
+
 #### Git Workflow
-1. Create a **feature branch** for your changes.
-2. **Rebase** your branch against the `main` branch before submitting.
-3. Submit a **Pull Request** towards the `main` branch.
+1. **Fork** the repository.
+2. Create a **branch** on your fork.
+3. **Rebase** your branch against the `main` branch before committing work.
+4. Submit a **Pull Request** using the provided template towards the `main` branch.
 
 #### Conventional Commits
 We follow [Conventional Commits](https://www.conventionalcommits.org/) to provide a consistent history.
@@ -99,10 +108,6 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/) to provid
 
 > **Note**: If your PR contains multiple commits, they will be squashed before merging to maintain a clean history.
 
-#### The Contributor's Agreement
-By submitting a Pull Request, you acknowledge the following:
-_"I have read the contribution guidelines and fulfill them with this PR. I acknowledge that my PR will be reviewed for alignment with the project's quality, security, and architectural standards."_
-
 ---
 
 ### The Gatekeeper & Review Process
@@ -110,10 +115,10 @@ _"I have read the contribution guidelines and fulfill them with this PR. I ackno
 To help your contribution reach a "review-ready" state faster, we use an automated **Gatekeeper** workflow.
 
 #### Helpful Automation
-The Gatekeeper provides immediate feedback in the workflow logs and PR comments. It verifies:
-- ✅ PR is linked to a GitHub issue.
+The Gatekeeper provides immediate feedback in the workflow logs and PR comments. It helps us verify:
+- ✅ A PR is linked to a GitHub issue.
 - ✅ Commits follow the [Conventional Commits](#conventional-commits) format and length.
-- ✅ Code follows existing style and architectural patterns.
+- ✅ Code follows existing style, security, and architectural patterns.
 - ✅ Tests and linting pass successfully.
 
 #### PR Labels
@@ -146,10 +151,20 @@ You can customize your agent's behavior via the git-ignored `./.agent` directory
 Please reference [PatternFly's AI-assisted development guidelines](https://github.com/patternfly/.github/blob/main/CONTRIBUTING.md) for how to acknowledge AI agent contributions.
 
 ### Agent only
+Agents: This repository contains a hierarchical guideline system. Agents should review agent-only comment blocks.
+
 <!--
-Agents must analyze these files in order:
-1. `./README.md`
-2. `./guidelines/README.md`
-3. `./guidelines/**/*.md`
-4. `./.agent/**/*.md` (if present)
+Agents must analyze these files when asked for guidance:
+
+**Guidelines review order:**
+1. **`./README.md`** - Main agent guidance and behavior standards (including agent-only comment block)
+2. **`./guidelines/README.md`** - Core agent guidance and behavior standards
+3. **`./guidelines/**/*.md`** - Specialized workflow and domain-specific instructions
+4. **`./.agent/**/*.md`** - gitignored directory and local guidelines intended for agent-specific state and new agent-generated guidance, and user workflows that enhance the core guidelines
+
+The guideline system should be processed in this order, with specialized guidelines taking precedence for their specific domains, and local guidelines overriding general guidelines when present.
+
+**Next Steps:**
+5. **Review guidance under the `./.agent/**/*.md` directory.** If the `./.agent` directory exists, the user may ask the agent about the guidance located here.
+6. **If the `./.agent` directory does not exist, ask the user if they want to create it.** The agent should explain how it's going to be used.
 -->
