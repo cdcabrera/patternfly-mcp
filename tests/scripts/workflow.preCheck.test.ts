@@ -382,12 +382,28 @@ describe('setLabels', () => {
     };
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } } as any;
     const core = { notice: jest.fn() } as any;
-
-    const labels = setLabels({ github, context, core });
+    const labels = setLabels({ github, context, core }, { isCommunity: true });
     await labels.add(['label-a']);
 
-    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Workflow add labels failed'));
-    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.'));
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('[Gatekeeper] Mirrored Status: Changes marked as [label-a]'));
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Direct PR labeling is specialized for organization members'));
+  });
+
+  it('should report error via core if adding labels fails for internal contributors', async () => {
+    const github = {
+      rest: {
+        issues: {
+          addLabels: jest.fn<any>().mockRejectedValue(new Error('Permission denied')),
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } } as any;
+    const core = { error: jest.fn() } as any;
+
+    const labels = setLabels({ github, context, core }, { isCommunity: false });
+    await labels.add(['label-a']);
+
+    expect(core.error).toHaveBeenCalledWith(expect.stringContaining('Workflow add labels failed: label-a'));
   });
 });
 
@@ -472,11 +488,29 @@ describe('setComment', () => {
     const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
     const core = { notice: jest.fn() } as any;
 
-    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core });
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core }, { isCommunity: true });
     await comment.add('new body');
 
-    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Workflow create comment failed'));
-    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.'));
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('[Gatekeeper] Mirrored Status: Guidance provided in workflow logs'));
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Direct PR commenting is specialized for organization members'));
+  });
+
+  it('should report error via core if commenting fails for internal contributors', async () => {
+    const github = {
+      rest: {
+        issues: {
+          createComment: jest.fn<any>().mockRejectedValue(new Error('Permission denied')),
+          listComments: jest.fn<any>().mockResolvedValue({ data: [] }),
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
+    const core = { error: jest.fn() } as any;
+
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context, core }, { isCommunity: false });
+    await comment.add('new body');
+
+    expect(core.error).toHaveBeenCalledWith(expect.stringContaining('Workflow create comment failed'));
   });
 });
 
@@ -612,5 +646,21 @@ describe('start', () => {
 
     // 4. Verify no failure was triggered
     expect(core.setFailed).not.toHaveBeenCalled();
+  });
+
+  it('should provide a centralized fallback notice if interactions fail', async () => {
+    // 1. Force labeling and commenting to fail
+    github.rest.issues.addLabels.mockRejectedValue(new Error('Permission denied'));
+    github.rest.issues.createComment.mockRejectedValue(new Error('Permission denied'));
+
+    await start(config, { github, context, core });
+
+    // 2. Verify centralized notice
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.'));
+
+    // 3. Verify that the notice is only called once at the end (or as per implementation)
+    // In our implementation, it's called at each exit point.
+    // We can check the total number of calls if we want to be strict,
+    // but here we just ensure it was called.
   });
 });

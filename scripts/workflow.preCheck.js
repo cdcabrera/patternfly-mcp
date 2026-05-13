@@ -215,21 +215,33 @@ const signatureScan = ({ description, files, fileCount } = {}) => {
  * @param config.github
  * @param config.context
  * @param config.core
+ * @param options
+ * @param options.isCommunity
+ * @param options.onInteractionFailure
  * @returns {{add: function(*): Promise<void>, remove: function(*): Promise<void>}}
  */
-const setLabels = ({ github, context, core } = {}) => {
+const setLabels = ({ github, context, core } = {}, { isCommunity = false, onInteractionFailure = () => {} } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
   const addLabels = github?.rest?.issues?.addLabels;
   const removeLabel = github?.rest?.issues?.removeLabel;
 
+  const handleFailure = (msg, labels) => {
+    onInteractionFailure();
+    const labelList = Array.isArray(labels) ? labels.join(', ') : labels;
+    if (isCommunity) {
+      core?.notice(`[Gatekeeper] Mirrored Status: Changes marked as [${labelList}]. (Note: Direct PR labeling is specialized for organization members)`);
+    } else {
+      core?.error(`${msg}: ${labelList}`);
+    }
+  };
+
   return {
     add: async labels => {
       if (Array.isArray(labels)) {
         await addLabels({ owner, repo, issue_number: issueNumber, labels }).catch(err => {
-          const msg = `Workflow add labels failed: ${labels.join(', ')}`;
-          console.error(msg, err?.message || err);
-          core?.notice(`${msg}. Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.`);
+          console.error(`Workflow add labels failed: ${labels.join(', ')}`, err?.message || err);
+          handleFailure('Workflow add labels failed', labels);
         });
       }
     },
@@ -237,9 +249,8 @@ const setLabels = ({ github, context, core } = {}) => {
       if (Array.isArray(labels)) {
         for (const label of labels) {
           await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(err => {
-            const msg = `Workflow remove label failed: ${label}`;
-            console.error(msg, err?.message || err);
-            core?.notice(`${msg}. Gatekeeper supports a flexible messaging model.`);
+            console.error(`Workflow remove label failed: ${label}`, err?.message || err);
+            handleFailure('Workflow remove label failed', label);
           });
         }
       }
@@ -282,9 +293,12 @@ const getCommentId = async (signature, { github, context } = {}) => {
  * @param config.github
  * @param config.context
  * @param config.core
+ * @param options
+ * @param options.isCommunity
+ * @param options.onInteractionFailure
  * @returns {Promise<{add: function(*): Promise<*>, remove: function(): Promise<*>, existingCommentId: *, isComment: boolean}>}
  */
-const setComment = async ({ signature, github, context, core } = {}) => {
+const setComment = async ({ signature, github, context, core } = {}, { isCommunity = false, onInteractionFailure = () => {} } = {}) => {
   const { owner, repo } = context?.repo || {};
   const issueNumber = context?.issue?.number;
   const createComment = github?.rest?.issues?.createComment;
@@ -294,26 +308,32 @@ const setComment = async ({ signature, github, context, core } = {}) => {
   const getBody = bod => String(bod ?? '') + signature;
   const commentId = await getCommentId(signature, { github, context });
 
+  const handleFailure = (msg) => {
+    onInteractionFailure();
+    if (isCommunity) {
+      core?.notice(`[Gatekeeper] Mirrored Status: Guidance provided in workflow logs. (Note: Direct PR commenting is specialized for organization members)`);
+    } else {
+      core?.error(msg);
+    }
+  };
+
   return {
     add: async body => {
       if (commentId) {
         return updateComment({ owner, repo, comment_id: commentId, body: getBody(body) }).catch(err => {
-          const msg = 'Workflow update comment failed';
-          console.error(msg, err?.message || err);
-          core?.notice(`${msg}. Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.`);
+          console.error('Workflow update comment failed', err?.message || err);
+          handleFailure('Workflow update comment failed');
         });
       }
 
       return createComment({ owner, repo, issue_number: issueNumber, body: getBody(body) }).catch(err => {
-        const msg = 'Workflow create comment failed';
-        console.error(msg, err?.message || err);
-        core?.notice(`${msg}. Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.`);
+        console.error('Workflow create comment failed', err?.message || err);
+        handleFailure('Workflow create comment failed');
       });
     },
     remove: async () => deleteComment({ owner, repo, comment_id: commentId }).catch(err => {
-      const msg = 'Workflow remove comment failed';
-      console.error(msg, err?.message || err);
-      core?.notice(`${msg}. Gatekeeper supports a flexible messaging model.`);
+      console.error('Workflow remove comment failed', err?.message || err);
+      handleFailure('Workflow remove comment failed');
     }),
     existingCommentId: commentId,
     isComment: commentId !== undefined
@@ -378,12 +398,26 @@ const start = async ({
   LABEL_PRECHECKS_FAIL
 } = {}, { github, context, core } = {}) => {
   const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles } = await getPullRequest({ github, context });
-  const { add: addLabels, remove: removeLabels } = await setLabels({ github, context, core });
+
+  let hasInteractionFailure = false;
+  const onInteractionFailure = () => {
+    hasInteractionFailure = true;
+  };
+
+  const isBot = ['Bot', 'dependabot[bot]'].includes(authorType) || ['Bot', 'dependabot[bot]'].includes(author);
+  const isInternal = ['OWNER', 'MEMBER', 'COLLABORATOR'].includes(authorRole);
+  const isCommunity = !isInternal && !isBot;
+
+  const { add: addLabels, remove: removeLabels } = await setLabels({ github, context, core }, { isCommunity, onInteractionFailure });
 
   // Core contributors get a pass
   if (coreContributors({ author, authorType, authorRole })) {
     await addLabels([LABEL_PRECHECKS_PASS]);
     core.notice(`Contributor found, skipping pre-checks: ${author}`);
+
+    if (hasInteractionFailure) {
+      core.notice('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.');
+    }
 
     return;
   }
@@ -391,7 +425,7 @@ const start = async ({
   // Signature checks found feature-like work, notify the user they may not be following guidance
   const codeSignature = signatureScan({ description: prDescription, files: prFiles, fileCount: prFileCount });
   const botCommentSignature = '<!-- precheck-bot-comment-V1 -->';
-  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context, core });
+  const { add: addBotComment } = await setComment({ signature: botCommentSignature, github, context, core }, { isCommunity, onInteractionFailure });
 
   if (codeSignature.hasTell) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
@@ -415,6 +449,10 @@ const start = async ({
       `- Split changes into smaller, focused PR contributions.\n\n` +
       `Make sure to review the contributing guidelines.`
     );
+
+    if (hasInteractionFailure) {
+      core.notice('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.');
+    }
 
     return;
   }
@@ -445,6 +483,10 @@ const start = async ({
       `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
       `Make sure to review the contributing guidelines.`
     );
+
+    if (hasInteractionFailure) {
+      core.notice('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.');
+    }
 
     return;
   }
@@ -484,6 +526,10 @@ const start = async ({
       `I finished my scan and all pre-checks pass!\n\n` +
       `Make sure to review the contributing guidelines.`
     );
+  }
+
+  if (hasInteractionFailure) {
+    core.notice('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.');
   }
 };
 
