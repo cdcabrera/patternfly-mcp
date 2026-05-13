@@ -41,7 +41,8 @@ jobs:
               await startFn({
                   LABEL_NEEDS_CLEANUP: 'bot:needs-cleanup',
                   LABEL_NEEDS_MAINTAINER: 'bot:needs-maintainer',
-                  LABEL_PRECHECKS_PASS: 'bot:policy-ready'
+                  LABEL_PRECHECKS_PASS: 'bot:policy-ready',
+                  LABEL_PRECHECKS_FAIL: 'bot:policy-hold'
                 }, {
                   github,
                   context,

@@ -309,25 +309,6 @@ const setComment = async ({ signature, github, context } = {}) => {
 };
 
 /**
- * Convert a PR to draft.
- *
- * @param config
- * @param config.github
- * @param config.context
- * @returns {Promise<any>}
- */
-const convertPrToDraft = async ({ github, context } = {}) => {
-  const prNodeId = context.payload.pull_request.node_id;
-  const mutation = `mutation($id: ID!) {
-      convertPullRequestToDraft(input: { pullRequestId: $id }) {
-        pullRequest { id isDraft }
-      }
-    }`;
-
-  return github.graphql(mutation, { id: prNodeId });
-};
-
-/**
  * Get a pull request context.
  *
  * @param config
@@ -371,6 +352,7 @@ const getPullRequest = async ({ github, context } = {}) => {
  * @param config.LABEL_NEEDS_CLEANUP - Label string
  * @param config.LABEL_NEEDS_MAINTAINER - Label string
  * @param config.LABEL_PRECHECKS_PASS - Label string
+ * @param config.LABEL_PRECHECKS_FAIL - Label string
  * @param env - Environment params
  * @param env.github
  * @param env.context
@@ -380,7 +362,8 @@ const getPullRequest = async ({ github, context } = {}) => {
 const start = async ({
   LABEL_NEEDS_CLEANUP,
   LABEL_NEEDS_MAINTAINER,
-  LABEL_PRECHECKS_PASS
+  LABEL_PRECHECKS_PASS,
+  LABEL_PRECHECKS_FAIL
 } = {}, { github, context, core } = {}) => {
   const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles } = await getPullRequest({ github, context });
   const { add: addLabels, remove: removeLabels } = await setLabels({ github, context });
@@ -400,15 +383,18 @@ const start = async ({
 
   if (codeSignature.hasTell) {
     const botComment = `### 🤖 PR Quality Guidance\n` +
-      `I've moved this to **Draft** due to the scope of changes, and to avoid confusion.\n` +
+      `I've flagged this PR for a **Policy Hold** due to a "Perfect Storm" of identified issues (core modifications, excessive scope, and template changes).\n\n` +
+      `**To resolve this hold**:\n` +
+      `- Ensure all updates are associated with a GitHub issue.\n` +
+      `- Align to the codebase style and remove excessive changes.\n` +
+      `- Split changes into smaller, focused PR contributions.\n\n` +
       `Once you've focused your changes I'll take another look.\n\n` +
       `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
-    await convertPrToDraft({ github, context });
     await addBotComment(botComment);
-    await addLabels([LABEL_NEEDS_CLEANUP]);
+    await addLabels([LABEL_NEEDS_CLEANUP, LABEL_PRECHECKS_FAIL]);
 
-    core.setFailed('PR moved to Draft. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.');
+    core.setFailed('PR placed on Policy Hold. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.');
 
     return;
   }
@@ -449,7 +435,7 @@ const start = async ({
 
     await addBotComment(successComment);
     await addLabels([LABEL_PRECHECKS_PASS]);
-    await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER]);
+    await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER, LABEL_PRECHECKS_FAIL]);
   }
 };
 
