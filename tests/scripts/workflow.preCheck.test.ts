@@ -457,8 +457,7 @@ describe('start', () => {
           updateComment: jest.fn<any>().mockResolvedValue({}),
           deleteComment: jest.fn<any>().mockResolvedValue({})
         }
-      },
-      graphql: jest.fn<any>().mockResolvedValue({})
+      }
     };
     context = {
       payload: {
@@ -478,7 +477,8 @@ describe('start', () => {
     config = {
       LABEL_PRECHECKS_PASS: 'bot:policy-ready',
       LABEL_NEEDS_CLEANUP: 'bot:needs-cleanup',
-      LABEL_NEEDS_MAINTAINER: 'bot:needs-maintainer'
+      LABEL_NEEDS_MAINTAINER: 'bot:needs-maintainer',
+      LABEL_PRECHECKS_FAIL: 'bot:policy-hold'
     };
   });
 
@@ -497,7 +497,7 @@ describe('start', () => {
     expect(core.setFailed).not.toHaveBeenCalled();
   });
 
-  it('should convert PR to draft if signature scan finds complex changes (hasTell)', async () => {
+  it('should place PR on policy hold if signature scan finds complex changes (hasTell)', async () => {
     // 1. Mock fileCount and description to trigger hasTell
     context.payload.pull_request.changed_files = 100;
     context.payload.pull_request.body = 'Missing template signature';
@@ -507,18 +507,16 @@ describe('start', () => {
 
     await start(config, { github, context, core });
 
-    // 2. Verify draft conversion and labeling
-    expect(github.graphql).toHaveBeenCalledWith(expect.stringContaining('convertPullRequestToDraft'), expect.objectContaining({ id: 'PR_123' }));
-
+    // 2. Verify policy hold labeling
     expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
-      labels: [config.LABEL_NEEDS_CLEANUP]
+      labels: [config.LABEL_NEEDS_CLEANUP, config.LABEL_PRECHECKS_FAIL]
     }));
 
     expect(github.rest.issues.createComment).toHaveBeenCalledWith(expect.objectContaining({
-      body: expect.stringContaining("I've moved this to **Draft**")
+      body: expect.stringContaining("I've flagged this PR for a **Policy Hold**")
     }));
 
-    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('PR moved to Draft'));
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('PR placed on Policy Hold'));
   });
 
   it('should apply needs-cleanup label and fail if scan find errors', async () => {
@@ -569,6 +567,7 @@ describe('start', () => {
 
     expect(removedLabels).toContain(config.LABEL_NEEDS_CLEANUP);
     expect(removedLabels).toContain(config.LABEL_NEEDS_MAINTAINER);
+    expect(removedLabels).toContain(config.LABEL_PRECHECKS_FAIL);
 
     // 4. Verify no failure was triggered
     expect(core.setFailed).not.toHaveBeenCalled();
