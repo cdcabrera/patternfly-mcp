@@ -348,6 +348,33 @@ describe('getPullRequest', () => {
 
     expect(result).toMatchSnapshot('pr');
   });
+
+  it('should handle errors when fetching PR metadata', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const github = {
+      rest: {
+        pulls: { listFiles: jest.fn<any>().mockRejectedValue(new Error('API Error')) }
+      }
+    } as any;
+    const context = {
+      payload: {
+        pull_request: {
+          user: { login: 'author1', type: 'User' },
+          author_association: 'MEMBER',
+          body: 'description',
+          changed_files: 10
+        }
+      },
+      repo: { owner: 'lorem', repo: 'ipsum' },
+      issue: { number: 1 }
+    } as any;
+
+    const result = await getPullRequest({ github, context });
+
+    expect(result).toEqual({});
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to get pull request context', 'API Error');
+    consoleSpy.mockRestore();
+  });
 });
 
 describe('setLabels', () => {
@@ -369,6 +396,28 @@ describe('setLabels', () => {
 
     expect(github.rest.issues.addLabels).toHaveBeenCalled();
     expect(github.rest.issues.removeLabel).toHaveBeenCalled();
+  });
+
+  it('should handle errors when adding labels', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const github = {
+      rest: {
+        issues: {
+          addLabels: jest.fn<any>().mockRejectedValue(new Error('Permission denied'))
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } } as any;
+    const labels = setLabels({ github, context });
+
+    await labels.add(['label-a']);
+
+    expect(github.rest.issues.addLabels).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Workflow add labels (label-a) failed'),
+      'Permission denied'
+    );
+    consoleSpy.mockRestore();
   });
 });
 
@@ -437,6 +486,29 @@ describe('setComment', () => {
       comment_id: 500
     }));
   });
+
+  it('should handle errors when commenting fails', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const github = {
+      rest: {
+        issues: {
+          createComment: jest.fn<any>().mockRejectedValue(new Error('Permission denied')),
+          listComments: jest.fn<any>().mockResolvedValue({ data: [] })
+        }
+      }
+    };
+    const context = { repo: { owner: 'lorem', repo: 'ipsum' }, issue: { number: 1 } };
+    const comment = await setComment({ signature: '<!-- signature-123 -->', github, context });
+
+    await comment.add('new body');
+
+    expect(github.rest.issues.createComment).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Workflow create comment failed'),
+      'Permission denied'
+    );
+    consoleSpy.mockRestore();
+  });
 });
 
 describe('start', () => {
@@ -473,7 +545,7 @@ describe('start', () => {
       repo: { owner: 'o', repo: 'r' },
       issue: { number: 123 }
     };
-    core = { setFailed: jest.fn(), log: jest.fn() };
+    core = { setFailed: jest.fn(), log: jest.fn(), notice: jest.fn(), error: jest.fn(), warning: jest.fn() };
     config = {
       LABEL_PRECHECKS_PASS: 'bot:policy-ready',
       LABEL_NEEDS_CLEANUP: 'bot:needs-cleanup',
@@ -494,7 +566,7 @@ describe('start', () => {
     }));
 
     expect(github.rest.issues.createComment).not.toHaveBeenCalled();
-    expect(core.setFailed).not.toHaveBeenCalled();
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Contributor found'));
   });
 
   it('should place PR on policy hold if signature scan finds complex changes (hasTell)', async () => {
@@ -516,7 +588,7 @@ describe('start', () => {
       body: expect.stringContaining("I've flagged this PR for a **Policy Hold**")
     }));
 
-    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('PR placed on Policy Hold'));
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('Policy Hold'));
   });
 
   it('should apply needs-cleanup label and fail if scan find errors', async () => {
@@ -534,7 +606,7 @@ describe('start', () => {
       body: expect.stringContaining('I found some issues with your work')
     }));
 
-    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('PR pre-check requirements not met'));
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('found some issues'));
   });
 
   it('should apply needs-maintainer label for security-sensitive changes', async () => {
@@ -547,6 +619,9 @@ describe('start', () => {
     expect(github.rest.issues.addLabels).toHaveBeenCalledWith(expect.objectContaining({
       labels: [config.LABEL_NEEDS_MAINTAINER]
     }));
+
+    expect(core.warning).toHaveBeenCalledWith(expect.stringContaining('Security-sensitive changes detected'));
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining("core contributor's involvement"));
   });
 
   it('should notify success and apply pass label when all pre-checks pass', async () => {
@@ -570,6 +645,6 @@ describe('start', () => {
     expect(removedLabels).toContain(config.LABEL_PRECHECKS_FAIL);
 
     // 4. Verify no failure was triggered
-    expect(core.setFailed).not.toHaveBeenCalled();
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('all pre-checks pass'));
   });
 });

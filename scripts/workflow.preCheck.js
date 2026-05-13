@@ -226,7 +226,7 @@ const setLabels = ({ github, context } = {}) => {
     add: async labels => {
       if (Array.isArray(labels)) {
         await addLabels({ owner, repo, issue_number: issueNumber, labels }).catch(err => {
-          console.error(`Workflow add labels failed: ${labels.join(', ')}`, err?.message || err);
+          console.error(`Workflow add labels (${labels.join(', ')}) failed.`, err?.message || err);
         });
       }
     },
@@ -234,7 +234,7 @@ const setLabels = ({ github, context } = {}) => {
       if (Array.isArray(labels)) {
         for (const label of labels) {
           await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(err => {
-            console.error(`Workflow remove label failed: ${label}`, err?.message || err);
+            console.error(`Workflow remove label ${label} failed.`, err?.message || err);
           });
         }
       }
@@ -292,16 +292,16 @@ const setComment = async ({ signature, github, context } = {}) => {
     add: async body => {
       if (commentId) {
         return updateComment({ owner, repo, comment_id: commentId, body: getBody(body) }).catch(err => {
-          console.error(`Workflow update comment failed`, err?.message || err);
+          console.error('Workflow update comment failed.', err?.message || err);
         });
       }
 
       return createComment({ owner, repo, issue_number: issueNumber, body: getBody(body) }).catch(err => {
-        console.error(`Workflow create comment failed`, err?.message || err);
+        console.error('Workflow create comment failed.', err?.message || err);
       });
     },
     remove: async () => deleteComment({ owner, repo, comment_id: commentId }).catch(err => {
-      console.error(`Workflow remove comment failed`, err?.message || err);
+      console.error('Workflow remove comment failed.', err?.message || err);
     }),
     existingCommentId: commentId,
     isComment: commentId !== undefined
@@ -368,10 +368,15 @@ const start = async ({
   const { author, authorType, authorRole, description: prDescription, fileCount: prFileCount, files: prFiles } = await getPullRequest({ github, context });
   const { add: addLabels, remove: removeLabels } = await setLabels({ github, context });
 
+  core.notice('🤖 Gatekeeper policy checks are active! Please refer to the workflow logs and summaries for guidance.');
+
   // Core contributors get a pass
   if (coreContributors({ author, authorType, authorRole })) {
-    console.log(`Contributor found, skipping pre-checks: ${author}`);
     await addLabels([LABEL_PRECHECKS_PASS]);
+    const botComment = `### 🤖 PR Quality Guidance\n` +
+      `Contributor found, skipping pre-checks: ${author}`;
+
+    core.notice(botComment + '\n\n');
 
     return;
   }
@@ -389,12 +394,12 @@ const start = async ({
       `- Align to the codebase style and remove excessive changes.\n` +
       `- Split changes into smaller, focused PR contributions.\n\n` +
       `Once you've focused your changes I'll take another look.\n\n` +
+      `**Labels**: \`${LABEL_NEEDS_CLEANUP}\`, \`${LABEL_PRECHECKS_FAIL}\` \n\n` +
       `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
     await addBotComment(botComment);
     await addLabels([LABEL_NEEDS_CLEANUP, LABEL_PRECHECKS_FAIL]);
-
-    core.setFailed('PR placed on Policy Hold. Make sure to review the contributing guidelines regarding potential feature and generated work and why your PatternFly MCP contribution may require planning.');
+    core.setFailed(botComment);
 
     return;
   }
@@ -402,6 +407,12 @@ const start = async ({
   // Sec check
   if (codeSignature.isSecModified) {
     await addLabels([LABEL_NEEDS_MAINTAINER]);
+
+    core.warning(
+      '### 🤖 PR Quality Guidance\n' +
+      'Security-sensitive changes detected. A maintainer has been notified.\n\n' +
+      `**Labels**: \`${LABEL_NEEDS_MAINTAINER}\`\n\n`
+    );
   }
 
   // Signature checks found something, alert the contributor in good faith
@@ -409,12 +420,12 @@ const start = async ({
     const botComment = `### 🤖 PR Quality Guidance\n` +
       `I found some issues with your work. Once the following updates are addressed, you'll be queued for review:\n\n` +
       `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+      `**Labels**: \`${LABEL_NEEDS_CLEANUP}\` \n\n` +
       `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
     await addBotComment(botComment);
     await addLabels([LABEL_NEEDS_CLEANUP]);
-
-    core.setFailed('PR pre-check requirements not met. Make sure to review the contributing guidelines.');
+    core.setFailed(botComment);
 
     return;
   }
@@ -423,19 +434,30 @@ const start = async ({
   if (codeSignature.hasFailed) {
     const errorComment = `### 🤖 PR Quality Guidance\n` +
       `${codeSignature.errors.map(err => `- ${err}`).join('\n')}\n\n` +
+      `**Labels**: \`${LABEL_NEEDS_MAINTAINER}\` \n\n` +
       `_This comment updates automatically._`;
 
     await addBotComment(errorComment);
     await addLabels([LABEL_NEEDS_MAINTAINER]);
+    core.warning(errorComment + '\n\n');
   } else {
     // Or confirm the work has passed pre-check
     const successComment = `### 🤖 PR Quality Guidance\n` +
       `I finished my scan and all pre-checks pass!\n\n` +
+      `**Labels**: \`${LABEL_PRECHECKS_PASS}\`${codeSignature?.isSecModified ? `\`,${LABEL_NEEDS_MAINTAINER}\`` : ''} \n\n` +
       `_Read our [contribution guidelines](https://github.com/patternfly/patternfly-mcp/blob/main/CONTRIBUTING.md). This comment updates automatically._`;
 
     await addBotComment(successComment);
     await addLabels([LABEL_PRECHECKS_PASS]);
-    await removeLabels([LABEL_NEEDS_CLEANUP, LABEL_NEEDS_MAINTAINER, LABEL_PRECHECKS_FAIL]);
+
+    const labelsToRemove = [LABEL_NEEDS_CLEANUP, LABEL_PRECHECKS_FAIL];
+
+    if (!codeSignature.isSecModified) {
+      labelsToRemove.push(LABEL_NEEDS_MAINTAINER);
+    }
+
+    await removeLabels(labelsToRemove);
+    core.notice(successComment + '\n\n');
   }
 };
 
