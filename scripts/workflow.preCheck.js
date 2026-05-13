@@ -229,7 +229,7 @@ const setLabels = ({ github, context, core } = {}) => {
         await addLabels({ owner, repo, issue_number: issueNumber, labels }).catch(err => {
           const msg = `Workflow add labels failed: ${labels.join(', ')}`;
           console.error(msg, err?.message || err);
-          core?.notice(`${msg}. This is common for PRs from forks. Guidance will be provided in the workflow logs instead.`);
+          core?.notice(`${msg}. Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.`);
         });
       }
     },
@@ -239,7 +239,7 @@ const setLabels = ({ github, context, core } = {}) => {
           await removeLabel({ owner, repo, issue_number: issueNumber, name: label }).catch(err => {
             const msg = `Workflow remove label failed: ${label}`;
             console.error(msg, err?.message || err);
-            core?.notice(`${msg}. This is common for PRs from forks.`);
+            core?.notice(`${msg}. Gatekeeper supports a flexible messaging model.`);
           });
         }
       }
@@ -300,20 +300,20 @@ const setComment = async ({ signature, github, context, core } = {}) => {
         return updateComment({ owner, repo, comment_id: commentId, body: getBody(body) }).catch(err => {
           const msg = 'Workflow update comment failed';
           console.error(msg, err?.message || err);
-          core?.notice(`${msg}. This is common for PRs from forks. Guidance will be provided in the workflow logs instead.`);
+          core?.notice(`${msg}. Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.`);
         });
       }
 
       return createComment({ owner, repo, issue_number: issueNumber, body: getBody(body) }).catch(err => {
         const msg = 'Workflow create comment failed';
         console.error(msg, err?.message || err);
-        core?.notice(`${msg}. This is common for PRs from forks. Guidance will be provided in the workflow logs instead.`);
+        core?.notice(`${msg}. Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.`);
       });
     },
     remove: async () => deleteComment({ owner, repo, comment_id: commentId }).catch(err => {
       const msg = 'Workflow remove comment failed';
       console.error(msg, err?.message || err);
-      core?.notice(`${msg}. This is common for PRs from forks.`);
+      core?.notice(`${msg}. Gatekeeper supports a flexible messaging model.`);
     }),
     existingCommentId: commentId,
     isComment: commentId !== undefined

@@ -387,6 +387,7 @@ describe('setLabels', () => {
     await labels.add(['label-a']);
 
     expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Workflow add labels failed'));
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.'));
   });
 });
 
@@ -475,6 +476,7 @@ describe('setComment', () => {
     await comment.add('new body');
 
     expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Workflow create comment failed'));
+    expect(core.notice).toHaveBeenCalledWith(expect.stringContaining('Gatekeeper supports a flexible messaging model; please refer to the workflow logs for mirrored guidance.'));
   });
 });
 
