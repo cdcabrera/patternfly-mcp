@@ -410,6 +410,11 @@ const start = async ({
   // Sec check
   if (codeSignature.isSecModified) {
     await addLabels([LABEL_NEEDS_MAINTAINER]);
+
+    core.notice(
+      'PR Quality Guidance\n\n' +
+      'Security-sensitive changes detected. A maintainer has been notified.'
+    );
   }
 
   // Signature checks found something, alert the contributor in good faith
