@@ -105,7 +105,7 @@ The PatternFly MCP primarily focuses on documentation found on the PatternFly Gi
 
 Development pull requests (PRs) should be opened against the default branch.
 
-Pull requests from non-core contributors will be invited to read the contribution agreement in PR comments. Proceeding with the PR implies acceptance of these guidelines.
+Pull requests from non-core contributors will be invited to read the contribution agreement in both workflow logs and PR comments if available. Proceeding with the PR implies acceptance of these guidelines.
 
 ##### The Contributor's agreement
 _I have read the contribution guidelines and fulfill them with this PR. I acknowledge my PR may be labeled, placed on policy hold, and closed by automation or maintainers if it does not have a related GitHub issue, follow guidelines, and pass validation._
