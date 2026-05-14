@@ -243,7 +243,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   // Cleanup: ensure logging matches severity after verbose/level processing
-  result.logging.level = result.logging.level || DEFAULT_OPTIONS.logging.level;
+  result.logging.level = result.logging.level ?? DEFAULT_OPTIONS.logging.level;
 
   return result;
 };
