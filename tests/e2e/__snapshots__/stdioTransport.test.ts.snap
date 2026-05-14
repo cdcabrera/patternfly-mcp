@@ -176,8 +176,6 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 ",
   "[INFO]: Registered tool: searchPatternFlyDocs
 ",
-  "[INFO]: Skipping tool registration: browsePatternFly
-",
   "[INFO]: @patternfly/patternfly-mcp server running on stdio transport
 ",
 ]

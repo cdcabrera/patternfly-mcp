@@ -258,7 +258,7 @@ const registerServerTools = async (tools: McpToolCreator[], server: McpServer, o
         runWithOptions(options, async () => shouldRegister(options)));
 
       if (!status) {
-        log.info(`Skipping tool registration: ${name}`);
+        log.debug(`Skipping tool registration: ${name}`);
         continue;
       }
     }
