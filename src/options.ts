@@ -112,6 +112,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
 
   // Tracking for toolModules to avoid duplicates
   const seenTools = new Set<string>();
+  let isVerbose = false;
 
   for (let i = 0; i < argv.length; i++) {
     let token = argv[i];
@@ -158,7 +159,7 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
         break;
 
       case '--verbose':
-        result.logging.level = 'debug';
+        isVerbose = true;
         break;
 
       case '--log-stderr':
@@ -243,7 +244,9 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   }
 
   // Cleanup: ensure logging matches severity after verbose/level processing
-  result.logging.level = result.logging.level ?? DEFAULT_OPTIONS.logging.level;
+  if (isVerbose) {
+    result.logging.level = 'debug';
+  }
 
   return result;
 };
