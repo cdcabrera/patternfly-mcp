@@ -131,6 +131,9 @@ const browsePatternFlyTool = (options = getOptions()): McpTool => {
   ];
 };
 
+/**
+ * A tool name, typically the first entry in the tuple. Used in logging and deduplication.
+ */
 browsePatternFlyTool.toolName = 'browsePatternFly';
 
 export { browsePatternFlyTool };
