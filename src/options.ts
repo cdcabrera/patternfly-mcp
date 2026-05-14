@@ -96,6 +96,12 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
  *     specification is a local module name or path.
  *
+ * @note Experimental Flags:
+ * The parser strips `--experimental-` prefixes from options to allow an internal match
+ * against standard flag names. Actual validation and warning issuance for experimental
+ * features are handled downstream in `setOptions` via `normalizeExperimentalOptions`
+ * to ensure both CLI and programmatic options align.
+ *
  * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
  */
