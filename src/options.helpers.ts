@@ -56,7 +56,4 @@ const normalizeExperimentalOptions = (options: Record<string, unknown> = {}, exp
   return { normalized, usedExperimental };
 };
 
-  return { normalized, usedExperimental };
-};
-
 export { getNodeMajorVersion, normalizeExperimentalOptions };

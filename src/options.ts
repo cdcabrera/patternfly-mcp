@@ -7,7 +7,7 @@ import {
   type DefaultOptionsOverrides,
   type LoggingOptions,
   type HttpOptions,
-  type ModeOptions, EXPERIMENTAL_OPTIONS
+  type ModeOptions
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
@@ -126,16 +126,6 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
     if (isExperimental) {
       // Extract the flag name without '--experimental-'
       const flagName = token.replace('--experimental-', '');
-
-      // Convert kebab-case (context-management) to camelCase (contextManagement)
-      const internalOption = flagName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-
-      // If the option isn't marked as experimental, we skip it
-      // This prevents users from using --experimental- on stable flags
-      if (!EXPERIMENTAL_OPTIONS.has(internalOption as keyof DefaultOptions)) {
-        console.warn(`[Warning] Flag ${token} is not registered as an experimental option. Ignoring.`);
-        continue;
-      }
 
       // Normalize token for the switch statement
       token = `--${flagName}`;
