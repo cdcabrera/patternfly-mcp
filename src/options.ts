@@ -28,21 +28,19 @@ type GlobalOptions = DefaultOptions;
 
 /**
  * Options parsed from CLI arguments
+ *
+ * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
+ * to 'strict' when external tools are requested, otherwise 'none'.
  */
 type CliOptions = {
   mode?: DefaultOptions['mode'];
   modeOptions?: Partial<ModeOptions>;
+  contextManagement: DefaultOptions['contextManagement'] | undefined;
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
   toolModules: string[];
-
-  /**
-   * Isolation preset for external plugins (CLI-provided). If omitted, defaults
-   * to 'strict' when external tools are requested, otherwise 'none'.
-   */
   pluginIsolation: 'none' | 'strict' | undefined;
-  contextManagement: DefaultOptions['contextManagement'] | undefined;
 };
 
 /**
