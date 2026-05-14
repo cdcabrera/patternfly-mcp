@@ -13,7 +13,7 @@ import { log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { composeTools, sendToolsHostShutdown } from './server.tools';
 import { composeResources } from './server.resources';
-import {type AppSession, type GlobalOptions} from './options';
+import { type GlobalOptions } from './options';
 import {
   getOptions,
   getSessionOptions,
@@ -207,18 +207,48 @@ interface ServerInstance {
 }
 
 /**
- * Register a server tool.
+ * Register server resources.
  *
- * @note Currently limited to registering tools. Intent is to review expanding
- * this towards resources and prompts.
- *
- * @param {McpToolCreator[]} tools - Server components/facets to register.
- * @param {McpServer} mcpServer
+ * @param {McpResourceCreator[]} resources - MCP resources to register.
+ * @param {McpServer} server - MCP server instance.
  * @param {GlobalOptions} [options]
  * @param {AppSession} [session]
- * @returns A filtered list of registered components.
  */
-const registerServerTools = async (tools: McpToolCreator[], mcpServer: McpServer, options = getOptions(), session = getSessionOptions()) => {
+const registerServerResources = async (resources: McpResourceCreator[], server: McpServer, options = getOptions(), session = getSessionOptions()) => {
+  resources.forEach(resourceCreator => {
+    const [name, uri, config, callback, metadata] = resourceCreator(options);
+
+    log.info(`Registered resource: ${name}`);
+
+    if (server) {
+      registerResource(server, name, uri, config, (...args: unknown[]) =>
+        runWithSession(session, async () =>
+          runWithOptions(options, async () => {
+            log.debug(
+              `Running resource "${name}"`,
+              `isArgs = ${args?.length > 0}`
+            );
+
+            const timedReport = stat.traffic();
+            const resourceResult = await callback(...args);
+
+            timedReport({ resource: name });
+
+            return resourceResult;
+          })), metadata);
+    }
+  });
+};
+
+/**
+ * Register server tools.
+ *
+ * @param {McpToolCreator[]} tools - MCP tools to register.
+ * @param {McpServer} server - MCP server instance.
+ * @param {GlobalOptions} [options]
+ * @param {AppSession} [session]
+ */
+const registerServerTools = async (tools: McpToolCreator[], server: McpServer, options = getOptions(), session = getSessionOptions()) => {
   for (const toolCreator of tools) {
     const [name, schema, callback, config] = toolCreator(options);
     const shouldRegister = config?.shouldRegister;
@@ -228,6 +258,7 @@ const registerServerTools = async (tools: McpToolCreator[], mcpServer: McpServer
         runWithOptions(options, async () => shouldRegister(options)));
 
       if (!status) {
+        log.info(`Skipping tool registration: ${name}`);
         continue;
       }
     }
@@ -251,7 +282,7 @@ const registerServerTools = async (tools: McpToolCreator[], mcpServer: McpServer
     const isContextLike = (value: unknown) => isPlainObject(value) && 'requestId' in value && 'signal' in value;
 
     try {
-      mcpServer?.registerTool(name, schema, (args: unknown = {}, ..._args: unknown[]) =>
+      server?.registerTool(name, schema, (args: unknown = {}, ..._args: unknown[]) =>
         runWithSession(session, async () =>
           runWithOptions(options, async () => {
             // Basic track for remaining args to account for future MCP SDK alterations.
@@ -421,101 +452,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
     }
 
     // Apply MCP resources, if available
-    updatedResources.forEach(resourceCreator => {
-      const [name, uri, config, callback, metadata] = resourceCreator(options);
-
-      log.info(`Registered resource: ${name}`);
-
-      if (server) {
-        registerResource(server, name, uri, config, (...args: unknown[]) =>
-          runWithSession(session, async () =>
-            runWithOptions(options, async () => {
-              log.debug(
-                `Running resource "${name}"`,
-                `isArgs = ${args?.length > 0}`
-              );
-
-              const timedReport = stat.traffic();
-              const resourceResult = await callback(...args);
-
-              timedReport({ resource: name });
-
-              return resourceResult;
-            })), metadata);
-      }
-    });
+    await registerServerResources(updatedResources, server, options, session);
 
     // Apply MCP tools, if available
     await registerServerTools(updatedTools, server, options, session);
-    /*
-    for (const toolCreator of updatedTools) {
-      const [name, schema, callback, config] = toolCreator(options);
-      const shouldRegister = config?.shouldRegister;
-
-      if (shouldRegister) {
-        const status = await runWithSession(session, async () =>
-          runWithOptions(options, async () => shouldRegister(options)));
-
-        if (!status) {
-          continue;
-        }
-      }
-
-      // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
-      const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
-      const isSchemaDefined = schema?.inputSchema !== undefined;
-
-      if (!isZod) {
-        log.warn(`Tool "${name}" has a non Zod inputSchema. Skipping registration.`);
-        log.debug(
-          `Tool "${name}" has received a non Zod inputSchema from the tool pipeline.`,
-          `This will cause unexpected issues, such as failure to pass arguments.`,
-          `MCP SDK requires Zod. Kneel before Zod.`
-        );
-
-        continue;
-      }
-
-      // Lightweight check for malformed schemas that bypass validation.
-      const isContextLike = (value: unknown) => isPlainObject(value) && 'requestId' in value && 'signal' in value;
-
-      try {
-        server?.registerTool(name, schema, (args: unknown = {}, ..._args: unknown[]) =>
-          runWithSession(session, async () =>
-            runWithOptions(options, async () => {
-              // Basic track for remaining args to account for future MCP SDK alterations.
-              log.debug(
-                `Running tool "${name}"`,
-                `isArgs = ${args !== undefined}`,
-                `isRemainingArgs = ${_args?.length > 0}`
-              );
-
-              const timedReport = stat.traffic();
-              const isContextLikeArgs = isContextLike(args);
-
-              // Log potential Zod validation errors triggered by context fail.
-              if (isContextLikeArgs) {
-                log.debug(
-                  `Tool "${name}" handler received a context like object as the first parameter.`,
-                  'If this is unexpected this is likely an undefined schema or a schema not registering as Zod.',
-                  'Review the related schema definition and ensure it is defined and valid.',
-                  `Schema is Defined = ${isSchemaDefined}; Schema is Zod = ${isZod}; Context like = ${isContextLikeArgs};`
-                );
-              }
-
-              const toolResult = await callback(args);
-
-              timedReport({ tool: name });
-
-              return toolResult;
-            })));
-
-        log.info(`Registered tool: ${name}`);
-      } catch (error) {
-        log.error(`Failed to register tool "${name}":`, error);
-      }
-    }
-     */
 
     if (enableSigint && !sigintHandler) {
       sigintHandler = () => {
@@ -610,6 +550,7 @@ runServer.memo = memo(
 
 export {
   runServer,
+  registerServerResources,
   registerServerTools,
   type McpTool,
   type McpToolCreator,
