@@ -1,6 +1,8 @@
 import {
   DEFAULT_OPTIONS,
+  CONTEXT_MANAGEMENT,
   MODE_LEVELS,
+  PLUGIN_ISOLATION,
   type DefaultOptions,
   type DefaultOptionsOverrides,
   type LoggingOptions,
@@ -40,7 +42,7 @@ type CliOptions = {
    * to 'strict' when external tools are requested, otherwise 'none'.
    */
   pluginIsolation: 'none' | 'strict' | undefined;
-  contextManagement: DefaultOptions['contextManagement'];
+  contextManagement: DefaultOptions['contextManagement'] | undefined;
 };
 
 /**
@@ -217,21 +219,17 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   if (contextManagementIndex >= 0) {
     const maybeStrategy = String(argv[contextManagementIndex + 1] || '').toLowerCase();
 
-    contextManagement = maybeStrategy === 'token-saver' ? 'token-saver' : 'default';
+    contextManagement = CONTEXT_MANAGEMENT.find(value => value === maybeStrategy);
   }
 
   // Parse isolation preset: --plugin-isolation <none|strict>
-  let pluginIsolation: CliOptions['pluginIsolation'];// = DEFAULT_OPTIONS.pluginIsolation;
+  let pluginIsolation: CliOptions['pluginIsolation'];
   const isolationIndex = argv.indexOf('--plugin-isolation');
 
   if (isolationIndex >= 0) {
     const val = String(argv[isolationIndex + 1] || '').toLowerCase();
 
-    switch (val) {
-      case 'none':
-      case 'strict':
-        pluginIsolation = val;
-    }
+    pluginIsolation = PLUGIN_ISOLATION.find(value => value === val);
   }
 
   return {

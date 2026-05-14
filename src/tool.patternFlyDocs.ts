@@ -228,7 +228,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     },
     callback,
     {
-      shouldRegister: opts => opts.contextManagement === 'default'
+      shouldRegister: opts => opts.contextManagement === 'default' || opts.contextManagement === undefined
     }
   ];
 };

@@ -52,7 +52,7 @@ type McpTool = [
   },
   handler: (arg?: unknown) => any | Promise<any>,
   config?: {
-    shouldRegister?: (options: GlobalOptions) => boolean;
+    shouldRegister?: (options: GlobalOptions) => boolean | Promise<boolean>;
   }
 ];
 

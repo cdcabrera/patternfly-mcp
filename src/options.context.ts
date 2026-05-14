@@ -5,6 +5,7 @@ import {
   DEFAULT_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
+  PLUGIN_ISOLATION,
   type LoggingSession,
   type StatsSession
 } from './options.defaults';
@@ -89,7 +90,8 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
-  const basePluginIsolation = ['strict', 'none'].includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
+  const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
+  // const baseContextManagement = CONTEXT_MANGEMENT.includes(base.contextManagement) ? base.contextManagement : DEFAULT_OPTIONS.contextManagement;
 
   const merged: GlobalOptions = {
     ...base,
