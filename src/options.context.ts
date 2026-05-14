@@ -4,6 +4,7 @@ import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } fro
 import {
   DEFAULT_OPTIONS,
   CONTEXT_MANAGEMENT,
+  EXPERIMENTAL_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
@@ -104,7 +105,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
-  const { normalized, usedExperimental } = normalizeExperimentalOptions(options);
+  const { normalized, usedExperimental } = normalizeExperimentalOptions(options, EXPERIMENTAL_OPTIONS);
 
   if (usedExperimental.length) {
     console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${usedExperimental.join(', ')}`);
