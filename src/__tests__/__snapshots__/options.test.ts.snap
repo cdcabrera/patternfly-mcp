@@ -261,6 +261,28 @@ exports[`parseCliOptions should attempt to parse args with --verbose flag and --
 }
 `;
 
+exports[`parseCliOptions should attempt to parse args with experimental prefixes 1`] = `
+{
+  "contextManagement": "default",
+  "http": {},
+  "isHttp": false,
+  "logging": {
+    "level": "info",
+    "logger": "@patternfly/patternfly-mcp",
+    "protocol": false,
+    "stderr": false,
+    "transport": "stdio",
+  },
+  "modeOptions": {
+    "cli": {},
+    "programmatic": {},
+    "test": {},
+  },
+  "pluginIsolation": "strict",
+  "toolModules": [],
+}
+`;
+
 exports[`parseCliOptions should attempt to parse args with other arguments 1`] = `
 {
   "contextManagement": "default",
