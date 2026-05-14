@@ -511,6 +511,15 @@ const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 't
 const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
 
 /**
+ * Options currently in experimental status.
+ *
+ * @note Use the internal key name here.
+ */
+const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
+  'contextManagement'
+]);
+
+/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @note `maxDocsToLoad` and `recommendedMaxDocsToLoad` should be generated from the length
@@ -556,6 +565,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 export {
   DEFAULT_OPTIONS,
   CONTEXT_MANAGEMENT,
+  EXPERIMENTAL_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
