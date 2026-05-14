@@ -96,150 +96,165 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
  *     specification is a local module name or path.
  *
+ * @note Experimental Flags:
+ * The parser strips `--experimental-` prefixes from options to allow an internal match
+ * against standard flag names. Actual validation and warning issuance for experimental
+ * features are handled downstream in `setOptions` via `normalizeExperimentalOptions`
+ * to ensure both CLI and programmatic options align.
+ *
  * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
  */
 const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
-  const modeIndex = argv.indexOf('--mode');
-  const modeTestUrl = argv.indexOf('--mode-test-url');
-  const modeOptions: ModeOptions = {
-    ...DEFAULT_OPTIONS.modeOptions
-  };
-  const levelIndex = argv.indexOf('--log-level');
-  const logging: LoggingOptions = {
-    ...DEFAULT_OPTIONS.logging,
-    stderr: argv.includes('--log-stderr'),
-    protocol: argv.includes('--log-protocol')
+  const result: CliOptions = {
+    modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
+    logging: { ...DEFAULT_OPTIONS.logging },
+    isHttp: argv.includes('--http'),
+    http: {},
+    toolModules: [],
+    pluginIsolation: undefined,
+    contextManagement: DEFAULT_OPTIONS.contextManagement
   };
 
-  let mode: CliOptions['mode'] | undefined;
+  // Tracking for toolModules to avoid duplicates
+  const seenTools = new Set<string>();
+  let isVerbose = false;
 
-  if (modeIndex >= 0) {
-    const maybeMode = String(argv[modeIndex + 1] || '').toLowerCase();
+  for (let i = 0; i < argv.length; i++) {
+    let token = argv[i];
 
-    if (MODE_LEVELS.includes(maybeMode as DefaultOptions['mode'])) {
-      mode = argv[modeIndex + 1] as DefaultOptions['mode'];
+    if (!token) {
+      continue;
+    }
+
+    // 1. Normalize experimental prefixes
+    const isExperimental = token.startsWith('--experimental-');
+
+    if (isExperimental) {
+      // Extract the flag name without '--experimental-'
+      const flagName = token.replace('--experimental-', '');
+
+      // Normalize token for the switch statement
+      token = `--${flagName}`;
+    }
+
+    const next = argv[i + 1];
+    const hasValue = next && !next.startsWith('-');
+
+    // 2. Process Flags
+    switch (token) {
+      case '--mode':
+        if (hasValue && MODE_LEVELS.includes(next.toLowerCase() as any)) {
+          result.mode = next.toLowerCase() as DefaultOptions['mode'];
+          i += 1;
+        }
+        break;
+
+      case '--mode-test-url':
+        if (hasValue && isUrl(next) && result.modeOptions) {
+          result.modeOptions.test = { ...result.modeOptions.test, baseUrl: next.trim() };
+          i += 1;
+        }
+        break;
+
+      case '--log-level':
+        if (hasValue && logSeverity(next.toLowerCase() as LogLevel) > -1) {
+          result.logging.level = next.toLowerCase() as LoggingOptions['level'];
+          i += 1;
+        }
+        break;
+
+      case '--verbose':
+        isVerbose = true;
+        break;
+
+      case '--log-stderr':
+        result.logging.stderr = true;
+        break;
+
+      case '--log-protocol':
+        result.logging.protocol = true;
+        break;
+
+      case '--port':
+        if (hasValue) {
+          const port = portValid(next);
+
+          if (port !== undefined) {
+            result.http!.port = port;
+          }
+          i += 1;
+        }
+        break;
+
+      case '--host':
+        if (hasValue) {
+          result.http!.host = next;
+          i += 1;
+        }
+        break;
+
+      case '--allowed-origins':
+      case '--allowed-hosts': {
+        if (hasValue) {
+          const list = next.split(',').map(str => str.trim()).filter(Boolean);
+
+          if (token === '--allowed-origins') {
+            result.http!.allowedOrigins = list;
+          } else {
+            result.http!.allowedHosts = list;
+          }
+          i += 1;
+        }
+        break;
+      }
+
+      case '--tool':
+        if (hasValue) {
+          next.split(',').forEach(spec => {
+            const trimmed = spec.trim();
+
+            if (trimmed && !seenTools.has(trimmed)) {
+              seenTools.add(trimmed);
+              result.toolModules.push(trimmed);
+            }
+          });
+          i += 1;
+        }
+        break;
+
+      case '--context-management':
+        if (hasValue) {
+          const strategy = next.toLowerCase();
+          const match = CONTEXT_MANAGEMENT.find(value => value === strategy);
+
+          if (match) {
+            result.contextManagement = match;
+          }
+          i += 1;
+        }
+        break;
+
+      case '--plugin-isolation':
+        if (hasValue) {
+          const val = next.toLowerCase();
+          const match = PLUGIN_ISOLATION.find(value => value === val);
+
+          if (match) {
+            result.pluginIsolation = match;
+          }
+          i += 1;
+        }
+        break;
     }
   }
 
-  if (modeTestUrl >= 0) {
-    const maybeBaseUrl = String(argv[modeTestUrl + 1] || '').trim();
-
-    if (isUrl(maybeBaseUrl)) {
-      modeOptions.test ??= {};
-      modeOptions.test.baseUrl = maybeBaseUrl;
-    }
+  // Cleanup: ensure logging matches severity after verbose/level processing
+  if (isVerbose) {
+    result.logging.level = 'debug';
   }
 
-  if (argv.includes('--verbose')) {
-    logging.level = 'debug';
-  } else if (levelIndex >= 0) {
-    const maybeLevel = String(argv[levelIndex + 1] || '').toLowerCase();
-
-    if (logSeverity(maybeLevel as LogLevel) > -1) {
-      logging.level = maybeLevel as LoggingOptions['level'];
-    }
-  }
-
-  const isHttp = argv.includes('--http');
-  const http: Partial<HttpOptions> = {};
-
-  if (isHttp) {
-    const rawPort = getArgValue('--port', { argv });
-    const parsedPort = portValid(rawPort);
-    const host = getArgValue('--host', { argv });
-
-    const allowedOrigins = (getArgValue('--allowed-origins', { argv }) as string)
-      ?.split(',')
-      ?.map((origin: string) => origin.trim())
-      ?.filter(Boolean);
-
-    const allowedHosts = (getArgValue('--allowed-hosts', { argv }) as string)
-      ?.split(',')
-      ?.map((host: string) => host.trim())
-      ?.filter(Boolean);
-
-    const port = parsedPort;
-
-    if (port !== undefined) {
-      http.port = port;
-    }
-
-    if (typeof host === 'string') {
-      http.host = host;
-    }
-
-    if (Array.isArray(allowedHosts) && allowedHosts.length) {
-      http.allowedHosts = allowedHosts;
-    }
-
-    if (Array.isArray(allowedOrigins) && allowedOrigins.length) {
-      http.allowedOrigins = allowedOrigins;
-    }
-  }
-
-  // Parse external tool modules: single canonical flag `--tool`
-  // Supported forms:
-  //   --tool a --tool b      (repeatable)
-  //   --tool a,b             (comma-separated)
-  const toolModules: string[] = [];
-  const seenSpecs = new Set<string>();
-
-  const addSpec = (spec?: string) => {
-    const trimmed = String(spec || '').trim();
-
-    if (!trimmed || seenSpecs.has(trimmed)) {
-      return;
-    }
-
-    seenSpecs.add(trimmed);
-    toolModules.push(trimmed);
-  };
-
-  for (let argIndex = 0; argIndex < argv.length; argIndex += 1) {
-    const token = argv[argIndex];
-    const next = argv[argIndex + 1];
-
-    if (token === '--tool' && typeof next === 'string' && !next.startsWith('-')) {
-      next
-        .split(',')
-        .map(value => value.trim())
-        .filter(Boolean)
-        .forEach(addSpec);
-
-      argIndex += 1;
-    }
-  }
-
-  const contextManagementIndex = argv.indexOf('--context-management');
-  let contextManagement: CliOptions['contextManagement'] = DEFAULT_OPTIONS.contextManagement;
-
-  if (contextManagementIndex >= 0) {
-    const maybeStrategy = String(argv[contextManagementIndex + 1] || '').toLowerCase();
-
-    contextManagement = CONTEXT_MANAGEMENT.find(value => value === maybeStrategy);
-  }
-
-  // Parse isolation preset: --plugin-isolation <none|strict>
-  let pluginIsolation: CliOptions['pluginIsolation'];
-  const isolationIndex = argv.indexOf('--plugin-isolation');
-
-  if (isolationIndex >= 0) {
-    const val = String(argv[isolationIndex + 1] || '').toLowerCase();
-
-    pluginIsolation = PLUGIN_ISOLATION.find(value => value === val);
-  }
-
-  return {
-    ...(mode ? { mode } : {}),
-    modeOptions,
-    logging,
-    isHttp,
-    http,
-    toolModules,
-    pluginIsolation,
-    contextManagement
-  };
+  return result;
 };
 
 export {

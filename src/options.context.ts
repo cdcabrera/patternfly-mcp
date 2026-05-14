@@ -4,6 +4,7 @@ import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } fro
 import {
   DEFAULT_OPTIONS,
   CONTEXT_MANAGEMENT,
+  EXPERIMENTAL_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
@@ -12,6 +13,7 @@ import {
 } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject, hashCode } from './server.helpers';
 import { assertProtocol } from './options.assertions';
+import { normalizeExperimentalOptions } from './options.helpers';
 
 /**
  * AsyncLocalStorage instance for a per-instance session state.
@@ -103,7 +105,13 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
-  const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
+  const { normalized, usedExperimental } = normalizeExperimentalOptions(options, EXPERIMENTAL_OPTIONS);
+
+  if (usedExperimental.length) {
+    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${usedExperimental.join(', ')}`);
+  }
+
+  const base = mergeObjects(DEFAULT_OPTIONS, normalized, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 

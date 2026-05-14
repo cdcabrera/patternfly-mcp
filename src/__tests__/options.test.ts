@@ -55,6 +55,10 @@ describe('parseCliOptions', () => {
     {
       description: 'with --tool',
       args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool']
+    },
+    {
+      description: 'with experimental prefixes',
+      args: ['node', 'script.js', '--experimental-plugin-isolation', 'strict']
     }
   ])('should attempt to parse args $description', ({ args = [] }) => {
     process.argv = args;
