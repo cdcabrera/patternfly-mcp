@@ -1,4 +1,4 @@
-import { getNodeMajorVersion } from '../options.helpers';
+import { getNodeMajorVersion, normalizeExperimentalOptions } from '../options.helpers';
 
 describe('getNodeMajorVersion', () => {
   it('should get the current Node.js version', () => {
@@ -44,5 +44,57 @@ describe('getNodeMajorVersion', () => {
     }
   ])('should handle, $description', ({ value, expected }) => {
     expect(getNodeMajorVersion(value as any)).toBe(expected);
+  });
+});
+
+describe('normalizeExperimentalOptions', () => {
+  const experimentalOptions = new Set(['contextManagement', 'pluginIsolation']);
+
+  it('should normalize experimental- prefixes with a dash', () => {
+    const options = { 'experimental-contextManagement': 'token-saver' };
+    const { normalized, usedExperimental } = normalizeExperimentalOptions(options, experimentalOptions);
+
+    expect(normalized).toEqual({ contextManagement: 'token-saver' });
+    expect(usedExperimental).toEqual(['contextManagement']);
+  });
+
+  it('should normalize experimental prefixes without a dash (camelCase)', () => {
+    const options = { experimentalContextManagement: 'token-saver' };
+    const { normalized, usedExperimental } = normalizeExperimentalOptions(options, experimentalOptions);
+
+    expect(normalized).toEqual({ contextManagement: 'token-saver' });
+    expect(usedExperimental).toEqual(['contextManagement']);
+  });
+
+  it('should NOT flag stable options even if they are in the experimental set', () => {
+    const options = { contextManagement: 'token-saver' };
+    const { normalized, usedExperimental } = normalizeExperimentalOptions(options, experimentalOptions);
+
+    expect(normalized).toEqual({ contextManagement: 'token-saver' });
+    expect(usedExperimental).toEqual([]);
+  });
+
+  it('should leave non-experimental options unchanged', () => {
+    const options = { mode: 'cli' };
+    const { normalized, usedExperimental } = normalizeExperimentalOptions(options, experimentalOptions);
+
+    expect(normalized).toEqual({ mode: 'cli' });
+    expect(usedExperimental).toEqual([]);
+  });
+
+  it('should handle multiple experimental and stable options', () => {
+    const options = {
+      'experimental-contextManagement': 'token-saver',
+      experimentalPluginIsolation: 'strict',
+      mode: 'test'
+    };
+    const { normalized, usedExperimental } = normalizeExperimentalOptions(options, experimentalOptions);
+
+    expect(normalized).toEqual({
+      contextManagement: 'token-saver',
+      pluginIsolation: 'strict',
+      mode: 'test'
+    });
+    expect(usedExperimental.sort()).toEqual(['contextManagement', 'pluginIsolation'].sort());
   });
 });

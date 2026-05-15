@@ -105,7 +105,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
-  const { normalized, usedExperimental } = normalizeExperimentalOptions(options, EXPERIMENTAL_OPTIONS);
+  const { normalized, usedExperimental } = normalizeExperimentalOptions(options as Record<string, unknown>, EXPERIMENTAL_OPTIONS as unknown as Set<string>);
 
   if (usedExperimental.length) {
     console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${usedExperimental.join(', ')}`);

@@ -32,26 +32,22 @@ const getNodeMajorVersion = (nodeVersion: unknown): number => {
  *            representation and other keys are unchanged.
  *          - `usedExperimental`: An array of keys that were identified as experimental and processed.
  */
-const normalizeExperimentalOptions = (options: Record<string, unknown> = {}, experimentalOptions: any) => {
+const normalizeExperimentalOptions = (options: Record<string, unknown> = {}, experimentalOptions: Set<string>) => {
   const normalized: Record<string, unknown> = {};
   const usedExperimental: string[] = [];
 
   Object.entries(options).forEach(([key, value]) => {
+    // Check for both kebab-case (CLI) and camelCase (Programmatic)
     if (key.startsWith('experimental-') || key.startsWith('experimental')) {
-      // Strip prefix and normalize kebab-case to camelCase for programmatic consistency
       const internalKey = key
-        .replace(/experimental-?/, '')
-        .replace(/^([A-Z])/g, (_, letter) => letter.toLowerCase())
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+        .replace(/^experimental-?/, '') // Remove prefix with optional dash
+        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase()) // Lowercase first letter if camelCase
+        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); // Convert remaining kebab
 
       normalized[internalKey] = value;
       usedExperimental.push(internalKey);
     } else {
-      // Include the key and check if it happens to be an experimental feature
       normalized[key] = value;
-      if (experimentalOptions.has(key)) {
-        usedExperimental.push(key);
-      }
     }
   });
 
