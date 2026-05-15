@@ -529,7 +529,7 @@ describe('token-saver mode', () => {
 
   beforeAll(async () => {
     CLIENT = await startServer({
-      args: ['--context-management', 'token-saver']
+      args: ['--experimental-context-management', 'token-saver']
     });
   });
 
