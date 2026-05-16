@@ -1,6 +1,8 @@
 import {
   parseCliOptions,
-  type CliOptions as InternalCliOptions,
+  parseProgrammaticOptions,
+  type CliOptions,
+  type DefaultOptions,
   type DefaultOptionsOverrides,
   type MakeExperimental
 } from './options';
@@ -27,10 +29,26 @@ import {
   type ToolInternalOptions
 } from './server.toolsUser';
 
-type CliOptions = MakeExperimental<InternalCliOptions, 'contextManagement'>;
+/**
+ * Options currently in experimental status.
+ *
+ * @note Use the internal key name here.
+ */
+const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
+  'contextManagement'
+]);
 
 /**
- * Options for "programmatic" use. Extends the `DefaultOptions` interface.
+ * Options for "cli" use. An aspect of the `DefaultOptions` interface.
+ *
+ * @alias CliOptions
+ */
+type PfMcpCliOptions = MakeExperimental<CliOptions, 'contextManagement'>;
+
+/**
+ * Options for "programmatic" use. Limits the `DefaultOptions` interface.
+ *
+ * @alias DefaultOptionsOverrides
  */
 type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'contextManagement'>;
 
@@ -176,10 +194,20 @@ const main = async (
 
   try {
     // Parse CLI options
-    const { mode: cliMode, ...cliOptions } = parseCliOptions();
+    const { mode: cliMode, ...cliOptions } = parseCliOptions({
+      argv: process.argv,
+      experimentalOptions: EXPERIMENTAL_OPTIONS
+    });
 
     // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
-    mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
+    mergedOptions = setOptions({
+      ...cliOptions,
+      ...parseProgrammaticOptions({
+        options,
+        experimentalOptions: EXPERIMENTAL_OPTIONS
+      }),
+      mode: cliMode ?? programmaticMode
+    });
 
     // Finalize exit policy after merging options
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
@@ -206,7 +234,7 @@ export {
   createMcpTool,
   main,
   main as start,
-  type CliOptions,
+  type PfMcpCliOptions,
   type PfMcpOptions,
   type PfMcpSettings,
   type PfMcpInstance,

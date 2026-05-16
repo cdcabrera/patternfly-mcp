@@ -407,6 +407,10 @@ describe('Logging', () => {
     {
       description: 'with mcp protocol',
       args: ['--log-protocol']
+    },
+    {
+      description: 'with experimental flag',
+      args: ['--experimental-context-management']
     }
   ])('should allow setting logging options, $description', async ({ args }) => {
     const serverArgs = [...args];

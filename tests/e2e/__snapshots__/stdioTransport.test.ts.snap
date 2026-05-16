@@ -142,17 +142,10 @@ exports[`Builtin tools, STDIO should return expected markdown structure for sear
   - Use a search all ("*") to find all available resources."
 `;
 
-exports[`Logging should allow setting logging options, default 1`] = `
-[
-  "[Experimental] The following options are subject to change, use at your own risk: contextManagement
-",
-]
-`;
+exports[`Logging should allow setting logging options, default 1`] = `[]`;
 
 exports[`Logging should allow setting logging options, stderr 1`] = `
 [
-  "[Experimental] The following options are subject to change, use at your own risk: contextManagement
-",
   "[INFO]: Server logging enabled.
 ",
   "[INFO]: Server stats enabled.
@@ -188,17 +181,12 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 ]
 `;
 
-exports[`Logging should allow setting logging options, with log level filtering 1`] = `
-[
-  "[Experimental] The following options are subject to change, use at your own risk: contextManagement
-",
-]
-`;
+exports[`Logging should allow setting logging options, with experimental flag 1`] = `[]`;
+
+exports[`Logging should allow setting logging options, with log level filtering 1`] = `[]`;
 
 exports[`Logging should allow setting logging options, with mcp protocol 1`] = `
 [
-  "[Experimental] The following options are subject to change, use at your own risk: contextManagement
-",
   {
     "method": "notifications/message",
     "params": {

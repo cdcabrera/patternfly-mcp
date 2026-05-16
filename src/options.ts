@@ -96,6 +96,9 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
  * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
  *     specification is a local module name or path.
+ * - `--context`
+ *
+ * @note Review removing `programmatic` mode from this function path.
  *
  * @note Experimental Flags:
  * The parser strips `--experimental-` prefixes from options to allow an internal match
@@ -106,7 +109,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
  */
-const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
+const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experimentalOptions: Set<string> }): CliOptions => {
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
@@ -124,19 +127,20 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   for (let i = 0; i < argv.length; i++) {
     let token = argv[i];
 
-    if (!token) {
+    if (!token || experimentalOptions.has(token)) {
       continue;
     }
 
-    // 1. Normalize experimental prefixes
     const isExperimental = token.startsWith('--experimental-');
 
     if (isExperimental) {
-      // Extract the flag name without '--experimental-'
       const flagName = token.replace('--experimental-', '');
 
-      // Normalize token for the switch statement
-      token = `--${flagName}`;
+      if (experimentalOptions.has(flagName)) {
+        token = `--${flagName}`;
+      } else {
+        continue;
+      }
     }
 
     const next = argv[i + 1];
@@ -258,8 +262,39 @@ const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
   return result;
 };
 
+const parseProgrammaticOptions = ({ options, experimentalOptions }: { options: DefaultOptionsOverrides; experimentalOptions: Set<string> }) => {
+  const optionsEntries = Object.entries(options);
+
+  const updatedOptions = {};
+
+  /*
+  for (let i = 0; i < options.length; i++) {
+    let token = argv[i];
+
+    if (!token || experimentalOptions.has(token)) {
+      continue;
+    }
+
+    const isExperimental = token.startsWith('--experimental-');
+
+    if (isExperimental) {
+      const flagName = token.replace('--experimental-', '');
+
+      if (experimentalOptions.has(flagName)) {
+        token = `--${flagName}`;
+      } else {
+        continue;
+      }
+    }
+  }
+   */
+
+  return updatedOptions;
+};
+
 export {
   parseCliOptions,
+  parseProgrammaticOptions,
   getArgValue,
   type AppSession,
   type CliOptions,

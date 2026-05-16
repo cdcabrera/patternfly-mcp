@@ -17,6 +17,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
  * @property docsPathSlug - Local docs slug. Used for resolving local stored documentation.
+ * @property experimentalOptions - Tracking for experimental options
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
  * @property {LoggingOptions} logging - Logging options.
@@ -56,6 +57,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextUrl: string;
   docsPaths: string[];
   docsPathSlug: string;
+  experimentalOptions: string[];
   http: HttpOptions;
   isHttp: boolean;
   logging: TLogOptions;
@@ -545,6 +547,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPaths: [],
   docsPathSlug: 'documentation:',
+  experimentalOptions: [],
   isHttp: false,
   http: HTTP_OPTIONS,
   logging: LOGGING_OPTIONS,

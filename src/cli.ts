@@ -7,10 +7,10 @@ import { getNodeMajorVersion } from './options.helpers';
  * CLI entry point with early error catching for environment and load-time issues.
  */
 const run = async (): Promise<void> => {
-  const appBugs = packageJson.bugs?.url;
-  const appName = packageJson.name;
-  const appSupport = packageJson.support?.url;
-  const appMinNodeMajorVersion = getNodeMajorVersion(packageJson.engines?.node);
+  const appBugs = packageJson?.bugs?.url;
+  const appName = packageJson?.name;
+  const appSupport = packageJson?.support?.url;
+  const appMinNodeMajorVersion = getNodeMajorVersion(packageJson?.engines?.node);
   const envNodeMajorVersion = getNodeMajorVersion(process.versions?.node || process.version);
 
   // Exit the process on error.

@@ -18,40 +18,4 @@ const getNodeMajorVersion = (nodeVersion: unknown): number => {
   return Number.isFinite(major) ? major : 0;
 };
 
-/**
- * Normalizes experimental options.
- *
- * Keys starting with 'experimental-' are stripped of the prefix and included in
- * the normalized object under their internal representation, while others remain unchanged.
- *
- * @param {Record<string, unknown>} [options={}] - Record containing key-value pairs of options.
- * @param experimentalOptions
- * @returns {{ normalized: Record<string, unknown>, usedExperimental: string[] }}
- *          An object containing:
- *          - `normalized`: A record where 'experimental-' prefixed keys are modified to their internal
- *            representation and other keys are unchanged.
- *          - `usedExperimental`: An array of keys that were identified as experimental and processed.
- */
-const normalizeExperimentalOptions = (options: Record<string, unknown> = {}, experimentalOptions: Set<string>) => {
-  const normalized: Record<string, unknown> = {};
-  const usedExperimental: string[] = [];
-
-  Object.entries(options).forEach(([key, value]) => {
-    // Check for both kebab-case (CLI) and camelCase (Programmatic)
-    if (key.startsWith('experimental-') || key.startsWith('experimental')) {
-      const internalKey = key
-        .replace(/^experimental-?/, '') // Remove prefix with optional dash
-        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase()) // Lowercase first letter if camelCase
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); // Convert remaining kebab
-
-      normalized[internalKey] = value;
-      usedExperimental.push(internalKey);
-    } else {
-      normalized[key] = value;
-    }
-  });
-
-  return { normalized, usedExperimental };
-};
-
-export { getNodeMajorVersion, normalizeExperimentalOptions };
+export { getNodeMajorVersion };

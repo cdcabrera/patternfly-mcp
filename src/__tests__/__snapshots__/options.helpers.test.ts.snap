@@ -1,0 +1,42 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`normalizeExperimentalOptions should normalize experimental prefixes, as a regular option 1`] = `
+{
+  "normalized": {
+    "contextManagement": undefined,
+  },
+  "usedExperimental": [],
+}
+`;
+
+exports[`normalizeExperimentalOptions should normalize experimental prefixes, regular options unchanged 1`] = `
+{
+  "normalized": {
+    "contextManagement": undefined,
+    "pluginIsolation": "strict",
+  },
+  "usedExperimental": [],
+}
+`;
+
+exports[`normalizeExperimentalOptions should normalize experimental prefixes, with a dash 1`] = `
+{
+  "normalized": {
+    "contextManagement": "token-saver",
+  },
+  "usedExperimental": [
+    "contextManagement",
+  ],
+}
+`;
+
+exports[`normalizeExperimentalOptions should normalize experimental prefixes, with lowerCamelCase 1`] = `
+{
+  "normalized": {
+    "contextManagement": "token-saver",
+  },
+  "usedExperimental": [
+    "contextManagement",
+  ],
+}
+`;

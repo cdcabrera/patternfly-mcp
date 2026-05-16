@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } from './options';
+import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides, type DefaultOptions } from './options';
 import {
   DEFAULT_OPTIONS,
   CONTEXT_MANAGEMENT,
@@ -13,7 +13,6 @@ import {
 } from './options.defaults';
 import { mergeObjects, freezeObject, isPlainObject, hashCode } from './server.helpers';
 import { assertProtocol } from './options.assertions';
-import { normalizeExperimentalOptions } from './options.helpers';
 
 /**
  * AsyncLocalStorage instance for a per-instance session state.
@@ -79,6 +78,54 @@ const runWithSession = async <TReturn>(
 const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 
 /**
+ * Normalizes experimental options.
+ *
+ * Keys starting with 'experimental-' are stripped of the prefix and included in
+ * the normalized object under their internal representation, while others remain unchanged.
+ *
+ * @param {Record<string, unknown>} [options={}] - Record containing key-value pairs of options.
+ * @param experimentalOptions
+ * @returns {{ normalized: Record<string, unknown>, usedExperimental: string[] }}
+ *          An object containing:
+ *          - `normalized`: A record where 'experimental-' prefixed keys are modified to their internal
+ *            representation and other keys are unchanged.
+ *          - `usedExperimental`: An array of keys that were identified as experimental and processed.
+ */
+const normalizeExperimentalOptions = (
+  options: DefaultOptionsOverrides | undefined,
+  experimentalOptions: Set<string>
+) => {
+  const normalized: Record<string, unknown> = {};
+  const usedExperimental: string[] = [];
+
+  if (!options) {
+    return {
+      normalized,
+      usedExperimental
+    };
+  }
+
+  Object.entries(options).forEach(([key, value]) => {
+    if (options.mode === 'cli' && experimentalOptions.has(key)) {
+      //  normalized[key] = undefined;
+    } else if (key.startsWith('experimental-') || key.startsWith('experimental')) {
+      const internalKey = key
+        .replace(/^experimental-?/, '') // Remove prefix with optional dash
+        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase()) // Lowercase first letter if camelCase
+        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); // Convert remaining kebab
+
+      normalized[internalKey] = value;
+      usedExperimental.push(internalKey);
+    } else {
+      normalized[key] = value;
+      // usedExperimental.push(key);
+    }
+  });
+
+  return { normalized, usedExperimental };
+};
+
+/**
  * Set and freeze cloned options in the current async context.
  *
  * @note This function performs a two-stage configuration setup:
@@ -104,8 +151,9 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
-  const { normalized, usedExperimental } = normalizeExperimentalOptions(options as Record<string, unknown>, EXPERIMENTAL_OPTIONS as unknown as Set<string>);
+const setOptions = (options?: DefaultOptionsOverrides, { experimentalOptions }): GlobalOptions => {
+  // const { normalized, usedExperimental } = normalizeExperimentalOptions(options, EXPERIMENTAL_OPTIONS);
+  // i think we have to allow the same behavior for both cli and programmatic ... both get stripped right out the gate otherwise we have to pass mode to determine when strip cli but obviously that fallsback here with a default
 
   if (usedExperimental.length) {
     console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${usedExperimental.join(', ')}`);
