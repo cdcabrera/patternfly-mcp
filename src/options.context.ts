@@ -151,18 +151,16 @@ const normalizeExperimentalOptions = (
  * that aligns with CLI options parsing. We need to account for both CLI and programmatic use.
  *
  * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
+ * @param [metadata] - Optional metadata
+ * @param [metadata.experimentalOptions] - Merged experimental options from cli and programmatic modes.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
-  // const { normalized, usedExperimental } = normalizeExperimentalOptions(options, EXPERIMENTAL_OPTIONS);
-  // i think we have to allow the same behavior for both cli and programmatic ... both get stripped right out the gate otherwise we have to pass mode to determine when strip cli but obviously that fallsback here with a default
-  const usedExperimental = [...new Set([...options?.experimentalOptions, ...options?.experimentalOptions])];
-
-  if (usedExperimental.length) {
-    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${usedExperimental.join(', ')}`);
+const setOptions = (options?: DefaultOptionsOverrides, { experimentalOptions = [] }: { experimentalOptions?: string[] } = {}): GlobalOptions => {
+  if (experimentalOptions.length) {
+    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${experimentalOptions.join(', ')}`);
   }
 
-  const base = mergeObjects(DEFAULT_OPTIONS, normalized, { allowNullValues: false, allowUndefinedValues: false });
+  const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 
@@ -173,6 +171,7 @@ const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   const merged: GlobalOptions = {
     ...base,
     contextManagement: baseContextManagement,
+    experimentalOptions,
     mode: MODE_LEVELS.includes(base.mode) ? base.mode : DEFAULT_OPTIONS.mode,
     logging: {
       level: ['debug', 'info', 'warn', 'error'].includes(baseLogging.level) ? baseLogging.level : DEFAULT_OPTIONS.logging.level,

@@ -44,6 +44,11 @@ type CliOptions = {
   pluginIsolation: 'none' | 'strict' | undefined;
 };
 
+type ParsedOptions<T> = {
+  options: T;
+  experimentalOptions: string[];
+};
+
 /**
  * Get argument value from argv (defaults to `process.argv`).
  *
@@ -109,7 +114,7 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
  * @returns Parsed command-line options.
  */
-const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experimentalOptions: Set<string> }): CliOptions => {
+const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experimentalOptions: Set<string> }): ParsedOptions<CliOptions> => {
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
@@ -119,6 +124,7 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
     pluginIsolation: undefined,
     contextManagement: DEFAULT_OPTIONS.contextManagement
   };
+  const usedExperimentalOptions: string[] = [];
 
   // Tracking for toolModules to avoid duplicates
   const seenTools = new Set<string>();
@@ -138,6 +144,7 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
 
       if (experimentalOptions.has(flagName)) {
         token = `--${flagName}`;
+        usedExperimentalOptions.push(flagName);
       } else {
         continue;
       }
@@ -259,13 +266,20 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
     result.logging.level = 'debug';
   }
 
-  return result;
+  return {
+    options: result,
+    experimentalOptions: usedExperimentalOptions
+  };
 };
 
-const parseProgrammaticOptions = ({ options, experimentalOptions }: { options: DefaultOptionsOverrides; experimentalOptions: Set<string> }) => {
-  const optionsEntries = Object.entries(options);
+const parseProgrammaticOptions = (
+  { options, experimentalOptions }: { options: DefaultOptionsOverrides; experimentalOptions: Set<string> }
+): ParsedOptions<DefaultOptionsOverrides> => {
+  const updatedOptions: DefaultOptionsOverrides = {};
+  const usedExperimental: string[] = [];
+  // const optionsEntries = Object.entries(options);
 
-  const updatedOptions = {};
+  // const updatedOptions = {};
 
   /*
   for (let i = 0; i < options.length; i++) {
@@ -289,7 +303,10 @@ const parseProgrammaticOptions = ({ options, experimentalOptions }: { options: D
   }
    */
 
-  return updatedOptions;
+  return {
+    options: updatedOptions,
+    experimentalOptions: usedExperimental
+  };
 };
 
 export {
