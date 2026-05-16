@@ -1,10 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides, type DefaultOptions } from './options';
+import { type AppSession, type GlobalOptions, type DefaultOptionsOverrides } from './options';
 import {
   DEFAULT_OPTIONS,
   CONTEXT_MANAGEMENT,
-  EXPERIMENTAL_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
@@ -91,6 +90,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  *            representation and other keys are unchanged.
  *          - `usedExperimental`: An array of keys that were identified as experimental and processed.
  */
+/*
 const normalizeExperimentalOptions = (
   options: DefaultOptionsOverrides | undefined,
   experimentalOptions: Set<string>
@@ -125,6 +125,8 @@ const normalizeExperimentalOptions = (
   return { normalized, usedExperimental };
 };
 
+ */
+
 /**
  * Set and freeze cloned options in the current async context.
  *
@@ -151,9 +153,10 @@ const normalizeExperimentalOptions = (
  * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: DefaultOptionsOverrides, { experimentalOptions }): GlobalOptions => {
+const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
   // const { normalized, usedExperimental } = normalizeExperimentalOptions(options, EXPERIMENTAL_OPTIONS);
   // i think we have to allow the same behavior for both cli and programmatic ... both get stripped right out the gate otherwise we have to pass mode to determine when strip cli but obviously that fallsback here with a default
+  const usedExperimental = [...new Set([...options?.experimentalOptions, ...options?.experimentalOptions])];
 
   if (usedExperimental.length) {
     console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${usedExperimental.join(', ')}`);

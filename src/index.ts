@@ -194,20 +194,19 @@ const main = async (
 
   try {
     // Parse CLI options
+    // const { mode: cliMode, ...cliOptions } = parseCliOptions({
     const { mode: cliMode, ...cliOptions } = parseCliOptions({
       argv: process.argv,
       experimentalOptions: EXPERIMENTAL_OPTIONS
     });
 
-    // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
-    mergedOptions = setOptions({
-      ...cliOptions,
-      ...parseProgrammaticOptions({
-        options,
-        experimentalOptions: EXPERIMENTAL_OPTIONS
-      }),
-      mode: cliMode ?? programmaticMode
+    const { options: progOptions } = parseProgrammaticOptions({
+      options,
+      experimentalOptions: EXPERIMENTAL_OPTIONS
     });
+
+    // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
+    mergedOptions = setOptions({ ...cliOptions, ...progOptions, mode: cliMode ?? programmaticMode });
 
     // Finalize exit policy after merging options
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
