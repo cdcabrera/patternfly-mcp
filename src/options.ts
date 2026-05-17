@@ -42,9 +42,6 @@ type GlobalOptions = DefaultOptions;
 type MakeExperimental<T, K extends keyof T = never> = T & {
   [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
 };
-// type MakeExperimental<T, K extends keyof T = never> = T & ([K] extends [never] ? object : {
-//  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
-// });
 
 /**
  * Overrides for default options. Exposed to the consumer/user.
@@ -79,40 +76,6 @@ type CliOptions = {
 type ParsedOptions<T> = {
   options: T;
   experimentalOptions: string[];
-};
-
-/**
- * Get argument value from argv (defaults to `process.argv`).
- *
- * @param flag - CLI flag to search for
- * @param [options] - Options
- * @param [options.defaultValue] - Default arg value
- * @param [options.argv] - Command-line arguments to parse. Defaults to `process.argv`.
- */
-const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defaultValue?: unknown, argv?: string[] } = {}) => {
-  const index = argv.indexOf(flag);
-
-  if (index === -1) {
-    return defaultValue;
-  }
-
-  const value = argv[index + 1];
-
-  if (!value || value.startsWith('-')) {
-    return defaultValue;
-  }
-
-  if (typeof defaultValue === 'number') {
-    const num = parseInt(value, 10);
-
-    if (isNaN(num)) {
-      return defaultValue;
-    }
-
-    return num;
-  }
-
-  return value;
 };
 
 /**
@@ -333,7 +296,6 @@ const parseProgrammaticOptions = (
 export {
   parseCliOptions,
   parseProgrammaticOptions,
-  getArgValue,
   type AppSession,
   type CliOptions,
   type DefaultOptions,
