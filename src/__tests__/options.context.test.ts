@@ -14,6 +14,36 @@ const MockMcpServer = McpServer as jest.MockedClass<typeof McpServer>;
 const MockStdioServerTransport = StdioServerTransport as jest.MockedClass<typeof StdioServerTransport>;
 
 describe('setOptions', () => {
+  it('warns when a registered experimental option differs from its default', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const registry = new Set(['pluginIsolation']);
+
+    setOptions({
+      pluginIsolation: 'none',
+      experimental: ['pluginIsolation']
+    }, registry);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[Experimental] The following options are subject to change, use at your own risk: pluginIsolation'
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('does not warn when experimental options match defaults', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    const registry = new Set(['pluginIsolation']);
+
+    setOptions({
+      pluginIsolation: DEFAULT_OPTIONS.pluginIsolation,
+      experimental: ['pluginIsolation']
+    }, registry);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
+
   it('should ignore valid but incorrect options for merged options', () => {
     const updatedOptions = setOptions({
       logging: 'oops' as any,
