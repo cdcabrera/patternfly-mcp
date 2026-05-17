@@ -111,8 +111,11 @@ const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<stri
   const baseContextManagement = CONTEXT_MANAGEMENT.includes(base.contextManagement) ? base.contextManagement : DEFAULT_OPTIONS.contextManagement;
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
-  const baseExperimental =
-    base.experimental.length && base.experimental.every(option => experimentalOptions?.has(option)) ? base.experimental : [];
+
+  const baseExperimental = base.experimental.filter(
+    option => experimentalOptions?.has(option) &&
+      base?.[option as keyof GlobalOptions] !== DEFAULT_OPTIONS?.[option as keyof GlobalOptions]
+  );
 
   if (baseExperimental.length) {
     console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${baseExperimental.join(', ')}`);

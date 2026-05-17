@@ -92,6 +92,8 @@ type ParsedOptions<T> = {
 
 /**
  * Parse CLI configuration options.
+ * - **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for
+ *     internal distinction.
  * - Parses `process.argv` options
  * - Separates out supported experimental options from standard ones.
  *
@@ -151,12 +153,12 @@ const parseCliOptions = (
     }
 
     if (token.startsWith('--experimental-')) {
-      const originalFlagName = token.replace('--experimental-', '');
-      const flagName = originalFlagName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      const flagName = token.replace('--experimental-', '');
+      const internalFlagName = flagName.replace(/-([a-z])/g, (_subStr, letter) => letter.toUpperCase());
 
-      if (experimentalOptions?.has(flagName)) {
+      if (experimentalOptions?.has(internalFlagName)) {
         token = `--${flagName}`;
-        usedExperimentalOptions.push(flagName);
+        usedExperimentalOptions.push(internalFlagName);
       } else {
         continue;
       }
@@ -247,7 +249,6 @@ const parseCliOptions = (
         }
         break;
 
-      case '--contextManagement':
       case '--context-management':
         if (hasValue) {
           const strategy = next.toLowerCase();

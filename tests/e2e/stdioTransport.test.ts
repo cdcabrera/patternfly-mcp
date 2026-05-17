@@ -409,8 +409,12 @@ describe('Logging', () => {
       args: ['--log-protocol']
     },
     {
-      description: 'with experimental flag',
-      args: ['--experimental-context-management']
+      description: 'with experimental flag default',
+      args: ['--experimental-context-management', 'default']
+    },
+    {
+      description: 'with experimental flag set',
+      args: ['--experimental-context-management', 'token-saver']
     }
   ])('should allow setting logging options, $description', async ({ args }) => {
     const serverArgs = [...args];
