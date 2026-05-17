@@ -3,7 +3,7 @@ import {
   parseProgrammaticOptions,
   type CliOptions,
   type DefaultOptions,
-  type DefaultOptionsOverrides,
+  type ProgrammaticOptions,
   type MakeExperimental
 } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
@@ -96,9 +96,9 @@ type DeprecatedCliOptions = PfMcpCliOptions;
 /**
  * Options for "programmatic" use. Limits the `DefaultOptions` interface.
  *
- * @alias DefaultOptionsOverrides
+ * @alias ProgrammaticOptions
  */
-type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, PfMcpExperimentalOptions>;
+type PfMcpOptions = MakeExperimental<ProgrammaticOptions, PfMcpExperimentalOptions>;
 
 /**
  * Additional settings for programmatic control.
@@ -121,7 +121,7 @@ type PfMcpExperimentalOptions = never;
  *
  * @note Add experimental options for consumer use.
  * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
- * 2. Update the typings on `options` for `CliOptions` and `DefaultOptionsOverrides` for what gets exposed to consumers.
+ * 2. Update the typings on `options` for `CliOptions` and `ProgrammaticOptions` for what gets exposed to consumers.
  * 3. Add the internal key name here, to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<keyof DefaultOptions>(['loremIpsum'])`)
  * 4. Add the internal key name to `PfMcpExperimentalOptions` (e.g., `type PfMcpExperimentalOptions = 'loremIpsum' | 'dolorSit`)
  *

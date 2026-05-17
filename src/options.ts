@@ -44,9 +44,9 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
 };
 
 /**
- * Overrides for default options. Exposed to the consumer/user.
+ * Options parsed from programmatic use. Exposed to the consumer/user.
  */
-type DefaultOptionsOverrides = Partial<
+type ProgrammaticOptions = Partial<
   Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
 > & {
   mode?: DefaultOptions['mode'] | undefined;
@@ -58,7 +58,7 @@ type DefaultOptionsOverrides = Partial<
 };
 
 /**
- * Options parsed from CLI arguments
+ * Options parsed from CLI arguments. Exposed to the consumer/user.
  *
  * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
  * to 'strict' when external tools are requested, otherwise 'none'.
@@ -73,6 +73,13 @@ type CliOptions = {
   pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
 };
 
+/**
+ * Parsed options return type. Separates regular options from experimental ones.
+ *
+ * @template T Passed standard options
+ * @property {T} options - Standard parsed options
+ * @property experimentalOptions - Experimental options
+ */
 type ParsedOptions<T> = {
   options: T;
   experimentalOptions: string[];
@@ -266,8 +273,8 @@ const parseCliOptions = (
  * @returns An object with options and used experimental options.
  */
 const parseProgrammaticOptions = (
-  options: DefaultOptionsOverrides, experimentalOptions:Set<string> = new Set()
-): ParsedOptions<DefaultOptionsOverrides> => {
+  options: ProgrammaticOptions, experimentalOptions:Set<string> = new Set()
+): ParsedOptions<ProgrammaticOptions> => {
   const updatedOptions: { [key: string]: unknown } = {};
   const usedExperimental: string[] = [];
 
@@ -299,9 +306,9 @@ export {
   type AppSession,
   type CliOptions,
   type DefaultOptions,
-  type DefaultOptionsOverrides,
   type GlobalOptions,
   type HttpOptions,
   type LoggingOptions,
-  type MakeExperimental
+  type MakeExperimental,
+  type ProgrammaticOptions
 };
