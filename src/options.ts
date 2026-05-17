@@ -26,6 +26,24 @@ type AppSession = {
 type GlobalOptions = DefaultOptions;
 
 /**
+ * Convert specific options towards an "experimental-" prefix for consumers.
+ *
+ * @example Use
+ * type ExperimentalKeys = 'loremOption' | 'ipsumOption';
+ *
+ * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, ExperimentalKeys>;
+ *
+ * // Or directly
+ * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, 'loremOption' | 'ipsumOption'>;
+ *
+ * // Or allow empty
+ * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
+ */
+type MakeExperimental<T, K extends keyof T = never> = T & {
+  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
+};
+
+/**
  * Option overrides parsed from programmatic use. Exposed to the consumer/user.
  */
 type ProgrammaticOptions = Partial<
@@ -56,42 +74,23 @@ type CliOptions = {
 };
 
 /**
- * Get argument value from argv (defaults to `process.argv`).
+ * Parsed options return type. Separates regular options from experimental ones.
  *
- * @param flag - CLI flag to search for
- * @param [options] - Options
- * @param [options.defaultValue] - Default arg value
- * @param [options.argv] - Command-line arguments to parse. Defaults to `process.argv`.
+ * @template T Passed standard options
+ * @property {T} options - Standard parsed options
+ * @property experimentalOptions - Experimental options
  */
-const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defaultValue?: unknown, argv?: string[] } = {}) => {
-  const index = argv.indexOf(flag);
-
-  if (index === -1) {
-    return defaultValue;
-  }
-
-  const value = argv[index + 1];
-
-  if (!value || value.startsWith('-')) {
-    return defaultValue;
-  }
-
-  if (typeof defaultValue === 'number') {
-    const num = parseInt(value, 10);
-
-    if (isNaN(num)) {
-      return defaultValue;
-    }
-
-    return num;
-  }
-
-  return value;
+type ParsedOptions<T> = {
+  options: T;
+  experimentalOptions: string[];
 };
 
 /**
  * Parse CLI configuration options.
+ * - **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for
+ *     internal distinction.
  * - Parses `process.argv` options
+ * - Separates out supported experimental options from standard ones.
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
@@ -111,152 +110,211 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  *
  * @note Review removing `programmatic` mode from this function path.
  *
- * @param [argv] - User-defined CLI configuration options (overrides).
+ * @note Experimental Flags:
+ * The parser strips `--experimental-` prefixes from options to allow an internal match
+ * against standard flag names. Actual validation and warning issuance for experimental
+ * features are handled downstream in `setOptions` via `normalizeExperimentalOptions`
+ * to ensure both CLI and programmatic options align.
+ *
+ * @param argv - User-defined CLI configuration options (overrides).
+ * @param experimentalOptions - The available experimental options set used for filtering
  * @returns An object with parsed command-line options and used experimental options.
  */
-const parseCliOptions = (argv: string[] = process.argv): CliOptions => {
-  const modeIndex = argv.indexOf('--mode');
-  const modeTestUrl = argv.indexOf('--mode-test-url');
-  const modeOptions: ModeOptions = {
-    ...DEFAULT_OPTIONS.modeOptions
+const parseCliOptions = (
+  argv: string[], experimentalOptions: Set<string> = new Set()
+): ParsedOptions<CliOptions> => {
+  const result: CliOptions = {
+    modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
+    logging: { ...DEFAULT_OPTIONS.logging },
+    isHttp: argv.includes('--http'),
+    toolModules: [],
+    pluginIsolation: undefined
   };
-  const levelIndex = argv.indexOf('--log-level');
-  const logging: LoggingOptions = {
-    ...DEFAULT_OPTIONS.logging,
-    stderr: argv.includes('--log-stderr'),
-    protocol: argv.includes('--log-protocol')
-  };
+  const usedExperimentalOptions: string[] = [];
 
-  let mode: CliOptions['mode'] | undefined;
+  // Tracking for toolModules to avoid duplicates
+  const seenTools = new Set<string>();
+  let isVerbose = false;
 
-  if (modeIndex >= 0) {
-    const maybeMode = String(argv[modeIndex + 1] || '').toLowerCase();
+  for (let i = 0; i < argv.length; i++) {
+    let token = argv[i];
 
-    if (MODE_LEVELS.includes(maybeMode as DefaultOptions['mode'])) {
-      mode = argv[modeIndex + 1] as DefaultOptions['mode'];
+    // Filter falsy or tokens intended to be experimental
+    if (!token || experimentalOptions?.has(token)) {
+      continue;
+    }
+
+    if (token.startsWith('--experimental-')) {
+      const flagName = token.replace('--experimental-', '');
+      const internalFlagName = flagName.replace(/-([a-z])/g, (_subStr, letter) => letter.toUpperCase());
+
+      if (experimentalOptions?.has(internalFlagName)) {
+        token = `--${flagName}`;
+        usedExperimentalOptions.push(internalFlagName);
+      } else {
+        continue;
+      }
+    }
+
+    const next = argv[i + 1];
+    const hasValue = next && !next.startsWith('-');
+
+    // 2. Process Flags
+    switch (token) {
+      case '--mode':
+        if (hasValue && MODE_LEVELS.includes(next.toLowerCase() as DefaultOptions['mode'])) {
+          result.mode = next.toLowerCase() as DefaultOptions['mode'];
+          i += 1;
+        }
+        break;
+
+      case '--mode-test-url':
+        if (hasValue && isUrl(next) && result.modeOptions) {
+          result.modeOptions.test = { ...result.modeOptions.test, baseUrl: next.trim() };
+          i += 1;
+        }
+        break;
+
+      case '--log-level':
+        if (hasValue && logSeverity(next.toLowerCase() as LogLevel) > -1) {
+          result.logging.level = next.toLowerCase() as LoggingOptions['level'];
+          i += 1;
+        }
+        break;
+
+      case '--verbose':
+        isVerbose = true;
+        break;
+
+      case '--log-stderr':
+        result.logging.stderr = true;
+        break;
+
+      case '--log-protocol':
+        result.logging.protocol = true;
+        break;
+
+      case '--port':
+        if (hasValue) {
+          const port = portValid(next);
+
+          if (port !== undefined) {
+            result.http ??= {};
+            result.http.port = port;
+          }
+          i += 1;
+        }
+        break;
+
+      case '--host':
+        if (hasValue) {
+          result.http ??= {};
+          result.http.host = next;
+          i += 1;
+        }
+        break;
+
+      case '--allowed-origins':
+      case '--allowed-hosts': {
+        if (hasValue) {
+          const list = next.split(',').map(str => str.trim()).filter(Boolean);
+
+          result.http ??= {};
+
+          if (token === '--allowed-origins') {
+            result.http.allowedOrigins = list;
+          } else {
+            result.http.allowedHosts = list;
+          }
+          i += 1;
+        }
+        break;
+      }
+
+      case '--tool':
+        if (hasValue) {
+          next.split(',').forEach(spec => {
+            const trimmed = spec.trim();
+
+            if (trimmed && !seenTools.has(trimmed)) {
+              seenTools.add(trimmed);
+              result.toolModules.push(trimmed);
+            }
+          });
+          i += 1;
+        }
+        break;
+
+      case '--plugin-isolation':
+        if (hasValue) {
+          const val = next.toLowerCase();
+          const match = PLUGIN_ISOLATION.find(value => value === val);
+
+          if (match) {
+            result.pluginIsolation = match;
+          }
+          i += 1;
+        }
+        break;
     }
   }
 
-  if (modeTestUrl >= 0) {
-    const maybeBaseUrl = String(argv[modeTestUrl + 1] || '').trim();
-
-    if (isUrl(maybeBaseUrl)) {
-      modeOptions.test ??= {};
-      modeOptions.test.baseUrl = maybeBaseUrl;
-    }
-  }
-
-  if (argv.includes('--verbose')) {
-    logging.level = 'debug';
-  } else if (levelIndex >= 0) {
-    const maybeLevel = String(argv[levelIndex + 1] || '').toLowerCase();
-
-    if (logSeverity(maybeLevel as LogLevel) > -1) {
-      logging.level = maybeLevel as LoggingOptions['level'];
-    }
-  }
-
-  const isHttp = argv.includes('--http');
-  const http: Partial<HttpOptions> = {};
-
-  if (isHttp) {
-    const rawPort = getArgValue('--port', { argv });
-    const parsedPort = portValid(rawPort);
-    const host = getArgValue('--host', { argv });
-
-    const allowedOrigins = (getArgValue('--allowed-origins', { argv }) as string)
-      ?.split(',')
-      ?.map((origin: string) => origin.trim())
-      ?.filter(Boolean);
-
-    const allowedHosts = (getArgValue('--allowed-hosts', { argv }) as string)
-      ?.split(',')
-      ?.map((host: string) => host.trim())
-      ?.filter(Boolean);
-
-    const port = parsedPort;
-
-    if (port !== undefined) {
-      http.port = port;
-    }
-
-    if (typeof host === 'string') {
-      http.host = host;
-    }
-
-    if (Array.isArray(allowedHosts) && allowedHosts.length) {
-      http.allowedHosts = allowedHosts;
-    }
-
-    if (Array.isArray(allowedOrigins) && allowedOrigins.length) {
-      http.allowedOrigins = allowedOrigins;
-    }
-  }
-
-  // Parse external tool modules: single canonical flag `--tool`
-  // Supported forms:
-  //   --tool a --tool b      (repeatable)
-  //   --tool a,b             (comma-separated)
-  const toolModules: string[] = [];
-  const seenSpecs = new Set<string>();
-
-  const addSpec = (spec?: string) => {
-    const trimmed = String(spec || '').trim();
-
-    if (!trimmed || seenSpecs.has(trimmed)) {
-      return;
-    }
-
-    seenSpecs.add(trimmed);
-    toolModules.push(trimmed);
-  };
-
-  for (let argIndex = 0; argIndex < argv.length; argIndex += 1) {
-    const token = argv[argIndex];
-    const next = argv[argIndex + 1];
-
-    if (token === '--tool' && typeof next === 'string' && !next.startsWith('-')) {
-      next
-        .split(',')
-        .map(value => value.trim())
-        .filter(Boolean)
-        .forEach(addSpec);
-
-      argIndex += 1;
-    }
-  }
-
-  // Parse isolation preset: --plugin-isolation <none|strict>
-  let pluginIsolation: CliOptions['pluginIsolation'];// = DEFAULT_OPTIONS.pluginIsolation;
-  const isolationIndex = argv.indexOf('--plugin-isolation');
-
-  if (isolationIndex >= 0) {
-    const maybePluginIsolation = String(argv[isolationIndex + 1] || '').toLowerCase();
-
-    if (PLUGIN_ISOLATION.includes(maybePluginIsolation as DefaultOptions['pluginIsolation'])) {
-      pluginIsolation = maybePluginIsolation as DefaultOptions['pluginIsolation'];
-    }
+  // Cleanup: ensure logging matches severity after verbose/level processing
+  if (isVerbose) {
+    result.logging.level = 'debug';
   }
 
   return {
-    ...(mode ? { mode } : {}),
-    modeOptions,
-    logging,
-    isHttp,
-    http,
-    toolModules,
-    pluginIsolation
+    options: result,
+    experimentalOptions: usedExperimentalOptions
+  };
+};
+
+/**
+ * Parse programmatic configuration options.
+ * - Separates out supported experimental options from standard ones.
+ *
+ * @param options - User-defined configuration options (overrides).
+ * @param experimentalOptions - The available experimental options set used for filtering
+ * @returns An object with options and used experimental options.
+ */
+const parseProgrammaticOptions = (
+  options: ProgrammaticOptions, experimentalOptions:Set<string> = new Set()
+): ParsedOptions<ProgrammaticOptions> => {
+  const updatedOptions: { [key: string]: unknown } = {};
+  const usedExperimental: string[] = [];
+
+  Object.entries(options).forEach(([key, value]: [string, unknown]) => {
+    if (key?.startsWith('experimental')) {
+      const internalKey = key
+        .replace(/^experimental/, '')
+        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase())
+        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) as keyof DefaultOptions;
+
+      if (experimentalOptions?.has(internalKey)) {
+        updatedOptions[internalKey] = value;
+        usedExperimental.push(internalKey);
+      }
+    } else {
+      updatedOptions[key] = value;
+    }
+  });
+
+  return {
+    options: updatedOptions,
+    experimentalOptions: usedExperimental
   };
 };
 
 export {
   parseCliOptions,
-  getArgValue,
+  parseProgrammaticOptions,
   type AppSession,
   type CliOptions,
   type DefaultOptions,
   type GlobalOptions,
   type HttpOptions,
   type LoggingOptions,
+  type MakeExperimental,
   type ProgrammaticOptions
 };

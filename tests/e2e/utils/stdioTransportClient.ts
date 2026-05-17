@@ -73,7 +73,7 @@ export const startServer = async ({
     }
   );
 
-  const parsedArgs = parseCliOptions(args);
+  const { options: parsedArgs } = parseCliOptions(args);
   const loggingArgs = parsedArgs?.logging || {};
 
   // Track whether we're intentionally closing the client
