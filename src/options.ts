@@ -31,11 +31,20 @@ type GlobalOptions = DefaultOptions;
  * @example Use
  * type ExperimentalKeys = 'loremOption' | 'ipsumOption';
  *
- * type PfMcpOptions = MakeExperimental<Pick<DefaultOptionsOverrides, ExperimentalKeys>>;
+ * type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, ExperimentalKeys>;
+ *
+ * // Or directly
+ * type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'loremOption' | 'ipsumOption'>;
+ *
+ * // Or allow empty
+ * type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides>
  */
-type MakeExperimental<T, K extends keyof T> = T & {
+type MakeExperimental<T, K extends keyof T = never> = T & {
   [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
 };
+// type MakeExperimental<T, K extends keyof T = never> = T & ([K] extends [never] ? object : {
+//  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
+// });
 
 /**
  * Overrides for default options. Exposed to the consumer/user.

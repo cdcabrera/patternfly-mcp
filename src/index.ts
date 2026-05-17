@@ -83,7 +83,7 @@ type PfMcpStatReport = ServerStatReport;
  *
  * @alias CliOptions
  */
-type PfMcpCliOptions = MakeExperimental<CliOptions, 'contextManagement'>;
+type PfMcpCliOptions = MakeExperimental<CliOptions, PfMcpExperimentalOptions>;
 
 /**
  * `CliOptions` renamed, use `PfMcpCliOptions` instead.
@@ -98,7 +98,7 @@ type DeprecatedCliOptions = PfMcpCliOptions;
  *
  * @alias DefaultOptionsOverrides
  */
-type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'contextManagement'>;
+type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, PfMcpExperimentalOptions>;
 
 /**
  * Additional settings for programmatic control.
@@ -112,13 +112,24 @@ type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'contextManagement
 type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 
 /**
+ * Available experimental options.
+ */
+type PfMcpExperimentalOptions = never;
+
+/**
  * Options currently in experimental status.
  *
- * @note Use the internal key name here.
+ * @note Add experimental options for consumer use.
+ * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
+ * 2. Update the typings on `options` for `CliOptions` and `DefaultOptionsOverrides` for what gets exposed to consumers.
+ * 3. Add the internal key name here, to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<keyof DefaultOptions>(['loremIpsum'])`)
+ * 4. Add the internal key name to `PfMcpExperimentalOptions` (e.g., `type PfMcpExperimentalOptions = 'loremIpsum' | 'dolorSit`)
+ *
+ * After that the option should be exposed as
+ * - `cli` as `--experimental-[the option]`
+ * - `programmatic` as `experimental[TheOption]`
  */
-const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
-  'contextManagement'
-]);
+const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([]);
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides
@@ -239,6 +250,7 @@ export {
   main as start,
   type DeprecatedCliOptions as CliOptions,
   type PfMcpCliOptions,
+  type PfMcpExperimentalOptions,
   type PfMcpOptions,
   type PfMcpSettings,
   type PfMcpInstance,
