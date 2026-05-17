@@ -151,9 +151,10 @@ const parseCliOptions = (
     }
 
     if (token.startsWith('--experimental-')) {
-      const flagName = token.replace('--experimental-', '');
+      const originalFlagName = token.replace('--experimental-', '');
+      const flagName = originalFlagName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 
-      if (experimentalOptions.has(flagName)) {
+      if (experimentalOptions?.has(flagName)) {
         token = `--${flagName}`;
         usedExperimentalOptions.push(flagName);
       } else {
@@ -246,6 +247,7 @@ const parseCliOptions = (
         }
         break;
 
+      case '--contextManagement':
       case '--context-management':
         if (hasValue) {
           const strategy = next.toLowerCase();
