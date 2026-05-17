@@ -1,4 +1,4 @@
-import { parseCliOptions } from '../options';
+import { parseCliOptions, parseProgrammaticOptions } from '../options';
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
@@ -10,83 +10,222 @@ describe('parseCliOptions', () => {
   it.each([
     {
       description: 'with --verbose flag',
-      args: ['node', 'script.js', '--verbose']
+      args: ['node', 'script.js', '--verbose'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'debug' })
+      })
     },
     {
       description: 'with --verbose flag and --log-level flag',
-      args: ['node', 'script.js', '--verbose', '--log-level', 'warn']
+      args: ['node', 'script.js', '--verbose', '--log-level', 'warn'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'debug' })
+      })
     },
     {
       description: 'with --log-level flag',
-      args: ['node', 'script.js', '--log-level', 'warn']
+      args: ['node', 'script.js', '--log-level', 'warn'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'warn' })
+      })
     },
     {
       description: 'with --log-stderr flag and --log-protocol flag',
-      args: ['node', 'script.js', '--log-stderr', '--log-protocol']
+      args: ['node', 'script.js', '--log-stderr', '--log-protocol'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({
+          stderr: true,
+          protocol: true
+        })
+      })
     },
     {
       description: 'with other arguments',
-      args: ['node', 'script.js', 'other', 'args']
+      args: ['node', 'script.js', 'other', 'args'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'info' })
+      })
     },
     {
       description: 'with --http flag',
-      args: ['node', 'script.js', '--http']
+      args: ['node', 'script.js', '--http'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true
+      })
     },
     {
       description: 'with --http and --port',
-      args: ['node', 'script.js', '--http', '--port', '6000']
+      args: ['node', 'script.js', '--http', '--port', '6000'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({ port: 6000 })
+      })
     },
     {
       description: 'with --http and invalid --port',
-      args: ['node', 'script.js', '--http', '--port', '0']
+      args: ['node', 'script.js', '--http', '--port', '0'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({ port: 0 })
+      })
     },
     {
       description: 'with --http and --host',
-      args: ['node', 'script.js', '--http', '--host', '0.0.0.0']
+      args: ['node', 'script.js', '--http', '--host', '0.0.0.0'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({ host: '0.0.0.0' })
+      })
     },
     {
       description: 'with --allowed-origins',
-      args: ['node', 'script.js', '--http', '--allowed-origins', 'https://app.com,https://admin.app.com']
+      args: ['node', 'script.js', '--http', '--allowed-origins', 'https://app.com,https://admin.app.com'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({
+          allowedOrigins: ['https://app.com', 'https://admin.app.com']
+        })
+      })
     },
     {
       description: 'with --allowed-hosts',
-      args: ['node', 'script.js', '--http', '--allowed-hosts', 'localhost,127.0.0.1']
+      args: ['node', 'script.js', '--http', '--allowed-hosts', 'localhost,127.0.0.1'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({
+          allowedHosts: ['localhost', '127.0.0.1']
+        })
+      })
+    },
+    {
+      description: 'with --allowed-hosts with spaces',
+      args: ['node', 'script.js', '--http', '--allowed-hosts', '   localhost, 127.0.0.1   '],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({
+          allowedHosts: ['localhost', '127.0.0.1']
+        })
+      })
     },
     {
       description: 'with --tool',
-      args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool']
+      args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool'],
+      expectedOptions: expect.objectContaining({
+        toolModules: ['my-tool', 'my-other-tool']
+      })
     },
     {
       description: 'with --plugin-isolation strict',
-      args: ['node', 'script.js', '--plugin-isolation', 'STRICT']
+      args: ['node', 'script.js', '--plugin-isolation', 'STRICT'],
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: 'strict'
+      })
     },
     {
       description: 'with --plugin-isolation none',
-      args: ['node', 'script.js', '--plugin-isolation', 'none']
+      args: ['node', 'script.js', '--plugin-isolation', 'none'],
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: 'none'
+      })
     },
     {
       description: 'with --plugin-isolation undefined',
-      args: ['node', 'script.js', '--plugin-isolation', '--verbose']
+      args: ['node', 'script.js', '--plugin-isolation', '--verbose'],
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: undefined
+      })
     }
-  ])('should attempt to parse args $description', ({ args = [] }) => {
-    process.argv = args;
+  ])('should attempt to parse args $description', ({ args, expectedOptions }) => {
+    const result = parseCliOptions(args);
 
-    const result = parseCliOptions();
-
-    expect(result).toMatchSnapshot();
+    expect(result.options).toEqual(expectedOptions);
   });
 
-  it('parses from a provided argv independent of process.argv', () => {
-    const customArgv = ['node', 'cli', '--http', '--port', '3101'];
-    const result = parseCliOptions(customArgv);
+  it.each([
+    {
+      description: 'tolerates an explicitly undefined option',
+      args: ['node', 'cli', '--verbose'],
+      experimentalOptions: undefined,
+      expectedOptions: expect.objectContaining({ logging: expect.objectContaining({ level: 'debug' }) }),
+      expectedExperimental: []
+    },
+    {
+      description: 'ignores direct CLI flags registered as experimental',
+      args: ['node', 'cli', '--plugin-isolation', 'none'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: undefined }),
+      expectedExperimental: []
+    },
+    {
+      description: 'applies registered experimental options via --experimental- prefix',
+      args: ['node', 'cli', '--experimental-plugin-isolation', 'none'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'dedupes repeated experimental CLI flags',
+      args: ['node', 'cli', '--experimental-plugin-isolation', 'none', '--experimental-plugin-isolation', 'strict'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
+      expectedExperimental: ['pluginIsolation']
+    }
+  ])('should handle experimental options, $description', ({ args, experimentalOptions, expectedOptions, expectedExperimental }) => {
+    const result = parseCliOptions(args, experimentalOptions);
 
-    expect(result.http?.port).toBe(3101);
+    expect(result.options).toEqual(expectedOptions);
+    expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 
-  it('trims spaces in list flags', () => {
-    const argv = ['node', 'cli', '--http', '--allowed-hosts', ' localhost , 127.0.0.1  '];
-    const result = parseCliOptions(argv);
+  it('does not apply HTTP flags when --http is absent', () => {
+    const { options } = parseCliOptions(['node', 'cli', '--port', '9000', '--host', '0.0.0.0']);
 
-    expect(result.http?.allowedHosts).toEqual(['localhost', '127.0.0.1']);
+    expect(options.isHttp).toBe(false);
+    expect(options.http).toBeUndefined();
+  });
+});
+
+describe('parseProgrammaticOptions', () => {
+  it.each([
+    {
+      description: 'maps experimental-prefixed keys when registered',
+      input: { experimentalPluginIsolation: 'none', pluginIsolation: 'strict' },
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'ignores direct keys registered as experimental',
+      input: { pluginIsolation: 'strict' },
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
+      expectedExperimental: []
+    },
+    {
+      description: 'ignores experimental-prefixed keys that are not registered',
+      input: { experimentalPluginIsolation: 'none' },
+      experimentalOptions: new Set(),
+      expectedOptions: expect.not.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: []
+    },
+    {
+      description: 'passes through the experimental metadata array unchanged',
+      input: { experimental: ['pluginIsolation'] },
+      experimentalOptions: new Set(),
+      expectedOptions: expect.objectContaining({ experimental: ['pluginIsolation'] }),
+      expectedExperimental: []
+    },
+    {
+      description: 'tolerates an explicitly undefined experimental registry',
+      input: { logging: { level: 'warn' } },
+      experimentalOptions: undefined,
+      expectedOptions: expect.objectContaining({ logging: { level: 'warn' } }),
+      expectedExperimental: []
+    }
+  ])('should handle experimental options, $description', ({ input, experimentalOptions, expectedOptions, expectedExperimental }) => {
+    const result = parseProgrammaticOptions(input as any, experimentalOptions as any);
+
+    expect(result.options).toEqual(expectedOptions);
+    expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 });
