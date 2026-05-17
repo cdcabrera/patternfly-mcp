@@ -1,4 +1,4 @@
-import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import { parseCliOptions, type CliOptions, type ProgrammaticOptions } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -23,9 +23,26 @@ import {
 } from './server.toolsUser';
 
 /**
- * Options for "programmatic" use. Extends the `DefaultOptions` interface.
+ * Options for "cli" use. An aspect of the `DefaultOptions` interface.
+ *
+ * @alias CliOptions
  */
-type PfMcpOptions = DefaultOptionsOverrides;
+type PfMcpCliOptions = CliOptions;
+
+/**
+ * `CliOptions` renamed, use `PfMcpCliOptions` instead.
+ *
+ * @deprecated
+ * @alias CliOptions
+ */
+type DeprecatedCliOptions = PfMcpCliOptions;
+
+/**
+ * Options for "programmatic" use. Limits the `DefaultOptions` interface.
+ *
+ * @alias ProgrammaticOptions
+ */
+type PfMcpOptions = ProgrammaticOptions;
 
 /**
  * Additional settings for programmatic control.
@@ -199,7 +216,8 @@ export {
   createMcpTool,
   main,
   main as start,
-  type CliOptions,
+  type DeprecatedCliOptions as CliOptions,
+  type PfMcpCliOptions,
   type PfMcpOptions,
   type PfMcpSettings,
   type PfMcpInstance,
