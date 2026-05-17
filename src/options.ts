@@ -36,12 +36,12 @@ type GlobalOptions = DefaultOptions;
 type CliOptions = {
   mode?: DefaultOptions['mode'];
   modeOptions?: Partial<ModeOptions>;
-  contextManagement: DefaultOptions['contextManagement'] | undefined;
-  http?: Partial<HttpOptions>;
+  contextManagement?: DefaultOptions['contextManagement'] | undefined;
+  http: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
   toolModules: string[];
-  pluginIsolation: 'none' | 'strict' | undefined;
+  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
 };
 
 type ParsedOptions<T> = {
@@ -84,7 +84,9 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
 };
 
 /**
- * Parses CLI options and return config options for the application.
+ * Parse CLI configuration options.
+ * - Parses `process.argv` options
+ * - Separates out supported experimental options from standard ones.
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
@@ -111,10 +113,13 @@ const getArgValue = (flag: string, { defaultValue, argv = process.argv }: { defa
  * features are handled downstream in `setOptions` via `normalizeExperimentalOptions`
  * to ensure both CLI and programmatic options align.
  *
- * @param [argv] - Command-line arguments to parse. Defaults to `process.argv`.
- * @returns Parsed command-line options.
+ * @param argv - User-defined CLI configuration options (overrides).
+ * @param experimentalOptions - The available experimental options set used for filtering
+ * @returns An object with parsed command-line options and used experimental options.
  */
-const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experimentalOptions: Set<string> }): ParsedOptions<CliOptions> => {
+const parseCliOptions = (
+  argv: string[], experimentalOptions: Set<string> = new Set()
+): ParsedOptions<CliOptions> => {
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
@@ -133,13 +138,12 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
   for (let i = 0; i < argv.length; i++) {
     let token = argv[i];
 
-    if (!token || experimentalOptions.has(token)) {
+    // Filter falsy or tokens intended to be experimental
+    if (!token || experimentalOptions?.has(token)) {
       continue;
     }
 
-    const isExperimental = token.startsWith('--experimental-');
-
-    if (isExperimental) {
+    if (token.startsWith('--experimental-')) {
       const flagName = token.replace('--experimental-', '');
 
       if (experimentalOptions.has(flagName)) {
@@ -156,7 +160,7 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
     // 2. Process Flags
     switch (token) {
       case '--mode':
-        if (hasValue && MODE_LEVELS.includes(next.toLowerCase() as any)) {
+        if (hasValue && MODE_LEVELS.includes(next.toLowerCase() as DefaultOptions['mode'])) {
           result.mode = next.toLowerCase() as DefaultOptions['mode'];
           i += 1;
         }
@@ -193,7 +197,7 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
           const port = portValid(next);
 
           if (port !== undefined) {
-            result.http!.port = port;
+            result.http.port = port;
           }
           i += 1;
         }
@@ -201,7 +205,7 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
 
       case '--host':
         if (hasValue) {
-          result.http!.host = next;
+          result.http.host = next;
           i += 1;
         }
         break;
@@ -212,9 +216,9 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
           const list = next.split(',').map(str => str.trim()).filter(Boolean);
 
           if (token === '--allowed-origins') {
-            result.http!.allowedOrigins = list;
+            result.http.allowedOrigins = list;
           } else {
-            result.http!.allowedHosts = list;
+            result.http.allowedHosts = list;
           }
           i += 1;
         }
@@ -272,36 +276,35 @@ const parseCliOptions = ({ argv, experimentalOptions }: { argv: string[]; experi
   };
 };
 
+/**
+ * Parse programmatic configuration options.
+ * - Separates out supported experimental options from standard ones.
+ *
+ * @param options - User-defined configuration options (overrides).
+ * @param experimentalOptions - The available experimental options set used for filtering
+ * @returns An object with options and used experimental options.
+ */
 const parseProgrammaticOptions = (
-  { options, experimentalOptions }: { options: DefaultOptionsOverrides; experimentalOptions: Set<string> }
+  options: DefaultOptionsOverrides, experimentalOptions:Set<string> = new Set()
 ): ParsedOptions<DefaultOptionsOverrides> => {
-  const updatedOptions: DefaultOptionsOverrides = {};
+  const updatedOptions: { [key: string]: unknown } = {};
   const usedExperimental: string[] = [];
-  // const optionsEntries = Object.entries(options);
 
-  // const updatedOptions = {};
+  Object.entries(options).forEach(([key, value]: [string, unknown]) => {
+    if (key?.startsWith('experimental')) {
+      const internalKey = key
+        .replace(/^experimental/, '')
+        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase())
+        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) as keyof DefaultOptions;
 
-  /*
-  for (let i = 0; i < options.length; i++) {
-    let token = argv[i];
-
-    if (!token || experimentalOptions.has(token)) {
-      continue;
-    }
-
-    const isExperimental = token.startsWith('--experimental-');
-
-    if (isExperimental) {
-      const flagName = token.replace('--experimental-', '');
-
-      if (experimentalOptions.has(flagName)) {
-        token = `--${flagName}`;
-      } else {
-        continue;
+      if (experimentalOptions?.has(internalKey)) {
+        updatedOptions[internalKey] = value;
+        usedExperimental.push(internalKey);
       }
+    } else {
+      updatedOptions[key] = value;
     }
-  }
-   */
+  });
 
   return {
     options: updatedOptions,

@@ -77,57 +77,6 @@ const runWithSession = async <TReturn>(
 const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 
 /**
- * Normalizes experimental options.
- *
- * Keys starting with 'experimental-' are stripped of the prefix and included in
- * the normalized object under their internal representation, while others remain unchanged.
- *
- * @param {Record<string, unknown>} [options={}] - Record containing key-value pairs of options.
- * @param experimentalOptions
- * @returns {{ normalized: Record<string, unknown>, usedExperimental: string[] }}
- *          An object containing:
- *          - `normalized`: A record where 'experimental-' prefixed keys are modified to their internal
- *            representation and other keys are unchanged.
- *          - `usedExperimental`: An array of keys that were identified as experimental and processed.
- */
-/*
-const normalizeExperimentalOptions = (
-  options: DefaultOptionsOverrides | undefined,
-  experimentalOptions: Set<string>
-) => {
-  const normalized: Record<string, unknown> = {};
-  const usedExperimental: string[] = [];
-
-  if (!options) {
-    return {
-      normalized,
-      usedExperimental
-    };
-  }
-
-  Object.entries(options).forEach(([key, value]) => {
-    if (options.mode === 'cli' && experimentalOptions.has(key)) {
-      //  normalized[key] = undefined;
-    } else if (key.startsWith('experimental-') || key.startsWith('experimental')) {
-      const internalKey = key
-        .replace(/^experimental-?/, '') // Remove prefix with optional dash
-        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase()) // Lowercase first letter if camelCase
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); // Convert remaining kebab
-
-      normalized[internalKey] = value;
-      usedExperimental.push(internalKey);
-    } else {
-      normalized[key] = value;
-      // usedExperimental.push(key);
-    }
-  });
-
-  return { normalized, usedExperimental };
-};
-
- */
-
-/**
  * Set and freeze cloned options in the current async context.
  *
  * @note This function performs a two-stage configuration setup:
@@ -151,15 +100,10 @@ const normalizeExperimentalOptions = (
  * that aligns with CLI options parsing. We need to account for both CLI and programmatic use.
  *
  * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
- * @param [metadata] - Optional metadata
- * @param [metadata.experimentalOptions] - Merged experimental options from cli and programmatic modes.
+ * @param [experimentalOptions] - The available experimental options set.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: DefaultOptionsOverrides, { experimentalOptions = [] }: { experimentalOptions?: string[] } = {}): GlobalOptions => {
-  if (experimentalOptions.length) {
-    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${experimentalOptions.join(', ')}`);
-  }
-
+const setOptions = (options?: DefaultOptionsOverrides, experimentalOptions: Set<string> = new Set()): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
@@ -167,11 +111,17 @@ const setOptions = (options?: DefaultOptionsOverrides, { experimentalOptions = [
   const baseContextManagement = CONTEXT_MANAGEMENT.includes(base.contextManagement) ? base.contextManagement : DEFAULT_OPTIONS.contextManagement;
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
+  const baseExperimental =
+    base.experimental.length && base.experimental.every(option => experimentalOptions?.has(option)) ? base.experimental : [];
+
+  if (baseExperimental.length) {
+    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${baseExperimental.join(', ')}`);
+  }
 
   const merged: GlobalOptions = {
     ...base,
     contextManagement: baseContextManagement,
-    experimentalOptions,
+    experimental: baseExperimental,
     mode: MODE_LEVELS.includes(base.mode) ? base.mode : DEFAULT_OPTIONS.mode,
     logging: {
       level: ['debug', 'info', 'warn', 'error'].includes(baseLogging.level) ? baseLogging.level : DEFAULT_OPTIONS.logging.level,

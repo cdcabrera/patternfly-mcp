@@ -17,7 +17,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
  * @property docsPathSlug - Local docs slug. Used for resolving local stored documentation.
- * @property experimentalOptions - Tracking for experimental options
+ * @property experimental - Used experimental options list.
  * @property isHttp - Flag indicating whether the server is running in HTTP mode.
  * @property {HttpOptions} http - HTTP server options.
  * @property {LoggingOptions} logging - Logging options.
@@ -57,7 +57,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   contextUrl: string;
   docsPaths: string[];
   docsPathSlug: string;
-  experimentalOptions: string[];
+  experimental: string[];
   http: HttpOptions;
   isHttp: boolean;
   logging: TLogOptions;
@@ -526,15 +526,6 @@ const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 't
 const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
 
 /**
- * Options currently in experimental status.
- *
- * @note Use the internal key name here.
- */
-const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
-  'contextManagement'
-]);
-
-/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @note `maxDocsToLoad` and `recommendedMaxDocsToLoad` should be generated from the length
@@ -547,7 +538,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPaths: [],
   docsPathSlug: 'documentation:',
-  experimentalOptions: [],
+  experimental: [],
   isHttp: false,
   http: HTTP_OPTIONS,
   logging: LOGGING_OPTIONS,
@@ -581,7 +572,6 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 export {
   DEFAULT_OPTIONS,
   CONTEXT_MANAGEMENT,
-  EXPERIMENTAL_OPTIONS,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
