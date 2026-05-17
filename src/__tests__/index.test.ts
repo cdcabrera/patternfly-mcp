@@ -1,4 +1,4 @@
-import { main, start, type PfMcpOptions, type CliOptions } from '../index';
+import { main, start, type PfMcpOptions, type PfMcpCliOptions } from '../index';
 import { parseCliOptions, type GlobalOptions } from '../options';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { getSessionOptions, runWithSession, setOptions } from '../options.context';
@@ -36,7 +36,7 @@ describe('main', () => {
     mockParseCliOptions.mockImplementation(() => {
       callOrder.push('parse');
 
-      return { logging: defaultLogging } as CliOptions;
+      return { logging: defaultLogging } as PfMcpCliOptions;
     });
 
     mockSetOptions.mockImplementation(options => {

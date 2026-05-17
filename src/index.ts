@@ -23,7 +23,24 @@ import {
 } from './server.toolsUser';
 
 /**
- * Options for "programmatic" use. Extends the `DefaultOptions` interface.
+ * Options for "cli" use. An aspect of the `DefaultOptions` interface.
+ *
+ * @alias CliOptions
+ */
+type PfMcpCliOptions = CliOptions;
+
+/**
+ * `CliOptions` renamed, use `PfMcpCliOptions` instead.
+ *
+ * @deprecated
+ * @alias CliOptions
+ */
+type DeprecatedCliOptions = PfMcpCliOptions;
+
+/**
+ * Options for "programmatic" use. Limits the `DefaultOptions` interface.
+ *
+ * @alias DefaultOptionsOverrides
  */
 type PfMcpOptions = DefaultOptionsOverrides;
 
@@ -199,7 +216,8 @@ export {
   createMcpTool,
   main,
   main as start,
-  type CliOptions,
+  type DeprecatedCliOptions as CliOptions,
+  type PfMcpCliOptions,
   type PfMcpOptions,
   type PfMcpSettings,
   type PfMcpInstance,

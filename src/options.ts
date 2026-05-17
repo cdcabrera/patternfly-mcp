@@ -3,10 +3,10 @@ import {
   MODE_LEVELS,
   PLUGIN_ISOLATION,
   type DefaultOptions,
-  type DefaultOptionsOverrides,
   type LoggingOptions,
   type HttpOptions,
-  type ModeOptions
+  type ModeOptions,
+  type ToolModule
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
@@ -24,6 +24,20 @@ type AppSession = {
  * Global options, convenience type for `DefaultOptions`
  */
 type GlobalOptions = DefaultOptions;
+
+/**
+ * Overrides for default options. Exposed to the consumer/user.
+ */
+type DefaultOptionsOverrides = Partial<
+  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
+> & {
+  mode?: DefaultOptions['mode'] | undefined;
+  modeOptions?: Partial<ModeOptions> | undefined;
+  http?: Partial<HttpOptions>;
+  logging?: Partial<LoggingOptions>;
+  pluginIsolation?: 'none' | 'strict' | undefined;
+  toolModules?: ToolModule | ToolModule[] | undefined;
+};
 
 /**
  * Options parsed from CLI arguments
