@@ -1,5 +1,5 @@
 import { main, start, type PfMcpOptions, type PfMcpCliOptions } from '../index';
-import { parseCliOptions, type GlobalOptions } from '../options';
+import { parseCliOptions, parseProgrammaticOptions, type GlobalOptions } from '../options';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { getSessionOptions, runWithSession, setOptions } from '../options.context';
 import { runServer } from '../server';
@@ -11,6 +11,7 @@ jest.mock('../server');
 jest.mock('../server.tools');
 
 const mockParseCliOptions = parseCliOptions as jest.MockedFunction<typeof parseCliOptions>;
+const mockParseProgrammaticOptions = parseProgrammaticOptions as jest.MockedFunction<typeof parseProgrammaticOptions>;
 const mockSetOptions = setOptions as jest.MockedFunction<typeof setOptions>;
 const mockRunServer = runServer as jest.MockedFunction<typeof runServer>;
 const mockGetSessionOptions = getSessionOptions as jest.MockedFunction<typeof getSessionOptions>;
@@ -36,7 +37,13 @@ describe('main', () => {
     mockParseCliOptions.mockImplementation(() => {
       callOrder.push('parse');
 
-      return { logging: defaultLogging } as PfMcpCliOptions;
+      return { options: { logging: defaultLogging }, experimentalOptions: [] } as PfMcpCliOptions;
+    });
+
+    mockParseProgrammaticOptions.mockImplementation(() => {
+      callOrder.push('parse');
+
+      return { options: { logging: defaultLogging }, experimentalOptions: [] } as PfMcpCliOptions;
     });
 
     mockSetOptions.mockImplementation(options => {

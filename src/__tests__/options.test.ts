@@ -56,25 +56,27 @@ describe('parseCliOptions', () => {
       description: 'with --tool',
       args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool']
     }
+    // {
+    //  description: 'with experimental prefixes',
+    //  args: ['node', 'script.js', '--experimental-context-management', 'strict']
+    // }
   ])('should attempt to parse args $description', ({ args = [] }) => {
-    process.argv = args;
-
-    const result = parseCliOptions();
+    const result = parseCliOptions(args);
 
     expect(result).toMatchSnapshot();
   });
 
   it('parses from a provided argv independent of process.argv', () => {
     const customArgv = ['node', 'cli', '--http', '--port', '3101'];
-    const result = parseCliOptions(customArgv);
+    const { options } = parseCliOptions(customArgv);
 
-    expect(result.http?.port).toBe(3101);
+    expect(options.http?.port).toBe(3101);
   });
 
   it('trims spaces in list flags', () => {
     const argv = ['node', 'cli', '--http', '--allowed-hosts', ' localhost , 127.0.0.1  '];
-    const result = parseCliOptions(argv);
+    const { options } = parseCliOptions(argv);
 
-    expect(result.http?.allowedHosts).toEqual(['localhost', '127.0.0.1']);
+    expect(options.http?.allowedHosts).toEqual(['localhost', '127.0.0.1']);
   });
 });

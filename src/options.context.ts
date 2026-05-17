@@ -99,18 +99,26 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * that aligns with CLI options parsing. We need to account for both CLI and programmatic use.
  *
  * @param {DefaultOptionsOverrides} [options] - Optional overrides merged with DEFAULT_OPTIONS.
+ * @param [experimentalOptions] - The available experimental options set.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: DefaultOptionsOverrides): GlobalOptions => {
+const setOptions = (options?: DefaultOptionsOverrides, experimentalOptions: Set<string> = new Set()): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
+  const baseExperimental =
+    base.experimental.length && base.experimental.every(option => experimentalOptions?.has(option)) ? base.experimental : [];
+
+  if (baseExperimental.length) {
+    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${baseExperimental.join(', ')}`);
+  }
 
   const merged: GlobalOptions = {
     ...base,
+    experimental: baseExperimental,
     mode: MODE_LEVELS.includes(base.mode) ? base.mode : DEFAULT_OPTIONS.mode,
     logging: {
       level: ['debug', 'info', 'warn', 'error'].includes(baseLogging.level) ? baseLogging.level : DEFAULT_OPTIONS.logging.level,

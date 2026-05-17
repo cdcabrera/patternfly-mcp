@@ -1,4 +1,11 @@
-import { parseCliOptions, type CliOptions, type DefaultOptionsOverrides } from './options';
+import {
+  parseCliOptions,
+  parseProgrammaticOptions,
+  type CliOptions,
+  type DefaultOptions,
+  type DefaultOptionsOverrides,
+  type MakeExperimental
+} from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
@@ -21,39 +28,6 @@ import {
   type ToolExternalOptions,
   type ToolInternalOptions
 } from './server.toolsUser';
-
-/**
- * Options for "cli" use. An aspect of the `DefaultOptions` interface.
- *
- * @alias CliOptions
- */
-type PfMcpCliOptions = CliOptions;
-
-/**
- * `CliOptions` renamed, use `PfMcpCliOptions` instead.
- *
- * @deprecated
- * @alias CliOptions
- */
-type DeprecatedCliOptions = PfMcpCliOptions;
-
-/**
- * Options for "programmatic" use. Limits the `DefaultOptions` interface.
- *
- * @alias DefaultOptionsOverrides
- */
-type PfMcpOptions = DefaultOptionsOverrides;
-
-/**
- * Additional settings for programmatic control.
- *
- * @property {boolean} allowProcessExit - Override process exits. Useful for tests
- *     or programmatic use to avoid exiting.
- *     - Setting directly overrides `mode` property defaults.
- *     - When `mode=cli` or `mode=programmatic` or `undefined`, defaults to `true`.
- *     - When `mode=test`, defaults to `false`.
- */
-type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 
 /**
  * Server instance with shutdown capability
@@ -103,6 +77,48 @@ type PfMcpStats = ServerStats;
  * @alias ServerStatReport
  */
 type PfMcpStatReport = ServerStatReport;
+
+/**
+ * Options for "cli" use. An aspect of the `DefaultOptions` interface.
+ *
+ * @alias CliOptions
+ */
+type PfMcpCliOptions = MakeExperimental<CliOptions, 'contextManagement'>;
+
+/**
+ * `CliOptions` renamed, use `PfMcpCliOptions` instead.
+ *
+ * @deprecated
+ * @alias CliOptions
+ */
+type DeprecatedCliOptions = PfMcpCliOptions;
+
+/**
+ * Options for "programmatic" use. Limits the `DefaultOptions` interface.
+ *
+ * @alias DefaultOptionsOverrides
+ */
+type PfMcpOptions = MakeExperimental<DefaultOptionsOverrides, 'contextManagement'>;
+
+/**
+ * Additional settings for programmatic control.
+ *
+ * @property {boolean} allowProcessExit - Override process exits. Useful for tests
+ *     or programmatic use to avoid exiting.
+ *     - Setting directly overrides `mode` property defaults.
+ *     - When `mode=cli` or `mode=programmatic` or `undefined`, defaults to `true`.
+ *     - When `mode=test`, defaults to `false`.
+ */
+type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
+
+/**
+ * Options currently in experimental status.
+ *
+ * @note Use the internal key name here.
+ */
+const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([
+  'contextManagement'
+]);
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides
@@ -185,11 +201,16 @@ const main = async (
   };
 
   try {
-    // Parse CLI options
-    const { mode: cliMode, ...cliOptions } = parseCliOptions();
+    const { options: cliOptions, experimentalOptions: cliExp } = parseCliOptions(process.argv, EXPERIMENTAL_OPTIONS);
+    const { options: progOptions, experimentalOptions: progExp } = parseProgrammaticOptions(options, EXPERIMENTAL_OPTIONS);
 
     // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
-    mergedOptions = setOptions({ ...cliOptions, ...options, mode: cliMode ?? programmaticMode });
+    mergedOptions = setOptions({
+      ...cliOptions,
+      ...progOptions,
+      experimental: [...new Set([...cliExp, ...progExp])],
+      mode: cliOptions.mode ?? programmaticMode
+    }, EXPERIMENTAL_OPTIONS);
 
     // Finalize exit policy after merging options
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';
