@@ -10,6 +10,7 @@ import {
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
+import { kebabToCamel } from './options.helpers';
 
 /**
  * Session defaults, not user-configurable
@@ -113,15 +114,19 @@ type ParsedOptions<T> = {
  * @note Experimental Flags:
  * The parser strips `--experimental-` prefixes from options to allow an internal match
  * against standard flag names. Actual validation and warning issuance for experimental
- * features are handled downstream in `setOptions` via `normalizeExperimentalOptions`
- * to ensure both CLI and programmatic options align.
+ * features are handled in `setOptions` to ensure both CLI and programmatic options
+ * align.
  *
  * @param argv - User-defined CLI configuration options (overrides).
  * @param experimentalOptions - The available experimental options set used for filtering
+ * @param [settings] - Function settings
+ * @param [settings.experimentalPrefix] - String prefix for experimental flags filtering.
  * @returns An object with parsed command-line options and used experimental options.
  */
 const parseCliOptions = (
-  argv: string[], experimentalOptions: Set<string> = new Set()
+  argv: string[],
+  experimentalOptions: Set<string> = new Set(),
+  { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<CliOptions> => {
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
@@ -130,7 +135,8 @@ const parseCliOptions = (
     toolModules: [],
     pluginIsolation: undefined
   };
-  const usedExperimentalOptions: string[] = [];
+  const updatedExperimentalPrefix = `--${experimentalPrefix}-`;
+  const usedExperimentalOptions = new Set<string>();
 
   // Tracking for toolModules to avoid duplicates
   const seenTools = new Set<string>();
@@ -139,22 +145,49 @@ const parseCliOptions = (
   for (let i = 0; i < argv.length; i++) {
     let token = argv[i];
 
-    // Filter falsy or tokens intended to be experimental
-    if (!token || experimentalOptions?.has(token)) {
+    if (!token) {
       continue;
     }
 
-    if (token.startsWith('--experimental-')) {
-      const flagName = token.replace('--experimental-', '');
-      const internalFlagName = flagName.replace(/-([a-z])/g, (_subStr, letter) => letter.toUpperCase());
+    const camelCaseToken = token.startsWith('--') ? kebabToCamel(token.slice(2)) : token;
+
+    if (experimentalOptions?.has(camelCaseToken)) {
+      continue;
+    }
+
+    if (token.startsWith(updatedExperimentalPrefix) && token.length > updatedExperimentalPrefix.length) {
+      const flagName = token.slice(updatedExperimentalPrefix.length);
+      const internalFlagName = kebabToCamel(flagName);
 
       if (experimentalOptions?.has(internalFlagName)) {
         token = `--${flagName}`;
-        usedExperimentalOptions.push(internalFlagName);
+        usedExperimentalOptions.add(internalFlagName);
       } else {
         continue;
       }
     }
+
+    /*
+    if (token.startsWith(updatedExperimentalPrefix) && token.length > updatedExperimentalPrefix.length) {
+      const flagName = token.slice(updatedExperimentalPrefix.length);
+      const internalFlagName = kebabToCamel(flagName);
+
+      if (experimentalOptions?.has(internalFlagName)) {
+        token = `--${flagName}`;
+        usedExperimentalOptions.add(internalFlagName);
+      } else {
+        continue;
+      }
+    } else if (token.startsWith('--')) {
+      // Fallback, filter tokens intended to be experimental
+      const flagName = token.slice(2);
+      const internalFlagName = kebabToCamel(flagName);
+
+      if (experimentalOptions?.has(internalFlagName)) {
+        continue;
+      }
+    }
+    */
 
     const next = argv[i + 1];
     const hasValue = next && !next.startsWith('-');
@@ -195,7 +228,7 @@ const parseCliOptions = (
         break;
 
       case '--port':
-        if (hasValue) {
+        if (result.isHttp && hasValue) {
           const port = portValid(next);
 
           if (port !== undefined) {
@@ -207,7 +240,7 @@ const parseCliOptions = (
         break;
 
       case '--host':
-        if (hasValue) {
+        if (result.isHttp && hasValue) {
           result.http ??= {};
           result.http.host = next;
           i += 1;
@@ -216,7 +249,7 @@ const parseCliOptions = (
 
       case '--allowed-origins':
       case '--allowed-hosts': {
-        if (hasValue) {
+        if (result.isHttp && hasValue) {
           const list = next.split(',').map(str => str.trim()).filter(Boolean);
 
           result.http ??= {};
@@ -266,43 +299,45 @@ const parseCliOptions = (
 
   return {
     options: result,
-    experimentalOptions: usedExperimentalOptions
+    experimentalOptions: [...usedExperimentalOptions]
   };
 };
 
 /**
  * Parse programmatic configuration options.
- * - Separates out supported experimental options from standard ones.
+ * - Separates out supported experimental top-level options from standard ones.
  *
  * @param options - User-defined configuration options (overrides).
  * @param experimentalOptions - The available experimental options set used for filtering
+ * @param [settings] - Function settings
+ * @param [settings.experimentalPrefix] - String prefix for experimental flags filtering.
  * @returns An object with options and used experimental options.
  */
 const parseProgrammaticOptions = (
-  options: ProgrammaticOptions, experimentalOptions:Set<string> = new Set()
+  options: ProgrammaticOptions,
+  experimentalOptions:Set<string> = new Set(),
+  { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
-  const updatedOptions: { [key: string]: unknown } = {};
-  const usedExperimental: string[] = [];
+  const updatedOptions: ProgrammaticOptions = { ...options };
+  const usedExperimental = new Set<string>();
 
-  Object.entries(options).forEach(([key, value]: [string, unknown]) => {
-    if (key?.startsWith('experimental')) {
+  for (const key in options) {
+    if (key?.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
       const internalKey = key
-        .replace(/^experimental/, '')
-        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase())
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) as keyof DefaultOptions;
+        .slice(experimentalPrefix.length).charAt(0).toLowerCase() +
+        key.slice(experimentalPrefix.length + 1);
 
-      if (experimentalOptions?.has(internalKey)) {
-        updatedOptions[internalKey] = value;
-        usedExperimental.push(internalKey);
+      if (experimentalOptions.has(internalKey)) {
+        (updatedOptions as Record<string, unknown>)[internalKey] = options[key as keyof ProgrammaticOptions];
+        delete (updatedOptions as Record<string, unknown>)[key];
+        usedExperimental.add(internalKey);
       }
-    } else {
-      updatedOptions[key] = value;
     }
-  });
+  }
 
   return {
     options: updatedOptions,
-    experimentalOptions: usedExperimental
+    experimentalOptions: [...usedExperimental]
   };
 };
 

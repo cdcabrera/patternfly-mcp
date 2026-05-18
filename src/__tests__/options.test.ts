@@ -1,4 +1,4 @@
-import { parseCliOptions } from '../options';
+import { parseCliOptions, parseProgrammaticOptions } from '../options';
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
@@ -53,6 +53,10 @@ describe('parseCliOptions', () => {
       args: ['node', 'script.js', '--http', '--allowed-hosts', 'localhost,127.0.0.1']
     },
     {
+      description: 'with --allowed-hosts with spaces',
+      args: ['node', 'script.js', '--http', '--allowed-hosts', '   localhost, 127.0.0.1   ']
+    },
+    {
       description: 'with --tool',
       args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool']
     },
@@ -78,17 +82,91 @@ describe('parseCliOptions', () => {
     expect(result).toMatchSnapshot();
   });
 
-  it('parses from a provided argv independent of process.argv', () => {
-    const customArgv = ['node', 'cli', '--http', '--port', '3101'];
-    const { options } = parseCliOptions(customArgv);
+  it.each([
+    {
+      description: 'tolerates an explicitly undefined option',
+      args: ['node', 'cli', '--verbose'],
+      experimentalOptions: undefined,
+      expectedOptions: expect.objectContaining({ logging: expect.objectContaining({ level: 'debug' }) }),
+      expectedExperimental: []
+    },
+    {
+      description: 'ignores direct CLI flags registered as experimental',
+      args: ['node', 'cli', '--plugin-isolation', 'none'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: undefined }),
+      expectedExperimental: []
+    },
+    {
+      description: 'applies registered experimental options via --experimental- prefix',
+      args: ['node', 'cli', '--experimental-plugin-isolation', 'none'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'dedupes repeated experimental CLI flags',
+      args: ['node', 'cli', '--experimental-plugin-isolation', 'none', '--experimental-plugin-isolation', 'strict'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
+      expectedExperimental: ['pluginIsolation']
+    }
+  ])('should handle experimental options, $description', ({ args, experimentalOptions, expectedOptions, expectedExperimental }) => {
+    const output = parseCliOptions(args, experimentalOptions);
 
-    expect(options.http?.port).toBe(3101);
+    expect(output.options).toEqual(expectedOptions);
+    expect(output.experimentalOptions).toEqual(expectedExperimental);
   });
 
-  it('trims spaces in list flags', () => {
-    const argv = ['node', 'cli', '--http', '--allowed-hosts', ' localhost , 127.0.0.1  '];
-    const { options } = parseCliOptions(argv);
+  it('does not apply HTTP flags when --http is absent', () => {
+    const { options } = parseCliOptions(['node', 'cli', '--port', '9000', '--host', '0.0.0.0']);
 
-    expect(options.http?.allowedHosts).toEqual(['localhost', '127.0.0.1']);
+    expect(options.isHttp).toBe(false);
+    expect(options.http).toBeUndefined();
+  });
+});
+
+describe('parseProgrammaticOptions', () => {
+  it.each([
+    {
+      description: 'maps experimental-prefixed keys when registered',
+      input: { experimentalPluginIsolation: 'none', pluginIsolation: 'strict' },
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'ignores direct keys registered as experimental',
+      input: { pluginIsolation: 'strict' },
+      experimentalOptions: new Set(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
+      expectedExperimental: []
+    },
+    {
+      description: 'ignores experimental-prefixed keys that are not registered',
+      input: { experimentalPluginIsolation: 'none' },
+      experimentalOptions: new Set<string>(),
+      expectedOptions: expect.not.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: []
+    },
+    {
+      description: 'passes through the experimental metadata array unchanged',
+      input: { experimental: ['pluginIsolation'] },
+      experimentalOptions: new Set<string>(),
+      expectedOptions: expect.objectContaining({ experimental: ['pluginIsolation'] }),
+      expectedExperimental: []
+    },
+    {
+      description: 'tolerates an explicitly undefined experimental registry',
+      input: { logging: { level: 'warn' } },
+      experimentalOptions: undefined,
+      expectedOptions: expect.objectContaining({ logging: { level: 'warn' } }),
+      expectedExperimental: []
+    }
+  ])('should handle experimental options, $description', ({ input, experimentalOptions, expectedOptions, expectedExperimental }) => {
+    const output = parseProgrammaticOptions(input as any, experimentalOptions);
+
+    expect(output.options).toEqual(expectedOptions);
+    expect(output.experimentalOptions).toEqual(expectedExperimental);
   });
 });
