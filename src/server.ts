@@ -4,11 +4,7 @@ import {
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   registerResource,
-  type McpTool,
   type McpToolCreator,
-  type McpResourceMetadataMetaConfig,
-  type McpResourceMetadata,
-  type McpResource,
   type McpResourceCreator
 } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
@@ -457,12 +453,6 @@ export {
   deprecatedBuiltinTools as builtinTools,
   registerServerResources,
   registerServerTools,
-  type McpTool,
-  type McpToolCreator,
-  type McpResource,
-  type McpResourceCreator,
-  type McpResourceMetadata,
-  type McpResourceMetadataMetaConfig,
   type ServerInstance,
   type ServerLogEvent,
   type ServerOnLog,
