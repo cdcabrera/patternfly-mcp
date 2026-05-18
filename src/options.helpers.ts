@@ -18,4 +18,27 @@ const getNodeMajorVersion = (nodeVersion: unknown): number => {
   return Number.isFinite(major) ? major : 0;
 };
 
-export { getNodeMajorVersion };
+/**
+ * Convert kebab-case to camelCase.
+ *
+ * @param {string} value - The kebab-case string to be converted.
+ * @returns {string} The converted camelCase string.
+ */
+const kebabToCamel = (value: string): string => {
+  let result = '';
+  let capitalizeNext = false;
+
+  for (const char of value) {
+    if (char === '-') {
+      capitalizeNext = true;
+      continue;
+    }
+
+    result += capitalizeNext ? char.toUpperCase() : char;
+    capitalizeNext = false;
+  }
+
+  return result;
+};
+
+export { getNodeMajorVersion, kebabToCamel };
