@@ -27,12 +27,14 @@ type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata,
  * @property [category] - Category to filter search results. Defaults to undefined for all categories.
  * @property [section] - Section to filter search results. Defaults to undefined for all sections.
  * @property [name] - Name to filter search results. Defaults to undefined for all names.
+ * @property [uri] - URI to filter search results. Defaults to undefined for all URIs.
  */
 interface FilterPatternFlyFilters {
   version?: string | undefined;
   category?: string | undefined;
   section?: string | undefined;
   name?: string | undefined;
+  uri?: string | undefined;
 }
 
 /**
@@ -163,9 +165,10 @@ const filterPatternFly = async (
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
       const matchesName = !updatedFilters.name || filterMatch(entry.name, updatedFilters.name);
+      const matchesUri = !updatedFilters.uri || filterMatch(entry.uri, updatedFilters.uri);
 
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesName;
+      return matchesVersion && matchesCategory && matchesSection && matchesName && matchesUri;
     });
 
     if (matchedEntries.length > 0) {
@@ -173,6 +176,7 @@ const filterPatternFly = async (
       const { versions, ...filteredResource } = resource;
       let versionContextualProperties = {};
 
+      // Might need to review how this affects a URI filter
       // Apply version contextual properties, typically URIs
       if (updatedFilters.version && versions?.[updatedFilters.version]) {
         versionContextualProperties = {

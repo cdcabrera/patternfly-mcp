@@ -133,6 +133,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     return {
       content: [{
+        // need to reconfirm the type
         type: 'text',
         text: stringJoin.newline(
           searchTitle,
