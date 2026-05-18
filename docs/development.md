@@ -171,6 +171,12 @@ const server: PfMcpInstance = await start({
 });
 ```
 
+### Deep imports
+
+**Deep imports come with a risk!**
+
+Deep importing from our various helpers or server files is sometimes needed for functionality, but from time to time refactors happen. If you do opt to use a deep import, and the functionality gets shifted to another file or deprecated. You are welcome to open an issue and highlight your use case for the moved functionality. Be aware, opening an issue is not a solution guarantee.
+
 ### Server instance
 
 The server instance exposes the following methods:

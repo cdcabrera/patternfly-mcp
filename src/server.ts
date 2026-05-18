@@ -41,8 +41,6 @@ import { builtinTools, builtinResources } from './options.registry';
  *    - `schema.inputSchema` `{*}`: Internally, a raw Zod schema. Externally, a JSON or raw Zod schema. External tools are
  *       converted to Zod for user convenience.
  * 2. `handler` `{Function}`: Resource handler function for returning content.
- * 3. `config` `{Object}`: Tool configuration.
- *    - `config.shouldRegister`: Optional callback to determine if the tool should be registered.
  */
 type McpTool = [
   name: string,
@@ -204,7 +202,17 @@ interface ServerInstance {
 }
 
 /**
+ * Built-in tools.
+ *
+ * @deprecated Use path {@link ./options.registry#builtinTools} instead.
+ */
+const deprecatedBuiltinTools = builtinTools;
+
+/**
  * Register server resources.
+ *
+ * @note Leaving as async for now, even though it is sync. Easier
+ * to migrate from async to sync instead of vice versa.
  *
  * @param {McpResourceCreator[]} resources - MCP resources to register.
  * @param {McpServer} server - MCP server instance.
@@ -239,6 +247,9 @@ const registerServerResources = async (resources: McpResourceCreator[], server: 
 
 /**
  * Register server tools.
+ *
+ * @note Leaving as async for now, even though it is sync. Easier
+ * to migrate from async to sync instead of vice versa.
  *
  * @param {McpToolCreator[]} tools - MCP tools to register.
  * @param {McpServer} server - MCP server instance.
@@ -536,6 +547,7 @@ runServer.memo = memo(
 
 export {
   runServer,
+  deprecatedBuiltinTools as builtinTools,
   registerServerResources,
   registerServerTools,
   type McpTool,
