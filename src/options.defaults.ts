@@ -135,12 +135,17 @@ interface LoggingOptions {
  * @interface MinMax
  *
  * @property urlString Minimum and maximum length for URL strings.
- * @property toolSearches Minimum and maximum number of tool searches.
+ * @property toolSearches Minimum and maximum number of resource results for searches.
+ * @property toolSearches Minimum and maximum number of tool results for searches.
  * @property inputStrings Minimum and maximum length for input strings.
  * @property docsToLoad Minimum and maximum number of docs to load.
  */
 interface MinMax {
   urlString: {
+    min: number;
+    max: number;
+  }
+  resourceSearches: {
     min: number;
     max: number;
   }
@@ -328,6 +333,10 @@ const MIN_MAX: MinMax = {
   urlString: {
     min: 11,
     max: 1500
+  },
+  resourceSearches: {
+    min: 0,
+    max: 50
   },
   toolSearches: {
     min: 0,

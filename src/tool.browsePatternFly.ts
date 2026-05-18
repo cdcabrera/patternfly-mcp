@@ -34,8 +34,8 @@ const browsePatternFlyTool = (options = getOptions()): McpTool => {
     if (internalUri) {
       if (internalUri.hostname === 'docs') {
         const slug = internalUri.path;
-        const { byPath } = await getPatternFlyMcpResources.memo();
-        const entry = byPath[slug];
+        const { byUri } = await getPatternFlyMcpResources.memo();
+        const entry = byUri[slug];
 
         if (entry) {
           const docs = await processDocsFunction.memo([slug], options);
