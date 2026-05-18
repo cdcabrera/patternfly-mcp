@@ -171,11 +171,17 @@ const server: PfMcpInstance = await start({
 });
 ```
 
-### Deep imports
+### Public API and Imports
 
-**Deep imports come with a risk!**
+To ensure stability and a predictable developer experience, this package currently enforces a strict public API. All supported programmatic functions and types are exported directly from the root entry point:
 
-Deep importing from our various helpers or server files is sometimes needed for functionality, but from time to time refactors happen. If you do opt to use a deep import, and the functionality gets shifted to another file or deprecated. You are welcome to open an issue and highlight your use case for the moved functionality. Be aware, opening an issue is not a solution guarantee.
+```typescript
+import { start, type PfMcpInstance } from '@patternfly/patternfly-mcp';
+```
+
+**Deep imports are not supported.** Accessing internal modules (e.g., `@patternfly/patternfly-mcp/dist/server`) is restricted by our package configuration. This "flattened" export strategy allows us to refactor internal code and move logic between files without impacting your programmatic integrations, as long as the root exports remain stable.
+
+If you require access to a type or utility that is not currently exported from the root, please open an issue to discuss your use case for extending the public API.
 
 ### Server instance
 
