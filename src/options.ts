@@ -73,6 +73,7 @@ type CliOptions = {
   http?: Partial<HttpOptions>;
   isHttp: boolean;
   logging: Partial<LoggingOptions>;
+  testLog?: boolean;
   toolModules: string[];
   pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
 };
@@ -295,6 +296,10 @@ const parseCliOptions = (
             result.pluginIsolation = match;
           }
         }
+        break;
+
+      case '--test-log':
+        result.testLog = true;
         break;
     }
   };

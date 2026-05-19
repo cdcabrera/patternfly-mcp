@@ -345,6 +345,9 @@ exports[`runServer should attempt to run server, log warnings for experimental o
       "Server logging enabled.",
     ],
     [
+      "Test experimental flag activated",
+    ],
+    [
       "Server stats enabled.",
     ],
     [

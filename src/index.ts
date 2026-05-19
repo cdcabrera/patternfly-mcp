@@ -113,7 +113,7 @@ type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
 /**
  * Available experimental options.
  */
-type PfMcpExperimentalOptions = never;
+type PfMcpExperimentalOptions = 'testLog';
 
 /**
  * Options currently in experimental status.
@@ -128,7 +128,7 @@ type PfMcpExperimentalOptions = never;
  * - `cli` as `--experimental-[the option]`
  * - `programmatic` as `experimental[TheOption]`
  */
-const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>([]);
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(['testLog']);
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides

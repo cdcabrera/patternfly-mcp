@@ -319,6 +319,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     log.info(`Server stats enabled.`);
 
+    if (options.testLog) {
+      log.info('Test experimental flag activated');
+    }
+
     if (options?.experimental?.length) {
       log.warn(`Enabled experimental options! Options are subject to change, use at your own risk!`);
       options.experimental.forEach(option => log.warn(`Enabled experimental option: ${option}`));

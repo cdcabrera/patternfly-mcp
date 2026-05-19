@@ -76,6 +76,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   separator: string;
   serverInstanceOptions: ServerInstanceOptions;
   stats: StatsOptions;
+  testLog: boolean;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   toolModules: ToolModule | ToolModule[];
   urlRegex: RegExp;
@@ -523,6 +524,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   serverInstanceOptions: SERVER_INSTANCE_OPTIONS,
   stats: STATS_OPTIONS,
+  testLog: false,
   resourceModules: [],
   toolMemoOptions: TOOL_MEMO_OPTIONS,
   toolModules: [],
