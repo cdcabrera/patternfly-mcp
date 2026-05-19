@@ -151,7 +151,7 @@ describe('parseCliOptions', () => {
     },
     {
       description: 'ignores direct CLI flags registered as experimental',
-      args: ['node', 'cli', '--plugin-isolation', 'none'],
+      args: ['node', 'cli', '--plugin-isolation', 'strict'],
       experimentalOptions: new Set(['pluginIsolation']),
       expectedOptions: expect.objectContaining({ pluginIsolation: undefined }),
       expectedExperimental: []

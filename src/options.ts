@@ -138,32 +138,52 @@ const parseCliOptions = (
   };
 
   // Aggregate tokens and values
-  // const updatedExperimentalPrefix = `--${experimentalPrefix}-`;
+  const updatedExperimentalPrefix = `--${experimentalPrefix}-`;
   const usedExperimentalOptions = new Set<string>();
-  const tokensMap = new Map<string, { name: string; originalToken: string; isExperimental: boolean; value: string }[]>();
+  const tokensMap = new Map<string, { name: string; originalToken: string; cleanedToken: string; isExperimental: boolean; value: string }[]>();
   let lastToken: string | undefined = undefined;
   let lastTokenName: string | undefined = undefined;
 
   for (const token of argv) {
     if (token.startsWith('-')) {
-      lastTokenName = (token.startsWith('--') && kebabToCamel(token.slice(2))) || (token.startsWith('-') && kebabToCamel(token.slice(1))) || undefined;
+      lastTokenName = (token.startsWith('--') && kebabToCamel(token.slice(2))) ||
+        (token.startsWith('-') && kebabToCamel(token.slice(1))) ||
+        undefined;
 
-      if (lastTokenName && !tokensMap.has(token) && !experimentalOptions?.has(lastTokenName)) {
-        lastToken = token;
+      lastTokenName = (token.startsWith(updatedExperimentalPrefix) && kebabToCamel(token.slice(updatedExperimentalPrefix.length))) || lastTokenName;
+      lastToken = token;
+
+      const shouldBeExperimental = lastTokenName && experimentalOptions?.has(lastTokenName);
+      const isExperimental = lastTokenName && experimentalOptions?.has(lastTokenName) && lastToken.startsWith(updatedExperimentalPrefix);
+
+      if (shouldBeExperimental && !isExperimental) {
+        lastTokenName = undefined;
+        lastToken = undefined;
+        continue;
+      }
+
+      // if (lastTokenName && !tokensMap.has(token) && !experimentalOptions?.has(lastTokenName)) {
+      if (lastTokenName && !tokensMap.has(token)) {
         tokensMap.set(lastToken, []);
       }
     } else if (lastToken && lastTokenName) {
-      const isExperimentalPrefix = lastTokenName?.startsWith(experimentalPrefix) && lastTokenName.length > experimentalPrefix.length;
-      const updatedLastTokenName = isExperimentalPrefix ? kebabToCamel(lastTokenName.slice(experimentalPrefix.length)) : lastTokenName;
-      const isExperimental = experimentalOptions?.has(updatedLastTokenName);
+      // const isExperimentalPrefix = lastToken?.startsWith(updatedExperimentalPrefix) && lastToken.length > updatedExperimentalPrefix.length;
+      // const updatedLastTokenName = isExperimentalPrefix ? kebabToCamel(lastTokenName.slice(experimentalPrefix.length)) : lastTokenName;
+      const shouldBeExperimental = experimentalOptions?.has(lastTokenName);
+      const isExperimental = experimentalOptions?.has(lastTokenName) && lastToken.startsWith(updatedExperimentalPrefix);
+
+      if (shouldBeExperimental && !isExperimental) {
+        continue;
+      }
 
       if (isExperimental) {
-        usedExperimentalOptions.add(updatedLastTokenName);
+        usedExperimentalOptions.add(lastTokenName);
       }
 
       tokensMap.get(lastToken)?.push({
-        name: updatedLastTokenName,
+        name: lastTokenName,
         originalToken: lastToken,
+        cleanedToken: isExperimental ? `--${lastToken.slice(updatedExperimentalPrefix.length)}` : lastToken,
         isExperimental,
         value: token
       });
@@ -175,6 +195,8 @@ const parseCliOptions = (
   let isVerbose = false;
 
   const processFlags = (originalToken: string, value?: string) => {
+    console.warn('>>>> busted', originalToken, value);
+
     switch (originalToken) {
       case '--mode':
         if (value && MODE_LEVELS.includes(value.toLowerCase() as DefaultOptions['mode'])) {
@@ -254,7 +276,9 @@ const parseCliOptions = (
         break;
 
       case '--plugin-isolation':
+        console.warn('>>>>>> plugin iso', value);
         if (value) {
+          console.warn('>>>>>> plugin iso', value);
           const val = value.toLowerCase();
           const match = PLUGIN_ISOLATION.find(value => value === val);
 
