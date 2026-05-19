@@ -486,3 +486,16 @@ describe('Inline tools, HTTP transport', () => {
     await CLIENT.close();
   });
 });
+
+describe('Logging', () => {
+  it('should log experimental flag message when experimentalTestLog is provided', async () => {
+    const experimentalClient = await startServer({
+      isHttp: true,
+      experimentalTestLog: true
+    } as any);
+
+    expect(experimentalClient.inProcessLogs()).toContain('Test experimental flag activated');
+
+    await experimentalClient.close();
+  });
+});

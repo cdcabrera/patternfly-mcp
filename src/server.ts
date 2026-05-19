@@ -307,6 +307,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     log.info(`Server logging enabled.`);
 
+    if (options.testLog) {
+      log.info('Test experimental flag activated');
+    }
+
     if (options?.logging?.stderr === undefined || enableProtocolLogging === undefined) {
       log.debug(
         `${options.name} server logging enabled with partial flags`,
@@ -403,6 +407,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
     },
 
     onLog(handler: ServerOnLogHandler): () => void {
+      if (options.testLog) {
+        handler({ level: 'info', msg: 'Test experimental flag activated', transport: options.logging?.transport } as LogEvent);
+      }
+
       // Simple one-off log event to notify the handler of the server startup.
       handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging?.transport } as LogEvent);
 

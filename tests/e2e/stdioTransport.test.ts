@@ -416,6 +416,18 @@ describe('Logging', () => {
 
     await CLIENT.stop();
   });
+
+  it('should log experimental flag message when --experimental-test-log is provided', async () => {
+    const experimentalClient = await startServer({
+      args: ['--experimental-test-log', '--log-stderr']
+    });
+
+    const hasLog = experimentalClient.logs().some(logLine => logLine.includes('Test experimental flag activated'));
+
+    expect(hasLog).toBe(true);
+
+    await experimentalClient.stop();
+  });
 });
 
 describe('Tools', () => {

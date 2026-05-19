@@ -266,6 +266,13 @@ describe('parseCliOptions', () => {
         logging: expect.objectContaining({ level: 'debug' })
       }),
       expectedExperimental: []
+    },
+    {
+      description: 'with experimental test log flag',
+      args: ['node', 'cli', '--experimental-test-log'],
+      experimentalOptions: new Set(['testLog'] as ExperimentalOptionKey[]),
+      expectedOptions: expect.objectContaining({ testLog: true }),
+      expectedExperimental: ['testLog']
     }
   ])('should handle experimental options, $description', ({ args, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseCliOptions(args, experimentalOptions, settings as any);
@@ -347,6 +354,13 @@ describe('parseProgrammaticOptions', () => {
       experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.not.objectContaining({ pluginIsolation: 'strict' }),
       expectedExperimental: []
+    },
+    {
+      description: 'maps experimentalTestLog when registered',
+      input: { experimentalTestLog: true },
+      experimentalOptions: new Set(['testLog'] as ExperimentalOptionKey[]),
+      expectedOptions: expect.objectContaining({ testLog: true }),
+      expectedExperimental: ['testLog']
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);

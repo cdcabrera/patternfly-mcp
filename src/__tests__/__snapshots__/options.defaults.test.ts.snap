@@ -125,6 +125,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
       "transport": 10000,
     },
   },
+  "testLog": false,
   "toolMemoOptions": {
     "searchPatternFlyDocs": {
       "cacheErrors": false,
