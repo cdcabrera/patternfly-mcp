@@ -11,79 +11,142 @@ describe('parseCliOptions', () => {
     {
       description: 'with --verbose flag',
       args: ['node', 'script.js', '--verbose'],
-      experimentalOptions: new Set([]),
-      expectedOptions: expect.objectContaining({ level: 'debug' }),
-      expectedExperimental: []
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'debug' })
+      })
     },
     {
       description: 'with --verbose flag and --log-level flag',
-      args: ['node', 'script.js', '--verbose', '--log-level', 'warn']
+      args: ['node', 'script.js', '--verbose', '--log-level', 'warn'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'debug' })
+      })
     },
     {
       description: 'with --log-level flag',
-      args: ['node', 'script.js', '--log-level', 'warn']
+      args: ['node', 'script.js', '--log-level', 'warn'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'warn' })
+      })
     },
     {
       description: 'with --log-stderr flag and --log-protocol flag',
-      args: ['node', 'script.js', '--log-stderr', '--log-protocol']
+      args: ['node', 'script.js', '--log-stderr', '--log-protocol'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({
+          stderr: true,
+          protocol: true
+        })
+      })
     },
     {
       description: 'with other arguments',
-      args: ['node', 'script.js', 'other', 'args']
+      args: ['node', 'script.js', 'other', 'args'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'info' })
+      })
     },
     {
       description: 'with --http flag',
-      args: ['node', 'script.js', '--http']
+      args: ['node', 'script.js', '--http'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true
+      })
     },
     {
       description: 'with --http and --port',
-      args: ['node', 'script.js', '--http', '--port', '6000']
+      args: ['node', 'script.js', '--http', '--port', '6000'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({ port: 6000 })
+      })
     },
     {
       description: 'with --http and invalid --port',
-      args: ['node', 'script.js', '--http', '--port', '0']
+      args: ['node', 'script.js', '--http', '--port', '0'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: undefined
+      })
     },
     {
       description: 'with --http and --host',
-      args: ['node', 'script.js', '--http', '--host', '0.0.0.0']
+      args: ['node', 'script.js', '--http', '--host', '0.0.0.0'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({ host: '0.0.0.0' })
+      })
     },
     {
       description: 'with --allowed-origins',
-      args: ['node', 'script.js', '--http', '--allowed-origins', 'https://app.com,https://admin.app.com']
+      args: ['node', 'script.js', '--http', '--allowed-origins', 'https://app.com,https://admin.app.com'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({
+          allowedOrigins: ['https://app.com', 'https://admin.app.com']
+        })
+      })
     },
     {
       description: 'with --allowed-hosts',
-      args: ['node', 'script.js', '--http', '--allowed-hosts', 'localhost,127.0.0.1']
+      args: ['node', 'script.js', '--http', '--allowed-hosts', 'localhost,127.0.0.1'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({
+          allowedHosts: ['localhost', '127.0.0.1']
+        })
+      })
     },
     {
       description: 'with --allowed-hosts with spaces',
-      args: ['node', 'script.js', '--http', '--allowed-hosts', '   localhost, 127.0.0.1   ']
+      args: ['node', 'script.js', '--http', '--allowed-hosts', '   localhost, 127.0.0.1   '],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        http: expect.objectContaining({
+          allowedHosts: ['localhost', '127.0.0.1']
+        })
+      })
+    },
+    {
+      description: 'without --http',
+      args: ['node', 'script.js', '--port', '--allowed-hosts', '127.0.0.1'],
+      expectedOptions: expect.objectContaining({
+        isHttp: false,
+        http: undefined
+      })
     },
     {
       description: 'with --tool',
-      args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool']
+      args: ['node', 'script.js', '--tool', 'my-tool', '--tool', 'my-other-tool'],
+      expectedOptions: expect.objectContaining({
+        toolModules: ['my-tool', 'my-other-tool']
+      })
     },
     {
       description: 'with --plugin-isolation strict',
-      args: ['node', 'script.js', '--plugin-isolation', 'STRICT']
+      args: ['node', 'script.js', '--plugin-isolation', 'STRICT'],
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: 'strict'
+      })
     },
     {
       description: 'with --plugin-isolation none',
-      args: ['node', 'script.js', '--plugin-isolation', 'none']
+      args: ['node', 'script.js', '--plugin-isolation', 'none'],
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: 'none'
+      })
     },
     {
       description: 'with --plugin-isolation undefined',
-      args: ['node', 'script.js', '--plugin-isolation', '--verbose']
+      args: ['node', 'script.js', '--plugin-isolation', '--verbose'],
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: undefined
+      })
     }
-    // {
-    //  description: 'with experimental prefixes',
-    //  args: ['node', 'script.js', '--experimental-context-management', 'strict']
-    // }
-  ])('should attempt to parse args $description', ({ args, experimentalOptions, expectedOptions, expectedExperimental }) => {
-    const result = parseCliOptions(args, experimentalOptions);
+  ])('should attempt to parse args $description', ({ args, expectedOptions }) => {
+    const result = parseCliOptions(args);
 
     expect(result.options).toEqual(expectedOptions);
-    expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 
   it.each([
