@@ -135,6 +135,7 @@ const parseCliOptions = (
     toolModules: [],
     pluginIsolation: undefined
   };
+  const updatedExperimentalPrefix = `--${experimentalPrefix}-`;
   const usedExperimentalOptions = new Set<string>();
 
   // Tracking for toolModules to avoid duplicates
@@ -144,14 +145,19 @@ const parseCliOptions = (
   for (let i = 0; i < argv.length; i++) {
     let token = argv[i];
 
-    // Filter falsy or tokens intended to be experimental
-    if (!token || experimentalOptions?.has(token)) {
+    if (!token) {
       continue;
     }
 
-    if (token.startsWith(`--${experimentalPrefix}-`)) {
-      const flagName = token.slice(`--${experimentalPrefix}-`.length);
-      const internalFlagName = kebabToCamel(flagName); // flagName.replace(/-([a-z])/g, (_subStr, letter) => letter.toUpperCase());
+    const camelCaseToken = token.startsWith('--') ? kebabToCamel(token.slice(2)) : token;
+
+    if (experimentalOptions?.has(camelCaseToken)) {
+      continue;
+    }
+
+    if (token.startsWith(updatedExperimentalPrefix) && token.length > updatedExperimentalPrefix.length) {
+      const flagName = token.slice(updatedExperimentalPrefix.length);
+      const internalFlagName = kebabToCamel(flagName);
 
       if (experimentalOptions?.has(internalFlagName)) {
         token = `--${flagName}`;
@@ -160,6 +166,28 @@ const parseCliOptions = (
         continue;
       }
     }
+
+    /*
+    if (token.startsWith(updatedExperimentalPrefix) && token.length > updatedExperimentalPrefix.length) {
+      const flagName = token.slice(updatedExperimentalPrefix.length);
+      const internalFlagName = kebabToCamel(flagName);
+
+      if (experimentalOptions?.has(internalFlagName)) {
+        token = `--${flagName}`;
+        usedExperimentalOptions.add(internalFlagName);
+      } else {
+        continue;
+      }
+    } else if (token.startsWith('--')) {
+      // Fallback, filter tokens intended to be experimental
+      const flagName = token.slice(2);
+      const internalFlagName = kebabToCamel(flagName);
+
+      if (experimentalOptions?.has(internalFlagName)) {
+        continue;
+      }
+    }
+    */
 
     const next = argv[i + 1];
     const hasValue = next && !next.startsWith('-');
@@ -200,7 +228,7 @@ const parseCliOptions = (
         break;
 
       case '--port':
-        if (hasValue) {
+        if (result.isHttp && hasValue) {
           const port = portValid(next);
 
           if (port !== undefined) {
@@ -212,7 +240,7 @@ const parseCliOptions = (
         break;
 
       case '--host':
-        if (hasValue) {
+        if (result.isHttp && hasValue) {
           result.http ??= {};
           result.http.host = next;
           i += 1;
@@ -221,7 +249,7 @@ const parseCliOptions = (
 
       case '--allowed-origins':
       case '--allowed-hosts': {
-        if (hasValue) {
+        if (result.isHttp && hasValue) {
           const list = next.split(',').map(str => str.trim()).filter(Boolean);
 
           result.http ??= {};
@@ -277,7 +305,7 @@ const parseCliOptions = (
 
 /**
  * Parse programmatic configuration options.
- * - Separates out supported experimental options from standard ones.
+ * - Separates out supported experimental top-level options from standard ones.
  *
  * @param options - User-defined configuration options (overrides).
  * @param experimentalOptions - The available experimental options set used for filtering
@@ -290,61 +318,22 @@ const parseProgrammaticOptions = (
   experimentalOptions:Set<string> = new Set(),
   { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
-  const updatedOptions: ProgrammaticOptions = { ...options };// structuredClone(options);
+  const updatedOptions: ProgrammaticOptions = { ...options };
   const usedExperimental = new Set<string>();
 
-  for (const key in updatedOptions) {
+  for (const key in options) {
     if (key?.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
       const internalKey = key
         .slice(experimentalPrefix.length).charAt(0).toLowerCase() +
         key.slice(experimentalPrefix.length + 1);
 
       if (experimentalOptions.has(internalKey)) {
-        updatedOptions[internalKey] = updatedOptions[key];
-        delete updatedOptions[key];
+        (updatedOptions as Record<string, unknown>)[internalKey] = options[key as keyof ProgrammaticOptions];
+        delete (updatedOptions as Record<string, unknown>)[key];
         usedExperimental.add(internalKey);
       }
     }
   }
-
-  /*
-  Object.entries(options).forEach(([key, value]) => {
-    if (key?.startsWith('experimental')) {
-      const internalKey = key
-        .replace(/^experimental/, '')
-        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase())
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) as keyof DefaultOptions;
-
-      if (experimentalOptions.has(internalKey)) {
-        // 1. Set the internal key
-        updatedOptions[internalKey] = value;
-        // 2. Remove the experimental-prefixed key from the clone
-        delete updatedOptions[key];
-        // 3. Track it
-        usedExperimental.add(internalKey);
-      }
-    }
-  });
-  */
-
-  /*
-  Object.entries(options).forEach(([key, value]: [string, unknown]) => {
-    if (key?.startsWith('experimental')) {
-      const internalKey = key
-        .replace(/^experimental/, '')
-        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase())
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) as keyof DefaultOptions;
-
-      if (experimentalOptions?.has(internalKey)) {
-        updatedOptions[internalKey] = value;
-        usedExperimental.add(internalKey);
-      }
-    } else {
-      updatedOptions[key] = value;
-    }
-  });
-
-   */
 
   return {
     options: updatedOptions,

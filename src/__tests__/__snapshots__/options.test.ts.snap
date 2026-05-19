@@ -29,6 +29,35 @@ exports[`parseCliOptions should attempt to parse args with --allowed-hosts 1`] =
 }
 `;
 
+exports[`parseCliOptions should attempt to parse args with --allowed-hosts with spaces 1`] = `
+{
+  "experimentalOptions": [],
+  "options": {
+    "http": {
+      "allowedHosts": [
+        "localhost",
+        "127.0.0.1",
+      ],
+    },
+    "isHttp": true,
+    "logging": {
+      "level": "info",
+      "logger": "@patternfly/patternfly-mcp",
+      "protocol": false,
+      "stderr": false,
+      "transport": "stdio",
+    },
+    "modeOptions": {
+      "cli": {},
+      "programmatic": {},
+      "test": {},
+    },
+    "pluginIsolation": undefined,
+    "toolModules": [],
+  },
+}
+`;
+
 exports[`parseCliOptions should attempt to parse args with --allowed-origins 1`] = `
 {
   "experimentalOptions": [],

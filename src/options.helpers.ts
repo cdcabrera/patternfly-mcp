@@ -21,8 +21,8 @@ const getNodeMajorVersion = (nodeVersion: unknown): number => {
 /**
  * Convert kebab-case to camelCase.
  *
- * @param {string} value - The kebab-case string to be converted.
- * @returns {string} The converted camelCase string.
+ * @param value - kebab-case string to be converted.
+ * @returns Converted camelCase string.
  */
 const kebabToCamel = (value: string): string => {
   let result = '';
