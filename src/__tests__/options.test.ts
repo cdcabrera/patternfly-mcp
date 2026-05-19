@@ -313,6 +313,28 @@ describe('parseProgrammaticOptions', () => {
       experimentalOptions: new Set<ExperimentalOptionKey>(['pluginIsolation', 'customOption' as ExperimentalOptionKey]),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation', 'customOption']
+    },
+    {
+      description: 'ignores inherited properties from the input object',
+      // Object.create(proto) creates an object where property is inherited, not own
+      input: Object.create({ experimentalPluginIsolation: 'none' }),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
+      expectedOptions: expect.not.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: []
+    },
+    {
+      description: 'guards against __proto__ as an own property in input',
+      // JSON.parse ensures __proto__ is treated as an own enumerable property
+      input: JSON.parse('{ "__proto__": { "polluted": true } }'),
+      expectedOptions: expect.not.objectContaining({ polluted: true }),
+      expectedExperimental: []
+    },
+    {
+      description: 'guards against experimental __proto__ registration attempt',
+      input: JSON.parse('{ "experimental__proto__": { "polluted": true } }'),
+      experimentalOptions: new Set<any>(['__proto__']),
+      expectedOptions: expect.not.objectContaining({ polluted: true }),
+      expectedExperimental: expect.arrayContaining(['__proto__'])
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);
@@ -321,24 +343,45 @@ describe('parseProgrammaticOptions', () => {
     expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 
-  it('should ignore inherited keys, prototype pollution', () => {
-    // const polluted = Object.create({
-    //  experimentalOptions: 'none'
-    // });
-    const polluted = {
-      experimentalPluginIsolation: 'strict'
-    };
+  it('ensures Object.prototype is not polluted via constructor', () => {
+    const input = JSON.parse('{ "constructor": { "prototype": { "polluted": true } } }');
 
-    Object.defineProperty(Object.prototype, 'experimentalLoremIpsum', {
-      value: 'dolorSit',
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
+    parseProgrammaticOptions(input);
 
-    const result = parseProgrammaticOptions(polluted as any, new Set<ExperimentalOptionKey>(['pluginIsolation']));
+    expect(({} as any).polluted).toBeUndefined();
 
-    expect(result.options).toEqual({ pluginIsolation: 'strict' });
-    expect(result.experimentalOptions).toEqual(['pluginIsolation']);
+    delete (Object.prototype as any).polluted;
+  });
+
+  it('ensures the returned options object does not inherit properties from __proto__ input', () => {
+    const input = JSON.parse('{ "__proto__": { "polluted": true } }');
+
+    const { options } = parseProgrammaticOptions(input);
+
+    // Verifies that the "polluted" property did not leak onto the result
+    expect((options as any).polluted).toBeUndefined();
+
+    delete (Object.prototype as any).polluted;
+  });
+
+  it('verifies that experimental mapping still obeys Object.hasOwn', () => {
+    const experimentalKey = 'experimentalPluginIsolation';
+
+    // Explicitly pollute the global prototype
+    (Object.prototype as any)[experimentalKey] = 'strict';
+
+    try {
+      const { options, experimentalOptions } = parseProgrammaticOptions(
+        {}, // Empty input should not trigger mapping from prototype
+        new Set(['pluginIsolation'])
+      );
+
+      expect(options.pluginIsolation).toBeUndefined();
+      expect(experimentalOptions).not.toContain('pluginIsolation');
+    } finally {
+      delete (Object.prototype as any)[experimentalKey];
+    }
+
+    delete (Object.prototype as any).polluted;
   });
 });
