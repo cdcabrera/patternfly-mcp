@@ -14,7 +14,7 @@ describe('parseCliOptions', () => {
       expectedOptions: expect.objectContaining({
         logging: expect.objectContaining({ level: 'debug' })
       })
-    }/*
+    },
     {
       description: 'with --verbose flag and --log-level flag',
       args: ['node', 'script.js', '--verbose', '--log-level', 'warn'],
@@ -134,7 +134,52 @@ describe('parseCliOptions', () => {
       expectedOptions: expect.objectContaining({
         pluginIsolation: undefined
       })
-    */
+    },
+    {
+      description: 'with comma-separated tools',
+      args: ['node', 'script.js', '--tool', 'tool-a,tool-b'],
+      expectedOptions: expect.objectContaining({
+        toolModules: ['tool-a', 'tool-b']
+      })
+    },
+    {
+      description: 'dedupes repeated tools',
+      args: ['node', 'script.js', '--tool', 'tool-a', '--tool', 'tool-a'],
+      expectedOptions: expect.objectContaining({
+        toolModules: ['tool-a']
+      })
+    },
+    {
+      description: 'with --mode test',
+      args: ['node', 'script.js', '--mode', 'test'],
+      expectedOptions: expect.objectContaining({
+        mode: 'test'
+      })
+    },
+    {
+      description: 'with --mode-test-url',
+      args: ['node', 'script.js', '--mode', 'test', '--mode-test-url', 'https://example.com'],
+      expectedOptions: expect.objectContaining({
+        mode: 'test',
+        modeOptions: expect.objectContaining({
+          test: expect.objectContaining({ baseUrl: 'https://example.com' })
+        })
+      })
+    },
+    {
+      description: 'ignores invalid --log-level and keeps previous valid value',
+      args: ['node', 'script.js', '--log-level', 'warn', '--log-level', 'invalid'],
+      expectedOptions: expect.objectContaining({
+        logging: expect.objectContaining({ level: 'warn' })
+      })
+    },
+    {
+      description: 'last one wins for --mode',
+      args: ['node', 'script.js', '--mode', 'test', '--mode', 'cli'],
+      expectedOptions: expect.objectContaining({
+        mode: 'cli'
+      })
+    }
   ])('should attempt to parse args $description', ({ args, expectedOptions }) => {
     const result = parseCliOptions(args);
 
@@ -169,9 +214,17 @@ describe('parseCliOptions', () => {
       experimentalOptions: new Set(['pluginIsolation']),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
       expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'uses a custom experimental prefix',
+      args: ['node', 'cli', '--beta-plugin-isolation', 'none'],
+      experimentalOptions: new Set(['pluginIsolation']),
+      settings: { experimentalPrefix: 'beta' },
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
     }
-  ])('should handle experimental options, $description', ({ args, experimentalOptions, expectedOptions, expectedExperimental }) => {
-    const result = parseCliOptions(args, experimentalOptions);
+  ])('should handle experimental options, $description', ({ args, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
+    const result = parseCliOptions(args, experimentalOptions, settings as any);
 
     expect(result.options).toEqual(expectedOptions);
     expect(result.experimentalOptions).toEqual(expectedExperimental);
@@ -221,9 +274,24 @@ describe('parseProgrammaticOptions', () => {
       experimentalOptions: undefined,
       expectedOptions: expect.objectContaining({ logging: { level: 'warn' } }),
       expectedExperimental: []
+    },
+    {
+      description: 'handles multiple different experimental options',
+      input: { experimentalPluginIsolation: 'none', experimentalCustomOption: 'value' },
+      experimentalOptions: new Set(['pluginIsolation', 'customOption']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none', customOption: 'value' }),
+      expectedExperimental: expect.arrayContaining(['pluginIsolation', 'customOption'])
+    },
+    {
+      description: 'uses a custom experimental prefix',
+      input: { betaPluginIsolation: 'none' },
+      experimentalOptions: new Set(['pluginIsolation']),
+      settings: { experimentalPrefix: 'beta' },
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
     }
-  ])('should handle experimental options, $description', ({ input, experimentalOptions, expectedOptions, expectedExperimental }) => {
-    const result = parseProgrammaticOptions(input as any, experimentalOptions as any);
+  ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
+    const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);
 
     expect(result.options).toEqual(expectedOptions);
     expect(result.experimentalOptions).toEqual(expectedExperimental);
