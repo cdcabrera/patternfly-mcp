@@ -1,4 +1,4 @@
-import { parseCliOptions } from '../options';
+import { parseCliOptions, parseProgrammaticOptions, type ProgrammaticOptions } from '../options';
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
@@ -91,4 +91,99 @@ describe('parseCliOptions', () => {
 
     expect(options.http?.allowedHosts).toEqual(['localhost', '127.0.0.1']);
   });
+
+  it('does not apply HTTP flags when --http is absent', () => {
+    const { options } = parseCliOptions(['node', 'cli', '--port', '9000', '--host', '0.0.0.0']);
+
+    expect(options.isHttp).toBe(false);
+    expect(options.http).toBeUndefined();
+  });
+
+  it('tolerates an explicitly undefined experimental registry', () => {
+    const { options, experimentalOptions } = parseCliOptions(['node', 'cli', '--verbose'], undefined);
+
+    expect(options.logging.level).toBe('debug');
+    expect(experimentalOptions).toEqual([]);
+  });
+
+  it('ignores direct CLI flags for registered experimental options', () => {
+    const registry = new Set(['pluginIsolation']);
+    const directKebab = parseCliOptions(['node', 'cli', '--plugin-isolation', 'none'], registry);
+    const directCamel = parseCliOptions(['node', 'cli', '--pluginIsolation', 'none'], registry);
+
+    expect(directKebab.options.pluginIsolation).toBeUndefined();
+    expect(directCamel.options.pluginIsolation).toBeUndefined();
+    expect(directKebab.experimentalOptions).toEqual([]);
+    expect(directCamel.experimentalOptions).toEqual([]);
+  });
+
+  it('applies registered experimental options via --experimental- prefix', () => {
+    const registry = new Set(['pluginIsolation']);
+    const { options, experimentalOptions } = parseCliOptions(
+      ['node', 'cli', '--experimental-plugin-isolation', 'none'],
+      registry
+    );
+
+    expect(options.pluginIsolation).toBe('none');
+    expect(experimentalOptions).toEqual(['pluginIsolation']);
+  });
+
+  it('dedupes repeated experimental CLI flags', () => {
+    const registry = new Set(['pluginIsolation']);
+    const { experimentalOptions } = parseCliOptions(
+      [
+        'node',
+        'cli',
+        '--experimental-plugin-isolation',
+        'none',
+        '--experimental-plugin-isolation',
+        'strict'
+      ],
+      registry
+    );
+
+    expect(experimentalOptions).toEqual(['pluginIsolation']);
+  });
+});
+
+describe('parseProgrammaticOptions', () => {
+  it('maps experimental-prefixed keys when registered', () => {
+    const registry = new Set(['pluginIsolation']);
+    const { options, experimentalOptions } = parseProgrammaticOptions(
+      { experimentalPluginIsolation: 'none', pluginIsolation: 'strict' } as ProgrammaticOptions,
+      registry
+    );
+
+    expect(options.pluginIsolation).toBe('none');
+    expect(experimentalOptions).toEqual(['pluginIsolation']);
+  });
+
+  it('passes through the experimental metadata array unchanged', () => {
+    const { options, experimentalOptions } = parseProgrammaticOptions({
+      experimental: ['pluginIsolation']
+    } as Parameters<typeof parseProgrammaticOptions>[0]);
+
+    expect(options.experimental).toEqual(['pluginIsolation']);
+    expect(experimentalOptions).toEqual([]);
+  });
+
+  it('ignores experimental-prefixed keys that are not registered', () => {
+    const { options, experimentalOptions } = parseProgrammaticOptions({
+      experimentalPluginIsolation: 'none'
+    } as ProgrammaticOptions);
+
+    expect(options.pluginIsolation).toBeUndefined();
+    expect(experimentalOptions).toEqual([]);
+  });
+
+  it('tolerates an explicitly undefined experimental registry', () => {
+    const { options, experimentalOptions } = parseProgrammaticOptions(
+      { logging: { level: 'warn' } },
+      undefined
+    );
+
+    expect(options.logging?.level).toBe('warn');
+    expect(experimentalOptions).toEqual([]);
+  });
+
 });
