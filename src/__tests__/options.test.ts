@@ -1,4 +1,4 @@
-import { parseCliOptions, parseProgrammaticOptions } from '../options';
+import { parseCliOptions, parseProgrammaticOptions, type ExperimentalOptionKey } from '../options';
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
@@ -214,31 +214,38 @@ describe('parseCliOptions', () => {
     {
       description: 'ignores direct CLI flags registered as experimental',
       args: ['node', 'cli', '--plugin-isolation', 'strict'],
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({ pluginIsolation: undefined }),
       expectedExperimental: []
     },
     {
       description: 'applies registered experimental options via --experimental- prefix',
       args: ['node', 'cli', '--experimental-plugin-isolation', 'none'],
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation']
     },
     {
       description: 'dedupes repeated experimental CLI flags',
       args: ['node', 'cli', '--experimental-plugin-isolation', 'none', '--experimental-plugin-isolation', 'strict'],
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
       expectedExperimental: ['pluginIsolation']
     },
     {
       description: 'uses a custom experimental prefix',
       args: ['node', 'cli', '--beta-plugin-isolation', 'none'],
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       settings: { experimentalPrefix: 'beta' },
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'handles multiple experimental CLI flags with strict registry typing',
+      args: ['node', 'cli', '--experimental-plugin-isolation', 'none', '--experimental-custom-option', 'value'],
+      experimentalOptions: new Set<ExperimentalOptionKey>(['pluginIsolation', 'customOption' as ExperimentalOptionKey]),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation', 'customOption']
     }
   ])('should handle experimental options, $description', ({ args, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseCliOptions(args, experimentalOptions, settings as any);
@@ -260,14 +267,14 @@ describe('parseProgrammaticOptions', () => {
     {
       description: 'maps experimental-prefixed keys when registered',
       input: { experimentalPluginIsolation: 'none', pluginIsolation: 'strict' },
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation']
     },
     {
       description: 'ignores direct keys registered as experimental',
       input: { pluginIsolation: 'strict' },
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({}),
       expectedExperimental: []
     },
@@ -293,19 +300,19 @@ describe('parseProgrammaticOptions', () => {
       expectedExperimental: []
     },
     {
-      description: 'handles multiple different experimental options',
-      input: { experimentalPluginIsolation: 'none', experimentalCustomOption: 'value' },
-      experimentalOptions: new Set(['pluginIsolation', 'customOption']),
-      expectedOptions: expect.objectContaining({ pluginIsolation: 'none', customOption: 'value' }),
-      expectedExperimental: expect.arrayContaining(['pluginIsolation', 'customOption'])
-    },
-    {
       description: 'uses a custom experimental prefix',
       input: { betaPluginIsolation: 'none' },
-      experimentalOptions: new Set(['pluginIsolation']),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
       settings: { experimentalPrefix: 'beta' },
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'handles multiple different experimental options and enforces typing',
+      input: { experimentalPluginIsolation: 'none', experimentalCustomOption: 'value' },
+      experimentalOptions: new Set<ExperimentalOptionKey>(['pluginIsolation', 'customOption' as ExperimentalOptionKey]),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation', 'customOption']
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);

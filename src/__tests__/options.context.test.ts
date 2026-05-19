@@ -16,7 +16,7 @@ const MockStdioServerTransport = StdioServerTransport as jest.MockedClass<typeof
 describe('setOptions', () => {
   it('warns when a registered experimental option differs from its default', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    const registry = new Set(['pluginIsolation']);
+    const registry = new Set<any>(['pluginIsolation']);
 
     setOptions({
       pluginIsolation: 'none',
@@ -32,7 +32,7 @@ describe('setOptions', () => {
 
   it('does not warn when experimental options match defaults', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
-    const registry = new Set(['pluginIsolation']);
+    const registry = new Set<any>(['pluginIsolation']);
 
     setOptions({
       pluginIsolation: DEFAULT_OPTIONS.pluginIsolation,

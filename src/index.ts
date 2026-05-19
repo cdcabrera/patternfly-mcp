@@ -2,7 +2,7 @@ import {
   parseCliOptions,
   parseProgrammaticOptions,
   type CliOptions,
-  type DefaultOptions,
+  type ExperimentalOptionKey,
   type ProgrammaticOptions,
   type MakeExperimental
 } from './options';
@@ -128,7 +128,7 @@ type PfMcpExperimentalOptions = never;
  * - `cli` as `--experimental-[the option]`
  * - `programmatic` as `experimental[TheOption]`
  */
-const EXPERIMENTAL_OPTIONS = new Set<keyof DefaultOptions>([]);
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>([]);
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides
