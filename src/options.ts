@@ -285,6 +285,7 @@ const parseCliOptions = (
  * Parse programmatic configuration options.
  * - Separates out supported `experimental` options from standard options.
  * - `experimental` checks only handle top-level properties.
+ * - Declaring multiple options with the same `experimental` prefix means the last one wins.
  *
  * @note Experimental Options:
  * The parser strips experimental prefixes from options to allow an internal match
@@ -304,8 +305,14 @@ const parseProgrammaticOptions = (
   { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
   const updatedOptions: ProgrammaticOptions = { ...options };
-  const usedExperimental = new Set<string>();
+  const usedExperimental = new Map<string, unknown>();
 
+  // Sanitize sans-experimental experimental options
+  experimentalOptions.forEach(value => {
+    delete (updatedOptions as Record<string, unknown>)[value];
+  });
+
+  // Aggregate and remove experimental options
   for (const key in options) {
     if (key?.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
       const internalKey = key
@@ -313,19 +320,20 @@ const parseProgrammaticOptions = (
         key.slice(experimentalPrefix.length + 1);
 
       if (experimentalOptions.has(internalKey)) {
-        // Add the internal-keyed option to clone
-        (updatedOptions as Record<string, unknown>)[internalKey] = options[key as keyof ProgrammaticOptions];
-        // Remove the experimental option from clone
+        usedExperimental.set(internalKey, options[key as keyof ProgrammaticOptions]);
         delete (updatedOptions as Record<string, unknown>)[key];
-        // Track the key used
-        usedExperimental.add(internalKey);
       }
     }
   }
 
+  // Apply experimental values, if any
+  usedExperimental.forEach((value, key) => {
+    (updatedOptions as Record<string, unknown>)[key] = value;
+  });
+
   return {
     options: updatedOptions,
-    experimentalOptions: [...usedExperimental]
+    experimentalOptions: [...usedExperimental.keys()]
   };
 };
 

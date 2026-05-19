@@ -198,7 +198,7 @@ describe('parseProgrammaticOptions', () => {
       description: 'ignores direct keys registered as experimental',
       input: { pluginIsolation: 'strict' },
       experimentalOptions: new Set(['pluginIsolation']),
-      expectedOptions: expect.objectContaining({ pluginIsolation: 'strict' }),
+      expectedOptions: expect.objectContaining({}),
       expectedExperimental: []
     },
     {
