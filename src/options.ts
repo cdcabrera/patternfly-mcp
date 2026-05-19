@@ -329,7 +329,7 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (key in DEFAULT_OPTIONS) {
+    if (Object.hasOwn(DEFAULT_OPTIONS, key)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
