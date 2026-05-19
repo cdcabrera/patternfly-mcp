@@ -26,6 +26,9 @@ type AppSession = {
  */
 type GlobalOptions = DefaultOptions;
 
+/** Keys on {@link DefaultOptions} that may be enabled via experimental surfaces. */
+type ExperimentalOptionKey = keyof DefaultOptions;
+
 /**
  * Convert specific options towards an "experimental-" prefix for consumers.
  *
@@ -97,6 +100,12 @@ type ParsedOptions<T> = {
  *   - Separates out supported `--experimental-` options from standard options.
  *   - Registered experimental options use `--experimental-<kebab-name>`.
  *   - Any use of registered experimental options without experimental is ignored.
+ * - Repeat values for the same flag:
+ *   - Single-value flags (e.g., `--mode`, `--port`): last value wins.
+ *   - Cumulative flags (e.g., `--tool`): values are aggregated into a list.
+ * - `--verbose` wins over `--log-level` regardless of argv order.
+ * - Skipped flags (unregistered or direct experimental): the following argv value is orphaned
+ *   (discarded; it does not attach to the previous flag).
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
@@ -131,7 +140,7 @@ type ParsedOptions<T> = {
  */
 const parseCliOptions = (
   argv: string[],
-  experimentalOptions: Set<string> = new Set(),
+  experimentalOptions: Set<ExperimentalOptionKey> = new Set(),
   { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<CliOptions> => {
   const result: CliOptions = {
@@ -158,12 +167,13 @@ const parseCliOptions = (
         : token.startsWith('--') ? token.slice(2) : token.slice(1);
 
       const internalName = kebabToCamel(flagPart);
-      const isRegisteredExperimental = experimentalOptions?.has(internalName);
+      const isRegisteredExperimental = experimentalOptions.has(internalName as ExperimentalOptionKey);
       const isExperimental = isExperimentalPrefix && isRegisteredExperimental;
       const isExperimentalSkipped = (isRegisteredExperimental && !isExperimentalPrefix) ||
         (isExperimentalPrefix && !isRegisteredExperimental);
 
       if (isExperimentalSkipped) {
+        // Orphan the next argv value: it is not paired with this flag or the previous one.
         lastToken = undefined;
         lastTokenName = undefined;
         lastCleanedToken = undefined;
@@ -298,7 +308,7 @@ const parseCliOptions = (
     });
   });
 
-  // Cleanup: ensure logging matches severity after verbose/level processing
+  // --verbose wins over --log-level regardless of argv order
   if (isVerbose) {
     result.logging.level = 'debug';
   }
@@ -307,6 +317,24 @@ const parseCliOptions = (
     options: result,
     experimentalOptions: [...usedExperimentalOptions]
   };
+};
+
+/**
+ * Filter programmatic options to keys that exist in base options.
+ *
+ * @param {ProgrammaticOptions} source - Complete set of programmatic options provided as input.
+ * @returns {ProgrammaticOptions} New object containing only the filtered programmatic options found in base options.
+ */
+const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptions => {
+  const picked: Record<string, unknown> = {};
+
+  for (const key of Object.keys(source)) {
+    if (key in DEFAULT_OPTIONS) {
+      picked[key] = source[key as keyof ProgrammaticOptions];
+    }
+  }
+
+  return picked as ProgrammaticOptions;
 };
 
 /**
@@ -332,23 +360,24 @@ const parseCliOptions = (
  */
 const parseProgrammaticOptions = (
   options: ProgrammaticOptions,
-  experimentalOptions: Set<string> = new Set(),
+  experimentalOptions: Set<ExperimentalOptionKey> = new Set(),
   { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
   const updatedOptions: ProgrammaticOptions = { ...options };
-  const usedExperimental = new Map<string, unknown>();
+  const usedExperimental = new Map<ExperimentalOptionKey, unknown>();
 
   // Sanitize sans-experimental experimental options
-  experimentalOptions.forEach(value => {
-    delete (updatedOptions as Record<string, unknown>)[value];
+  experimentalOptions.forEach(key => {
+    delete updatedOptions[key];
   });
 
   // Aggregate and remove experimental options
   for (const key in options) {
     if (key?.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
-      const internalKey = key
-        .slice(experimentalPrefix.length).charAt(0).toLowerCase() +
-        key.slice(experimentalPrefix.length + 1);
+      const internalKey = (
+        key.slice(experimentalPrefix.length).charAt(0).toLowerCase() +
+        key.slice(experimentalPrefix.length + 1)
+      ) as ExperimentalOptionKey;
 
       if (experimentalOptions.has(internalKey)) {
         usedExperimental.set(internalKey, options[key as keyof ProgrammaticOptions]);
@@ -364,7 +393,7 @@ const parseProgrammaticOptions = (
   });
 
   return {
-    options: updatedOptions,
+    options: pickProgrammaticOptions(updatedOptions),
     experimentalOptions: [...usedExperimental.keys()]
   };
 };
@@ -375,6 +404,7 @@ export {
   type AppSession,
   type CliOptions,
   type DefaultOptions,
+  type ExperimentalOptionKey,
   type GlobalOptions,
   type HttpOptions,
   type LoggingOptions,

@@ -1,6 +1,11 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { type AppSession, type GlobalOptions, type ProgrammaticOptions } from './options';
+import {
+  type AppSession,
+  type ExperimentalOptionKey,
+  type GlobalOptions,
+  type ProgrammaticOptions
+} from './options';
 import {
   DEFAULT_OPTIONS,
   LOG_BASENAME,
@@ -102,7 +107,7 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @param [experimentalOptions] - The available experimental options set.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<string> = new Set()): GlobalOptions => {
+const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<ExperimentalOptionKey> = new Set()): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
@@ -111,7 +116,7 @@ const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<stri
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
 
   const baseExperimental = base.experimental.filter(
-    option => experimentalOptions?.has(option) &&
+    option => experimentalOptions.has(option as ExperimentalOptionKey) &&
       base?.[option as keyof GlobalOptions] !== DEFAULT_OPTIONS?.[option as keyof GlobalOptions]
   );
 
