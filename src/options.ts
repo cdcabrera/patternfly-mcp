@@ -88,11 +88,15 @@ type ParsedOptions<T> = {
 
 /**
  * Additive parse for CLI configuration options.
+ * > **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for internal distinction.
+ *
  * - Focuses on adding options into configuration.
- * - **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for
- *     internal distinction.
  * - Parses `process.argv` options
- * - Separates out supported `--experimental-` options from standard options.
+ * - HTTP sub-flags (e.g. `--port`, `--host`, etc.) apply only when `--http` is set.
+ * - Experimental options
+ *   - Separates out supported `--experimental-` options from standard options.
+ *   - Registered experimental options use `--experimental-<kebab-name>`.
+ *   - Any use of registered experimental options without experimental is ignored.
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
@@ -109,6 +113,7 @@ type ParsedOptions<T> = {
  * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
  * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
  *     specification is a local module name or path.
+ * - `--experimental-<option>`: Registered option in experimental status.
  *
  * @note Review removing `programmatic` mode from this function path.
  *
@@ -155,15 +160,10 @@ const parseCliOptions = (
       const internalName = kebabToCamel(flagPart);
       const isRegisteredExperimental = experimentalOptions?.has(internalName);
       const isExperimental = isExperimentalPrefix && isRegisteredExperimental;
+      const isExperimentalSkipped = (isRegisteredExperimental && !isExperimentalPrefix) ||
+        (isExperimentalPrefix && !isRegisteredExperimental);
 
-      if (isRegisteredExperimental && !isExperimentalPrefix) {
-        lastToken = undefined;
-        lastTokenName = undefined;
-        lastCleanedToken = undefined;
-        continue;
-      }
-
-      if (isExperimentalPrefix && !isRegisteredExperimental) {
+      if (isExperimentalSkipped) {
         lastToken = undefined;
         lastTokenName = undefined;
         lastCleanedToken = undefined;
@@ -312,9 +312,11 @@ const parseCliOptions = (
 /**
  * Reductive/subtractive parse for programmatic configuration options.
  * - Focuses on removing keys from options.
- * - Separates out supported `experimental` options from standard options.
- * - `experimental` checks only handle top-level properties.
- * - Declaring multiple options with the same `experimental` prefix means the last one wins.
+ * - Experimental options
+ *   - Separates out supported `experimental` options from standard options.
+ *   - Strips every `${experimentalPrefix}*` key
+ *   - `experimental` checks only handle top-level properties.
+ *   - Declaring multiple options with the same `experimental` prefix means the last one wins.
  *
  * @note Experimental Options:
  * The parser strips experimental prefixes from options to allow an internal match
@@ -330,7 +332,7 @@ const parseCliOptions = (
  */
 const parseProgrammaticOptions = (
   options: ProgrammaticOptions,
-  experimentalOptions:Set<string> = new Set(),
+  experimentalOptions: Set<string> = new Set(),
   { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
   const updatedOptions: ProgrammaticOptions = { ...options };
@@ -350,8 +352,9 @@ const parseProgrammaticOptions = (
 
       if (experimentalOptions.has(internalKey)) {
         usedExperimental.set(internalKey, options[key as keyof ProgrammaticOptions]);
-        delete (updatedOptions as Record<string, unknown>)[key];
       }
+
+      delete (updatedOptions as Record<string, unknown>)[key];
     }
   }
 
@@ -376,5 +379,6 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type MakeExperimental,
+  type ParsedOptions,
   type ProgrammaticOptions
 };

@@ -272,7 +272,7 @@ describe('parseProgrammaticOptions', () => {
       expectedExperimental: []
     },
     {
-      description: 'ignores experimental-prefixed keys that are not registered',
+      description: 'removes experimental-prefixed keys that are not registered',
       input: { experimentalPluginIsolation: 'none' },
       experimentalOptions: new Set(),
       expectedOptions: expect.not.objectContaining({ pluginIsolation: 'none' }),
