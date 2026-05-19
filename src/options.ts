@@ -132,7 +132,7 @@ const parseCliOptions = (
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
-    isHttp: argv.includes('--http'),
+    isHttp: false,
     toolModules: [],
     pluginIsolation: undefined
   };
@@ -140,53 +140,53 @@ const parseCliOptions = (
   // Aggregate tokens and values
   const updatedExperimentalPrefix = `--${experimentalPrefix}-`;
   const usedExperimentalOptions = new Set<string>();
-  const tokensMap = new Map<string, { name: string; originalToken: string; cleanedToken: string; isExperimental: boolean; value: string }[]>();
+  const tokensMap = new Map<string, { value?: string }[]>();
   let lastToken: string | undefined = undefined;
   let lastTokenName: string | undefined = undefined;
+  let lastCleanedToken: string | undefined = undefined;
 
   for (const token of argv) {
     if (token.startsWith('-')) {
-      lastTokenName = (token.startsWith('--') && kebabToCamel(token.slice(2))) ||
-        (token.startsWith('-') && kebabToCamel(token.slice(1))) ||
-        undefined;
+      const isExperimentalPrefix = token.startsWith(updatedExperimentalPrefix);
+      const flagPart = isExperimentalPrefix
+        ? token.slice(updatedExperimentalPrefix.length)
+        : token.startsWith('--') ? token.slice(2) : token.slice(1);
 
-      lastTokenName = (token.startsWith(updatedExperimentalPrefix) && kebabToCamel(token.slice(updatedExperimentalPrefix.length))) || lastTokenName;
-      lastToken = token;
+      const internalName = kebabToCamel(flagPart);
+      const isRegisteredExperimental = experimentalOptions?.has(internalName);
+      const isExperimental = isExperimentalPrefix && isRegisteredExperimental;
 
-      const shouldBeExperimental = lastTokenName && experimentalOptions?.has(lastTokenName);
-      const isExperimental = lastTokenName && experimentalOptions?.has(lastTokenName) && lastToken.startsWith(updatedExperimentalPrefix);
-
-      if (shouldBeExperimental && !isExperimental) {
-        lastTokenName = undefined;
+      if (isRegisteredExperimental && !isExperimentalPrefix) {
         lastToken = undefined;
+        lastTokenName = undefined;
+        lastCleanedToken = undefined;
         continue;
       }
 
-      // if (lastTokenName && !tokensMap.has(token) && !experimentalOptions?.has(lastTokenName)) {
-      if (lastTokenName && !tokensMap.has(token)) {
-        tokensMap.set(lastToken, []);
-      }
-    } else if (lastToken && lastTokenName) {
-      // const isExperimentalPrefix = lastToken?.startsWith(updatedExperimentalPrefix) && lastToken.length > updatedExperimentalPrefix.length;
-      // const updatedLastTokenName = isExperimentalPrefix ? kebabToCamel(lastTokenName.slice(experimentalPrefix.length)) : lastTokenName;
-      const shouldBeExperimental = experimentalOptions?.has(lastTokenName);
-      const isExperimental = experimentalOptions?.has(lastTokenName) && lastToken.startsWith(updatedExperimentalPrefix);
-
-      if (shouldBeExperimental && !isExperimental) {
+      if (isExperimentalPrefix && !isRegisteredExperimental) {
+        lastToken = undefined;
+        lastTokenName = undefined;
+        lastCleanedToken = undefined;
         continue;
       }
+
+      lastToken = token;
+      lastTokenName = internalName;
+      lastCleanedToken = `--${flagPart}`;
 
       if (isExperimental) {
         usedExperimentalOptions.add(lastTokenName);
       }
 
-      tokensMap.get(lastToken)?.push({
-        name: lastTokenName,
-        originalToken: lastToken,
-        cleanedToken: isExperimental ? `--${lastToken.slice(updatedExperimentalPrefix.length)}` : lastToken,
-        isExperimental,
-        value: token
-      });
+      if (lastCleanedToken === '--http') {
+        result.isHttp = true;
+      }
+
+      if (!tokensMap.has(lastCleanedToken)) {
+        tokensMap.set(lastCleanedToken, []);
+      }
+    } else if (lastToken && lastTokenName && lastCleanedToken) {
+      tokensMap.get(lastCleanedToken)?.push({ value: token });
     }
   }
 
@@ -194,10 +194,8 @@ const parseCliOptions = (
   const seenTools = new Set<string>();
   let isVerbose = false;
 
-  const processFlags = (originalToken: string, value?: string) => {
-    console.warn('>>>> busted', originalToken, value);
-
-    switch (originalToken) {
+  const processFlags = (cleanedToken: string, value?: string) => {
+    switch (cleanedToken) {
       case '--mode':
         if (value && MODE_LEVELS.includes(value.toLowerCase() as DefaultOptions['mode'])) {
           result.mode = value.toLowerCase() as DefaultOptions['mode'];
@@ -253,7 +251,7 @@ const parseCliOptions = (
 
           result.http ??= {};
 
-          if (originalToken === '--allowed-origins') {
+          if (cleanedToken === '--allowed-origins') {
             result.http.allowedOrigins = list;
           } else {
             result.http.allowedHosts = list;
@@ -276,11 +274,9 @@ const parseCliOptions = (
         break;
 
       case '--plugin-isolation':
-        console.warn('>>>>>> plugin iso', value);
         if (value) {
-          console.warn('>>>>>> plugin iso', value);
           const val = value.toLowerCase();
-          const match = PLUGIN_ISOLATION.find(value => value === val);
+          const match = PLUGIN_ISOLATION.find(isolation => isolation === val);
 
           if (match) {
             result.pluginIsolation = match;
@@ -290,17 +286,15 @@ const parseCliOptions = (
     }
   };
 
-  tokensMap.forEach((list, key) => {
-    console.warn('>>>>>>>>> value', list, key);
+  tokensMap.forEach((list, cleanedToken) => {
     if (!list.length) {
-      processFlags(key);
+      processFlags(cleanedToken);
 
       return;
     }
 
-    list.forEach(({ originalToken, value }) => {
-      console.warn('>>>>>>>>>>>>>>>', originalToken, value);
-      processFlags(originalToken, value);
+    list.forEach(({ value }) => {
+      processFlags(cleanedToken, value);
     });
   });
 
