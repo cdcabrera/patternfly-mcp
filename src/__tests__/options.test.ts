@@ -246,6 +246,26 @@ describe('parseCliOptions', () => {
       experimentalOptions: new Set<ExperimentalOptionKey>(['pluginIsolation', 'customOption' as ExperimentalOptionKey]),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation', 'customOption']
+    },
+    {
+      description: 'drop orphan value after direct flag registred as experimental',
+      args: ['node', 'cli', '--log-level', 'warn', '--plugin-isolation', 'strict'],
+      experimentalOptions: new Set<any>(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: undefined,
+        logging: expect.objectContaining({ level: 'warn' })
+      }),
+      expectedExperimental: []
+    },
+    {
+      description: 'drop orphan value after unregistered experimental flag',
+      args: ['node', 'cli', '--log-level', 'warn', '--experimental-lorem-ipsum', 'strict', '--verbose'],
+      experimentalOptions: new Set<any>(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({
+        pluginIsolation: undefined,
+        logging: expect.objectContaining({ level: 'debug' })
+      }),
+      expectedExperimental: []
     }
   ])('should handle experimental options, $description', ({ args, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseCliOptions(args, experimentalOptions, settings as any);
@@ -313,6 +333,20 @@ describe('parseProgrammaticOptions', () => {
       experimentalOptions: new Set<ExperimentalOptionKey>(['pluginIsolation', 'customOption' as ExperimentalOptionKey]),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation', 'customOption']
+    },
+    {
+      description: 'last duplicate experimental prefixed key wins from JSON',
+      input: JSON.parse('{ "experimentalPluginIsolation": "strict", "experimentalPluginIsolation": "none" }'),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
+      expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
+      expectedExperimental: ['pluginIsolation']
+    },
+    {
+      description: 'ignores experimental prefixed keys inherited from a parent object',
+      input: Object.create({ experimentalPluginIsolation: 'strict' }),
+      experimentalOptions: new Set<any>(['pluginIsolation']),
+      expectedOptions: expect.not.objectContaining({ pluginIsolation: 'strict' }),
+      expectedExperimental: []
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);
@@ -321,7 +355,7 @@ describe('parseProgrammaticOptions', () => {
     expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 
-  it('ensures Object.prototype is not polluted via constructor', () => {
+  it('should ensure Object.prototype is not polluted via constructor', () => {
     const input = JSON.parse('{ "constructor": { "prototype": { "polluted": true } } }');
 
     parseProgrammaticOptions(input);
@@ -331,7 +365,7 @@ describe('parseProgrammaticOptions', () => {
     delete (Object.prototype as any).polluted;
   });
 
-  it('ensures the returned options object does not inherit properties from __proto__ input', () => {
+  it('should ensure the returned options object does not inherit properties from __proto__ input', () => {
     const input = JSON.parse('{ "__proto__": { "polluted": true } }');
 
     const { options } = parseProgrammaticOptions(input);
@@ -342,15 +376,14 @@ describe('parseProgrammaticOptions', () => {
     delete (Object.prototype as any).polluted;
   });
 
-  it('verifies that experimental mapping still obeys Object.hasOwn', () => {
+  it('should verify that experimental mapping still obeys Object.hasOwn', () => {
     const experimentalKey = 'experimentalPluginIsolation';
 
-    // Explicitly pollute the global prototype
     (Object.prototype as any)[experimentalKey] = 'strict';
 
     try {
       const { options, experimentalOptions } = parseProgrammaticOptions(
-        {}, // Empty input should not trigger mapping from prototype
+        {},
         new Set(['pluginIsolation'])
       );
 
@@ -359,7 +392,5 @@ describe('parseProgrammaticOptions', () => {
     } finally {
       delete (Object.prototype as any)[experimentalKey];
     }
-
-    delete (Object.prototype as any).polluted;
   });
 });
