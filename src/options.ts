@@ -329,7 +329,7 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (key in DEFAULT_OPTIONS) {
+    if (Object.hasOwn(DEFAULT_OPTIONS, key)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
@@ -371,9 +371,9 @@ const parseProgrammaticOptions = (
     delete updatedOptions[key];
   });
 
-  // Aggregate and remove experimental options
-  for (const key in options) {
-    if (key?.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
+  // Aggregate and remove experimental options, own keys only
+  for (const key of Object.keys(options)) {
+    if (key.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
       const internalKey = (
         key.slice(experimentalPrefix.length).charAt(0).toLowerCase() +
         key.slice(experimentalPrefix.length + 1)

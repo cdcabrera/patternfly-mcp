@@ -320,4 +320,46 @@ describe('parseProgrammaticOptions', () => {
     expect(result.options).toEqual(expectedOptions);
     expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
+
+  it('ensures Object.prototype is not polluted via constructor', () => {
+    const input = JSON.parse('{ "constructor": { "prototype": { "polluted": true } } }');
+
+    parseProgrammaticOptions(input);
+
+    expect(({} as any).polluted).toBeUndefined();
+
+    delete (Object.prototype as any).polluted;
+  });
+
+  it('ensures the returned options object does not inherit properties from __proto__ input', () => {
+    const input = JSON.parse('{ "__proto__": { "polluted": true } }');
+
+    const { options } = parseProgrammaticOptions(input);
+
+    // Verifies that the "polluted" property did not leak onto the result
+    expect((options as any).polluted).toBeUndefined();
+
+    delete (Object.prototype as any).polluted;
+  });
+
+  it('verifies that experimental mapping still obeys Object.hasOwn', () => {
+    const experimentalKey = 'experimentalPluginIsolation';
+
+    // Explicitly pollute the global prototype
+    (Object.prototype as any)[experimentalKey] = 'strict';
+
+    try {
+      const { options, experimentalOptions } = parseProgrammaticOptions(
+        {}, // Empty input should not trigger mapping from prototype
+        new Set(['pluginIsolation'])
+      );
+
+      expect(options.pluginIsolation).toBeUndefined();
+      expect(experimentalOptions).not.toContain('pluginIsolation');
+    } finally {
+      delete (Object.prototype as any)[experimentalKey];
+    }
+
+    delete (Object.prototype as any).polluted;
+  });
 });
