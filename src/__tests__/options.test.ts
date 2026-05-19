@@ -137,8 +137,25 @@ describe('parseCliOptions', () => {
     },
     {
       description: 'with comma-separated tools',
-      args: ['node', 'script.js', '--tool', 'tool-a,tool-b'],
+      args: ['node', 'script.js', '--tool', 'tool-a,tool-b', '--http'],
       expectedOptions: expect.objectContaining({
+        isHttp: true,
+        toolModules: ['tool-a', 'tool-b']
+      })
+    },
+    {
+      description: 'with arg-separated tools',
+      args: ['node', 'script.js', '--tool', 'tool-a', 'tool-b', '--http'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
+        toolModules: ['tool-a', 'tool-b']
+      })
+    },
+    {
+      description: 'with separated tools',
+      args: ['node', 'script.js', '--tool', 'tool-a', '--tool', 'tool-b', '--http'],
+      expectedOptions: expect.objectContaining({
+        isHttp: true,
         toolModules: ['tool-a', 'tool-b']
       })
     },
