@@ -320,4 +320,25 @@ describe('parseProgrammaticOptions', () => {
     expect(result.options).toEqual(expectedOptions);
     expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
+
+  it('should ignore inherited keys, prototype pollution', () => {
+    // const polluted = Object.create({
+    //  experimentalOptions: 'none'
+    // });
+    const polluted = {
+      experimentalPluginIsolation: 'strict'
+    };
+
+    Object.defineProperty(Object.prototype, 'experimentalLoremIpsum', {
+      value: 'dolorSit',
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+
+    const result = parseProgrammaticOptions(polluted as any, new Set<ExperimentalOptionKey>(['pluginIsolation']));
+
+    expect(result.options).toEqual({ pluginIsolation: 'strict' });
+    expect(result.experimentalOptions).toEqual(['pluginIsolation']);
+  });
 });
