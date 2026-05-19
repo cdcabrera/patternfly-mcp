@@ -120,10 +120,6 @@ const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<Expe
       base?.[option as keyof GlobalOptions] !== DEFAULT_OPTIONS?.[option as keyof GlobalOptions]
   );
 
-  if (baseExperimental.length) {
-    console.warn(`[Experimental] The following options are subject to change, use at your own risk: ${baseExperimental.join(', ')}`);
-  }
-
   const merged: GlobalOptions = {
     ...base,
     experimental: baseExperimental,
