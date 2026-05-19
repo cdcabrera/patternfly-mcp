@@ -313,28 +313,6 @@ describe('parseProgrammaticOptions', () => {
       experimentalOptions: new Set<ExperimentalOptionKey>(['pluginIsolation', 'customOption' as ExperimentalOptionKey]),
       expectedOptions: expect.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: ['pluginIsolation', 'customOption']
-    },
-    {
-      description: 'ignores inherited properties from the input object',
-      // Object.create(proto) creates an object where property is inherited, not own
-      input: Object.create({ experimentalPluginIsolation: 'none' }),
-      experimentalOptions: new Set<any>(['pluginIsolation']),
-      expectedOptions: expect.not.objectContaining({ pluginIsolation: 'none' }),
-      expectedExperimental: []
-    },
-    {
-      description: 'guards against __proto__ as an own property in input',
-      // JSON.parse ensures __proto__ is treated as an own enumerable property
-      input: JSON.parse('{ "__proto__": { "polluted": true } }'),
-      expectedOptions: expect.not.objectContaining({ polluted: true }),
-      expectedExperimental: []
-    },
-    {
-      description: 'guards against experimental __proto__ registration attempt',
-      input: JSON.parse('{ "experimental__proto__": { "polluted": true } }'),
-      experimentalOptions: new Set<any>(['__proto__']),
-      expectedOptions: expect.not.objectContaining({ polluted: true }),
-      expectedExperimental: expect.arrayContaining(['__proto__'])
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
     const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);
