@@ -91,7 +91,7 @@ type ParsedOptions<T> = {
  * - **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for
  *     internal distinction.
  * - Parses `process.argv` options
- * - Separates out supported experimental options from standard ones.
+ * - Separates out supported `--experimental-` options from standard options.
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
@@ -112,8 +112,8 @@ type ParsedOptions<T> = {
  * @note Review removing `programmatic` mode from this function path.
  *
  * @note Experimental Flags:
- * The parser strips `--experimental-` prefixes from options to allow an internal match
- * against standard flag names. Actual validation and warning issuance for experimental
+ * The parser strips experimental prefixes from options to allow an internal match
+ * against standard option names. Actual validation and warning issuance for experimental
  * features are handled in `setOptions` to ensure both CLI and programmatic options
  * align.
  *
@@ -166,28 +166,6 @@ const parseCliOptions = (
         continue;
       }
     }
-
-    /*
-    if (token.startsWith(updatedExperimentalPrefix) && token.length > updatedExperimentalPrefix.length) {
-      const flagName = token.slice(updatedExperimentalPrefix.length);
-      const internalFlagName = kebabToCamel(flagName);
-
-      if (experimentalOptions?.has(internalFlagName)) {
-        token = `--${flagName}`;
-        usedExperimentalOptions.add(internalFlagName);
-      } else {
-        continue;
-      }
-    } else if (token.startsWith('--')) {
-      // Fallback, filter tokens intended to be experimental
-      const flagName = token.slice(2);
-      const internalFlagName = kebabToCamel(flagName);
-
-      if (experimentalOptions?.has(internalFlagName)) {
-        continue;
-      }
-    }
-    */
 
     const next = argv[i + 1];
     const hasValue = next && !next.startsWith('-');
@@ -305,7 +283,14 @@ const parseCliOptions = (
 
 /**
  * Parse programmatic configuration options.
- * - Separates out supported experimental top-level options from standard ones.
+ * - Separates out supported `experimental` options from standard options.
+ * - `experimental` checks only handle top-level properties.
+ *
+ * @note Experimental Options:
+ * The parser strips experimental prefixes from options to allow an internal match
+ * against standard option names. Actual validation and warning issuance for experimental
+ * features are handled in `setOptions` to ensure both CLI and programmatic options
+ * align.
  *
  * @param options - User-defined configuration options (overrides).
  * @param experimentalOptions - The available experimental options set used for filtering
@@ -328,8 +313,11 @@ const parseProgrammaticOptions = (
         key.slice(experimentalPrefix.length + 1);
 
       if (experimentalOptions.has(internalKey)) {
+        // Add the internal-keyed option to clone
         (updatedOptions as Record<string, unknown>)[internalKey] = options[key as keyof ProgrammaticOptions];
+        // Remove the experimental option from clone
         delete (updatedOptions as Record<string, unknown>)[key];
+        // Track the key used
         usedExperimental.add(internalKey);
       }
     }
