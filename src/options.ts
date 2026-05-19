@@ -106,6 +106,9 @@ type ParsedOptions<T> = {
  * - `--verbose` wins over `--log-level` regardless of argv order.
  * - Skipped flags (unregistered or direct experimental): the following argv value is orphaned
  *   (discarded; it does not attach to the previous flag).
+ * - Single-dash flags (e.g. `-h`): not supported today; any token starting with the `-` is treated as
+ *   a flag, but only `--long-form-option` names are normalized and handled. If/when we accept short
+ *   flags, parsing will need to be adjusted. Or we could also review adding in a package to handle args.
  *
  * Available options:
  * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
