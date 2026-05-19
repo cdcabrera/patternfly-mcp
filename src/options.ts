@@ -87,7 +87,8 @@ type ParsedOptions<T> = {
 };
 
 /**
- * Parse CLI configuration options.
+ * Additive parse for CLI configuration options.
+ * - Focuses on adding options into configuration.
  * - **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for
  *     internal distinction.
  * - Parses `process.argv` options
@@ -131,65 +132,85 @@ const parseCliOptions = (
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
-    isHttp: argv.includes('--http'),
+    isHttp: false,
     toolModules: [],
     pluginIsolation: undefined
   };
+
+  // Aggregate tokens and values
   const updatedExperimentalPrefix = `--${experimentalPrefix}-`;
   const usedExperimentalOptions = new Set<string>();
+  const tokensMap = new Map<string, { value?: string }[]>();
+  let lastToken: string | undefined = undefined;
+  let lastTokenName: string | undefined = undefined;
+  let lastCleanedToken: string | undefined = undefined;
+
+  for (const token of argv) {
+    if (token.startsWith('-')) {
+      const isExperimentalPrefix = token.startsWith(updatedExperimentalPrefix);
+      const flagPart = isExperimentalPrefix
+        ? token.slice(updatedExperimentalPrefix.length)
+        : token.startsWith('--') ? token.slice(2) : token.slice(1);
+
+      const internalName = kebabToCamel(flagPart);
+      const isRegisteredExperimental = experimentalOptions?.has(internalName);
+      const isExperimental = isExperimentalPrefix && isRegisteredExperimental;
+
+      if (isRegisteredExperimental && !isExperimentalPrefix) {
+        lastToken = undefined;
+        lastTokenName = undefined;
+        lastCleanedToken = undefined;
+        continue;
+      }
+
+      if (isExperimentalPrefix && !isRegisteredExperimental) {
+        lastToken = undefined;
+        lastTokenName = undefined;
+        lastCleanedToken = undefined;
+        continue;
+      }
+
+      lastToken = token;
+      lastTokenName = internalName;
+      lastCleanedToken = `--${flagPart}`;
+
+      if (isExperimental) {
+        usedExperimentalOptions.add(lastTokenName);
+      }
+
+      if (lastCleanedToken === '--http') {
+        result.isHttp = true;
+      }
+
+      if (!tokensMap.has(lastCleanedToken)) {
+        tokensMap.set(lastCleanedToken, []);
+      }
+    } else if (lastToken && lastTokenName && lastCleanedToken) {
+      tokensMap.get(lastCleanedToken)?.push({ value: token });
+    }
+  }
 
   // Tracking for toolModules to avoid duplicates
   const seenTools = new Set<string>();
   let isVerbose = false;
 
-  for (let i = 0; i < argv.length; i++) {
-    let token = argv[i];
-
-    if (!token) {
-      continue;
-    }
-
-    const camelCaseToken = token.startsWith('--') ? kebabToCamel(token.slice(2)) : token;
-
-    if (experimentalOptions?.has(camelCaseToken)) {
-      continue;
-    }
-
-    if (token.startsWith(updatedExperimentalPrefix) && token.length > updatedExperimentalPrefix.length) {
-      const flagName = token.slice(updatedExperimentalPrefix.length);
-      const internalFlagName = kebabToCamel(flagName);
-
-      if (experimentalOptions?.has(internalFlagName)) {
-        token = `--${flagName}`;
-        usedExperimentalOptions.add(internalFlagName);
-      } else {
-        continue;
-      }
-    }
-
-    const next = argv[i + 1];
-    const hasValue = next && !next.startsWith('-');
-
-    // 2. Process Flags
-    switch (token) {
+  const processFlags = (cleanedToken: string, value?: string) => {
+    switch (cleanedToken) {
       case '--mode':
-        if (hasValue && MODE_LEVELS.includes(next.toLowerCase() as DefaultOptions['mode'])) {
-          result.mode = next.toLowerCase() as DefaultOptions['mode'];
-          i += 1;
+        if (value && MODE_LEVELS.includes(value.toLowerCase() as DefaultOptions['mode'])) {
+          result.mode = value.toLowerCase() as DefaultOptions['mode'];
         }
         break;
 
       case '--mode-test-url':
-        if (hasValue && isUrl(next) && result.modeOptions) {
-          result.modeOptions.test = { ...result.modeOptions.test, baseUrl: next.trim() };
-          i += 1;
+        if (value && isUrl(value) && result.modeOptions) {
+          result.modeOptions.test = { ...result.modeOptions.test, baseUrl: value.trim() };
         }
         break;
 
       case '--log-level':
-        if (hasValue && logSeverity(next.toLowerCase() as LogLevel) > -1) {
-          result.logging.level = next.toLowerCase() as LoggingOptions['level'];
-          i += 1;
+        if (value && logSeverity(value.toLowerCase() as LogLevel) > -1) {
+          result.logging.level = value.toLowerCase() as LoggingOptions['level'];
         }
         break;
 
@@ -206,45 +227,42 @@ const parseCliOptions = (
         break;
 
       case '--port':
-        if (result.isHttp && hasValue) {
-          const port = portValid(next);
+        if (result.isHttp && value) {
+          const port = portValid(value);
 
           if (port !== undefined) {
             result.http ??= {};
             result.http.port = port;
           }
-          i += 1;
         }
         break;
 
       case '--host':
-        if (result.isHttp && hasValue) {
+        if (result.isHttp && value) {
           result.http ??= {};
-          result.http.host = next;
-          i += 1;
+          result.http.host = value;
         }
         break;
 
       case '--allowed-origins':
       case '--allowed-hosts': {
-        if (result.isHttp && hasValue) {
-          const list = next.split(',').map(str => str.trim()).filter(Boolean);
+        if (result.isHttp && value) {
+          const list = value.split(',').map(str => str.trim()).filter(Boolean);
 
           result.http ??= {};
 
-          if (token === '--allowed-origins') {
+          if (cleanedToken === '--allowed-origins') {
             result.http.allowedOrigins = list;
           } else {
             result.http.allowedHosts = list;
           }
-          i += 1;
         }
         break;
       }
 
       case '--tool':
-        if (hasValue) {
-          next.split(',').forEach(spec => {
+        if (value) {
+          value.split(',').forEach(spec => {
             const trimmed = spec.trim();
 
             if (trimmed && !seenTools.has(trimmed)) {
@@ -252,23 +270,33 @@ const parseCliOptions = (
               result.toolModules.push(trimmed);
             }
           });
-          i += 1;
         }
         break;
 
       case '--plugin-isolation':
-        if (hasValue) {
-          const val = next.toLowerCase();
-          const match = PLUGIN_ISOLATION.find(value => value === val);
+        if (value) {
+          const val = value.toLowerCase();
+          const match = PLUGIN_ISOLATION.find(isolation => isolation === val);
 
           if (match) {
             result.pluginIsolation = match;
           }
-          i += 1;
         }
         break;
     }
-  }
+  };
+
+  tokensMap.forEach((list, cleanedToken) => {
+    if (!list.length) {
+      processFlags(cleanedToken);
+
+      return;
+    }
+
+    list.forEach(({ value }) => {
+      processFlags(cleanedToken, value);
+    });
+  });
 
   // Cleanup: ensure logging matches severity after verbose/level processing
   if (isVerbose) {
@@ -282,7 +310,8 @@ const parseCliOptions = (
 };
 
 /**
- * Parse programmatic configuration options.
+ * Reductive/subtractive parse for programmatic configuration options.
+ * - Focuses on removing keys from options.
  * - Separates out supported `experimental` options from standard options.
  * - `experimental` checks only handle top-level properties.
  * - Declaring multiple options with the same `experimental` prefix means the last one wins.
