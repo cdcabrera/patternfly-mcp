@@ -372,12 +372,8 @@ const parseProgrammaticOptions = (
   });
 
   // Aggregate and remove experimental options, own keys only
-  for (const key in options) {
-    if (!Object.hasOwn(options, key)) {
-      continue;
-    }
-
-    if (key?.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
+  for (const key of Object.keys(options)) {
+    if (key.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
       const internalKey = (
         key.slice(experimentalPrefix.length).charAt(0).toLowerCase() +
         key.slice(experimentalPrefix.length + 1)
