@@ -10,7 +10,10 @@ describe('parseCliOptions', () => {
   it.each([
     {
       description: 'with --verbose flag',
-      args: ['node', 'script.js', '--verbose']
+      args: ['node', 'script.js', '--verbose'],
+      experimentalOptions: new Set([]),
+      expectedOptions: expect.objectContaining({ level: 'debug' }),
+      expectedExperimental: []
     },
     {
       description: 'with --verbose flag and --log-level flag',
@@ -76,10 +79,11 @@ describe('parseCliOptions', () => {
     //  description: 'with experimental prefixes',
     //  args: ['node', 'script.js', '--experimental-context-management', 'strict']
     // }
-  ])('should attempt to parse args $description', ({ args = [] }) => {
-    const result = parseCliOptions(args);
+  ])('should attempt to parse args $description', ({ args, experimentalOptions, expectedOptions, expectedExperimental }) => {
+    const result = parseCliOptions(args, experimentalOptions);
 
-    expect(result).toMatchSnapshot();
+    expect(result.options).toEqual(expectedOptions);
+    expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 
   it.each([
@@ -112,10 +116,10 @@ describe('parseCliOptions', () => {
       expectedExperimental: ['pluginIsolation']
     }
   ])('should handle experimental options, $description', ({ args, experimentalOptions, expectedOptions, expectedExperimental }) => {
-    const output = parseCliOptions(args, experimentalOptions);
+    const result = parseCliOptions(args, experimentalOptions);
 
-    expect(output.options).toEqual(expectedOptions);
-    expect(output.experimentalOptions).toEqual(expectedExperimental);
+    expect(result.options).toEqual(expectedOptions);
+    expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 
   it('does not apply HTTP flags when --http is absent', () => {
@@ -145,14 +149,14 @@ describe('parseProgrammaticOptions', () => {
     {
       description: 'ignores experimental-prefixed keys that are not registered',
       input: { experimentalPluginIsolation: 'none' },
-      experimentalOptions: new Set<string>(),
+      experimentalOptions: new Set(),
       expectedOptions: expect.not.objectContaining({ pluginIsolation: 'none' }),
       expectedExperimental: []
     },
     {
       description: 'passes through the experimental metadata array unchanged',
       input: { experimental: ['pluginIsolation'] },
-      experimentalOptions: new Set<string>(),
+      experimentalOptions: new Set(),
       expectedOptions: expect.objectContaining({ experimental: ['pluginIsolation'] }),
       expectedExperimental: []
     },
@@ -164,9 +168,9 @@ describe('parseProgrammaticOptions', () => {
       expectedExperimental: []
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, expectedOptions, expectedExperimental }) => {
-    const output = parseProgrammaticOptions(input as any, experimentalOptions);
+    const result = parseProgrammaticOptions(input as any, experimentalOptions as any);
 
-    expect(output.options).toEqual(expectedOptions);
-    expect(output.experimentalOptions).toEqual(expectedExperimental);
+    expect(result.options).toEqual(expectedOptions);
+    expect(result.experimentalOptions).toEqual(expectedExperimental);
   });
 });
