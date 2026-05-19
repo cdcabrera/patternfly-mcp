@@ -218,7 +218,7 @@ const main = async (
     mergedOptions = setOptions({
       ...cliOptions,
       ...progOptions,
-      experimental: [...new Set([...cliExp, ...progExp])],
+      experimental: [...cliExp, ...progExp],
       mode: cliOptions.mode ?? programmaticMode
     }, EXPERIMENTAL_OPTIONS);
 

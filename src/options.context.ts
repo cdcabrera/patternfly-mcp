@@ -110,7 +110,7 @@ const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<stri
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
 
-  const baseExperimental = base.experimental.filter(
+  const baseExperimental = [...new Set(base.experimental)].filter(
     option => experimentalOptions?.has(option) &&
       base?.[option as keyof GlobalOptions] !== DEFAULT_OPTIONS?.[option as keyof GlobalOptions]
   );

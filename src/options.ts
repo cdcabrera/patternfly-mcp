@@ -8,6 +8,7 @@ import {
   type ModeOptions,
   type ToolModule
 } from './options.defaults';
+import { kebabToCamel } from './options.helpers';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
 
@@ -85,6 +86,39 @@ type ParsedOptions<T> = {
   experimentalOptions: string[];
 };
 
+const EXPERIMENTAL_PREFIX = 'experimental';
+
+/**
+ * Programmatic keys use `experimental` + PascalCase (e.g. `experimentalPluginIsolation`).
+ */
+const isProgrammaticExperimentalKey = (key: string): boolean =>
+  key.startsWith(EXPERIMENTAL_PREFIX) &&
+  key.length > EXPERIMENTAL_PREFIX.length &&
+  key.charAt(EXPERIMENTAL_PREFIX.length) >= 'A' &&
+  key.charAt(EXPERIMENTAL_PREFIX.length) <= 'Z';
+
+/**
+ * Map `experimentalPluginIsolation` → `pluginIsolation`.
+ */
+const toInternalExperimentalKey = (programmaticKey: string): string => {
+  const suffix = programmaticKey.slice(EXPERIMENTAL_PREFIX.length);
+
+  return suffix.charAt(0).toLowerCase() + suffix.slice(1);
+};
+
+/**
+ * Skip argv tokens that name a registered experimental option unless rewritten from `--experimental-`.
+ */
+const isRegisteredExperimentalCliToken = (token: string, registry: Set<string>): boolean => {
+  if (!registry.size) {
+    return false;
+  }
+
+  const bare = token.startsWith('--') ? token.slice(2) : token;
+
+  return registry.has(bare) || registry.has(kebabToCamel(bare));
+};
+
 /**
  * Parse CLI configuration options.
  * - **IMPORTANT**: Exposed CLI options should be kebab-case, lowerCamel is reserved for
@@ -112,9 +146,12 @@ type ParsedOptions<T> = {
  *
  * @note Experimental Flags:
  * The parser strips `--experimental-` prefixes from options to allow an internal match
- * against standard flag names. Actual validation and warning issuance for experimental
- * features are handled downstream in `setOptions` via `normalizeExperimentalOptions`
- * to ensure both CLI and programmatic options align.
+ * against standard flag names. Registered experimental options cannot be set via their
+ * direct CLI flag (including camelCase tokens); use `--experimental-<kebab-name>` only.
+ * Validation and warning issuance are handled downstream in `setOptions`.
+ *
+ * @note HTTP-related flags (`--port`, `--host`, `--allowed-origins`, `--allowed-hosts`) are
+ * only applied when `--http` is present.
  *
  * @param argv - User-defined CLI configuration options (overrides).
  * @param experimentalOptions - The available experimental options set used for filtering
@@ -123,6 +160,7 @@ type ParsedOptions<T> = {
 const parseCliOptions = (
   argv: string[], experimentalOptions: Set<string> = new Set()
 ): ParsedOptions<CliOptions> => {
+  const registry = experimentalOptions ?? new Set<string>();
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
@@ -130,7 +168,16 @@ const parseCliOptions = (
     toolModules: [],
     pluginIsolation: undefined
   };
-  const usedExperimentalOptions: string[] = [];
+  const usedExperimentalOptions = new Set<string>();
+
+  const applyHttp = (apply: (http: Partial<HttpOptions>) => void): void => {
+    if (!result.isHttp) {
+      return;
+    }
+
+    result.http ??= {};
+    apply(result.http);
+  };
 
   // Tracking for toolModules to avoid duplicates
   const seenTools = new Set<string>();
@@ -139,18 +186,18 @@ const parseCliOptions = (
   for (let i = 0; i < argv.length; i++) {
     let token = argv[i];
 
-    // Filter falsy or tokens intended to be experimental
-    if (!token || experimentalOptions?.has(token)) {
+    // Filter falsy tokens and direct uses of registered experimental option names
+    if (!token || isRegisteredExperimentalCliToken(token, registry)) {
       continue;
     }
 
     if (token.startsWith('--experimental-')) {
-      const flagName = token.replace('--experimental-', '');
-      const internalFlagName = flagName.replace(/-([a-z])/g, (_subStr, letter) => letter.toUpperCase());
+      const flagName = token.slice('--experimental-'.length);
+      const internalFlagName = kebabToCamel(flagName);
 
-      if (experimentalOptions?.has(internalFlagName)) {
+      if (registry.has(internalFlagName)) {
         token = `--${flagName}`;
-        usedExperimentalOptions.push(internalFlagName);
+        usedExperimentalOptions.add(internalFlagName);
       } else {
         continue;
       }
@@ -199,8 +246,9 @@ const parseCliOptions = (
           const port = portValid(next);
 
           if (port !== undefined) {
-            result.http ??= {};
-            result.http.port = port;
+            applyHttp(http => {
+              http.port = port;
+            });
           }
           i += 1;
         }
@@ -208,8 +256,9 @@ const parseCliOptions = (
 
       case '--host':
         if (hasValue) {
-          result.http ??= {};
-          result.http.host = next;
+          applyHttp(http => {
+            http.host = next;
+          });
           i += 1;
         }
         break;
@@ -219,13 +268,13 @@ const parseCliOptions = (
         if (hasValue) {
           const list = next.split(',').map(str => str.trim()).filter(Boolean);
 
-          result.http ??= {};
-
-          if (token === '--allowed-origins') {
-            result.http.allowedOrigins = list;
-          } else {
-            result.http.allowedHosts = list;
-          }
+          applyHttp(http => {
+            if (token === '--allowed-origins') {
+              http.allowedOrigins = list;
+            } else {
+              http.allowedHosts = list;
+            }
+          });
           i += 1;
         }
         break;
@@ -266,43 +315,50 @@ const parseCliOptions = (
 
   return {
     options: result,
-    experimentalOptions: usedExperimentalOptions
+    experimentalOptions: [...usedExperimentalOptions]
   };
 };
 
 /**
  * Parse programmatic configuration options.
  * - Separates out supported experimental options from standard ones.
+ * - Only keys matching `experimental` + PascalCase are treated as experimental aliases
+ *     (the `experimental` metadata array is passed through unchanged).
  *
  * @param options - User-defined configuration options (overrides).
  * @param experimentalOptions - The available experimental options set used for filtering
  * @returns An object with options and used experimental options.
  */
 const parseProgrammaticOptions = (
-  options: ProgrammaticOptions, experimentalOptions:Set<string> = new Set()
+  options: ProgrammaticOptions, experimentalOptions: Set<string> = new Set()
 ): ParsedOptions<ProgrammaticOptions> => {
-  const updatedOptions: { [key: string]: unknown } = {};
-  const usedExperimental: string[] = [];
+  const registry = experimentalOptions ?? new Set<string>();
+  const usedExperimental = new Set<string>();
+  const updatedOptions: ProgrammaticOptions = {};
+  const entries = Object.entries(options) as [string, unknown][];
 
-  Object.entries(options).forEach(([key, value]: [string, unknown]) => {
-    if (key?.startsWith('experimental')) {
-      const internalKey = key
-        .replace(/^experimental/, '')
-        .replace(/^([A-Z])/, (_, letter) => letter.toLowerCase())
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()) as keyof DefaultOptions;
-
-      if (experimentalOptions?.has(internalKey)) {
-        updatedOptions[internalKey] = value;
-        usedExperimental.push(internalKey);
-      }
-    } else {
-      updatedOptions[key] = value;
+  for (const [key, value] of entries) {
+    if (!isProgrammaticExperimentalKey(key)) {
+      (updatedOptions as Record<string, unknown>)[key] = value;
     }
-  });
+  }
+
+  for (const [key, value] of entries) {
+    if (!isProgrammaticExperimentalKey(key)) {
+      continue;
+    }
+
+    const internalKey = toInternalExperimentalKey(key);
+
+    if (registry.has(internalKey)) {
+      (updatedOptions as Record<string, unknown>)[internalKey] = value;
+      usedExperimental.add(internalKey);
+    }
+  }
 
   return {
     options: updatedOptions,
-    experimentalOptions: usedExperimental
+    experimentalOptions: [...usedExperimental]
   };
 };
 
