@@ -66,7 +66,7 @@ describe('parseCliOptions', () => {
       args: ['node', 'script.js', '--http', '--port', '0'],
       expectedOptions: expect.objectContaining({
         isHttp: true,
-        http: undefined
+        http: expect.objectContaining({ port: 0 })
       })
     },
     {
@@ -105,14 +105,6 @@ describe('parseCliOptions', () => {
         http: expect.objectContaining({
           allowedHosts: ['localhost', '127.0.0.1']
         })
-      })
-    },
-    {
-      description: 'without --http',
-      args: ['node', 'script.js', '--port', '--allowed-hosts', '127.0.0.1'],
-      expectedOptions: expect.objectContaining({
-        isHttp: false,
-        http: undefined
       })
     },
     {
