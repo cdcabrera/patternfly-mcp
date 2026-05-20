@@ -53,10 +53,13 @@ type ProgrammaticOptions = {
   mode?: DefaultOptions['mode'];
   modeOptions?: Partial<ModeOptions>;
   http?: Partial<HttpOptions>;
-  isHttp: boolean;
-  logging: Partial<LoggingOptions>;
-  pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
-  toolModules: DefaultOptions['toolModules'];
+  isHttp?: boolean;
+  logging?: Partial<LoggingOptions>;
+  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
+  toolModules?: DefaultOptions['toolModules'];
+  docsPaths?: DefaultOptions['docsPaths'];
+  name?: string;
+  version?: string;
 };
 
 /**
@@ -80,6 +83,10 @@ type ParsedOptions<T> = {
   options: T;
   experimentalOptions: string[];
 };
+
+const PROGRAMMATIC_OPTIONS = [
+  'mode', 'modeOptions', 'http', 'isHttp', 'logging', 'pluginIsolation', 'toolModules', 'docsPaths', 'name', 'version'
+];
 
 /**
  * Additive parse for CLI configuration options.
@@ -215,6 +222,7 @@ const parseCliOptions = (
 
       case '--log-level':
         if (value && logSeverity(value.toLowerCase() as LogLevel) > -1) {
+          result.logging ??= {};
           result.logging.level = value.toLowerCase() as LoggingOptions['level'];
         }
         break;
@@ -224,10 +232,12 @@ const parseCliOptions = (
         break;
 
       case '--log-stderr':
+        result.logging ??= {};
         result.logging.stderr = true;
         break;
 
       case '--log-protocol':
+        result.logging ??= {};
         result.logging.protocol = true;
         break;
 
@@ -305,6 +315,7 @@ const parseCliOptions = (
 
   // --verbose wins over --log-level regardless of argv order
   if (isVerbose) {
+    result.logging ??= {};
     result.logging.level = 'debug';
   }
 
@@ -324,7 +335,7 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (Object.hasOwn(DEFAULT_OPTIONS, key)) {
+    if (PROGRAMMATIC_OPTIONS.includes(key)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
