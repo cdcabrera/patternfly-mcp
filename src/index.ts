@@ -84,9 +84,27 @@ type PfMcpStatReport = ServerStatReport;
 type PfMcpExperimentalOptions = ExperimentalOptions;
 
 /**
- * Exposed options for CLI use. A focused options interface.
+ * Exposed options for "programmatic" CLI use. A focused options interface.
  *
- * Alias of {@link CliOptions} (Internal type).
+ * Available CLI options:
+ * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
+ * - `--mode-test-url`: Specifies the base URL for testing mode.
+ * - `--log-level <level>`: Specifies the logging level. Valid values are `debug`, `info`, `warn`, and `error`.
+ * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
+ * - `--log-stderr`: Enables terminal logging of channel events
+ * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
+ * - `--http`: Indicates if the `--http` option is enabled.
+ * - `--port`: The port number specified via `--port`
+ * - `--host`: The host name specified via `--host`
+ * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
+ * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
+ * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
+ * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
+ *     specification is a local module name or path.
+ * - `--experimental-<option>`: Registered option in experimental status.
+ *
+ * @note Type is not a 1:1 match for available options.
+ * @note Alias of {@link CliOptions} (Internal type).
  */
 type PfMcpCliOptions = CliOptions;
 
@@ -100,7 +118,18 @@ type DeprecatedCliOptions = PfMcpCliOptions;
 /**
  * Exposed options for programmatic use. A limited `DefaultOptions` interface.
  *
- * Alias of {@link ProgrammaticOptions} (Internal type).
+ * @property [docsPaths] - Local documentation search paths.
+ * @property [name] -
+ * @property [http] - HTTP server options.
+ * @property [isHttp] - Enable HTTP transport.
+ * @property [logging] - Logging configuration.
+ * @property [mode] - Specifies the mode of operation.
+ * @property [modeOptions] -
+ * @property [pluginIsolation] -
+ * @property [toolModules] - Programmatic tool registrations.
+ * @property [version] -
+ *
+ * @note Alias of {@link ProgrammaticOptions} (Internal type).
  */
 type PfMcpOptions = ProgrammaticOptions;
 

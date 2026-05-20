@@ -12,18 +12,6 @@ import { isUrl, portValid } from './server.helpers';
 import { kebabToCamel } from './options.helpers';
 
 /**
- * Utility generic that creates a simple duplicate of the given type `T`.
- *
- * Used in scenarios where creating a plain copy of a type is needed,
- * without introducing additional constraints or removing properties.
- *
- * @template T - The input type to be duplicated.
- */
-type MakeFlat<T> = {
-  [K in keyof T]: T[K];
-} & {};
-
-/**
  * Session defaults, not user-configurable
  */
 type AppSession = {
@@ -82,12 +70,12 @@ type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
  *
  * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type CliOptions = MakeFlat<MakeExperimental<CliOptionsBase, ExperimentalOptions>>;
+type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
 
 /**
  * Core option definitions for CLI use.
  */
-type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'toolModules'> & {
+type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'docsPaths' | 'name' | 'toolModules' | 'version'> & {
   toolModules: string[]
 };
 
@@ -96,7 +84,7 @@ type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'toolModules'> & {
  *
  * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type ProgrammaticOptions = MakeFlat<MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>>;
+type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
 /**
  * Core option definitions for programmatic use.
@@ -177,23 +165,6 @@ const PROGRAMMATIC_OPTIONS = [
  * - Single-dash flags (e.g. `-h`): not supported today; any token starting with the `-` is treated as
  *   a flag, but only `--long-form-option` names are normalized and handled. If/when we accept short
  *   flags, parsing will need to be adjusted. Or we could also review adding in a package to handle args.
- *
- * Available options:
- * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
- * - `--mode-test-url`: Specifies the base URL for testing mode.
- * - `--log-level <level>`: Specifies the logging level. Valid values are `debug`, `info`, `warn`, and `error`.
- * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
- * - `--log-stderr`: Enables terminal logging of channel events
- * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
- * - `--http`: Indicates if the `--http` option is enabled.
- * - `--port`: The port number specified via `--port`
- * - `--host`: The host name specified via `--host`
- * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
- * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
- * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
- * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
- *     specification is a local module name or path.
- * - `--experimental-<option>`: Registered option in experimental status.
  *
  * @note Review removing `programmatic` mode from this function path.
  *
@@ -490,7 +461,6 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type MakeExperimental,
-  type MakeFlat,
   type ParsedOptions,
   type ProgrammaticOptions
 };
