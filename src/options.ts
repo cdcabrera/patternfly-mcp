@@ -58,7 +58,7 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
 /**
  * Keys on {@link ProgrammaticOptions} that may be enabled via experimental surfaces.
  */
-type ExperimentalOptionKey = keyof ProgrammaticOptions;
+type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
 
 /**
  * Options parsed from CLI arguments. Exposed to the consumer/user.
@@ -68,16 +68,9 @@ type ExperimentalOptionKey = keyof ProgrammaticOptions;
  *     to 'strict' when external tools are requested, otherwise 'none'.
  * - `toolModules` is limited to a list of file entries
  */
-type CliOptions = MakeExperimental<(Omit<ProgrammaticOptions, 'toolModules'> & {
+type CliOptions = MakeExperimental<(Omit<ProgrammaticOptionsBase, 'toolModules'> & {
   toolModules: string[]
 }), ExperimentalOptions>;
-
-/**
- * Available experimental options.
- *
- * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
- */
-type ExperimentalOptions = never;
 
 /**
  * Option overrides parsed for programmatic use. Exposed to the consumer/user.
@@ -85,7 +78,12 @@ type ExperimentalOptions = never;
  * @see {@link DefaultOptions} for base types.
  * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type ProgrammaticOptions = MakeExperimental<{
+type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
+
+/**
+ * Core option definitions for programmatic use.
+ */
+type ProgrammaticOptionsBase = {
   mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
   http?: Partial<HttpOptions> | undefined;
@@ -96,7 +94,14 @@ type ProgrammaticOptions = MakeExperimental<{
   docsPaths?: DefaultOptions['docsPaths'] | undefined;
   name?: string | undefined;
   version?: string | undefined;
-}, ExperimentalOptions>;
+};
+
+/**
+ * Available experimental options.
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ */
+type ExperimentalOptions = never;
 
 /**
  * Options currently in experimental status for consumers.
@@ -104,7 +109,7 @@ type ProgrammaticOptions = MakeExperimental<{
  * @note Add experimental options for consumer use.
  * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
  * 2. Then add the internal key name
- *    - to `type ProgrammaticOptions`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
+ *    - to `type ProgrammaticOptionsBase`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
  *    - to `type ExperimentalOptions` (e.g., `type ExperimentalOptions = 'loremIpsum' | 'dolorSit`)
  *    - to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<ExperimentalOptionKey>(['loremIpsum'])`)
  * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
