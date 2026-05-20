@@ -52,7 +52,7 @@ const defineOption = <const C extends boolean, const E extends boolean = false>(
  *
  * To expose options for consumer use:
  *    1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), declare your type.
- *    2. Then add the internal key name to `OPTIONS_REGISTRY`.
+ *    2. Then add the internal key name to `SET_OPTIONS`.
  *    3. If the option is available for CLI, update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
  *    4. Finally, the option would be exposed as
  *       - `cli` as `--experimental-[lorem-ipsum]` (if available)
@@ -82,21 +82,21 @@ const SET_OPTIONS = {
 /**
  * See {@link SET_OPTIONS}
  */
-type OptionsRegistry = typeof SET_OPTIONS;
+type SetOptions = typeof SET_OPTIONS;
 
 /**
  * See {@link SET_OPTIONS}
  */
 type ProgrammaticOptionsBase = {
-  -readonly [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'] | undefined;
+  -readonly [K in keyof SetOptions]?: SetOptions[K]['_type'] | undefined;
 };
 
 /**
  * See {@link SET_OPTIONS}
  */
 type CliOptionsBase = {
-  -readonly [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]?:
-  K extends 'toolModules' ? string[] | undefined : OptionsRegistry[K]['_type'] | undefined
+  -readonly [K in keyof SetOptions as SetOptions[K]['cli'] extends true ? K : never]?:
+  K extends 'toolModules' ? string[] | undefined : SetOptions[K]['_type'] | undefined
 };
 
 /**
@@ -112,7 +112,7 @@ type MakeExperimental<T, K extends string = never> = T & {
  * See {@link SET_OPTIONS}
  */
 type ExperimentalOptions = keyof {
-  [K in keyof OptionsRegistry as OptionsRegistry[K]['experimental'] extends true ? K : never]: unknown
+  [K in keyof SetOptions as SetOptions[K]['experimental'] extends true ? K : never]: unknown
 } & string;
 
 /**
@@ -128,7 +128,7 @@ type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, Experimenta
 /**
  * See {@link SET_OPTIONS}
  */
-type ExperimentalOptionKey = keyof OptionsRegistry & string;
+type ExperimentalOptionKey = keyof SetOptions & string;
 
 /**
  * Experimental options list.
@@ -157,7 +157,7 @@ const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
  *
  * @generated See {@link SET_OPTIONS}
  */
-const PROGRAMMATIC_OPTIONS = Object.keys(SET_OPTIONS) as ReadonlyArray<keyof OptionsRegistry>;
+const PROGRAMMATIC_OPTIONS = Object.keys(SET_OPTIONS) as ReadonlyArray<keyof SetOptions>;
 
 export {
   EXPERIMENTAL_CLI_OPTIONS,
@@ -172,7 +172,7 @@ export {
   type ExperimentalOptionKey,
   type GlobalOptions,
   type MakeExperimental,
-  type OptionsRegistry,
   type ProgrammaticOptions,
-  type ProgrammaticOptionsBase
+  type ProgrammaticOptionsBase,
+  type SetOptions
 };
