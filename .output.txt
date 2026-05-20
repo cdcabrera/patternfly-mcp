@@ -1,0 +1,270 @@
+src/cli.ts:import packageJson from '../package.json';
+src/cli.ts:import { getNodeMajorVersion } from './options.helpers';
+src/cli.ts:  let main: typeof import('./index').main;
+src/cli.ts:    const module = await import('./index');
+src/index.ts:import {
+src/index.ts:import { parseCliOptions, parseProgrammaticOptions } from './options.parser';
+src/index.ts:import { getSessionOptions, setOptions, runWithSession } from './options.context';
+src/index.ts:import {
+src/index.ts:import {
+src/index.ts: * import { start } from '@patternfly/patternfly-mcp';
+src/index.ts: * import { start } from '@patternfly/patternfly-mcp';
+src/index.ts: * import { subscribe, unsubscribe } from 'node:diagnostics_channel';
+src/index.ts: * import { start, createMcpTool } from '@patternfly/patternfly-mcp';
+src/index.ts: * import { start, createMcpTool } from '@patternfly/patternfly-mcp';
+src/logger.ts:import { channel, unsubscribe, subscribe } from 'node:diagnostics_channel';
+src/logger.ts:import { inspect } from 'node:util';
+src/logger.ts:import { type LoggingSession } from './options.defaults';
+src/logger.ts:import { getLoggerOptions } from './options.context';
+src/mcpSdk.ts:import {
+src/mcpSdk.ts:import { type GlobalOptions } from './options';
+src/mcpSdk.ts:import { listAllCombinations, listIncrementalCombinations, splitUri } from './server.helpers';
+src/options.assertions.ts:import { z } from 'zod';
+src/options.assertions.ts:import { mcpAssert } from './server.assertions';
+src/options.context.ts:import { AsyncLocalStorage } from 'node:async_hooks';
+src/options.context.ts:import { randomUUID } from 'node:crypto';
+src/options.context.ts:import {
+src/options.context.ts:import {
+src/options.context.ts:import { mergeObjects, freezeObject, isPlainObject, hashCode } from './server.helpers';
+src/options.context.ts:import { assertProtocol } from './options.assertions';
+src/options.defaults.ts:import { basename, resolve } from 'node:path';
+src/options.defaults.ts:import { pathToFileURL } from 'node:url';
+src/options.defaults.ts:import packageJson from '../package.json';
+src/options.defaults.ts:import { type ToolModule } from './server.toolsUser';
+src/options.defaults.ts:import { getNodeMajorVersion } from './options.helpers';
+src/options.experimental.ts:import {
+src/options.parser.ts:import {
+src/options.parser.ts:import { type LogLevel, logSeverity } from './logger';
+src/options.parser.ts:import { isUrl, portValid } from './server.helpers';
+src/options.parser.ts:import { kebabToCamel } from './options.helpers';
+src/options.registry.ts:import { type McpToolCreator, type McpResourceCreator } from './mcpSdk';
+src/options.registry.ts:import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
+src/options.registry.ts:import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
+src/options.registry.ts:import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
+src/options.registry.ts:import { patternFlyContextResource } from './resource.patternFlyContext';
+src/options.registry.ts:import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
+src/options.registry.ts:import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
+src/options.registry.ts:import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
+src/options.registry.ts:import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
+src/options.tools.ts:import { type GlobalOptions } from './options';
+src/options.ts:import {
+src/patternFly.getResources.ts:import {
+src/patternFly.getResources.ts:import { memo } from './server.caching';
+src/patternFly.getResources.ts:import { DEFAULT_OPTIONS } from './options.defaults';
+src/patternFly.getResources.ts:import {
+src/patternFly.getResources.ts:import { log, formatUnknownError } from './logger';
+src/patternFly.getResources.ts:import {
+src/patternFly.getResources.ts:import {
+src/patternFly.getResources.ts: * @returns PatternFly documentation catalog JSON, or fallback catalog if import fails.
+src/patternFly.getResources.ts:      docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
+src/patternFly.getResources.ts:      docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+src/patternFly.getResources.ts:    log.debug(`Failed to import docs catalog '#docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
+src/patternFly.helpers.ts:import semver, { type SemVer } from 'semver';
+src/patternFly.helpers.ts:import { getOptions } from './options.context';
+src/patternFly.helpers.ts:import { type PatternFlyOptions } from './options.defaults';
+src/patternFly.helpers.ts:import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
+src/patternFly.helpers.ts:import { fuzzySearch } from './server.search';
+src/patternFly.helpers.ts:import { memo } from './server.caching';
+src/patternFly.search.ts:import { fuzzySearch, type FuzzySearch, type FuzzySearchResult } from './server.search';
+src/patternFly.search.ts:import { memo } from './server.caching';
+src/patternFly.search.ts:import { DEFAULT_OPTIONS } from './options.defaults';
+src/patternFly.search.ts:import {
+src/patternFly.search.ts:import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
+src/resource.helpers.ts:import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
+src/resource.helpers.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/resource.patternFlyComponentsIndex.ts:import {
+src/resource.patternFlyComponentsIndex.ts:import { type McpResource } from './mcpSdk';
+src/resource.patternFlyComponentsIndex.ts:import { memo } from './server.caching';
+src/resource.patternFlyComponentsIndex.ts:import { buildSearchString, stringJoin } from './server.helpers';
+src/resource.patternFlyComponentsIndex.ts:import { assertInput, assertInputStringLength } from './server.assertions';
+src/resource.patternFlyComponentsIndex.ts:import { getOptions, runWithOptions } from './options.context';
+src/resource.patternFlyComponentsIndex.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/resource.patternFlyComponentsIndex.ts:import { getPatternFlyMcpResources } from './patternFly.getResources';
+src/resource.patternFlyComponentsIndex.ts:import { filterPatternFly } from './patternFly.search';
+src/resource.patternFlyComponentsIndex.ts:import {
+src/resource.patternFlyComponentsIndex.ts:import { paramCompletion } from './resource.helpers';
+src/resource.patternFlyContext.ts:import { type McpResource } from './mcpSdk';
+src/resource.patternFlyContext.ts:import { stringJoin } from './server.helpers';
+src/resource.patternFlyContext.ts:import { getOptions, runWithOptions } from './options.context';
+src/resource.patternFlyDocsIndex.ts:import {
+src/resource.patternFlyDocsIndex.ts:import { type McpResource } from './mcpSdk';
+src/resource.patternFlyDocsIndex.ts:import { memo } from './server.caching';
+src/resource.patternFlyDocsIndex.ts:import { buildSearchString, stringJoin } from './server.helpers';
+src/resource.patternFlyDocsIndex.ts:import { assertInput, assertInputStringLength } from './server.assertions';
+src/resource.patternFlyDocsIndex.ts:import { getOptions, runWithOptions } from './options.context';
+src/resource.patternFlyDocsIndex.ts:import { getPatternFlyMcpResources } from './patternFly.getResources';
+src/resource.patternFlyDocsIndex.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/resource.patternFlyDocsIndex.ts:import { filterPatternFly } from './patternFly.search';
+src/resource.patternFlyDocsIndex.ts:import { paramCompletion } from './resource.helpers';
+src/resource.patternFlyDocsIndex.ts: * @note It's important to keep lists focused and concise, avoid listing all resources.
+src/resource.patternFlyDocsTemplate.ts:import {
+src/resource.patternFlyDocsTemplate.ts:import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+src/resource.patternFlyDocsTemplate.ts:import { type McpResource } from './mcpSdk';
+src/resource.patternFlyDocsTemplate.ts:import { processDocsFunction } from './server.getResources';
+src/resource.patternFlyDocsTemplate.ts:import { stringJoin } from './server.helpers';
+src/resource.patternFlyDocsTemplate.ts:import { assertInput, assertInputStringLength } from './server.assertions';
+src/resource.patternFlyDocsTemplate.ts:import { getOptions, runWithOptions } from './options.context';
+src/resource.patternFlyDocsTemplate.ts:import { getPatternFlyMcpResources } from './patternFly.getResources';
+src/resource.patternFlyDocsTemplate.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/resource.patternFlyDocsTemplate.ts:import { filterPatternFly } from './patternFly.search';
+src/resource.patternFlyDocsTemplate.ts:import {
+src/resource.patternFlySchemasIndex.ts:import {
+src/resource.patternFlySchemasIndex.ts:import { type McpResource } from './mcpSdk';
+src/resource.patternFlySchemasIndex.ts:import { memo } from './server.caching';
+src/resource.patternFlySchemasIndex.ts:import { stringJoin } from './server.helpers';
+src/resource.patternFlySchemasIndex.ts:import { assertInput, assertInputStringLength } from './server.assertions';
+src/resource.patternFlySchemasIndex.ts:import { getOptions, runWithOptions } from './options.context';
+src/resource.patternFlySchemasIndex.ts:import { getPatternFlyMcpResources } from './patternFly.getResources';
+src/resource.patternFlySchemasIndex.ts:import { type PatternFlyListResourceResult } from './resource.patternFlyDocsIndex';
+src/resource.patternFlySchemasIndex.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/resource.patternFlySchemasIndex.ts:import { filterPatternFly } from './patternFly.search';
+src/resource.patternFlySchemasIndex.ts:import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
+src/resource.patternFlySchemasTemplate.ts:import {
+src/resource.patternFlySchemasTemplate.ts:import { type McpResource } from './mcpSdk';
+src/resource.patternFlySchemasTemplate.ts:import { memo } from './server.caching';
+src/resource.patternFlySchemasTemplate.ts:import { assertInput, assertInputStringLength } from './server.assertions';
+src/resource.patternFlySchemasTemplate.ts:import { getOptions, runWithOptions } from './options.context';
+src/resource.patternFlySchemasTemplate.ts:import { filterPatternFly } from './patternFly.search';
+src/resource.patternFlySchemasTemplate.ts:import {
+src/resource.patternFlySchemasTemplate.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/resource.patternFlySchemasTemplate.ts:import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
+src/resource.patternFlySchemasTemplate.ts:import { type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
+src/resource.patternFlySchemasTemplate.ts:import { paramCompletion } from './resource.helpers';
+src/server.assertions.ts:import assert from 'node:assert';
+src/server.assertions.ts:import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+src/server.assertions.ts:import { isWhitelistedUrl, stringJoin } from './server.helpers';
+src/server.assertions.ts:import { DEFAULT_OPTIONS, type WhitelistUrl } from './options.defaults';
+src/server.caching.ts:import { generateHash, isPromise } from './server.helpers';
+src/server.caching.ts:import { log } from './logger';
+src/server.getResources.ts:import { readFile } from 'node:fs/promises';
+src/server.getResources.ts:import { accessSync } from 'node:fs';
+src/server.getResources.ts:import { isAbsolute, normalize, resolve, dirname, join, parse, sep } from 'node:path';
+src/server.getResources.ts:import semver, { type SemVer } from 'semver';
+src/server.getResources.ts:import { getOptions } from './options.context';
+src/server.getResources.ts:import { DEFAULT_OPTIONS } from './options.defaults';
+src/server.getResources.ts:import { memo } from './server.caching';
+src/server.getResources.ts:import { normalizeString } from './server.search';
+src/server.getResources.ts:import { isUrl, isPath } from './server.helpers';
+src/server.getResources.ts:import { log, formatUnknownError } from './logger';
+src/server.helpers.ts:import { createHash, type BinaryToTextEncoding } from 'node:crypto';
+src/server.helpers.ts:import { extname, sep } from 'node:path';
+src/server.helpers.ts:import { type WhitelistUrl } from './options.defaults';
+src/server.http.ts:import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+src/server.http.ts:import { type Socket } from 'node:net';
+src/server.http.ts:import { execSync } from 'node:child_process';
+src/server.http.ts:import { platform } from 'node:os';
+src/server.http.ts:import { randomUUID } from 'node:crypto';
+src/server.http.ts:import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+src/server.http.ts:import { StreamableHTTPServerTransport, type StreamableHTTPServerTransportOptions } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+src/server.http.ts:import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+src/server.http.ts:import { portToPid } from 'pid-port';
+src/server.http.ts:import { getOptions } from './options.context';
+src/server.http.ts:import { log } from './logger';
+src/server.http.ts:import { portValid } from './server.helpers';
+src/server.logger.ts:import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+src/server.logger.ts:import { type LoggingLevel } from '@modelcontextprotocol/sdk/types.js';
+src/server.logger.ts:import { getLoggerOptions } from './options.context';
+src/server.logger.ts:import { DEFAULT_OPTIONS, type LoggingSession } from './options.defaults';
+src/server.logger.ts:import { createLogger, log, logSeverity, subscribeToChannel, type LogEvent, type LogLevel, type Unsubscribe } from './logger';
+src/server.logger.ts:import { memo } from './server.caching';
+src/server.resourceMeta.ts:import {
+src/server.resourceMeta.ts:import {
+src/server.resourceMeta.ts:import {
+src/server.resourceMeta.ts:import { getOptions, runWithOptions } from './options.context';
+src/server.resources.ts:import { type McpResourceCreator } from './mcpSdk';
+src/server.resources.ts:import { type AppSession, type GlobalOptions } from './options';
+src/server.resources.ts:import { getOptions, getSessionOptions } from './options.context';
+src/server.resources.ts:import { log } from './logger';
+src/server.schema.ts:import { z, fromJSONSchema, toJSONSchema } from 'zod';
+src/server.schema.ts:import { isPlainObject } from './server.helpers';
+src/server.search.ts:import { distance, closest } from 'fastest-levenshtein';
+src/server.search.ts:import { memo } from './server.caching';
+src/server.stats.ts:import {
+src/server.stats.ts:import { type HttpServerHandle } from './server.http';
+src/server.stats.ts:import { publish, type StatReport } from './stats';
+src/server.stats.ts:import { type StatsSession } from './options.defaults';
+src/server.tools.ts:import { spawn, type ChildProcess } from 'node:child_process';
+src/server.tools.ts:import { realpathSync } from 'node:fs';
+src/server.tools.ts:import { fileURLToPath } from 'node:url';
+src/server.tools.ts:import { dirname } from 'node:path';
+src/server.tools.ts:import { z } from 'zod';
+src/server.tools.ts:import { type AppSession, type GlobalOptions } from './options';
+src/server.tools.ts:import { type McpToolCreator } from './mcpSdk';
+src/server.tools.ts:import { log, formatUnknownError } from './logger';
+src/server.tools.ts:import {
+src/server.tools.ts:import { getOptions, getSessionOptions } from './options.context';
+src/server.tools.ts:import { setToolOptions } from './options.tools';
+src/server.tools.ts:import { normalizeTools, sanitizeStaticToolName, type NormalizedToolEntry } from './server.toolsUser';
+src/server.tools.ts:import { jsonSchemaToZod, normalizeInputSchema } from './server.schema';
+src/server.tools.ts:      // Pattern: ESM/CJS import issues
+src/server.tools.ts:        /Cannot use import statement outside a module/i.test(line) ||
+src/server.tools.ts:          log.warn('Tools Host import error. Ensure external tools are ESM (no raw .ts) and resolvable.\nFor local files, prefer a file:// URL.');
+src/server.tools.ts: * - See `package.json` import path for entry parameter.
+src/server.tools.ts:    const entryUrl = import.meta.resolve('#toolsHost');
+src/server.tools.ts:    log.debug(`Failed to import.meta.resolve Tools Host entry '#toolsHost': ${formatUnknownError(error)}`);
+src/server.tools.ts:    // Using top-level import instead of dynamic import for better performance
+src/server.toolsHost.ts:import {
+src/server.toolsHost.ts:import { resolveExternalCreators } from './server.toolsHostCreator';
+src/server.toolsHost.ts:import { DEFAULT_OPTIONS } from './options.defaults';
+src/server.toolsHost.ts:import { type ToolOptions } from './options.tools';
+src/server.toolsHost.ts:import { type McpTool, type McpToolCreator } from './mcpSdk';
+src/server.toolsHost.ts:import {
+src/server.toolsHost.ts:import { isPlainObject } from './server.helpers';
+src/server.toolsHost.ts:      const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
+src/server.toolsHost.ts:      errors.push(`Failed import: ${spec}: ${String((error as Error)?.message || error)}`);
+src/server.toolsHostCreator.ts:import { type McpTool, type McpToolCreator } from './mcpSdk';
+src/server.toolsIpc.ts:import { type ChildProcess } from 'node:child_process';
+src/server.toolsIpc.ts:import { randomUUID } from 'node:crypto';
+src/server.toolsIpc.ts:import { type ToolOptions } from './options.tools';
+src/server.toolsUser.ts:import { fileURLToPath, pathToFileURL } from 'node:url';
+src/server.toolsUser.ts:import { dirname, isAbsolute, resolve } from 'node:path';
+src/server.toolsUser.ts:import { isPath, isPlainObject, isReferenceLike, isUrl } from './server.helpers';
+src/server.toolsUser.ts:import { type McpTool } from './mcpSdk';
+src/server.toolsUser.ts:import { type GlobalOptions } from './options';
+src/server.toolsUser.ts:import { memo } from './server.caching';
+src/server.toolsUser.ts:import { DEFAULT_OPTIONS } from './options.defaults';
+src/server.toolsUser.ts:import { type ToolOptions } from './options.tools';
+src/server.toolsUser.ts:import { formatUnknownError } from './logger';
+src/server.toolsUser.ts:import { normalizeInputSchema } from './server.schema';
+src/server.toolsUser.ts:      const url = import.meta.resolve(config, contextUrl);
+src/server.toolsUser.ts:  // Note: http(s) module specs are not supported by Node import and will surface as load warnings in the child.
+src/server.ts:import {
+src/server.ts:import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+src/server.ts:import {
+src/server.ts:import { setMetaResources } from './server.resourceMeta';
+src/server.ts:import { startHttpTransport, type HttpServerHandle } from './server.http';
+src/server.ts:import { memo } from './server.caching';
+src/server.ts:import { log, type LogEvent } from './logger';
+src/server.ts:import { createServerLogger } from './server.logger';
+src/server.ts:import { composeTools, sendToolsHostShutdown } from './server.tools';
+src/server.ts:import { composeResources } from './server.resources';
+src/server.ts:import { type GlobalOptions } from './options';
+src/server.ts:import {
+src/server.ts:import { DEFAULT_OPTIONS } from './options.defaults';
+src/server.ts:import { isZodRawShape, isZodSchema } from './server.schema';
+src/server.ts:import { isPlainObject, timeoutFunction } from './server.helpers';
+src/server.ts:import { createServerStats, type Stats } from './server.stats';
+src/server.ts:import { stat, type StatReport } from './stats';
+src/server.ts:import { builtinTools, builtinResources } from './options.registry';
+src/stats.ts:import { channel } from 'node:diagnostics_channel';
+src/stats.ts:import { getStatsOptions } from './options.context';
+src/stats.ts:import { type StatsSession } from './options.defaults';
+src/tool.patternFlyDocs.ts:import { z } from 'zod';
+src/tool.patternFlyDocs.ts:import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+src/tool.patternFlyDocs.ts:import { type McpTool } from './mcpSdk';
+src/tool.patternFlyDocs.ts:import { processDocsFunction, type ProcessedDoc } from './server.getResources';
+src/tool.patternFlyDocs.ts:import { stringJoin } from './server.helpers';
+src/tool.patternFlyDocs.ts:import {
+src/tool.patternFlyDocs.ts:import { getOptions } from './options.context';
+src/tool.patternFlyDocs.ts:import { searchPatternFly } from './patternFly.search';
+src/tool.patternFlyDocs.ts:import { getPatternFlyMcpResources, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
+src/tool.patternFlyDocs.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+src/tool.searchPatternFlyDocs.ts:import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+src/tool.searchPatternFlyDocs.ts:import { z } from 'zod';
+src/tool.searchPatternFlyDocs.ts:import { type McpTool } from './mcpSdk';
+src/tool.searchPatternFlyDocs.ts:import { stringJoin } from './server.helpers';
+src/tool.searchPatternFlyDocs.ts:import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
+src/tool.searchPatternFlyDocs.ts:import { getOptions } from './options.context';
+src/tool.searchPatternFlyDocs.ts:import { searchPatternFly } from './patternFly.search';
+src/tool.searchPatternFlyDocs.ts:import { getPatternFlyMcpResources } from './patternFly.getResources';
+src/tool.searchPatternFlyDocs.ts:import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';

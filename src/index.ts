@@ -1,11 +1,10 @@
 import {
   EXPERIMENTAL_OPTIONS,
-  parseCliOptions,
-  parseProgrammaticOptions,
   type CliOptions,
   type ExperimentalOptions,
   type ProgrammaticOptions
 } from './options';
+import { parseCliOptions, parseProgrammaticOptions } from './options.parser';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
   runServer,
