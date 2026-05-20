@@ -19,7 +19,7 @@ describe('setOptions', () => {
     const options = setOptions({
       pluginIsolation: 'none',
       experimental: ['pluginIsolation']
-    } as any, registry);
+    }, registry);
 
     expect(options.experimental).toContain('pluginIsolation');
   });
@@ -29,7 +29,7 @@ describe('setOptions', () => {
     const options = setOptions({
       pluginIsolation: DEFAULT_OPTIONS.pluginIsolation,
       experimental: ['pluginIsolation']
-    } as any, registry);
+    }, registry);
 
     expect(options.experimental).not.toContain('pluginIsolation');
   });
