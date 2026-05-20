@@ -5,160 +5,124 @@ import {
   type ModeOptions
 } from './options.defaults';
 
-/**
- * Session defaults, not user-configurable
- */
+type GlobalOptions = DefaultOptions;
+
 type AppSession = {
   readonly sessionId: string;
   readonly publicSessionId: string;
-  readonly channelName: string
+  readonly channelName: string;
 };
 
 /**
- * Global options, convenience type for `DefaultOptions`
+ * Metadata for an option.
+ * The `_type` property is a phantom property used only for TypeScript inference.
  */
-type GlobalOptions = DefaultOptions;
+interface OptionMeta<T> {
+  readonly cli: boolean;
+  readonly experimental?: boolean;
+  readonly _type?: T;
+}
 
 /**
- * Convert specific options towards an "experimental-" prefix for consumers.
+ * Helper to define an option with full type inference.
  *
- * @example Use
- * type ExperimentalKeys = 'loremOption' | 'ipsumOption';
- *
- * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, ExperimentalKeys>;
- *
- * // Or directly
- * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, 'loremOption' | 'ipsumOption'>;
- *
- * // Or allow empty
- * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
+ * @param meta
+ * @param meta.cli
+ * @param meta.experimental
+ */
+const defineOption = <T>(meta: { cli: boolean; experimental?: boolean }): OptionMeta<T> =>
+  meta as OptionMeta<T>;
+
+const OPTIONS_REGISTRY = {
+  mode: defineOption<DefaultOptions['mode']>({ cli: true }),
+  modeOptions: defineOption<Partial<ModeOptions>>({ cli: true }),
+  http: defineOption<Partial<HttpOptions>>({ cli: true }),
+  isHttp: defineOption<boolean>({ cli: true }),
+  logging: defineOption<Partial<LoggingOptions>>({ cli: true }),
+  pluginIsolation: defineOption<DefaultOptions['pluginIsolation']>({ cli: true }),
+  toolModules: defineOption<DefaultOptions['toolModules']>({ cli: true }),
+  docsPaths: defineOption<DefaultOptions['docsPaths']>({ cli: false }),
+  name: defineOption<string>({ cli: false }),
+  version: defineOption<string>({ cli: false })
+} as const;
+
+type OptionsRegistry = typeof OPTIONS_REGISTRY;
+
+/**
+ * @generated
+ */
+type ProgrammaticOptionsBase = {
+  [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'];
+};
+
+/**
+ * @generated
+ */
+type CliOptionsBase = {
+  [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]:
+  K extends 'toolModules' ? string[] : OptionsRegistry[K]['_type']
+};
+
+/**
+ * @generated
  */
 type MakeExperimental<T, K extends string = never> = T & {
   [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P]
 };
 
 /**
- * Keys on {@link ProgrammaticOptions} that may be enabled via experimental surfaces.
+ * @generated
  */
-type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
+type ExperimentalOptions = keyof {
+  [K in keyof OptionsRegistry as OptionsRegistry[K]['experimental'] extends true ? K : never]: unknown
+} & string;
 
 /**
- * Options parsed from CLI arguments. Exposed to the consumer/user.
- *
- * @note Option behaviors:
- * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
- *     to 'strict' when external tools are requested, otherwise 'none'.
- * - `toolModules` is limited to a list of file entries
- *
- * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
+ * @generated
  */
 type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
 
 /**
- * Core option definitions for CLI use.
- */
-type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'docsPaths' | 'name' | 'toolModules' | 'version'> & {
-  toolModules: string[]
-};
-
-/**
- * Option overrides parsed for programmatic use. Exposed to the consumer/user.
- *
- * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
+ * @generated
  */
 type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
 /**
- * Core option definitions for programmatic use.
+ * @generated
  */
-type ProgrammaticOptionsBase = {
-  mode?: DefaultOptions['mode'] | undefined;
-  modeOptions?: Partial<ModeOptions> | undefined;
-  http?: Partial<HttpOptions> | undefined;
-  isHttp?: boolean | undefined;
-  logging?: Partial<LoggingOptions> | undefined;
-  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
-  toolModules?: DefaultOptions['toolModules'] | undefined;
-  docsPaths?: DefaultOptions['docsPaths'] | undefined;
-  name?: string | undefined;
-  version?: string | undefined;
-};
+type ExperimentalOptionKey = keyof OptionsRegistry & string;
 
 /**
- * Registry for internal experimental features.
- *
- * To expose experimental options for consumer use:
- *   1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), declare your type.
- *   2. Then add the internal key name
- *      - to `type ProgrammaticOptionsBase`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
- *      - to `EXPERIMENTAL_REGISTRY` (e.g., `{ someFeature: { cli: true } }`)
- *   3. If the option is available for CLI, update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
- *   4. Finally, the option would be exposed as
- *      - `cli` as `--experimental-[the option]` (if available)
- *      - `programmatic` as `experimental[TheOption]`
- *
- * @example Add a new experimental internal key
- * const EXPERIMENTAL_REGISTRY = {
- *   someFeature: { cli: true }
- * } ...
- */
-const EXPERIMENTAL_REGISTRY = {
-  // Add new experimental keys here.
-} as const satisfies Partial<Record<ExperimentalOptionKey, { cli: boolean }>>;
-
-/**
- * Available experimental options.
- * - Apply `never` if there are no experimental options.
- *
- * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
- */
-type ExperimentalOptions = keyof typeof EXPERIMENTAL_REGISTRY;
-
-/**
- * Options currently in experimental status for consumers.
- *
- * @generated See {@link EXPERIMENTAL_REGISTRY} for source.
+ * @generated
  */
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
-  Object.keys(EXPERIMENTAL_REGISTRY) as ExperimentalOptionKey[]
-);
-
-/**
- * Available experimental CLI options.
- *
- * @generated See {@link EXPERIMENTAL_REGISTRY} for source.
- */
-const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
-  Object.entries(EXPERIMENTAL_REGISTRY)
-    .filter(([_, config]) => (config as { cli: boolean }).cli)
+  Object.entries(OPTIONS_REGISTRY)
+    .filter(([_, meta]) => meta.experimental)
     .map(([key]) => key as ExperimentalOptionKey)
 );
 
 /**
- * List of configurable options that can be used programmatically.
- *
- * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
+ * @generated
  */
-const PROGRAMMATIC_OPTIONS = [
-  'mode',
-  'modeOptions',
-  'http',
-  'isHttp',
-  'logging',
-  'pluginIsolation',
-  'toolModules',
-  'docsPaths',
-  'name',
-  'version',
-  ...EXPERIMENTAL_OPTIONS
-] as const;
+const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
+  Object.entries(OPTIONS_REGISTRY)
+    .filter(([_, meta]) => meta.experimental && meta.cli)
+    .map(([key]) => key as ExperimentalOptionKey)
+);
+
+/**
+ * @generated
+ */
+const PROGRAMMATIC_OPTIONS = Object.keys(OPTIONS_REGISTRY) as ReadonlyArray<keyof OptionsRegistry>;
 
 export {
   EXPERIMENTAL_CLI_OPTIONS,
   EXPERIMENTAL_OPTIONS,
+  OPTIONS_REGISTRY,
   PROGRAMMATIC_OPTIONS,
   type AppSession,
   type CliOptions,
+  type CliOptionsBase,
   type DefaultOptions,
   type ExperimentalOptions,
   type ExperimentalOptionKey,
@@ -166,5 +130,7 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type MakeExperimental,
-  type ProgrammaticOptions
+  type OptionsRegistry,
+  type ProgrammaticOptions,
+  type ProgrammaticOptionsBase
 };
