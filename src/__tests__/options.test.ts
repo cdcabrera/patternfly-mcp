@@ -248,7 +248,7 @@ describe('parseCliOptions', () => {
       expectedExperimental: ['pluginIsolation', 'customOption']
     },
     {
-      description: 'drop orphan value after direct flag registred as experimental',
+      description: 'drop orphan value after direct flag registered as experimental',
       args: ['node', 'cli', '--log-level', 'warn', '--plugin-isolation', 'strict'],
       experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({
