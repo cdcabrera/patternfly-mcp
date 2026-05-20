@@ -55,7 +55,7 @@ const defineOption = <const C extends boolean, const E extends boolean = false>(
  * Set options for consumers.
  *
  * To expose options for consumer use:
- *    1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), declare your type.
+ *    1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), add your type.
  *    2. Then add the internal key name to `SET_OPTIONS`.
  *    3. If the option is available for CLI, update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
  *    4. Finally, the option would be exposed as

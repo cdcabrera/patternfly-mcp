@@ -78,7 +78,9 @@ type PfMcpStats = ServerStats;
 type PfMcpStatReport = ServerStatReport;
 
 /**
- * Available experimental options.
+ * Available experimental option keys (without prefixes).
+ *
+ * @see {@link MakeExperimental} for how these are transformed for consumers.
  */
 type PfMcpExperimentalOptions = ExperimentalOptions;
 
