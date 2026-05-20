@@ -36,7 +36,7 @@ Complete guide to using the PatternFly MCP Server for development including CLI 
 - **Programmatic API** - The server can also be used programmatically with options. See [Programmatic usage](#programmatic-usage) for more details.
 - **Tool plugins** - The server can load external tool plugins at startup. See [MCP tool plugins](#mcp-tool-plugins) for more details.
 - **Test Mode** - When `--mode test` is used, the server redirects resource requests to the URL provided by `--mode-test-url`, enabling E2E testing without local filesystem access.
-- **Experimental options** - When an option is registered as experimental, use `--experimental-<kebab-name>` on the CLI, for programmatic options use `experimental<PascalName>`.
+- **Experimental options** - When an option is registered as experimental, use `--experimental-<lorem-ipsum>` on the CLI, for programmatic options use `experimental<LoremIpsum>`.
 
 ### Basic use scenarios
 
