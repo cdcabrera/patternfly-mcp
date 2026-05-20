@@ -74,7 +74,7 @@ const parseCliOptions = (
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
     isHttp: false,
-    toolModules: [],
+    toolModules: []
   };
 
   // Aggregate tokens and values
@@ -201,17 +201,19 @@ const parseCliOptions = (
 
       case '--tool':
         if (value) {
+          result.toolModules ??= [];
+          const modules = result.toolModules;
+
           value.split(',').forEach(spec => {
             const trimmed = spec.trim();
 
             if (trimmed && !seenTools.has(trimmed)) {
               seenTools.add(trimmed);
-              result.toolModules.push(trimmed);
+              modules.push(trimmed);
             }
           });
         }
         break;
-
       case '--plugin-isolation':
         if (value) {
           const val = value.toLowerCase();
