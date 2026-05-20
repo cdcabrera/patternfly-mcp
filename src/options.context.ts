@@ -111,7 +111,7 @@ const setOptions = (
   options?: ProgrammaticOptions & { experimental?: string[] },
   experimentalOptions: Set<ExperimentalOptionKey> = new Set()
 ): GlobalOptions => {
-  const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
+  const base = mergeObjects(DEFAULT_OPTIONS as GlobalOptions, options, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 
@@ -120,7 +120,7 @@ const setOptions = (
 
   const baseExperimental = base.experimental.filter(
     option => experimentalOptions.has(option as ExperimentalOptionKey) &&
-      base?.[option as keyof GlobalOptions] !== DEFAULT_OPTIONS?.[option as keyof GlobalOptions]
+      base[option as ExperimentalOptionKey] !== (DEFAULT_OPTIONS as unknown as Record<string, unknown>)[option]
   );
 
   const merged: GlobalOptions = {

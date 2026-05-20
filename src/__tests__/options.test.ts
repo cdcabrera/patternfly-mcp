@@ -27,11 +27,14 @@ describe('SET_OPTIONS', () => {
     expect(Array.from(EXPERIMENTAL_CLI_OPTIONS)).toEqual(expected);
   });
 
-  it('should ensure every registered option has a corresponding default value', () => {
+  it('should ensure every registered option has a default or is experimental', () => {
     const defaultKeys = Object.keys(DEFAULT_OPTIONS);
 
-    Object.keys(SET_OPTIONS).forEach(key => {
-      expect(defaultKeys).toContain(key);
+    Object.entries(SET_OPTIONS).forEach(([key, meta]) => {
+      const hasDefault = defaultKeys.includes(key);
+
+      // Allow experimental options to bypass the default requirement
+      expect(hasDefault || meta.experimental).toBe(true);
     });
   });
 

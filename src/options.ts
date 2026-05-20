@@ -8,7 +8,7 @@ import {
 /**
  * Global options, convenience type for `DefaultOptions`
  */
-type GlobalOptions = DefaultOptions;
+type GlobalOptions = DefaultOptions & ProgrammaticOptionsBase;
 
 /**
  * Session defaults, not user-configurable
@@ -53,8 +53,8 @@ const defineOption = <const C extends boolean, const E extends boolean = false>(
  * Set options for consumers.
  *
  * To expose options for consumer use:
- *    1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), add your type.
- *    2. Then add the internal key name to `SET_OPTIONS`.
+ *    1. Then add the internal key name to `SET_OPTIONS`.
+ *    2. Add a key to the `options.defaults` sans-experimental prefix (internal key name), add your type.
  *    3. If the option is available for CLI, update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
  *    4. Finally, the option would be exposed as
  *       - `cli` as `--experimental-[lorem-ipsum]` (if available)
@@ -67,6 +67,10 @@ const defineOption = <const C extends boolean, const E extends boolean = false>(
  *     experimental: false
  *   })<DefaultOptions['loremIpsum']>(),
  * }
+ *
+ * @note Currently, we do account for scenarios where an option may be set for consumers
+ * but there is no corresponding internal on `options.defaults`, but the flag has to be
+ * `experimental`.
  */
 const SET_OPTIONS = {
   mode: defineOption({ cli: true })<DefaultOptions['mode']>(),
@@ -78,7 +82,8 @@ const SET_OPTIONS = {
   docsPaths: defineOption({ cli: false })<DefaultOptions['docsPaths']>(),
   name: defineOption({ cli: false })<string>(),
   toolModules: defineOption({ cli: true })<DefaultOptions['toolModules']>(),
-  version: defineOption({ cli: false })<string>()
+  version: defineOption({ cli: false })<string>(),
+  frank: defineOption({ cli: true, experimental: true })<boolean>()
 } as const;
 
 /**

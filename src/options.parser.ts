@@ -318,13 +318,13 @@ const parseProgrammaticOptions = (
         usedExperimental.set(internalKey, options[key as keyof ProgrammaticOptions]);
       }
 
-      delete (updatedOptions as Record<string, unknown>)[key];
+      delete (updatedOptions as unknown as Record<string, unknown>)[key];
     }
   }
 
   // Apply experimental values, if any
   usedExperimental.forEach((value, key) => {
-    (updatedOptions as Record<string, unknown>)[key] = value;
+    (updatedOptions as unknown as Record<string, unknown>)[key] = value;
   });
 
   return {
