@@ -5,8 +5,7 @@ import {
   type DefaultOptions,
   type LoggingOptions,
   type HttpOptions,
-  type ModeOptions,
-  type ToolModule
+  type ModeOptions
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
@@ -26,8 +25,17 @@ type AppSession = {
  */
 type GlobalOptions = DefaultOptions;
 
-/** Keys on {@link DefaultOptions} that may be enabled via experimental surfaces. */
-type ExperimentalOptionKey = keyof DefaultOptions;
+/**
+ * Parsed options return type. Separates regular options from experimental ones.
+ *
+ * @template T Passed standard options
+ * @property {T} options - Standard parsed options
+ * @property experimentalOptions - Experimental options
+ */
+type ParsedOptions<T> = {
+  options: T;
+  experimentalOptions: string[];
+};
 
 /**
  * Convert specific options towards an "experimental-" prefix for consumers.
@@ -48,46 +56,94 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
 };
 
 /**
- * Option overrides parsed from programmatic use. Exposed to the consumer/user.
+ * Keys on {@link ProgrammaticOptions} that may be enabled via experimental surfaces.
  */
-type ProgrammaticOptions = Partial<
-  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
-> & {
-  mode?: DefaultOptions['mode'] | undefined;
-  modeOptions?: Partial<ModeOptions> | undefined;
-  http?: Partial<HttpOptions>;
-  logging?: Partial<LoggingOptions>;
-  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
-  toolModules?: ToolModule | ToolModule[] | undefined;
-};
+type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
 
 /**
  * Options parsed from CLI arguments. Exposed to the consumer/user.
  *
- * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
- * to 'strict' when external tools are requested, otherwise 'none'.
+ * @note Option behaviors:
+ * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
+ *     to 'strict' when external tools are requested, otherwise 'none'.
+ * - `toolModules` is limited to a list of file entries
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type CliOptions = {
-  mode?: DefaultOptions['mode'];
-  modeOptions?: Partial<ModeOptions>;
-  http?: Partial<HttpOptions>;
-  isHttp: boolean;
-  logging: Partial<LoggingOptions>;
-  toolModules: string[];
-  pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
+type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
+
+/**
+ * Core option definitions for CLI use.
+ */
+type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'docsPaths' | 'name' | 'toolModules' | 'version'> & {
+  toolModules: string[]
 };
 
 /**
- * Parsed options return type. Separates regular options from experimental ones.
+ * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
- * @template T Passed standard options
- * @property {T} options - Standard parsed options
- * @property experimentalOptions - Experimental options
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type ParsedOptions<T> = {
-  options: T;
-  experimentalOptions: string[];
+type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
+
+/**
+ * Core option definitions for programmatic use.
+ */
+type ProgrammaticOptionsBase = {
+  mode?: DefaultOptions['mode'] | undefined;
+  modeOptions?: Partial<ModeOptions> | undefined;
+  http?: Partial<HttpOptions> | undefined;
+  isHttp?: boolean | undefined;
+  logging?: Partial<LoggingOptions> | undefined;
+  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
+  toolModules?: DefaultOptions['toolModules'] | undefined;
+  docsPaths?: DefaultOptions['docsPaths'] | undefined;
+  name?: string | undefined;
+  version?: string | undefined;
 };
+
+/**
+ * Available experimental options.
+ * - Apply `never` if there are no experimental options.
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ */
+type ExperimentalOptions = never;
+
+/**
+ * Options currently in experimental status for consumers.
+ *
+ * @note Add experimental options for consumer use.
+ * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
+ * 2. Then add the internal key name
+ *    - to `type ProgrammaticOptionsBase`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
+ *    - to `type ExperimentalOptions` (e.g., `type ExperimentalOptions = 'loremIpsum' | 'dolorSit`)
+ *    - to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<ExperimentalOptionKey>(['loremIpsum'])`)
+ * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
+ * 4. Finally, the option should be exposed as
+ *    - `cli` as `--experimental-[the option]`
+ *    - `programmatic` as `experimental[TheOption]`
+ */
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>([]);
+
+/**
+ * List of configurable options that can be used programmatically.
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ */
+const PROGRAMMATIC_OPTIONS = [
+  'mode',
+  'modeOptions',
+  'http',
+  'isHttp',
+  'logging',
+  'pluginIsolation',
+  'toolModules',
+  'docsPaths',
+  'name',
+  'version',
+  ...EXPERIMENTAL_OPTIONS
+] as const;
 
 /**
  * Additive parse for CLI configuration options.
@@ -110,41 +166,25 @@ type ParsedOptions<T> = {
  *   a flag, but only `--long-form-option` names are normalized and handled. If/when we accept short
  *   flags, parsing will need to be adjusted. Or we could also review adding in a package to handle args.
  *
- * Available options:
- * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
- * - `--mode-test-url`: Specifies the base URL for testing mode.
- * - `--log-level <level>`: Specifies the logging level. Valid values are `debug`, `info`, `warn`, and `error`.
- * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
- * - `--log-stderr`: Enables terminal logging of channel events
- * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
- * - `--http`: Indicates if the `--http` option is enabled.
- * - `--port`: The port number specified via `--port`
- * - `--host`: The host name specified via `--host`
- * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
- * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
- * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
- * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
- *     specification is a local module name or path.
- * - `--experimental-<option>`: Registered option in experimental status.
- *
  * @note Review removing `programmatic` mode from this function path.
  *
  * @note Experimental Flags:
  * The parser strips experimental prefixes from options to allow an internal match
  * against standard option names. Actual validation and warning issuance for experimental
- * features are handled in `setOptions` to ensure both CLI and programmatic options
- * align.
+ * features are handled in `runServer` to ensure availability for server logs.
  *
  * @param argv - User-defined CLI configuration options (overrides).
- * @param experimentalOptions - The available experimental options set used for filtering
  * @param [settings] - Function settings
+ * @param [settings.experimentalOptions] - The available experimental options set used for filtering
  * @param [settings.experimentalPrefix] - String prefix for experimental flags filtering.
  * @returns An object with parsed command-line options and used experimental options.
  */
 const parseCliOptions = (
   argv: string[],
-  experimentalOptions: Set<ExperimentalOptionKey> = new Set(),
-  { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
+  {
+    experimentalOptions = EXPERIMENTAL_OPTIONS,
+    experimentalPrefix = 'experimental'
+  }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
 ): ParsedOptions<CliOptions> => {
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
@@ -223,6 +263,7 @@ const parseCliOptions = (
 
       case '--log-level':
         if (value && logSeverity(value.toLowerCase() as LogLevel) > -1) {
+          result.logging ??= {};
           result.logging.level = value.toLowerCase() as LoggingOptions['level'];
         }
         break;
@@ -232,10 +273,12 @@ const parseCliOptions = (
         break;
 
       case '--log-stderr':
+        result.logging ??= {};
         result.logging.stderr = true;
         break;
 
       case '--log-protocol':
+        result.logging ??= {};
         result.logging.protocol = true;
         break;
 
@@ -313,6 +356,7 @@ const parseCliOptions = (
 
   // --verbose wins over --log-level regardless of argv order
   if (isVerbose) {
+    result.logging ??= {};
     result.logging.level = 'debug';
   }
 
@@ -332,7 +376,7 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (Object.hasOwn(DEFAULT_OPTIONS, key)) {
+    if ((PROGRAMMATIC_OPTIONS as readonly string[]).includes(key)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
@@ -356,15 +400,17 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
  * align.
  *
  * @param options - User-defined configuration options (overrides).
- * @param experimentalOptions - The available experimental options set used for filtering
  * @param [settings] - Function settings
+ * @param [settings.experimentalOptions] - The available experimental options set used for filtering
  * @param [settings.experimentalPrefix] - String prefix for experimental flags filtering.
  * @returns An object with options and used experimental options.
  */
 const parseProgrammaticOptions = (
   options: ProgrammaticOptions,
-  experimentalOptions: Set<ExperimentalOptionKey> = new Set(),
-  { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
+  {
+    experimentalOptions = EXPERIMENTAL_OPTIONS,
+    experimentalPrefix = 'experimental'
+  }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
   const updatedOptions: ProgrammaticOptions = { ...options };
   const usedExperimental = new Map<ExperimentalOptionKey, unknown>();
@@ -402,11 +448,13 @@ const parseProgrammaticOptions = (
 };
 
 export {
+  EXPERIMENTAL_OPTIONS,
   parseCliOptions,
   parseProgrammaticOptions,
   type AppSession,
   type CliOptions,
   type DefaultOptions,
+  type ExperimentalOptions,
   type ExperimentalOptionKey,
   type GlobalOptions,
   type HttpOptions,

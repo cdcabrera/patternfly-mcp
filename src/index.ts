@@ -1,10 +1,10 @@
 import {
+  EXPERIMENTAL_OPTIONS,
   parseCliOptions,
   parseProgrammaticOptions,
   type CliOptions,
-  type ExperimentalOptionKey,
-  type ProgrammaticOptions,
-  type MakeExperimental
+  type ExperimentalOptions,
+  type ProgrammaticOptions
 } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
@@ -79,11 +79,34 @@ type PfMcpStats = ServerStats;
 type PfMcpStatReport = ServerStatReport;
 
 /**
- * Exposed options for CLI use. A focused options interface.
- *
- * Alias of {@link CliOptions} (Internal type).
+ * Available experimental options.
  */
-type PfMcpCliOptions = MakeExperimental<CliOptions, PfMcpExperimentalOptions>;
+type PfMcpExperimentalOptions = ExperimentalOptions;
+
+/**
+ * Exposed options for "programmatic" CLI use. A focused options interface.
+ *
+ * Available CLI options:
+ * - `--mode <mode>`: Specifies the mode of operation. Valid values are `cli`, `programmatic`, and `test`.
+ * - `--mode-test-url`: Specifies the base URL for testing mode.
+ * - `--log-level <level>`: Specifies the logging level. Valid values are `debug`, `info`, `warn`, and `error`.
+ * - `--verbose`: Log all severity levels. Shortcut to set the logging level to `debug`.
+ * - `--log-stderr`: Enables terminal logging of channel events
+ * - `--log-protocol`: Enables MCP protocol logging. Forward server logs to MCP clients (requires advertising `capabilities.logging`).
+ * - `--http`: Indicates if the `--http` option is enabled.
+ * - `--port`: The port number specified via `--port`
+ * - `--host`: The host name specified via `--host`
+ * - `--allowed-origins`: List of allowed origins derived from the `--allowed-origins` parameter, split by commas, or undefined if not provided.
+ * - `--allowed-hosts`: List of allowed hosts derived from the `--allowed-hosts` parameter, split by commas, or undefined if not provided.
+ * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
+ * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
+ *     specification is a local module name or path.
+ *
+ * @note Type is not a 1:1 match for available options.
+ * @note Experimental options, when avialable appear as `--experimental-<option-example>`.
+ * @note Alias of {@link CliOptions} (Internal type).
+ */
+type PfMcpCliOptions = CliOptions;
 
 /**
  * `CliOptions` renamed to `PfMcpCliOptions` to avoid conflicts with internal naming.
@@ -95,9 +118,21 @@ type DeprecatedCliOptions = PfMcpCliOptions;
 /**
  * Exposed options for programmatic use. A limited `DefaultOptions` interface.
  *
- * Alias of {@link ProgrammaticOptions} (Internal type).
+ * @property [docsPaths] - Local documentation search paths.
+ * @property [name] - The server display name.
+ * @property [http] - HTTP server options.
+ * @property [isHttp] - Enable HTTP transport.
+ * @property [logging] - Logging configuration.
+ * @property [mode] - Specifies the mode of operation.
+ * @property [modeOptions] - Options for `mode`. Currently, limited to the base URL for `test` mode.
+ * @property [pluginIsolation] - Isolation preset for external tools-as-plugins.
+ * @property [toolModules] - Programmatic tool registrations.
+ * @property [version] - The server display version.
+ *
+ * @note Experimental options, when avialable appear as `experimental<OptionExample>`.
+ * @note Alias of {@link ProgrammaticOptions} (Internal type).
  */
-type PfMcpOptions = MakeExperimental<ProgrammaticOptions, PfMcpExperimentalOptions>;
+type PfMcpOptions = ProgrammaticOptions;
 
 /**
  * Additional settings for programmatic control.
@@ -109,26 +144,6 @@ type PfMcpOptions = MakeExperimental<ProgrammaticOptions, PfMcpExperimentalOptio
  *     - When `mode=test`, defaults to `false`.
  */
 type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
-
-/**
- * Available experimental options.
- */
-type PfMcpExperimentalOptions = never;
-
-/**
- * Options currently in experimental status.
- *
- * @note Add experimental options for consumer use.
- * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
- * 2. Update the typings on `options` for `CliOptions` and `ProgrammaticOptions` for what gets exposed to consumers.
- * 3. Add the internal key name here, to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<keyof DefaultOptions>(['loremIpsum'])`)
- * 4. Add the internal key name to `PfMcpExperimentalOptions` (e.g., `type PfMcpExperimentalOptions = 'loremIpsum' | 'dolorSit`)
- *
- * After that the option should be exposed as
- * - `cli` as `--experimental-[the option]`
- * - `programmatic` as `experimental[TheOption]`
- */
-const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>([]);
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides
@@ -211,8 +226,8 @@ const main = async (
   };
 
   try {
-    const { options: cliOptions, experimentalOptions: cliExp } = parseCliOptions(process.argv, EXPERIMENTAL_OPTIONS);
-    const { options: progOptions, experimentalOptions: progExp } = parseProgrammaticOptions(options, EXPERIMENTAL_OPTIONS);
+    const { options: cliOptions, experimentalOptions: cliExp } = parseCliOptions(process.argv);
+    const { options: progOptions, experimentalOptions: progExp } = parseProgrammaticOptions(options);
 
     // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
     mergedOptions = setOptions({

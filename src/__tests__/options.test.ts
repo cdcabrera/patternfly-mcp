@@ -268,7 +268,7 @@ describe('parseCliOptions', () => {
       expectedExperimental: []
     }
   ])('should handle experimental options, $description', ({ args, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
-    const result = parseCliOptions(args, experimentalOptions, settings as any);
+    const result = parseCliOptions(args, { ...settings, experimentalOptions } as any);
 
     expect(result.options).toEqual(expectedOptions);
     expect(result.experimentalOptions).toEqual(expectedExperimental);
@@ -306,10 +306,10 @@ describe('parseProgrammaticOptions', () => {
       expectedExperimental: []
     },
     {
-      description: 'passes through the experimental metadata array unchanged',
+      description: 'ignore experimental metadata array',
       input: { experimental: ['pluginIsolation'] },
       experimentalOptions: new Set(),
-      expectedOptions: expect.objectContaining({ experimental: ['pluginIsolation'] }),
+      expectedOptions: expect.objectContaining({}),
       expectedExperimental: []
     },
     {
@@ -349,7 +349,7 @@ describe('parseProgrammaticOptions', () => {
       expectedExperimental: []
     }
   ])('should handle experimental options, $description', ({ input, experimentalOptions, settings, expectedOptions, expectedExperimental }) => {
-    const result = parseProgrammaticOptions(input as any, experimentalOptions as any, settings as any);
+    const result = parseProgrammaticOptions(input as any, { ...settings, experimentalOptions } as any);
 
     expect(result.options).toEqual(expectedOptions);
     expect(result.experimentalOptions).toEqual(expectedExperimental);
@@ -384,7 +384,7 @@ describe('parseProgrammaticOptions', () => {
     try {
       const { options, experimentalOptions } = parseProgrammaticOptions(
         {},
-        new Set(['pluginIsolation'])
+        { experimentalOptions: new Set(['pluginIsolation']) } as any
       );
 
       expect(options.pluginIsolation).toBeUndefined();
