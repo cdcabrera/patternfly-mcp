@@ -51,7 +51,7 @@ const OPTIONS_REGISTRY = {
   modeOptions: defineOption({ cli: true })<Partial<ModeOptions>>(),
   http: defineOption({ cli: true })<Partial<HttpOptions>>(),
   isHttp: defineOption({ cli: true })<boolean>(),
-  logging: defineOption({ cli: true })<LoggingOptions>(),
+  logging: defineOption({ cli: true })<Partial<LoggingOptions>>(),
   pluginIsolation: defineOption({ cli: true })<DefaultOptions['pluginIsolation']>(),
   docsPaths: defineOption({ cli: false })<DefaultOptions['docsPaths']>(),
   name: defineOption({ cli: false })<string>(),
