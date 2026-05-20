@@ -55,7 +55,7 @@ const OPTIONS_REGISTRY = {
   pluginIsolation: defineOption({ cli: true })<DefaultOptions['pluginIsolation']>(),
   docsPaths: defineOption({ cli: false })<DefaultOptions['docsPaths']>(),
   name: defineOption({ cli: false })<string>(),
-  toolModules: defineOption({ cli: true })<any>(),
+  toolModules: defineOption({ cli: true })<DefaultOptions['toolModules']>(),
   version: defineOption({ cli: false })<string>()
 } as const;
 
@@ -117,7 +117,7 @@ type ExperimentalOptionKey = keyof OptionsRegistry & string;
  */
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(OPTIONS_REGISTRY)
-    .filter(([_, meta]) => (meta as any).experimental)
+    .filter(([_, meta]) => meta.experimental)
     .map(([key]) => key as ExperimentalOptionKey)
 );
 
@@ -128,7 +128,7 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
  */
 const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(OPTIONS_REGISTRY)
-    .filter(([_, meta]) => (meta as any).experimental && (meta as any).cli)
+    .filter(([_, meta]) => meta.experimental && meta.cli)
     .map(([key]) => key as ExperimentalOptionKey)
 );
 
