@@ -51,8 +51,8 @@ type ParsedOptions<T> = {
  * // Or allow empty
  * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
  */
-type MakeExperimental<T, K extends keyof T = never> = T & {
-  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
+type MakeExperimental<T, K extends string = never> = T & {
+  [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P]
 };
 
 /**
@@ -68,7 +68,7 @@ type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
  *     to 'strict' when external tools are requested, otherwise 'none'.
  * - `toolModules` is limited to a list of file entries
  *
- * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
  */
 type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
 
@@ -82,7 +82,7 @@ type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'docsPaths' | 'name' | 'tool
 /**
  * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
- * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
  */
 type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
@@ -103,33 +103,59 @@ type ProgrammaticOptionsBase = {
 };
 
 /**
+ * Registry for internal experimental features.
+ *
+ * To expose experimental options for consumer use:
+ *   1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), declare your type.
+ *   2. Then add the internal key name
+ *      - to `type ProgrammaticOptionsBase`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
+ *      - to `EXPERIMENTAL_REGISTRY` (e.g., `{ someFeature: { cli: true } }`)
+ *   3. If the option is available for CLI, update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
+ *   4. Finally, the option would be exposed as
+ *      - `cli` as `--experimental-[the option]` (if available)
+ *      - `programmatic` as `experimental[TheOption]`
+ *
+ * @example Add a new experimental internal key
+ * const EXPERIMENTAL_REGISTRY = {
+ *   someFeature: { cli: true }
+ * } ...
+ */
+const EXPERIMENTAL_REGISTRY = {
+  // Add new experimental keys here.
+} as const satisfies Partial<Record<ExperimentalOptionKey, { cli: boolean }>>;
+
+/**
  * Available experimental options.
  * - Apply `never` if there are no experimental options.
  *
- * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
  */
-type ExperimentalOptions = never;
+type ExperimentalOptions = keyof typeof EXPERIMENTAL_REGISTRY;
 
 /**
  * Options currently in experimental status for consumers.
  *
- * @note Add experimental options for consumer use.
- * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
- * 2. Then add the internal key name
- *    - to `type ProgrammaticOptionsBase`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
- *    - to `type ExperimentalOptions` (e.g., `type ExperimentalOptions = 'loremIpsum' | 'dolorSit`)
- *    - to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<ExperimentalOptionKey>(['loremIpsum'])`)
- * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
- * 4. Finally, the option should be exposed as
- *    - `cli` as `--experimental-[the option]`
- *    - `programmatic` as `experimental[TheOption]`
+ * @generated See {@link EXPERIMENTAL_REGISTRY} for source.
  */
-const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>([]);
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
+  Object.keys(EXPERIMENTAL_REGISTRY) as ExperimentalOptionKey[]
+);
+
+/**
+ * Available experimental CLI options.
+ *
+ * @generated See {@link EXPERIMENTAL_REGISTRY} for source.
+ */
+const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
+  Object.entries(EXPERIMENTAL_REGISTRY)
+    .filter(([_, config]) => (config as { cli: boolean }).cli)
+    .map(([key]) => key as ExperimentalOptionKey)
+);
 
 /**
  * List of configurable options that can be used programmatically.
  *
- * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ * @see {@link EXPERIMENTAL_REGISTRY} for directions on adding experimental flags.
  */
 const PROGRAMMATIC_OPTIONS = [
   'mode',
@@ -182,7 +208,7 @@ const PROGRAMMATIC_OPTIONS = [
 const parseCliOptions = (
   argv: string[],
   {
-    experimentalOptions = EXPERIMENTAL_OPTIONS,
+    experimentalOptions = EXPERIMENTAL_CLI_OPTIONS,
     experimentalPrefix = 'experimental'
   }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
 ): ParsedOptions<CliOptions> => {
