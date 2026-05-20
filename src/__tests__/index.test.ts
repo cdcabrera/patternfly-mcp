@@ -1,5 +1,6 @@
 import { main, start, type PfMcpOptions, type PfMcpCliOptions } from '../index';
-import { parseCliOptions, parseProgrammaticOptions, type GlobalOptions } from '../options';
+import { type GlobalOptions } from '../options';
+import { parseCliOptions, parseProgrammaticOptions } from '../options.parser';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 import { getSessionOptions, runWithSession, setOptions } from '../options.context';
 import { runServer } from '../server';
