@@ -25,7 +25,7 @@ type AppSession = {
  * Configuration metadata for an option.
  * The `_type` property is a phantom property used only for TypeScript inference.
  *
- * @internal See {@link defineOption}
+ * @internal See {@link defineOption} and {@link MakeExperimental}
  */
 interface OptionConfig<T, C extends boolean = boolean, E extends boolean = boolean> {
   readonly cli: C;
@@ -89,14 +89,14 @@ const SET_OPTIONS = {
 type SetOptions = typeof SET_OPTIONS;
 
 /**
- * See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 type ProgrammaticOptionsBase = {
   -readonly [K in keyof SetOptions]?: SetOptions[K]['_type'] | undefined;
 };
 
 /**
- * See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 type CliOptionsBase = {
   -readonly [K in keyof SetOptions as SetOptions[K]['cli'] extends true ? K : never]?:
