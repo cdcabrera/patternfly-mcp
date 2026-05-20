@@ -171,8 +171,7 @@ const PROGRAMMATIC_OPTIONS = [
  * @note Experimental Flags:
  * The parser strips experimental prefixes from options to allow an internal match
  * against standard option names. Actual validation and warning issuance for experimental
- * features are handled in `setOptions` to ensure both CLI and programmatic options
- * align.
+ * features are handled in `runServer` to ensure availability for server logs.
  *
  * @param argv - User-defined CLI configuration options (overrides).
  * @param [settings] - Function settings

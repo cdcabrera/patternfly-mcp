@@ -101,9 +101,9 @@ type PfMcpExperimentalOptions = ExperimentalOptions;
  * - `--plugin-isolation <none|strict>`: Isolation preset for external tools-as-plugins.
  * - `--tool <tool-spec>`: Either a repeatable single tool-as-plugin specification or a comma-separated list of tool-as-plugin specifications. Each tool-as-plugin
  *     specification is a local module name or path.
- * - `--experimental-<option>`: Registered option in experimental status.
  *
  * @note Type is not a 1:1 match for available options.
+ * @note Experimental options, when avialable appear as `--experimental-<option-example>`.
  * @note Alias of {@link CliOptions} (Internal type).
  */
 type PfMcpCliOptions = CliOptions;
@@ -119,16 +119,17 @@ type DeprecatedCliOptions = PfMcpCliOptions;
  * Exposed options for programmatic use. A limited `DefaultOptions` interface.
  *
  * @property [docsPaths] - Local documentation search paths.
- * @property [name] -
+ * @property [name] - The server display name.
  * @property [http] - HTTP server options.
  * @property [isHttp] - Enable HTTP transport.
  * @property [logging] - Logging configuration.
  * @property [mode] - Specifies the mode of operation.
- * @property [modeOptions] -
- * @property [pluginIsolation] -
+ * @property [modeOptions] - Options for `mode`. Currently, limited to the base URL for `test` mode.
+ * @property [pluginIsolation] - Isolation preset for external tools-as-plugins.
  * @property [toolModules] - Programmatic tool registrations.
- * @property [version] -
+ * @property [version] - The server display version.
  *
+ * @note Experimental options, when avialable appear as `experimental<OptionExample>`.
  * @note Alias of {@link ProgrammaticOptions} (Internal type).
  */
 type PfMcpOptions = ProgrammaticOptions;
