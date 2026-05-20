@@ -102,7 +102,6 @@ type ExperimentalOptions = never;
  * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
  * 2. Then add the internal key name
  *    - to `type ProgrammaticOptions`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
- *    - to `PROGRAMMATIC_OPTIONS` (e.g., `const PROGRAMMATIC_OPTIONS = ['loremIpsum`...])
  *    - to `type ExperimentalOptions` (e.g., `type ExperimentalOptions = 'loremIpsum' | 'dolorSit`)
  *    - to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<ExperimentalOptionKey>(['loremIpsum'])`)
  * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
@@ -116,7 +115,6 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>([]);
  * List of configurable options that can be used programmatically.
  */
 const PROGRAMMATIC_OPTIONS = [
-  ...EXPERIMENTAL_OPTIONS,
   'mode',
   'modeOptions',
   'http',
@@ -126,7 +124,8 @@ const PROGRAMMATIC_OPTIONS = [
   'toolModules',
   'docsPaths',
   'name',
-  'version'
+  'version',
+  ...EXPERIMENTAL_OPTIONS
 ] as const;
 
 /**
@@ -378,7 +377,7 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (PROGRAMMATIC_OPTIONS.includes(key as keyof ProgrammaticOptions)) {
+    if ((PROGRAMMATIC_OPTIONS as readonly string[]).includes(key)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
