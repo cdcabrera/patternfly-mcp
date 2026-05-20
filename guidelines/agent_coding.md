@@ -98,6 +98,13 @@ export default createMcpTool({
 });
 ```
 
+### 2.4 Experimental Flags
+
+Features in PoC or subject to change must be implemented as experimental flags.
+- **Prefixing**: Users must opt-in via `--experimental-` (CLI) or `experimental` (programmatic) prefixes.
+- **Internal Keys**: Within the codebase, use the non-prefixed key name (e.g., `testLog`).
+- **Implementation**: Follow the [Add experimental flag skill](./skills/add-experimental-flag/SKILL.md).
+
 ## 3. Common Patterns
 
 ### 3.1 Memoization
