@@ -4,7 +4,6 @@ import {
   parseProgrammaticOptions,
   type CliOptions,
   type ExperimentalOptions,
-  type MakeExperimental,
   type ProgrammaticOptions
 } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
@@ -89,7 +88,7 @@ type PfMcpExperimentalOptions = ExperimentalOptions;
  *
  * Alias of {@link CliOptions} (Internal type).
  */
-type PfMcpCliOptions = MakeExperimental<CliOptions, PfMcpExperimentalOptions>;
+type PfMcpCliOptions = CliOptions;
 
 /**
  * `CliOptions` renamed to `PfMcpCliOptions` to avoid conflicts with internal naming.
@@ -103,7 +102,7 @@ type DeprecatedCliOptions = PfMcpCliOptions;
  *
  * Alias of {@link ProgrammaticOptions} (Internal type).
  */
-type PfMcpOptions = MakeExperimental<ProgrammaticOptions, PfMcpExperimentalOptions>;
+type PfMcpOptions = ProgrammaticOptions;
 
 /**
  * Additional settings for programmatic control.

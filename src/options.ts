@@ -68,16 +68,16 @@ type ExperimentalOptionKey = keyof ProgrammaticOptions;
  *     to 'strict' when external tools are requested, otherwise 'none'.
  * - `toolModules` is limited to a list of file entries
  */
-type CliOptions = Omit<ProgrammaticOptions, 'toolModules'> & {
+type CliOptions = MakeExperimental<(Omit<ProgrammaticOptions, 'toolModules'> & {
   toolModules: string[]
-};
+}), ExperimentalOptions>;
 
 /**
  * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
  * @see {@link DefaultOptions}
  */
-type ProgrammaticOptions = {
+type ProgrammaticOptions = MakeExperimental<{
   mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
   http?: Partial<HttpOptions> | undefined;
@@ -88,20 +88,12 @@ type ProgrammaticOptions = {
   docsPaths?: DefaultOptions['docsPaths'] | undefined;
   name?: string | undefined;
   version?: string | undefined;
-  frank?: boolean | undefined;
-};
+}, ExperimentalOptions>;
 
 /**
  * Available experimental options.
  */
 type ExperimentalOptions = never;
-
-/**
- * List of configurable options that can be used programmatically.
- */
-const PROGRAMMATIC_OPTIONS = [
-  'mode', 'modeOptions', 'http', 'isHttp', 'logging', 'pluginIsolation', 'toolModules', 'docsPaths', 'name', 'version', 'frank'
-] as const;
 
 /**
  * Options currently in experimental status for consumers.
@@ -118,7 +110,24 @@ const PROGRAMMATIC_OPTIONS = [
  *    - `cli` as `--experimental-[the option]`
  *    - `programmatic` as `experimental[TheOption]`
  */
-const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>([]);
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>([]);
+
+/**
+ * List of configurable options that can be used programmatically.
+ */
+const PROGRAMMATIC_OPTIONS = [
+  ...EXPERIMENTAL_OPTIONS,
+  'mode',
+  'modeOptions',
+  'http',
+  'isHttp',
+  'logging',
+  'pluginIsolation',
+  'toolModules',
+  'docsPaths',
+  'name',
+  'version'
+] as const;
 
 /**
  * Additive parse for CLI configuration options.
