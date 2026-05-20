@@ -103,11 +103,14 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @note In the future, look at adding a re-validation helper here, and potentially in `runWithOptions`,
  * that aligns with CLI options parsing. We need to account for both CLI and programmatic use.
  *
- * @param {ProgrammaticOptions} [options] - Optional overrides merged with DEFAULT_OPTIONS.
+ * @param {(ProgrammaticOptions & { experimental?: string[] | undefined }) | undefined} [options] - Optional overrides merged with DEFAULT_OPTIONS.
  * @param [experimentalOptions] - The available experimental options set.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
-const setOptions = (options?: ProgrammaticOptions, experimentalOptions: Set<ExperimentalOptionKey> = new Set()): GlobalOptions => {
+const setOptions = (
+  options?: (ProgrammaticOptions & { experimental?: string[] | undefined }) | undefined,
+  experimentalOptions: Set<ExperimentalOptionKey> = new Set()
+): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);

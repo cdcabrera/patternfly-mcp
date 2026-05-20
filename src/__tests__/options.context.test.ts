@@ -19,7 +19,7 @@ describe('setOptions', () => {
     const options = setOptions({
       pluginIsolation: 'none',
       experimental: ['pluginIsolation']
-    }, registry);
+    } as any, registry);
 
     expect(options.experimental).toContain('pluginIsolation');
   });
@@ -29,7 +29,7 @@ describe('setOptions', () => {
     const options = setOptions({
       pluginIsolation: DEFAULT_OPTIONS.pluginIsolation,
       experimental: ['pluginIsolation']
-    }, registry);
+    } as any, registry);
 
     expect(options.experimental).not.toContain('pluginIsolation');
   });
@@ -40,7 +40,7 @@ describe('setOptions', () => {
       resourceMemoOptions: 'gotcha' as any,
       toolMemoOptions: 'really?' as any,
       pluginIsolation: 'fun' as any
-    });
+    } as any);
 
     expect(updatedOptions.logging.protocol).toBe(DEFAULT_OPTIONS.logging.protocol);
     expect(updatedOptions.resourceMemoOptions?.readFile?.expire).toBe(DEFAULT_OPTIONS.resourceMemoOptions?.readFile?.expire);
@@ -49,7 +49,7 @@ describe('setOptions', () => {
   });
 
   it('should ignore null/invalid nested overrides safely', () => {
-    const updatedOptions = setOptions({ logging: null as any, resourceMemoOptions: null as any, pluginIsolation: null as any });
+    const updatedOptions = setOptions({ logging: null as any, resourceMemoOptions: null as any, pluginIsolation: null as any } as any);
 
     expect(typeof updatedOptions.logging.protocol).toBe('boolean');
     expect(updatedOptions.logging.protocol).toBe(DEFAULT_OPTIONS.logging.protocol);

@@ -88,7 +88,7 @@ export const startServer = async (
       transport: 'mcp'
     },
     mode: 'test'
-  };
+  } as PfMcpOptions;
 
   const { host, port } = updatedOptions.http || {};
 

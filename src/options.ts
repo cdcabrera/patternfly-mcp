@@ -42,31 +42,35 @@ type ExperimentalOptionKey = keyof ProgrammaticOptions;
  * // Or allow empty
  * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
  */
-type MakeExperimental<T, K extends keyof T = never> = T & {
-  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
+type MakeExperimental<T, K extends keyof T = never> = {
+  [P in keyof T]: T[P] | undefined;
+} & {
+  [P in K as `experimental${Capitalize<string & P>}`]?: T[P] | undefined;
 };
 
 /**
  * Option overrides parsed from programmatic use. Exposed to the consumer/user.
  */
 type ProgrammaticOptions = {
-  mode?: DefaultOptions['mode'];
-  modeOptions?: Partial<ModeOptions>;
-  http?: Partial<HttpOptions>;
-  isHttp?: boolean;
-  logging?: Partial<LoggingOptions>;
+  mode?: DefaultOptions['mode'] | undefined;
+  modeOptions?: Partial<ModeOptions> | undefined;
+  http?: Partial<HttpOptions> | undefined;
+  isHttp?: boolean | undefined;
+  logging?: Partial<LoggingOptions> | undefined;
   pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
-  toolModules?: DefaultOptions['toolModules'];
-  docsPaths?: DefaultOptions['docsPaths'];
-  name?: string;
-  version?: string;
+  toolModules?: DefaultOptions['toolModules'] | undefined;
+  docsPaths?: DefaultOptions['docsPaths'] | undefined;
+  name?: string | undefined;
+  version?: string | undefined;
 };
 
 /**
  * Options parsed from CLI arguments. Exposed to the consumer/user.
  *
- * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
- * to 'strict' when external tools are requested, otherwise 'none'.
+ * @note Option behaviors:
+ * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
+ *     to 'strict' when external tools are requested, otherwise 'none'.
+ * - `toolModules` is limited to a list of file entries
  */
 type CliOptions = Omit<ProgrammaticOptions, 'toolModules'> & {
   toolModules: string[]
