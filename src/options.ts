@@ -12,6 +12,8 @@ type GlobalOptions = DefaultOptions;
 
 /**
  * Session defaults, not user-configurable
+ *
+ * @internal
  */
 type AppSession = {
   readonly sessionId: string;
@@ -22,6 +24,8 @@ type AppSession = {
 /**
  * Configuration metadata for an option.
  * The `_type` property is a phantom property used only for TypeScript inference.
+ *
+ * @internal See {@link defineOption}
  */
 interface OptionConfig<T, C extends boolean = boolean, E extends boolean = boolean> {
   readonly cli: C;
@@ -80,7 +84,7 @@ const SET_OPTIONS = {
 } as const;
 
 /**
- * See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 type SetOptions = typeof SET_OPTIONS;
 
@@ -126,14 +130,14 @@ type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
 type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
 /**
- * See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 type ExperimentalOptionKey = keyof SetOptions & string;
 
 /**
  * Experimental options list.
  *
- * @generated See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(SET_OPTIONS)
@@ -144,7 +148,7 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
 /**
  * Experimental options list for CLI.
  *
- * @generated See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(SET_OPTIONS)
@@ -155,7 +159,7 @@ const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
 /**
  * Options list for programmatic use.
  *
- * @generated See {@link SET_OPTIONS}
+ * @internal See {@link SET_OPTIONS}
  */
 const PROGRAMMATIC_OPTIONS = Object.keys(SET_OPTIONS) as ReadonlyArray<keyof SetOptions>;
 
