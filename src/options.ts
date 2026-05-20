@@ -12,6 +12,18 @@ import { isUrl, portValid } from './server.helpers';
 import { kebabToCamel } from './options.helpers';
 
 /**
+ * Utility generic that creates a simple duplicate of the given type `T`.
+ *
+ * Used in scenarios where creating a plain copy of a type is needed,
+ * without introducing additional constraints or removing properties.
+ *
+ * @template T - The input type to be duplicated.
+ */
+type MakeFlat<T> = {
+  [K in keyof T]: T[K];
+} & {};
+
+/**
  * Session defaults, not user-configurable
  */
 type AppSession = {
@@ -67,8 +79,10 @@ type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
  * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
  *     to 'strict' when external tools are requested, otherwise 'none'.
  * - `toolModules` is limited to a list of file entries
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
+type CliOptions = MakeFlat<MakeExperimental<CliOptionsBase, ExperimentalOptions>>;
 
 /**
  * Core option definitions for CLI use.
@@ -80,10 +94,9 @@ type CliOptionsBase = Omit<ProgrammaticOptionsBase, 'toolModules'> & {
 /**
  * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
- * @see {@link DefaultOptions} for base types.
  * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
-type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
+type ProgrammaticOptions = MakeFlat<MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>>;
 
 /**
  * Core option definitions for programmatic use.
@@ -477,6 +490,7 @@ export {
   type HttpOptions,
   type LoggingOptions,
   type MakeExperimental,
+  type MakeFlat,
   type ParsedOptions,
   type ProgrammaticOptions
 };
