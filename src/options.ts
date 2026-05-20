@@ -61,6 +61,14 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
 type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
 
 /**
+ * Option overrides parsed for programmatic use. Exposed to the consumer/user.
+ *
+ * @see {@link DefaultOptions} for base types.
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ */
+type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
+
+/**
  * Options parsed from CLI arguments. Exposed to the consumer/user.
  *
  * @note Option behaviors:
@@ -71,14 +79,6 @@ type ExperimentalOptionKey = keyof ProgrammaticOptionsBase;
 type CliOptions = MakeExperimental<(Omit<ProgrammaticOptionsBase, 'toolModules'> & {
   toolModules: string[]
 }), ExperimentalOptions>;
-
-/**
- * Option overrides parsed for programmatic use. Exposed to the consumer/user.
- *
- * @see {@link DefaultOptions} for base types.
- * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
- */
-type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
 /**
  * Core option definitions for programmatic use.
@@ -98,6 +98,7 @@ type ProgrammaticOptionsBase = {
 
 /**
  * Available experimental options.
+ * - Apply `never` if there are no experimental options.
  *
  * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
