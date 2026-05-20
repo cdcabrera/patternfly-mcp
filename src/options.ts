@@ -51,33 +51,32 @@ type ParsedOptions<T> = {
  * // Or allow empty
  * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
  */
-type MakeExperimental<T, K extends keyof T = never> = T & {
+type MakeExperimental<T, K extends keyof T = never> = Omit<T, K> & {
   [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
 };
 
 /**
- * Keys on {@link ProgrammaticOptions} that may be enabled via experimental surfaces.
+ * Options currently in experimental status for consumers.
+ *
+ * @note Add experimental options for consumer use.
+ * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
+ * 2. Then add the internal key name
+ *    - to `EXPERIMENTAL_OPTIONS` (e.g., `const EXPERIMENTAL_OPTIONS = ['loremIpsum'] as const`)
+ * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
+ * 4. Finally, the option should be exposed as
+ *    - `cli` as `--experimental-[the option]`
+ *    - `programmatic` as `experimental[TheOption]`
  */
-type ExperimentalOptionKey = keyof ProgrammaticOptions;
+const EXPERIMENTAL_OPTIONS_ARRAY = [] as const;
 
 /**
- * Options parsed from CLI arguments. Exposed to the consumer/user.
- *
- * @note Option behaviors:
- * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
- *     to 'strict' when external tools are requested, otherwise 'none'.
- * - `toolModules` is limited to a list of file entries
+ * Available experimental options.
  */
-type CliOptions = MakeExperimental<(Omit<ProgrammaticOptions, 'toolModules'> & {
-  toolModules: string[]
-}), ExperimentalOptions>;
+type ExperimentalOptions = (typeof EXPERIMENTAL_OPTIONS_ARRAY)[number];
 
-/**
- * Option overrides parsed for programmatic use. Exposed to the consumer/user.
- *
- * @see {@link DefaultOptions}
- */
-type ProgrammaticOptions = MakeExperimental<{
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>(EXPERIMENTAL_OPTIONS_ARRAY);
+
+type RawProgrammaticOptions = {
   mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
   http?: Partial<HttpOptions> | undefined;
@@ -88,35 +87,37 @@ type ProgrammaticOptions = MakeExperimental<{
   docsPaths?: DefaultOptions['docsPaths'] | undefined;
   name?: string | undefined;
   version?: string | undefined;
-}, ExperimentalOptions>;
+};
 
 /**
- * Available experimental options.
- */
-type ExperimentalOptions = never;
-
-/**
- * Options currently in experimental status for consumers.
+ * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
- * @note Add experimental options for consumer use.
- * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
- * 2. Then add the internal key name
- *    - to `type ProgrammaticOptions`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
- *    - to `PROGRAMMATIC_OPTIONS` (e.g., `const PROGRAMMATIC_OPTIONS = ['loremIpsum`...])
- *    - to `type ExperimentalOptions` (e.g., `type ExperimentalOptions = 'loremIpsum' | 'dolorSit`)
- *    - to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<ExperimentalOptionKey>(['loremIpsum'])`)
- * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
- * 4. Finally, the option should be exposed as
- *    - `cli` as `--experimental-[the option]`
- *    - `programmatic` as `experimental[TheOption]`
+ * @see {@link DefaultOptions}
  */
-const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>([]);
+type ProgrammaticOptions = MakeExperimental<RawProgrammaticOptions, ExperimentalOptions>;
+
+/**
+ * Keys on {@link RawProgrammaticOptions} that may be enabled via experimental surfaces.
+ */
+type ExperimentalOptionKey = keyof RawProgrammaticOptions;
+
+/**
+ * Options parsed from CLI arguments. Exposed to the consumer/user.
+ *
+ * @note Option behaviors:
+ * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
+ *     to 'strict' when external tools are requested, otherwise 'none'.
+ * - `toolModules` is limited to a list of file entries
+ */
+type CliOptions = MakeExperimental<(Omit<RawProgrammaticOptions, 'toolModules'> & {
+  toolModules: string[]
+}), ExperimentalOptions>;
 
 /**
  * List of configurable options that can be used programmatically.
  */
 const PROGRAMMATIC_OPTIONS = [
-  ...EXPERIMENTAL_OPTIONS,
+  ...EXPERIMENTAL_OPTIONS_ARRAY.map(k => `experimental${(k as string).charAt(0).toUpperCase()}${(k as string).slice(1)}` as const),
   'mode',
   'modeOptions',
   'http',
@@ -127,7 +128,7 @@ const PROGRAMMATIC_OPTIONS = [
   'docsPaths',
   'name',
   'version'
-] as const;
+] as unknown as (keyof ProgrammaticOptions)[];
 
 /**
  * Additive parse for CLI configuration options.
@@ -419,7 +420,7 @@ const parseProgrammaticOptions = (
 
   // Sanitize sans-experimental experimental options
   experimentalOptions.forEach(key => {
-    delete updatedOptions[key];
+    delete (updatedOptions as Record<string, unknown>)[key as string];
   });
 
   // Aggregate and remove experimental options, own keys only
