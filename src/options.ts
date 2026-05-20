@@ -75,7 +75,7 @@ type ProgrammaticOptionsBase = {
  * See {@link OPTIONS_REGISTRY}
  */
 type CliOptionsBase = {
-  -readonly [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]:
+  -readonly [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]?:
   K extends 'toolModules' ? string[] : OptionsRegistry[K]['_type']
 };
 

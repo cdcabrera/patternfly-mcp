@@ -75,7 +75,6 @@ const parseCliOptions = (
     logging: { ...DEFAULT_OPTIONS.logging },
     isHttp: false,
     toolModules: [],
-    pluginIsolation: undefined
   };
 
   // Aggregate tokens and values
