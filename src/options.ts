@@ -20,10 +20,10 @@ type AppSession = {
 };
 
 /**
- * Metadata for an option.
+ * Configuration metadata for an option.
  * The `_type` property is a phantom property used only for TypeScript inference.
  */
-interface OptionMeta<T, C extends boolean = boolean, E extends boolean = boolean> {
+interface OptionConfig<T, C extends boolean = boolean, E extends boolean = boolean> {
   readonly cli: C;
   readonly experimental: E;
   readonly _type: T;
@@ -31,22 +31,42 @@ interface OptionMeta<T, C extends boolean = boolean, E extends boolean = boolean
 
 /**
  * Helper to define an option with metadata-first inference.
- * Currying allows 'C' and 'E' to be inferred strictly from the value
+ *
+ * Allows 'C' and 'E' to be inferred strictly from the value
  * without being widened, even when 'T' is provided later.
  *
- * @param meta
- * @param meta.cli
- * @param meta.experimental
+ * @param config - Option configuration
+ * @param config.cli - Required `boolean` indicating CLI availability.
+ * @param config.experimental - Optional `boolean` indicating option is experimental.
  */
 const defineOption = <const C extends boolean, const E extends boolean = false>(
-  meta: { cli: C; experimental?: E }
-) => <T>(): OptionMeta<T, C, E> => ({
-  ...meta,
-  experimental: (meta.experimental ?? false) as E,
+  config: { cli: C; experimental?: E }
+) => <T>(): OptionConfig<T, C, E> => ({
+  ...config,
+  experimental: (config.experimental ?? false) as E,
   _type: undefined as unknown as T
-} as OptionMeta<T, C, E>);
+} as OptionConfig<T, C, E>);
 
-const OPTIONS_REGISTRY = {
+/**
+ * Set options for consumers.
+ *
+ * To expose options for consumer use:
+ *    1. Add a key to the `options.defaults` sans-experimental prefix (internal key name), declare your type.
+ *    2. Then add the internal key name to `OPTIONS_REGISTRY`.
+ *    3. If the option is available for CLI, update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
+ *    4. Finally, the option would be exposed as
+ *       - `cli` as `--experimental-[lorem-ipsum]` (if available)
+ *       - `programmatic` as `experimental[LoremIpsum]`
+ *
+ * @example Add a new option:
+ * {
+ *   loremIpsum: defineOption({
+ *     cli: true,
+ *     experimental: false
+ *   })<DefaultOptions['loremIpsum']>(),
+ * }
+ */
+const SET_OPTIONS = {
   mode: defineOption({ cli: true })<DefaultOptions['mode']>(),
   modeOptions: defineOption({ cli: true })<Partial<ModeOptions>>(),
   http: defineOption({ cli: true })<Partial<HttpOptions>>(),
@@ -60,19 +80,19 @@ const OPTIONS_REGISTRY = {
 } as const;
 
 /**
- * See {@link OPTIONS_REGISTRY}
+ * See {@link SET_OPTIONS}
  */
-type OptionsRegistry = typeof OPTIONS_REGISTRY;
+type OptionsRegistry = typeof SET_OPTIONS;
 
 /**
- * See {@link OPTIONS_REGISTRY}
+ * See {@link SET_OPTIONS}
  */
 type ProgrammaticOptionsBase = {
   -readonly [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'] | undefined;
 };
 
 /**
- * See {@link OPTIONS_REGISTRY}
+ * See {@link SET_OPTIONS}
  */
 type CliOptionsBase = {
   -readonly [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]?:
@@ -82,14 +102,14 @@ type CliOptionsBase = {
 /**
  * Convert specific options towards an "experimental-" prefix for consumers.
  *
- * See {@link OPTIONS_REGISTRY}
+ * See {@link SET_OPTIONS}
  */
 type MakeExperimental<T, K extends string = never> = T & {
   -readonly [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P] | undefined
 };
 
 /**
- * See {@link OPTIONS_REGISTRY}
+ * See {@link SET_OPTIONS}
  */
 type ExperimentalOptions = keyof {
   [K in keyof OptionsRegistry as OptionsRegistry[K]['experimental'] extends true ? K : never]: unknown
@@ -106,17 +126,17 @@ type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
 type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
 /**
- * See {@link OPTIONS_REGISTRY}
+ * See {@link SET_OPTIONS}
  */
 type ExperimentalOptionKey = keyof OptionsRegistry & string;
 
 /**
  * Experimental options list.
  *
- * @generated See {@link OPTIONS_REGISTRY}
+ * @generated See {@link SET_OPTIONS}
  */
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
-  Object.entries(OPTIONS_REGISTRY)
+  Object.entries(SET_OPTIONS)
     .filter(([_, meta]) => meta.experimental)
     .map(([key]) => key as ExperimentalOptionKey)
 );
@@ -124,10 +144,10 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
 /**
  * Experimental options list for CLI.
  *
- * @generated See {@link OPTIONS_REGISTRY}
+ * @generated See {@link SET_OPTIONS}
  */
 const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
-  Object.entries(OPTIONS_REGISTRY)
+  Object.entries(SET_OPTIONS)
     .filter(([_, meta]) => meta.experimental && meta.cli)
     .map(([key]) => key as ExperimentalOptionKey)
 );
@@ -135,15 +155,15 @@ const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
 /**
  * Options list for programmatic use.
  *
- * @generated See {@link OPTIONS_REGISTRY}
+ * @generated See {@link SET_OPTIONS}
  */
-const PROGRAMMATIC_OPTIONS = Object.keys(OPTIONS_REGISTRY) as ReadonlyArray<keyof OptionsRegistry>;
+const PROGRAMMATIC_OPTIONS = Object.keys(SET_OPTIONS) as ReadonlyArray<keyof OptionsRegistry>;
 
 export {
   EXPERIMENTAL_CLI_OPTIONS,
   EXPERIMENTAL_OPTIONS,
-  OPTIONS_REGISTRY,
   PROGRAMMATIC_OPTIONS,
+  SET_OPTIONS,
   type AppSession,
   type CliOptions,
   type CliOptionsBase,
