@@ -73,9 +73,17 @@ type CliOptions = MakeExperimental<(Omit<ProgrammaticOptions, 'toolModules'> & {
 }), ExperimentalOptions>;
 
 /**
+ * Available experimental options.
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
+ */
+type ExperimentalOptions = never;
+
+/**
  * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
- * @see {@link DefaultOptions}
+ * @see {@link DefaultOptions} for base types.
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
 type ProgrammaticOptions = MakeExperimental<{
   mode?: DefaultOptions['mode'] | undefined;
@@ -89,11 +97,6 @@ type ProgrammaticOptions = MakeExperimental<{
   name?: string | undefined;
   version?: string | undefined;
 }, ExperimentalOptions>;
-
-/**
- * Available experimental options.
- */
-type ExperimentalOptions = never;
 
 /**
  * Options currently in experimental status for consumers.
@@ -113,6 +116,8 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>([]);
 
 /**
  * List of configurable options that can be used programmatically.
+ *
+ * @see {@link EXPERIMENTAL_OPTIONS} for directions on adding experimental flags.
  */
 const PROGRAMMATIC_OPTIONS = [
   'mode',
