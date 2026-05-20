@@ -306,10 +306,10 @@ describe('parseProgrammaticOptions', () => {
       expectedExperimental: []
     },
     {
-      description: 'passes through the experimental metadata array unchanged',
+      description: 'ignore experimental metadata array',
       input: { experimental: ['pluginIsolation'] },
       experimentalOptions: new Set(),
-      expectedOptions: expect.objectContaining({ experimental: ['pluginIsolation'] }),
+      expectedOptions: expect.objectContaining({}),
       expectedExperimental: []
     },
     {

@@ -5,8 +5,7 @@ import {
   type DefaultOptions,
   type LoggingOptions,
   type HttpOptions,
-  type ModeOptions,
-  type ToolModule
+  type ModeOptions
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
@@ -26,8 +25,17 @@ type AppSession = {
  */
 type GlobalOptions = DefaultOptions;
 
-/** Keys on {@link DefaultOptions} that may be enabled via experimental surfaces. */
-type ExperimentalOptionKey = keyof DefaultOptions;
+/**
+ * Parsed options return type. Separates regular options from experimental ones.
+ *
+ * @template T Passed standard options
+ * @property {T} options - Standard parsed options
+ * @property experimentalOptions - Experimental options
+ */
+type ParsedOptions<T> = {
+  options: T;
+  experimentalOptions: string[];
+};
 
 /**
  * Convert specific options towards an "experimental-" prefix for consumers.
@@ -48,46 +56,47 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
 };
 
 /**
- * Option overrides parsed from programmatic use. Exposed to the consumer/user.
+ * Keys on {@link ProgrammaticOptions} that may be enabled via experimental surfaces.
  */
-type ProgrammaticOptions = Partial<
-  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
-> & {
-  mode?: DefaultOptions['mode'] | undefined;
-  modeOptions?: Partial<ModeOptions> | undefined;
-  http?: Partial<HttpOptions>;
-  logging?: Partial<LoggingOptions>;
-  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
-  toolModules?: ToolModule | ToolModule[] | undefined;
-};
+type ExperimentalOptionKey = keyof ProgrammaticOptions;
 
 /**
  * Options parsed from CLI arguments. Exposed to the consumer/user.
  *
- * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
- * to 'strict' when external tools are requested, otherwise 'none'.
+ * @note Option behaviors:
+ * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
+ *     to 'strict' when external tools are requested, otherwise 'none'.
+ * - `toolModules` is limited to a list of file entries
  */
-type CliOptions = {
-  mode?: DefaultOptions['mode'];
-  modeOptions?: Partial<ModeOptions>;
-  http?: Partial<HttpOptions>;
-  isHttp: boolean;
-  logging: Partial<LoggingOptions>;
-  toolModules: string[];
-  pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
+type CliOptions = Omit<ProgrammaticOptions, 'toolModules'> & {
+  toolModules: string[]
 };
 
 /**
- * Parsed options return type. Separates regular options from experimental ones.
+ * Option overrides parsed for programmatic use. Exposed to the consumer/user.
  *
- * @template T Passed standard options
- * @property {T} options - Standard parsed options
- * @property experimentalOptions - Experimental options
+ * @see {@link DefaultOptions}
  */
-type ParsedOptions<T> = {
-  options: T;
-  experimentalOptions: string[];
+type ProgrammaticOptions = {
+  mode?: DefaultOptions['mode'] | undefined;
+  modeOptions?: Partial<ModeOptions> | undefined;
+  http?: Partial<HttpOptions> | undefined;
+  isHttp?: boolean | undefined;
+  logging?: Partial<LoggingOptions> | undefined;
+  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
+  toolModules?: DefaultOptions['toolModules'] | undefined;
+  docsPaths?: DefaultOptions['docsPaths'] | undefined;
+  name?: string | undefined;
+  version?: string | undefined;
+  frank?: boolean | undefined;
 };
+
+/**
+ * List of configurable options that can be used programmatically.
+ */
+const PROGRAMMATIC_OPTIONS = [
+  'mode', 'modeOptions', 'http', 'isHttp', 'logging', 'pluginIsolation', 'toolModules', 'docsPaths', 'name', 'version', 'frank'
+] as const;
 
 /**
  * Additive parse for CLI configuration options.
@@ -223,6 +232,7 @@ const parseCliOptions = (
 
       case '--log-level':
         if (value && logSeverity(value.toLowerCase() as LogLevel) > -1) {
+          result.logging ??= {};
           result.logging.level = value.toLowerCase() as LoggingOptions['level'];
         }
         break;
@@ -232,10 +242,12 @@ const parseCliOptions = (
         break;
 
       case '--log-stderr':
+        result.logging ??= {};
         result.logging.stderr = true;
         break;
 
       case '--log-protocol':
+        result.logging ??= {};
         result.logging.protocol = true;
         break;
 
@@ -313,6 +325,7 @@ const parseCliOptions = (
 
   // --verbose wins over --log-level regardless of argv order
   if (isVerbose) {
+    result.logging ??= {};
     result.logging.level = 'debug';
   }
 
@@ -332,7 +345,7 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (Object.hasOwn(DEFAULT_OPTIONS, key)) {
+    if (PROGRAMMATIC_OPTIONS.includes(key as keyof ProgrammaticOptions)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
