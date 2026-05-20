@@ -92,11 +92,33 @@ type ProgrammaticOptions = {
 };
 
 /**
+ * Available experimental options.
+ */
+type ExperimentalOptions = never;
+
+/**
  * List of configurable options that can be used programmatically.
  */
 const PROGRAMMATIC_OPTIONS = [
   'mode', 'modeOptions', 'http', 'isHttp', 'logging', 'pluginIsolation', 'toolModules', 'docsPaths', 'name', 'version', 'frank'
 ] as const;
+
+/**
+ * Options currently in experimental status for consumers.
+ *
+ * @note Add experimental options for consumer use.
+ * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
+ * 2. Then add the internal key name
+ *    - to `type ProgrammaticOptions`; ONLY IF the CLI receives a lesser variation of the option, update `type CliOptions`
+ *    - to `PROGRAMMATIC_OPTIONS` (e.g., `const PROGRAMMATIC_OPTIONS = ['loremIpsum`...])
+ *    - to `type ExperimentalOptions` (e.g., `type ExperimentalOptions = 'loremIpsum' | 'dolorSit`)
+ *    - to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<ExperimentalOptionKey>(['loremIpsum'])`)
+ * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
+ * 4. Finally, the option should be exposed as
+ *    - `cli` as `--experimental-[the option]`
+ *    - `programmatic` as `experimental[TheOption]`
+ */
+const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>([]);
 
 /**
  * Additive parse for CLI configuration options.
@@ -145,15 +167,17 @@ const PROGRAMMATIC_OPTIONS = [
  * align.
  *
  * @param argv - User-defined CLI configuration options (overrides).
- * @param experimentalOptions - The available experimental options set used for filtering
  * @param [settings] - Function settings
+ * @param [settings.experimentalOptions] - The available experimental options set used for filtering
  * @param [settings.experimentalPrefix] - String prefix for experimental flags filtering.
  * @returns An object with parsed command-line options and used experimental options.
  */
 const parseCliOptions = (
   argv: string[],
-  experimentalOptions: Set<ExperimentalOptionKey> = new Set(),
-  { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
+  {
+    experimentalOptions = EXPERIMENTAL_OPTIONS,
+    experimentalPrefix = 'experimental'
+  }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
 ): ParsedOptions<CliOptions> => {
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
@@ -369,15 +393,17 @@ const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptio
  * align.
  *
  * @param options - User-defined configuration options (overrides).
- * @param experimentalOptions - The available experimental options set used for filtering
  * @param [settings] - Function settings
+ * @param [settings.experimentalOptions] - The available experimental options set used for filtering
  * @param [settings.experimentalPrefix] - String prefix for experimental flags filtering.
  * @returns An object with options and used experimental options.
  */
 const parseProgrammaticOptions = (
   options: ProgrammaticOptions,
-  experimentalOptions: Set<ExperimentalOptionKey> = new Set(),
-  { experimentalPrefix = 'experimental' }: { experimentalPrefix?: string } = {}
+  {
+    experimentalOptions = EXPERIMENTAL_OPTIONS,
+    experimentalPrefix = 'experimental'
+  }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
 ): ParsedOptions<ProgrammaticOptions> => {
   const updatedOptions: ProgrammaticOptions = { ...options };
   const usedExperimental = new Map<ExperimentalOptionKey, unknown>();
@@ -415,11 +441,13 @@ const parseProgrammaticOptions = (
 };
 
 export {
+  EXPERIMENTAL_OPTIONS,
   parseCliOptions,
   parseProgrammaticOptions,
   type AppSession,
   type CliOptions,
   type DefaultOptions,
+  type ExperimentalOptions,
   type ExperimentalOptionKey,
   type GlobalOptions,
   type HttpOptions,

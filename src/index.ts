@@ -1,10 +1,11 @@
 import {
+  EXPERIMENTAL_OPTIONS,
   parseCliOptions,
   parseProgrammaticOptions,
   type CliOptions,
-  type ExperimentalOptionKey,
-  type ProgrammaticOptions,
-  type MakeExperimental
+  type ExperimentalOptions,
+  type MakeExperimental,
+  type ProgrammaticOptions
 } from './options';
 import { getSessionOptions, setOptions, runWithSession } from './options.context';
 import {
@@ -79,6 +80,11 @@ type PfMcpStats = ServerStats;
 type PfMcpStatReport = ServerStatReport;
 
 /**
+ * Available experimental options.
+ */
+type PfMcpExperimentalOptions = ExperimentalOptions;
+
+/**
  * Exposed options for CLI use. A focused options interface.
  *
  * Alias of {@link CliOptions} (Internal type).
@@ -109,26 +115,6 @@ type PfMcpOptions = MakeExperimental<ProgrammaticOptions, PfMcpExperimentalOptio
  *     - When `mode=test`, defaults to `false`.
  */
 type PfMcpSettings = Pick<ServerSettings, 'allowProcessExit'>;
-
-/**
- * Available experimental options.
- */
-type PfMcpExperimentalOptions = never;
-
-/**
- * Options currently in experimental status.
- *
- * @note Add experimental options for consumer use.
- * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
- * 2. Update the typings on `options` for `CliOptions` and `ProgrammaticOptions` for what gets exposed to consumers.
- * 3. Add the internal key name here, to `EXPERIMENTAL_OPTIONS` (e.g., `new Set<keyof DefaultOptions>(['loremIpsum'])`)
- * 4. Add the internal key name to `PfMcpExperimentalOptions` (e.g., `type PfMcpExperimentalOptions = 'loremIpsum' | 'dolorSit`)
- *
- * After that the option should be exposed as
- * - `cli` as `--experimental-[the option]`
- * - `programmatic` as `experimental[TheOption]`
- */
-const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>([]);
 
 /**
  * Main function - Programmatic and CLI entry point with optional overrides
@@ -211,8 +197,8 @@ const main = async (
   };
 
   try {
-    const { options: cliOptions, experimentalOptions: cliExp } = parseCliOptions(process.argv, EXPERIMENTAL_OPTIONS);
-    const { options: progOptions, experimentalOptions: progExp } = parseProgrammaticOptions(options, EXPERIMENTAL_OPTIONS);
+    const { options: cliOptions, experimentalOptions: cliExp } = parseCliOptions(process.argv);
+    const { options: progOptions, experimentalOptions: progExp } = parseProgrammaticOptions(options);
 
     // Apply `mode` separately because `cli.ts` applies it programmatically. Doing this allows us to set mode through `CLI options`.
     mergedOptions = setOptions({
