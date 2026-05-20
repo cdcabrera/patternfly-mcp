@@ -5,8 +5,14 @@ import {
   type ModeOptions
 } from './options.defaults';
 
+/**
+ * Global options, convenience type for `DefaultOptions`
+ */
 type GlobalOptions = DefaultOptions;
 
+/**
+ * Session defaults, not user-configurable
+ */
 type AppSession = {
   readonly sessionId: string;
   readonly publicSessionId: string;
@@ -17,21 +23,28 @@ type AppSession = {
  * Metadata for an option.
  * The `_type` property is a phantom property used only for TypeScript inference.
  */
-interface OptionMeta<T> {
-  readonly cli: boolean;
-  readonly experimental?: boolean;
+interface OptionMeta<T, C extends boolean = boolean, E extends boolean = boolean> {
+  readonly cli: C;
+  readonly experimental?: E;
   readonly _type?: T;
 }
 
 /**
  * Helper to define an option with full type inference.
  *
- * @param meta
- * @param meta.cli
- * @param meta.experimental
+ * @template T - The type of the value associated with the option.
+ * @template C - A boolean indicating whether the option is CLI-specific.
+ * @template E - An optional boolean indicating whether the option is experimental. Defaults to `false`.
+ *
+ * @param {Object} meta - The metadata object defining the option.
+ * @param {C} meta.cli - Specifies if the option is CLI-specific.
+ * @param {E} [meta.experimental] - Specifies if the option is experimental.
+ *
+ * @returns {OptionMeta<T, C, E>} The provided metadata object cast as `OptionMeta<T, C, E>`.
  */
-const defineOption = <T>(meta: { cli: boolean; experimental?: boolean }): OptionMeta<T> =>
-  meta as OptionMeta<T>;
+const defineOption = <T, C extends boolean, E extends boolean = false>(
+  meta: { cli: C; experimental?: E }
+): OptionMeta<T, C, E> => meta as OptionMeta<T, C, E>;
 
 const OPTIONS_REGISTRY = {
   mode: defineOption<DefaultOptions['mode']>({ cli: true }),
@@ -64,7 +77,18 @@ type CliOptionsBase = {
 };
 
 /**
- * @generated
+ * Convert specific options towards an "experimental-" prefix for consumers.
+ *
+ * @example Use
+ * type ExperimentalKeys = 'loremOption' | 'ipsumOption';
+ *
+ * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, ExperimentalKeys>;
+ *
+ * // Or directly
+ * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, 'loremOption' | 'ipsumOption'>;
+ *
+ * // Or allow empty
+ * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
  */
 type MakeExperimental<T, K extends string = never> = T & {
   [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P]
