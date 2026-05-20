@@ -25,8 +25,8 @@ type AppSession = {
  */
 interface OptionMeta<T, C extends boolean = boolean, E extends boolean = boolean> {
   readonly cli: C;
-  readonly experimental?: E;
-  readonly _type?: T;
+  readonly experimental: E;
+  readonly _type: T;
 }
 
 /**
@@ -55,7 +55,7 @@ const OPTIONS_REGISTRY = {
   pluginIsolation: defineOption({ cli: true })<DefaultOptions['pluginIsolation']>(),
   docsPaths: defineOption({ cli: false })<DefaultOptions['docsPaths']>(),
   name: defineOption({ cli: false })<string>(),
-  toolModules: defineOption({ cli: true })<DefaultOptions['toolModules']>(),
+  toolModules: defineOption({ cli: true })<any>(),
   version: defineOption({ cli: false })<string>()
 } as const;
 
@@ -68,7 +68,7 @@ type OptionsRegistry = typeof OPTIONS_REGISTRY;
  * See {@link OPTIONS_REGISTRY}
  */
 type ProgrammaticOptionsBase = {
-  -readonly [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'];
+  -readonly [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'] | undefined;
 };
 
 /**
@@ -76,25 +76,16 @@ type ProgrammaticOptionsBase = {
  */
 type CliOptionsBase = {
   -readonly [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]?:
-  K extends 'toolModules' ? string[] : OptionsRegistry[K]['_type']
+  K extends 'toolModules' ? string[] | undefined : OptionsRegistry[K]['_type'] | undefined
 };
 
 /**
  * Convert specific options towards an "experimental-" prefix for consumers.
  *
- * @example Use
- * type ExperimentalKeys = 'loremOption' | 'ipsumOption';
- *
- * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, ExperimentalKeys>;
- *
- * // Or directly
- * type PfMcpOptions = MakeExperimental<ProgrammaticOptions, 'loremOption' | 'ipsumOption'>;
- *
- * // Or allow empty
- * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
+ * See {@link OPTIONS_REGISTRY}
  */
 type MakeExperimental<T, K extends string = never> = T & {
-  -readonly [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P]
+  -readonly [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P] | undefined
 };
 
 /**
@@ -126,7 +117,7 @@ type ExperimentalOptionKey = keyof OptionsRegistry & string;
  */
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(OPTIONS_REGISTRY)
-    .filter(([_, meta]) => meta.experimental)
+    .filter(([_, meta]) => (meta as any).experimental)
     .map(([key]) => key as ExperimentalOptionKey)
 );
 
@@ -137,7 +128,7 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
  */
 const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(OPTIONS_REGISTRY)
-    .filter(([_, meta]) => meta.experimental && meta.cli)
+    .filter(([_, meta]) => (meta as any).experimental && (meta as any).cli)
     .map(([key]) => key as ExperimentalOptionKey)
 );
 
@@ -160,8 +151,6 @@ export {
   type ExperimentalOptions,
   type ExperimentalOptionKey,
   type GlobalOptions,
-  type HttpOptions,
-  type LoggingOptions,
   type MakeExperimental,
   type OptionsRegistry,
   type ProgrammaticOptions,
