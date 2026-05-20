@@ -42,9 +42,13 @@ interface OptionMeta<T, C extends boolean = boolean, E extends boolean = boolean
  *
  * @returns {OptionMeta<T, C, E>} The provided metadata object cast as `OptionMeta<T, C, E>`.
  */
-const defineOption = <T, C extends boolean, E extends boolean = false>(
+const defineOption = <T, const C extends boolean, const E extends boolean = false>(
   meta: { cli: C; experimental?: E }
-): OptionMeta<T, C, E> => meta as OptionMeta<T, C, E>;
+): OptionMeta<T, C, E> => ({
+  ...meta,
+  experimental: (meta.experimental ?? false) as E,
+  _type: undefined as T
+} as OptionMeta<T, C, E>);
 
 const OPTIONS_REGISTRY = {
   mode: defineOption<DefaultOptions['mode']>({ cli: true }),
@@ -59,17 +63,20 @@ const OPTIONS_REGISTRY = {
   version: defineOption<string>({ cli: false })
 } as const;
 
+/**
+ * See {@link OPTIONS_REGISTRY}
+ */
 type OptionsRegistry = typeof OPTIONS_REGISTRY;
 
 /**
- * @generated
+ * See {@link OPTIONS_REGISTRY}
  */
 type ProgrammaticOptionsBase = {
   [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'];
 };
 
 /**
- * @generated
+ * See {@link OPTIONS_REGISTRY}
  */
 type CliOptionsBase = {
   [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]:
@@ -95,29 +102,31 @@ type MakeExperimental<T, K extends string = never> = T & {
 };
 
 /**
- * @generated
+ * See {@link OPTIONS_REGISTRY}
  */
 type ExperimentalOptions = keyof {
   [K in keyof OptionsRegistry as OptionsRegistry[K]['experimental'] extends true ? K : never]: unknown
 } & string;
 
 /**
- * @generated
+ * Consumer facing CLI options.
  */
 type CliOptions = MakeExperimental<CliOptionsBase, ExperimentalOptions>;
 
 /**
- * @generated
+ * Consumer facing programmatic options.
  */
 type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, ExperimentalOptions>;
 
 /**
- * @generated
+ * See {@link OPTIONS_REGISTRY}
  */
 type ExperimentalOptionKey = keyof OptionsRegistry & string;
 
 /**
- * @generated
+ * Experimental options list.
+ *
+ * @generated See {@link OPTIONS_REGISTRY}
  */
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(OPTIONS_REGISTRY)
@@ -126,7 +135,9 @@ const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptionKey>(
 );
 
 /**
- * @generated
+ * Experimental options list for CLI.
+ *
+ * @generated See {@link OPTIONS_REGISTRY}
  */
 const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
   Object.entries(OPTIONS_REGISTRY)
@@ -135,7 +146,9 @@ const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
 );
 
 /**
- * @generated
+ * Options list for programmatic use.
+ *
+ * @generated See {@link OPTIONS_REGISTRY}
  */
 const PROGRAMMATIC_OPTIONS = Object.keys(OPTIONS_REGISTRY) as ReadonlyArray<keyof OptionsRegistry>;
 
