@@ -23,7 +23,7 @@ type AppSession = {
 /**
  * Global options, convenience type for `DefaultOptions`
  */
-type GlobalOptions = DefaultOptions;
+type GlobalOptions = DefaultOptions & RawProgrammaticOptions;
 
 /**
  * Parsed options return type. Separates regular options from experimental ones.
@@ -51,23 +51,22 @@ type ParsedOptions<T> = {
  * // Or allow empty
  * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
  */
-type MakeExperimental<T, K extends keyof T = never> = Omit<T, K> & {
-  [P in K as `experimental${Capitalize<string & P>}`]?: T[P]
+/**
+ * Convert specific options towards an "experimental-" prefix for consumers.
+ */
+type MakeExperimental<T, K extends keyof T = never> = {
+  [P in keyof T as P extends K ? `experimental${Capitalize<string & P>}` : P]: T[P]
 };
 
 /**
  * Options currently in experimental status for consumers.
  *
  * @note Add experimental options for consumer use.
- * 1. Add a key to the `options.defaults` sans-experimental prefix, declare your type.
- * 2. Then add the internal key name
- *    - to `EXPERIMENTAL_OPTIONS` (e.g., `const EXPERIMENTAL_OPTIONS = ['loremIpsum'] as const`)
- * 3. Update the `parseCliOptions` switch with the new flag. A unit test update is optional since it is experimental.
- * 4. Finally, the option should be exposed as
- *    - `cli` as `--experimental-[the option]`
- *    - `programmatic` as `experimental[TheOption]`
+ * 1. Add a key to the `RawProgrammaticOptions` interface sans-experimental prefix.
+ * 2. Then add the internal key name to `EXPERIMENTAL_OPTIONS_ARRAY`.
+ * 3. Update the `parseCliOptions` switch with the new flag.
  */
-const EXPERIMENTAL_OPTIONS_ARRAY = [] as const;
+const EXPERIMENTAL_OPTIONS_ARRAY = ['frank'] as const;
 
 /**
  * Available experimental options.
@@ -76,7 +75,10 @@ type ExperimentalOptions = (typeof EXPERIMENTAL_OPTIONS_ARRAY)[number];
 
 const EXPERIMENTAL_OPTIONS = new Set<ExperimentalOptions>(EXPERIMENTAL_OPTIONS_ARRAY);
 
-type RawProgrammaticOptions = {
+/**
+ * Base programmatic options before experimental transformation.
+ */
+interface RawProgrammaticOptions {
   mode?: DefaultOptions['mode'] | undefined;
   modeOptions?: Partial<ModeOptions> | undefined;
   http?: Partial<HttpOptions> | undefined;
@@ -87,7 +89,8 @@ type RawProgrammaticOptions = {
   docsPaths?: DefaultOptions['docsPaths'] | undefined;
   name?: string | undefined;
   version?: string | undefined;
-};
+  frank?: string | undefined;
+}
 
 /**
  * Option overrides parsed for programmatic use. Exposed to the consumer/user.
@@ -95,23 +98,6 @@ type RawProgrammaticOptions = {
  * @see {@link DefaultOptions}
  */
 type ProgrammaticOptions = MakeExperimental<RawProgrammaticOptions, ExperimentalOptions>;
-
-/**
- * Keys on {@link RawProgrammaticOptions} that may be enabled via experimental surfaces.
- */
-type ExperimentalOptionKey = keyof RawProgrammaticOptions;
-
-/**
- * Options parsed from CLI arguments. Exposed to the consumer/user.
- *
- * @note Option behaviors:
- * - `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
- *     to 'strict' when external tools are requested, otherwise 'none'.
- * - `toolModules` is limited to a list of file entries
- */
-type CliOptions = MakeExperimental<(Omit<RawProgrammaticOptions, 'toolModules'> & {
-  toolModules: string[]
-}), ExperimentalOptions>;
 
 /**
  * List of configurable options that can be used programmatically.
@@ -128,7 +114,19 @@ const PROGRAMMATIC_OPTIONS = [
   'docsPaths',
   'name',
   'version'
-] as unknown as (keyof ProgrammaticOptions)[];
+] as (keyof ProgrammaticOptions)[];
+
+/**
+ * Keys on {@link RawProgrammaticOptions} that may be enabled via experimental surfaces.
+ */
+type ExperimentalOptionKey = keyof RawProgrammaticOptions;
+
+/**
+ * Options parsed from CLI arguments. Exposed to the consumer/user.
+ */
+type CliOptions = MakeExperimental<(Omit<RawProgrammaticOptions, 'toolModules'> & {
+  toolModules: string[]
+}), ExperimentalOptions>;
 
 /**
  * Additive parse for CLI configuration options.
@@ -188,8 +186,8 @@ const parseCliOptions = (
     experimentalOptions = EXPERIMENTAL_OPTIONS,
     experimentalPrefix = 'experimental'
   }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
-): ParsedOptions<CliOptions> => {
-  const result: CliOptions = {
+): ParsedOptions<RawProgrammaticOptions & { toolModules: string[] }> => {
+  const result: RawProgrammaticOptions & { toolModules: string[] } = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
     isHttp: false,
@@ -342,6 +340,12 @@ const parseCliOptions = (
           }
         }
         break;
+
+      case '--frank':
+        if (value) {
+          result.frank = value;
+        }
+        break;
     }
   };
 
@@ -373,13 +377,20 @@ const parseCliOptions = (
  * Filter programmatic options to keys that exist in base options.
  *
  * @param {ProgrammaticOptions} source - Complete set of programmatic options provided as input.
+ * @param {string} [experimentalPrefix='experimental'] - Prefix for experimental options.
  * @returns {ProgrammaticOptions} New object containing only the filtered programmatic options found in base options.
  */
-const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptions => {
+const pickProgrammaticOptions = (
+  source: ProgrammaticOptions,
+  experimentalPrefix = 'experimental'
+): ProgrammaticOptions => {
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if (PROGRAMMATIC_OPTIONS.includes(key as keyof ProgrammaticOptions)) {
+    if (
+      PROGRAMMATIC_OPTIONS.includes(key as keyof ProgrammaticOptions) ||
+      key.startsWith(experimentalPrefix)
+    ) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }
@@ -414,17 +425,13 @@ const parseProgrammaticOptions = (
     experimentalOptions = EXPERIMENTAL_OPTIONS,
     experimentalPrefix = 'experimental'
   }: { experimentalOptions?: Set<ExperimentalOptionKey>, experimentalPrefix?: string } = {}
-): ParsedOptions<ProgrammaticOptions> => {
-  const updatedOptions: ProgrammaticOptions = { ...options };
+): ParsedOptions<RawProgrammaticOptions> => {
+  const picked = pickProgrammaticOptions(options, experimentalPrefix);
+  const updatedOptions: Record<string, unknown> = { ...picked };
   const usedExperimental = new Map<ExperimentalOptionKey, unknown>();
 
-  // Sanitize sans-experimental experimental options
-  experimentalOptions.forEach(key => {
-    delete (updatedOptions as Record<string, unknown>)[key as string];
-  });
-
   // Aggregate and remove experimental options, own keys only
-  for (const key of Object.keys(options)) {
+  for (const key of Object.keys(picked)) {
     if (key.startsWith(experimentalPrefix) && key.length > experimentalPrefix.length) {
       const internalKey = (
         key.slice(experimentalPrefix.length).charAt(0).toLowerCase() +
@@ -432,20 +439,20 @@ const parseProgrammaticOptions = (
       ) as ExperimentalOptionKey;
 
       if (experimentalOptions.has(internalKey)) {
-        usedExperimental.set(internalKey, options[key as keyof ProgrammaticOptions]);
+        usedExperimental.set(internalKey, picked[key as keyof ProgrammaticOptions]);
       }
 
-      delete (updatedOptions as Record<string, unknown>)[key];
+      delete updatedOptions[key];
     }
   }
 
   // Apply experimental values, if any
   usedExperimental.forEach((value, key) => {
-    (updatedOptions as Record<string, unknown>)[key] = value;
+    updatedOptions[key as string] = value;
   });
 
   return {
-    options: pickProgrammaticOptions(updatedOptions),
+    options: updatedOptions as RawProgrammaticOptions,
     experimentalOptions: [...usedExperimental.keys()]
   };
 };
@@ -464,5 +471,6 @@ export {
   type LoggingOptions,
   type MakeExperimental,
   type ParsedOptions,
-  type ProgrammaticOptions
+  type ProgrammaticOptions,
+  type RawProgrammaticOptions
 };

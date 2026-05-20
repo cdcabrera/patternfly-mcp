@@ -248,6 +248,13 @@ describe('parseCliOptions', () => {
       expectedExperimental: ['pluginIsolation', 'customOption']
     },
     {
+      description: 'handles the frank experimental flag',
+      args: ['node', 'cli', '--experimental-frank', 'test-value'],
+      experimentalOptions: new Set<any>(['frank']),
+      expectedOptions: expect.objectContaining({ frank: 'test-value' }),
+      expectedExperimental: ['frank']
+    },
+    {
       description: 'drop orphan value after direct flag registered as experimental',
       args: ['node', 'cli', '--log-level', 'warn', '--plugin-isolation', 'strict'],
       experimentalOptions: new Set<any>(['pluginIsolation']),

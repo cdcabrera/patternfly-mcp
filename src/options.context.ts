@@ -4,7 +4,8 @@ import {
   type AppSession,
   type ExperimentalOptionKey,
   type GlobalOptions,
-  type ProgrammaticOptions
+  type ProgrammaticOptions,
+  type RawProgrammaticOptions
 } from './options';
 import {
   DEFAULT_OPTIONS,
@@ -103,12 +104,12 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @note In the future, look at adding a re-validation helper here, and potentially in `runWithOptions`,
  * that aligns with CLI options parsing. We need to account for both CLI and programmatic use.
  *
- * @param {ProgrammaticOptions & { experimental?: string[] }} [options] - Optional overrides merged with DEFAULT_OPTIONS.
+ * @param {RawProgrammaticOptions & { experimental?: string[] }} [options] - Optional overrides merged with DEFAULT_OPTIONS.
  * @param [experimentalOptions] - The available experimental options set.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (
-  options?: ProgrammaticOptions & { experimental?: string[] },
+  options?: RawProgrammaticOptions & { experimental?: string[] },
   experimentalOptions: Set<ExperimentalOptionKey> = new Set()
 ): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS, options, { allowNullValues: false, allowUndefinedValues: false });
@@ -120,7 +121,7 @@ const setOptions = (
 
   const baseExperimental = base.experimental.filter(
     option => experimentalOptions.has(option as ExperimentalOptionKey) &&
-      base?.[option as keyof GlobalOptions] !== DEFAULT_OPTIONS?.[option as keyof GlobalOptions]
+      (base as any)?.[option] !== (DEFAULT_OPTIONS as any)?.[option]
   );
 
   const merged: GlobalOptions = {
