@@ -5,8 +5,7 @@ import {
   type DefaultOptions,
   type LoggingOptions,
   type HttpOptions,
-  type ModeOptions,
-  type ToolModule
+  type ModeOptions
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
@@ -26,8 +25,8 @@ type AppSession = {
  */
 type GlobalOptions = DefaultOptions;
 
-/** Keys on {@link DefaultOptions} that may be enabled via experimental surfaces. */
-type ExperimentalOptionKey = keyof DefaultOptions;
+/** Keys on {@link ProgrammaticOptions} that may be enabled via experimental surfaces. */
+type ExperimentalOptionKey = keyof ProgrammaticOptions;
 
 /**
  * Convert specific options towards an "experimental-" prefix for consumers.
@@ -50,15 +49,14 @@ type MakeExperimental<T, K extends keyof T = never> = T & {
 /**
  * Option overrides parsed from programmatic use. Exposed to the consumer/user.
  */
-type ProgrammaticOptions = Partial<
-  Omit<DefaultOptions, 'mode' | 'modeOptions' | 'http' | 'logging' | 'pluginIsolation' | 'toolModules'>
-> & {
-  mode?: DefaultOptions['mode'] | undefined;
-  modeOptions?: Partial<ModeOptions> | undefined;
+type ProgrammaticOptions = {
+  mode?: DefaultOptions['mode'];
+  modeOptions?: Partial<ModeOptions>;
   http?: Partial<HttpOptions>;
-  logging?: Partial<LoggingOptions>;
-  pluginIsolation?: DefaultOptions['pluginIsolation'] | undefined;
-  toolModules?: ToolModule | ToolModule[] | undefined;
+  isHttp: boolean;
+  logging: Partial<LoggingOptions>;
+  pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
+  toolModules: DefaultOptions['toolModules'];
 };
 
 /**
@@ -67,14 +65,8 @@ type ProgrammaticOptions = Partial<
  * @note `pluginIsolation` preset for external plugins (CLI-provided). If omitted, defaults
  * to 'strict' when external tools are requested, otherwise 'none'.
  */
-type CliOptions = {
-  mode?: DefaultOptions['mode'];
-  modeOptions?: Partial<ModeOptions>;
-  http?: Partial<HttpOptions>;
-  isHttp: boolean;
-  logging: Partial<LoggingOptions>;
-  toolModules: string[];
-  pluginIsolation: DefaultOptions['pluginIsolation'] | undefined;
+type CliOptions = Omit<ProgrammaticOptions, 'toolModules'> & {
+  toolModules: string[]
 };
 
 /**
