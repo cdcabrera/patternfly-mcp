@@ -68,14 +68,14 @@ type OptionsRegistry = typeof OPTIONS_REGISTRY;
  * See {@link OPTIONS_REGISTRY}
  */
 type ProgrammaticOptionsBase = {
-  [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'];
+  -readonly [K in keyof OptionsRegistry]?: OptionsRegistry[K]['_type'];
 };
 
 /**
  * See {@link OPTIONS_REGISTRY}
  */
 type CliOptionsBase = {
-  [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]:
+  -readonly [K in keyof OptionsRegistry as OptionsRegistry[K]['cli'] extends true ? K : never]:
   K extends 'toolModules' ? string[] : OptionsRegistry[K]['_type']
 };
 
@@ -94,7 +94,7 @@ type CliOptionsBase = {
  * type PfMcpOptions = MakeExperimental<ProgrammaticOptions>
  */
 type MakeExperimental<T, K extends string = never> = T & {
-  [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P]
+  -readonly [P in Extract<K, keyof T> as `experimental${Capitalize<P & string>}`]?: T[P]
 };
 
 /**
