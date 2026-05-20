@@ -30,37 +30,33 @@ interface OptionMeta<T, C extends boolean = boolean, E extends boolean = boolean
 }
 
 /**
- * Helper to define an option with full type inference.
+ * Helper to define an option with metadata-first inference.
+ * Currying allows 'C' and 'E' to be inferred strictly from the value
+ * without being widened, even when 'T' is provided later.
  *
- * @template T - The type of the value associated with the option.
- * @template C - A boolean indicating whether the option is CLI-specific.
- * @template E - An optional boolean indicating whether the option is experimental. Defaults to `false`.
- *
- * @param {Object} meta - The metadata object defining the option.
- * @param {C} meta.cli - Specifies if the option is CLI-specific.
- * @param {E} [meta.experimental] - Specifies if the option is experimental.
- *
- * @returns {OptionMeta<T, C, E>} The provided metadata object cast as `OptionMeta<T, C, E>`.
+ * @param meta
+ * @param meta.cli
+ * @param meta.experimental
  */
-const defineOption = <T, const C extends boolean, const E extends boolean = false>(
+const defineOption = <const C extends boolean, const E extends boolean = false>(
   meta: { cli: C; experimental?: E }
-): OptionMeta<T, C, E> => ({
+) => <T>(): OptionMeta<T, C, E> => ({
   ...meta,
   experimental: (meta.experimental ?? false) as E,
-  _type: undefined as T
+  _type: undefined as unknown as T
 } as OptionMeta<T, C, E>);
 
 const OPTIONS_REGISTRY = {
-  mode: defineOption<DefaultOptions['mode']>({ cli: true }),
-  modeOptions: defineOption<Partial<ModeOptions>>({ cli: true }),
-  http: defineOption<Partial<HttpOptions>>({ cli: true }),
-  isHttp: defineOption<boolean>({ cli: true }),
-  logging: defineOption<Partial<LoggingOptions>>({ cli: true }),
-  pluginIsolation: defineOption<DefaultOptions['pluginIsolation']>({ cli: true }),
-  toolModules: defineOption<DefaultOptions['toolModules']>({ cli: true }),
-  docsPaths: defineOption<DefaultOptions['docsPaths']>({ cli: false }),
-  name: defineOption<string>({ cli: false }),
-  version: defineOption<string>({ cli: false })
+  mode: defineOption({ cli: true })<DefaultOptions['mode']>(),
+  modeOptions: defineOption({ cli: true })<Partial<ModeOptions>>(),
+  http: defineOption({ cli: true })<Partial<HttpOptions>>(),
+  isHttp: defineOption({ cli: true })<boolean>(),
+  logging: defineOption({ cli: true })<LoggingOptions>(),
+  pluginIsolation: defineOption({ cli: true })<DefaultOptions['pluginIsolation']>(),
+  docsPaths: defineOption({ cli: false })<DefaultOptions['docsPaths']>(),
+  name: defineOption({ cli: false })<string>(),
+  toolModules: defineOption({ cli: true })<DefaultOptions['toolModules']>(),
+  version: defineOption({ cli: false })<string>()
 } as const;
 
 /**
