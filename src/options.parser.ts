@@ -332,8 +332,8 @@ const parseProgrammaticOptions = (
 };
 
 export {
+  parseCliOptions,
   parseProgrammaticOptions,
   pickProgrammaticOptions,
-  parseCliOptions,
   type ParsedOptions
 };
