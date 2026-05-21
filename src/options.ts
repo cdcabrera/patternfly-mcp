@@ -85,6 +85,9 @@ const SET_OPTIONS = {
   pluginIsolation: defineOption({ cli: true })<DefaultOptions['pluginIsolation']>(),
   docsPaths: defineOption({ cli: false })<DefaultOptions['docsPaths']>(),
   name: defineOption({ cli: false })<string>(),
+  regularOption: defineOption({ cli: true })<string>(),
+  noDefaultOption: defineOption({ cli: true, experimental: true })<string>(),
+  withDefaultOption: defineOption({ cli: true, experimental: true })<string>(),
   toolModules: defineOption({ cli: true })<DefaultOptions['toolModules']>(),
   version: defineOption({ cli: false })<string>()
 } as const;

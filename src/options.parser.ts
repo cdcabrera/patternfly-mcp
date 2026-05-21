@@ -224,6 +224,24 @@ const parseCliOptions = (
           }
         }
         break;
+
+      case '--regular-option':
+        if (value) {
+          result.regularOption = value;
+        }
+        break;
+
+      case '--no-default-option':
+        if (value) {
+          result.noDefaultOption = value;
+        }
+        break;
+
+      case '--with-default-option':
+        if (value) {
+          result.withDefaultOption = value;
+        }
+        break;
     }
   };
 

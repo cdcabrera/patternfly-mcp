@@ -324,6 +324,18 @@ const runServer = async (options: ServerOptions = getOptions(), {
       options.experimental.forEach(option => log.warn(`Enabled experimental option: ${option}`));
     }
 
+    if (options.regularOption !== DEFAULT_OPTIONS.regularOption) {
+      log.info('Regular option is enabled');
+    }
+
+    if (options.noDefaultOption) {
+      log.info('Experimental no default option is enabled');
+    }
+
+    if (options.withDefaultOption !== DEFAULT_OPTIONS.withDefaultOption) {
+      log.info('Experimental with default option is enabled');
+    }
+
     // Compose resources after logging is set up.
     let updatedResources = await composeResources(resources);
 

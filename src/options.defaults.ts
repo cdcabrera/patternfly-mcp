@@ -67,6 +67,8 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   patternflyOptions: PatternFlyOptions;
   pluginIsolation: 'none' | 'strict';
   pluginHost: PluginHostOptions;
+  regularOption: string;
+  withDefaultOption: string;
   repoBugs: string | undefined;
   repoName: string | undefined;
   repoResources: RepoResources;
@@ -516,6 +518,8 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   patternflyOptions: PATTERNFLY_OPTIONS,
   pluginIsolation: 'strict',
   pluginHost: PLUGIN_HOST_OPTIONS,
+  regularOption: 'regular-default',
+  withDefaultOption: 'experimental-default',
   repoBugs: packageJson.bugs?.url,
   repoSupport: packageJson.support?.url,
   repoName: basename(process.cwd() || '').trim(),
