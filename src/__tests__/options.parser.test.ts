@@ -2,12 +2,6 @@ import { type ExperimentalOptionKey } from '../options';
 import { parseCliOptions, parseProgrammaticOptions, pickProgrammaticOptions } from '../options.parser';
 
 describe('parseCliOptions', () => {
-  const originalArgv = process.argv;
-
-  afterEach(() => {
-    process.argv = originalArgv;
-  });
-
   it.each([
     {
       description: 'with --verbose flag',

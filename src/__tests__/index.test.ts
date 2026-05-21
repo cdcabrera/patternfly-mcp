@@ -154,6 +154,9 @@ describe('main', () => {
   ])('should attempt to parse options, merge options, then run the server, $description', async ({ programmaticOptions, method }) => {
     await method(programmaticOptions as any);
 
+    expect(mockParseCliOptions).toHaveBeenCalledTimes(1);
+    expect(mockParseProgrammaticOptions).toHaveBeenCalledTimes(1);
+    expect(mockSetOptions).toHaveBeenCalledTimes(1);
     expect(callOrder).toEqual(expect.arrayContaining(['parse', 'set', 'run']));
   });
 });

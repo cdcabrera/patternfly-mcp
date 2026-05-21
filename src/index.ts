@@ -103,7 +103,7 @@ type PfMcpExperimentalOptions = ExperimentalOptions;
  *     specification is a local module name or path.
  *
  * @note Type is not a 1:1 match for available options.
- * @note Experimental options, when available appear as `--experimental-<option-example>`.
+ * @note Experimental options appear as `--experimental-<lorem-ipsum>` when available.
  * @note Alias of {@link CliOptions} (Internal type).
  */
 type PfMcpCliOptions = CliOptions;
@@ -129,7 +129,7 @@ type DeprecatedCliOptions = PfMcpCliOptions;
  * @property [toolModules] - Programmatic tool registrations.
  * @property [version] - The server display version.
  *
- * @note Experimental options, when available appear as `experimental<OptionExample>`.
+ * @note Experimental options appear as `experimental<LoremIpsum>` when available.
  * @note Alias of {@link ProgrammaticOptions} (Internal type).
  */
 type PfMcpOptions = ProgrammaticOptions;
