@@ -4,7 +4,8 @@ import {
   PROGRAMMATIC_OPTIONS,
   type CliOptions,
   type ExperimentalOptionKey,
-  type ProgrammaticOptions
+  type ProgrammaticOptions,
+  type ProgrammaticOptionsKey
 } from './options';
 import {
   DEFAULT_OPTIONS,
@@ -253,14 +254,21 @@ const parseCliOptions = (
 /**
  * Filter programmatic options to keys that exist in base options.
  *
- * @param {ProgrammaticOptions} source - Complete set of programmatic options provided as input.
+ * @param {ProgrammaticOptions} source - Input provided programmatic options.
+ * @param [settings] - Function settings
+ * @param [settings.baseOptions] - Base programmatic options set used for comparison/filtering.
  * @returns {ProgrammaticOptions} New object containing only the filtered programmatic options found in base options.
  */
-const pickProgrammaticOptions = (source: ProgrammaticOptions): ProgrammaticOptions => {
+const pickProgrammaticOptions = (
+  source: ProgrammaticOptions,
+  {
+    baseOptions = PROGRAMMATIC_OPTIONS
+  }: { baseOptions?: ReadonlyArray<ProgrammaticOptionsKey> } = {}
+): ProgrammaticOptions => {
   const picked: Record<string, unknown> = {};
 
   for (const key of Object.keys(source)) {
-    if ((PROGRAMMATIC_OPTIONS as readonly string[]).includes(key)) {
+    if ((baseOptions as readonly string[]).includes(key)) {
       picked[key] = source[key as keyof ProgrammaticOptions];
     }
   }

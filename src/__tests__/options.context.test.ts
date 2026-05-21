@@ -15,21 +15,21 @@ const MockStdioServerTransport = StdioServerTransport as jest.MockedClass<typeof
 
 describe('setOptions', () => {
   it('should populate the experimental array when a registered option differs from default', () => {
-    const registry = new Set<any>(['pluginIsolation']);
+    const experimentalOptions = new Set<any>(['pluginIsolation']);
     const options = setOptions({
       pluginIsolation: 'none',
       experimental: ['pluginIsolation']
-    }, registry);
+    }, { experimentalOptions });
 
     expect(options.experimental).toContain('pluginIsolation');
   });
 
   it('should not populate the experimental array when options match defaults', () => {
-    const registry = new Set<any>(['pluginIsolation']);
+    const experimentalOptions = new Set<any>(['pluginIsolation']);
     const options = setOptions({
       pluginIsolation: DEFAULT_OPTIONS.pluginIsolation,
       experimental: ['pluginIsolation']
-    }, registry);
+    }, { experimentalOptions });
 
     expect(options.experimental).not.toContain('pluginIsolation');
   });

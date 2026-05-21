@@ -97,15 +97,20 @@ type SetOptions = typeof SET_OPTIONS;
 /**
  * See {@link SET_OPTIONS}
  */
+type ProgrammaticOptionsKey = keyof SetOptions;
+
+/**
+ * See {@link SET_OPTIONS}
+ */
 type ProgrammaticOptionsBase = {
-  -readonly [K in keyof SetOptions]?: SetOptions[K]['_type'] | undefined;
+  -readonly [K in ProgrammaticOptionsKey]?: SetOptions[K]['_type'] | undefined;
 };
 
 /**
  * See {@link SET_OPTIONS}
  */
 type CliOptionsBase = {
-  -readonly [K in keyof SetOptions as SetOptions[K]['cli'] extends true ? K : never]?:
+  -readonly [K in ProgrammaticOptionsKey as SetOptions[K]['cli'] extends true ? K : never]?:
   K extends 'toolModules' ? string[] | undefined : SetOptions[K]['_type'] | undefined
 };
 
@@ -122,7 +127,7 @@ type MakeExperimental<T, K extends string = never> = T & {
  * See {@link SET_OPTIONS}
  */
 type ExperimentalOptions = keyof {
-  [K in keyof SetOptions as SetOptions[K]['experimental'] extends true ? K : never]: unknown
+  [K in ProgrammaticOptionsKey as SetOptions[K]['experimental'] extends true ? K : never]: unknown
 } & string;
 
 /**
@@ -138,7 +143,7 @@ type ProgrammaticOptions = MakeExperimental<ProgrammaticOptionsBase, Experimenta
 /**
  * See {@link SET_OPTIONS}
  */
-type ExperimentalOptionKey = keyof SetOptions & string;
+type ExperimentalOptionKey = ProgrammaticOptionsKey & string;
 
 /**
  * Experimental options list.
@@ -167,7 +172,7 @@ const EXPERIMENTAL_CLI_OPTIONS = new Set<ExperimentalOptionKey>(
  *
  * See {@link SET_OPTIONS}
  */
-const PROGRAMMATIC_OPTIONS = Object.keys(SET_OPTIONS) as ReadonlyArray<keyof SetOptions>;
+const PROGRAMMATIC_OPTIONS = Object.keys(SET_OPTIONS) as ReadonlyArray<ProgrammaticOptionsKey>;
 
 export {
   EXPERIMENTAL_CLI_OPTIONS,
@@ -184,5 +189,6 @@ export {
   type MakeExperimental,
   type ProgrammaticOptions,
   type ProgrammaticOptionsBase,
+  type ProgrammaticOptionsKey,
   type SetOptions
 };

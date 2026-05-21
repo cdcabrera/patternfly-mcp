@@ -1,5 +1,4 @@
 import {
-  EXPERIMENTAL_OPTIONS,
   type CliOptions,
   type ExperimentalOptions,
   type ProgrammaticOptions
@@ -236,7 +235,7 @@ const main = async (
       ...progOptions,
       experimental: [...new Set([...cliExp, ...progExp])],
       mode: cliOptions.mode ?? programmaticMode
-    }, EXPERIMENTAL_OPTIONS);
+    });
 
     // Finalize exit policy after merging options
     updatedAllowProcessExit = allowProcessExit ?? mergedOptions.mode !== 'test';

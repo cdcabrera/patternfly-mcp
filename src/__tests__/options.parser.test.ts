@@ -1,5 +1,5 @@
 import { type ExperimentalOptionKey } from '../options';
-import { parseCliOptions, parseProgrammaticOptions } from '../options.parser';
+import { parseCliOptions, parseProgrammaticOptions, pickProgrammaticOptions } from '../options.parser';
 
 describe('parseCliOptions', () => {
   const originalArgv = process.argv;
@@ -393,5 +393,40 @@ describe('parseProgrammaticOptions', () => {
     } finally {
       delete (Object.prototype as any)[experimentalKey];
     }
+  });
+});
+
+describe('pickProgrammaticOptions', () => {
+  it.each([
+    {
+      description: 'filter out non-programmatic options',
+      source: { name: 'test-server', invalidKey: 'should-be-removed' },
+      expected: { name: 'test-server' }
+    },
+    {
+      description: 'include all valid programmatic options',
+      source: { name: 'test-server', pluginIsolation: 'none', logging: { level: 'debug' } },
+      expected: { name: 'test-server', pluginIsolation: 'none', logging: { level: 'debug' } }
+    },
+    {
+      description: 'return an empty object when no valid keys are present',
+      source: { unknown: 'value', anotherUnknown: 123 },
+      expected: {}
+    },
+    {
+      description: 'handle custom baseOptions',
+      source: { name: 'test-server', custom: 'value' },
+      settings: { baseOptions: ['custom'] },
+      expected: { custom: 'value' }
+    },
+    {
+      description: 'handle empty source object',
+      source: {},
+      expected: {}
+    }
+  ])('should $description', ({ source, settings, expected }) => {
+    const result = pickProgrammaticOptions(source as any, settings as any);
+
+    expect(result).toEqual(expected);
   });
 });

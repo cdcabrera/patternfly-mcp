@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import {
+  EXPERIMENTAL_OPTIONS,
   type AppSession,
   type ExperimentalOptionKey,
   type GlobalOptions,
@@ -103,13 +104,16 @@ const optionsContext = new AsyncLocalStorage<GlobalOptions>();
  * @note In the future, look at adding a re-validation helper here, and potentially in `runWithOptions`,
  * that aligns with CLI options parsing. We need to account for both CLI and programmatic use.
  *
- * @param {ProgrammaticOptions & { experimental?: string[] }} [options] - Optional overrides merged with DEFAULT_OPTIONS.
- * @param [experimentalOptions] - The available experimental options list.
+ * @param [options] - Consumer optional overrides to be merged with DEFAULT_OPTIONS.
+ * @param [settings] - Function settings
+ * @param [settings.experimentalOptions] - Available experimental options list for comparison and filtering.
  * @returns {GlobalOptions} Cloned frozen default options object with session.
  */
 const setOptions = (
   options?: ProgrammaticOptions & { experimental?: string[] },
-  experimentalOptions: Set<ExperimentalOptionKey> = new Set()
+  {
+    experimentalOptions = EXPERIMENTAL_OPTIONS
+  }: { experimentalOptions?: Set<ExperimentalOptionKey> } = {}
 ): GlobalOptions => {
   const base = mergeObjects(DEFAULT_OPTIONS as GlobalOptions, options, { allowNullValues: false, allowUndefinedValues: false });
 
