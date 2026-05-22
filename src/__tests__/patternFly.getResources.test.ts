@@ -151,4 +151,12 @@ describe('getPatternFlyMcpResources', () => {
   it('should have a memoized property', async () => {
     expect(getPatternFlyMcpResources).toHaveProperty('memo');
   });
+
+  it('should have lowercased index keys', async () => {
+    const result = await getPatternFlyMcpResources();
+
+    expect(Array.from(result.pathIndex.keys()).some(key => /[A-Z]/.test(key))).toBe(false);
+    expect(Array.from(result.uriIndex.keys()).some(key => /[A-Z]/.test(key))).toBe(false);
+    expect(Array.from(result.hashIndex.keys()).some(key => /[A-Z]/.test(key))).toBe(false);
+  });
 });
