@@ -6,15 +6,33 @@ import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isUrl, isPath } from './server.helpers';
+import { isUrl, isPath, createError } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
-interface ProcessedDoc {
+/**
+ * Represents a successful document processing attempt.
+ */
+interface ProcessedDocSuccess {
+  content: string;
+  path: string;
+  resolvedPath: string;
+  isSuccess: true;
+}
+
+/**
+ * Represents a failed document processing attempt.
+ */
+interface ProcessedDocFailure {
   content: string;
   path: string | undefined;
   resolvedPath: string | undefined;
-  isSuccess: boolean;
+  isSuccess: false;
 }
+
+/**
+ * A processed document, either successful or failed.
+ */
+type ProcessedDoc = ProcessedDocSuccess | ProcessedDocFailure;
 
 /**
  * Match a dependency version against a list of supported versions.
@@ -228,22 +246,28 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  * @returns Resolves to an object containing the loaded content and the resolved path.
  */
 const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
-  if (options.mode === 'test') {
-    const mockContent = await mockPathOrUrlFunction(pathOrUrl);
+  let updatedPathOrUrl = pathOrUrl;
 
-    return { content: mockContent, resolvedPath: pathOrUrl };
+  try {
+    if (options.mode === 'test') {
+      const mockContent = await mockPathOrUrlFunction(pathOrUrl);
+
+      return { content: mockContent, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
+    }
+
+    updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
+    let content;
+
+    if (isUrl(updatedPathOrUrl)) {
+      content = await fetchUrlFunction.memo(updatedPathOrUrl);
+    } else {
+      content = await readLocalFileFunction.memo(updatedPathOrUrl);
+    }
+
+    return { content, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
+  } catch (error) {
+    throw createError(error, {}, { resolvedPath: updatedPathOrUrl, path: pathOrUrl });
   }
-
-  const updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
-  let content;
-
-  if (isUrl(updatedPathOrUrl)) {
-    content = await fetchUrlFunction.memo(updatedPathOrUrl);
-  } else {
-    content = await readLocalFileFunction.memo(updatedPathOrUrl);
-  }
-
-  return { content, resolvedPath: updatedPathOrUrl };
 };
 
 /**
@@ -283,7 +307,10 @@ const promiseQueue = async (queue: string[], limit = 5) => {
 /**
  * Normalize inputs, load all in parallel, and return a joined string.
  *
- * @note Remember to limit the number of docs to load to avoid OOM.
+ * @note Remember:
+ * - To limit the number of docs to load to avoid OOM.
+ * - Deduplication of paths happens using `normalizeString.memo`. Original paths are
+ *     still used to fetch and are returned as part of the result.
  * @param inputs - List of paths or URLs to load
  * @param options - Optional options
  * @returns An array of loaded docs with content, path, resolvedPath, and isSuccess properties:
@@ -302,33 +329,34 @@ const processDocsFunction = async (
   const list = Array.from(uniqueInputs.values()).slice(0, options.minMax.docsToLoad.max).filter(Boolean);
 
   const settled = await promiseQueue(list);
-  const docs: { content: string, path: string | undefined, resolvedPath: string | undefined, isSuccess: boolean }[] = [];
+  const docs: ProcessedDoc[] = [];
 
   settled.forEach((res, index) => {
-    const original = list[index];
-    let content;
-    let resolvedPath;
-    const path = original;
-    let isSuccess = false;
+    const fallbackPath = list[index];
 
     if (res.status === 'fulfilled') {
-      const { resolvedPath: docResolvedPath, content: docContent } = res.value;
+      docs.push({
+        ...res.value,
+        isSuccess: true
+      } as ProcessedDocSuccess);
 
-      resolvedPath = docResolvedPath;
-      content = docContent;
-      isSuccess = true;
-    } else {
-      const errorMessage = res.reason instanceof Error ? res.reason.message : String(res.reason);
-
-      content = `❌ Failed to load ${original}: ${errorMessage}`;
+      return;
     }
 
+    const reason: Error & { path?: string; resolvedPath?: string } = res.reason;
+    const error = reason instanceof Error ? reason : undefined;
+    const errorPath = error?.path || fallbackPath;
+    const errorResolvedPath = error?.resolvedPath || undefined;
+    const errorMessage = error?.message || String(reason);
+
     docs.push({
-      content,
-      path,
-      resolvedPath,
-      isSuccess
-    });
+      content: `❌ Failed to load ${errorPath}: ${errorMessage}`,
+      path: errorPath,
+      resolvedPath: errorResolvedPath,
+      isSuccess: false
+    } as ProcessedDocFailure);
+
+    log.debug(`Failed to load ${errorPath} from processing: ${formatUnknownError(errorMessage)}`);
   });
 
   return docs;
@@ -348,5 +376,7 @@ export {
   promiseQueue,
   readLocalFileFunction,
   resolveLocalPathFunction,
-  type ProcessedDoc
+  type ProcessedDoc,
+  type ProcessedDocSuccess,
+  type ProcessedDocFailure
 };
