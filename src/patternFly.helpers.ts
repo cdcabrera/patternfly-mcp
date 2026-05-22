@@ -4,6 +4,7 @@ import { type PatternFlyOptions } from './options.defaults';
 import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
 import { fuzzySearch } from './server.search';
 import { memo } from './server.caching';
+import { isUrl } from "./server.helpers";
 
 interface PatternFlyVersionContext {
   availableSemVer: string[];
@@ -220,6 +221,18 @@ const disabled_findClosestPatternFlyVersion = async (
   } catch {
     return updatedDefaultVersion;
   }
+};
+
+const isPatternFlyUri = (uri: string | undefined, { prefix = 'patternfly' }: { prefix?: string } = {}) => {
+  const updatedUri = typeof uri === 'string' ? uri.trim().toLowerCase() : undefined;
+  // const patternflyUri = updatedUri ? parseUrl(updatedUri, { prefix }) : undefined;
+  const isUrl(coercedSearchQuery, { isStrict: false, allowedProtocols: ['patternfly'] });
+
+  if (patternflyUri) {
+    return patternflyUri;
+  }
+
+  return undefined;
 };
 
 export {
