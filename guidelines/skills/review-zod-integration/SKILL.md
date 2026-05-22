@@ -31,9 +31,10 @@ Copy this checklist and track progress:
 
 1. Read `package.json` and `package-lock.json` (`node_modules/zod/package.json` if installed).
 2. Note **previous** version from `git log -1 -- package.json` or the bump PR/commit.
-3. Fetch release notes for the target minor/major:
+3. Fetch release notes for the target minor/major (method-agnostic - release page, GitHub API, packaged changelog, or any fetch tool available in the agent environment):
    - GitHub: `https://github.com/colinhacks/zod/releases/tag/v{VERSION}`
    - For patch bumps within the same minor (e.g. 4.4.1 → 4.4.3), use the **minor** release notes (e.g. v4.4.0) plus any patch-specific notes if present.
+   - **Offline fallback:** If release notes cannot be retrieved, state that limitation and continue from `package.json`, lockfile, and the implementation audit below only.
 4. List **potentially breaking**, **other fixes**, **performance**, and **locales** sections from the release.
 5. **Implementation audit (conditional)**: If release notes are ambiguous or the bump is minor/major:
    - Prefer `node_modules/zod/src/` when shipped (see `files` in `node_modules/zod/package.json`).
