@@ -414,6 +414,42 @@ const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?
 };
 
 /**
+ * Check if a value is an SHA hex string.
+ *
+ * @param value - Value to check.
+ * @param [options] - Options.
+ * @param [options.minLength] - Minimum length of the SHA-1 hex string.
+ * @param [options.maxLength] - Maximum length of the SHA-1 hex string.
+ * @returns `true` if the value is an SHA hex-like string
+ */
+const isShaHexLike = (
+  value: unknown,
+  {
+    minLength = 5,
+    maxLength = 40
+  }: { minLength?: number; maxLength?: number } = {}
+): boolean => {
+  const updatedValue = typeof value === 'string' ? value.trim() : '';
+  const sha1HexLeading = /^[a-f0-9]{1}/i;
+
+  if (!updatedValue || updatedValue.length < minLength || updatedValue.length > maxLength || !sha1HexLeading.test(updatedValue)) {
+    return false;
+  }
+
+  // const sha1HexFull = /\b[a-f0-9]{40}\b/i;
+  const sha1HexFull = /^[a-f0-9]{40}$/i;
+
+  if (sha1HexFull.test(updatedValue)) {
+    return true;
+  }
+
+  // const sha1HexPartial = /\b[a-f0-9]{4,39}\b/i;
+  const sha1HexPartial = /^[a-f0-9]{4,39}$/i;
+
+  return sha1HexPartial.test(updatedValue);
+};
+
+/**
  * Check if a string URL matches a whitelist entry
  *
  * @note Avoid decoding the URL as it can introduce unnecessary security risks.
@@ -764,6 +800,7 @@ export {
   isPlainObject,
   isPromise,
   isReferenceLike,
+  isShaHexLike,
   isUrl,
   isUrlObject,
   isWhitelistedUrl,

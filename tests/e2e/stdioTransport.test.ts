@@ -214,7 +214,7 @@ describe('Builtin tools, STDIO', () => {
       description: 'hash search query',
       searchQuery: '19b2a9418c744e70da9e3dd0965d1948ec1ebbe4',
       contains: [
-        'Showing 2 exact match',
+        'Showing 1 exact match',
         '**button**'
       ]
     },
@@ -230,7 +230,7 @@ describe('Builtin tools, STDIO', () => {
       description: 'uri search query',
       searchQuery: 'patternfly://docs/19b2a9418c744e70da9e3dd0965d1948ec1ebbe4',
       contains: [
-        'Showing 2 exact match',
+        'Showing 1 exact match',
         '**button**'
       ]
     },
