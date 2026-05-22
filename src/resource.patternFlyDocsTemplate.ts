@@ -4,6 +4,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './mcpSdk';
 import { getOptions, runWithOptions } from './options.context';
+import { stringJoin } from './server.helpers';
 import { resolvePatternFlyResources } from './resource.helpers';
 import {
   uriCategoryComplete,
@@ -47,12 +48,24 @@ const CONFIG = {
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
   const { docs } = await resolvePatternFlyResources(variables as any, options);
 
+  const docResults: string[] = [];
+
+  for (const doc of docs) {
+    docResults.push(stringJoin.newline(
+      `# Documentation from ${doc.resolvedPath || doc.path}`,
+      '',
+      doc.content
+    ));
+  }
+
   return {
-    contents: docs.map(doc => ({
-      uri: passedUri?.toString(),
-      mimeType: 'text/markdown',
-      text: `# Documentation from ${doc.resolvedPath || doc.path}\n\n${doc.content}`
-    }))
+    contents: [
+      {
+        uri: passedUri?.toString(),
+        mimeType: 'text/markdown',
+        text: docResults.join(options.separator)
+      }
+    ]
   };
 };
 
