@@ -1,4 +1,4 @@
-# Review Zod Integration — Reference (PatternFly MCP)
+# Review Zod integration — Reference (PatternFly MCP)
 
 ## Quick PF MCP facts
 
@@ -70,7 +70,7 @@ If release notes only mention these, impact is usually **None**:
 | `zod` | Direct production dep; use native `fromJSONSchema` / `toJSONSchema` (not `zod-to-json-schema` in app code) |
 | `@modelcontextprotocol/sdk` | Depends on / peers `zod ^3.25 \|\| ^4.0` |
 
-## Audit Depth Policy
+## Audit depth policy
 
 | Source | Frequency | Objective |
 | :--- | :--- | :--- |
@@ -271,19 +271,19 @@ No release-note item maps to APIs used in PF MCP hot paths; unit, e2e, and audit
 
 ## Architecture
 
-### SDK Routing Trigger
+### SDK routing trigger
 The MCP SDK requires `inputSchema` to be a Zod instance to route `(args, context)` to tool handlers. We rehydrate minimal Zod in the parent process (via `normalizeInputSchema`) specifically to trigger this signature, while keeping genuine validation in the isolated child process.
 
-## Compatibility Policy (Zod Detection)
+## Compatibility policy (Zod detection)
 
 To support a diverse plugin ecosystem, PatternFly MCP maintains a "Compatibility-First" approach for Zod schema detection.
 
-### Preservation Rules:
+### Preservation rules
 1. **Never Remove `_def` Detection**: Even when pinned to Zod 4+, the `isZodSchema` function in `src/server.schema.ts` must keep the `_def` check to support plugins using Zod v3.
 2. **Additive Detection**: When Zod introduces new public APIs (like `.def` in v4.4), add detection for them *alongside* existing internal brands (`_zod`, `_def`).
 3. **Exceptions**: Legacy detection should only be removed if the Zod release notes indicate that a legacy property (e.g., `_def`) has been repurposed in a way that causes false positives or crashes in the current version.
 
-### Updated P2 Recommendations (Recurring):
+### Updated P2 recommendations (recurring)
 These items MUST be included in the "Recommended Fixes (P2)" section of the report for any Zod 4.4+ review to ensure long-term health, even if they are not strictly required for the current bump to "pass."
 
 - **DO**: Add detection for the public `.def` property (Zod 4.4+).

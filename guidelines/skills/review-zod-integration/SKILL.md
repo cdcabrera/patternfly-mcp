@@ -1,6 +1,6 @@
 ---
 name: review-zod-integration
-description: Reviews Zod dependency upgrades for PatternFly MCP—maps release notes to codebase usage, runs tests, and writes a dated update report with impact tables and prioritized fixes. Use when bumping zod, reviewing zod integration, assessing Zod breaking changes, generating a zod update report, or reviewing Dependabot/Renovate zod PRs.
+description: Reviews Zod dependency upgrades for PatternFly MCP—maps release notes to codebase usage, runs tests, and writes a dated update report with impact tables and prioritized fixes. Use when bumping zod, on review zod, zod upgrade, zod integration review, assessing Zod breaking changes, generating a zod update report, or reviewing Dependabot/Renovate zod PRs.
 ---
 
 # Review Zod Integration (PatternFly MCP)
@@ -61,6 +61,10 @@ description: Reviews Zod dependency upgrades for PatternFly MCP—maps release n
    - Do not modify the codebase further until the user explicitly grants permission (except minimal P0 fixes from step 5).
 
 Domain context (SDK routing, schema pipeline, peer range): [reference.md — Quick PF MCP facts](reference.md#quick-pf-mcp-facts).
+
+## Additional resources
+
+- [reference.md](reference.md) — grep patterns, key files, priority rules, compatibility policy, report template, example impact rows, architecture notes
 
 ## Quick checks
 
