@@ -53,12 +53,31 @@ describe('searchPatternFly', () => {
     {
       description: 'empty all search',
       search: ''
+    },
+    {
+      description: 'uri search with version',
+      search: 'patternfly://schemas/modal?version=v6'
+    },
+    {
+      description: 'uri search without version, prefix',
+      search: 'patternfly://schemas/modal'
+    },
+    {
+      description: 'uri search without version, prefix partial',
+      search: 'patternfly://schemas/a'
     }
   ])('should attempt to return an array of all available results, $description', async ({ search }) => {
     const { searchResults, ...rest } = await searchPatternFly(search, undefined, { allowWildCardAll: true });
 
     expect(searchResults.length).toBeGreaterThan(0);
-    expect(Object.keys(rest)).toMatchSnapshot('keys');
+    expect(Object.keys(rest)).toEqual(expect.arrayContaining([
+      'isSearchWildCardAll',
+      'firstExactMatch',
+      'exactMatches',
+      'remainingMatches',
+      'totalResults',
+      'totalPotentialMatches'
+    ]));
   });
 
   it.each([

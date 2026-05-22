@@ -1,5 +1,6 @@
 import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { memo } from './server.caching';
 
 /**
  * Centralized completion logic for PatternFly resources.
@@ -46,5 +47,10 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
     versions: Array.from(versions).sort()
   };
 };
+
+/**
+ * Memoized version of paramCompletion.
+ */
+paramCompletion.memo = memo(paramCompletion);
 
 export { paramCompletion };

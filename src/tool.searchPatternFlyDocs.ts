@@ -6,6 +6,7 @@ import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike }
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
+import { paramCompletion } from './resource.helpers';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
 /**
@@ -59,14 +60,18 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
+      const suggestions = await paramCompletion.memo({ version: updatedVersion });
+
       return {
         content: [{
           type: 'text',
-          text: stringJoin.newline(
+          text: stringJoin.newlineFiltered(
             `No PatternFly resources found matching "${searchQuery}"`,
             options.separator,
             '**Important**:',
-            '  - Use a search all ("*") to find all available resources.'
+            '  - Use a search all ("*") to find all available resources.',
+            suggestions.sections.length ? `  - Some available sections are: ${suggestions.sections.slice(0, 3).join(', ')}` : undefined,
+            suggestions.categories.length ? `  - Some available categories are: ${suggestions.categories.slice(0, 3).join(', ')}` : undefined
           )
         }]
       };
