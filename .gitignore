@@ -62,3 +62,4 @@ coverage/
 .archive
 .agent
 reports/
+.output.txt

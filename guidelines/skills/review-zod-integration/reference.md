@@ -21,13 +21,13 @@ Canonical inventory commands (run all):
 
 ```bash
 # Zod imports and schema pipeline
-rg "from ['\"]zod['\"]|fromJSONSchema|toJSONSchema|isZodSchema|isZodRawShape|normalizeInputSchema|jsonSchemaToZod" src docs guidelines tests
+grep -rE "from ['\"]zod['\"]|fromJSONSchema|toJSONSchema|isZodSchema|isZodRawShape|normalizeInputSchema|jsonSchemaToZod" src docs guidelines tests
 
 # Breaking-change-prone APIs
-rg "z\.(tuple|undefined|merge|base64|httpUrl|cuid|record|discriminatedUnion|function|map|set)|\.merge\(|\.passthrough|looseObject|\.prefault" src
+grep -rE "z\.(tuple|undefined|merge|base64|httpUrl|cuid|record|discriminatedUnion|function|map|set)|\.merge\(|\.passthrough|looseObject|\.prefault" src
 
 # Error formatting (snapshot risk)
-rg "ZodError|formatError|treeifyError" src
+grep -rE "ZodError|formatError|treeifyError" src
 ```
 
 ## APIs typically unused in PF MCP
