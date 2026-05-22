@@ -52,7 +52,7 @@ description: Reviews Zod dependency upgrades for PatternFly MCP—maps release n
 
 6. **Write the report**
    - **Directory:** `reports/` at repository root (gitignored). Run `mkdir -p reports` if needed; do not delete prior reports.
-   - **Filename:** `YYYYMMDD-zod-{semver}-update-report.md` (`YYYYMMDD` = report date; `{semver}` = target version without `v`, e.g. `reports/20260521-zod-4.4.3-update-report.md`).
+   - **Filename:** `YYYYMMDD-HHMMSS-zod-{semver}-update-report.md` (`YYYYMMDD-HHMMSS` = report timestamp in **UTC**, 24-hour, no separators in the time part; `{semver}` = target version without `v`, e.g. `reports/20260522-143045-zod-4.4.3-update-report.md`).
    - Use [reference.md — Report template](reference.md#report-template). Do not commit unless the user asks.
 
 7. **User summary**
@@ -69,5 +69,5 @@ Domain context (SDK routing, schema pipeline, peer range): [reference.md — Qui
 - [ ] Every release-note bullet mapped with priority
 - [ ] Recurring P2s in report consolidated fixes
 - [ ] `test:types`, unit, `test:integration`, `test:audit` recorded
-- [ ] Report at `reports/YYYYMMDD-zod-{semver}-update-report.md`
+- [ ] Report at `reports/YYYYMMDD-HHMMSS-zod-{semver}-update-report.md` (UTC)
 - [ ] User asked before any P1/P2 code changes

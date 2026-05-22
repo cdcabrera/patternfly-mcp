@@ -80,7 +80,7 @@ If release notes only mention these, impact is usually **None**:
 
 ## Report template
 
-Save as: **`reports/YYYYMMDD-zod-{semver}-update-report.md`** (e.g. `reports/20260521-zod-4.4.3-update-report.md`). The `reports/` directory is gitignored; ensure an allowance for an existing directory is made (e.g., `mkdir -p`) to preserve previous contents.
+Save as: **`reports/YYYYMMDD-HHMMSS-zod-{semver}-update-report.md`** (`YYYYMMDD-HHMMSS` = UTC timestamp when the report is written; e.g. `reports/20260522-143045-zod-4.4.3-update-report.md`). The `reports/` directory is gitignored; ensure an allowance for an existing directory is made (e.g., `mkdir -p`) to preserve previous contents.
 
 ```markdown
 # Zod {version} Update Report — PatternFly MCP
