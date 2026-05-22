@@ -184,6 +184,11 @@ uriVersionComplete.memo = memo(uriVersionComplete);
 /**
  * Resource callback for the documentation index.
  *
+ * @note The callback response is a high-level index potentially grouping multiple "entries"
+ * by a single URI. This is an optimization already, but we can review moving responses over
+ * to using resource IDs instead of the current grouping uri mechanism IF we opt to review
+ * pagination.
+ *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @param options - Global options
@@ -244,7 +249,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   });
 
-  // Generate the consolidated list, apply search/query string
+  // Generate the consolidated list, apply search/query string.
   const docsIndex = Array.from(groupedByUri.entries())
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([uri, data], index) => {

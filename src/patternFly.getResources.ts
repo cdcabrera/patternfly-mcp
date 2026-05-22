@@ -3,6 +3,7 @@ import {
   getComponentSchema
 } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
+import { buildSearchString, generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext,
@@ -70,16 +71,24 @@ interface PatternFlyMcpComponentNames {
 /**
  * PatternFly JSON extended documentation metadata
  *
- * @property name - The name of component entry.
- * @property displayCategory - The display category of component entry.
- * @property uri - The parent resource URI of component entry.
- * @property uriSchemas - The parent resource URI of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property id - The unique identifier of document entry.
+ * @property groupId - The unique identifier for the document's parent.
+ * @property name - The name of document entry.
+ * @property displayCategory - The display category of document entry.
+ * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
+ * @property uriId - The resource's exact URI for the document entry.
+ * @property uriSchemas - The parent resource's general URI for the related component schemas, if they exist.
+ * @property uriSchemasId - The resource's exact URI for the component schemas, if they exist.
  */
 type PatternFlyMcpDocsMeta = {
+  id: string;
+  groupId: string;
   name: string;
   displayCategory: string;
   uri: string;
-  uriSchemas?: string | undefined
+  uriId: string;
+  uriSchemas?: string | undefined;
+  uriSchemasId?: string | undefined;
 };
 
 /**
@@ -119,22 +128,33 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
 /**
  * PatternFly resource metadata.
  *
- * @note This might need to be called resource metadata. `docs.json` doesn't just contain component metadata.
+ * Contextual properties
+ * - Contextual properties are populated based on search and filtering.
+ * - Do not expect them to exist, make sure to conditionally load them.
  *
  * @property name - The name of component entry.
- * @property isSchemasAvailable - Whether schemas are available for this component **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
- * @property uri - The URI of component entry. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
- * @property uriSchemas - The URI of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
  * @property entries - All entry PatternFly documentation entries.
  * @property versions - Entry segmented by versions. Contains all the same properties.
+ * @property id - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
+ * @property groupId - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
+ * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
+ * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
+ * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
+ * @property uriSchemas - see {@link PatternFlyMcpDocsMeta.uriSchemas} **CONTEXTUAL**.
+ * @property uriSchemasId - see {@link PatternFlyMcpDocsMeta.uriSchemasId} **CONTEXTUAL**.
  */
 type PatternFlyMcpResourceMetadata = {
   name: string;
-  isSchemasAvailable: boolean | undefined;
-  uri: string | undefined;
-  uriSchemas: string | undefined;
   entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   versions: Record<string, Omit<PatternFlyMcpResourceMetadata, 'name' | 'versions'>>;
+
+  id: string | undefined;
+  groupId: string | undefined;
+  isSchemasAvailable: boolean | undefined;
+  uri: string | undefined;
+  uriId: string | undefined;
+  uriSchemas: string | undefined;
+  uriSchemasId: string | undefined;
 };
 
 /**
@@ -433,6 +453,10 @@ const mutateKeyWordsMap = (
 /**
  * Get a multifaceted resources breakdown from PatternFly.
  *
+ * @note `resources.set(name...` includes `undefined` PF version contextual metadata by design. These values
+ * are populated during search and filter services when `entries` are matched against PF versions. Review
+ * separating the typings for clarity.
+ *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
@@ -453,56 +477,73 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
+    const groupId = generateHash(name);
 
     if (!resources.has(name)) {
-      // isSchemasAvailable, uri, and uriSchemas are contextually populated from the patternFly.search
-      // functions, search and filter. They are intended to be undefined here.
+      // Include search and filter contextual `undefined` metadata for each resource.
       resources.set(name, {
         name,
+        entries: [],
+        versions: {},
+        id: undefined,
+        groupId: undefined,
         isSchemasAvailable: undefined,
         uri: undefined,
+        uriId: undefined,
         uriSchemas: undefined,
-        entries: [],
-        versions: {}
+        uriSchemasId: undefined
       });
     }
 
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
 
     entries.forEach(entry => {
+      const id = generateHash(entry.path);
       const version = (entry.version || 'unknown').toLowerCase();
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
-      const uri = `patternfly://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
+      const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+      const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
 
       if (path) {
         pathIndex.add(path);
       }
 
       resource.versions[version] ??= {
+        id,
+        groupId,
         isSchemasAvailable,
         uri,
+        uriId,
         uriSchemas: undefined,
+        uriSchemasId: undefined,
         entries: []
       };
 
       const displayName = entry.displayName || name;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
       let uriSchemas;
+      let uriSchemasId;
 
       if (isSchemasAvailable) {
-        uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
+        uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+        uriSchemasId = `patternfly://schemas/${encodeURIComponent(groupId)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
+        resource.versions[version].uriSchemasId = uriSchemasId;
       }
 
       const extendedEntry = {
         ...entry,
+        id,
+        groupId,
         name,
         displayName,
         displayCategory,
         uri,
-        uriSchemas
+        uriId,
+        uriSchemas,
+        uriSchemasId
       } as (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta);
 
       if (path) {
@@ -521,6 +562,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version]?.push(extendedEntry);
 
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: groupId, name, version });
 
       if (entry.displayName) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.displayName, name, version });
@@ -536,6 +578,26 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       if (entry.description) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name, version });
+      }
+
+      if (id) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: id, name, version });
+      }
+
+      if (uri) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: uri, name, version });
+      }
+
+      if (uriId) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriId, name, version });
+      }
+
+      if (uriSchemas) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemas, name, version });
+      }
+
+      if (uriSchemasId) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemasId, name, version });
       }
 
       resource.entries.push(extendedEntry);
