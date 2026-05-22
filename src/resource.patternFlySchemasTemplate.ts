@@ -102,21 +102,22 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     name: updatedName
   });
 
-  let result: PatternFlyComponentSchema | undefined;
-  const matchedSchemas: string[] = [];
+  const matchedSchemas = byEntry.filter(result => result.uriSchemas);
+  const schemaResults: { content: PatternFlyComponentSchema, [key: string]: unknown }[] = [];
 
-  byEntry.forEach(result => {
-    if (result.uriSchemas) {
-      matchedSchemas.push(result.name);
+  for (const schema of matchedSchemas) {
+    const result = await getPatternFlyComponentSchema.memo(schema.uriSchemas as string);
+
+    if (result) {
+      schemaResults.push({
+        ...schema,
+        content: result
+      });
     }
-  });
-
-  if (matchedSchemas[0]) {
-    result = await getPatternFlyComponentSchema.memo(matchedSchemas[0]);
   }
 
   assertInput(
-    matchedSchemas.length > 0 && result !== undefined,
+    schemaResults.length > 0,
     () => {
       let suggestionMessage = '';
 
@@ -129,13 +130,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   return {
-    contents: [
-      {
-        uri: passedUri?.toString(),
-        mimeType: 'application/json',
-        text: JSON.stringify(result, null, 2)
-      }
-    ]
+    contents: schemaResults.map(schema => ({
+      uri: schema.uriSchemasId,
+      mimeType: 'application/json',
+      text: JSON.stringify(schema.content, null, 2)
+    }))
   };
 };
 

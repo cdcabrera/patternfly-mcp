@@ -1,4 +1,8 @@
-import { fuzzySearch, type FuzzySearch, type FuzzySearchResult } from './server.search';
+import {
+  fuzzySearch,
+  type FuzzySearch,
+  type FuzzySearchResult
+} from './server.search';
 import { memo } from './server.caching';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
@@ -7,6 +11,7 @@ import {
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
+import { parsePatternFlyUri } from './patternFly.helpers';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
 
 /**
@@ -162,7 +167,8 @@ const filterPatternFly = async (
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
-      const matchesName = !updatedFilters.name || filterMatch(entry.name, updatedFilters.name);
+      // Filter by ID and Name
+      const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
       // Any missing filter registers as true. Only filters that are active run their check.
       return matchesVersion && matchesCategory && matchesSection && matchesName;
@@ -176,9 +182,12 @@ const filterPatternFly = async (
       // Apply version contextual properties, typically URIs
       if (updatedFilters.version && versions?.[updatedFilters.version]) {
         versionContextualProperties = {
+          id: versions[updatedFilters.version]?.id,
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
-          uriSchemas: versions[updatedFilters.version]?.uriSchemas
+          uriId: versions[updatedFilters.version]?.uriId,
+          uriSchemas: versions[updatedFilters.version]?.uriSchemas,
+          uriSchemasId: versions[updatedFilters.version]?.uriSchemasId
         };
       }
 
@@ -248,14 +257,21 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
-    // Pass the original searchQuery, fuzzySearch has its own normalization.
-    search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
+    const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
+    const fuzzySearchSettings = {
       maxDistance,
       maxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true
-    });
+    };
 
+    if (patternflyUri) {
+      fuzzySearchSettings.maxDistance = 1;
+      fuzzySearchSettings.isFuzzyMatch = false;
+    }
+
+    // Pass the original searchQuery, fuzzySearch has its own normalization.
+    search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, fuzzySearchSettings);
     searchResults = search.results;
   }
 
@@ -330,7 +346,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
   return {
     isSearchWildCardAll,
-    firstExactMatch: sortedExactMatches[0],
+    firstExactMatch: sortedExactMatches.find(match => match.name === coercedSearchQuery) || sortedExactMatches[0],
     exactMatches: sortedExactMatches.slice(0, maxResults),
     remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
     searchResults: sortedSearchResults.slice(0, maxResults),
