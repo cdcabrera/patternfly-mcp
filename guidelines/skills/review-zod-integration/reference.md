@@ -17,15 +17,14 @@
 
 ## Grep patterns
 
-```bash
-# All Zod imports
-rg "from ['\"]zod['\"]" .
+Canonical inventory commands (run all):
 
-# Schema pipeline
-rg "fromJSONSchema|toJSONSchema|normalizeInputSchema|jsonSchemaToZod|isZodSchema|isZodRawShape" src
+```bash
+# Zod imports and schema pipeline
+rg "from ['\"]zod['\"]|fromJSONSchema|toJSONSchema|isZodSchema|isZodRawShape|normalizeInputSchema|jsonSchemaToZod" src docs guidelines tests
 
 # Breaking-change-prone APIs
-rg "z\.(tuple|undefined|base64|httpUrl|cuid|record|discriminatedUnion|function)|\.merge\(|\.passthrough|looseObject|\.prefault" src
+rg "z\.(tuple|undefined|merge|base64|httpUrl|cuid|record|discriminatedUnion|function|map|set)|\.merge\(|\.passthrough|looseObject|\.prefault" src
 
 # Error formatting (snapshot risk)
 rg "ZodError|formatError|treeifyError" src
@@ -65,7 +64,7 @@ If release notes only mention these, impact is usually **None**:
 
 ## Report template
 
-Save as: **`YYYYMMDD-zod{version}-update-report.md`** (repo root).
+Save as: **`reports/YYYYMMDD-zod-{semver}-update-report.md`** (e.g. `reports/20260521-zod-4.4.3-update-report.md`). The `reports/` directory is gitignored.
 
 ```markdown
 # Zod {version} Update Report — PatternFly MCP
@@ -249,8 +248,9 @@ No release-note item maps to APIs used in PF MCP hot paths; unit, e2e, and audit
 ### P2 — Optional
 | Item | Recommended fix |
 |------|-----------------|
-| v3 `passthrough()` fallback in `server.schema.ts` | Remove when repo only supports Zod 4.x |
-| Plugin authoring | Note in `docs/development.md`: prefer JSON Schema or Zod 4.x aligned with server |
+| v3 `passthrough()` fallback in `server.schema.ts` | **Keep** — tool plugins may use Zod v3 shapes; only revisit removal if PF MCP explicitly drops v3 plugin compatibility and pins Zod 4-only |
+| Public `.def` detection | Add alongside `_zod` / `_def` in `isZodSchema` when relevant to the bump |
+| Plugin authoring | Note in `docs/development.md`: prefer JSON Schema or Zod 4 for *new* plugins |
 ```
 
 ## Architecture
@@ -271,4 +271,4 @@ To support a diverse plugin ecosystem, PatternFly MCP maintains a "Compatibility
 - **DO**: Add detection for the public `.def` property (Zod 4.4+).
 - **DO**: Update `docs/development.md` to recommend JSON Schema or Zod 4 for *new* plugins.
 - **DO NOT**: Remove the v3 `_def` branch in `isZodSchema`.
-- **DO NOT**: Remove the `passthrough()` fallback in `jsonSchemaToZod` if there is any risk of the server being run in an environment with an older Zod instance.
+- **DO NOT**: Remove the `passthrough()` fallback in `jsonSchemaToZod` while plugin/tool authors may supply Zod v3 schemas (even when the server pins Zod 4). Revisit only if PF MCP explicitly drops v3 plugin compatibility.
