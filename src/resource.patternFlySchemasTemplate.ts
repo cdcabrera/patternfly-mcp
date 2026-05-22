@@ -4,18 +4,10 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
-import { filterPatternFly } from './patternFly.search';
-import {
-  getPatternFlyComponentSchema,
-  getPatternFlyMcpResources,
-  type PatternFlyComponentSchema
-} from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { resolvePatternFlySchema, paramCompletion } from './resource.helpers';
 import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
 import { type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
-import { paramCompletion } from './resource.helpers';
 
 /**
  * Name of the resource template.
@@ -72,68 +64,14 @@ uriNameComplete.memo = memo(uriNameComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { version, name } = variables || {};
-
-  assertInputStringLength(name, {
-    ...options.minMax.inputStrings,
-    inputDisplayName: 'name'
-  });
-
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
-
-  const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableSchemasVersions.join(', ')}`
-  );
-
-  const updatedVersion = normalizedVersion || latestSchemasVersion;
-  const updatedName = name.trim();
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: updatedVersion,
-    name: updatedName
-  });
-
-  let result: PatternFlyComponentSchema | undefined;
-  const matchedSchemas: string[] = [];
-
-  byEntry.forEach(result => {
-    if (result.uriSchemas) {
-      matchedSchemas.push(result.name);
-    }
-  });
-
-  if (matchedSchemas[0]) {
-    result = await getPatternFlyComponentSchema.memo(matchedSchemas[0]);
-  }
-
-  assertInput(
-    matchedSchemas.length > 0 && result !== undefined,
-    () => {
-      let suggestionMessage = '';
-
-      if (!availableSchemasVersions.includes(updatedVersion)) {
-        suggestionMessage = ` Component schemas are only available for PatternFly versions ${availableSchemasVersions.join(', ')}`;
-      }
-
-      return `No component JSON schemas found for "${passedUri?.toString()}".${suggestionMessage}`;
-    }
-  );
+  const { schema } = await resolvePatternFlySchema(variables as any, options);
 
   return {
     contents: [
       {
         uri: passedUri?.toString(),
         mimeType: 'application/json',
-        text: JSON.stringify(result, null, 2)
+        text: JSON.stringify(schema, null, 2)
       }
     ]
   };

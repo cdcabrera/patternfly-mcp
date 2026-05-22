@@ -5,12 +5,11 @@ import {
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { assertInput } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
+import { resolvePatternFlyIndex } from './resource.helpers';
 import { type PatternFlyListResourceResult } from './resource.patternFlyDocsIndex';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { filterPatternFly } from './patternFly.search';
 import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
 
 /**
@@ -85,67 +84,28 @@ listResources.memo = memo(listResources);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { version } = variables || {};
+  const { version, available, content, count } = await resolvePatternFlyIndex({
+    ...variables as any,
+    resourceType: 'schemas'
+  }, options);
 
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
+  assertInput(count > 0, () => {
+    const sug = !available.includes(version)
+      ? ` Component schemas are only available for versions: ${available.join(', ')}`
+      : '';
 
-  const { availableSchemasVersions, latestSchemasVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableSchemasVersions.join(', ')}`
-  );
-
-  const updatedVersion = normalizedVersion || latestSchemasVersion;
-
-  let docsIndex: string[] = [];
-
-  if (availableSchemasVersions.includes(updatedVersion)) {
-    const { byResource } = await filterPatternFly.memo({
-      version: updatedVersion
-    });
-
-    const groupedByUri = new Map<string, { name: string, version: string }>();
-
-    byResource.forEach(resource => {
-      if (resource.uriSchemas) {
-        groupedByUri.set(resource.uriSchemas, { name: resource.name, version: updatedVersion });
-      }
-    });
-
-    docsIndex = Array.from(groupedByUri.entries())
-      .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
-      .map(([uri, data], index) => `${index + 1}. [${data.name} (${data.version})](${uri})`);
-  }
-
-  assertInput(
-    docsIndex.length > 0,
-    () => {
-      let suggestionMessage = '';
-
-      if (!availableSchemasVersions.includes(updatedVersion)) {
-        suggestionMessage = ` Component schemas are only available for PatternFly versions ${availableSchemasVersions.join(', ')}`;
-      }
-
-      return `No component JSON schemas found for "${passedUri?.toString()}".${suggestionMessage}`;
-    }
-  );
+    return `No component JSON schemas found for "${passedUri?.toString()}".${sug}`;
+  });
 
   return {
     contents: [{
       uri: passedUri?.toString(),
       mimeType: 'text/markdown',
       text: stringJoin.newline(
-        `# PatternFly Component JSON Schemas Index for "${updatedVersion}"`,
+        `# PatternFly Component JSON Schemas Index for "${version}"`,
         '',
         '',
-        ...docsIndex
+        ...content
       )
     }]
   };

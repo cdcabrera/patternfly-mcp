@@ -2,15 +2,9 @@ import {
   ResourceTemplate,
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
-import { processDocsFunction } from './server.getResources';
-import { stringJoin } from './server.helpers';
-import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
-import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { filterPatternFly } from './patternFly.search';
+import { resolvePatternFlyResources } from './resource.helpers';
 import {
   uriCategoryComplete,
   uriNameComplete,
@@ -51,124 +45,14 @@ const CONFIG = {
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { category, name, section, version } = variables || {};
-
-  assertInputStringLength(name, {
-    ...options.minMax.inputStrings,
-    inputDisplayName: 'name'
-  });
-
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
-
-  if (section) {
-    assertInputStringLength(section, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'section'
-    });
-  }
-
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
-    });
-  }
-
-  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
-
-  const updatedVersion = normalizedVersion || latestVersion;
-  const updatedName = name.trim();
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: updatedVersion,
-    name: updatedName,
-    category,
-    section
-  });
-
-  assertInput(
-    byEntry.length > 0,
-    () => {
-      let suggestionMessage = '';
-
-      if (version || category || section) {
-        const variableList = [
-          (version && 'version') || undefined,
-          (category && 'category') || undefined,
-          (section && 'section') || undefined
-        ].filter(Boolean).join(', ');
-
-        suggestionMessage = ` Try using different parameters for ${variableList}.`;
-      }
-
-      return `No documentation found for "${updatedName}".${suggestionMessage}`;
-    }
-  );
-
-  const docResults = [];
-  const docs = [];
-
-  try {
-    const matchedUrls = byEntry.map(entry => entry.path).filter(Boolean);
-
-    if (matchedUrls.length > 0) {
-      const processedDocs = await processDocsFunction.memo(matchedUrls);
-
-      docs.push(...processedDocs);
-    }
-  } catch (error) {
-    throw new McpError(
-      ErrorCode.InternalError,
-      `Failed to fetch documentation: ${error}`
-    );
-  }
-
-  assertInput(
-    docs.length > 0,
-    () => {
-      let suggestionMessage = '';
-
-      if (version || category || section) {
-        const variableList = [
-          (version && 'version') || undefined,
-          (category && 'category') || undefined,
-          (section && 'section') || undefined
-        ].filter(Boolean).join(', ');
-
-        suggestionMessage = ` Try using different parameters for ${variableList}.`;
-      }
-
-      return `"${updatedName}" was found, but no documentation URLs are available for it.${suggestionMessage}`;
-    }
-  );
-
-  for (const doc of docs) {
-    docResults.push(stringJoin.newline(
-      `# Documentation from ${doc.resolvedPath || doc.path}`,
-      '',
-      doc.content
-    ));
-  }
+  const { docs } = await resolvePatternFlyResources(variables as any, options);
 
   return {
-    contents: [
-      {
-        uri: passedUri?.toString(),
-        mimeType: 'text/markdown',
-        text: docResults.join(options.separator)
-      }
-    ]
+    contents: docs.map(doc => ({
+      uri: passedUri?.toString(),
+      mimeType: 'text/markdown',
+      text: `# Documentation from ${doc.resolvedPath || doc.path}\n\n${doc.content}`
+    }))
   };
 };
 

@@ -4,13 +4,10 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { buildSearchString, stringJoin } from './server.helpers';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
-import { filterPatternFly } from './patternFly.search';
-import { paramCompletion } from './resource.helpers';
+import { resolvePatternFlyIndex, paramCompletion } from './resource.helpers';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -190,101 +187,19 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { category, version, section } = variables || {};
-
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
-
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
-    });
-  }
-
-  if (section) {
-    assertInputStringLength(section, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'section'
-    });
-  }
-
-  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
-
-  const updatedVersion = normalizedVersion || latestVersion;
-
-  const { byEntry } = await filterPatternFly.memo({
-    version: updatedVersion,
-    category,
-    section
-  });
-
-  // Group by URI
-  const groupedByUri = new Map<string, { name: string, version: string, categories: Set<string> }>();
-
-  byEntry.forEach(entry => {
-    if (!groupedByUri.has(entry.uri)) {
-      groupedByUri.set(entry.uri, {
-        name: entry.name,
-        version: entry.version,
-        categories: new Set([entry.displayCategory])
-      });
-    } else {
-      groupedByUri.get(entry.uri)?.categories.add(entry.displayCategory);
-    }
-  });
-
-  // Generate the consolidated list, apply search/query string
-  const docsIndex = Array.from(groupedByUri.entries())
-    .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
-    .map(([uri, data], index) => {
-      const categoryList = Array.from(data.categories).join(', ');
-      const searchString = buildSearchString({ section, category }, { prefix: true });
-
-      return `${index + 1}. [${data.name} - ${categoryList} (${data.version})](${uri}${searchString || ''})`;
-    });
-
-  assertInput(
-    docsIndex.length > 0,
-    () => {
-      let suggestionMessage = '';
-
-      if (category || section) {
-        const variableList = [
-          (category && 'category') || undefined,
-          (section && 'section') || undefined
-        ].filter(Boolean).join(' or ');
-
-        suggestionMessage = ` Try using a different ${variableList} search.`;
-      }
-
-      return `No documentation found for "${passedUri?.toString()}".${suggestionMessage}`;
-    }
-  );
-
-  const allDocs = stringJoin.newline(
-    `# PatternFly Documentation Index for "${updatedVersion}"`,
-    '',
-    '',
-    ...(docsIndex || [])
-  );
+  const { version, content } = await resolvePatternFlyIndex(variables as any, options);
 
   return {
     contents: [
       {
         uri: passedUri?.toString(),
         mimeType: 'text/markdown',
-        text: allDocs
+        text: stringJoin.newline(
+          `# PatternFly Documentation Index for "${version}"`,
+          '',
+          '',
+          ...content
+        )
       }
     ]
   };
