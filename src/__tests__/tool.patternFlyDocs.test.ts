@@ -1,7 +1,7 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { processDocsFunction } from '../server.getResources';
 import { getPatternFlyComponentSchema, getPatternFlyMcpResources, setCategoryDisplayLabel } from '../patternFly.getResources';
-import { searchPatternFly } from '../patternFly.search';
+import { searchPatternFly, filterPatternFly } from '../patternFly.search';
 import { isPlainObject } from '../server.helpers';
 import { usePatternFlyDocsTool } from '../tool.patternFlyDocs';
 
@@ -17,6 +17,7 @@ const mockProcessDocs = processDocsFunction as jest.MockedFunction<typeof proces
 const mockComponentSchema = getPatternFlyComponentSchema as jest.MockedFunction<typeof getPatternFlyComponentSchema>;
 const mockGetResources = getPatternFlyMcpResources as jest.MockedFunction<typeof getPatternFlyMcpResources>;
 const mockSearch = searchPatternFly as jest.MockedFunction<typeof searchPatternFly>;
+const mockFilter = filterPatternFly as jest.MockedFunction<typeof filterPatternFly>;
 const mockSetCategoryLabel = setCategoryDisplayLabel as jest.MockedFunction<typeof setCategoryDisplayLabel>;
 
 describe('usePatternFlyDocsTool', () => {
@@ -42,6 +43,8 @@ describe('usePatternFlyDocsTool, callback', () => {
     mockGetResources.mockResolvedValue({
       latestVersion: 'v6',
       latestSchemasVersion: 'v6',
+      availableVersions: ['v6', 'v5'],
+      availableSchemasVersions: ['v6'],
       byPath: {
         'components/loremButton.md': { name: 'button', version: 'v6', displayName: 'Button' }
       }
@@ -50,6 +53,10 @@ describe('usePatternFlyDocsTool, callback', () => {
     mockSearch.mockResolvedValue({
       exactMatches: [{ entries: [{ path: 'components/loremButton.md' }] }],
       searchResults: []
+    } as any);
+
+    mockFilter.mockResolvedValue({
+      byEntry: [{ name: 'button', version: 'v6', path: 'components/loremButton.md' }]
     } as any);
 
     mockSetCategoryLabel.mockImplementation(entry => entry?.category || 'Documentation');

@@ -1,4 +1,4 @@
-import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
+import { filterPatternFly, searchPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import {
   getPatternFlyMcpResources,
@@ -7,7 +7,7 @@ import {
 import { processDocsFunction } from './server.getResources';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions } from './options.context';
-import { buildSearchString, stringJoin } from './server.helpers';
+import { buildSearchString, stringJoin, parseUrl } from './server.helpers';
 
 /**
  * Shared logic for normalizing versions and validating inputs.
@@ -55,15 +55,19 @@ const prepareResolution = async (params: FilterPatternFlyFilters & { isSchema?: 
  * @param {FilterPatternFlyFilters} params - The filters used.
  * @param {object} suggestions - Contextual suggestions.
  * @param {object} globalSuggestions - Global suggestions.
+ * @param {string[]} [fuzzyNames] - Optional list of fuzzy name matches.
  * @returns {string} The suggestive error message.
  */
-const buildSuggestiveErrorMessage = (baseMessage: string, params: FilterPatternFlyFilters, suggestions: any, globalSuggestions: any) => {
+const buildSuggestiveErrorMessage = (baseMessage: string, params: FilterPatternFlyFilters, suggestions: any, globalSuggestions: any, fuzzyNames?: string[]) => {
   const { category, section } = params;
   const isCategory = typeof category === 'string' && category.length > 0;
   const isSection = typeof section === 'string' && section.length > 0;
 
   return stringJoin.newlineFiltered(
     baseMessage,
+    fuzzyNames && fuzzyNames.length > 0
+      ? `Did you mean ${fuzzyNames.map(name => `"${name}"`).join(', ')}?`
+      : undefined,
     isCategory && !globalSuggestions.categories.includes(category)
       ? `Category "${category}" is invalid. Valid: ${globalSuggestions.categories.join(', ')}`
       : undefined,
@@ -95,6 +99,9 @@ const resolvePatternFlyResources = async (params: FilterPatternFlyFilters, optio
   const { byEntry } = await filterPatternFly.memo({ ...params, version: updatedVersion });
 
   if (byEntry.length === 0) {
+    const { searchResults } = await searchPatternFly.memo(params.name, { version: updatedVersion });
+    const fuzzyNames = searchResults.map(result => result.item).slice(0, 3);
+
     const suggestions = await paramCompletion({
       version: updatedVersion,
       category: params.category,
@@ -107,7 +114,8 @@ const resolvePatternFlyResources = async (params: FilterPatternFlyFilters, optio
       `No documentation found for "${params.name}".`,
       params,
       suggestions,
-      globalSuggestions
+      globalSuggestions,
+      fuzzyNames
     ));
   }
 
@@ -132,6 +140,9 @@ const resolvePatternFlySchema = async (params: FilterPatternFlyFilters, options 
   const schemaEntry = byEntry.find(entry => entry.uriSchemas);
 
   if (!schemaEntry) {
+    const { searchResults } = await searchPatternFly.memo(params.name, { version: updatedSchemasVersion });
+    const fuzzyNames = searchResults.filter(result => result.uriSchemas).map(result => result.item).slice(0, 3);
+
     const suggestions = await paramCompletion({
       version: updatedSchemasVersion,
       category: params.category,
@@ -148,7 +159,8 @@ const resolvePatternFlySchema = async (params: FilterPatternFlyFilters, options 
       `No component JSON schemas found for "${params.name}".${suggestion}`,
       params,
       suggestions,
-      globalSuggestions
+      globalSuggestions,
+      fuzzyNames
     ));
   }
 
@@ -262,9 +274,41 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   };
 };
 
+/**
+ * Resolves a list of documentation URLs, paths or URIs.
+ *
+ * @param {string[]} urlList - The list of URLs/paths/URIs to resolve.
+ * @returns {Promise<string[]>} The list of resolved paths or URLs.
+ */
+const resolvePatternFlyUrls = async (urlList: string[]) => {
+  const resolvedPaths: string[] = [];
+
+  for (const item of urlList) {
+    const parsed = parseUrl(item, { prefix: 'patternfly' });
+
+    if (parsed) {
+      const { byEntry } = await filterPatternFly.memo({
+        uri: item,
+        name: parsed.path.split('/').pop(),
+        version: parsed.params.version
+      });
+
+      if (byEntry.length > 0) {
+        resolvedPaths.push(...byEntry.map(entry => entry.path).filter(Boolean));
+        continue;
+      }
+    }
+
+    resolvedPaths.push(item);
+  }
+
+  return Array.from(new Set(resolvedPaths));
+};
+
 export {
   paramCompletion,
   resolvePatternFlyIndex,
   resolvePatternFlySchema,
-  resolvePatternFlyResources
+  resolvePatternFlyResources,
+  resolvePatternFlyUrls
 };

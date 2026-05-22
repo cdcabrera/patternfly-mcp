@@ -11,9 +11,9 @@ import {
   assertInputUrlWhiteListed
 } from './server.assertions';
 import { getOptions } from './options.context';
-import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { resolvePatternFlyResources, resolvePatternFlyUrls } from './resource.helpers';
 
 /**
  * usePatternFlyDocs tool function
@@ -72,96 +72,41 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const updatedUrlList: string[] = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
     const { latestVersion, latestSchemasVersion, byPath } = await getPatternFlyMcpResources.memo();
-    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
+    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
     const updatedVersion = normalizedVersion || latestVersion;
-    const updatedName = name?.trim();
-
-    if (updatedName) {
-      const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName, { version: updatedVersion });
-
-      assertInput(
-        exactMatches.length > 0 && exactMatches.every(match => match.entries.some(entry => Boolean(entry.path))),
-        () => {
-          const suggestions = searchResults.map(result => result.item).slice(0, 3);
-          const suggestionMessage = suggestions.length
-            ? `Did you mean ${suggestions.map(suggestion => `"${suggestion}"`).join(', ')}?`
-            : 'No similar resources found.';
-
-          return `Resource "${updatedName}" not found. ${suggestionMessage}`;
-        },
-        ErrorCode.InvalidParams
-      );
-
-      updatedUrlList.push(...exactMatches.flatMap(match => match.entries.map(entry => entry.path)).filter(Boolean));
-    }
 
     const docs: ProcessedDoc[] = [];
-    const schemasSeen = new Set<string>();
     const schemaResults = [];
     const docResults = [];
 
     try {
-      const processedDocs = await processDocsFunction.memo(updatedUrlList);
-      const primaryDocs: ProcessedDoc[] = [];
-      const secondaryDocs: ProcessedDoc[] = [];
-      const tertiaryDocs: ProcessedDoc[] = [];
+      if (isName) {
+        const { docs: resolvedDocs } = await resolvePatternFlyResources({
+          name,
+          version: updatedVersion
+        }, options);
 
-      processedDocs.forEach(doc => {
-        const docEntry = (doc.path && byPath[doc.path]) || undefined;
+        docs.push(...resolvedDocs);
+      } else if (isUrlList) {
+        const slicedUrlList = urlList.slice(0, options.minMax.docsToLoad.max);
+        const resolvedUrls = await resolvePatternFlyUrls(slicedUrlList);
+        const processedDocs = await processDocsFunction.memo(resolvedUrls);
 
-        if (docEntry) {
-          if (!updatedVersion || docEntry.version === updatedVersion) {
-            primaryDocs.push(doc);
-          } else {
-            secondaryDocs.push(doc);
-          }
-        } else {
-          tertiaryDocs.push(doc);
-        }
-      });
-
-      const sortByPath = (a: ProcessedDoc, b: ProcessedDoc) => (a.path || '').localeCompare(b.path || '');
-
-      docs.push(
-        ...primaryDocs.sort(sortByPath),
-        ...secondaryDocs.sort(sortByPath),
-        ...tertiaryDocs.sort(sortByPath)
-      );
+        docs.push(...processedDocs);
+      }
     } catch (error) {
+      if (error instanceof McpError) {
+        throw error;
+      }
+
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to fetch documentation: ${error}`
       );
     }
 
-    if (docs.length === 0) {
-      const nameFilter = `**Name**: ${updatedName || '*'}`;
-      const versionFilter = `**PatternFly Version**: ${updatedVersion || '*'}`;
-      const urlListBlock = updatedUrlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');
-      const urlListFilter = stringJoin.newline(
-        `**URL List**:`,
-        urlListBlock || '  - None'
-      );
-
-      return {
-        content: [{
-          type: 'text',
-          text: stringJoin.newline(
-            `No PatternFly resources found for:`,
-            nameFilter,
-            versionFilter,
-            urlListFilter,
-            '',
-            '---',
-            '',
-            '**Important**:',
-            '  - To browse all available resources use "searchPatternFlyDocs" with a search all ("*").'
-          )
-        }]
-      };
-    }
+    const schemasSeen = new Set<string>();
 
     for (const doc of docs) {
       const patternFlyEntry = doc.path ? byPath[doc.path] : undefined;
