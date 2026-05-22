@@ -64,7 +64,7 @@ If release notes only mention these, impact is usually **None**:
 
 ## Report template
 
-Save as: **`reports/YYYYMMDD-zod-{semver}-update-report.md`** (e.g. `reports/20260521-zod-4.4.3-update-report.md`). The `reports/` directory is gitignored.
+Save as: **`reports/YYYYMMDD-zod-{semver}-update-report.md`** (e.g. `reports/20260521-zod-4.4.3-update-report.md`). The `reports/` directory is gitignored; ensure an allowance for an existing directory is made (e.g., `mkdir -p`) to preserve previous contents.
 
 ```markdown
 # Zod {version} Update Report — PatternFly MCP
@@ -268,7 +268,10 @@ To support a diverse plugin ecosystem, PatternFly MCP maintains a "Compatibility
 3. **Exceptions**: Legacy detection should only be removed if the Zod release notes indicate that a legacy property (e.g., `_def`) has been repurposed in a way that causes false positives or crashes in the current version.
 
 ### Updated P2 Recommendations (Recurring):
+These items MUST be included in the "Recommended Fixes (P2)" section of the report for any Zod 4.4+ review to ensure long-term health, even if they are not strictly required for the current bump to "pass."
+
 - **DO**: Add detection for the public `.def` property (Zod 4.4+).
 - **DO**: Update `docs/development.md` to recommend JSON Schema or Zod 4 for *new* plugins.
+- **DO**: Migrate `z.string().url()` to `z.url()` where applicable (Zod 4.4+).
 - **DO NOT**: Remove the v3 `_def` branch in `isZodSchema`.
 - **DO NOT**: Remove the `passthrough()` fallback in `jsonSchemaToZod` while plugin/tool authors may supply Zod v3 schemas (even when the server pins Zod 4). Revisit only if PF MCP explicitly drops v3 plugin compatibility.

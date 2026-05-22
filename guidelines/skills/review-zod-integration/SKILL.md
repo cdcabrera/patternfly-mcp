@@ -24,7 +24,7 @@ Copy this checklist and track progress:
 - [ ] 4. Map each release-note item to PF MCP impact
 - [ ] 5. Run tests (types, unit, e2e, audit)
 - [ ] 6. Write report under `reports/` with required filename
-- [ ] 7. Summarize verdict and prioritized fixes for the user
+- [ ] 7. Present report and ASK for permission to apply fixes
 ```
 
 ### Step 1: Versions and release notes
@@ -75,6 +75,8 @@ For **every** release-note bullet (breaking, fixes, performance, locales), fill 
 | **Priority** | See priority rules below |
 | **Recommended fix** | Concrete action, or `None` |
 
+- [ ] **Check Recurring P2s**: Always include the "Updated P2 Recommendations (Recurring)" from `reference.md` in the "Recommended fixes" (consolidated) section of the report, even if the primary tests pass.
+
 **Priority rules (PF MCP):**
 
 | Priority | When |
@@ -99,11 +101,15 @@ npm run test:audit
 
 Record pass/fail counts. Note: full `npm test` may fail on `auditor/` ESLint — treat as pre-existing unless the Zod bump touched `auditor/`.
 
-If tests fail due to Zod: fix code, update snapshots only when output change is correct (`jest -u` scoped to affected files).
+**Important Behavioral Rule**:
+- If tests fail due to Zod (**P0**): Note the failures in the report. Apply minimal P0 fixes only if strictly necessary to verify the bump's safety, and document them clearly.
+- For **P1** and **P2** items: **Do NOT apply any code changes** (even optional ones like `z.url()` migration) during this step. These must be recommended in the report first.
+
+If tests fail due to Zod (P0): fix code, update snapshots only when output change is correct (`jest -u` scoped to affected files).
 
 ### Step 6: Write the report
 
-**Directory:** `reports/` at repository root (gitignored; not for commit unless the user asks)  
+**Directory:** `reports/` at repository root (gitignored; not for commit unless the user asks). Ensure an allowance for an existing directory is made (e.g., `mkdir -p`) to avoid blowing away or failing on the previous report directory.  
 **Filename:** `YYYYMMDD-zod-{semver}-update-report.md`
 
 - `YYYYMMDD` = report date (e.g. `20260521`)
@@ -122,7 +128,7 @@ Use the template in [reference.md — Report template](reference.md#report-templ
 
 Do not commit the report unless the user asks.
 
-### Step 7: User summary
+### Step 7: User summary and Permission
 
 Reply with:
 
@@ -130,6 +136,9 @@ Reply with:
 - **Executive summary verdict table** from the report (code changes required, documentation updates required, risk level — do not collapse to a single safe/needs-work line)
 - Count of P0/P1/P2 items
 - Link to release notes
+- **🛑 Permission Request**: Ask the user: *"Would you like me to proceed with the recommended P1/P2 fixes listed in the report?"*
+
+**DO NOT** modify the codebase further until the user explicitly grants permission.
 
 ## Quick PF MCP facts
 
