@@ -34,6 +34,10 @@ Copy this checklist and track progress:
    - GitHub: `https://github.com/colinhacks/zod/releases/tag/v{VERSION}`
    - For patch bumps within the same minor (e.g. 4.4.1 → 4.4.3), use the **minor** release notes (e.g. v4.4.0) plus any patch-specific notes if present.
 4. List **potentially breaking**, **other fixes**, **performance**, and **locales** sections from the release.
+5. **Implementation Audit (Conditional)**: If the release notes are ambiguous or if the upgrade involves a minor/major version bump, perform a targeted search of `node_modules/zod/src/` to verify:
+   - Persistence of internal brands (`_def`, `_zod`).
+   - Stability of "loose" or "passthrough" logic.
+   - Compatibility of the `v3` interop layer within the `v4` package.
 
 ### Step 2: Repo guidelines
 
@@ -130,6 +134,7 @@ Reply with:
 
 ## Quick PF MCP facts
 
+- **Zod is Required for SDK Routing**: Any tool registered with the MCP SDK MUST have a Zod instance for its `inputSchema` (even a minimal one like `z.any()`) to ensure the SDK passes user arguments correctly to the handler. Without it, handlers receive only a context object.
 - Internal tools **require** Zod or raw Zod shapes; JSON Schema is converted via `src/server.schema.ts`.
 - Core APIs: `fromJSONSchema`, `toJSONSchema`, `z.looseObject`, raw shapes with `.optional()` — not `z.undefined()`, `z.tuple()`, `.merge()`.
 - MCP SDK peer: `zod ^3.25 || ^4.0`.

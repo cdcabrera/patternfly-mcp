@@ -55,6 +55,14 @@ If release notes only mention these, impact is usually **None**:
 | `zod` | Direct production dep; use native `fromJSONSchema` / `toJSONSchema` (not `zod-to-json-schema` in app code) |
 | `@modelcontextprotocol/sdk` | Depends on / peers `zod ^3.25 \|\| ^4.0` |
 
+## Audit Depth Policy
+
+| Source | Frequency | Objective |
+| :--- | :--- | :--- |
+| **Release Notes** | Always | Identify public API changes and security fixes. |
+| **Package Metadata** | Always | Verify peer dependencies and entry points. |
+| **Source Code Audit** | Minor/Major Bumps | Validate internal state and undocumented behavioral shifts. |
+
 ## Report template
 
 Save as: **`YYYYMMDD-zod{version}-update-report.md`** (repo root).
@@ -205,6 +213,7 @@ Use these as patterns when mapping **your** target release notes. Re-grep the co
 | Release note | Used in PF MCP? | Impact | Priority | Recommended fix |
 |--------------|-----------------|--------|----------|-----------------|
 | `fromJSONSchema()` metadata / cyclic input handling | Yes — `jsonSchemaToZod` | Low positive — plugin conversion may differ | None | Monitor plugin edge cases; no code change if tests pass |
+| **Metadata retention (round-trip preservation)** | Yes — `fromJSONSchema` / `toJSONSchema` | Low — snapshots may include extra keys | None | Update snapshots if custom keys are now preserved; no code change |
 | `z.record()` key transforms | No | None | None | None |
 | Skip `__proto__` in object catchall | Indirect — object parsing in tools/options | Low positive | None | None |
 | Empty union construction | Indirect — via JSON Schema conversion | Low positive — safer conversion | None | None |
@@ -243,6 +252,11 @@ No release-note item maps to APIs used in PF MCP hot paths; unit, e2e, and audit
 | v3 `passthrough()` fallback in `server.schema.ts` | Remove when repo only supports Zod 4.x |
 | Plugin authoring | Note in `docs/development.md`: prefer JSON Schema or Zod 4.x aligned with server |
 ```
+
+## Architecture
+
+### SDK Routing Trigger
+The MCP SDK requires `inputSchema` to be a Zod instance to route `(args, context)` to tool handlers. We rehydrate minimal Zod in the parent process (via `normalizeInputSchema`) specifically to trigger this signature, while keeping genuine validation in the isolated child process.
 
 ## Compatibility Policy (Zod Detection)
 
