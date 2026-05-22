@@ -1,5 +1,6 @@
 import { fuzzySearch, type FuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
+import { parseUrl } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -241,6 +242,38 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
   const coercedSearchQuery = String(searchQuery).trim();
+  const parsedUri = parseUrl(coercedSearchQuery, { prefix: 'patternfly' });
+
+  if (parsedUri) {
+    const uriFilters: FilterPatternFlyFilters = {
+      ...filters,
+      uri: coercedSearchQuery
+    };
+
+    if (!uriFilters.name) {
+      uriFilters.name = parsedUri.path.split('/').pop();
+    }
+
+    const { byResource } = await filterPatternFly(uriFilters, mcpResources);
+    const results: SearchPatternFlyResult[] = Array.from(byResource.entries()).map(([name, resource]) => ({
+      ...resource,
+      query: coercedSearchQuery,
+      distance: 0,
+      matchType: 'exact',
+      item: name
+    } as SearchPatternFlyResult));
+
+    return {
+      isSearchWildCardAll: false,
+      firstExactMatch: results[0],
+      exactMatches: results.slice(0, maxResults),
+      remainingMatches: [],
+      searchResults: results.slice(0, maxResults),
+      totalResults: results.length,
+      totalPotentialMatches: results.length
+    };
+  }
+
   const updatedResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
