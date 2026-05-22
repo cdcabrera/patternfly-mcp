@@ -5,7 +5,7 @@ import {
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
 import { processDocsFunction } from './server.getResources';
-import { stringJoin } from './server.helpers';
+import { generateHash, stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
@@ -162,13 +162,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   }
 
   return {
-    contents: [
-      {
-        uri: passedUri?.toString(),
-        mimeType: 'text/markdown',
-        text: docResults.join(options.separator)
-      }
-    ]
+    contents: docs.map(doc => ({
+      uri: `patternfly://docs/${generateHash(doc.path)}`,
+      mimeType: 'text/markdown',
+      text: stringJoin.newline(
+        `# Documentation from ${doc.resolvedPath || doc.path}`,
+        '',
+        doc.content
+      )
+    }))
   };
 };
 

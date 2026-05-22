@@ -244,7 +244,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   });
 
-  // Generate the consolidated list, apply search/query string
+  // Review flipping this over to the ID instead of the grouping uri mechanism possibly add in paging
+  // Generate the consolidated list, apply search/query string. This is a high-level index potentially grouping multiple "entries" by a single URI.
   const docsIndex = Array.from(groupedByUri.entries())
     .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
     .map(([uri, data], index) => {
