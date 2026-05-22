@@ -7,7 +7,7 @@ import {
 import { processDocsFunction } from './server.getResources';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions } from './options.context';
-import { buildSearchString } from './server.helpers';
+import { buildSearchString, stringJoin } from './server.helpers';
 
 /**
  * Shared logic for normalizing versions and validating inputs.
@@ -49,6 +49,38 @@ const prepareResolution = async (params: FilterPatternFlyFilters & { isSchema?: 
 };
 
 /**
+ * Builds a suggestive error message when no resources are found.
+ *
+ * @param {string} baseMessage - The base error message.
+ * @param {FilterPatternFlyFilters} params - The filters used.
+ * @param {object} suggestions - Contextual suggestions.
+ * @param {object} globalSuggestions - Global suggestions.
+ * @returns {string} The suggestive error message.
+ */
+const buildSuggestiveErrorMessage = (baseMessage: string, params: FilterPatternFlyFilters, suggestions: any, globalSuggestions: any) => {
+  const { category, section } = params;
+  const isCategory = typeof category === 'string' && category.length > 0;
+  const isSection = typeof section === 'string' && section.length > 0;
+
+  return stringJoin.newlineFiltered(
+    baseMessage,
+    isCategory && !globalSuggestions.categories.includes(category)
+      ? `Category "${category}" is invalid. Valid: ${globalSuggestions.categories.join(', ')}`
+      : undefined,
+    isSection && !globalSuggestions.sections.includes(section)
+      ? `Section "${section}" is invalid. Valid: ${globalSuggestions.sections.join(', ')}`
+      : undefined,
+    isCategory && globalSuggestions.categories.includes(category) && suggestions.sections.length > 0
+      ? `Valid sections for category "${category}": ${suggestions.sections.join(', ')}`
+      : undefined,
+    isSection && globalSuggestions.sections.includes(section) && suggestions.categories.length > 0
+      ? `Valid categories for section "${section}": ${suggestions.categories.join(', ')}`
+      : undefined,
+    'Try removing filters or browse the index for all available resources.'
+  );
+};
+
+/**
  * Resolves documentation content (Docs Template).
  *
  * @param {FilterPatternFlyFilters} params - The filters to resolve.
@@ -62,11 +94,22 @@ const resolvePatternFlyResources = async (params: FilterPatternFlyFilters, optio
 
   const { byEntry } = await filterPatternFly.memo({ ...params, version: updatedVersion });
 
-  assertInput(byEntry.length > 0, () => {
-    const filters = [params.version && 'version', params.category && 'category', params.section && 'section'].filter(Boolean);
+  if (byEntry.length === 0) {
+    const suggestions = await paramCompletion({
+      version: updatedVersion,
+      category: params.category,
+      section: params.section
+    });
 
-    return `No documentation found for "${params.name}".${filters.length ? ` Try using different parameters for ${filters.join(', ')}.` : ''}`;
-  });
+    const globalSuggestions = await paramCompletion({ version: updatedVersion });
+
+    assertInput(false, buildSuggestiveErrorMessage(
+      `No documentation found for "${params.name}".`,
+      params,
+      suggestions,
+      globalSuggestions
+    ));
+  }
 
   const docs = await processDocsFunction.memo(byEntry.map(entry => entry.path).filter(Boolean));
 
@@ -88,13 +131,26 @@ const resolvePatternFlySchema = async (params: FilterPatternFlyFilters, options 
   const { byEntry } = await filterPatternFly.memo({ ...params, version: updatedSchemasVersion });
   const schemaEntry = byEntry.find(entry => entry.uriSchemas);
 
-  assertInput(schemaEntry, () => {
+  if (!schemaEntry) {
+    const suggestions = await paramCompletion({
+      version: updatedSchemasVersion,
+      category: params.category,
+      section: params.section
+    });
+
+    const globalSuggestions = await paramCompletion({ version: updatedSchemasVersion });
+
     const suggestion = !availableSchemasVersions.includes(updatedSchemasVersion)
       ? ` Component schemas are only available for: ${availableSchemasVersions.join(', ')}`
       : '';
 
-    return `No component JSON schemas found for "${params.name}".${suggestion}`;
-  });
+    assertInput(false, buildSuggestiveErrorMessage(
+      `No component JSON schemas found for "${params.name}".${suggestion}`,
+      params,
+      suggestions,
+      globalSuggestions
+    ));
+  }
 
   const schema = await getPatternFlyComponentSchema.memo(schemaEntry!.name);
 
@@ -115,6 +171,25 @@ const resolvePatternFlyIndex = async (params: FilterPatternFlyFilters & { resour
   const version = resourceType === 'schemas' ? updatedSchemasVersion : updatedVersion;
 
   const { byEntry } = await filterPatternFly.memo({ ...params, version });
+
+  if (byEntry.length === 0) {
+    const suggestions = await paramCompletion({
+      version,
+      category: params.category,
+      section: params.section
+    });
+
+    const globalSuggestions = await paramCompletion({ version });
+
+    const resourceName = resourceType === 'schemas' ? 'component JSON schemas' : 'documentation';
+
+    assertInput(false, buildSuggestiveErrorMessage(
+      `No ${resourceName} found for "${version}".`,
+      params,
+      suggestions,
+      globalSuggestions
+    ));
+  }
 
   const grouped = new Map<string, { name: string, version: string, cats: Set<string> }>();
 

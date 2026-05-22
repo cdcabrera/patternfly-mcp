@@ -131,7 +131,7 @@ describe('resourceCallback', () => {
     },
     {
       description: 'non-existent name, missing version',
-      error: 'No documentation found for "loremIpsum". Try using different parameters',
+      error: 'No documentation found for "loremIpsum".',
       variables: {
         name: 'loremIpsum',
         category: 'react'

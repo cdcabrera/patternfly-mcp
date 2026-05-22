@@ -4,17 +4,14 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { buildSearchString, stringJoin } from './server.helpers';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { filterPatternFly } from './patternFly.search';
+import { resolvePatternFlyIndex, paramCompletion } from './resource.helpers';
 import {
   type PatternFlyListResourceResult,
   type ExtendedCompleteResourceTemplateCallback
 } from './resource.patternFlyDocsIndex';
-import { paramCompletion } from './resource.helpers';
 
 /**
  * Name of the resource.
@@ -131,56 +128,24 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { version, category } = variables || {};
-  const section = 'components';
-
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
-
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
-    });
-  }
-
-  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
-
-  const updatedVersion = normalizedVersion || latestVersion;
-  const { byResource } = await filterPatternFly.memo({ version: updatedVersion, section, category });
-
-  const docsIndex = Array.from(byResource.entries())
-    .sort(([_aUri, aData], [_bUri, bData]) => aData.name.localeCompare(bData.name))
-    .map(([_name, data], index) => {
-      const searchString = buildSearchString({
-        version: updatedVersion,
-        category
-      }, { prefix: true });
-
-      return `${index + 1}. [${data.name} (${updatedVersion})](${data.uri}${searchString || ''})`;
-    });
+  const { version, content } = await resolvePatternFlyIndex({
+    ...variables as any,
+    section: 'components'
+  }, options);
 
   return {
-    contents: [{
-      uri: passedUri?.toString(),
-      mimeType: 'text/markdown',
-      text: stringJoin.newline(
-        `# PatternFly Components Index for "${updatedVersion}"`,
-        '',
-        '',
-        ...docsIndex || []
-      )
-    }]
+    contents: [
+      {
+        uri: passedUri?.toString(),
+        mimeType: 'text/markdown',
+        text: stringJoin.newline(
+          `# PatternFly Components Index for "${version}"`,
+          '',
+          '',
+          ...content
+        )
+      }
+    ]
   };
 };
 

@@ -5,7 +5,6 @@ import {
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
 import { stringJoin } from './server.helpers';
-import { assertInput } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { resolvePatternFlyIndex } from './resource.helpers';
@@ -84,18 +83,10 @@ listResources.memo = memo(listResources);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { version, available, content, count } = await resolvePatternFlyIndex({
+  const { version, content } = await resolvePatternFlyIndex({
     ...variables as any,
     resourceType: 'schemas'
   }, options);
-
-  assertInput(count > 0, () => {
-    const sug = !available.includes(version)
-      ? ` Component schemas are only available for versions: ${available.join(', ')}`
-      : '';
-
-    return `No component JSON schemas found for "${passedUri?.toString()}".${sug}`;
-  });
 
   return {
     contents: [{

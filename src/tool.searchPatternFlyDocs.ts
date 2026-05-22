@@ -76,15 +76,31 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
-      const suggestions = await paramCompletion({ version: updatedVersion });
+      const suggestions = await paramCompletion({
+        version: updatedVersion,
+        category: isCategory ? category : undefined,
+        section: isSection ? section : undefined
+      });
+
+      const globalSuggestions = await paramCompletion({ version: updatedVersion });
 
       return {
         content: [{
           type: 'text',
           text: stringJoin.newlineFiltered(
             `No PatternFly resources found matching query "${searchQuery}" with current filters.`,
-            isCategory ? `Valid categories for this version: ${suggestions.categories.join(', ')}` : undefined,
-            isSection ? `Valid sections for this version: ${suggestions.sections.join(', ')}` : undefined,
+            isCategory && !globalSuggestions.categories.includes(category)
+              ? `Category "${category}" is invalid. Valid categories for this version: ${globalSuggestions.categories.join(', ')}`
+              : undefined,
+            isSection && !globalSuggestions.sections.includes(section)
+              ? `Section "${section}" is invalid. Valid sections for this version: ${globalSuggestions.sections.join(', ')}`
+              : undefined,
+            isCategory && globalSuggestions.categories.includes(category) && suggestions.sections.length > 0
+              ? `Valid sections for category "${category}": ${suggestions.sections.join(', ')}`
+              : undefined,
+            isSection && globalSuggestions.sections.includes(section) && suggestions.categories.length > 0
+              ? `Valid categories for section "${section}": ${suggestions.categories.join(', ')}`
+              : undefined,
             options.separator,
             '**Important**:',
             '  - Try removing filters or use "*" to see all available resources.'
