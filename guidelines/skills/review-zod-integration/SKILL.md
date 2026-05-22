@@ -14,139 +14,60 @@ description: Reviews Zod dependency upgrades for PatternFly MCP—maps release n
 
 ## Workflow
 
-Copy this checklist and track progress:
+1. **Versions and release notes**
+   - Read `package.json`, `package-lock.json`, and `node_modules/zod/package.json` if installed.
+   - Note **previous** version from `git log -1 -- package.json` or the bump PR/commit.
+   - Fetch release notes for the target minor/major (release page, GitHub API, packaged changelog, or any fetch tool): `https://github.com/colinhacks/zod/releases/tag/v{VERSION}`.
+   - For patch bumps within the same minor (e.g. 4.4.1 → 4.4.3), use the **minor** release notes (e.g. v4.4.0) plus patch-specific notes when present.
+   - **Offline fallback:** If release notes cannot be retrieved, state that limitation and continue from `package.json`, lockfile, and the inventory/audit steps only.
+   - Extract **potentially breaking**, **other fixes**, **performance**, and **locales** sections.
+   - If notes are ambiguous or the bump is minor/major, follow [reference.md — Audit depth policy](reference.md#audit-depth-policy) (prefer `node_modules/zod/src/` when shipped; otherwise published entry points from `package.json` `exports`).
 
-```
-- [ ] 1. Confirm versions (from → to) and fetch release notes
-- [ ] 2. Review repo guidelines (CONTRIBUTING, agent_coding, development.md)
-- [ ] 3. Inventory Zod usage (grep patterns + hot paths in reference.md)
-- [ ] 3b. Compatibility checks (_def / v3 detection stays additive)
-- [ ] 4. Map each release-note item to PF MCP impact
-- [ ] 5. Run tests (types, unit, e2e, audit)
-- [ ] 6. Write report under `reports/` with required filename
-- [ ] 7. Present report and ASK for permission to apply fixes
-```
+2. **Repo guidelines**
+   - Read (do not paste into the report): `CONTRIBUTING.md`, `guidelines/agent_coding.md`, `guidelines/agent_testing.md`, `docs/development.md`.
 
-### Step 1: Versions and release notes
+3. **Codebase inventory**
+   - Run all commands in [reference.md — Grep patterns](reference.md#grep-patterns). Read [reference.md — Key files](reference.md#key-files).
+   - Record **used** vs **not used** per release-note item.
+   - Apply [reference.md — Compatibility policy (Zod detection)](reference.md#compatibility-policy-zod-detection): new detection must be **additive**; do not remove `_def` or v3 paths unless release notes show a concrete conflict.
 
-1. Read `package.json` and `package-lock.json` (`node_modules/zod/package.json` if installed).
-2. Note **previous** version from `git log -1 -- package.json` or the bump PR/commit.
-3. Fetch release notes for the target minor/major (method-agnostic - release page, GitHub API, packaged changelog, or any fetch tool available in the agent environment):
-   - GitHub: `https://github.com/colinhacks/zod/releases/tag/v{VERSION}`
-   - For patch bumps within the same minor (e.g. 4.4.1 → 4.4.3), use the **minor** release notes (e.g. v4.4.0) plus any patch-specific notes if present.
-   - **Offline fallback:** If release notes cannot be retrieved, state that limitation and continue from `package.json`, lockfile, and the implementation audit below only.
-4. List **potentially breaking**, **other fixes**, **performance**, and **locales** sections from the release.
-5. **Implementation audit (conditional)**: If release notes are ambiguous or the bump is minor/major:
-   - Prefer `node_modules/zod/src/` when shipped (see `files` in `node_modules/zod/package.json`).
-   - **Fallback:** If `src/` is absent, read `main`, `module`, and `exports` in `node_modules/zod/package.json`, then search those published paths (e.g. `index.js`, `v3/`) for internal brands and interop behavior.
-   - Verify: persistence of `_def` / `_zod`; stability of loose/passthrough logic; v3 interop within the v4 package.
+4. **Impact matrix**
+   - For **every** release-note bullet (breaking, fixes, performance, locales), add one row to the report tables. Columns: **Release note**, **Used in PF MCP?** (Yes / No / Indirect — cite file or grep), **Impact** (None / Low / Medium / High), **Priority**, **Recommended fix** (or `None`). Priority rules: [reference.md — Priority rules](reference.md#priority-rules-pf-mcp).
+   - Always include [reference.md — Updated P2 recommendations (Recurring)](reference.md#updated-p2-recommendations-recurring) in the report **Recommended fixes** section, even when tests pass.
+   - Row patterns: [reference.md — Example impact rows](reference.md#example-impact-rows-pf-mcp).
 
-### Step 2: Repo guidelines
+5. **Tests**
+   From repo root:
 
-Read (do not duplicate into the report):
+   ```bash
+   npm run test:types
+   npx jest --selectProjects unit
+   npm run test:integration
+   npm run test:audit
+   ```
 
-- `CONTRIBUTING.md` — testing, TypeScript, AI agent section
-- `guidelines/agent_coding.md` — schema conversion, `_zod` / `_def` detection
-- `guidelines/agent_testing.md` — snapshots, behavior-focused tests
-- `docs/development.md` — Zod vs JSON Schema for tools/plugins
+   - Record pass/fail counts. Full `npm test` may fail on `auditor/` ESLint—treat as pre-existing unless the bump touched `auditor/`.
+   - **P0 (tests/types/runtime break):** Document failures in the report. Apply only minimal fixes needed to verify bump safety, re-run tests, and note any changes. Update snapshots only when output change is correct (`jest -u` scoped to affected files).
+   - **P1 / P2:** Do not change code during this review—list fixes in the report only.
 
-### Step 3: Codebase inventory
+6. **Write the report**
+   - **Directory:** `reports/` at repository root (gitignored). Run `mkdir -p reports` if needed; do not delete prior reports.
+   - **Filename:** `YYYYMMDD-zod-{semver}-update-report.md` (`YYYYMMDD` = report date; `{semver}` = target version without `v`, e.g. `reports/20260521-zod-4.4.3-update-report.md`).
+   - Use [reference.md — Report template](reference.md#report-template). Do not commit unless the user asks.
 
-Run all commands in [reference.md — Grep patterns](reference.md#grep-patterns). Read hot paths in [reference.md — Key files](reference.md#key-files).
+7. **User summary**
+   - Report path; **executive summary verdict table** from the report (code changes required, documentation updates required, risk level—do not collapse to a single line); P0/P1/P2 counts; link to release notes.
+   - Ask: *"Would you like me to proceed with the recommended P1/P2 fixes listed in the report?"*
+   - Do not modify the codebase further until the user explicitly grants permission (except minimal P0 fixes from step 5).
 
-Record: **used** vs **not used** per release-note item.
+Domain context (SDK routing, schema pipeline, peer range): [reference.md — Quick PF MCP facts](reference.md#quick-pf-mcp-facts).
 
-#### Step 3b: Compatibility checks
+## Quick checks
 
-Per [reference.md — Compatibility Policy](reference.md#compatibility-policy-zod-detection):
-
-- New detection logic must be **additive** (e.g. public `.def` alongside `_zod` / `_def`).
-- Do **not** remove legacy `_def` or v3-compatible paths unless Zod release notes show a concrete conflict (false positives or crashes).
-
-### Step 4: Impact matrix
-
-For **every** release-note bullet (breaking, fixes, performance, locales), fill one row in the report tables:
-
-| Column | Content |
-|--------|---------|
-| **Release note** | Short label from Zod release |
-| **Used in PF MCP?** | Yes / No / Indirect — cite file or grep |
-| **Impact** | None / Low / Medium / High — effect on tools, plugins, manifests, tests |
-| **Priority** | See priority rules below |
-| **Recommended fix** | Concrete action, or `None` |
-
-- [ ] **Check Recurring P2s**: Always include the "Updated P2 Recommendations (Recurring)" from `reference.md` in the "Recommended fixes" (consolidated) section of the report, even if the primary tests pass.
-
-**Priority rules (PF MCP):**
-
-| Priority | When |
-|----------|------|
-| **P0** | Tests fail, types fail, or runtime/tool registration breaks after bump |
-| **P1** | Used API with behavior change; snapshots or plugin manifests need update |
-| **P2** | Optional hygiene (adding modern `.def` detection, docs for plugin authors). **Note**: Do NOT remove legacy `_def` or v3-compatible detection logic unless it contradicts the new Zod version. |
-| **None** | Not used, or positive/neutral change with passing tests |
-
-For filled-row patterns (breaking / fixes / summary), see [reference.md — Example impact rows](reference.md#example-impact-rows-pf-mcp).
-
-### Step 5: Tests
-
-From repo root:
-
-```bash
-npm run test:types
-npx jest --selectProjects unit
-npm run test:integration
-npm run test:audit
-```
-
-Record pass/fail counts. Note: full `npm test` may fail on `auditor/` ESLint — treat as pre-existing unless the Zod bump touched `auditor/`.
-
-**Important Behavioral Rule**:
-- If tests fail due to Zod (**P0**): Note the failures in the report. Apply minimal P0 fixes only if strictly necessary to verify the bump's safety, and document them clearly.
-- For **P1** and **P2** items: **Do NOT apply any code changes** (even optional ones like `z.url()` migration) during this step. These must be recommended in the report first.
-
-If tests fail due to Zod (P0): fix code, update snapshots only when output change is correct (`jest -u` scoped to affected files).
-
-### Step 6: Write the report
-
-**Directory:** `reports/` at repository root (gitignored; not for commit unless the user asks). Ensure an allowance for an existing directory is made (e.g., `mkdir -p`) to avoid blowing away or failing on the previous report directory.  
-**Filename:** `YYYYMMDD-zod-{semver}-update-report.md`
-
-- `YYYYMMDD` = report date (e.g. `20260521`)
-- `{semver}` = **target** version without `v` prefix (e.g. `4.4.3` → `reports/20260521-zod-4.4.3-update-report.md`)
-
-Use the template in [reference.md — Report template](reference.md#report-template). Include:
-
-1. Executive summary (verdict table)
-2. Test verification table
-3. Dependency context (`zod`, `@modelcontextprotocol/sdk` peer range)
-4. Zod usage inventory
-5. **Release notes vs. PatternFly MCP** — separate tables for breaking / other / performance / locales
-6. Documentation and agent guidance status
-7. **Recommended fixes** — consolidated list sorted by priority (P0 → P2)
-8. Conclusion and references (release URL, bump commit if any)
-
-Do not commit the report unless the user asks.
-
-### Step 7: User summary and Permission
-
-Reply with:
-
-- Report path
-- **Executive summary verdict table** from the report (code changes required, documentation updates required, risk level — do not collapse to a single safe/needs-work line)
-- Count of P0/P1/P2 items
-- Link to release notes
-- **🛑 Permission Request**: Ask the user: *"Would you like me to proceed with the recommended P1/P2 fixes listed in the report?"*
-
-**DO NOT** modify the codebase further until the user explicitly grants permission.
-
-## Quick PF MCP facts
-
-- **Zod is Required for SDK Routing**: Any tool registered with the MCP SDK MUST have a Zod instance for its `inputSchema` (even a minimal one like `z.any()`) to ensure the SDK passes user arguments correctly to the handler. Without it, handlers receive only a context object.
-- Internal tools **require** Zod or raw Zod shapes; JSON Schema is converted via `src/server.schema.ts`.
-- Core APIs: `fromJSONSchema`, `toJSONSchema`, `z.looseObject`, raw shapes with `.optional()` — not `z.undefined()`, `z.tuple()`, `.merge()`.
-- MCP SDK peer: `zod ^3.25 || ^4.0`.
-
-## Additional resources
-
-- [reference.md](reference.md) — file map, grep patterns, **report template**, **example impact rows**
+- [ ] Versions (from → to) and release notes captured (or offline limitation noted)
+- [ ] Guidelines read; inventory grep run; compatibility policy applied
+- [ ] Every release-note bullet mapped with priority
+- [ ] Recurring P2s in report consolidated fixes
+- [ ] `test:types`, unit, `test:integration`, `test:audit` recorded
+- [ ] Report at `reports/YYYYMMDD-zod-{semver}-update-report.md`
+- [ ] User asked before any P1/P2 code changes

@@ -1,5 +1,21 @@
 # Review Zod Integration — Reference (PatternFly MCP)
 
+## Quick PF MCP facts
+
+- **Zod is required for SDK routing:** Any tool registered with the MCP SDK must have a Zod `inputSchema` (even `z.any()`) so the SDK passes user arguments to the handler. Without it, handlers receive only a context object.
+- Internal tools **require** Zod or raw Zod shapes; JSON Schema is converted via `src/server.schema.ts`.
+- Core APIs: `fromJSONSchema`, `toJSONSchema`, `z.looseObject`, raw shapes with `.optional()` — not `z.undefined()`, `z.tuple()`, `.merge()`.
+- MCP SDK peer: `zod ^3.25 || ^4.0`.
+
+## Priority rules (PF MCP)
+
+| Priority | When |
+|----------|------|
+| **P0** | Tests fail, types fail, or runtime/tool registration breaks after bump |
+| **P1** | Used API with behavior change; snapshots or plugin manifests need update |
+| **P2** | Optional hygiene (e.g. modern `.def` detection, docs for plugin authors). Do **not** remove legacy `_def` or v3-compatible detection unless the new Zod version contradicts it |
+| **None** | Not used, or positive/neutral change with passing tests |
+
 ## Key files
 
 | File | Zod role |
