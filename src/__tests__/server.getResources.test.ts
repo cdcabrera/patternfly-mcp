@@ -320,6 +320,7 @@ describe('loadFileFetch', () => {
     expect(mockReadCall).toHaveBeenCalledTimes(expectedIsFetch ? 0 : 1);
     expect(result).toEqual({
       content: 'content',
+      path: expect.any(String),
       resolvedPath: expect.any(String)
     });
   });

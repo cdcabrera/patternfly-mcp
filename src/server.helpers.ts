@@ -183,19 +183,44 @@ const isAsync = (obj: unknown) => /^\[object (Async|AsyncFunction)]/.test(Object
 const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.test(Object.prototype.toString.call(obj));
 
 /**
- * Check if a value is a valid URL, URL-like.
+ * Check if a value is a URL object.
+ *
+ * Setting allowedProtocols to `undefined` or an empty array will allow all protocols.
+ *
+ * @param obj - The unknown value to check
+ * @param [options] - Options
+ * @param [options.allowedProtocols] - Array of allowed URL protocols. Default `undefined`.
+ * @returns `true` if the value is an instance of URL
+ */
+const isUrlObject = (obj: unknown, { allowedProtocols }: { allowedProtocols?: string[] | undefined } = {}): obj is URL => {
+  const isUrlObj = obj instanceof URL;
+  const isAllowedProtocols = Array.isArray(allowedProtocols) && allowedProtocols.length > 0;
+
+  if ((isUrlObj && !isAllowedProtocols) || (isUrlObj && allowedProtocols?.includes(obj.protocol.slice(0, -1)))) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Check if a value is a valid URL object, URL string, URL-like.
  *
  * @note URL-like validation can be updated to support more URL schemes (e.g. `blob:`).
  * Be aware this helper is used to gate-keep tools-as-plugins. Consider additions carefully
  * since they may fall outside our use cases.
  *
- * @param str - String to check
+ * @param str - String or object to check
  * @param [options] - Options
  * @param [options.allowedProtocols] - List of allowed URL protocols. Default: `['file', 'http', 'https', 'data', 'node']`
  * @param [options.isStrict] - If `true`, only strict URL validation is performed. Default: `true`
  * @returns `true` if the string is a valid URL, URL-like.
  */
 const isUrl = (str: unknown, { allowedProtocols = ['file', 'http', 'https', 'data', 'node'], isStrict = true } = {}) => {
+  if (isUrlObject(str, { allowedProtocols })) {
+    return true;
+  }
+
   if (typeof str !== 'string' || !str.trim()) {
     return false;
   }
@@ -408,7 +433,7 @@ const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProto
     const { host, pathname, protocol } = new URL(url);
     const updatedProtocol = protocol.toLowerCase();
     const updatedHost = host.toLowerCase();
-    const updatedPath = pathname.toLowerCase();
+    const updatedPath = decodeURIComponent(pathname).toLowerCase();
 
     return whitelist.some(entry => {
       const listUrl = new URL(entry);
@@ -464,6 +489,60 @@ const listIncrementalCombinations = (values: string[]): string[][] =>
 
     return acc;
   }, [[]] as string[][]);
+
+/**
+ * URL and URI parser with prefix/protocol support.
+ *
+ * @param url - URL or URI to parse
+ * @param [options] - Configuration options
+ * @param [options.prefix] - Optional filtering URL prefix sans-colon and slashes (e.g. "http" vs. "http://").
+ *     This will match against the provided URI. If the URI does not start with the prefix, `undefined` is returned.
+ * @param [options.normalizeSearchParamKeys=true] - If `true`, search param keys are normalized to lowercase. Default: `true`
+ * @param [options.isStrict] - If `true`, only strict URL and path validation is performed. Default: `true`
+ * @returns Object containing URI parts, or `undefined` if parsing fails.
+ */
+const parseUrl = (url: string, { prefix, normalizeSearchParamKeys = true, isStrict = true }: { prefix?: string, normalizeSearchParamKeys?: boolean, isStrict?: boolean } = {}) => {
+  const isPrefix = typeof prefix === 'string' && prefix.length > 0 && !prefix.includes(':') && !prefix.includes('/');
+  const opts = isPrefix ? { allowedProtocols: [prefix] } : {};
+  const isUri = isUrl(url, { ...opts, isStrict });
+
+  // Normalize search param keys into a plain object with original keys, or a plain object with lowercase keys.
+  const normalizeParamKeys = (searchParams: URLSearchParams) => {
+    if (normalizeSearchParamKeys) {
+      return Object.fromEntries(new URLSearchParams(
+        Array.from(searchParams, ([key, value]) => [key.toLowerCase(), value])
+      ));
+    }
+
+    return Object.fromEntries(searchParams);
+  };
+
+  if (isUri) {
+    const updatedUrl = new URL(url);
+
+    return {
+      protocol: updatedUrl.protocol,
+      hostname: updatedUrl.hostname,
+      path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
+      params: normalizeParamKeys(updatedUrl.searchParams)
+    };
+  }
+
+  if (isPrefix && isPath(url, { isStrict })) {
+    try {
+      const updatedUrl = new URL(`${prefix}://${url}`);
+
+      return {
+        protocol: updatedUrl.protocol,
+        hostname: updatedUrl.hostname,
+        path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
+        params: normalizeParamKeys(updatedUrl.searchParams)
+      };
+    } catch {}
+  }
+
+  return undefined;
+};
 
 /**
  * Basic split for URIs to find base and search.
@@ -613,10 +692,12 @@ export {
   isPromise,
   isReferenceLike,
   isUrl,
+  isUrlObject,
   isWhitelistedUrl,
   listAllCombinations,
   listIncrementalCombinations,
   mergeObjects,
+  parseUrl,
   portValid,
   splitUri,
   stringJoin,

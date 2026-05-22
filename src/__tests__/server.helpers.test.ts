@@ -8,11 +8,13 @@ import {
   isPromise,
   isReferenceLike,
   isUrl,
+  isUrlObject,
   isPath,
   isWhitelistedUrl,
   listAllCombinations,
   listIncrementalCombinations,
   mergeObjects,
+  parseUrl,
   portValid,
   splitUri,
   stringJoin,
@@ -460,6 +462,55 @@ describe('isPromise', () => {
     }
   ])('should determine a promise for $description', ({ param, value }) => {
     expect(isPromise(param)).toBe(value);
+  });
+});
+
+describe('isUrlObject', () => {
+  it.each([
+    {
+      description: 'valid URL object with no protocol restrictions',
+      obj: new URL('https://patternfly.org'),
+      options: {},
+      expected: true
+    },
+    {
+      description: 'valid URL object with matching allowed protocol',
+      obj: new URL('patternfly://docs'),
+      options: { allowedProtocols: ['patternfly'] },
+      expected: true
+    },
+    {
+      description: 'valid URL object with non-matching allowed protocol',
+      obj: new URL('http://patternfly.org'),
+      options: { allowedProtocols: ['https'] },
+      expected: false
+    },
+    {
+      description: 'invalid input (string instead of URL object)',
+      obj: 'https://patternfly.org',
+      options: {},
+      expected: false
+    },
+    {
+      description: 'invalid input, null',
+      obj: null,
+      options: {},
+      expected: false
+    },
+    {
+      description: 'invalid input, undefined',
+      obj: undefined,
+      options: {},
+      expected: false
+    },
+    {
+      description: 'invalid input, empty string',
+      obj: ' ',
+      options: {},
+      expected: false
+    }
+  ])('should return $expected for $description', ({ obj, options, expected }) => {
+    expect(isUrlObject(obj, options)).toBe(expected);
   });
 });
 
@@ -947,6 +998,67 @@ describe('portValid', () => {
     }
   ])('should validate a port, $description', ({ port, expected }) => {
     expect(portValid(port)).toBe(expected);
+  });
+});
+
+describe('parseUrl', () => {
+  it.each([
+    {
+      description: 'absolute URI without prefix',
+      uri: 'patternfly://docs/button?v=1',
+      options: { isStrict: false },
+      expected: {
+        protocol: 'patternfly:',
+        hostname: 'docs',
+        path: 'button',
+        params: { v: '1' }
+      }
+    },
+    {
+      description: 'relative URI with prefix',
+      uri: 'docs/button',
+      options: { prefix: 'patternfly', isStrict: false },
+      expected: {
+        protocol: 'patternfly:',
+        hostname: 'docs',
+        path: 'button',
+        params: {}
+      }
+    },
+    {
+      description: 'absolute URI with ignored prefix',
+      uri: 'https://google.com/search?q=test',
+      options: { prefix: 'patternfly://' },
+      expected: {
+        protocol: 'https:',
+        hostname: 'google.com',
+        path: 'search',
+        params: { q: 'test' }
+      }
+    },
+    {
+      description: 'invalid URI',
+      uri: 'not a uri',
+      expected: undefined
+    },
+    {
+      description: 'relative URI without prefix',
+      uri: 'docs/button',
+      expected: undefined
+    },
+    {
+      description: 'absolute URI without hostname',
+      uri: 'patternfly:docs/button',
+      options: { isStrict: false },
+      expected: {
+        protocol: 'patternfly:',
+        hostname: '',
+        path: 'docs/button',
+        params: {}
+      }
+    }
+  ])('should parse a URI, $description', ({ uri, options, expected }) => {
+    expect(parseUrl(uri, options)).toEqual(expected);
   });
 });
 
