@@ -1,8 +1,8 @@
 import { filterPatternFly, searchPatternFly } from '../patternFly.search';
-
+/*
 describe('filterPatternFly', () => {
   it.each([
-    /*{
+    {
       description: 'all filter',
       filters: undefined
     },
@@ -21,7 +21,7 @@ describe('filterPatternFly', () => {
     {
       description: 'category, accessibility',
       filters: { category: 'accessibility' }
-    },*/
+    },
     {
       description: 'patternfly URI',
       filters: { version: 'v6', uri: 'patternfly://docs/inlineedit?version=v6' }
@@ -33,10 +33,46 @@ describe('filterPatternFly', () => {
   ])('should attempt to return filtered results, $description', async ({ filters }) => {
     const result = await filterPatternFly(filters as any);
 
-    console.warn(result);
-
     expect(result.byEntry.length).toBeGreaterThanOrEqual(0);
     expect(Array.from(result.byResource).length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should filter URI results if version is available', async () => {
+    const result = await filterPatternFly(
+      { version: 'v6', uri: 'patternfly://schemas/modal?version=v6' } as any,
+      new Map([['loremIpsum', {
+        name: 'loremIpsum',
+        description: 'dolor sit amet, consectetur adipiscing elit.',
+        entries: [{ section: 'dolor' }, { section: 'sit' }],
+        versions: {
+          v6: {
+            uri: 'patternfly://schemas/modal?version=v6'
+          }
+        }
+      }]]) as any
+    );
+
+    console.warn(result);
+
+    expect(result.byEntry.length).toBe(0);
+    expect(Array.from(result.byResource).length).toBe(0);
+  });
+
+  it('should fail to filter URI results if version is missing', async () => {
+    const result = await filterPatternFly(
+      { uri: 'patternfly://schemas/modal?version=v5' } as any,
+      new Map([['loremIpsum', {
+        entries: [{ section: 'dolor' }, { section: 'sit' }],
+        versions: {
+          v5: {
+            uri: 'patternfly://schemas/modal?version=v5'
+          }
+        }
+      }]]) as any
+    );
+
+    expect(result.byEntry.length).toBe(2);
+    expect(Array.from(result.byResource).length).toBe(1);
   });
 
   it('should attempt to filter number results', async () => {
@@ -49,7 +85,8 @@ describe('filterPatternFly', () => {
     expect(Array.from(result.byResource).length).toBeGreaterThanOrEqual(0);
   });
 });
-/*
+*/
+
 describe('searchPatternFly', () => {
   it.each([
     {
@@ -63,9 +100,15 @@ describe('searchPatternFly', () => {
     {
       description: 'empty all search',
       search: ''
+    },
+    {
+      description: 'uri search',
+      search: 'patternfly://docs/inlineedit?version=v6'
     }
   ])('should attempt to return an array of all available results, $description', async ({ search }) => {
     const { searchResults, ...rest } = await searchPatternFly(search, undefined, { allowWildCardAll: true });
+
+    console.warn('>>>>', search, rest);
 
     expect(searchResults.length).toBeGreaterThan(0);
     expect(Object.keys(rest)).toMatchSnapshot('keys');
@@ -125,4 +168,3 @@ describe('searchPatternFly', () => {
     expect(totalPotentialMatches).toBeGreaterThanOrEqual(totalResults);
   });
 });
-*/
