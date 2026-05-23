@@ -20,7 +20,7 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
  */
 const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
-    const { searchQuery, version, category, section } = args;
+    const { searchQuery, version } = args;
     const isVersion = typeof version === 'string' && version.length > 0;
 
     assertInputStringLength(searchQuery, {
@@ -46,7 +46,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
-      { version: updatedVersion, category, section },
+      { version: updatedVersion },
       { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
     );
 
@@ -66,10 +66,10 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         content: [{
           type: 'text',
           text: stringJoin.newlineFiltered(
-            `No PatternFly resources found matching query "${searchQuery}" with current filters.`,
+            `No PatternFly resources found matching "${searchQuery}"`,
             options.separator,
             '**Important**:',
-            '  - Try removing filters or use "*" to see all available resources.',
+            '  - Use a search all ("*") to find all available resources.',
             suggestions.sections.length ? `  - Some available sections are: ${suggestions.sections.slice(0, 3).join(', ')}` : undefined,
             suggestions.categories.length ? `  - Some available categories are: ${suggestions.categories.slice(0, 3).join(', ')}` : undefined
           )
@@ -138,7 +138,6 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     return {
       content: [{
-        // need to reconfirm the type
         type: 'text',
         text: stringJoin.newline(
           searchTitle,
@@ -155,11 +154,11 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   return [
     'searchPatternFlyDocs',
     {
-      description: `Search PatternFly resources and get component names with documentation and guidance URIs, URLs. Supports case-insensitive partial and all ("*") matches.
+      description: `Search PatternFly resources and get component names with documentation and guidance URLs. Supports case-insensitive partial and all ("*") matches.
 
       **Usage**:
-        1. Input a "searchQuery" to find PatternFly documentation and guideline URIs, URLs, and component names.
-        2. Use the returned resource names OR URIs OR URLs OR version with the "usePatternFlyDocs" tool to get markdown documentation, guidelines, and component JSON schemas.
+        1. Input a "searchQuery" to find PatternFly documentation and guideline URLs, and component names.
+        2. Use the returned resource names OR URLs OR version with the "usePatternFlyDocs" tool to get markdown documentation, guidelines, and component JSON schemas.
 
       **Returns**:
         - Component and resource names that can be used with "usePatternFlyDocs"
