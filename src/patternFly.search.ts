@@ -28,14 +28,12 @@ type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata,
  * @property [category] - Category to filter search results. Defaults to undefined for all categories.
  * @property [section] - Section to filter search results. Defaults to undefined for all sections.
  * @property [name] - Name to filter search results. Defaults to undefined for all names.
- * @property [uri] - URI to filter search results. Defaults to undefined for all URIs.
  */
 interface FilterPatternFlyFilters {
   version?: string | undefined;
   category?: string | undefined;
   section?: string | undefined;
   name?: string | undefined;
-  uri?: string | undefined;
 }
 
 /**
@@ -122,22 +120,6 @@ const setPatternFlyUriFilters = (uri: string) => {
         filters[key as keyof FilterPatternFlyFilters] = value;
       }
     });
-
-    /*
-    if (patternflyUri.params.version) {
-      filters.version = patternflyUri.params.version;
-    }
-
-    if (patternflyUri.params.section) {
-      filters.section = patternflyUri.params.section;
-    }
-
-    if (patternflyUri.params.category) {
-      filters.category = patternflyUri.params.category;
-    }
-    */
-
-    return filters;
   }
 
   return filters;
@@ -191,8 +173,6 @@ const filterPatternFly = async (
     );
   }
 
-  // console.warn('>>>>>>>>>>>>>>>>>>>> filters', updatedFilters);
-
   // Filter matching for resources and entries
   const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
   const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
@@ -204,8 +184,6 @@ const filterPatternFly = async (
       normalizePropertyValue.endsWith(filterValue);
   };
 
-  // console.warn('>>>>>>>>>>>>>>>>>>>> resource', resources);
-
   for (const [name, resource] of resources) {
     const matchedEntries = resource.entries.filter(entry => {
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
@@ -213,38 +191,15 @@ const filterPatternFly = async (
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
       const matchesName = !updatedFilters.name || filterMatch(entry.name, updatedFilters.name);
 
-      // const matchesUri = !(updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri));
-      // const matchesUriSchemas = !(updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri));
-
-      // const matchesUri = updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
-      // const matchesUriSchemas = updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
-
-      // const matchesUri = !(updatedFilters.version && updatedFilters.uri) || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
-      // const matchesUriSchemas = !(updatedFilters.version && updatedFilters.uri) || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
-
-      const matchesUri = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
-      const matchesUriSchemas = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
-
-      // const matchesUri = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
-      // const uriSchemas = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
-
-      // const matchesUri = !updatedFilters.version ||
-      // !updatedFilters.uri || !resource.versions?.[updatedFilters.version]?.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
-      // const matchesUriSchemas = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
-
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesName && (matchesUri || matchesUriSchemas);
-      // return matchesVersion && matchesCategory && matchesSection && matchesName && matchesUri && matchesUriSchemas;
+      return matchesVersion && matchesCategory && matchesSection && matchesName;
     });
-
-    // console.warn('>>>>>>>>>>>>>>>>>>>> test', filters, matchedEntries);
 
     if (matchedEntries.length > 0) {
       byEntry.push(...matchedEntries);
       const { versions, ...filteredResource } = resource;
       let versionContextualProperties = {};
 
-      // Might need to review how this affects a URI filter
       // Apply version contextual properties, typically URIs
       if (updatedFilters.version && versions?.[updatedFilters.version]) {
         versionContextualProperties = {
@@ -308,13 +263,11 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   maxDistance = 3,
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
-  let coercedSearchQuery = String(searchQuery).trim();
+  const coercedSearchQuery = String(searchQuery).trim();
   const updatedResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
-  // const patternflyUri = isSearchWildCardAll ? undefined : parseUrl(coercedSearchQuery.toLowerCase(), { prefix: 'patternfly' });
-  // const patternflyUri = isSearchWildCardAll ? undefined : parsePatternFlyUri.memo(coercedSearchQuery);
 
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
@@ -322,48 +275,20 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
-  } /* else if (patternflyUri) {
-    // Parse a patternfly
-    const uriFilters = setPatternFlyUriFilters.memo(coercedSearchQuery);
-
-    console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 001', uriFilters);
-
-    // Version is required for URI filtering. If a version or URI filter is missing, attempt to break out filters (URI params).
-    if (!updatedFilters.version || !updatedFilters.uri) {
-      Object.entries(uriFilters).forEach(([key, value]) => {
-        if (value) {
-          updatedFilters[key as keyof FilterPatternFlyFilters] = value;
-        }
-      });
-    } else if (uriFilters.name) {
-      updatedFilters.name = uriFilters.name;
-    }
-
-    search = fuzzySearch(updatedFilters.name, updatedResources.keywordsIndex, {
-      maxDistance,
-      maxResults,
-      isFuzzyMatch: false,
-      deduplicateByNormalized: true
-    });
-
-    searchResults = search.results;
-
-    // console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters', updatedFilters);
-    console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 004', uriFilters, !updatedFilters.version || !updatedFilters.uri, search);
-  } */ else {
+  } else {
     const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
-    // let updatedSearchQuery
 
     if (patternflyUri) {
       const uriFilters = setPatternFlyUriFilters.memo(coercedSearchQuery);
 
-      if (uriFilters.name) {
-        coercedSearchQuery = uriFilters.name;
-      }
+      // if (uriFilters.name) {
+      //  coercedSearchQuery = uriFilters.name;
+      // }
 
-      if (!updatedFilters.version || !updatedFilters.uri) {
+      if (!updatedFilters.version) {
         Object.entries(uriFilters).forEach(([key, value]) => {
-          if (key !== 'name' && value) {
+          // if (key !== 'name' && value) {
+          if (value) {
             updatedFilters[key as keyof FilterPatternFlyFilters] = value;
           }
         });
@@ -372,7 +297,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
     // Pass the original searchQuery, fuzzySearch has its own normalization.
     search = fuzzySearch(coercedSearchQuery, updatedResources.keywordsIndex, {
-      maxDistance,
+      maxDistance: patternflyUri ? 0 : maxDistance,
       maxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true

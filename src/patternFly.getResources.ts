@@ -539,11 +539,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       }
 
       if (uri) {
-        // mutateKeyWordsMap(rawKeywordsMap, { keyword: uri, name, version });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: uri, name, version });
       }
 
       if (uriSchemas) {
-        // mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemas, name, version });
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemas, name, version });
       }
 
       resource.entries.push(extendedEntry);
