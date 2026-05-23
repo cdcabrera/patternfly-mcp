@@ -335,7 +335,21 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       });
     } else if (uriFilters.name) {
       updatedFilters.name = uriFilters.name;
+
+      /*
+      search = fuzzySearch(uriFilters.name, updatedResources.keywordsIndex, {
+        maxDistance,
+        maxResults,
+        isFuzzyMatch: true,
+        deduplicateByNormalized: true
+      });
+
+      searchResults = search.results;
+      */
     }
+
+    // console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters', updatedFilters);
+    console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters', uriFilters, !updatedFilters.version || !updatedFilters.uri, search);
   } else {
     // Pass the original searchQuery, fuzzySearch has its own normalization.
     search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
@@ -436,6 +450,7 @@ searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.s
 export {
   filterPatternFly,
   searchPatternFly,
+  setPatternFlyUriFilters,
   type FilterPatternFlyFilters,
   type FilterPatternFlyResults,
   type SearchPatternFlyResult,

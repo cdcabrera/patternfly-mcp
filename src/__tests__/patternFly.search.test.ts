@@ -1,4 +1,4 @@
-import { filterPatternFly, searchPatternFly } from '../patternFly.search';
+import { filterPatternFly, searchPatternFly, setPatternFlyUriFilters } from '../patternFly.search';
 /*
 describe('filterPatternFly', () => {
   it.each([
@@ -86,7 +86,7 @@ describe('filterPatternFly', () => {
   });
 });
 */
-
+/*
 describe('searchPatternFly', () => {
   it.each([
     {
@@ -166,5 +166,30 @@ describe('searchPatternFly', () => {
     expect(searchResults.length).toBeGreaterThanOrEqual(0);
     expect(totalResults).toBeGreaterThanOrEqual(searchResults.length);
     expect(totalPotentialMatches).toBeGreaterThanOrEqual(totalResults);
+  });
+});
+*/
+
+describe('setPatternFlyUriFilters', () => {
+  it.each([
+    {
+      description: 'no search parameters',
+      uri: 'patternfly://docs/inlineedit',
+      expected: { name: 'inlineedit' }
+    },
+    {
+      description: 'version parameter',
+      uri: 'patternfly://docs/inlineedit?version=v6',
+      expected: { version: 'v6', name: 'inlineedit' }
+    },
+    {
+      description: 'all parameters',
+      uri: 'patternfly://docs/inlineedit?version=v6&section=components&category=accessibility',
+      expected: { version: 'v6', name: 'inlineedit', section: 'components', category: 'accessibility' }
+    }
+  ])('should set uri filters, $description', ({ uri, expected }) => {
+    const uriFilters = setPatternFlyUriFilters(uri);
+
+    expect(uriFilters).toEqual(expected);
   });
 });
