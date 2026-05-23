@@ -308,13 +308,13 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   maxDistance = 3,
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
-  const coercedSearchQuery = String(searchQuery).trim();
+  let coercedSearchQuery = String(searchQuery).trim();
   const updatedResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   // const patternflyUri = isSearchWildCardAll ? undefined : parseUrl(coercedSearchQuery.toLowerCase(), { prefix: 'patternfly' });
-  const patternflyUri = isSearchWildCardAll ? undefined : parsePatternFlyUri.memo(coercedSearchQuery);
+  // const patternflyUri = isSearchWildCardAll ? undefined : parsePatternFlyUri.memo(coercedSearchQuery);
 
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
@@ -322,7 +322,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
-  } else if (patternflyUri) {
+  } /* else if (patternflyUri) {
     // Parse a patternfly
     const uriFilters = setPatternFlyUriFilters.memo(coercedSearchQuery);
 
@@ -335,22 +335,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
           updatedFilters[key as keyof FilterPatternFlyFilters] = value;
         }
       });
-
-      console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 002', updatedFilters);
     } else if (uriFilters.name) {
       updatedFilters.name = uriFilters.name;
-
-      /*
-      search = fuzzySearch(uriFilters.name, updatedResources.keywordsIndex, {
-        maxDistance,
-        maxResults,
-        isFuzzyMatch: true,
-        deduplicateByNormalized: true
-      });
-
-      searchResults = search.results;
-      */
-      console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 003', updatedFilters);
     }
 
     search = fuzzySearch(updatedFilters.name, updatedResources.keywordsIndex, {
@@ -364,9 +350,28 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
     // console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters', updatedFilters);
     console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 004', uriFilters, !updatedFilters.version || !updatedFilters.uri, search);
-  } else {
+  } */ else {
+    const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
+    // let updatedSearchQuery
+
+    if (patternflyUri) {
+      const uriFilters = setPatternFlyUriFilters.memo(coercedSearchQuery);
+
+      if (uriFilters.name) {
+        coercedSearchQuery = uriFilters.name;
+      }
+
+      if (!updatedFilters.version || !updatedFilters.uri) {
+        Object.entries(uriFilters).forEach(([key, value]) => {
+          if (key !== 'name' && value) {
+            updatedFilters[key as keyof FilterPatternFlyFilters] = value;
+          }
+        });
+      }
+    }
+
     // Pass the original searchQuery, fuzzySearch has its own normalization.
-    search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
+    search = fuzzySearch(coercedSearchQuery, updatedResources.keywordsIndex, {
       maxDistance,
       maxResults,
       isFuzzyMatch: true,
@@ -410,8 +415,6 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     }
   }
 
-  console.warn('>>>>>>>>>>>>>>>>>>>> searchResultsFilterMap', coercedSearchQuery, searchResultsFilterMap);
-
   // Apply filtering
   const { byResource } = await filterPatternFly(updatedFilters, searchResultsFilterMap);
 
@@ -429,8 +432,6 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       query: coercedSearchQuery
     } as SearchPatternFlyResult);
   }
-  //
-  console.warn('>>>>>>>>>>>>>>>>>>>> searchResultsMap', coercedSearchQuery, byResource.get('inlineedit'), searchResultsMap);
 
   // Minor breakdown of search results
   const exactMatches = Array.from(searchResultsMap.values()).filter(result => result.matchType === 'exact' || result.matchType === 'all');
@@ -451,7 +452,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
   return {
     isSearchWildCardAll,
-    firstExactMatch: sortedExactMatches[0],
+    firstExactMatch: sortedExactMatches.find(match => match.name === coercedSearchQuery) || sortedExactMatches[0],
     exactMatches: sortedExactMatches.slice(0, maxResults),
     remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
     searchResults: sortedSearchResults.slice(0, maxResults),

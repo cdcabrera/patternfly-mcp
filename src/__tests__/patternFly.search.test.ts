@@ -103,7 +103,9 @@ describe('searchPatternFly', () => {
     },*/
     {
       description: 'uri search',
-      search: 'patternfly://docs/inlineedit'
+      // search: 'patternfly://docs/inlineedit'
+      // search: 'patternfly://docs/inlineedit?version=v6'
+      search: 'patternfly://schemas/modal?version=v6'
     }
   ])('should attempt to return an array of all available results, $description', async ({ search }) => {
     const { searchResults, ...rest } = await searchPatternFly(search, undefined, { allowWildCardAll: true });
