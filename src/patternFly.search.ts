@@ -1,5 +1,6 @@
 import { fuzzySearch, type FuzzySearch, type FuzzySearchResult } from './server.search';
 import { memo } from './server.caching';
+import { parseUrl } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -148,6 +149,8 @@ const filterPatternFly = async (
     );
   }
 
+  // console.warn('>>>>>>>>>>>>>>>>>>>> filters', updatedFilters);
+
   // Filter matching for resources and entries
   const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
   const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
@@ -159,17 +162,40 @@ const filterPatternFly = async (
       normalizePropertyValue.endsWith(filterValue);
   };
 
+  // console.warn('>>>>>>>>>>>>>>>>>>>> resource', resources);
+
   for (const [name, resource] of resources) {
     const matchedEntries = resource.entries.filter(entry => {
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
       const matchesName = !updatedFilters.name || filterMatch(entry.name, updatedFilters.name);
-      const matchesUri = !updatedFilters.uri || filterMatch(entry.uri, updatedFilters.uri);
+
+      // const matchesUri = !(updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri));
+      // const matchesUriSchemas = !(updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri));
+
+      // const matchesUri = updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
+      // const matchesUriSchemas = updatedFilters.version && updatedFilters.uri && filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
+
+      // const matchesUri = !(updatedFilters.version && updatedFilters.uri) || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
+      // const matchesUriSchemas = !(updatedFilters.version && updatedFilters.uri) || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
+
+      const matchesUri = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
+      const matchesUriSchemas = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
+
+      // const matchesUri = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
+      // const uriSchemas = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
+
+      // const matchesUri = !updatedFilters.version ||
+      // !updatedFilters.uri || !resource.versions?.[updatedFilters.version]?.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uri, updatedFilters.uri);
+      // const matchesUriSchemas = !updatedFilters.version || !updatedFilters.uri || filterMatch(resource.versions?.[updatedFilters.version]?.uriSchemas, updatedFilters.uri);
 
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesName && matchesUri;
+      return matchesVersion && matchesCategory && matchesSection && matchesName && (matchesUri || matchesUriSchemas);
+      // return matchesVersion && matchesCategory && matchesSection && matchesName && matchesUri && matchesUriSchemas;
     });
+
+    // console.warn('>>>>>>>>>>>>>>>>>>>> test', filters, matchedEntries);
 
     if (matchedEntries.length > 0) {
       byEntry.push(...matchedEntries);
@@ -204,6 +230,42 @@ const filterPatternFly = async (
  * Memoized version of filterPatternFly
  */
 filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
+
+/*
+const filterPatternFlyUri = (parsedUri, filters) => {
+  const parsedUri = parseUrl(coercedSearchQuery, { prefix: 'patternfly' });
+
+  if (parsedUri) {
+    const uriFilters: FilterPatternFlyFilters = {
+      ...filters,
+      uri: coercedSearchQuery
+    };
+
+    if (!uriFilters.name) {
+      uriFilters.name = parsedUri.path.split('/').pop();
+    }
+
+    const { byResource } = await filterPatternFly(uriFilters, mcpResources);
+    const results: SearchPatternFlyResult[] = Array.from(byResource.entries()).map(([name, resource]) => ({
+      ...resource,
+      query: coercedSearchQuery,
+      distance: 0,
+      matchType: 'exact',
+      item: name
+    } as SearchPatternFlyResult));
+
+    return {
+      isSearchWildCardAll: false,
+      firstExactMatch: results[0],
+      exactMatches: results.slice(0, maxResults),
+      remainingMatches: [],
+      searchResults: results.slice(0, maxResults),
+      totalResults: results.length,
+      totalPotentialMatches: results.length
+    };
+  }
+};
+*/
 
 /**
  * Search for PatternFly component documentation URLs using fuzzy search.
@@ -241,16 +303,68 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
   const coercedSearchQuery = String(searchQuery).trim();
+
+  /*
+  const parsedUri = parseUrl(coercedSearchQuery, { prefix: 'patternfly' });
+
+  if (parsedUri) {
+    const uriFilters: FilterPatternFlyFilters = {
+      ...filters,
+      uri: coercedSearchQuery
+    };
+
+    if (!uriFilters.name) {
+      uriFilters.name = parsedUri.path.split('/').pop();
+    }
+
+    const { byResource } = await filterPatternFly(uriFilters, mcpResources);
+    const results: SearchPatternFlyResult[] = Array.from(byResource.entries()).map(([name, resource]) => ({
+      ...resource,
+      query: coercedSearchQuery,
+      distance: 0,
+      matchType: 'exact',
+      item: name
+    } as SearchPatternFlyResult));
+
+    return {
+      isSearchWildCardAll: false,
+      firstExactMatch: results[0],
+      exactMatches: results.slice(0, maxResults),
+      remainingMatches: [],
+      searchResults: results.slice(0, maxResults),
+      totalResults: results.length,
+      totalPotentialMatches: results.length
+    };
+  }
+   */
+
   const updatedResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+  const patternflyUri = isSearchWildCardAll ? undefined : parseUrl(coercedSearchQuery.toLowerCase(), { prefix: 'patternfly' });
+
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+  } else if (patternflyUri) {
+    // Filter by URI
+    updatedFilters.uri = coercedSearchQuery;
+
+    const uriName = patternflyUri.path.split('/').pop();
+
+    if (uriName) {
+      updatedFilters.name = uriName === 'index' || uriName === 'meta' ? undefined : uriName;
+    }
+    // Version is required for URI filtering. If a version or URI filter is missing, attempt to break out URI params.
+    if (!updatedFilters.version || !updatedFilters.uri) {
+      updatedFilters.version = patternflyUri.params.version;
+      updatedFilters.section = patternflyUri.params.section;
+      updatedFilters.category = patternflyUri.params.category;
+    }
   } else {
     // Pass the original searchQuery, fuzzySearch has its own normalization.
     search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {

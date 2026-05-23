@@ -6,6 +6,7 @@ import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike }
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
+import { paramCompletion } from './resource.helpers';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
 /**
@@ -19,8 +20,10 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
  */
 const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
-    const { searchQuery, version } = args;
+    const { searchQuery, version, category, section } = args;
     const isVersion = typeof version === 'string' && version.length > 0;
+    const isSection = typeof section === 'string' && section.length > 0;
+    const isCategory = typeof category === 'string' && category.length > 0;
 
     assertInputStringLength(searchQuery, {
       ...options.minMax.inputStrings,
@@ -39,13 +42,46 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
     }
 
+    if (isSection) {
+      assertInputStringLength(section, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'section'
+      });
+    }
+
     const { latestVersion } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
+    const globalSuggestions = await paramCompletion.memo({ version: updatedVersion });
+    const filteredFilters = await paramCompletion.memo({ version: updatedVersion, section, category });
+
+    if (isSection) {
+      assertInputStringLength(section, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'section'
+      });
+
+      assertInput(
+        (isCategory && !filteredFilters.sections.length) || !globalSuggestions.sections.includes(section.trim().toLowerCase()),
+        `Section "${section.trim().toLowerCase()}" is invalid. Valid sections are: ${globalSuggestions.sections.join(', ')}`
+      );
+    }
+
+    if (isCategory) {
+      assertInputStringLength(category, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'category'
+      });
+
+      assertInput(
+        (isSection && !filteredFilters.categories.length) || !globalSuggestions.categories.includes(category.trim().toLowerCase()),
+        `Category "${category.trim().toLowerCase()}" is invalid. Valid categories are: ${globalSuggestions.categories.join(', ')}`
+      );
+    }
 
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
-      { version: updatedVersion },
+      { version: updatedVersion, category, section },
       { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
     );
 
@@ -59,14 +95,18 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
+      const suggestions = await paramCompletion.memo({ version: updatedVersion });
+
       return {
         content: [{
           type: 'text',
-          text: stringJoin.newline(
-            `No PatternFly resources found matching "${searchQuery}"`,
+          text: stringJoin.newlineFiltered(
+            `No PatternFly resources found matching query "${searchQuery}" with current filters.`,
             options.separator,
             '**Important**:',
-            '  - Use a search all ("*") to find all available resources.'
+            '  - Try removing filters or use "*" to see all available resources.',
+            isSection ? `  - Valid sections are: ${suggestions.sections.join(', ')}` : undefined,
+            isCategory ? `  - Valid categories are: ${suggestions.categories.join(', ')}` : undefined
           )
         }]
       };
@@ -167,7 +207,17 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           .describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional()
-          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
+          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`),
+        section: z.string()
+          .min(options.minMax.inputStrings.min)
+          .max(options.minMax.inputStrings.max)
+          .optional()
+          .describe('Filter by section (e.g., "components", "guidelines")'),
+        category: z.string()
+          .min(options.minMax.inputStrings.min)
+          .max(options.minMax.inputStrings.max)
+          .optional()
+          .describe(`Filter by category (e.g., "accessibility", "design-guidelines", "react"`)
       }
     },
     callback

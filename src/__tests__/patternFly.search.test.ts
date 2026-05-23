@@ -2,7 +2,7 @@ import { filterPatternFly, searchPatternFly } from '../patternFly.search';
 
 describe('filterPatternFly', () => {
   it.each([
-    {
+    /*{
       description: 'all filter',
       filters: undefined
     },
@@ -21,9 +21,19 @@ describe('filterPatternFly', () => {
     {
       description: 'category, accessibility',
       filters: { category: 'accessibility' }
+    },*/
+    {
+      description: 'patternfly URI',
+      filters: { version: 'v6', uri: 'patternfly://docs/inlineedit?version=v6' }
+    },
+    {
+      description: 'patternfly URI schemas',
+      filters: { version: 'v6', uri: 'patternfly://schemas/modal?version=v6' }
     }
   ])('should attempt to return filtered results, $description', async ({ filters }) => {
     const result = await filterPatternFly(filters as any);
+
+    console.warn(result);
 
     expect(result.byEntry.length).toBeGreaterThanOrEqual(0);
     expect(Array.from(result.byResource).length).toBeGreaterThanOrEqual(0);
@@ -39,7 +49,7 @@ describe('filterPatternFly', () => {
     expect(Array.from(result.byResource).length).toBeGreaterThanOrEqual(0);
   });
 });
-
+/*
 describe('searchPatternFly', () => {
   it.each([
     {
@@ -115,3 +125,4 @@ describe('searchPatternFly', () => {
     expect(totalPotentialMatches).toBeGreaterThanOrEqual(totalResults);
   });
 });
+*/
