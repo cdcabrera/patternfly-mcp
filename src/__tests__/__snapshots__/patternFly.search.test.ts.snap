@@ -22,6 +22,17 @@ exports[`searchPatternFly should attempt to return an array of all available res
 ]
 `;
 
+exports[`searchPatternFly should attempt to return an array of all available results, uri search: keys 1`] = `
+[
+  "isSearchWildCardAll",
+  "firstExactMatch",
+  "exactMatches",
+  "remainingMatches",
+  "totalResults",
+  "totalPotentialMatches",
+]
+`;
+
 exports[`searchPatternFly should attempt to return an array of all available results, wildcard search: keys 1`] = `
 [
   "isSearchWildCardAll",

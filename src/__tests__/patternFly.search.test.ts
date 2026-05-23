@@ -86,10 +86,10 @@ describe('filterPatternFly', () => {
   });
 });
 */
-/*
+
 describe('searchPatternFly', () => {
   it.each([
-    {
+    /*{
       description: 'wildcard search',
       search: '*'
     },
@@ -100,10 +100,10 @@ describe('searchPatternFly', () => {
     {
       description: 'empty all search',
       search: ''
-    },
+    },*/
     {
       description: 'uri search',
-      search: 'patternfly://docs/inlineedit?version=v6'
+      search: 'patternfly://docs/inlineedit'
     }
   ])('should attempt to return an array of all available results, $description', async ({ search }) => {
     const { searchResults, ...rest } = await searchPatternFly(search, undefined, { allowWildCardAll: true });
@@ -113,7 +113,7 @@ describe('searchPatternFly', () => {
     expect(searchResults.length).toBeGreaterThan(0);
     expect(Object.keys(rest)).toMatchSnapshot('keys');
   });
-
+  /*
   it.each([
     {
       description: 'exact match',
@@ -167,8 +167,8 @@ describe('searchPatternFly', () => {
     expect(totalResults).toBeGreaterThanOrEqual(searchResults.length);
     expect(totalPotentialMatches).toBeGreaterThanOrEqual(totalResults);
   });
+  */
 });
-*/
 
 describe('setPatternFlyUriFilters', () => {
   it.each([

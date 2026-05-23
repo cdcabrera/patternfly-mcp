@@ -326,6 +326,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     // Parse a patternfly
     const uriFilters = setPatternFlyUriFilters.memo(coercedSearchQuery);
 
+    console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 001', uriFilters);
+
     // Version is required for URI filtering. If a version or URI filter is missing, attempt to break out filters (URI params).
     if (!updatedFilters.version || !updatedFilters.uri) {
       Object.entries(uriFilters).forEach(([key, value]) => {
@@ -333,6 +335,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
           updatedFilters[key as keyof FilterPatternFlyFilters] = value;
         }
       });
+
+      console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 002', updatedFilters);
     } else if (uriFilters.name) {
       updatedFilters.name = uriFilters.name;
 
@@ -346,10 +350,20 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
       searchResults = search.results;
       */
+      console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 003', updatedFilters);
     }
 
+    search = fuzzySearch(updatedFilters.name, updatedResources.keywordsIndex, {
+      maxDistance,
+      maxResults,
+      isFuzzyMatch: false,
+      deduplicateByNormalized: true
+    });
+
+    searchResults = search.results;
+
     // console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters', updatedFilters);
-    console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters', uriFilters, !updatedFilters.version || !updatedFilters.uri, search);
+    console.warn('>>>>>>>>>>>>>>>>>>>> uriFilters 004', uriFilters, !updatedFilters.version || !updatedFilters.uri, search);
   } else {
     // Pass the original searchQuery, fuzzySearch has its own normalization.
     search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, {
@@ -396,6 +410,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     }
   }
 
+  console.warn('>>>>>>>>>>>>>>>>>>>> searchResultsFilterMap', coercedSearchQuery, searchResultsFilterMap);
+
   // Apply filtering
   const { byResource } = await filterPatternFly(updatedFilters, searchResultsFilterMap);
 
@@ -413,6 +429,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       query: coercedSearchQuery
     } as SearchPatternFlyResult);
   }
+  //
+  console.warn('>>>>>>>>>>>>>>>>>>>> searchResultsMap', coercedSearchQuery, byResource.get('inlineedit'), searchResultsMap);
 
   // Minor breakdown of search results
   const exactMatches = Array.from(searchResultsMap.values()).filter(result => result.matchType === 'exact' || result.matchType === 'all');
