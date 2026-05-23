@@ -38,6 +38,14 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         ...options.minMax.inputStrings,
         inputDisplayName: 'name'
       });
+
+      assertInput(
+        !new RegExp('patternfly://', 'i').test(name),
+        stringJoin.basic(
+          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
+          'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
+        )
+      );
     }
 
     if (isUrlList) {
@@ -49,6 +57,14 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       assertInput(
         urlList.length <= options.minMax.docsToLoad.max,
         `"urlList" must be an array with a maximum length of ${options.minMax.docsToLoad.max} items.`
+      );
+
+      assertInput(
+        !urlList.some(url => new RegExp('patternfly://', 'i').test(url)),
+        stringJoin.basic(
+          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
+          'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
+        )
       );
 
       if (options.mode !== 'test') {
@@ -211,14 +227,14 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       description: `Get markdown documentation and component JSON schemas for PatternFly resources and components.
 
       **Usage**:
-        1. Input a component or resource name (e.g., "Button", "Writing") or a list of up to ${options.minMax.docsToLoad.max} documentation URIs, URLs at a time (typically from searchPatternFlyDocs results).
+        1. Input a component or resource name (e.g., "Button", "Writing") or a list of up to ${options.minMax.docsToLoad.max} documentation URLs at a time (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
         - Component JSON schemas, if available
       `,
       inputSchema: {
-        urlList: z.array(z.string().url().min(options.minMax.urlString.min).max(options.minMax.urlString.max)).max(options.minMax.docsToLoad.max)
+        urlList: z.array(z.url().min(options.minMax.urlString.min).max(options.minMax.urlString.max)).max(options.minMax.docsToLoad.max)
           .optional().describe(`The list of URLs to fetch the documentation from (max ${options.minMax.docsToLoad.max} at a time)`),
         name: z.string().max(options.minMax.inputStrings.max)
           .optional().describe('The name of a PatternFly component or resource to fetch documentation for (e.g., "Button", "Table", "Writing")'),

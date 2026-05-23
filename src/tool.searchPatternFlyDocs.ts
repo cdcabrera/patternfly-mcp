@@ -22,8 +22,6 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
     const { searchQuery, version, category, section } = args;
     const isVersion = typeof version === 'string' && version.length > 0;
-    const isSection = typeof section === 'string' && section.length > 0;
-    const isCategory = typeof category === 'string' && category.length > 0;
 
     assertInputStringLength(searchQuery, {
       ...options.minMax.inputStrings,
@@ -42,42 +40,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
     }
 
-    if (isSection) {
-      assertInputStringLength(section, {
-        ...options.minMax.inputStrings,
-        inputDisplayName: 'section'
-      });
-    }
-
     const { latestVersion } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
-    const globalSuggestions = await paramCompletion.memo({ version: updatedVersion });
-    const filteredFilters = await paramCompletion.memo({ version: updatedVersion, section, category });
-
-    if (isSection) {
-      assertInputStringLength(section, {
-        ...options.minMax.inputStrings,
-        inputDisplayName: 'section'
-      });
-
-      assertInput(
-        (isCategory && !filteredFilters.sections.length) || !globalSuggestions.sections.includes(section.trim().toLowerCase()),
-        `Section "${section.trim().toLowerCase()}" is invalid. Valid sections are: ${globalSuggestions.sections.join(', ')}`
-      );
-    }
-
-    if (isCategory) {
-      assertInputStringLength(category, {
-        ...options.minMax.inputStrings,
-        inputDisplayName: 'category'
-      });
-
-      assertInput(
-        (isSection && !filteredFilters.categories.length) || !globalSuggestions.categories.includes(category.trim().toLowerCase()),
-        `Category "${category.trim().toLowerCase()}" is invalid. Valid categories are: ${globalSuggestions.categories.join(', ')}`
-      );
-    }
 
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
@@ -105,8 +70,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
             options.separator,
             '**Important**:',
             '  - Try removing filters or use "*" to see all available resources.',
-            isSection ? `  - Valid sections are: ${suggestions.sections.join(', ')}` : undefined,
-            isCategory ? `  - Valid categories are: ${suggestions.categories.join(', ')}` : undefined
+            suggestions.sections.length ? `  - Some available sections are: ${suggestions.sections.slice(0, 3).join(', ')}` : undefined,
+            suggestions.categories.length ? `  - Some available categories are: ${suggestions.categories.slice(0, 3).join(', ')}` : undefined
           )
         }]
       };
@@ -207,17 +172,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           .describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional()
-          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`),
-        section: z.string()
-          .min(options.minMax.inputStrings.min)
-          .max(options.minMax.inputStrings.max)
-          .optional()
-          .describe('Filter by section (e.g., "components", "guidelines")'),
-        category: z.string()
-          .min(options.minMax.inputStrings.min)
-          .max(options.minMax.inputStrings.max)
-          .optional()
-          .describe(`Filter by category (e.g., "accessibility", "design-guidelines", "react"`)
+          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
     },
     callback
