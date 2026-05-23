@@ -408,7 +408,7 @@ const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProto
     const { host, pathname, protocol } = new URL(url);
     const updatedProtocol = protocol.toLowerCase();
     const updatedHost = host.toLowerCase();
-    const updatedPath = pathname.toLowerCase();
+    const updatedPath = decodeURIComponent(pathname).toLowerCase();
 
     return whitelist.some(entry => {
       const listUrl = new URL(entry);
@@ -486,7 +486,7 @@ const parseUrl = (url: string, { prefix, isStrict = true }: { prefix?: string, i
     return {
       protocol: updatedUrl.protocol,
       hostname: updatedUrl.hostname,
-      path: updatedUrl.pathname.replace(/^\//, ''),
+      path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
       params: Object.fromEntries(updatedUrl.searchParams)
     };
   }
@@ -498,7 +498,7 @@ const parseUrl = (url: string, { prefix, isStrict = true }: { prefix?: string, i
       return {
         protocol: updatedUrl.protocol,
         hostname: updatedUrl.hostname,
-        path: updatedUrl.pathname.replace(/^\//, ''),
+        path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
         params: Object.fromEntries(updatedUrl.searchParams)
       };
     } catch {}
