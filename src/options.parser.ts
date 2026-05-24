@@ -8,11 +8,12 @@ import {
   type ProgrammaticOptionsKey
 } from './options';
 import {
+  CONTEXT_MANAGEMENT,
   DEFAULT_OPTIONS,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
   type DefaultOptions,
-  type LoggingOptions, CONTEXT_MANAGEMENT
+  type LoggingOptions
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
