@@ -111,7 +111,9 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const results = parseResults.map(result => result.entries
+    const results = parseResults
+      .map(result => result.entries)
+      .flat()
       .filter(entry => entry.path)
       .map(entry => {
         const resource = [];
@@ -137,7 +139,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         }
 
         return resource;
-      }).flat(2));
+      })
+      .flat();
 
     return {
       content: [

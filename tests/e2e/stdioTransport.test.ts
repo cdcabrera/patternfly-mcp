@@ -528,18 +528,20 @@ describe('token-saver mode', () => {
       params: {
         name: 'searchPatternFly',
         arguments: {
-          query: 'Button'
+          searchQuery: 'Button'
         }
       }
     });
 
     const [summary, ...resources] = response?.result?.content || [];
 
+    console.warn(resources);
+
     expect(summary).toBeDefined() //.toBeGreaterThan(0);
 
     resources.forEach((item: any) => {
-      expect(item.type).toBe('resource');
-      expect(item.resource.uri).toMatch(/^patternfly:\/\/docs\//);
+      expect(item.type).toBe('resource_link');
+      expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas|components)\//);
     });
   });
 });
