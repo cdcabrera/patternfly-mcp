@@ -76,9 +76,12 @@ interface PatternFlyMcpComponentNames {
  * @property name - The name of document entry.
  * @property displayCategory - The display category of document entry.
  * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
- * @property uriId - The resource's exact URI for the document entry.
+ * @property uriId - The resource's query ID with exact URI for the document entry.
+ * @property uriHash - The resource's exact URI for the document entry.
  * @property uriSchemas - The parent resource's general URI for the related component schemas, if they exist.
- * @property uriSchemasId - The resource's schemas URI for the component schemas, if they exist. Keyed by
+ * @property uriSchemasId - The resource's schemas URI with query ID for the component schemas, if they exist. Keyed with
+ *     the parent resource's `groupId` since the URIs are the same for sibling entries.
+ * @property uriComponentHash - The resource's schemas exact URI for the component schemas, if they exist. Keyed with
  *     the parent resource's `groupId` since the URIs are the same for sibling entries.
  */
 type PatternFlyMcpDocsMeta = {
@@ -86,10 +89,15 @@ type PatternFlyMcpDocsMeta = {
   groupId: string;
   name: string;
   displayCategory: string;
+  isSchemasAvailable: boolean;
   uri: string;
   uriId: string;
+  uriHash: string;
   uriSchemas?: string | undefined;
   uriSchemasId?: string | undefined;
+  uriComponent?: string | undefined;
+  uriComponentId?: string | undefined;
+  uriComponentHash?: string | undefined;
 };
 
 /**
@@ -133,16 +141,20 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  *
  * Contextual properties
  * - Contextual properties are populated based on search and filtering.
- * - Do not expect them to exist, make sure to conditionally load them.
+ * - Do not expect them to exist, make sure to confirm. You may need to conditionally load them.
  *
  * @property name - The name of component entry.
  * @property entries - All entry PatternFly documentation entries.
  * @property versions - Entry segmented by versions. Contains all the same properties.
  * @property groupId - The unique identifier for the document group.
  * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
+ * @property id - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
  * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
+ * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
+ * @property uriHash - see {@link PatternFlyMcpDocsMeta.uriHash} **CONTEXTUAL**.
  * @property uriSchemas - see {@link PatternFlyMcpDocsMeta.uriSchemas} **CONTEXTUAL**.
  * @property uriSchemasId - see {@link PatternFlyMcpDocsMeta.uriSchemasId} **CONTEXTUAL**.
+ * @property uriComponentHash - see {@link PatternFlyMcpDocsMeta.uriComponentHash} **CONTEXTUAL**.
  */
 type PatternFlyMcpResourceMetadata = {
   name: string;
@@ -151,9 +163,15 @@ type PatternFlyMcpResourceMetadata = {
   groupId: string;
 
   isSchemasAvailable: boolean | undefined;
+  id: string | undefined;
   uri: string | undefined;
+  uriId: string | undefined;
+  uriHash: string | undefined;
   uriSchemas: string | undefined;
   uriSchemasId: string | undefined;
+  uriComponent: string | undefined;
+  uriComponentId: string | undefined;
+  uriComponentHash: string | undefined;
 };
 
 /**
@@ -175,6 +193,7 @@ type PatternFlyMcpResourceMetadata = {
  * @property pathIndex - Patternfly documentation path->name map for helping refine search results.
  * @property uriIndex - Patternfly documentation uri->name map for helping refine search results.
  * @property hashIndex - Patternfly documentation hash->name map for helping refine search results.
+ * @property versionIndex - Patternfly documentation sort by the latest version first, then alphabetically by entries
  * @property byPath - Patternfly documentation by path with entries
  * @property byUri - `@deprecated Under review. Use uriIndex`. Patternfly documentation by uri with entries
  * @property byVersion - Patternfly documentation by version with entries
@@ -190,6 +209,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   pathIndex: Map<string, string>;
   uriIndex: Map<string, string>;
   hashIndex: Map<string, string>;
+  versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   byPath: PatternFlyMcpResourcesByPath;
   byUri: PatternFlyMcpResourcesByUri;
   byVersion: PatternFlyMcpResourcesByVersion;
@@ -488,6 +508,9 @@ const mutateKeyWordsMap = (
  * are populated during search and filter services when `entries` are matched against PF versions. Review
  * separating the typings for clarity.
  *
+ * @note Need to re-eval component resources being "schema-dependent". Under the experimental-context-management
+ * we've temporarily made them dependent since schemas include specs. This may shift under related API work.
+ *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
@@ -504,6 +527,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const pathIndexMap = new Map<string, string>();
   const uriIndexMap = new Map<string, string>();
   const hashIndexMap = new Map<string, string>();
+  const versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
@@ -521,10 +545,16 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         groupId,
         entries: [],
         versions: {},
+        id: undefined,
         isSchemasAvailable: undefined,
         uri: undefined,
+        uriId: undefined,
+        uriHash: undefined,
         uriSchemas: undefined,
-        uriSchemasId: undefined
+        uriSchemasId: undefined,
+        uriComponent: undefined,
+        uriComponentId: undefined,
+        uriComponentHash: undefined
       });
     }
 
@@ -537,11 +567,16 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-      const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
+      const uriId = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ id }, { prefix: true })}`;
+      const uriHash = `patternfly://docs/${encodeURIComponent(id)}`;
+      // const uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+      // const uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
+      // const uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uri.toLowerCase(), name);
       uriIndexMap.set(uriId.toLowerCase(), name);
+      uriIndexMap.set(uriHash.toLowerCase(), name);
 
       if (path) {
         pathIndexMap.set(path.toLowerCase(), name);
@@ -550,7 +585,13 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.versions[version] ??= {
         groupId,
         isSchemasAvailable,
+        id,
         uri,
+        uriId,
+        uriHash,
+        uriComponent: undefined,
+        uriComponentId: undefined,
+        uriComponentHash: undefined,
         uriSchemas: undefined,
         uriSchemasId: undefined,
         entries: []
@@ -560,10 +601,13 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
       let uriSchemas;
       let uriSchemasId;
+      let uriComponent;
+      let uriComponentId;
+      let uriComponentHash;
 
       if (isSchemasAvailable) {
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-        uriSchemasId = `patternfly://schemas/${encodeURIComponent(groupId)}`;
+        uriSchemasId = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasId = uriSchemasId;
@@ -572,17 +616,32 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         uriIndexMap.set(uriSchemasId.toLowerCase(), name);
       }
 
+      if (entry.section === 'components' && entry.category === 'react') {
+        uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+        uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
+        uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
+
+        uriIndexMap.set(uriComponent.toLowerCase(), name);
+        uriIndexMap.set(uriComponentId.toLowerCase(), name);
+        uriIndexMap.set(uriComponentHash.toLowerCase(), name);
+      }
+
       const extendedEntry = {
         ...entry,
         id,
         groupId,
+        isSchemasAvailable,
         name,
         displayName,
         displayCategory,
         uri,
         uriId,
+        uriHash,
         uriSchemas,
-        uriSchemasId
+        uriSchemasId,
+        uriComponent,
+        uriComponentId,
+        uriComponentHash
       } as (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta);
 
       if (path) {
@@ -595,6 +654,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       if (uriSchemas) {
         byUri[uriSchemas] ??= [];
         byUri[uriSchemas]?.push(extendedEntry);
+      }
+
+      if (uriComponent) {
+        byUri[uriComponent] ??= [];
+        byUri[uriComponent]?.push(extendedEntry);
       }
 
       byVersion[version] ??= [];
@@ -623,9 +687,15 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     });
   });
 
-  Object.entries(byVersion).forEach(([_version, entries]) => {
-    entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-  });
+  Object.entries(byVersion)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .forEach(([_version, entries]) => {
+      entries
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .forEach((entry, _index) => {
+          versionIndex.push(entry);
+        });
+    });
 
   const filteredKeywords = filterKeywords(rawKeywordsMap);
 
@@ -645,6 +715,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     pathIndex: pathIndexMap,
     uriIndex: uriIndexMap,
     hashIndex: hashIndexMap,
+    versionIndex,
     byPath,
     // @deprecated byUri - Under review
     byUri,
