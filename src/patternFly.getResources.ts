@@ -3,7 +3,7 @@ import {
   getComponentSchema
 } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
-import { generateHash } from './server.helpers';
+import { buildSearchString, generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext,
@@ -71,12 +71,17 @@ interface PatternFlyMcpComponentNames {
 /**
  * PatternFly JSON extended documentation metadata
  *
- * @property name - The name of component entry.
- * @property displayCategory - The display category of component entry.
- * @property uri - The parent resource URI of component entry.
+ * @property id - The unique identifier of document entry.
+ * @property name - The name of document entry.
+ * @property displayCategory - The display category of document entry.
+ * @property uri - The parent resource URI of document entry.
+ * @property uriFull - Parent resource URI with full search parameters for the entry. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
  * @property uriSchemas - The parent resource URI of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property uriSchemasFull - Parent resource URI with full search parameters for the component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on
+ *     search and filtering.**
  */
 type PatternFlyMcpDocsMeta = {
+  id: string;
   name: string;
   displayCategory: string;
   uri: string;
@@ -479,13 +484,13 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
 
     entries.forEach(entry => {
+      const id = generateHash(entry.path);
       const version = (entry.version || 'unknown').toLowerCase();
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
-      const uriCategory = entry.category ? `&category=${encodeURIComponent(entry.category)}` : '';
-      const uriSection = entry.section ? `&section=${encodeURIComponent(entry.section)}` : '';
-      const uri = `patternfly://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
-      const uriFull = `patternfly://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}${uriCategory}${uriSection}`;
+      const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+      // const uriFull = `patternfly://docs/${encodeURIComponent(id)}${buildSearchString({ version, category: entry.category, section: entry.section }, { prefix: true })}`;
+      const uriFull = `patternfly://docs/${encodeURIComponent(id)}`;
 
       if (path) {
         pathIndex.add(path);
@@ -506,10 +511,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       let uriSchemasFull;
 
       if (isSchemasAvailable) {
-        const schemasCategory = entry.category ? `&category=${encodeURIComponent(entry.category)}` : '';
+        // const schemasCategory = entry.category ? `&category=${encodeURIComponent(entry.category)}` : '';
 
-        uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
-        uriSchemasFull = `patternfly://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}${schemasCategory}`;
+        uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+        // uriSchemasFull = `patternfly://schemas/${encodeURIComponent(id)}${buildSearchString({ version, category: entry.category, section: entry.section }, { prefix: true })}`;
+        uriSchemasFull = `patternfly://schemas/${encodeURIComponent(id)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasFull = uriSchemasFull;
@@ -517,6 +523,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       const extendedEntry = {
         ...entry,
+        id,
         name,
         displayName,
         displayCategory,
