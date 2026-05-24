@@ -44,6 +44,9 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
     options.repoBugs && `- **Report bugs:** ${options.repoBugs}`
   );
 
+  // Audit review required on adjusting context. Also need to take into account any prefix directions specific to "token-saver"
+  const availableToolFunctions = options.contextManagement !== 'default' ? 'search, fetch and access' : 'search, fetch and display';
+  const availableResourceFunctions = options.contextManagement !== 'default' ? 'list, filter and access' : 'list, filter and display';
   const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
 **What is PatternFly?**
@@ -57,13 +60,14 @@ PatternFly provides React components, design guidelines, and development tools f
 
 **PatternFly MCP Server:**
 This MCP server provides tools and resources to access all PatternFly documentation resources ranging from design to development.
-- **MCP tools:** Can be used to search, fetch and display available documentation resources.
-- **MCP resources:** Can be used to list, filter and display available documentation resources.
+- **MCP tools:** Can be used to ${availableToolFunctions} available documentation resources.
+- **MCP resources:** Can be used to ${availableResourceFunctions} available documentation resources.
 
 **Environment:**
 - **MCP Server Mode:** ${options.mode}
 - **MCP Server Version:** ${options.version || 'Unknown'}
 - **Node.js Major Version:** ${options.nodeVersion || 'Unknown'}
+- **Context Management:** ${options.contextManagement}
 
 ${(troubleshooting && stringJoin.newline('**Troubleshooting:**', troubleshooting)) || ''}
 `;
