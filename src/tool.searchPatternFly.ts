@@ -10,16 +10,16 @@ import { paramCompletion } from './resource.helpers';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
 /**
- * searchPatternFlyDocs tool function
+ * searchPatternFly tool function
  *
- * Searches for PatternFly component documentation URLs using fuzzy search.
- * Returns URLs only (does not fetch content). Use usePatternFlyDocs to fetch the actual content.
+ * Searches for PatternFly resources using fuzzy search.
+ * Returns MCP Resource Links when contextManagement: 'token-saver' is active.
  *
  * @param options - Optional configuration options (defaults to OPTIONS)
  * @returns MCP tool tuple [name, schema, callback]
  */
-const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
-  const callback = async (args: any = {}) => {
+const searchPatternFlyTool = (options = getOptions()): McpTool => {
+  const callback = async (args: any) => {
     const { searchQuery, version } = args;
     const isVersion = typeof version === 'string' && version.length > 0;
 
@@ -47,7 +47,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
       { version: updatedVersion },
-      { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
+      { allowWildCardAll: true, maxResults: options.minMax.resourceSearches.max }
     );
 
     assertInput(
@@ -111,53 +111,61 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const results = parseResults.map((result, index) => {
-      const urlList = result.entries
-        .filter(entry => entry.path)
-        .map(entry => `      - [${entry.displayName} - (${entry.version}) - ${entry.description}](${entry.path})`);
+    const results = parseResults.map(result => result.entries
+      .filter(entry => entry.path)
+      .map(entry => {
+        const resource = [];
 
-      const uri = result.uri;
-      const uriSchemas = result.uriSchemas;
+        if (entry.uriFull) {
+          resource.push({
+            type: 'resource_link',
+            uri: entry.uriFull,
+            name: `${entry.displayName} - (${entry.version})`,
+            description: entry.description,
+            mimeType: 'text/markdown'
+          });
+        }
 
-      return stringJoin.newlineFiltered(
-        `${index + 1}. **${result.name}**:`,
-        `  "usePatternFlyDocs" resource parameter "name" and "URLs"`,
-        `    - **Name**: ${result.name}`,
-        urlList.length ? `    - **URLs**:` : undefined,
-        urlList.length ? urlList.join('\n') : undefined,
-        uri || uriSchemas ? `    - **Resources**:` : undefined,
-        uri ? `      - **URI**: ${uri}` : undefined,
-        uriSchemas ? `      - **JSON Schemas**: ${uriSchemas}` : undefined
-      ) + '\n';
-    });
+        if (entry.uriSchemasFull) {
+          resource.push({
+            type: 'resource_link',
+            uri: entry.uriSchemasFull,
+            name: `${entry.displayName} JSON Schemas - (${entry.version})`,
+            description: `${entry.displayName} JSON schemas.`,
+            mimeType: 'application/json'
+          });
+        }
+
+        return resource;
+      }).flat(2));
 
     return {
-      content: [{
-        type: 'text',
-        text: stringJoin.newline(
-          searchTitle,
-          ...results,
-          options.separator,
-          '**Important**:',
-          '  - Use the "usePatternFlyDocs" tool with the above names and URLs to fetch resource content.',
-          '  - Use a search all ("*") to find all available resources.'
-        )
-      }]
+      content: [
+        {
+          type: 'text',
+          text: stringJoin.newline(
+            searchTitle,
+            '**Important**:',
+            '  - Use the attached resources to access and read full content.',
+            '  - Use a search all ("*") to find all available resources.'
+          )
+        },
+        ...results
+      ]
     };
   };
 
   return [
-    'searchPatternFlyDocs',
+    'searchPatternFly',
     {
-      description: `Search PatternFly resources and get component names with documentation and guidance URLs. Supports case-insensitive partial and all ("*") matches.
+      description: `Search PatternFly resources and get component names with documentation resources. Supports case-insensitive partial and all ("*") matches.
 
       **Usage**:
         1. Input a "searchQuery" to find PatternFly documentation and guideline URLs, and component names.
-        2. Use the returned resource names OR URLs OR version with the "usePatternFlyDocs" tool to get markdown documentation, guidelines, and component JSON schemas.
+        2. Use the returned resources to get markdown documentation, guidelines, and component JSON schemas.
 
       **Returns**:
-        - Component and resource names that can be used with "usePatternFlyDocs"
-        - Documentation and guideline URLs that can be used with "usePatternFlyDocs"
+        - Component, documentation, and guideline resource links that can be used to access and read content.
       `,
       inputSchema: {
         searchQuery: z.string()
@@ -171,11 +179,11 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     },
     callback,
     {
-      shouldRegister: opts => opts.contextManagement === 'default' || opts.contextManagement === undefined
+      shouldRegister: opts => opts.contextManagement === 'token-saver'
     }
   ];
 };
 
-searchPatternFlyDocsTool.toolName = 'searchPatternFlyDocs';
+searchPatternFlyTool.toolName = 'searchPatternFlyDocs';
 
-export { searchPatternFlyDocsTool };
+export { searchPatternFlyTool };

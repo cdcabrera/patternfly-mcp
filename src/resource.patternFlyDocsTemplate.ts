@@ -163,6 +163,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   return {
     contents: [
+
+    ]
+  }
+
+  return {
+    contents: [
       {
         uri: passedUri?.toString(),
         mimeType: 'text/markdown',

@@ -3,6 +3,7 @@ import {
   getComponentSchema
 } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
+import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext,
@@ -79,7 +80,9 @@ type PatternFlyMcpDocsMeta = {
   name: string;
   displayCategory: string;
   uri: string;
-  uriSchemas?: string | undefined
+  uriFull: string;
+  uriSchemas?: string | undefined;
+  uriSchemasFull?: string | undefined;
 };
 
 /**
@@ -124,7 +127,9 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @property name - The name of component entry.
  * @property isSchemasAvailable - Whether schemas are available for this component **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
  * @property uri - The URI of component entry. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property uriFull - The URI with full search parameters of component entry. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
  * @property uriSchemas - The URI of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
+ * @property uriSchemasFull - The URI with full search parameters of component schemas. **DO NOT EXPECT THIS PROPERTY TO EXIST**. **Contextual based on search and filtering.**
  * @property entries - All entry PatternFly documentation entries.
  * @property versions - Entry segmented by versions. Contains all the same properties.
  */
@@ -132,7 +137,9 @@ type PatternFlyMcpResourceMetadata = {
   name: string;
   isSchemasAvailable: boolean | undefined;
   uri: string | undefined;
+  uriFull: string | undefined;
   uriSchemas: string | undefined;
+  uriSchemasFull: string | undefined;
   entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   versions: Record<string, Omit<PatternFlyMcpResourceMetadata, 'name' | 'versions'>>;
 };
@@ -461,7 +468,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         name,
         isSchemasAvailable: undefined,
         uri: undefined,
+        uriFull: undefined,
         uriSchemas: undefined,
+        uriSchemasFull: undefined,
         entries: [],
         versions: {}
       });
@@ -473,7 +482,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const version = (entry.version || 'unknown').toLowerCase();
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
+      const uriCategory = entry.category ? `&category=${encodeURIComponent(entry.category)}` : '';
+      const uriSection = entry.section ? `&section=${encodeURIComponent(entry.section)}` : '';
       const uri = `patternfly://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
+      const uriFull = `patternfly://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}${uriCategory}${uriSection}`;
 
       if (path) {
         pathIndex.add(path);
@@ -482,18 +494,25 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.versions[version] ??= {
         isSchemasAvailable,
         uri,
+        uriFull,
         uriSchemas: undefined,
+        uriSchemasFull: undefined,
         entries: []
       };
 
       const displayName = entry.displayName || name;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
       let uriSchemas;
+      let uriSchemasFull;
 
       if (isSchemasAvailable) {
+        const schemasCategory = entry.category ? `&category=${encodeURIComponent(entry.category)}` : '';
+
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
+        uriSchemasFull = `patternfly://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}${schemasCategory}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
+        resource.versions[version].uriSchemasFull = uriSchemasFull;
       }
 
       const extendedEntry = {
@@ -502,7 +521,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         displayName,
         displayCategory,
         uri,
-        uriSchemas
+        uriFull,
+        uriSchemas,
+        uriSchemasFull
       } as (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta);
 
       if (path) {
