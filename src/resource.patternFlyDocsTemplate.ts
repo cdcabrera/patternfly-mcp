@@ -5,7 +5,7 @@ import {
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
 import { processDocsFunction } from './server.getResources';
-import {generateHash, stringJoin} from './server.helpers';
+import { generateHash, stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';

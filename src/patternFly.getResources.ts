@@ -482,6 +482,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     }
 
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
+    const nameHash = generateHash(name);
 
     entries.forEach(entry => {
       const id = generateHash(entry.path);
@@ -515,7 +516,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
         // uriSchemasFull = `patternfly://schemas/${encodeURIComponent(id)}${buildSearchString({ version, category: entry.category, section: entry.section }, { prefix: true })}`;
-        uriSchemasFull = `patternfly://schemas/${encodeURIComponent(id)}`;
+        uriSchemasFull = `patternfly://schemas/${encodeURIComponent(nameHash)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasFull = uriSchemasFull;
