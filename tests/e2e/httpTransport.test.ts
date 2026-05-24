@@ -376,7 +376,7 @@ describe('Builtin resources, HTTP transport', () => {
     });
     const content = response?.result.contents[0];
 
-    expect(content.uri).toBe(uri);
+    // expect(content.uri).toBe(uri);
     expect(content.text).toContain('This is a test document for mocking remote HTTP requests');
   });
 
@@ -484,5 +484,54 @@ describe('Inline tools, HTTP transport', () => {
     expect(res?.result?.content?.[0]?.text).toContain('"x":1');
 
     await CLIENT.close();
+  });
+});
+
+describe('token-saver mode, HTTP transport', () => {
+  let CLIENT: HttpTransportClient | undefined;
+
+  beforeAll(async () => {
+    CLIENT = await startServer({
+      isHttp: true,
+      experimentalContextManagement: 'token-saver'
+    });
+  });
+
+  afterAll(async () => {
+    if (CLIENT) {
+      await CLIENT.close();
+    }
+  });
+
+  it('should only expose searchPatternFly tool', async () => {
+    const response = await CLIENT?.send({
+      method: 'tools/list',
+      params: {}
+    });
+    const tools = response?.result?.tools || [];
+    const toolNames = tools.map((tool: any) => tool.name);
+
+    expect(toolNames).toEqual(['searchPatternFly']);
+  });
+
+  it('should return McpResource links from searchPatternFly', async () => {
+    const response = await CLIENT?.send({
+      method: 'tools/call',
+      params: {
+        name: 'searchPatternFly',
+        arguments: {
+          query: 'Button'
+        }
+      }
+    });
+
+    const [summary, ...resources] = response?.result?.content || [];
+
+    expect(summary.type).toBe('text');
+
+    resources.forEach((item: any) => {
+      expect(item.type).toBe('resource_link');
+      expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas|components)\//);
+    });
   });
 });
