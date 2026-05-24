@@ -184,6 +184,6 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
   ];
 };
 
-searchPatternFlyTool.toolName = 'searchPatternFlyDocs';
+searchPatternFlyTool.toolName = 'searchPatternFly';
 
 export { searchPatternFlyTool };
