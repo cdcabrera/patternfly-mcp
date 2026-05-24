@@ -1,5 +1,5 @@
 import { type McpToolCreator, type McpResourceCreator } from './mcpSdk';
-import { browsePatternFlyTool } from './tool.browsePatternFly';
+import { searchPatternFlyTool } from './tool.searchPatternFly';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
 import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
@@ -17,7 +17,7 @@ import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasT
 const builtinTools: McpToolCreator[] = [
   usePatternFlyDocsTool,
   searchPatternFlyDocsTool,
-  browsePatternFlyTool
+  searchPatternFlyTool
 ];
 
 /**

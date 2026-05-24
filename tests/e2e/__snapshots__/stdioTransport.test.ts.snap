@@ -183,12 +183,7 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 
 exports[`Logging should allow setting logging options, with experimental flag default 1`] = `[]`;
 
-exports[`Logging should allow setting logging options, with experimental flag set 1`] = `
-[
-  "[Experimental] The following options are subject to change, use at your own risk: contextManagement
-",
-]
-`;
+exports[`Logging should allow setting logging options, with experimental flag set 1`] = `[]`;
 
 exports[`Logging should allow setting logging options, with log level filtering 1`] = `[]`;
 
