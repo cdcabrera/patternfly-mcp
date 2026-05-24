@@ -205,6 +205,9 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
     {
       complete,
       registerAllSearchCombinations: true
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

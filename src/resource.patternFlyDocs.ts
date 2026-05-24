@@ -1,16 +1,23 @@
 import {
   ResourceTemplate,
+  type ListResourcesCallback,
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { buildSearchString, stringJoin } from './server.helpers';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputStringLength, assertInputStringShaHex } from './server.assertions';
+import { findClosest } from './server.search';
+import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
-import { paramCompletion } from './resource.helpers';
+import {
+  formatSummaryFullContent,
+  nextCursor,
+  paramCompletion
+} from './resource.helpers';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -45,12 +52,12 @@ const NAME = 'patternfly-docs-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section}';
+const URI_TEMPLATE = 'patternfly://docs/{name}{?id,version,category,section,detail}';
 
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly version, category, and section. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly ID or version, category, section. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -58,42 +65,45 @@ const URI_DESCRIPTION = `Filter by PatternFly version, category, and section. ${
 const CONFIG = {
   title: 'PatternFly Documentation Index',
   description: `A list of PatternFly documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
-  mimeType: 'text/markdown'
+  mimeType: 'text/markdown',
+  annotations: {
+    priority: 1.0,
+    audience: ['assistant' as const]
+  }
 };
 
 /**
- * List resources callback for the URI template by available versions only.
+ * Index list. List resources callback for the URI template.
  *
- * @note It's important to keep lists focused and concise, avoid listing all resources.
+ * @note It's important to keep lists focused and concise, use paging to avoid
+ * listing all resources.
  *
+ * @param _extra
+ * @param cursor - The passed back cursor/page for pagination.
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
-const listResources = async () => {
-  const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
+const listResources = async (_extra: unknown, cursor?: string | undefined) => {
+  const pageSize = 50;
+  const { versionIndex } = await getPatternFlyMcpResources.memo();
+  const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
-  Object.entries(byVersion)
-    .filter(([version]) => availableVersions.includes(version))
-    .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version]) => {
-      resources.push({
-        uri: `patternfly://docs/index?version=${encodeURIComponent(version)}`,
-        mimeType: 'text/markdown',
-        name: `Docs Index (${version})`,
-        description: `Documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
-      });
+  versionIndex.slice(start, end).forEach((entry, _index) => {
+    const actualIndex = start + 1;
+
+    resources.push({
+      uri: entry.uriId,
+      name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${versionIndex.length} resources)`,
+      description: entry.description,
+      mimeType: 'text/markdown'
     });
+  });
 
   return {
-    resources: [
-      {
-        uri: 'patternfly://docs/index',
-        mimeType: 'text/markdown',
-        name: 'Docs Index (Latest)',
-        description: `Documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
-      },
-      ...resources.sort((a, b) => a.name.localeCompare(b.name))
-    ]
+    totalCount: versionIndex.length,
+    pageSize,
+    nextCursor: next,
+    resources
   };
 };
 
@@ -101,6 +111,24 @@ const listResources = async () => {
  * Memoized version of listResources.
  */
 listResources.memo = memo(listResources);
+
+/**
+ * Detail completion callback for the URI template.
+ *
+ * @param detail - The value to complete.
+ * @returns The list of available details.
+ */
+const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detail: string) => {
+  const levels = ['summary', 'full'];
+  const closest = findClosest.memo(detail, levels) as string | undefined;
+
+  return closest ? [closest] : [];
+};
+
+/**
+ * Memoized version of uriDetailComplete.
+ */
+uriDetailComplete.memo = memo(uriDetailComplete);
 
 /**
  * Name completion callback for the URI template.
@@ -182,11 +210,7 @@ const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (vers
 uriVersionComplete.memo = memo(uriVersionComplete);
 
 /**
- * Resource callback for the documentation index.
- *
- * @note The callback response is a high-level index potentially grouping multiple "entries"
- * by a single URI. See {@link ./resource.patternFlyDocs} for the final combined format
- * under `contextManagement`.
+ * Return content. Resource callback for the documentation template.
  *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
@@ -194,19 +218,31 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { category, version, section } = variables || {};
+  const { category, detail = 'summary', name, section, id, version } = variables || {};
+  const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
+  let updatedId;
+
+  assertInputStringLength(name, {
+    ...options.minMax.inputStrings,
+    inputDisplayName: 'name'
+  });
+
+  if (id) {
+    assertInputStringShaHex(id, {
+      ...options.minMax.sha1Hex,
+      inputDisplayName: 'id'
+    });
+
+    // Be lenient, only apply the ID if it's different from name.
+    if (id !== name) {
+      updatedId = id;
+    }
+  }
 
   if (version) {
     assertInputStringLength(version, {
       ...options.minMax.inputStrings,
       inputDisplayName: 'version'
-    });
-  }
-
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
     });
   }
 
@@ -217,7 +253,17 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
+  if (category) {
+    assertInputStringLength(category, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'category'
+    });
+  }
+
+  const {
+    availableVersions,
+    latestVersion
+  } = await getPatternFlyMcpResources.memo();
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 
   assertInput(
@@ -226,59 +272,96 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   const updatedVersion = normalizedVersion || latestVersion;
+  const updatedName = name.trim();
 
-  const { byResource } = await filterPatternFly.memo({
+  const { byEntry } = await filterPatternFly.memo({
+    id: updatedId,
     version: updatedVersion,
+    name: updatedName,
     category,
     section
   });
 
-  // Generate the consolidated list, apply search/query string.
-  const docsIndex = Array.from(byResource.values())
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((resource, index) => {
-      const firstEntry = resource.entries[0];
-      const version = firstEntry?.version || updatedVersion;
-      const categories = new Set(resource.entries.map(entry => entry.displayCategory));
-      const categoryList = Array.from(categories).sort().join(', ');
-      const searchString = buildSearchString({ section, category }, { prefix: true, base: resource.uri });
-
-      return `${index + 1}. [${resource.name} - ${categoryList} (${version})](${resource.uri}${searchString || ''})`;
-    });
-
   assertInput(
-    docsIndex.length > 0,
+    byEntry.length > 0,
     () => {
       let suggestionMessage = '';
 
-      if (category || section) {
+      if (id || version || category || section) {
         const variableList = [
+          (version && 'id') || undefined,
+          (version && 'version') || undefined,
           (category && 'category') || undefined,
           (section && 'section') || undefined
-        ].filter(Boolean).join(' or ');
+        ].filter(Boolean).join(', ');
 
-        suggestionMessage = ` Try using a different ${variableList} search.`;
+        suggestionMessage = ` Try using different parameters for ${variableList}.`;
       }
 
-      return `No documentation found for "${passedUri?.toString()}".${suggestionMessage}`;
+      return `No documentation found for "${updatedName}".${suggestionMessage}`;
     }
   );
 
-  const allDocs = stringJoin.newline(
-    `# PatternFly Documentation Index for "${updatedVersion}"`,
-    '',
-    '',
-    ...(docsIndex || [])
+  const docs = [];
+
+  try {
+    const docPaths = byEntry
+      .filter(({ path }) => path)
+      .map(({ path, uriId }) => ({ doc: path, uri: uriId }));
+
+    if (docPaths.length > 0) {
+      // `processDocsFunction` has de-dup docs baked in
+      const processedDocs = await processDocsFunction.memo(docPaths);
+
+      // Failures are `log.debugged` in `processDocsFunction`.
+      for (const response of processedDocs) {
+        if (response.isSuccess) {
+          docs.push({
+            ...response
+          });
+        }
+      }
+    }
+  } catch (error) {
+    throw new McpError(
+      ErrorCode.InternalError,
+      `Failed to fetch documentation: ${error}`
+    );
+  }
+
+  assertInput(
+    docs.length > 0,
+    () => {
+      let suggestionMessage = '';
+
+      if (version || category || section) {
+        const variableList = [
+          (version && 'version') || undefined,
+          (category && 'category') || undefined,
+          (section && 'section') || undefined
+        ].filter(Boolean).join(', ');
+
+        suggestionMessage = ` Try using different parameters for ${variableList}.`;
+      }
+
+      return `"${updatedName}" was found, but no documentation resources are available for it.${suggestionMessage}`;
+    }
   );
 
   return {
-    contents: [
-      {
-        uri: passedUri?.toString(),
-        mimeType: 'text/markdown',
-        text: allDocs
-      }
-    ]
+    contents: docs.map(({ uri, path, resolvedPath, content }) => ({
+      uri,
+      mimeType: 'text/markdown',
+      text: formatSummaryFullContent(content, {
+        url: uri,
+        detailType: normalizedDetail,
+        frontMatter: {
+          document: resolvedPath || path,
+          name: updatedName,
+          version: updatedVersion
+        }
+      })
+    }))
   };
 };
 
@@ -288,18 +371,14 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @note The `metaConfig` determines if a metadata resource is generated. Remove
  * the config to disable it.
  *
- * @note This resource is being considered for deprecation in favor of a more
- * all-encompassing resource, like "resource.patternFlyDocs." See
- * {@link ./resource.patternFlyDocs} for the final combined format activated
- * under `contextManagement`.
- *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
-  const list = async () => runWithOptions(options, async () => listResources.memo());
+const patternFlyDocsResource = (options = getOptions()): McpResource => {
+  const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
+    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
     category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
     section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
     version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
@@ -319,6 +398,9 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
     {
       complete,
       registerAllSearchCombinations: true,
+      indexConfig: {
+        uri: 'patternfly://docs/index{?version}'
+      },
       metaConfig: {
         uri: 'patternfly://docs/meta{?version}',
         title: `${CONFIG.title} Metadata`,
@@ -326,16 +408,17 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
       }
     },
     {
-      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
+      shouldRegister: opts => opts.contextManagement === true
     }
   ];
 };
 
 export {
-  patternFlyDocsIndexResource,
+  patternFlyDocsResource,
   listResources,
   resourceCallback,
   uriCategoryComplete,
+  uriDetailComplete,
   uriNameComplete,
   uriSectionComplete,
   uriVersionComplete,

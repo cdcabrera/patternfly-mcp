@@ -168,6 +168,9 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
     callback,
     {
       complete
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

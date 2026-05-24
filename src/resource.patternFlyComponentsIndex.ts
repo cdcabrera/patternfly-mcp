@@ -216,6 +216,9 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly components.'
       }
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };
