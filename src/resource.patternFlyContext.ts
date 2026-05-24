@@ -1,6 +1,7 @@
 import { type McpResource } from './mcpSdk';
 import { stringJoin } from './server.helpers';
 import { getOptions, runWithOptions } from './options.context';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -10,7 +11,7 @@ const NAME = 'patternfly-context';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://context';
+const URI_TEMPLATE = `${DEFAULT_OPTIONS.serverOptions.uriPrefix}://context`;
 
 /**
  * Resource configuration.

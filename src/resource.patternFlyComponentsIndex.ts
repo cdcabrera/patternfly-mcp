@@ -15,6 +15,7 @@ import {
   type ExtendedCompleteResourceTemplateCallback
 } from './resource.patternFlyDocsIndex';
 import { paramCompletion } from './resource.helpers';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -24,7 +25,7 @@ const NAME = 'patternfly-components-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://components/index{?version,category}';
+const URI_TEMPLATE = `${DEFAULT_OPTIONS.serverOptions.uriPrefix}://components/index{?version,category}`;
 
 /**
  * URI description for the resource.
@@ -48,7 +49,7 @@ const CONFIG = {
  *
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
-const listResources = async () => {
+const listResources = async (options = getOptions()) => {
   const { availableVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -57,7 +58,7 @@ const listResources = async () => {
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version]) => {
       resources.push({
-        uri: `patternfly://components/index?version=${encodeURIComponent(version)}`,
+        uri: `${options.serverOptions.uriPrefix}://components/index?version=${encodeURIComponent(version)}`,
         mimeType: 'text/markdown',
         name: `Component Index (${version})`,
         description: `Component documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
@@ -67,7 +68,7 @@ const listResources = async () => {
   return {
     resources: [
       {
-        uri: 'patternfly://components/index',
+        uri: `${options.serverOptions.uriPrefix}://components/index`,
         mimeType: 'text/markdown',
         name: 'Components Index (Latest)',
         description: `Component documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
@@ -215,7 +216,7 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
     {
       complete,
       metaConfig: {
-        uri: 'patternfly://components/meta{?version}',
+        uri: `${options.serverOptions.uriPrefix}://components/meta{?version}`,
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly components.'
       }

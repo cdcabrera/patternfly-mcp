@@ -11,6 +11,7 @@ import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
 import { paramCompletion } from './resource.helpers';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -45,7 +46,7 @@ const NAME = 'patternfly-docs-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section}';
+const URI_TEMPLATE = `${DEFAULT_OPTIONS.serverOptions.uriPrefix}://docs/index{?version,category,section}`;
 
 /**
  * URI description for the resource.
@@ -68,7 +69,7 @@ const CONFIG = {
  *
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
-const listResources = async () => {
+const listResources = async (options = getOptions()) => {
   const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -77,7 +78,7 @@ const listResources = async () => {
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version]) => {
       resources.push({
-        uri: `patternfly://docs/index?version=${encodeURIComponent(version)}`,
+        uri: `${options.serverOptions.uriPrefix}://docs/index?version=${encodeURIComponent(version)}`,
         mimeType: 'text/markdown',
         name: `Docs Index (${version})`,
         description: `Documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
@@ -87,7 +88,7 @@ const listResources = async () => {
   return {
     resources: [
       {
-        uri: 'patternfly://docs/index',
+        uri: `${options.serverOptions.uriPrefix}://docs/index`,
         mimeType: 'text/markdown',
         name: 'Docs Index (Latest)',
         description: `Documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
@@ -323,7 +324,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
       complete,
       registerAllSearchCombinations: true,
       metaConfig: {
-        uri: 'patternfly://docs/meta{?version}',
+        uri: `${options.serverOptions.uriPrefix}://docs/meta{?version}`,
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the PatternFly documentation index.'
       }

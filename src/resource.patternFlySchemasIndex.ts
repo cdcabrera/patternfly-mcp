@@ -12,6 +12,7 @@ import { type PatternFlyListResourceResult } from './resource.patternFlyDocsInde
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
 import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -21,7 +22,7 @@ const NAME = 'patternfly-schemas-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://schemas/index{?version,category}';
+const URI_TEMPLATE = `${DEFAULT_OPTIONS.serverOptions.uriPrefix}://schemas/index{?version,category}`;
 
 /**
  * URI description for the resource.
@@ -40,9 +41,10 @@ const CONFIG = {
 /**
  * List resources callback for the URI template.
  *
+ * @param options
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
-const listResources = async () => {
+const listResources = async (options = getOptions()) => {
   const { availableSchemasVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -51,7 +53,7 @@ const listResources = async () => {
     .sort(([a], [b]) => b.localeCompare(a))
     .forEach(([version]) => {
       resources.push({
-        uri: `patternfly://schemas/index?version=${encodeURIComponent(version)}`,
+        uri: `${options.serverOptions.uriPrefix}://schemas/index?version=${encodeURIComponent(version)}`,
         mimeType: 'text/markdown',
         name: `JSON Component Schemas Index (${version})`,
         description: `JSON component schemas for PatternFly version ${version}. ${URI_DESCRIPTION}`
@@ -61,7 +63,7 @@ const listResources = async () => {
   return {
     resources: [
       {
-        uri: 'patternfly://schemas/index',
+        uri: `${options.serverOptions.uriPrefix}://schemas/index`,
         mimeType: 'text/markdown',
         name: 'JSON Component Schemas Index (Latest)',
         description: `JSON component schemas entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
@@ -185,7 +187,7 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
     {
       complete,
       metaConfig: {
-        uri: 'patternfly://schemas/meta{?version}',
+        uri: `${options.serverOptions.uriPrefix}://schemas/meta{?version}`,
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly component schemas.'
       }

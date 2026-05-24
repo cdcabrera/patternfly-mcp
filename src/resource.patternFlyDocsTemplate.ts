@@ -17,6 +17,7 @@ import {
   uriSectionComplete,
   uriVersionComplete
 } from './resource.patternFlyDocsIndex';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource template.
@@ -26,7 +27,7 @@ const NAME = 'patternfly-docs-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{name}{?version,category,section}';
+const URI_TEMPLATE = `${DEFAULT_OPTIONS.serverOptions.uriPrefix}://docs/{name}{?version,category,section}`;
 
 /**
  * URI description for the resource.

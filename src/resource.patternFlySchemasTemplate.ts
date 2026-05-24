@@ -16,6 +16,7 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
 import { type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
 import { paramCompletion } from './resource.helpers';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource template.
@@ -25,7 +26,7 @@ const NAME = 'patternfly-schemas-template';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://schemas/{name}{?version,category}';
+const URI_TEMPLATE = `${DEFAULT_OPTIONS.serverOptions.uriPrefix}://schemas/{name}{?version,category}`;
 
 /**
  * URI description for the resource.

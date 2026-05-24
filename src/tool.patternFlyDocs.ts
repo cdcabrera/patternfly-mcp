@@ -40,9 +40,9 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
 
       assertInput(
-        !new RegExp('patternfly://', 'i').test(name),
+        !new RegExp(`${options.serverOptions.uriPrefix}://`, 'i').test(name),
         stringJoin.basic(
-          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
+          `Direct "${options.serverOptions.uriPrefix}://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.`,
           'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
         )
       );
@@ -60,9 +60,9 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
 
       assertInput(
-        !urlList.some(url => new RegExp('patternfly://', 'i').test(url)),
+        !urlList.some(url => new RegExp(`${options.serverOptions.uriPrefix}://`, 'i').test(url)),
         stringJoin.basic(
-          'Direct "patternfly://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.',
+          `Direct "${options.serverOptions.uriPrefix}://" URIs are not currently supported as tool inputs, and are intended to be used with MCP resources directly.`,
           'Use a component or resource "name" or provide a "urlList" of raw documentation URLs.'
         )
       );

@@ -40,6 +40,7 @@ import { getNodeMajorVersion } from './options.helpers';
  *     for MCP resources and currently only internal.
  * @property separator - Default string delimiter.
  * @property serverInstanceOptions - Server-instance options.
+ * @property {ServerOptions} serverOptions - General use server options.
  * @property {StatsOptions} stats - Stats options.
  * @property {typeof TOOL_MEMO_OPTIONS} toolMemoOptions - Tool-specific memoization options.
  * @property {ToolModule|ToolModule[]} toolModules - Array of external tool modules (ESM specs or paths) to be loaded and
@@ -75,6 +76,7 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   resourceModules: unknown | unknown[];
   separator: string;
   serverInstanceOptions: ServerInstanceOptions;
+  serverOptions: ServerOptions;
   stats: StatsOptions;
   toolMemoOptions: Partial<typeof TOOL_MEMO_OPTIONS>;
   toolModules: ToolModule | ToolModule[];
@@ -254,6 +256,13 @@ interface ServerInstanceOptions {
 }
 
 /**
+ * MCP general use server options.
+ */
+interface ServerOptions {
+  readonly uriPrefix: string;
+}
+
+/**
  * Base stats options.
  */
 type StatsOptions = {
@@ -424,6 +433,13 @@ const SERVER_INSTANCE_OPTIONS: ServerInstanceOptions = {
 };
 
 /**
+ * Default general use server options.
+ */
+const SERVER_OPTIONS: ServerOptions = {
+  uriPrefix: 'patternfly'
+};
+
+/**
  * Default stats options.
  */
 const STATS_OPTIONS: StatsOptions = {
@@ -522,6 +538,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
   repoResources: REPO_RESOURCES,
   resourceMemoOptions: RESOURCE_MEMO_OPTIONS,
   serverInstanceOptions: SERVER_INSTANCE_OPTIONS,
+  serverOptions: SERVER_OPTIONS,
   stats: STATS_OPTIONS,
   resourceModules: [],
   toolMemoOptions: TOOL_MEMO_OPTIONS,

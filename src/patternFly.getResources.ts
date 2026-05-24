@@ -437,6 +437,7 @@ const mutateKeyWordsMap = (
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
 const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<PatternFlyMcpAvailableResources> => {
+  const uriPrefix = DEFAULT_OPTIONS.serverOptions.uriPrefix;
   const versionContext = await getPatternFlyVersionContext.memo(contextPathOverride);
   const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
   const { componentNamesIndex, byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
@@ -473,7 +474,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const version = (entry.version || 'unknown').toLowerCase();
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
-      const uri = `patternfly://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
+      const uri = `${uriPrefix}://docs/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
 
       if (path) {
         pathIndex.add(path);
@@ -491,7 +492,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       let uriSchemas;
 
       if (isSchemasAvailable) {
-        uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
+        uriSchemas = `${uriPrefix}://schemas/${encodeURIComponent(name)}?version=${encodeURIComponent(version)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
       }

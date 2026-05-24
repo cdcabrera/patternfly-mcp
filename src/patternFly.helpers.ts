@@ -1,6 +1,6 @@
 import semver, { type SemVer } from 'semver';
 import { getOptions } from './options.context';
-import { type PatternFlyOptions } from './options.defaults';
+import { DEFAULT_OPTIONS, type PatternFlyOptions } from './options.defaults';
 import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
 import { fuzzySearch } from './server.search';
 import { parseUrl } from './server.helpers';
@@ -233,7 +233,7 @@ const disabled_findClosestPatternFlyVersion = async (
  * @param options.prefix - The URI prefix to use. Defaults to 'patternfly'.
  * @returns A parsed PatternFly specific URI object or `undefined` if the URI is NOT an MCP `patternfly://` URI.
  */
-const parsePatternFlyUri = (uri: string | undefined, { prefix = 'patternfly' }: { prefix?: string } = {}) => {
+const parsePatternFlyUri = (uri: string | undefined, { prefix = DEFAULT_OPTIONS.serverOptions.uriPrefix }: { prefix?: string } = {}) => {
   const updatedUri = typeof uri === 'string' ? uri.trim().toLowerCase() : undefined;
   const patternflyUri = updatedUri ? parseUrl(updatedUri, { prefix }) : undefined;
 
