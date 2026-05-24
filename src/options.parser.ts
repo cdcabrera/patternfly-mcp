@@ -12,7 +12,7 @@ import {
   MODE_LEVELS,
   PLUGIN_ISOLATION,
   type DefaultOptions,
-  type LoggingOptions
+  type LoggingOptions, CONTEXT_MANAGEMENT
 } from './options.defaults';
 import { type LogLevel, logSeverity } from './logger';
 import { isUrl, portValid } from './server.helpers';
@@ -221,6 +221,16 @@ const parseCliOptions = (
 
           if (match) {
             result.pluginIsolation = match;
+          }
+        }
+        break;
+      case '--context-management':
+        if (value) {
+          const val = value.toLowerCase();
+          const match = CONTEXT_MANAGEMENT.find(management => management === val);
+
+          if (match) {
+            result.contextManagement = match;
           }
         }
         break;

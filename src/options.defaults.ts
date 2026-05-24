@@ -10,6 +10,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
+ * @property contextManagement - Context management strategy, either 'default' or 'token-saver'.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
@@ -49,6 +50,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property xhrFetch - XHR and Fetch options.
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
+  contextManagement: 'default' | 'token-saver';
   contextPath: string;
   contextUrl: string;
   docsPaths: string[];
@@ -490,6 +492,11 @@ const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
 
 /**
+ * Available context management strategies.
+ */
+const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 'token-saver'];
+
+/**
  * Global default options. Base defaults before CLI/programmatic overrides.
  *
  * @note `maxDocsToLoad` and `recommendedMaxDocsToLoad` should be generated from the length
@@ -498,6 +505,7 @@ const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict']
  * @type {DefaultOptions} Default options object.
  */
 const DEFAULT_OPTIONS: DefaultOptions = {
+  contextManagement: 'default',
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPaths: [],
@@ -534,6 +542,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 
 export {
   DEFAULT_OPTIONS,
+  CONTEXT_MANAGEMENT,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
