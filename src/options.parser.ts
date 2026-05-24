@@ -8,6 +8,7 @@ import {
   type ProgrammaticOptionsKey
 } from './options';
 import {
+  CONTEXT_MANAGEMENT,
   DEFAULT_OPTIONS,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
@@ -221,6 +222,16 @@ const parseCliOptions = (
 
           if (match) {
             result.pluginIsolation = match;
+          }
+        }
+        break;
+      case '--context-management':
+        if (value) {
+          const val = value.toLowerCase();
+          const match = CONTEXT_MANAGEMENT.find(management => management === val);
+
+          if (match) {
+            result.contextManagement = match;
           }
         }
         break;

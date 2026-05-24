@@ -10,6 +10,9 @@ import { getNodeMajorVersion } from './options.helpers';
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
+ * @property contextManagement - Strategy for managing agent context and response sizes.
+ *    - 'default': Standard text-heavy responses.
+ *    - 'token-saver': High-efficiency mode using McpResource links.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
@@ -49,6 +52,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property xhrFetch - XHR and Fetch options.
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
+  contextManagement: 'default' | 'token-saver';
   contextPath: string;
   contextUrl: string;
   docsPaths: string[];
@@ -131,12 +135,17 @@ interface LoggingOptions {
  * @interface MinMax
  *
  * @property urlString Minimum and maximum length for URL strings.
- * @property toolSearches Minimum and maximum number of tool searches.
+ * @property resourceSearches Minimum and maximum number of resource results for searches.
+ * @property toolSearches Minimum and maximum number of tool results for searches.
  * @property inputStrings Minimum and maximum length for input strings.
  * @property docsToLoad Minimum and maximum number of docs to load.
  */
 interface MinMax {
   urlString: {
+    min: number;
+    max: number;
+  }
+  resourceSearches: {
     min: number;
     max: number;
   }
@@ -319,11 +328,18 @@ const HTTP_OPTIONS: HttpOptions = {
 
 /**
  * Minimum and maximum ranges for various options.
+ *
+ * @note For resourceSearches you still have to take into account that for every result
+ * there could be multiple resources.
  */
 const MIN_MAX: MinMax = {
   urlString: {
     min: 11,
     max: 1500
+  },
+  resourceSearches: {
+    min: 0,
+    max: 15
   },
   toolSearches: {
     min: 0,
@@ -485,6 +501,11 @@ const URL_REGEX = /^(https?:)\/\//i;
 const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 
 /**
+ * Available context management settings.
+ */
+const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 'token-saver'];
+
+/**
  * Available plugin isolation settings.
  */
 const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
@@ -498,6 +519,7 @@ const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict']
  * @type {DefaultOptions} Default options object.
  */
 const DEFAULT_OPTIONS: DefaultOptions = {
+  contextManagement: 'default',
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPaths: [],
@@ -534,6 +556,7 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 
 export {
   DEFAULT_OPTIONS,
+  CONTEXT_MANAGEMENT,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,

@@ -156,7 +156,18 @@ const registerServerResources = async (resources: McpResourceCreator[], server: 
  */
 const registerServerTools = async (tools: McpToolCreator[], server: McpServer, options = getOptions(), session = getSessionOptions()) => {
   for (const toolCreator of tools) {
-    const [name, schema, callback] = toolCreator(options);
+    const [name, schema, callback, config] = toolCreator(options);
+    const shouldRegister = config?.shouldRegister;
+
+    if (shouldRegister) {
+      const status = await runWithSession(session, async () =>
+        runWithOptions(options, async () => shouldRegister(options)));
+
+      if (!status) {
+        log.debug(`Skipping tool registration: ${name}`);
+        continue;
+      }
+    }
 
     // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
     const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);
