@@ -528,16 +528,17 @@ describe('token-saver mode', () => {
       params: {
         name: 'searchPatternFly',
         arguments: {
-          searchQuery: 'Button'
+          query: 'Button'
         }
       }
     });
 
     const [summary, ...resources] = response?.result?.content || [];
 
+    console.warn(summary);
     console.warn(resources);
 
-    expect(summary).toBeDefined() //.toBeGreaterThan(0);
+    expect(summary.type).toBe('text');
 
     resources.forEach((item: any) => {
       expect(item.type).toBe('resource_link');

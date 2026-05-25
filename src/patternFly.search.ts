@@ -181,11 +181,12 @@ const filterPatternFly = async (
       // Apply version contextual properties, typically URIs
       if (updatedFilters.version && versions?.[updatedFilters.version]) {
         versionContextualProperties = {
+          id: versions[updatedFilters.version]?.id,
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
-          uriFull: versions[updatedFilters.version]?.uriFull,
+          uriId: versions[updatedFilters.version]?.uriId,
           uriSchemas: versions[updatedFilters.version]?.uriSchemas,
-          uriSchemasFull: versions[updatedFilters.version]?.uriSchemasFull
+          uriSchemasId: versions[updatedFilters.version]?.uriSchemasId
         };
       }
 

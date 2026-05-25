@@ -520,14 +520,14 @@ describe('token-saver mode, HTTP transport', () => {
       params: {
         name: 'searchPatternFly',
         arguments: {
-          searchQuery: 'Button'
+          query: 'Button'
         }
       }
     });
 
     const [summary, ...resources] = response?.result?.content || [];
 
-    expect(summary).toBeDefined() //.toBeGreaterThan(0);
+    expect(summary.type).toBe('text');
 
     resources.forEach((item: any) => {
       expect(item.type).toBe('resource_link');

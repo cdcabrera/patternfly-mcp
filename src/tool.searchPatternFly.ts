@@ -20,7 +20,7 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
  */
 const searchPatternFlyTool = (options = getOptions()): McpTool => {
   const callback = async (args: any) => {
-    const { searchQuery, version } = args;
+    const { query: searchQuery, version } = args;
     const isVersion = typeof version === 'string' && version.length > 0;
 
     assertInputStringLength(searchQuery, {
@@ -111,36 +111,33 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       );
     }
 
-    const results = parseResults
+    const results = new Map<string, Record<string, unknown>>();
+
+    parseResults
       .map(result => result.entries)
       .flat()
       .filter(entry => entry.path)
-      .map(entry => {
-        const resource = [];
-
-        if (entry.uriFull) {
-          resource.push({
+      .forEach(entry => {
+        if (entry.uriId && !results.has(entry.uriId)) {
+          results.set(entry.uriId, {
             type: 'resource_link',
-            uri: entry.uriFull,
-            name: `${entry.displayName} - (${entry.version})`,
+            uri: entry.uriId,
+            name: `${entry.displayName} - (${entry.section}, ${entry.version})`,
             description: entry.description,
             mimeType: 'text/markdown'
           });
         }
 
-        if (entry.uriSchemasFull) {
-          resource.push({
+        if (entry.uriSchemasId && !results.has(entry.uriSchemasId)) {
+          results.set(entry.uriSchemasId, {
             type: 'resource_link',
-            uri: entry.uriSchemasFull,
-            name: `${entry.displayName} JSON Schemas - (${entry.version})`,
-            description: `${entry.displayName} JSON schemas.`,
+            uri: entry.uriSchemasId,
+            name: `${entry.displayName} JSON Schemas - (${entry.section}, ${entry.version})`,
+            description: `${entry.displayName} JSON schemas. ${entry.description}`,
             mimeType: 'application/json'
           });
         }
-
-        return resource;
-      })
-      .flat();
+      });
 
     return {
       content: [
@@ -153,7 +150,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             '  - Use a search all ("*") to find all available resources.'
           )
         },
-        ...results
+        ...results.values()
       ]
     };
   };
@@ -164,13 +161,13 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       description: `Find PatternFly resources and get component names with documentation resources. Supports case-insensitive partial and all ("*") matches.
 
       **Usage**:
-        1. Input a "searchQuery" to find and return PatternFly documentation, guideline, and component JSON schemas.
+        1. Input a "query" to find and return PatternFly documentation, guideline, and component JSON schemas.
 
       **Returns**:
         - Component, documentation, and guideline resource links that can be used to access and read full content.
       `,
       inputSchema: {
-        searchQuery: z.string()
+        query: z.string()
           .min(options.minMax.inputStrings.min)
           .max(options.minMax.inputStrings.max)
           .describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
