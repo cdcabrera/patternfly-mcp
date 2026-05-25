@@ -6,14 +6,17 @@ import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike }
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { paramCompletion } from './resource.helpers';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { findClosest } from './server.search';
 
 /**
  * searchPatternFly tool function
  *
  * Searches for PatternFly resources using fuzzy search.
  * Returns MCP Resource Links when contextManagement: 'token-saver' is active.
+ *
+ * @note Review not filtering out resources without a path. These resources could be
+ * inlined or handled with the upcoming on-demand session resource loader.
  *
  * @param options - Optional configuration options (defaults to OPTIONS)
  * @returns MCP tool tuple [name, schema, callback]
@@ -40,7 +43,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const { latestVersion } = await getPatternFlyMcpResources.memo();
+    const { latestVersion, keywordsIndex } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
 
@@ -60,18 +63,14 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
-      const suggestions = await paramCompletion.memo({ version: updatedVersion });
+      const suggestion = findClosest.memo(searchQuery, keywordsIndex.reverse(), { maxDistance: 5 });
+      const hint = suggestion ? `Try a search for "${suggestion}".` : `Try a broader search.`;
 
       return {
         content: [{
           type: 'text',
           text: stringJoin.newlineFiltered(
-            `No PatternFly resources found matching "${searchQuery}"`,
-            options.separator,
-            '**Important**:',
-            '  - Use a search all ("*") to find all available resources.',
-            suggestions.sections.length ? `  - Some available sections are: ${suggestions.sections.slice(0, 3).join(', ')}` : undefined,
-            suggestions.categories.length ? `  - Some available categories are: ${suggestions.categories.slice(0, 3).join(', ')}` : undefined
+            `No PatternFly resources found matching "${searchQuery}". ${hint}`
           )
         }]
       };
@@ -123,43 +122,28 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       ? `Search results for PatternFly version "${updatedVersion}" and`
       : `Search results for`;
 
-    let summaryTitle = stringJoin.basic(
+    let summaryTitle = stringJoin.newline(
       `# ${summaryTitlePatternFly} "${searchQuery}".`,
-      `Showing ${resultValues.length} related resources.`
+      `Showing ${resultValues.length} related ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
     );
 
     if (isSearchWildCardAll) {
-      summaryTitle = stringJoin.basic(
+      summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing the first ${resultValues.length} resources. There are ${totalPotentialMatches} potential match variations.`,
-        `Try searching with a more specific query.`
+        `Only showing ${resultValues.length} ${resultValues.length === 1 ? 'resource' : 'resources'} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
       );
     } else if (exactMatches.length > 0) {
-      summaryTitle = stringJoin.basic(
+      summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "${searchQuery}".`,
-        `Showing ${resultValues.length} resources for ${parseResults.length} exact ${parseResults.length === 1 ? 'match' : 'matches'}.`
+        `Showing ${resultValues.length} exact ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
       );
     }
-
-    const summaryResults = stringJoin.newline(
-      ...parseResults.map(
-        (result, index) =>
-          `  ${index + 1}."${result.name}" has ${result.entries.length} available ${result.entries.length === 1 ? 'resource' : 'resources'} (${result.matchType} match).`
-      )
-    );
 
     return {
       content: [
         {
           type: 'text',
-          text: stringJoin.newline(
-            summaryTitle,
-            summaryResults,
-            options.separator,
-            '**Important**:',
-            '  - Use the attached resources to access and read full content.',
-            '  - Use a search all ("*") to find all available resources.'
-          )
+          text: summaryTitle
         },
         ...resultValues
       ]
@@ -169,19 +153,12 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
   return [
     'searchPatternFly',
     {
-      description: `Find PatternFly resources and get component names with documentation resources. Supports case-insensitive partial and all ("*") matches.
-
-      **Usage**:
-        1. Input a "query" to find and return PatternFly documentation, guideline, and component JSON schemas.
-
-      **Returns**:
-        - Component, documentation, and guideline resource links that can be used to access and read full content.
-      `,
+      description: `Search PatternFly components, documentation, guidelines, and resource links by keywords or '*' for all.`,
       inputSchema: {
         query: z.string()
           .min(options.minMax.inputStrings.min)
           .max(options.minMax.inputStrings.max)
-          .describe('Full or partial resource or component name to search for (e.g., "button", "react", "*")'),
+          .describe('Full or partial component name or resource to search for (e.g., "button", "react", "*")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional()
           .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
