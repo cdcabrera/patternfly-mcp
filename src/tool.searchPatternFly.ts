@@ -158,7 +158,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         query: z.string()
           .min(options.minMax.inputStrings.min)
           .max(options.minMax.inputStrings.max)
-          .describe('Full or partial component name or resource to search for (e.g., "button", "react", "*")'),
+          .describe('Case-insensitive, full or partial keyword query (e.g., "button", "react", "*")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional()
           .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
