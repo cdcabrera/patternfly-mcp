@@ -89,27 +89,34 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       parseResults = searchResults.filter(result => result.distance === 1);
     }
 
-    const searchTitlePatternFly = updatedVersion
+    const summaryTitlePatternFly = updatedVersion
       ? `Search results for PatternFly version "${updatedVersion}" and`
       : `Search results for`;
 
-    let searchTitle = stringJoin.basic(
-      `# ${searchTitlePatternFly} "${searchQuery}".`,
+    let summaryTitle = stringJoin.basic(
+      `# ${summaryTitlePatternFly} "${searchQuery}".`,
       `Showing ${parseResults.length} related ${parseResults.length === 1 ? 'match' : 'matches'}.`
     );
 
     if (isSearchWildCardAll) {
-      searchTitle = stringJoin.basic(
-        `# ${searchTitlePatternFly} "all" resources.`,
+      summaryTitle = stringJoin.basic(
+        `# ${summaryTitlePatternFly} "all" resources.`,
         `Only showing the first ${parseResults.length} results. There are ${totalPotentialMatches} potential match variations.`,
         `Try searching with a more specific query.`
       );
     } else if (exactMatches.length > 0) {
-      searchTitle = stringJoin.basic(
-        `# ${searchTitlePatternFly} "${searchQuery}".`,
+      summaryTitle = stringJoin.basic(
+        `# ${summaryTitlePatternFly} "${searchQuery}".`,
         `Showing ${parseResults.length} exact ${parseResults.length === 1 ? 'match' : 'matches'}.`
       );
     }
+
+    const summaryResults = stringJoin.basic(
+      ...parseResults.map(
+        (result, index) =>
+          `  ${index + 1}. ${result.name} has ${result.entries.length} available ${result.entries.length === 1 ? 'resource' : 'resources'}.`
+      )
+    );
 
     const results = new Map<string, Record<string, unknown>>();
 
@@ -122,7 +129,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           results.set(entry.uriId, {
             type: 'resource_link',
             uri: entry.uriId,
-            name: `${entry.displayName} - (${entry.section}, ${entry.version})`,
+            name: `${entry.displayName} - (${entry.version}, ${entry.section}, ${entry.category})`,
             description: entry.description,
             mimeType: 'text/markdown'
           });
@@ -132,8 +139,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           results.set(entry.uriSchemasId, {
             type: 'resource_link',
             uri: entry.uriSchemasId,
-            name: `${entry.displayName} JSON Schemas - (${entry.section}, ${entry.version})`,
-            description: `${entry.displayName} JSON schemas. ${entry.description}`,
+            name: `${entry.displayName} JSON Schemas - (${entry.version}, ${entry.section})`,
+            description: `${entry.displayName} component JSON schemas. ${entry.description}`,
             mimeType: 'application/json'
           });
         }
@@ -144,7 +151,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         {
           type: 'text',
           text: stringJoin.newline(
-            searchTitle,
+            summaryTitle,
+            summaryResults,
             '**Important**:',
             '  - Use the attached resources to access and read full content.',
             '  - Use a search all ("*") to find all available resources.'

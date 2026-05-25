@@ -16,7 +16,6 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
 import { type ExtendedCompleteResourceTemplateCallback } from './resource.patternFlyDocsIndex';
 import { paramCompletion } from './resource.helpers';
-import {generateHash, stringJoin} from "./server.helpers";
 
 /**
  * Name of the resource template.

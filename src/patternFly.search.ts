@@ -167,6 +167,7 @@ const filterPatternFly = async (
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
+      // Filter by ID and Name
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
       // Any missing filter registers as true. Only filters that are active run their check.
