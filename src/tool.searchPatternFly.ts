@@ -124,7 +124,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
 
     let summaryTitle = stringJoin.newline(
       `# ${summaryTitlePatternFly} "${searchQuery}".`,
-      `Showing ${resultValues.length} related ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
+      `Found ${resultValues.length} related ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
     );
 
     if (isSearchWildCardAll) {
@@ -135,7 +135,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     } else if (exactMatches.length > 0) {
       summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "${searchQuery}".`,
-        `Showing ${resultValues.length} exact ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
+        `Found ${resultValues.length} ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
       );
     }
 
