@@ -84,39 +84,10 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     if (isSearchWildCardAll || exactMatches.length > 0) {
       parseResults = exactMatches;
 
-    // Focus the result set. If there aren't any exactMatches use "distance 1" matches only.
+    // Focus the result set. If there aren't any exactMatches, but we have "distance 1" matches, use those.
     } else if (searchResults.some(result => result.distance === 1)) {
       parseResults = searchResults.filter(result => result.distance === 1);
     }
-
-    const summaryTitlePatternFly = updatedVersion
-      ? `Search results for PatternFly version "${updatedVersion}" and`
-      : `Search results for`;
-
-    let summaryTitle = stringJoin.basic(
-      `# ${summaryTitlePatternFly} "${searchQuery}".`,
-      `Showing ${parseResults.length} related ${parseResults.length === 1 ? 'match' : 'matches'}.`
-    );
-
-    if (isSearchWildCardAll) {
-      summaryTitle = stringJoin.basic(
-        `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing the first ${parseResults.length} results. There are ${totalPotentialMatches} potential match variations.`,
-        `Try searching with a more specific query.`
-      );
-    } else if (exactMatches.length > 0) {
-      summaryTitle = stringJoin.basic(
-        `# ${summaryTitlePatternFly} "${searchQuery}".`,
-        `Showing ${parseResults.length} exact ${parseResults.length === 1 ? 'match' : 'matches'}.`
-      );
-    }
-
-    const summaryResults = stringJoin.basic(
-      ...parseResults.map(
-        (result, index) =>
-          `  ${index + 1}. ${result.name} has ${result.entries.length} available ${result.entries.length === 1 ? 'resource' : 'resources'}.`
-      )
-    );
 
     const results = new Map<string, Record<string, unknown>>();
 
@@ -129,7 +100,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           results.set(entry.uriId, {
             type: 'resource_link',
             uri: entry.uriId,
-            name: `${entry.displayName} - (${entry.version}, ${entry.section}, ${entry.category})`,
+            name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
             description: entry.description,
             mimeType: 'text/markdown'
           });
@@ -139,12 +110,43 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           results.set(entry.uriSchemasId, {
             type: 'resource_link',
             uri: entry.uriSchemasId,
-            name: `${entry.displayName} JSON Schemas - (${entry.version}, ${entry.section})`,
-            description: `${entry.displayName} component JSON schemas. ${entry.description}`,
+            name: `${entry.displayName} - JSON Schemas (${entry.version})`,
+            description: `${entry.displayName} component JSON schemas.`,
             mimeType: 'application/json'
           });
         }
       });
+
+    const resultValues = Array.from(results.values());
+
+    const summaryTitlePatternFly = updatedVersion
+      ? `Search results for PatternFly version "${updatedVersion}" and`
+      : `Search results for`;
+
+    let summaryTitle = stringJoin.basic(
+      `# ${summaryTitlePatternFly} "${searchQuery}".`,
+      `Showing ${resultValues.length} related resources.`
+    );
+
+    if (isSearchWildCardAll) {
+      summaryTitle = stringJoin.basic(
+        `# ${summaryTitlePatternFly} "all" resources.`,
+        `Only showing the first ${resultValues.length} resources. There are ${totalPotentialMatches} potential match variations.`,
+        `Try searching with a more specific query.`
+      );
+    } else if (exactMatches.length > 0) {
+      summaryTitle = stringJoin.basic(
+        `# ${summaryTitlePatternFly} "${searchQuery}".`,
+        `Showing ${resultValues.length} resources for ${parseResults.length} exact ${parseResults.length === 1 ? 'match' : 'matches'}.`
+      );
+    }
+
+    const summaryResults = stringJoin.newline(
+      ...parseResults.map(
+        (result, index) =>
+          `  ${index + 1}."${result.name}" has ${result.entries.length} available ${result.entries.length === 1 ? 'resource' : 'resources'} (${result.matchType} match).`
+      )
+    );
 
     return {
       content: [
@@ -153,12 +155,13 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           text: stringJoin.newline(
             summaryTitle,
             summaryResults,
+            options.separator,
             '**Important**:',
             '  - Use the attached resources to access and read full content.',
             '  - Use a search all ("*") to find all available resources.'
           )
         },
-        ...results.values()
+        ...resultValues
       ]
     };
   };

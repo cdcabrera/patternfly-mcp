@@ -328,6 +328,9 @@ const HTTP_OPTIONS: HttpOptions = {
 
 /**
  * Minimum and maximum ranges for various options.
+ *
+ * @note For resourceSearches you still have to take into account that for every result
+ * there could be multiple resources.
  */
 const MIN_MAX: MinMax = {
   urlString: {
@@ -336,7 +339,7 @@ const MIN_MAX: MinMax = {
   },
   resourceSearches: {
     min: 0,
-    max: 50
+    max: 15
   },
   toolSearches: {
     min: 0,
