@@ -121,7 +121,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "instructions": "Use the PatternFly MCP when a user asks about: PatternFly, pf, pf docs, design tokens, design guidelines, accessibility, PatternFly components, and frontend development. Use patternfly://context for server environment and troubleshooting links if runtime issues occur.",
   },
   "stats": {
-    "reportIntervalMs": {
+    "reportTimeoutMs": {
       "health": 30000,
       "transport": 10000,
     },

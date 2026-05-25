@@ -261,7 +261,7 @@ interface ServerInstanceOptions {
  * Base stats options.
  */
 type StatsOptions = {
-  reportIntervalMs: {
+  reportTimeoutMs: {
     health: number;
     transport: number;
   }
@@ -431,7 +431,7 @@ const SERVER_INSTANCE_OPTIONS: ServerInstanceOptions = {
  * Default stats options.
  */
 const STATS_OPTIONS: StatsOptions = {
-  reportIntervalMs: {
+  reportTimeoutMs: {
     health: 30_000,
     transport: 10_000
   }
