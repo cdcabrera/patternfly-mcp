@@ -61,13 +61,18 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
       const suggestion = findClosest.memo(searchQuery, keywordsIndex.reverse(), { maxDistance: 5 });
-      const hint = suggestion ? `Try a search for "${suggestion}".` : `Try a search all ("*").`;
 
       return {
         content: [{
           type: 'text',
           text: stringJoin.newlineFiltered(
-            `No PatternFly resources found matching "${searchQuery}". ${hint}`
+            stringJoin.filtered(
+              `No PatternFly resources found matching "${searchQuery}".`,
+              suggestion && `Try a search for "${suggestion}".`
+            ),
+            options.separator,
+            '**Important**:',
+            '  - Use a search all ("*") to find all available resources.'
           )
         }]
       };
