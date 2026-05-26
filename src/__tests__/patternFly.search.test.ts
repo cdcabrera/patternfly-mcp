@@ -63,8 +63,8 @@ describe('searchPatternFly', () => {
       search: 'patternfly://schemas/modal'
     },
     {
-      description: 'uri search without version, prefix partial',
-      search: 'patternfly://schemas/a'
+      description: 'button entry id hash',
+      search: '5d642f0d9640119a074f5275c2a9459d2f18d9e1'
     }
   ])('should attempt to return an array of all available results, $description', async ({ search }) => {
     const { searchResults, ...rest } = await searchPatternFly(search, undefined, { allowWildCardAll: true });
@@ -125,9 +125,17 @@ describe('searchPatternFly', () => {
       search: '*',
       filters: { category: 'grammar' },
       options: { allowWildCardAll: true }
+    },
+    {
+      description: 'button entry id hash,',
+      search: '5d642f0d9640119a074f5275c2a9459d2f18d9e1',
+      filters: {},
+      options: { allowWildCardAll: true, dynamicFilter: true }
     }
   ])('should allow filtering, $description', async ({ search, filters, options }) => {
     const { searchResults, totalResults, totalPotentialMatches } = await searchPatternFly(search, filters, options || {});
+
+    console.log(searchResults);
 
     expect(searchResults.length).toBeGreaterThanOrEqual(0);
     expect(totalResults).toBeGreaterThanOrEqual(searchResults.length);
