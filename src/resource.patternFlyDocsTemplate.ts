@@ -4,8 +4,8 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
-import { processDocsFunction } from './server.getResources';
-import { generateHash, stringJoin } from './server.helpers';
+import { processDocsFunction, type ProcessedDocSuccess } from './server.getResources';
+import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
@@ -116,16 +116,20 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  const docResults = [];
-  const docs = [];
+  const docsPathIdLookup = new Map<string, string>();
+  const docs: ProcessedDocSuccess[] = [];
 
   try {
-    const matchedUrls = byEntry.map(entry => entry.path).filter(Boolean);
+    byEntry.forEach(({ path, uriId }) => {
+      if (path && !docsPathIdLookup.has(path)) {
+        docsPathIdLookup.set(path, uriId);
+      }
+    });
 
-    if (matchedUrls.length > 0) {
-      const processedDocs = await processDocsFunction.memo(matchedUrls);
+    if (docsPathIdLookup.size > 0) {
+      const processedDocs = await processDocsFunction.memo([...docsPathIdLookup.keys()]);
 
-      docs.push(...processedDocs);
+      docs.push(...processedDocs.filter(response => response.isSuccess));
     }
   } catch (error) {
     throw new McpError(
@@ -153,17 +157,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  for (const doc of docs) {
-    docResults.push(stringJoin.newline(
-      `# Documentation from ${doc.resolvedPath || doc.path}`,
-      '',
-      doc.content
-    ));
-  }
-
   return {
     contents: docs.map(doc => ({
-      uri: `patternfly://docs/${generateHash(doc.path)}`,
+      uri: `patternfly://docs/${docsPathIdLookup.get(doc.path)}`,
       mimeType: 'text/markdown',
       text: stringJoin.newline(
         `# Documentation from ${doc.resolvedPath || doc.path}`,
