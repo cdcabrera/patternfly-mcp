@@ -154,7 +154,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         suggestionMessage = ` Try using different parameters for ${variableList}.`;
       }
 
-      return `"${updatedName}" was found, but no documentation URLs are available for it.${suggestionMessage}`;
+      return `"${updatedName}" was found, but no documentation resources are available for it.${suggestionMessage}`;
     }
   );
 

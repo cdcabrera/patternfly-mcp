@@ -183,17 +183,24 @@ const filterPatternFly = async (
       const { versions, ...filteredResource } = resource;
       let versionContextualProperties = {};
 
-      // Apply version contextual properties, typically URIs
+      // Apply version contextual properties, typically URIs.
       if (updatedFilters.version && versions?.[updatedFilters.version]) {
-        versionContextualProperties = {
-          id: versions[updatedFilters.version]?.id,
-          groupId: versions[updatedFilters.version]?.groupId,
+        // General props version dependent
+        versionContextualProperties = Object.assign(versionContextualProperties, {
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
-          uriId: versions[updatedFilters.version]?.uriId,
           uriSchemas: versions[updatedFilters.version]?.uriSchemas,
           uriSchemasId: versions[updatedFilters.version]?.uriSchemasId
-        };
+        });
+
+        // Version dependent props and also unique. Not setting length === 1 means only the first entry is
+        // returned; IDs are unique by doc path.
+        if (matchedEntries.length === 1) {
+          versionContextualProperties = Object.assign(versionContextualProperties, {
+            id: matchedEntries[0]?.id,
+            uriId: matchedEntries[0]?.uriId
+          });
+        }
       }
 
       byResource.set(name, {

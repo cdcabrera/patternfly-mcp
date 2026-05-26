@@ -136,8 +136,8 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @property name - The name of component entry.
  * @property entries - All entry PatternFly documentation entries.
  * @property versions - Entry segmented by versions. Contains all the same properties.
+ * @property groupId - The unique identifier for the document group.
  * @property id - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
- * @property groupId - see {@link PatternFlyMcpDocsMeta.groupId} **CONTEXTUAL**.
  * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
  * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
  * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
@@ -148,9 +148,9 @@ type PatternFlyMcpResourceMetadata = {
   name: string;
   entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   versions: Record<string, Omit<PatternFlyMcpResourceMetadata, 'name' | 'versions'>>;
+  groupId: string;
 
   id: string | undefined;
-  groupId: string | undefined;
   isSchemasAvailable: boolean | undefined;
   uri: string | undefined;
   uriId: string | undefined;
@@ -484,10 +484,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       // Include search and filter contextual `undefined` metadata for each resource.
       resources.set(name, {
         name,
+        groupId,
         entries: [],
         versions: {},
         id: undefined,
-        groupId: undefined,
         isSchemasAvailable: undefined,
         uri: undefined,
         uriId: undefined,
