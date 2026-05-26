@@ -137,7 +137,7 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @property entries - All entry PatternFly documentation entries.
  * @property versions - Entry segmented by versions. Contains all the same properties.
  * @property id - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
- * @property groupId - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
+ * @property groupId - see {@link PatternFlyMcpDocsMeta.groupId} **CONTEXTUAL**.
  * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
  * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
  * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
