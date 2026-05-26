@@ -9,8 +9,7 @@ import { getOptions, runWithOptions } from './options.context';
 import { filterPatternFly } from './patternFly.search';
 import {
   getPatternFlyComponentSchema,
-  getPatternFlyMcpResources,
-  type PatternFlyComponentSchema
+  getPatternFlyMcpResources
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { uriCategoryComplete, uriVersionComplete } from './resource.patternFlyComponentsIndex';
@@ -97,27 +96,27 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const updatedVersion = normalizedVersion || latestSchemasVersion;
   const updatedName = name.trim();
 
-  const { byEntry } = await filterPatternFly.memo({
+  const { byResource } = await filterPatternFly.memo({
     version: updatedVersion,
     name: updatedName
   });
 
-  const matchedSchemas = byEntry.filter(result => result.uriSchemas);
-  const schemaResults = new Map<string, { content: PatternFlyComponentSchema, [key: string]: unknown }>();
+  const matchedResources = Array.from(byResource.values()).filter(res => res.isSchemasAvailable);
+  const schemaResults = [];
 
-  for (const schema of matchedSchemas) {
-    const result = await getPatternFlyComponentSchema.memo(schema.name as string);
+  for (const resource of matchedResources) {
+    const content = await getPatternFlyComponentSchema.memo(resource.name);
 
-    if (result && !schemaResults.has(schema.name)) {
-      schemaResults.set(schema.name, {
-        ...schema,
-        content: result
+    if (content) {
+      schemaResults.push({
+        uriSchemasId: resource.uriSchemasId as string,
+        content
       });
     }
   }
 
   assertInput(
-    schemaResults.size > 0,
+    schemaResults.length > 0,
     () => {
       let suggestionMessage = '';
 
@@ -130,7 +129,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   return {
-    contents: Array.from(schemaResults.values()).map(schema => ({
+    contents: schemaResults.map(schema => ({
       uri: schema.uriSchemasId,
       mimeType: 'application/json',
       text: JSON.stringify(schema.content, null, 2)
