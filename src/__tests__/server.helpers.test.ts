@@ -16,6 +16,7 @@ import {
   mergeObjects,
   parseUrl,
   portValid,
+  safeDecode,
   splitUri,
   stringJoin,
   timeoutFunction
@@ -1001,6 +1002,28 @@ describe('portValid', () => {
   });
 });
 
+describe('safeDecode', () => {
+  it.each([
+    {
+      description: 'valid encoded string',
+      str: 'my%20component',
+      expected: 'my component'
+    },
+    {
+      description: 'invalid encoded string (malformed)',
+      str: 'bad%zzpath',
+      expected: 'bad%zzpath'
+    },
+    {
+      description: 'string with no encoding',
+      str: 'standard-path',
+      expected: 'standard-path'
+    }
+  ])('should $description', ({ str, expected }) => {
+    expect(safeDecode(str)).toBe(expected);
+  });
+});
+
 describe('parseUrl', () => {
   it.each([
     {
@@ -1056,6 +1079,18 @@ describe('parseUrl', () => {
         path: 'docs/button',
         params: {}
       }
+    },
+    {
+      description: 'return undefined for malformed percent-encoding in absolute URI',
+      uri: 'https://patternfly.org/docs/bad%zzpath',
+      options: {},
+      expected: undefined
+    },
+    {
+      description: 'return undefined for malformed percent-encoding in prefixed path',
+      uri: 'docs/bad%zzpath',
+      options: { prefix: 'patternfly' },
+      expected: undefined
     }
   ])('should parse a URI, $description', ({ uri, options, expected }) => {
     expect(parseUrl(uri, options)).toEqual(expected);

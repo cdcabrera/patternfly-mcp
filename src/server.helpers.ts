@@ -415,6 +415,22 @@ const generateHash = (anyValue: unknown): string => {
 };
 
 /**
+ * Safely decode a URI component, returning the original string if decoding fails.
+ *
+ * @param str - The string to decode.
+ * @param [options] - Options for decoding
+ * @param [options.isStrict] - If `true`, return `undefined` on decoding failure, otherwise return original string
+ * @returns The decoded string, or the original string if malformed.
+ */
+const safeDecode = (str: string, { isStrict = false }: { isStrict?: boolean } = {}) => {
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return isStrict ? undefined : str;
+  }
+};
+
+/**
  * Check if a string URL matches a whitelist entry
  *
  * @param url - string URL to check
@@ -433,7 +449,7 @@ const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProto
     const { host, pathname, protocol } = new URL(url);
     const updatedProtocol = protocol.toLowerCase();
     const updatedHost = host.toLowerCase();
-    const updatedPath = decodeURIComponent(pathname).toLowerCase();
+    const updatedPath = safeDecode(pathname)?.toLowerCase();
 
     return whitelist.some(entry => {
       const listUrl = new URL(entry);
@@ -448,7 +464,7 @@ const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProto
       if (!pathMatch) {
         const checkDir = (listPath.endsWith('/') && listPath) || `${listPath}/`;
 
-        pathMatch = updatedPath.startsWith(checkDir);
+        pathMatch = updatedPath?.startsWith(checkDir) ?? false;
       }
 
       return protocolMatch && hostMatch && pathMatch;
@@ -518,14 +534,18 @@ const parseUrl = (url: string, { prefix, normalizeSearchParamKeys = true, isStri
   };
 
   if (isUri) {
-    const updatedUrl = new URL(url);
+    try {
+      const updatedUrl = new URL(url);
 
-    return {
-      protocol: updatedUrl.protocol,
-      hostname: updatedUrl.hostname,
-      path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
-      params: normalizeParamKeys(updatedUrl.searchParams)
-    };
+      return {
+        protocol: updatedUrl.protocol,
+        hostname: updatedUrl.hostname,
+        path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
+        params: normalizeParamKeys(updatedUrl.searchParams)
+      };
+    } catch {
+      return undefined;
+    }
   }
 
   if (isPrefix && isPath(url, { isStrict })) {
@@ -538,7 +558,9 @@ const parseUrl = (url: string, { prefix, normalizeSearchParamKeys = true, isStri
         path: decodeURIComponent(updatedUrl.pathname).replace(/^\//, ''),
         params: normalizeParamKeys(updatedUrl.searchParams)
       };
-    } catch {}
+    } catch {
+      return undefined;
+    }
   }
 
   return undefined;
@@ -699,6 +721,7 @@ export {
   mergeObjects,
   parseUrl,
   portValid,
+  safeDecode,
   splitUri,
   stringJoin,
   timeoutFunction
