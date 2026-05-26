@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { type McpTool } from './mcpSdk';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
+import { findClosest } from './server.search';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { paramCompletion } from './resource.helpers';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
 /**
@@ -40,7 +40,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const { latestVersion } = await getPatternFlyMcpResources.memo();
+    const { keywordsIndex, latestVersion } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
 
@@ -60,18 +60,14 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
-      const suggestions = await paramCompletion.memo({ version: updatedVersion });
+      const suggestion = findClosest.memo(searchQuery, keywordsIndex.reverse(), { maxDistance: 5 });
+      const hint = suggestion ? `Try a search for "${suggestion}".` : `Try a search all ("*").`;
 
       return {
         content: [{
           type: 'text',
           text: stringJoin.newlineFiltered(
-            `No PatternFly resources found matching "${searchQuery}"`,
-            options.separator,
-            '**Important**:',
-            '  - Use a search all ("*") to find all available resources.',
-            suggestions.sections.length ? `  - Some available sections are: ${suggestions.sections.slice(0, 3).join(', ')}` : undefined,
-            suggestions.categories.length ? `  - Some available categories are: ${suggestions.categories.slice(0, 3).join(', ')}` : undefined
+            `No PatternFly resources found matching "${searchQuery}". ${hint}`
           )
         }]
       };
