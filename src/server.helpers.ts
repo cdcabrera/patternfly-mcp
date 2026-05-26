@@ -509,6 +509,10 @@ const listIncrementalCombinations = (values: string[]): string[][] =>
 /**
  * URL and URI parser with prefix/protocol support.
  *
+ * @note We stick with `decodeURIComponent` for decoding here instead of `safeDecode` to
+ * maintain the "parse failure" return of `undefined`. Applying safeDecode would only leave out
+ * the path as `undefined`.
+ *
  * @param url - URL or URI to parse
  * @param [options] - Configuration options
  * @param [options.prefix] - Optional filtering URL prefix sans-colon and slashes (e.g. "http" vs. "http://").

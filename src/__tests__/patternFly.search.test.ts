@@ -1,4 +1,4 @@
-import { filterPatternFly, searchPatternFly } from '../patternFly.search';
+import { dynamicFilterPatternFly, filterPatternFly, searchPatternFly } from '../patternFly.search';
 
 describe('filterPatternFly', () => {
   it.each([
@@ -39,8 +39,6 @@ describe('filterPatternFly', () => {
     expect(Array.from(result.byResource).length).toBeGreaterThanOrEqual(0);
   });
 });
-
-import { dynamicFilterPatternFly, type FilterPatternFlyFilters } from '../patternFly.search';
 
 describe('dynamicFilterPatternFly', () => {
   it.each([
@@ -118,7 +116,7 @@ describe('dynamicFilterPatternFly', () => {
 
     const result = await dynamicFilterPatternFly(
       searchQuery,
-      filters as FilterPatternFlyFilters,
+      filters as any,
       mockResources as any,
       options as any
     );
