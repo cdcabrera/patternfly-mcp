@@ -135,8 +135,6 @@ describe('searchPatternFly', () => {
   ])('should allow filtering, $description', async ({ search, filters, options }) => {
     const { searchResults, totalResults, totalPotentialMatches } = await searchPatternFly(search, filters, options || {});
 
-    console.log(searchResults);
-
     expect(searchResults.length).toBeGreaterThanOrEqual(0);
     expect(totalResults).toBeGreaterThanOrEqual(searchResults.length);
     expect(totalPotentialMatches).toBeGreaterThanOrEqual(totalResults);
