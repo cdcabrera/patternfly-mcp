@@ -1,5 +1,6 @@
 import {
   buildSearchString,
+  createError,
   freezeObject,
   generateHash,
   hashCode,
@@ -63,6 +64,51 @@ describe('buildSearchString', () => {
     }
   ])('should build a search string, $description', ({ values, options, expected }) => {
     expect(buildSearchString(values, options || {})).toBe(expected);
+  });
+});
+
+describe('createError', () => {
+  it.each([
+    {
+      description: 'use an explicit message and metadata',
+      message: 'Custom error message',
+      metadata: { code: 404, details: 'Not found' },
+      expectedMessage: 'Custom error message',
+      expectedMetadata: { code: 404, details: 'Not found' }
+    },
+    {
+      description: 'use an Error object as message',
+      message: new Error('Original error message'),
+      metadata: { path: '/tmp' },
+      expectedMessage: 'Original error message',
+      expectedMetadata: { path: '/tmp' }
+    },
+    {
+      description: 'use cause message when message is undefined',
+      message: undefined,
+      options: { cause: new Error('Cause error') },
+      metadata: { retry: true },
+      expectedMessage: 'Cause error',
+      expectedMetadata: { retry: true }
+    },
+    {
+      description: 'use fallback message when nothing else is provided',
+      message: undefined,
+      metadata: {},
+      expectedMessage: 'An error occurred',
+      expectedMetadata: {}
+    }
+  ])('should create an error, $description', ({ message, options, metadata, expectedMessage, expectedMetadata }: any) => {
+    const err = createError(message, options || {}, metadata);
+
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toBe(expectedMessage);
+    Object.entries(expectedMetadata).forEach(([key, value]) => {
+      expect((err as any)[key]).toBe(value);
+    });
+    if (options?.cause) {
+      expect(err.cause).toBe(options.cause);
+    }
   });
 });
 

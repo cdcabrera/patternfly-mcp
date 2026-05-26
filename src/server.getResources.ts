@@ -6,7 +6,7 @@ import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isUrl, isPath, isPlainObject } from './server.helpers';
+import { isUrl, isPath, createError } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
 /**
@@ -266,7 +266,7 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
 
     return { content, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
   } catch (error) {
-    throw { error, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
+    throw createError(error, {}, { resolvedPath: updatedPathOrUrl, path: pathOrUrl });
   }
 };
 
@@ -340,13 +340,11 @@ const processDocsFunction = async (
       return;
     }
 
-    const reason = res.reason as { error: unknown; path: string; resolvedPath: string; };
-    const isReasonObj = isPlainObject(reason);
-
-    const error = isReasonObj && 'error' in reason ? reason.error : reason;
-    const errorPath = isReasonObj && 'path' in reason ? reason.path : fallbackPath;
-    const errorResolvedPath = isReasonObj && 'resolvedPath' in reason ? reason.resolvedPath : undefined;
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const reason: Error & { path?: string; resolvedPath?: string } = res.reason;
+    const error = reason instanceof Error ? reason : undefined;
+    const errorPath = error?.path || fallbackPath;
+    const errorResolvedPath = error?.resolvedPath || undefined;
+    const errorMessage = error?.message || String(reason);
 
     docs.push({
       content: `❌ Failed to load ${errorPath}: ${errorMessage}`,

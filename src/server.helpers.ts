@@ -671,6 +671,44 @@ const buildSearchString = (
 };
 
 /**
+ * Create a customized error instance with a fallback message, options, and additional metadata, if provided.
+ *
+ * @template TMetadata A type extending `Record<string, unknown>`, representing additional metadata that can be assigned to the error.
+ * @param message - An error message or an Error instance. If left `undefined`, the error message will be derived from the `options.cause` or default to 'An error occurred'.
+ * @param options - An object containing options for the Error instance. Used for specifying a cause using `options.cause`.
+ * @param {TMetadata} metadata - An object containing additional metadata to attach to the error. Metadata object must be a plain object.
+ * @param [settings] - Additional function settings.
+ * @param [settings.fallbackMessage] - Fallback error message.
+ * @returns {Error & TMetadata} An error instance enhanced with the provided metadata and a processed error message.
+ */
+const createError = <TMetadata extends Record<string, unknown>>(
+  message: unknown | string | Error,
+  options: ErrorOptions,
+  metadata: TMetadata,
+  { fallbackMessage = 'An error occurred' }: { fallbackMessage?: string } = {}
+) => {
+  let updatedMessage: string;
+
+  if (typeof message === 'string' && message.length > 0) {
+    updatedMessage = message;
+  } else if (message instanceof Error) {
+    updatedMessage = message.message;
+  } else if (options?.cause instanceof Error) {
+    updatedMessage = options.cause.message;
+  } else {
+    updatedMessage = String(options?.cause || fallbackMessage);
+  }
+
+  const err = new Error(updatedMessage, options) as Error & TMetadata;
+
+  if (isPlainObject(metadata)) {
+    Object.assign(err, metadata);
+  }
+
+  return err;
+};
+
+/**
  * Wrap a function, or another Promise in a timeout, returning a
  * Promise that either resolves, rejects, or rejects after the timeout.
  *
@@ -703,6 +741,7 @@ const timeoutFunction = async <TReturn>(
 
 export {
   buildSearchString,
+  createError,
   freezeObject,
   generateHash,
   hashCode,

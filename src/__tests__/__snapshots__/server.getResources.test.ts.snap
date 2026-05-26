@@ -79,11 +79,7 @@ exports[`promiseQueue should execute promises in order: allSettled 1`] = `
     },
   },
   {
-    "reason": {
-      "error": "https://example.com/remote.md",
-      "path": "https://example.com/remote.md",
-      "resolvedPath": "https://example.com/remote.md",
-    },
+    "reason": [Error: https://example.com/remote.md],
     "status": "rejected",
   },
   {

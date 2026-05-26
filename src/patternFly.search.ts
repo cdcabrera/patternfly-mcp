@@ -242,9 +242,7 @@ const dynamicFilterPatternFly = async (
 
   // Have a match from the base check? Return that.
   if (originalOutput.byEntry.length === maxResultsLimit) {
-    return {
-      ...originalOutput as FilterPatternFlyResults
-    };
+    return originalOutput;
   }
 
   for (const filter of prioritizedFilters) {

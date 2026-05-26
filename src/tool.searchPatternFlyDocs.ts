@@ -60,7 +60,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
-      const suggestion = findClosest.memo(searchQuery, keywordsIndex.reverse(), { maxDistance: 5 });
+      const suggestion = findClosest.memo(searchQuery, keywordsIndex.toReversed(), { maxDistance: 5 });
 
       return {
         content: [{
