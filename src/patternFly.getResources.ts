@@ -72,6 +72,7 @@ interface PatternFlyMcpComponentNames {
  * PatternFly JSON extended documentation metadata
  *
  * @property id - The unique identifier of document entry.
+ * @property groupId - The unique identifier for the document's parent.
  * @property name - The name of document entry.
  * @property displayCategory - The display category of document entry.
  * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
@@ -81,6 +82,7 @@ interface PatternFlyMcpComponentNames {
  */
 type PatternFlyMcpDocsMeta = {
   id: string;
+  groupId: string;
   name: string;
   displayCategory: string;
   uri: string;
@@ -134,6 +136,7 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @property entries - All entry PatternFly documentation entries.
  * @property versions - Entry segmented by versions. Contains all the same properties.
  * @property id - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
+ * @property groupId - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
  * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
  * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
  * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
@@ -146,6 +149,7 @@ type PatternFlyMcpResourceMetadata = {
   versions: Record<string, Omit<PatternFlyMcpResourceMetadata, 'name' | 'versions'>>;
 
   id: string | undefined;
+  groupId: string | undefined;
   isSchemasAvailable: boolean | undefined;
   uri: string | undefined;
   uriId: string | undefined;
@@ -473,6 +477,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
+    const groupId = generateHash(name);
 
     if (!resources.has(name)) {
       // Include search and filter contextual `undefined` metadata for each resource.
@@ -481,6 +486,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         entries: [],
         versions: {},
         id: undefined,
+        groupId: undefined,
         isSchemasAvailable: undefined,
         uri: undefined,
         uriId: undefined,
@@ -490,7 +496,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     }
 
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
-    const nameHash = generateHash(name);
 
     entries.forEach(entry => {
       const id = generateHash(entry.path);
@@ -506,6 +511,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       resource.versions[version] ??= {
         id,
+        groupId,
         isSchemasAvailable,
         uri,
         uriId,
@@ -521,7 +527,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       if (isSchemasAvailable) {
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-        uriSchemasId = `patternfly://schemas/${encodeURIComponent(nameHash)}`;
+        uriSchemasId = `patternfly://schemas/${encodeURIComponent(groupId)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasId = uriSchemasId;
@@ -530,6 +536,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const extendedEntry = {
         ...entry,
         id,
+        groupId,
         name,
         displayName,
         displayCategory,
@@ -555,6 +562,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version]?.push(extendedEntry);
 
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: groupId, name, version });
 
       if (entry.displayName) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.displayName, name, version });
@@ -570,6 +578,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       if (entry.description) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name, version });
+      }
+
+      if (id) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: id, name, version });
       }
 
       if (uri) {

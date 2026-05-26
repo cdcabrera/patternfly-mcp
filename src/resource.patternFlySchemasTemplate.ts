@@ -103,13 +103,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   });
 
   const matchedSchemas = byEntry.filter(result => result.uriSchemas);
-  const schemaResults: { content: PatternFlyComponentSchema, [key: string]: unknown }[] = [];
+  const schemaResults = new Map<string, { content: PatternFlyComponentSchema, [key: string]: unknown }>();
 
   for (const schema of matchedSchemas) {
-    const result = await getPatternFlyComponentSchema.memo(schema.uriSchemas as string);
+    const result = await getPatternFlyComponentSchema.memo(schema.name as string);
 
-    if (result) {
-      schemaResults.push({
+    if (result && !schemaResults.has(schema.name)) {
+      schemaResults.set(schema.name, {
         ...schema,
         content: result
       });
@@ -117,7 +117,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   }
 
   assertInput(
-    schemaResults.length > 0,
+    schemaResults.size > 0,
     () => {
       let suggestionMessage = '';
 
@@ -130,7 +130,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   return {
-    contents: schemaResults.map(schema => ({
+    contents: Array.from(schemaResults.values()).map(schema => ({
       uri: schema.uriSchemasId,
       mimeType: 'application/json',
       text: JSON.stringify(schema.content, null, 2)

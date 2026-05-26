@@ -167,8 +167,10 @@ const filterPatternFly = async (
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
-      // Filter by ID and Name
-      const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
+
+      // Filter order matters specific id -> group id -> group name
+      const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
+        filterMatch(entry.groupId, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
       // Any missing filter registers as true. Only filters that are active run their check.
       return matchesVersion && matchesCategory && matchesSection && matchesName;
@@ -183,6 +185,7 @@ const filterPatternFly = async (
       if (updatedFilters.version && versions?.[updatedFilters.version]) {
         versionContextualProperties = {
           id: versions[updatedFilters.version]?.id,
+          groupId: versions[updatedFilters.version]?.groupId,
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
           uriId: versions[updatedFilters.version]?.uriId,
