@@ -217,49 +217,47 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
 
 /**
  * Use iteration to filter down the tightest possible results. Iteratively applies the
- * searchQuery to each of the filters, if those results have a single match, return that.
+ * searchQuery to empty filters; if those results have a single match, they're returned.
  *
  * @param searchQuery
  * @param filters
  * @param mcpResources
+ * @param [options] - Optional settings object
+ * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to `['name', 'section', 'category', 'version']`.
+ * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
+ * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
  */
 const dynamicFilterPatternFly = async (
   searchQuery: string, filters: FilterPatternFlyFilters | undefined,
-  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>
-) => {
-  const filterNames = ['version', 'category', 'section', 'name'];
+  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
+  {
+    prioritizedFilters = ['name', 'section', 'category', 'version'],
+    useExistingFilters = true
+  }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[], useExistingFilters?: boolean } = {}
+): Promise<FilterPatternFlyResults> => {
+  // Base filter check
   const originalOutput = await filterPatternFly.memo(filters, mcpResources);
-  const results: FilterPatternFlyResults[] = [originalOutput];
 
+  // Have a single match from the base check? Return that.
   if (originalOutput.byEntry.length === 1) {
     return {
       ...originalOutput as FilterPatternFlyResults
     };
   }
 
-  for (const filter of filterNames) {
-    const updatedFilter: any = {};
+  for (const filter of prioritizedFilters) {
+    // Skip existing filters if `useExistingFilters` is true
+    if (useExistingFilters && filters && filters[filter]) {
+      continue;
+    }
 
-    updatedFilter[filter] = searchQuery;
-
+    const updatedFilter = { ...filters, [filter]: searchQuery };
     const output = await filterPatternFly.memo(updatedFilter, mcpResources);
 
-    results.push(output);
-  }
-
-  // console.warn(results);
-  const indexesWithOne: number[] = [];
-
-  results.forEach(({ byEntry }, index) => {
-    if (byEntry.length === 1) {
-      indexesWithOne.push(index);
+    // Have a single match already? Return that.
+    if (output.byEntry.length === 1) {
+      return output;
     }
-  });
-
-  if (indexesWithOne.length === 1 && indexesWithOne[0]) {
-    return {
-      ...results[indexesWithOne[0]] as FilterPatternFlyResults
-    };
   }
 
   return {
