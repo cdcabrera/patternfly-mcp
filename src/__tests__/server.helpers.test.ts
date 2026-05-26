@@ -106,9 +106,7 @@ describe('createError', () => {
     Object.entries(expectedMetadata).forEach(([key, value]) => {
       expect((err as any)[key]).toBe(value);
     });
-    if (options?.cause) {
-      expect(err.cause).toBe(options.cause);
-    }
+    expect(err.cause).toBe(options?.cause);
   });
 });
 

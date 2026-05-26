@@ -307,7 +307,10 @@ const promiseQueue = async (queue: string[], limit = 5) => {
 /**
  * Normalize inputs, load all in parallel, and return a joined string.
  *
- * @note Remember to limit the number of docs to load to avoid OOM.
+ * @note Remember:
+ * - To limit the number of docs to load to avoid OOM.
+ * - Deduplication of paths happens using `normalizeString.memo`. Original paths are
+ *     still used to fetch and are returned as part of the result.
  * @param inputs - List of paths or URLs to load
  * @param options - Optional options
  * @returns An array of loaded docs with content, path, resolvedPath, and isSuccess properties:

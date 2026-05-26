@@ -194,13 +194,10 @@ const isPromise = (obj: unknown) => /^\[object (Promise|Async|AsyncFunction)]/.t
  */
 const isUrlObject = (obj: unknown, { allowedProtocols }: { allowedProtocols?: string[] | undefined } = {}): obj is URL => {
   const isUrlObj = obj instanceof URL;
-  const isAllowedProtocols = Array.isArray(allowedProtocols) && allowedProtocols.length > 0;
+  const isProtocolAvailable = Array.isArray(allowedProtocols) && allowedProtocols.length > 0;
+  const isUrlObjAndProtocolAllowed = isUrlObj && isProtocolAvailable && allowedProtocols?.includes(obj.protocol.slice(0, -1));
 
-  if ((isUrlObj && !isAllowedProtocols) || (isUrlObj && allowedProtocols?.includes(obj.protocol.slice(0, -1)))) {
-    return true;
-  }
-
-  return false;
+  return (isUrlObj && !isProtocolAvailable) || isUrlObjAndProtocolAllowed;
 };
 
 /**
@@ -399,9 +396,11 @@ const hashNormalizeValue = (value: unknown): unknown => {
  * Generate a consistent hash from a value
  *
  * @param anyValue - Value to hash
+ * @param [options] - Hash options
+ * @param [options.isLowercase] - If `true`, lowercase the stringified value before hashing. Default: `false`
  * @returns Hash string
  */
-const generateHash = (anyValue: unknown): string => {
+const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?: boolean } = {}): string => {
   const normalizeValue = (_key: string, value: unknown) => hashNormalizeValue(value);
   let stringify: string;
 
@@ -411,7 +410,7 @@ const generateHash = (anyValue: unknown): string => {
     stringify = `$error:${Object.prototype.toString.call(anyValue)}:${error}`;
   }
 
-  return hashCode(stringify);
+  return hashCode(isLowercase ? stringify.toLowerCase() : stringify);
 };
 
 /**
@@ -678,7 +677,8 @@ const buildSearchString = (
  * Create a customized error instance with a fallback message, options, and additional metadata, if provided.
  *
  * @template TMetadata A type extending `Record<string, unknown>`, representing additional metadata that can be assigned to the error.
- * @param message - An error message or an Error instance. If left `undefined`, the error message will be derived from the `options.cause` or default to 'An error occurred'.
+ * @param message - An error message, Error instance, or other value. If left `undefined`, the error message will be derived from the
+ *     `options.cause` or default to 'An error occurred'.
  * @param options - An object containing options for the Error instance. Used for specifying a cause using `options.cause`.
  * @param {TMetadata} metadata - An object containing additional metadata to attach to the error. Metadata object must be a plain object.
  * @param [settings] - Additional function settings.
@@ -691,19 +691,26 @@ const createError = <TMetadata extends Record<string, unknown>>(
   metadata: TMetadata,
   { fallbackMessage = 'An error occurred' }: { fallbackMessage?: string } = {}
 ) => {
-  let updatedMessage: string;
+  let updatedMessage: string = fallbackMessage;
+  let updatedOptions = options;
 
   if (typeof message === 'string' && message.length > 0) {
     updatedMessage = message;
-  } else if (message instanceof Error) {
+  } else if (message instanceof Error && message.message) {
     updatedMessage = message.message;
-  } else if (options?.cause instanceof Error) {
+
+    if (!options?.cause && message.cause) {
+      updatedOptions = { ...options, cause: message.cause };
+    }
+  } else if (options?.cause instanceof Error && options.cause.message) {
     updatedMessage = options.cause.message;
-  } else {
-    updatedMessage = String(options?.cause || fallbackMessage);
+
+    if (options.cause.cause) {
+      updatedOptions = { ...options, cause: options.cause.cause };
+    }
   }
 
-  const err = new Error(updatedMessage, options) as Error & TMetadata;
+  const err = new Error(updatedMessage, updatedOptions) as Error & TMetadata;
 
   if (isPlainObject(metadata)) {
     Object.assign(err, metadata);
