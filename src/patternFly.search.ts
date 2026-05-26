@@ -74,7 +74,7 @@ interface SearchPatternFlyResult extends FuzzySearchResult, PatternFlyMcpResourc
  * @interface SearchPatternFlyResults
  *
  * @property isSearchWildCardAll - Whether the search query matched all components
- * @property {SearchPatternFlyResult | undefined} firstExactMatch - First exact match within search results
+ * @property {SearchPatternFlyResult | undefined} firstExactMatch - Exact-ranked result
  * @property {SearchPatternFlyResult[]} exactMatches - Exact matches within search results
  * @property {SearchPatternFlyResult[]} remainingMatches - Contrast to `exactMatches`, the remaining matches within search results
  * @property {SearchPatternFlyResult[]} searchResults - All search results, exact and remaining matches
@@ -294,7 +294,7 @@ dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.res
  * @param [settings.maxResults] - Maximum number of results to return. Defaults to `10`.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all resources
- *   - `firstExactMatch`: First exact match within search results
+ *   - `firstExactMatch`: Exact-ranked result
  *   - `exactMatches`: Exact matches within search results
  *   - `remainingMatches`: Contrast to `exactMatches`, the remaining matches within search results
  *   - `searchResults`: All search results, exact and remaining matches

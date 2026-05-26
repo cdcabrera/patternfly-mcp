@@ -78,7 +78,8 @@ interface PatternFlyMcpComponentNames {
  * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
  * @property uriId - The resource's exact URI for the document entry.
  * @property uriSchemas - The parent resource's general URI for the related component schemas, if they exist.
- * @property uriSchemasId - The resource's exact URI for the component schemas, if they exist.
+ * @property uriSchemasId - The resource's schemas URI for the component schemas, if they exist. Keyed by
+ *     the parent resource's `groupId` since the URIs are the same for sibling entries.
  */
 type PatternFlyMcpDocsMeta = {
   id: string;

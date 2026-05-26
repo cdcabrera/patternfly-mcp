@@ -129,6 +129,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     if (docsPathIdLookup.size > 0) {
       const processedDocs = await processDocsFunction.memo([...docsPathIdLookup.keys()]);
 
+      // Failures are `log.debugged` in `processDocsFunction`.
       docs.push(...processedDocs.filter(response => response.isSuccess));
     }
   } catch (error) {
