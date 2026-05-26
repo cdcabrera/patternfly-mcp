@@ -98,12 +98,14 @@ interface SearchPatternFlyResults {
  *
  * @property {Promise<PatternFlyMcpAvailableResources>} [mcpResources] - Object of multifaceted documentation entries to search.
  * @property [allowWildCardAll] - Allow a search query to match all components.
+ * @property [dynamicFilter] - Allow a search query to attempt a multi-filter match on returned search results for tighter results.
  * @property [maxDistance] - Maximum edit distance for fuzzy search.
  * @property [maxResults] - Maximum number of results to return.
  */
 interface SearchPatternFlyOptions {
   mcpResources?: Promise<PatternFlyMcpAvailableResources>;
   allowWildCardAll?: boolean;
+  dynamicFilter?: boolean;
   maxDistance?: number;
   maxResults?: number;
 }
@@ -214,6 +216,63 @@ const filterPatternFly = async (
 filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
+ * Use iteration to filter down the tightest possible results. Iteratively applies the
+ * searchQuery to each of the filters, if those results have a single match, return that.
+ *
+ * @param searchQuery
+ * @param filters
+ * @param mcpResources
+ */
+const dynamicFilterPatternFly = async (
+  searchQuery: string, filters: FilterPatternFlyFilters | undefined,
+  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>
+) => {
+  const filterNames = ['version', 'category', 'section', 'name'];
+  const originalOutput = await filterPatternFly.memo(filters, mcpResources);
+  const results: FilterPatternFlyResults[] = [originalOutput];
+
+  if (originalOutput.byEntry.length === 1) {
+    return {
+      ...originalOutput as FilterPatternFlyResults
+    };
+  }
+
+  for (const filter of filterNames) {
+    const updatedFilter: any = {};
+
+    updatedFilter[filter] = searchQuery;
+
+    const output = await filterPatternFly.memo(updatedFilter, mcpResources);
+
+    results.push(output);
+  }
+
+  // console.warn(results);
+  const indexesWithOne: number[] = [];
+
+  results.forEach(({ byEntry }, index) => {
+    if (byEntry.length === 1) {
+      indexesWithOne.push(index);
+    }
+  });
+
+  if (indexesWithOne.length === 1 && indexesWithOne[0]) {
+    return {
+      ...results[indexesWithOne[0]] as FilterPatternFlyResults
+    };
+  }
+
+  return {
+    ...originalOutput
+  };
+};
+
+/**
+ * Memoized version of dynamicFilterPatternFly
+ */
+dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
+
+/**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @note It is tempting to apply a default version to this function. Do not. Architecture
@@ -231,6 +290,8 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  *     - `keywordsMap`: Map of normalized keywords against versioned entries
  *     - `resources`: Map of names against entries
  * @param [settings.allowWildCardAll] - Allow a search query to match all resources. Defaults to `false`.
+ * @param [settings.dynamicFilter] - Allow a search query to attempt a multi-filter match on returned search results. Defaults to `false`.
+ *   Useful for narrowing down search results to a specific resource.
  * @param [settings.maxDistance] - Maximum edit distance for fuzzy search. Defaults to `3`.
  * @param [settings.maxResults] - Maximum number of results to return. Defaults to `10`.
  * @returns Object containing search results and matched URLs
@@ -245,6 +306,7 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
 const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFlyFilters | undefined, {
   mcpResources,
   allowWildCardAll = false,
+  dynamicFilter = false,
   maxDistance = 3,
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
@@ -312,8 +374,16 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     }
   }
 
-  // Apply filtering
-  const { byResource } = await filterPatternFly(updatedFilters, searchResultsFilterMap);
+  let filtered: FilterPatternFlyResults;
+
+  // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
+  if (dynamicFilter && !isSearchWildCardAll) {
+    filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
+  } else {
+    filtered = await filterPatternFly(updatedFilters, searchResultsFilterMap);
+  }
+
+  const { byResource } = filtered;
 
   // Loop fuzzy results, apply and update search results with resources.
   for (const [name, fuzzyMatch] of fuzzyResultsMap) {
