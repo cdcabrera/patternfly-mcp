@@ -1,6 +1,7 @@
 import {
   fuzzySearch,
   type FuzzySearch,
+  type FuzzySearchOptions,
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
@@ -11,7 +12,6 @@ import {
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
-import { parsePatternFlyUri } from './patternFly.helpers';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
 
 /**
@@ -31,13 +31,15 @@ type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata,
  * @property [version] - PatternFly version to filter search results. Defaults to undefined for all versions.
  * @property [category] - Category to filter search results. Defaults to undefined for all categories.
  * @property [section] - Section to filter search results. Defaults to undefined for all sections.
- * @property [name] - Name to filter search results. Defaults to undefined for all names.
+ * @property [name] - Name, or hash id, to filter search results. Defaults to undefined for all names and IDs.
+ * @property [path] - Document path, or URI, to filter search results. Defaults to undefined for all paths and URIs.
  */
 interface FilterPatternFlyFilters {
   version?: string | undefined;
   category?: string | undefined;
   section?: string | undefined;
   name?: string | undefined;
+  path?: string | undefined;
 }
 
 /**
@@ -111,6 +113,17 @@ interface SearchPatternFlyOptions {
 }
 
 /**
+ * A list of prioritized filters used for matching and processing
+ * filter patterns. Each filter corresponds to a specific key in the
+ * FilterPatternFlyFilters type.
+ *
+ * @note **Sequence matters** - This array defines the order of priority for
+ * filter keys, which may be used in operations such as sorting or
+ * applying specific filtering logic. See {@link FilterPatternFlyFilters}
+ */
+const PRIORITY_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'category', 'version', 'path'];
+
+/**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
  *
  * @note It is tempting to apply a default version to this function. Do not. Architecture
@@ -169,13 +182,16 @@ const filterPatternFly = async (
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
+      const matchesPath = !updatedFilters.path || filterMatch(entry.path, updatedFilters.path) ||
+        filterMatch(entry.uriId, updatedFilters.path) || filterMatch(entry.uriSchemas, updatedFilters.path) ||
+        filterMatch(entry.uriSchemasId, updatedFilters.path) || filterMatch(entry.uri, updatedFilters.path);
 
       // Filter order matters specific id -> group id -> group name
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
         filterMatch(entry.groupId, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesName;
+      return matchesVersion && matchesCategory && matchesSection && matchesPath && matchesName;
     });
 
     if (matchedEntries.length > 0) {
@@ -221,7 +237,7 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  * @param filters
  * @param mcpResources
  * @param [options] - Optional settings object
- * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to `['name', 'section', 'category', 'version']`.
+ * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to {@link PRIORITY_FILTERS}.
  * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
  * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
  * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
@@ -230,7 +246,7 @@ const dynamicFilterPatternFly = async (
   searchQuery: string, filters: FilterPatternFlyFilters | undefined,
   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
   {
-    prioritizedFilters = ['name', 'section', 'category', 'version'],
+    prioritizedFilters = PRIORITY_FILTERS,
     maxResultsLimit = 1,
     useExistingFilters = true
   }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
@@ -311,25 +327,30 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+  const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery);
+  const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery);
+  const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery);
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+  } else if (pathMatchName || uriMatchName || hashMatchName) {
+    searchResults = [
+      {
+        matchType: 'exact',
+        distance: 0,
+        item: pathMatchName || uriMatchName || hashMatchName
+      } as FuzzySearchResult
+    ];
   } else {
-    const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
-    const fuzzySearchSettings = {
+    const fuzzySearchSettings: FuzzySearchOptions = {
       maxDistance,
       maxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true
     };
-
-    if (patternflyUri) {
-      fuzzySearchSettings.maxDistance = 1;
-      fuzzySearchSettings.isFuzzyMatch = false;
-    }
 
     // Pass the original searchQuery, fuzzySearch has its own normalization.
     search = fuzzySearch(searchQuery, updatedResources.keywordsIndex, fuzzySearchSettings);
