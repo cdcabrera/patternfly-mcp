@@ -3,7 +3,6 @@ import { getOptions } from './options.context';
 import { type PatternFlyOptions } from './options.defaults';
 import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
 import { fuzzySearch } from './server.search';
-import { parseUrl } from './server.helpers';
 import { memo } from './server.caching';
 
 interface PatternFlyVersionContext {
