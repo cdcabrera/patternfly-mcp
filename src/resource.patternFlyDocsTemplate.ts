@@ -116,7 +116,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  const docs: Array<ProcessedDocSuccess> = [];
+  const docs: Array<ProcessedDocSuccess<{ uri: string }>> = [];
 
   try {
     const docPaths = byEntry
