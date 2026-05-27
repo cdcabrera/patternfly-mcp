@@ -11,7 +11,7 @@ import {
   isUrl,
   isUrlObject,
   isPath,
-  isSha1Hex,
+  isSha1HexLike,
   isWhitelistedUrl,
   listAllCombinations,
   listIncrementalCombinations,
@@ -777,13 +777,19 @@ describe('isSha1Hex', () => {
       expected: false
     },
     {
-      description: 'odd characters',
-      value: 'beefd',
+      description: 'odd sequence characters',
+      value: 'beefdead',
+      options: { },
+      expected: true
+    },
+    {
+      description: 'within a sequence of characters',
+      value: '1e99e',
       options: { },
       expected: true
     }
   ])('should check for SHA-1 hex for $description', ({ value, options, expected }) => {
-    expect(isSha1Hex(value, options)).toBe(expected);
+    expect(isSha1HexLike(value, options)).toBe(expected);
   });
 });
 

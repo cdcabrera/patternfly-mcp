@@ -415,35 +415,42 @@ const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?
 };
 
 /**
- * Check if a value is a SHA-1 hex string.
+ * Check if a value is an SHA-1 hex string.
  *
  * @param value - Value to check.
  * @param [options] - Options.
- * @param options.maxDistance
- * @param options.minLength
- * @param options.maxLength
- * @param options.probes
- * @returns `true` if the value is a SHA-1 hex string
+ * @param [options.maxDistance] - Maximum allowed distance for partial SHA-1 hex string comparison.
+ * @param [options.minLength] - Minimum length of the SHA-1 hex string.
+ * @param [options.maxLength] - Maximum length of the SHA-1 hex string.
+ * @param [options.partialProbes] - Probes to check for partial SHA-1 hex string distance.
+ * @returns `true` if the value is a SHA-1 hex-like string
  */
-const isSha1Hex = (
+const isSha1HexLike = (
   value: unknown,
   {
     maxDistance = 6,
-    minLength = 4,
+    minLength = 5,
     maxLength = 40,
     partialProbes = ['4f2a9c1b', '8b3e0d72', '123fee4a', '9f8e7d6c', 'a0b1c2d3', '707e42a', 'c41d8fe9', '2b59c8f0']
   }: { maxDistance?: number; minLength?: number; maxLength?: number, partialProbes?: string[] } = {}
 ): boolean => {
   const updatedValue = typeof value === 'string' ? value.trim() : '';
-  const sha1HexLeading = /\b[a-f0-9]/i;
+  // const sha1HexLeading = /\b[a-f0-9]/i;
+  const sha1HexLeading = /^[a-f0-9]{1}/i;
 
   if (!updatedValue || updatedValue.length < minLength || updatedValue.length > maxLength || !sha1HexLeading.test(updatedValue)) {
     return false;
   }
 
-  const sha1HexPartial = /\b[a-f0-9]{4,39}\b/i;
-  const sha1HexFull = /\b[a-f0-9]{40}\b/i;
+  // const sha1HexFull = /\b[a-f0-9]{40}\b/i;
+  const sha1HexFull = /^[a-f0-9]{40}$/i;
 
+  if (sha1HexFull.test(updatedValue)) {
+    return true;
+  }
+
+  // const sha1HexPartial = /\b[a-f0-9]{4,39}\b/i;
+  const sha1HexPartial = /^[a-f0-9]{4,39}$/i;
   const checkPartialDistance = (val: string) => partialProbes.some((probe: string) => {
     const updatedVal = val.length >= probe.length ? val.substring(0, probe.length) : val;
     const updatedProbe = probe.length >= val.length ? probe.substring(0, val.length) : probe;
@@ -451,7 +458,7 @@ const isSha1Hex = (
     return distance(updatedVal, updatedProbe) <= maxDistance;
   });
 
-  return sha1HexFull.test(updatedValue) || (checkPartialDistance(updatedValue) && sha1HexPartial.test(updatedValue));
+  return sha1HexPartial.test(updatedValue); // && checkPartialDistance(updatedValue);
 };
 
 /**
@@ -804,7 +811,7 @@ export {
   isPlainObject,
   isPromise,
   isReferenceLike,
-  isSha1Hex,
+  isSha1HexLike,
   isUrl,
   isUrlObject,
   isWhitelistedUrl,

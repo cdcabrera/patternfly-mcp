@@ -1,9 +1,10 @@
 import {
   fuzzySearch,
-  type FuzzySearch,
+  type FuzzySearch, FuzzySearchOptions,
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
+import { isSha1HexLike } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -13,7 +14,6 @@ import {
 } from './patternFly.getResources';
 import { parsePatternFlyUri } from './patternFly.helpers';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
-import {isSha1Hex} from "./server.helpers";
 
 /**
  * A filtered MCP resource.
@@ -320,17 +320,26 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
     const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
-    const isShaHex = isSha1Hex(coercedSearchQuery);
-    const fuzzySearchSettings = {
+    const isShaHex = isSha1HexLike(coercedSearchQuery);
+    const fuzzySearchSettings: FuzzySearchOptions = {
       maxDistance,
       maxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true
     };
 
-    if (patternflyUri || isShaHex) {
+    if (patternflyUri) {
       fuzzySearchSettings.maxDistance = 1;
       fuzzySearchSettings.isFuzzyMatch = false;
+    }
+
+    if (isShaHex) {
+      fuzzySearchSettings.maxDistance = 0;
+      fuzzySearchSettings.isFuzzyMatch = false;
+      fuzzySearchSettings.isPrefixMatch = false;
+      fuzzySearchSettings.isSuffixMatch = false;
+      fuzzySearchSettings.isContainsMatch = false;
+      fuzzySearchSettings.isPartialMatch = false;
     }
 
     // Pass the original searchQuery, fuzzySearch has its own normalization.
