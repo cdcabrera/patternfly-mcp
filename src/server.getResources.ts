@@ -322,7 +322,7 @@ const promiseQueue = async (queue: string[], limit = 5) => {
 const processDocsFunction = async <T extends Record<string, unknown> = Record<string, unknown>>(
   inputs: (string | ({ doc: string } & T))[],
   options = getOptions()
-): Promise<ProcessedDoc<T>[]> => {
+): Promise<ProcessedDoc<Omit<T, 'doc'>>[]> => {
   const normalizeInputs = inputs.map(input =>
     (typeof input === 'string' ? { doc: input } : input) as { doc: string } & T);
 
@@ -344,7 +344,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
   const list = uniqueInputsList.map(input => input.doc);
 
   const settled = await promiseQueue(list);
-  const docs: ProcessedDoc<T>[] = [];
+  const docs: ProcessedDoc<Omit<T, 'doc'>>[] = [];
 
   settled.forEach((res, index) => {
     const originalInput = uniqueInputsList[index];
@@ -358,9 +358,9 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
     if (res.status === 'fulfilled') {
       docs.push({
         ...res.value,
-        ...(metadata as unknown as T),
+        ...(metadata as unknown as Omit<T, 'doc'>),
         isSuccess: true
-      } as ProcessedDocSuccess<T>);
+      } as ProcessedDocSuccess<Omit<T, 'doc'>>);
 
       return;
     }
@@ -375,9 +375,9 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
       content: `❌ Failed to load ${errorPath}: ${errorMessage}`,
       path: errorPath,
       resolvedPath: errorResolvedPath,
-      ...(metadata as unknown as T),
+      ...(metadata as unknown as Omit<T, 'doc'>),
       isSuccess: false
-    } as ProcessedDocFailure<T>);
+    } as ProcessedDocFailure<Omit<T, 'doc'>>);
 
     log.debug(`Failed to load ${errorPath} from processing: ${formatUnknownError(errorMessage)}`);
   });
