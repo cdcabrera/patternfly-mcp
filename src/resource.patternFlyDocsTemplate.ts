@@ -116,7 +116,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  // const docsPathMap = new Map<string, { doc: string; uri: string }>();
   const docs: Array<ProcessedDocSuccess> = [];
 
   try {
@@ -137,27 +136,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         }
       }
     }
-
-    /*
-    byEntry.forEach(({ path, uriId }) => {
-      if (path && !docsPathMap.has(path)) {
-        docsPathMap.set(path, { doc: path, uri: uriId });
-      }
-    });
-
-    if (docsPathMap.size > 0) {
-      const processedDocs = await processDocsFunction.memo([...docsPathMap.values()]);
-
-      // Failures are `log.debugged` in `processDocsFunction`.
-      for (const response of processedDocs) {
-        if (response.isSuccess) {
-          docs.push({
-            ...response
-          });
-        }
-      }
-    }
-     */
   } catch (error) {
     throw new McpError(
       ErrorCode.InternalError,
