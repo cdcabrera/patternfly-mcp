@@ -358,7 +358,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
     if (res.status === 'fulfilled') {
       docs.push({
         ...res.value,
-        ...(metadata as unknown as Omit<T, 'doc'>),
+        ...(metadata as unknown as T),
         isSuccess: true
       } as ProcessedDocSuccess<Omit<T, 'doc'>>);
 
@@ -375,7 +375,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
       content: `❌ Failed to load ${errorPath}: ${errorMessage}`,
       path: errorPath,
       resolvedPath: errorResolvedPath,
-      ...(metadata as unknown as Omit<T, 'doc'>),
+      ...(metadata as unknown as T),
       isSuccess: false
     } as ProcessedDocFailure<Omit<T, 'doc'>>);
 
