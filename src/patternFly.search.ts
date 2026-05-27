@@ -331,6 +331,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     if (patternflyUri) {
       fuzzySearchSettings.maxDistance = 1;
       fuzzySearchSettings.isFuzzyMatch = false;
+      fuzzySearchSettings.isContainsMatch = false;
+      fuzzySearchSettings.isPartialMatch = false;
     }
 
     if (isShaHex) {
