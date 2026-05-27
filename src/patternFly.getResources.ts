@@ -169,7 +169,9 @@ type PatternFlyMcpResourceMetadata = {
  * @property keywordsIndex - Patternfly available keywords index.
  * @property keywordsMap - Patternfly available keywords by resource name then by version.
  * @property isFallbackDocumentation - Whether the fallback documentation is used.
- * @property pathIndex - Patternfly documentation path index.
+ * @property pathIndex - Patternfly documentation path->name map for helping refine search results.
+ * @property uriIndex - Patternfly documentation uri->name map for helping refine search results.
+ * @property hashIndex - Patternfly documentation hash->name map for helping refine search results.
  * @property byPath - Patternfly documentation by path with entries
  * @property byUri - Patternfly documentation by uri with entries
  * @property byVersion - Patternfly documentation by version with entries
@@ -182,7 +184,9 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   keywordsIndex: string[];
   keywordsMap: PatternFlyMcpKeywordsMap;
   isFallbackDocumentation: boolean;
-  pathIndex: string[];
+  pathIndex: Map<string, string>;
+  uriIndex: Map<string, string>;
+  hashIndex: Map<string, string>;
   byPath: PatternFlyMcpResourcesByPath;
   byUri: PatternFlyMcpResourcesByUri;
   byVersion: PatternFlyMcpResourcesByVersion;
@@ -467,7 +471,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
   const byVersion: PatternFlyMcpResourcesByVersion = {};
-  const pathIndex = new Set<string>();
+  const pathIndexMap = new Map<string, string>();
+  const uriIndexMap = new Map<string, string>();
+  const hashIndexMap = new Map<string, string>();
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
@@ -475,6 +481,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
     const groupId = generateHash(name);
+
+    hashIndexMap.set(groupId, name);
 
     if (!resources.has(name)) {
       // Include search and filter contextual `undefined` metadata for each resource.
@@ -500,8 +508,19 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
       const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
 
+      // hashIndex.set(groupId, name);
+      hashIndexMap.set(id, name);
+      uriIndexMap.set(uri, name);
+      uriIndexMap.set(uriId, name);
+
+      // hashIndexMap.set(groupId, name);
+      // hashIndexMap.set(groupId.substring(0, 8), name);
+
+      // hashIndexMap.set(id, uriId);
+      // hashIndexMap.set(id.substring(0, 8), uriId);
+
       if (path) {
-        pathIndex.add(path);
+        pathIndexMap.set(path, name);
       }
 
       resource.versions[version] ??= {
@@ -524,6 +543,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasId = uriSchemasId;
+
+        uriIndexMap.set(uriSchemas, name);
+        uriIndexMap.set(uriSchemasId, name);
       }
 
       const extendedEntry = {
@@ -555,7 +577,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version]?.push(extendedEntry);
 
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
-      mutateKeyWordsMap(rawKeywordsMap, { keyword: groupId, name, version });
+      // mutateKeyWordsMap(rawKeywordsMap, { keyword: groupId, name, version });
 
       if (entry.displayName) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.displayName, name, version });
@@ -573,25 +595,25 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name, version });
       }
 
-      if (id) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: id, name, version });
-      }
+      // if (id) {
+      //   mutateKeyWordsMap(rawKeywordsMap, { keyword: id, name, version });
+      // }
 
-      if (uri) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: uri, name, version });
-      }
+      // if (uri) {
+      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uri, name, version });
+      // }
 
-      if (uriId) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriId, name, version });
-      }
+      // if (uriId) {
+      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uriId, name, version });
+      // }
 
-      if (uriSchemas) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemas, name, version });
-      }
+      // if (uriSchemas) {
+      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemas, name, version });
+      // }
 
-      if (uriSchemasId) {
-        mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemasId, name, version });
-      }
+      // if (uriSchemasId) {
+      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemasId, name, version });
+      // }
 
       resource.entries.push(extendedEntry);
       resource.versions[version].entries.push(extendedEntry);
@@ -615,7 +637,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       ...Array.from(filteredKeywords.keys())
     ])).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     keywordsMap: filteredKeywords,
-    pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    // pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    // uriIndex: Array.from(uriIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    // hashIndex: Array.from(hashIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    pathIndex: pathIndexMap,
+    uriIndex: uriIndexMap,
+    hashIndex: hashIndexMap,
     byPath,
     byUri,
     byVersion,
