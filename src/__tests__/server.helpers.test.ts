@@ -775,6 +775,12 @@ describe('isSha1Hex', () => {
       value: '5d642g',
       options: { },
       expected: false
+    },
+    {
+      description: 'odd characters',
+      value: 'beefd',
+      options: { },
+      expected: true
     }
   ])('should check for SHA-1 hex for $description', ({ value, options, expected }) => {
     expect(isSha1Hex(value, options)).toBe(expected);
