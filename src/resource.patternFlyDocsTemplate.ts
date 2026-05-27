@@ -4,7 +4,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
-import { processDocsFunction, type ProcessedDocSuccess } from './server.getResources';
+import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
@@ -116,21 +116,25 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  const docsPathIdLookup = new Map<string, string>();
-  const docs: ProcessedDocSuccess[] = [];
+  const docs = [];
 
   try {
-    byEntry.forEach(({ path, uriId }) => {
-      if (path && !docsPathIdLookup.has(path)) {
-        docsPathIdLookup.set(path, uriId);
-      }
-    });
+    const docPaths = byEntry
+      .filter(({ path }) => path)
+      .map(({ path, uriId }) => ({ doc: path, uri: uriId }));
 
-    if (docsPathIdLookup.size > 0) {
-      const processedDocs = await processDocsFunction.memo([...docsPathIdLookup.keys()]);
+    if (docPaths.length > 0) {
+      // `processDocsFunction` has de-dup docs baked in
+      const processedDocs = await processDocsFunction.memo(docPaths);
 
       // Failures are `log.debugged` in `processDocsFunction`.
-      docs.push(...processedDocs.filter(response => response.isSuccess));
+      for (const response of processedDocs) {
+        if (response.isSuccess) {
+          docs.push({
+            ...response
+          });
+        }
+      }
     }
   } catch (error) {
     throw new McpError(
@@ -159,13 +163,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   return {
-    contents: docs.map(doc => ({
-      uri: docsPathIdLookup.get(doc.path),
+    contents: docs.map(({ uri, path, resolvedPath, content }) => ({
+      uri,
       mimeType: 'text/markdown',
       text: stringJoin.newline(
-        `# Documentation from ${doc.resolvedPath || doc.path}`,
+        `# Documentation from ${resolvedPath || path}`,
         '',
-        doc.content
+        content
       )
     }))
   };

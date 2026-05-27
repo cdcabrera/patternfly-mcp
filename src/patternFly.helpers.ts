@@ -3,7 +3,6 @@ import { getOptions } from './options.context';
 import { type PatternFlyOptions } from './options.defaults';
 import { findNearestPackageJson, matchPackageVersion, readLocalFileFunction } from './server.getResources';
 import { fuzzySearch } from './server.search';
-import { parseUrl } from './server.helpers';
 import { memo } from './server.caching';
 
 interface PatternFlyVersionContext {
@@ -223,37 +222,10 @@ const disabled_findClosestPatternFlyVersion = async (
   }
 };
 
-/**
- * Parse a PatternFly specific URI. A convenience wrapper around `parseUrl`.
- *
- * Looks specifically for the `patternfly://` URI scheme.
- *
- * @param uri - The URI to parse.
- * @param options - Optional configuration options.
- * @param options.prefix - The URI prefix to use. Defaults to 'patternfly'.
- * @returns A parsed PatternFly specific URI object or `undefined` if the URI is NOT an MCP `patternfly://` URI.
- */
-const parsePatternFlyUri = (uri: string | undefined, { prefix = 'patternfly' }: { prefix?: string } = {}) => {
-  const updatedUri = typeof uri === 'string' ? uri.trim().toLowerCase() : undefined;
-  const patternflyUri = updatedUri ? parseUrl(updatedUri, { prefix }) : undefined;
-
-  if (patternflyUri) {
-    return patternflyUri;
-  }
-
-  return undefined;
-};
-
-/**
- * Memoized version of parsePatternFlyUri.
- */
-parsePatternFlyUri.memo = memo(parsePatternFlyUri);
-
 export {
   findClosestPatternFlyVersion,
   disabled_findClosestPatternFlyVersion,
   getPatternFlyVersionContext,
   normalizeEnumeratedPatternFlyVersion,
-  parsePatternFlyUri,
   type PatternFlyVersionContext
 };

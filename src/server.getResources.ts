@@ -12,27 +12,27 @@ import { log, formatUnknownError } from './logger';
 /**
  * Represents a successful document processing attempt.
  */
-interface ProcessedDocSuccess {
+type ProcessedDocSuccess<T = Record<string, unknown>> = {
   content: string;
   path: string;
   resolvedPath: string;
   isSuccess: true;
-}
+} & T;
 
 /**
  * Represents a failed document processing attempt.
  */
-interface ProcessedDocFailure {
+type ProcessedDocFailure<T = Record<string, unknown>> = {
   content: string;
   path: string | undefined;
   resolvedPath: string | undefined;
   isSuccess: false;
-}
+} & T;
 
 /**
  * A processed document, either successful or failed.
  */
-type ProcessedDoc = ProcessedDocSuccess | ProcessedDocFailure;
+type ProcessedDoc<T = Record<string, unknown>> = ProcessedDocSuccess<T> | ProcessedDocFailure<T>;
 
 /**
  * Match a dependency version against a list of supported versions.
@@ -319,33 +319,55 @@ const promiseQueue = async (queue: string[], limit = 5) => {
  *   - `resolvedPath` is the resolved path after normalization.
  *   - `isSuccess` is true if the doc was successfully loaded, false otherwise.
  */
-const processDocsFunction = async (
-  inputs: string[],
+const processDocsFunction = async <T extends Record<string, unknown> = Record<string, unknown>>(
+  inputs: (string | ({ doc: string } & T))[],
   options = getOptions()
-): Promise<ProcessedDoc[]> => {
-  const uniqueInputs = new Map(
-    inputs.map(input => [normalizeString.memo(input), input.trim()])
-  );
-  const list = Array.from(uniqueInputs.values()).slice(0, options.minMax.docsToLoad.max).filter(Boolean);
+): Promise<ProcessedDoc<Omit<T, 'doc'>>[]> => {
+  const normalizeInputs = inputs.map(input =>
+    (typeof input === 'string' ? { doc: input } : input) as { doc: string } & T);
+
+  const uniqueInputsMap = new Map<string, { doc: string } & T>();
+
+  for (const input of normalizeInputs) {
+    const trimmedDoc = input.doc.trim();
+
+    if (trimmedDoc) {
+      const normalizedPath = normalizeString.memo(trimmedDoc);
+
+      if (!uniqueInputsMap.has(normalizedPath)) {
+        uniqueInputsMap.set(normalizedPath, { ...input, doc: trimmedDoc });
+      }
+    }
+  }
+
+  const uniqueInputsList = Array.from(uniqueInputsMap.values()).slice(0, options.minMax.docsToLoad.max);
+  const list = uniqueInputsList.map(input => input.doc);
 
   const settled = await promiseQueue(list);
-  const docs: ProcessedDoc[] = [];
+  const docs: ProcessedDoc<Omit<T, 'doc'>>[] = [];
 
   settled.forEach((res, index) => {
-    const fallbackPath = list[index];
+    const originalInput = uniqueInputsList[index];
+
+    if (!originalInput) {
+      return;
+    }
+
+    const { doc: originalPath, ...metadata } = originalInput;
 
     if (res.status === 'fulfilled') {
       docs.push({
         ...res.value,
+        ...(metadata as unknown as T),
         isSuccess: true
-      } as ProcessedDocSuccess);
+      });
 
       return;
     }
 
     const reason: Error & { path?: string; resolvedPath?: string } = res.reason;
     const error = reason instanceof Error ? reason : undefined;
-    const errorPath = error?.path || fallbackPath;
+    const errorPath = error?.path || originalPath;
     const errorResolvedPath = error?.resolvedPath || undefined;
     const errorMessage = error?.message || String(reason);
 
@@ -353,8 +375,9 @@ const processDocsFunction = async (
       content: `❌ Failed to load ${errorPath}: ${errorMessage}`,
       path: errorPath,
       resolvedPath: errorResolvedPath,
+      ...(metadata as unknown as T),
       isSuccess: false
-    } as ProcessedDocFailure);
+    });
 
     log.debug(`Failed to load ${errorPath} from processing: ${formatUnknownError(errorMessage)}`);
   });
