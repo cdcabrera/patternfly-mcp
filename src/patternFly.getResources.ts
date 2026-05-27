@@ -508,16 +508,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
       const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
 
-      // hashIndex.set(groupId, name);
       hashIndexMap.set(id, name);
       uriIndexMap.set(uri, name);
       uriIndexMap.set(uriId, name);
-
-      // hashIndexMap.set(groupId, name);
-      // hashIndexMap.set(groupId.substring(0, 8), name);
-
-      // hashIndexMap.set(id, uriId);
-      // hashIndexMap.set(id.substring(0, 8), uriId);
 
       if (path) {
         pathIndexMap.set(path, name);
@@ -577,7 +570,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version]?.push(extendedEntry);
 
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
-      // mutateKeyWordsMap(rawKeywordsMap, { keyword: groupId, name, version });
 
       if (entry.displayName) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.displayName, name, version });
@@ -594,26 +586,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       if (entry.description) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.description, name, version });
       }
-
-      // if (id) {
-      //   mutateKeyWordsMap(rawKeywordsMap, { keyword: id, name, version });
-      // }
-
-      // if (uri) {
-      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uri, name, version });
-      // }
-
-      // if (uriId) {
-      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uriId, name, version });
-      // }
-
-      // if (uriSchemas) {
-      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemas, name, version });
-      // }
-
-      // if (uriSchemasId) {
-      //  mutateKeyWordsMap(rawKeywordsMap, { keyword: uriSchemasId, name, version });
-      // }
 
       resource.entries.push(extendedEntry);
       resource.versions[version].entries.push(extendedEntry);
@@ -637,9 +609,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       ...Array.from(filteredKeywords.keys())
     ])).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     keywordsMap: filteredKeywords,
-    // pathIndex: Array.from(pathIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
-    // uriIndex: Array.from(uriIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
-    // hashIndex: Array.from(hashIndex).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     pathIndex: pathIndexMap,
     uriIndex: uriIndexMap,
     hashIndex: hashIndexMap,

@@ -5,7 +5,6 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
-// import { isSha1HexLike } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -13,7 +12,6 @@ import {
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
-// import { parsePatternFlyUri } from './patternFly.helpers';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
 
 /**
@@ -33,15 +31,15 @@ type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata,
  * @property [version] - PatternFly version to filter search results. Defaults to undefined for all versions.
  * @property [category] - Category to filter search results. Defaults to undefined for all categories.
  * @property [section] - Section to filter search results. Defaults to undefined for all sections.
- * @property [name] - Name to filter search results. Defaults to undefined for all names.
- * @property [pathUri] - Document path or URI to filter search results. Defaults to undefined for all paths and URIs.
+ * @property [name] - Name, or hash id, to filter search results. Defaults to undefined for all names and IDs.
+ * @property [path] - Document path, or URI, to filter search results. Defaults to undefined for all paths and URIs.
  */
 interface FilterPatternFlyFilters {
   version?: string | undefined;
   category?: string | undefined;
   section?: string | undefined;
   name?: string | undefined;
-  pathUri?: string | undefined;
+  path?: string | undefined;
 }
 
 /**
@@ -114,7 +112,16 @@ interface SearchPatternFlyOptions {
   maxResults?: number;
 }
 
-const PF_PRIORITY_FILTERS: (keyof FilterPatternFlyFilters)[] = ['version', 'category', 'section', 'name', 'pathUri'];
+/**
+ * A list of prioritized filters used for matching and processing
+ * filter patterns. Each filter corresponds to a specific key in the
+ * FilterPatternFlyFilters type.
+ *
+ * @note **Sequence matters** - This array defines the order of priority for
+ * filter keys, which may be used in operations such as sorting or
+ * applying specific filtering logic. See {@link FilterPatternFlyFilters}
+ */
+const PRIORITY_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'category', 'version', 'path'];
 
 /**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
@@ -175,16 +182,16 @@ const filterPatternFly = async (
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
-      const matchesUriPath = !updatedFilters.pathUri || filterMatch(entry.path, updatedFilters.pathUri) ||
-        filterMatch(entry.uriId, updatedFilters.pathUri) || filterMatch(entry.uriSchemas, updatedFilters.pathUri) ||
-        filterMatch(entry.uriSchemasId, updatedFilters.pathUri) || filterMatch(entry.uri, updatedFilters.pathUri);
+      const matchesPath = !updatedFilters.path || filterMatch(entry.path, updatedFilters.path) ||
+        filterMatch(entry.uriId, updatedFilters.path) || filterMatch(entry.uriSchemas, updatedFilters.path) ||
+        filterMatch(entry.uriSchemasId, updatedFilters.path) || filterMatch(entry.uri, updatedFilters.path);
 
       // Filter order matters specific id -> group id -> group name
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
         filterMatch(entry.groupId, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesUriPath && matchesName;
+      return matchesVersion && matchesCategory && matchesSection && matchesPath && matchesName;
     });
 
     if (matchedEntries.length > 0) {
@@ -230,7 +237,7 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  * @param filters
  * @param mcpResources
  * @param [options] - Optional settings object
- * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to `['name', 'section', 'category', 'version']`.
+ * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to {@link PRIORITY_FILTERS}.
  * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
  * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
  * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
@@ -239,7 +246,7 @@ const dynamicFilterPatternFly = async (
   searchQuery: string, filters: FilterPatternFlyFilters | undefined,
   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
   {
-    prioritizedFilters = PF_PRIORITY_FILTERS,
+    prioritizedFilters = PRIORITY_FILTERS,
     maxResultsLimit = 1,
     useExistingFilters = true
   }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
@@ -331,35 +338,13 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else if (pathMatchName || uriMatchName || hashMatchName) {
     searchResults = [
-      { matchType: 'exact', distance: 0, item: pathMatchName || uriMatchName || hashMatchName } as FuzzySearchResult
+      {
+        matchType: 'exact',
+        distance: 0,
+        item: pathMatchName || uriMatchName || hashMatchName
+      } as FuzzySearchResult
     ];
   } else {
-    /*
-    const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
-    const isShaHex = isSha1HexLike(coercedSearchQuery);
-    const fuzzySearchSettings: FuzzySearchOptions = {
-      maxDistance,
-      maxResults,
-      isFuzzyMatch: true,
-      deduplicateByNormalized: true
-    };
-
-    if (patternflyUri) {
-      fuzzySearchSettings.maxDistance = 1;
-      fuzzySearchSettings.isFuzzyMatch = false;
-      fuzzySearchSettings.isContainsMatch = false;
-      fuzzySearchSettings.isPartialMatch = false;
-    }
-
-    if (isShaHex) {
-      fuzzySearchSettings.maxDistance = 0;
-      fuzzySearchSettings.isFuzzyMatch = false;
-      fuzzySearchSettings.isPrefixMatch = false;
-      fuzzySearchSettings.isSuffixMatch = false;
-      fuzzySearchSettings.isContainsMatch = false;
-      fuzzySearchSettings.isPartialMatch = false;
-    }*/
-
     const fuzzySearchSettings: FuzzySearchOptions = {
       maxDistance,
       maxResults,
