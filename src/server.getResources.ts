@@ -17,7 +17,7 @@ type ProcessedDocSuccess<T = Record<string, unknown>> = {
   path: string;
   resolvedPath: string;
   isSuccess: true;
-} & T;
+} & Omit<T, "doc">;
 
 /**
  * Represents a failed document processing attempt.
@@ -27,7 +27,7 @@ type ProcessedDocFailure<T = Record<string, unknown>> = {
   path: string | undefined;
   resolvedPath: string | undefined;
   isSuccess: false;
-} & T;
+} & Omit<T, "doc">;
 
 /**
  * A processed document, either successful or failed.
@@ -322,7 +322,7 @@ const promiseQueue = async (queue: string[], limit = 5) => {
 const processDocsFunction = async <T extends Record<string, unknown> = Record<string, unknown>>(
   inputs: (string | ({ doc: string } & T))[],
   options = getOptions()
-): Promise<ProcessedDoc<Omit<T, 'doc'>>[]> => {
+): Promise<ProcessedDoc<T>[]> => {
   const normalizeInputs = inputs.map(input =>
     (typeof input === 'string' ? { doc: input } : input) as { doc: string } & T);
 
@@ -344,7 +344,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
   const list = uniqueInputsList.map(input => input.doc);
 
   const settled = await promiseQueue(list);
-  const docs: ProcessedDoc<Omit<T, 'doc'>>[] = [];
+  const docs: ProcessedDoc<T>[] = [];
 
   settled.forEach((res, index) => {
     const originalInput = uniqueInputsList[index];
@@ -358,9 +358,9 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
     if (res.status === 'fulfilled') {
       docs.push({
         ...res.value,
-        ...(metadata as unknown as Omit<T, 'doc'>),
+        ...(metadata as unknown as T),
         isSuccess: true
-      } as ProcessedDocSuccess<Omit<T, 'doc'>>);
+      } as ProcessedDocSuccess<T>);
 
       return;
     }
@@ -375,9 +375,9 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
       content: `❌ Failed to load ${errorPath}: ${errorMessage}`,
       path: errorPath,
       resolvedPath: errorResolvedPath,
-      ...(metadata as unknown as Omit<T, 'doc'>),
+      ...(metadata as unknown as T),
       isSuccess: false
-    } as ProcessedDocFailure<Omit<T, 'doc'>>);
+    } as ProcessedDocFailure<T>);
 
     log.debug(`Failed to load ${errorPath} from processing: ${formatUnknownError(errorMessage)}`);
   });
