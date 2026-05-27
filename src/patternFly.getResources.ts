@@ -482,7 +482,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     const name = unifiedName.toLowerCase();
     const groupId = generateHash(name);
 
-    hashIndexMap.set(groupId, name);
+    hashIndexMap.set(groupId.toLowerCase(), name);
 
     if (!resources.has(name)) {
       // Include search and filter contextual `undefined` metadata for each resource.
@@ -508,12 +508,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
       const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
 
-      hashIndexMap.set(id, name);
-      uriIndexMap.set(uri, name);
-      uriIndexMap.set(uriId, name);
+      hashIndexMap.set(id.toLowerCase(), name);
+      uriIndexMap.set(uri.toLowerCase(), name);
+      uriIndexMap.set(uriId.toLowerCase(), name);
 
       if (path) {
-        pathIndexMap.set(path, name);
+        pathIndexMap.set(path.toLowerCase(), name);
       }
 
       resource.versions[version] ??= {
@@ -537,8 +537,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasId = uriSchemasId;
 
-        uriIndexMap.set(uriSchemas, name);
-        uriIndexMap.set(uriSchemasId, name);
+        uriIndexMap.set(uriSchemas.toLowerCase(), name);
+        uriIndexMap.set(uriSchemasId.toLowerCase(), name);
       }
 
       const extendedEntry = {

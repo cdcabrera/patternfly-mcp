@@ -327,8 +327,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
-  const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery);
-  const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery);
+  const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
+  const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery.toLowerCase());
   const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery.toLowerCase());
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];

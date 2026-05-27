@@ -242,7 +242,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       const version = firstEntry?.version || updatedVersion;
       const categories = new Set(resource.entries.map(entry => entry.displayCategory));
       const categoryList = Array.from(categories).sort().join(', ');
-      const searchString = buildSearchString({ section, category }, { prefix: true });
+      const searchString = buildSearchString({ section, category }, { prefix: true, base: resource.uri });
 
       return `${index + 1}. [${resource.name} - ${categoryList} (${version})](${resource.uri}${searchString || ''})`;
     });

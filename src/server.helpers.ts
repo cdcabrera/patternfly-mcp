@@ -641,17 +641,21 @@ stringJoin.newlineFiltered = (...args: unknown[]) => stringJoin(args, { sep: '\n
 
 /**
  * Construct a search/query string from an object of key-value pairs, optionally filtering out
- * specific values and adding a `?` prefix.
+ * specific values and adding a context-aware separator.
+ *
+ * @note This helper needs to migrate over to a "buildUrl" helper function. Patched to allow base
+ * detection for prefixes in the short-term.
  *
  * @param values - An object containing key-value pairs to be converted into a query string.
  * @param [options] - Configuration options for constructing the query string.
- * @param [options.filter=[undefined, null]] - Array of values to filter out from the key-value pairs.
- * @param [options.prefix=false] - Determines whether to prepend a "?" to the query string.
- * @returns The constructed query string, optionally prefixed with "?", or `undefined` if no valid key-value pairs remain.
+ * @param [options.filter=[undefined, null]] - Array of values to filter out.
+ * @param [options.prefix=false] - Whether to prepend a separator.
+ * @param [options.base=''] - The base URI to check for existing separators.
+ * @returns The constructed query string with the correct separator.
  */
 const buildSearchString = (
   values: Record<string, unknown>,
-  { filter = [undefined, null], prefix = false }: { filter?: unknown[], prefix?: boolean } = {}
+  { filter = [undefined, null], prefix = false, base = '' }: { filter?: unknown[], prefix?: boolean, base?: string | undefined } = {}
 ) => {
   if (!isPlainObject(values)) {
     return undefined;
@@ -669,8 +673,15 @@ const buildSearchString = (
 
   const entriesToString = entries.sort(([aKey], [bKey]) => aKey.localeCompare(bKey)).map(([key, value]) => [key, `${value}`]);
   const searchParams = new URLSearchParams(Object.fromEntries(entriesToString));
+  const searchString = searchParams.toString();
 
-  return prefix ? `?${searchParams.toString()}` : searchParams.toString();
+  if (prefix) {
+    const separator = base.includes('?') ? '&' : '?';
+
+    return `${separator}${searchString}`;
+  }
+
+  return searchString;
 };
 
 /**

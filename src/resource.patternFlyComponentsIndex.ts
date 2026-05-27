@@ -162,10 +162,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const docsIndex = Array.from(byResource.values())
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((resource, index) => {
-      const searchString = buildSearchString({
-        version: updatedVersion,
-        category
-      }, { prefix: true });
+      const searchString = buildSearchString({ category }, { prefix: true, base: resource.uri });
 
       return `${index + 1}. [${resource.name} (${updatedVersion})](${resource.uri}${searchString || ''})`;
     });
