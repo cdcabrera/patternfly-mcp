@@ -319,7 +319,7 @@ const promiseQueue = async (queue: string[], limit = 5) => {
  *   - `resolvedPath` is the resolved path after normalization.
  *   - `isSuccess` is true if the doc was successfully loaded, false otherwise.
  */
-const processDocsFunction = async <T extends Record<string, unknown>>(
+const processDocsFunction = async <T extends Record<string, unknown> = Record<string, unknown>>(
   inputs: (string | ({ doc: string } & T))[],
   options = getOptions()
 ): Promise<ProcessedDoc<T>[]> => {

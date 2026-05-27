@@ -4,7 +4,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
-import { processDocsFunction, type ProcessedDocSuccess } from './server.getResources';
+import { processDocsFunction } from './server.getResources';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
@@ -115,8 +115,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       return `No documentation found for "${updatedName}".${suggestionMessage}`;
     }
   );
-
-  const docs: Array<ProcessedDocSuccess<{ uri: string }>> = [];
+  const docs = [];
 
   try {
     const docPaths = byEntry
