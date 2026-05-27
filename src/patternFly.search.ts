@@ -329,7 +329,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery);
   const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery);
-  const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery);
+  const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery.toLowerCase());
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
