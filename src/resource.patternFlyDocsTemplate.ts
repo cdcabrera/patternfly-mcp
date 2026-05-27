@@ -115,6 +115,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       return `No documentation found for "${updatedName}".${suggestionMessage}`;
     }
   );
+
   const docs = [];
 
   try {
