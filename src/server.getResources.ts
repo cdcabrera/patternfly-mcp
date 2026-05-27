@@ -344,7 +344,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
   const list = uniqueInputsList.map(input => input.doc);
 
   const settled = await promiseQueue(list);
-  const docs: ProcessedDoc<T>[] = [];
+  const docs: ProcessedDoc<Omit<T, 'doc'>>[] = [];
 
   settled.forEach((res, index) => {
     const originalInput = uniqueInputsList[index];
