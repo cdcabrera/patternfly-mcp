@@ -117,7 +117,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   const docsPathIdLookup = new Map<string, string>();
-  const docs: ProcessedDocSuccess[] = [];
+  const docs: Array<ProcessedDocSuccess & { uri: string }> = [];
 
   try {
     byEntry.forEach(({ path, uriId }) => {
@@ -130,7 +130,14 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       const processedDocs = await processDocsFunction.memo([...docsPathIdLookup.keys()]);
 
       // Failures are `log.debugged` in `processDocsFunction`.
-      docs.push(...processedDocs.filter(response => response.isSuccess));
+      for (const response of processedDocs) {
+        if (response.isSuccess) {
+          docs.push({
+            ...response,
+            uri: docsPathIdLookup.get(response.path)
+          });
+        }
+      }
     }
   } catch (error) {
     throw new McpError(
@@ -159,13 +166,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   return {
-    contents: docs.map(doc => ({
-      uri: docsPathIdLookup.get(doc.path),
+    contents: docs.map(({ uri, path, resolvedPath, content }) => ({
+      uri,
       mimeType: 'text/markdown',
       text: stringJoin.newline(
-        `# Documentation from ${doc.resolvedPath || doc.path}`,
+        `# Documentation from ${resolvedPath || path}`,
         '',
-        doc.content
+        content
       )
     }))
   };
