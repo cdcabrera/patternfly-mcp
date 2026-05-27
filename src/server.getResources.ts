@@ -360,7 +360,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
         ...res.value,
         ...(metadata as unknown as T),
         isSuccess: true
-      } as ProcessedDocSuccess<Omit<T, 'doc'>>);
+      });
 
       return;
     }
@@ -377,7 +377,7 @@ const processDocsFunction = async <T extends Record<string, unknown> = Record<st
       resolvedPath: errorResolvedPath,
       ...(metadata as unknown as T),
       isSuccess: false
-    } as ProcessedDocFailure<Omit<T, 'doc'>>);
+    });
 
     log.debug(`Failed to load ${errorPath} from processing: ${formatUnknownError(errorMessage)}`);
   });

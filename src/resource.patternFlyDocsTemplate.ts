@@ -129,6 +129,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
       // Failures are `log.debugged` in `processDocsFunction`.
       for (const response of processedDocs) {
+        const test = response.doc;
+
         if (response.isSuccess) {
           docs.push({
             ...response
