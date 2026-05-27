@@ -116,29 +116,48 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  const docsPathIdLookup = new Map<string, string>();
-  const docs: Array<ProcessedDocSuccess & { uri: string }> = [];
+  // const docsPathMap = new Map<string, { doc: string; uri: string }>();
+  const docs: Array<ProcessedDocSuccess> = [];
 
   try {
-    byEntry.forEach(({ path, uriId }) => {
-      if (path && !docsPathIdLookup.has(path)) {
-        docsPathIdLookup.set(path, uriId);
-      }
-    });
+    const docPaths = byEntry
+      .filter(({ path }) => path)
+      .map(({ path, uriId }) => ({ doc: path, uri: uriId }));
 
-    if (docsPathIdLookup.size > 0) {
-      const processedDocs = await processDocsFunction.memo([...docsPathIdLookup.keys()]);
+    if (docPaths.length > 0) {
+      // `processDocsFunction` has de-dup docs baked in
+      const processedDocs = await processDocsFunction.memo(docPaths);
 
       // Failures are `log.debugged` in `processDocsFunction`.
       for (const response of processedDocs) {
         if (response.isSuccess) {
           docs.push({
-            ...response,
-            uri: docsPathIdLookup.get(response.path)
+            ...response
           });
         }
       }
     }
+
+    /*
+    byEntry.forEach(({ path, uriId }) => {
+      if (path && !docsPathMap.has(path)) {
+        docsPathMap.set(path, { doc: path, uri: uriId });
+      }
+    });
+
+    if (docsPathMap.size > 0) {
+      const processedDocs = await processDocsFunction.memo([...docsPathMap.values()]);
+
+      // Failures are `log.debugged` in `processDocsFunction`.
+      for (const response of processedDocs) {
+        if (response.isSuccess) {
+          docs.push({
+            ...response
+          });
+        }
+      }
+    }
+     */
   } catch (error) {
     throw new McpError(
       ErrorCode.InternalError,

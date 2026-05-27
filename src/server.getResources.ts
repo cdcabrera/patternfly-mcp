@@ -17,6 +17,7 @@ interface ProcessedDocSuccess {
   path: string;
   resolvedPath: string;
   isSuccess: true;
+  [key: string]: unknown;
 }
 
 /**
@@ -27,6 +28,7 @@ interface ProcessedDocFailure {
   path: string | undefined;
   resolvedPath: string | undefined;
   isSuccess: false;
+  [key: string]: unknown;
 }
 
 /**
@@ -320,23 +322,43 @@ const promiseQueue = async (queue: string[], limit = 5) => {
  *   - `isSuccess` is true if the doc was successfully loaded, false otherwise.
  */
 const processDocsFunction = async (
-  inputs: string[],
+  inputs: (string | { doc: string, [key: string]: unknown })[],
   options = getOptions()
 ): Promise<ProcessedDoc[]> => {
-  const uniqueInputs = new Map(
-    inputs.map(input => [normalizeString.memo(input), input.trim()])
-  );
-  const list = Array.from(uniqueInputs.values()).slice(0, options.minMax.docsToLoad.max).filter(Boolean);
+  const normalizeInputs = inputs.map(input => (typeof input === 'string' ? { doc: input } : input));
+  const uniqueInputsMap = new Map<string, { doc: string, [key: string]: unknown }>();
+
+  for (const input of normalizeInputs) {
+    const trimmedDoc = input.doc.trim();
+
+    if (trimmedDoc) {
+      const normalizedPath = normalizeString.memo(trimmedDoc);
+
+      if (!uniqueInputsMap.has(normalizedPath)) {
+        uniqueInputsMap.set(normalizedPath, { ...input, doc: trimmedDoc });
+      }
+    }
+  }
+
+  const uniqueInputsList = Array.from(uniqueInputsMap.values()).slice(0, options.minMax.docsToLoad.max);
+  const list = uniqueInputsList.map(input => input.doc);
 
   const settled = await promiseQueue(list);
   const docs: ProcessedDoc[] = [];
 
   settled.forEach((res, index) => {
-    const fallbackPath = list[index];
+    const originalInput = uniqueInputsList[index];
+
+    if (!originalInput) {
+      return;
+    }
+
+    const { doc: originalPath, ...metadata } = originalInput;
 
     if (res.status === 'fulfilled') {
       docs.push({
         ...res.value,
+        ...metadata,
         isSuccess: true
       } as ProcessedDocSuccess);
 
@@ -345,7 +367,7 @@ const processDocsFunction = async (
 
     const reason: Error & { path?: string; resolvedPath?: string } = res.reason;
     const error = reason instanceof Error ? reason : undefined;
-    const errorPath = error?.path || fallbackPath;
+    const errorPath = error?.path || originalPath;
     const errorResolvedPath = error?.resolvedPath || undefined;
     const errorMessage = error?.message || String(reason);
 
@@ -353,6 +375,7 @@ const processDocsFunction = async (
       content: `❌ Failed to load ${errorPath}: ${errorMessage}`,
       path: errorPath,
       resolvedPath: errorResolvedPath,
+      ...metadata,
       isSuccess: false
     } as ProcessedDocFailure);
 
