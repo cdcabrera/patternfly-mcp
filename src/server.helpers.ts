@@ -1,5 +1,6 @@
 import { createHash, type BinaryToTextEncoding } from 'node:crypto';
 import { extname, sep } from 'node:path';
+import { distance } from 'fastest-levenshtein';
 import { type WhitelistUrl } from './options.defaults';
 
 /**
@@ -414,6 +415,46 @@ const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?
 };
 
 /**
+ * Check if a value is a SHA-1 hex string.
+ *
+ * @param value - Value to check.
+ * @param [options] - Options.
+ * @param options.maxDistance
+ * @param options.minLength
+ * @param options.maxLength
+ * @param options.probes
+ * @returns `true` if the value is a SHA-1 hex string
+ */
+const isSha1Hex = (
+  value: unknown,
+  {
+    maxDistance = 8,
+    minLength = 4,
+    maxLength = 40,
+    probes = ['4f2a9c1b', '8b3e0d72', '123fee4a', '9f8e7d6c', 'a0b1c2d3', '707e42a', 'c41d8fe9', '2b59c8f0']
+  }: { maxDistance?: number; minLength?: number; maxLength?: number, probes?: string[] } = {}
+): boolean => {
+  const updatedValue = typeof value === 'string' ? value.trim() : '';
+  const sha1HexLeading = /\b[a-f0-9]/i;
+
+  if (!updatedValue || updatedValue.length < minLength || updatedValue.length > maxLength || !sha1HexLeading.test(updatedValue)) {
+    return false;
+  }
+
+  const sha1HexPartial = /\b[a-f0-9]{4,39}\b/i;
+  const sha1HexFull = /\b[a-f0-9]{40}\b/i;
+
+  const checkDistance = (val: string) => probes.some(probe => {
+    const updatedVal = val.length >= probe.length ? val.substring(0, probe.length) : val;
+    const updatedProbe = probe.length >= val.length ? probe.substring(0, val.length) : probe;
+
+    return distance(updatedVal, updatedProbe) <= maxDistance;
+  });
+
+  return sha1HexFull.test(updatedValue) || (checkDistance(updatedValue) && sha1HexPartial.test(updatedValue));
+};
+
+/**
  * Safely decode a URI component, returning the original string if decoding fails.
  *
  * @param str - The string to decode.
@@ -763,6 +804,7 @@ export {
   isPlainObject,
   isPromise,
   isReferenceLike,
+  isSha1Hex,
   isUrl,
   isUrlObject,
   isWhitelistedUrl,

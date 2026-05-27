@@ -13,6 +13,7 @@ import {
 } from './patternFly.getResources';
 import { parsePatternFlyUri } from './patternFly.helpers';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
+import {isSha1Hex} from "./server.helpers";
 
 /**
  * A filtered MCP resource.
@@ -319,6 +320,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
   } else {
     const patternflyUri = parsePatternFlyUri.memo(coercedSearchQuery);
+    const isShaHex = isSha1Hex(coercedSearchQuery);
     const fuzzySearchSettings = {
       maxDistance,
       maxResults,
@@ -326,7 +328,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       deduplicateByNormalized: true
     };
 
-    if (patternflyUri) {
+    if (patternflyUri || isShaHex) {
       fuzzySearchSettings.maxDistance = 1;
       fuzzySearchSettings.isFuzzyMatch = false;
     }

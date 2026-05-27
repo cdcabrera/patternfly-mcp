@@ -11,6 +11,7 @@ import {
   isUrl,
   isUrlObject,
   isPath,
+  isSha1Hex,
   isWhitelistedUrl,
   listAllCombinations,
   listIncrementalCombinations,
@@ -746,6 +747,37 @@ describe('isPath', () => {
     { description: 'Windows separator file extension', file: 'C:\\path\\to\\another\\file.txt', options: { sep: '\\' }, expected: true }
   ])('should validate $description', ({ file, options, expected }) => {
     expect(isPath(file, { sep: '/', ...options } as any)).toBe(expected);
+  });
+});
+
+describe('isSha1Hex', () => {
+  it.each([
+    {
+      description: 'valid 40-char SHA-1 hex',
+      value: '5d642f0d9640119a074f5275c2a9459d2f18d9e1',
+      options: {},
+      expected: true
+    },
+    {
+      description: 'valid 40-char SHA-1 hex with uppercase',
+      value: '5D642F0D9640119A074F5275C2A9459D2F18D9E1',
+      options: {},
+      expected: true
+    },
+    {
+      description: 'valid length (partial) with non-strict mode',
+      value: '5d642',
+      options: { },
+      expected: true
+    },
+    {
+      description: 'invalid characters',
+      value: '5d642g',
+      options: { },
+      expected: false
+    }
+  ])('should check for SHA-1 hex for $description', ({ value, options, expected }) => {
+    expect(isSha1Hex(value, options)).toBe(expected);
   });
 });
 
