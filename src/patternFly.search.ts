@@ -113,17 +113,6 @@ interface SearchPatternFlyOptions {
 }
 
 /**
- * A list of prioritized filters used for matching and processing
- * filter patterns. Each filter corresponds to a specific key in the
- * FilterPatternFlyFilters type.
- *
- * @note **Sequence matters** - This array defines the order of priority for
- * filter keys, which may be used in operations such as sorting or
- * applying specific filtering logic. See {@link FilterPatternFlyFilters}
- */
-const PRIORITY_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'category', 'version', 'path'];
-
-/**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
  *
  * @note It is tempting to apply a default version to this function. Do not. Architecture
@@ -230,61 +219,6 @@ const filterPatternFly = async (
 filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
- * Use iteration to filter down the tightest possible results. Iteratively applies the
- * searchQuery to empty filters; if those results have a single match, they're returned.
- *
- * @param searchQuery
- * @param filters
- * @param mcpResources
- * @param [options] - Optional settings object
- * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to {@link PRIORITY_FILTERS}.
- * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
- * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
- * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
- */
-const dynamicFilterPatternFly = async (
-  searchQuery: string, filters: FilterPatternFlyFilters | undefined,
-  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
-  {
-    prioritizedFilters = PRIORITY_FILTERS,
-    maxResultsLimit = 1,
-    useExistingFilters = true
-  }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
-): Promise<FilterPatternFlyResults> => {
-  // Base filter check
-  const originalOutput = await filterPatternFly.memo(filters, mcpResources);
-
-  // Have a match from the base check? Return that.
-  if (originalOutput.byEntry.length === maxResultsLimit) {
-    return originalOutput;
-  }
-
-  for (const filter of prioritizedFilters) {
-    // Skip existing filters if `useExistingFilters` is true
-    if (useExistingFilters && filters && filters[filter]) {
-      continue;
-    }
-
-    const updatedFilter = { ...filters, [filter]: searchQuery };
-    const output = await filterPatternFly.memo(updatedFilter, mcpResources);
-
-    // Have a match already? Return that.
-    if (output.byEntry.length === maxResultsLimit) {
-      return output;
-    }
-  }
-
-  return {
-    ...originalOutput
-  };
-};
-
-/**
- * Memoized version of dynamicFilterPatternFly
- */
-dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
-
-/**
  * Search for PatternFly component documentation URLs using fuzzy search.
  *
  * @note It is tempting to apply a default version to this function. Do not. Architecture
@@ -302,8 +236,6 @@ dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.res
  *     - `keywordsMap`: Map of normalized keywords against versioned entries
  *     - `resources`: Map of names against entries
  * @param [settings.allowWildCardAll] - Allow a search query to match all resources. Defaults to `false`.
- * @param [settings.dynamicFilter] - Allow a search query to attempt a multi-filter match on returned search results. Defaults to `false`.
- *   Useful for narrowing down search results to a specific resource.
  * @param [settings.maxDistance] - Maximum edit distance for fuzzy search. Defaults to `3`.
  * @param [settings.maxResults] - Maximum number of results to return. Defaults to `10`.
  * @returns Object containing search results and matched URLs
@@ -318,7 +250,6 @@ dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.res
 const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFlyFilters | undefined, {
   mcpResources,
   allowWildCardAll = false,
-  dynamicFilter = false,
   maxDistance = 3,
   maxResults = 10
 }: SearchPatternFlyOptions = {}): Promise<SearchPatternFlyResults> => {
@@ -391,16 +322,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     }
   }
 
-  let filtered: FilterPatternFlyResults;
-
-  // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
-  if (dynamicFilter && !isSearchWildCardAll) {
-    filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
-  } else {
-    filtered = await filterPatternFly(updatedFilters, searchResultsFilterMap);
-  }
-
-  const { byResource } = filtered;
+  // Apply filtering
+  const { byResource } = await filterPatternFly(updatedFilters, searchResultsFilterMap);
 
   // Loop fuzzy results, apply and update search results with resources.
   for (const [name, fuzzyMatch] of fuzzyResultsMap) {
@@ -451,7 +374,6 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.searchPatternFlyDocs);
 
 export {
-  dynamicFilterPatternFly,
   filterPatternFly,
   searchPatternFly,
   type FilterPatternFlyFilters,

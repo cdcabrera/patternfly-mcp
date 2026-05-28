@@ -1,4 +1,4 @@
-import { dynamicFilterPatternFly, filterPatternFly, searchPatternFly } from '../patternFly.search';
+import { filterPatternFly, searchPatternFly } from '../patternFly.search';
 
 describe('filterPatternFly', () => {
   const mockResources = new Map([
@@ -85,91 +85,6 @@ describe('filterPatternFly', () => {
 
     expect(result.byEntry).toEqual(expect.arrayContaining([{ section: 1 }]));
     expect(Array.from(result.byResource).length).toBeGreaterThanOrEqual(0);
-  });
-});
-
-describe('dynamicFilterPatternFly', () => {
-  const mockResources = new Map([
-    ['button', {
-      name: 'button',
-      entries: [
-        { name: 'button', section: 'components', category: 'action', version: 'v6' },
-        { name: 'button', section: 'components', category: 'action', version: 'v5' }
-      ]
-    }],
-    ['modal', {
-      name: 'modal',
-      entries: [
-        { name: 'modal', section: 'components', category: 'view', version: 'v6' }
-      ]
-    }],
-    ['card', {
-      name: 'card',
-      entries: [
-        { name: 'card', section: 'layouts', category: 'view', version: 'v6' }
-      ]
-    }]
-  ]);
-
-  it.each([
-    {
-      description: 'return immediate single match if filters already narrow it down',
-      searchQuery: 'ignored',
-      filters: { name: 'modal' },
-      options: {},
-      expectedNames: ['modal']
-    },
-    {
-      description: 'find a single match by applying searchQuery to "name"',
-      searchQuery: 'modal',
-      filters: {},
-      options: { prioritizedFilters: ['name'] },
-      expectedNames: ['modal']
-    },
-    {
-      description: 'find a single match by applying searchQuery to "section"',
-      searchQuery: 'layouts',
-      filters: {},
-      options: { prioritizedFilters: ['section'] },
-      expectedNames: ['card']
-    },
-    {
-      description: 'fallback to original results when using a broad section',
-      searchQuery: 'components',
-      filters: {},
-      options: { prioritizedFilters: ['name'] },
-      expectedNames: ['button', 'button', 'modal', 'card']
-    },
-    {
-      description: 'fallback to original when using a broad category',
-      searchQuery: 'view',
-      filters: {},
-      options: {},
-      expectedNames: ['button', 'button', 'modal', 'card']
-    },
-    {
-      description: 'skip iterative filter if useExistingFilters is true and filter is already set',
-      searchQuery: 'modal',
-      filters: { name: 'button' },
-      options: { useExistingFilters: true, prioritizedFilters: ['name'] },
-      expectedNames: ['button', 'button']
-    },
-    {
-      description: 'use custom prioritizedFilters with increased max results',
-      searchQuery: 'view',
-      filters: {},
-      options: { prioritizedFilters: ['category'], maxResultsLimit: 2 },
-      expectedNames: ['modal', 'card']
-    }
-  ])('should $description', async ({ searchQuery, filters, options, expectedNames }) => {
-    const result = await dynamicFilterPatternFly(
-      searchQuery,
-      filters as any,
-      mockResources as any,
-      options as any
-    );
-
-    expect(result.byEntry.map(result => result.name)).toEqual(expectedNames);
   });
 });
 
