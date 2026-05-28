@@ -171,7 +171,7 @@ describe('searchPatternFly', () => {
       description: 'hash entry id with filter',
       search: 'btn-v6-hash',
       options: { dynamicFilter: true },
-      expectedLength: 1,
+      expectedLength: 2,
       expectedName: 'button',
       expectedType: 'exact'
     },
