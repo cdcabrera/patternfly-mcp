@@ -501,7 +501,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
 
     entries.forEach(entry => {
-      const id = generateHash(entry.path);
+      // Technically, we could just dump `entry` into generateHash as the fallback, but it'd be prone to frequent shifting based on updates.
+      const id = generateHash(entry.path || `${name}:${entry.version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
       const version = (entry.version || 'unknown').toLowerCase();
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
