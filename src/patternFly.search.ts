@@ -13,6 +13,7 @@ import {
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
+import {isShaHexLike, isUrl} from "./server.helpers";
 
 /**
  * A filtered MCP resource.
@@ -330,6 +331,9 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
   const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery.toLowerCase());
   const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery.toLowerCase());
+  const isQueryShaHexLike = isShaHexLike(coercedSearchQuery, { minLength: 5, maxLength: 40 });
+  const isQueryUriLike = isUrl(coercedSearchQuery, { isStrict: false, allowedProtocols: ['patternfly'] });
+
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
@@ -394,7 +398,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   let filtered: FilterPatternFlyResults;
 
   // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
-  if (dynamicFilter && !isSearchWildCardAll) {
+  if (dynamicFilter && !(isSearchWildCardAll || isQueryShaHexLike || isQueryUriLike)) {
     filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
   } else {
     filtered = await filterPatternFly(updatedFilters, searchResultsFilterMap);
