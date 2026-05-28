@@ -5,6 +5,7 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
+import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -228,7 +229,10 @@ const filterPatternFly = async (
 /**
  * Memoized version of filterPatternFly
  */
-filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
+filterPatternFly.memo = memo(filterPatternFly, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+  keyHash: ([filters, mcpResources]) => generateHash([filters, mcpResources])
+});
 
 /**
  * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
@@ -253,8 +257,10 @@ const dynamicFilterPatternFly = async (
     useExistingFilters = true
   }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
+  // Error name
   const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
 
+  // Centralized error
   const createDynamicFilterPassNotMatchedError = () => {
     const error = new Error('Dynamic filter pass did not match maxResultsLimit');
 
@@ -263,23 +269,17 @@ const dynamicFilterPatternFly = async (
     return error;
   };
 
-  const isTightMatch = (output: FilterPatternFlyResults) =>
+  // Matching conditions based on options
+  const isCloseMatch = (output: FilterPatternFlyResults) =>
     output.byEntry.length === maxResultsLimit;
-
-  const requireTightMatch = (output: FilterPatternFlyResults) => {
-    if (!isTightMatch(output)) {
-      return Promise.reject(createDynamicFilterPassNotMatchedError());
-    }
-
-    return output;
-  };
 
   const abortController = new AbortController();
   const { signal } = abortController;
 
+  // Run match and handle abort
   const passFail = (promise: Promise<FilterPatternFlyResults>) =>
     promise.then(output => {
-      if (signal.aborted || !isTightMatch(output)) {
+      if (signal.aborted || !isCloseMatch(output)) {
         return Promise.reject(createDynamicFilterPassNotMatchedError());
       }
 
@@ -291,9 +291,10 @@ const dynamicFilterPatternFly = async (
         return Promise.reject(createDynamicFilterPassNotMatchedError());
       }
 
-      return Promise.reject(err);
+      throw err;
     });
 
+  // Limit the filters to ones not already set
   const filtersToTry = prioritizedFilters.filter(
     filter => !(useExistingFilters && filters && filters[filter])
   );
@@ -301,13 +302,18 @@ const dynamicFilterPatternFly = async (
   try {
     return await Promise.any([
       ...filtersToTry.map(filter =>
-        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources).then(requireTightMatch))),
+        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources))),
       passFail(filterPatternFly.memo(filters, mcpResources))
     ]);
   } catch {
+    // If no close matches, return the base filter.
+    const original = await filterPatternFly.memo(filters, mcpResources);
+
     return {
-      ...filterPatternFly.memo(filters, mcpResources)
+      ...original
     };
+  } finally {
+    abortController.abort();
   }
 };
 
