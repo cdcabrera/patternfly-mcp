@@ -263,12 +263,8 @@ const dynamicFilterPatternFly = async (
     return error;
   };
 
-  const filtersToTry = prioritizedFilters.filter(
-    filter => !(useExistingFilters && filters && filters[filter])
-  );
-
-  const isTightMatch = (output: FilterPatternFlyResults) => output.byEntry.length === maxResultsLimit;
-  const originalPromise = filterPatternFly.memo(filters, mcpResources);
+  const isTightMatch = (output: FilterPatternFlyResults) =>
+    output.byEntry.length === maxResultsLimit;
 
   const requireTightMatch = (output: FilterPatternFlyResults) => {
     if (!isTightMatch(output)) {
@@ -278,24 +274,39 @@ const dynamicFilterPatternFly = async (
     return output;
   };
 
+  const abortController = new AbortController();
+  const { signal } = abortController;
+
+  const passFail = (promise: Promise<FilterPatternFlyResults>) =>
+    promise.then(output => {
+      if (signal.aborted || !isTightMatch(output)) {
+        return Promise.reject(createDynamicFilterPassNotMatchedError());
+      }
+
+      abortController.abort();
+
+      return output;
+    }).catch((err: unknown) => {
+      if (signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return Promise.reject(createDynamicFilterPassNotMatchedError());
+      }
+
+      return Promise.reject(err);
+    });
+
+  const filtersToTry = prioritizedFilters.filter(
+    filter => !(useExistingFilters && filters && filters[filter])
+  );
+
   try {
     return await Promise.any([
-      originalPromise.then(requireTightMatch),
       ...filtersToTry.map(filter =>
-        filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources).then(requireTightMatch))
+        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources).then(requireTightMatch))),
+      passFail(filterPatternFly.memo(filters, mcpResources))
     ]);
-  } catch (error) {
-    const isAllPassesRejected = error instanceof AggregateError &&
-      error.errors.every(reason => reason instanceof Error && reason.name === dynamicFilterPassNotMatched);
-
-    if (!isAllPassesRejected) {
-      throw error;
-    }
-
-    const originalOutput = await originalPromise;
-
+  } catch {
     return {
-      ...originalOutput
+      ...filterPatternFly.memo(filters, mcpResources)
     };
   }
 };
