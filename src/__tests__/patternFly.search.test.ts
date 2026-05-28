@@ -246,7 +246,15 @@ describe('searchPatternFly', () => {
       expectedType: 'contains'
     },
     {
-      description: 'patternfly:// URI',
+      description: 'patternfly:// URI with filter',
+      search: 'patternfly://docs/modal',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'modal',
+      expectedType: 'exact'
+    },
+    {
+      description: 'patternfly:// URI without filter',
       search: 'patternfly://docs/modal',
       expectedLength: 1,
       expectedName: 'modal',

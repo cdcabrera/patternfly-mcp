@@ -5,7 +5,6 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
-import { generateHash, isShaHexLike, isUrl } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -363,19 +362,13 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery.toLowerCase());
   const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery.toLowerCase());
 
-  const isUriLike = pathMatchName !== undefined ||
-    uriMatchName !== undefined ||
-    isUrl(coercedSearchQuery, { isStrict: false, allowedProtocols: ['patternfly'] });
-
-  const isHashLike = hashMatchName !== undefined || isShaHexLike(coercedSearchQuery);
-
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
-  } else if (isUriLike || isHashLike) {
+  } else if (pathMatchName || uriMatchName || hashMatchName) {
     searchResults = [
       {
         matchType: 'exact',
