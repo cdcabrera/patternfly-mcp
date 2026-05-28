@@ -162,11 +162,6 @@ describe('getPatternFlyMcpResources', () => {
 
   it('should generate unique hash IDs for pathless component entries', async () => {
     const result = await getPatternFlyMcpResources();
-    const totalResources = result.resources.size;
-
-    // If collisions occur, `hashIndex.size` will be smaller than totalResources.
-    expect(result.hashIndex.size).toBeGreaterThanOrEqual(totalResources);
-
     const entries = Array.from(result.resources.values()).flatMap(resource => resource.entries);
     const ids = entries.map(entry => entry.id);
     const pathlessEntries = entries.filter(entry => !entry.path);

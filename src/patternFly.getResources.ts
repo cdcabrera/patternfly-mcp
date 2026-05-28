@@ -109,6 +109,8 @@ type PatternFlyMcpResourcesByPath = {
 
 /**
  * PatternFly resources by URI with a list of entries.
+ *
+ * @deprecated  Under review. Use `uriIndex`.
  */
 type PatternFlyMcpResourcesByUri = {
   [uri: string]: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
@@ -164,8 +166,9 @@ type PatternFlyMcpResourceMetadata = {
  * @extends PatternFlyVersionContext
  *
  * @property resources - Patternfly available documentation and metadata by resource name.
- * @property docsIndex - Patternfly available documentation index.
- * @property componentsIndex - Patternfly available components index.
+ * @property docsIndex - `@deprecated Under review. Use Array.from(resources.keys()) instead`. Patternfly available documentation index.
+ * @property componentsIndex - `@deprecated Under review. Use keywordsIndex for search or byVersionComponentNames for lookups`.
+ *     Patternfly available components index.
  * @property keywordsIndex - Patternfly available keywords index.
  * @property keywordsMap - Patternfly available keywords by resource name then by version.
  * @property isFallbackDocumentation - Whether the fallback documentation is used.
@@ -173,7 +176,7 @@ type PatternFlyMcpResourceMetadata = {
  * @property uriIndex - Patternfly documentation uri->name map for helping refine search results.
  * @property hashIndex - Patternfly documentation hash->name map for helping refine search results.
  * @property byPath - Patternfly documentation by path with entries
- * @property byUri - Patternfly documentation by uri with entries
+ * @property byUri - `@deprecated Under review. Use uriIndex`. Patternfly documentation by uri with entries
  * @property byVersion - Patternfly documentation by version with entries
  * @property byVersionComponentNames - Patternfly documentation by version with component names
  */
@@ -502,8 +505,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
     entries.forEach(entry => {
       // Technically, we could just dump `entry` into generateHash as the fallback, but it'd be prone to frequent shifting based on updates.
-      const id = generateHash(entry.path || `${name}:${entry.version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
       const version = (entry.version || 'unknown').toLowerCase();
+      const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
@@ -602,7 +605,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   return {
     ...versionContext,
     resources,
+    // @deprecated docsIndex - Under review
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    // @deprecated componentsIndex - Under review
     componentsIndex: componentNamesIndex,
     isFallbackDocumentation: originalDocs.isFallback,
     keywordsIndex: Array.from(new Set([
@@ -614,6 +619,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     uriIndex: uriIndexMap,
     hashIndex: hashIndexMap,
     byPath,
+    // @deprecated byUri - Under review
     byUri,
     byVersion,
     byVersionComponentNames: componentNamesByVersion
