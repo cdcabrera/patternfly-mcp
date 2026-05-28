@@ -13,7 +13,6 @@ import {
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
-import {isShaHexLike, isUrl} from "./server.helpers";
 
 /**
  * A filtered MCP resource.
@@ -77,7 +76,8 @@ interface SearchPatternFlyResult extends FuzzySearchResult, PatternFlyMcpResourc
  * @interface SearchPatternFlyResults
  *
  * @property isSearchWildCardAll - Whether the search query matched all components
- * @property {SearchPatternFlyResult | undefined} firstExactMatch - Exact-ranked result
+ * @property {SearchPatternFlyResult | undefined} firstExactMatch - `@deprecated Unreliable when the query is a hash, URI, or
+ *     path (compares name to the query string). Prefer exactMatches[0] or searchResults`.
  * @property {SearchPatternFlyResult[]} exactMatches - Exact matches within search results
  * @property {SearchPatternFlyResult[]} remainingMatches - Contrast to `exactMatches`, the remaining matches within search results
  * @property {SearchPatternFlyResult[]} searchResults - All search results, exact and remaining matches
@@ -231,12 +231,12 @@ const filterPatternFly = async (
 filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
- * Use iteration to filter down the tightest possible results. Iteratively applies the
- * searchQuery to empty filters; if those results have a single match, they're returned.
+ * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
+ * wins. If no matches, return the base filter.
  *
- * @param searchQuery
- * @param filters
- * @param mcpResources
+ * @param searchQuery - Search query.
+ * @param filters - Available filters for PatternFly data.
+ * @param mcpResources - Scoped resources for PatternFly data.
  * @param [options] - Optional settings object
  * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to {@link PRIORITY_FILTERS}.
  * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
@@ -244,7 +244,8 @@ filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptio
  * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
  */
 const dynamicFilterPatternFly = async (
-  searchQuery: string, filters: FilterPatternFlyFilters | undefined,
+  searchQuery: string,
+  filters: FilterPatternFlyFilters | undefined,
   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
   {
     prioritizedFilters = PRIORITY_FILTERS,
@@ -252,32 +253,51 @@ const dynamicFilterPatternFly = async (
     useExistingFilters = true
   }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
-  // Base filter check
-  const originalOutput = await filterPatternFly.memo(filters, mcpResources);
+  const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
 
-  // Have a match from the base check? Return that.
-  if (originalOutput.byEntry.length === maxResultsLimit) {
-    return originalOutput;
-  }
+  const createDynamicFilterPassNotMatchedError = () => {
+    const error = new Error('Dynamic filter pass did not match maxResultsLimit');
 
-  for (const filter of prioritizedFilters) {
-    // Skip existing filters if `useExistingFilters` is true
-    if (useExistingFilters && filters && filters[filter]) {
-      continue;
-    }
+    error.name = dynamicFilterPassNotMatched;
 
-    const updatedFilter = { ...filters, [filter]: searchQuery };
-    const output = await filterPatternFly.memo(updatedFilter, mcpResources);
-
-    // Have a match already? Return that.
-    if (output.byEntry.length === maxResultsLimit) {
-      return output;
-    }
-  }
-
-  return {
-    ...originalOutput
+    return error;
   };
+
+  const filtersToTry = prioritizedFilters.filter(
+    filter => !(useExistingFilters && filters && filters[filter])
+  );
+
+  const isTightMatch = (output: FilterPatternFlyResults) => output.byEntry.length === maxResultsLimit;
+  const originalPromise = filterPatternFly.memo(filters, mcpResources);
+
+  const requireTightMatch = (output: FilterPatternFlyResults) => {
+    if (!isTightMatch(output)) {
+      return Promise.reject(createDynamicFilterPassNotMatchedError());
+    }
+
+    return output;
+  };
+
+  try {
+    return await Promise.any([
+      originalPromise.then(requireTightMatch),
+      ...filtersToTry.map(filter =>
+        filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources).then(requireTightMatch))
+    ]);
+  } catch (error) {
+    const isAllPassesRejected = error instanceof AggregateError &&
+      error.errors.every(reason => reason instanceof Error && reason.name === dynamicFilterPassNotMatched);
+
+    if (!isAllPassesRejected) {
+      throw error;
+    }
+
+    const originalOutput = await originalPromise;
+
+    return {
+      ...originalOutput
+    };
+  }
 };
 
 /**
@@ -309,7 +329,7 @@ dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.res
  * @param [settings.maxResults] - Maximum number of results to return. Defaults to `10`.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all resources
- *   - `firstExactMatch`: Exact-ranked result
+ *   - `firstExactMatch`: `@deprecated` See {@link SearchPatternFlyResults.firstExactMatch}.
  *   - `exactMatches`: Exact matches within search results
  *   - `remainingMatches`: Contrast to `exactMatches`, the remaining matches within search results
  *   - `searchResults`: All search results, exact and remaining matches
@@ -331,9 +351,6 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
   const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery.toLowerCase());
   const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery.toLowerCase());
-  const isQueryShaHexLike = isShaHexLike(coercedSearchQuery, { minLength: 5, maxLength: 40 });
-  const isQueryUriLike = isUrl(coercedSearchQuery, { isStrict: false, allowedProtocols: ['patternfly'] });
-
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
@@ -398,7 +415,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   let filtered: FilterPatternFlyResults;
 
   // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
-  if (dynamicFilter && !(isSearchWildCardAll || isQueryShaHexLike || isQueryUriLike)) {
+  if (dynamicFilter && !isSearchWildCardAll) {
     filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
   } else {
     filtered = await filterPatternFly(updatedFilters, searchResultsFilterMap);
@@ -440,6 +457,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
   return {
     isSearchWildCardAll,
+    // @deprecated firstExactMatch — name-vs-query check misses hash/URI/path lookups; kept for backward compatibility.
     firstExactMatch: sortedExactMatches.find(match => match.name === coercedSearchQuery) || sortedExactMatches[0],
     exactMatches: sortedExactMatches.slice(0, maxResults),
     remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
