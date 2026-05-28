@@ -328,6 +328,26 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
 getPatternFlyComponentNames.memo = memo(getPatternFlyComponentNames);
 
 /**
+ * Transform two string arrays into sets with all words lowercased and trimmed.
+ *
+ * @private
+ * @param {string[]} listA - First array of strings to be processed.
+ * @param {string[]} listB - Second array of strings to be processed.
+ * @returns {Object} An object containing two sets:
+ *   - `listA`: A set containing unique processed words from the first array.
+ *   - `listB`: A set containing unique processed words from the second array.
+ */
+const setWordLists = (listA: string[], listB: string[]) => ({
+  listA: new Set(listA.map(word => word.toLowerCase().trim())),
+  listB: new Set(listB.map(word => word.toLowerCase().trim()))
+});
+
+/**
+ * Memoized version of setWordLists.
+ */
+setWordLists.memo = memo(setWordLists, { cacheLimit: 3 });
+
+/**
  * Filter keywords using the exception list and noise-word rules.
  *
  * - Words are kept that match the `exceptionList`.
@@ -347,24 +367,28 @@ const filterKeywords = (
 ) => {
   const filteredKeywords: PatternFlyMcpKeywordsMap = new Map();
 
+  // Pre-process into Sets
+  const { listA: exceptionSet, listB: filterSet } = setWordLists.memo(exceptionList, filterList);
+
+  // Keep the original list for prefix/suffix checks
+  const normalizedFilterList = Array.from(filterSet);
+
   for (const [keyword, versionMap] of keywordsMap) {
     const updatedKeyword = keyword.toLowerCase().trim();
 
-    // Exception match, never filter these out.
-    if (exceptionList.includes(updatedKeyword)) {
+    // Exception match
+    if (exceptionSet.has(updatedKeyword)) {
       filteredKeywords.set(keyword, versionMap);
       continue;
     }
 
-    const isVariant = filterList.some(word => {
-      const updatedWord = word.toLowerCase().trim();
+    // Exact filter match
+    if (filterSet.has(updatedKeyword)) {
+      continue;
+    }
 
-      // Exact match
-      if (updatedKeyword === updatedWord) {
-        return true;
-      }
-
-      // Related match, is filterList word related?
+    // Related match (prefix/suffix)
+    const isVariant = normalizedFilterList.some(updatedWord => {
       if (Math.abs(updatedKeyword.length - updatedWord.length) <= distanceMatch) {
         return updatedKeyword.startsWith(updatedWord) || updatedKeyword.endsWith(updatedWord);
       }
@@ -413,6 +437,9 @@ const mutateKeyWordsMap = (
   const initialSplit = normalizedKeyword.split(' ').filter(Boolean);
   const isMultipleWords = initialSplit.length > 1;
 
+  // Pre-process into Sets
+  const { listA: blockSet, listB: exceptionSet } = setWordLists.memo(blockList, exceptionList);
+
   const mutateMap = (word: string) => {
     if (!keywordsMap.has(word)) {
       keywordsMap.set(word, new Map());
@@ -438,11 +465,11 @@ const mutateKeyWordsMap = (
     for (const word of splitKeywords) {
       const lowerWord = word.toLowerCase();
 
-      if (blockList.includes(lowerWord)) {
+      if (blockSet.has(lowerWord)) {
         continue;
       }
 
-      if (word.length <= lengthFilter && !exceptionList.includes(lowerWord)) {
+      if (word.length <= lengthFilter && !exceptionSet.has(lowerWord)) {
         continue;
       }
 

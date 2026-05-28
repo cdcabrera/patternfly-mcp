@@ -167,7 +167,7 @@ const findClosest = (
   }
 
   if (items[itemIndex] && typeof maxDistance === 'number') {
-    const dis = findDistance.memo(normalizedQuery, normalizeFn(items[itemIndex]));
+    const dis = findDistance.memo(normalizedQuery, normalizedItems[itemIndex] as string);
 
     if (dis <= maxDistance) {
       return items[itemIndex];
