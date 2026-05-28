@@ -47,7 +47,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
       { version: updatedVersion },
-      { allowWildCardAll: true, dynamicFilter: true, maxResults: options.minMax.toolSearches.max }
+      { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
     );
 
     assertInput(

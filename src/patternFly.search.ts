@@ -100,14 +100,12 @@ interface SearchPatternFlyResults {
  *
  * @property {Promise<PatternFlyMcpAvailableResources>} [mcpResources] - Object of multifaceted documentation entries to search.
  * @property [allowWildCardAll] - Allow a search query to match all components.
- * @property [dynamicFilter] - Allow a search query to attempt a multi-filter match on returned search results for tighter results.
  * @property [maxDistance] - Maximum edit distance for fuzzy search.
  * @property [maxResults] - Maximum number of results to return.
  */
 interface SearchPatternFlyOptions {
   mcpResources?: Promise<PatternFlyMcpAvailableResources>;
   allowWildCardAll?: boolean;
-  dynamicFilter?: boolean;
   maxDistance?: number;
   maxResults?: number;
 }
