@@ -5,7 +5,7 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
-import { generateHash } from './server.helpers';
+import { generateHash, isShaHexLike, isUrl } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -116,15 +116,10 @@ interface SearchPatternFlyOptions {
 }
 
 /**
- * A list of prioritized filters used for matching and processing
- * filter patterns. Each filter corresponds to a specific key in the
- * FilterPatternFlyFilters type.
- *
- * @note **Sequence matters** - This array defines the order of priority for
- * filter keys, which may be used in operations such as sorting or
- * applying specific filtering logic. See {@link FilterPatternFlyFilters}
+ * A list of the available search filters used for matching and processing
+ * filter patterns. Each filter corresponds to a specific key in {@link FilterPatternFlyFilters}.
  */
-const PRIORITY_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'category', 'version', 'path'];
+const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'category', 'version', 'path'];
 
 /**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
@@ -239,11 +234,14 @@ filterPatternFly.memo = memo(filterPatternFly, {
  * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
  * wins. If no matches, return the base filter.
  *
+ * @note In the future we can expand AbortController into the filter and search functions, for now
+ * this is a light implementation.
+ *
  * @param searchQuery - Search query.
  * @param filters - Available filters for PatternFly data.
  * @param mcpResources - Scoped resources for PatternFly data.
  * @param [options] - Optional settings object
- * @param [options.prioritizedFilters] - Array of filters to prioritize. Defaults to {@link PRIORITY_FILTERS}.
+ * @param [options.searchFilters] - Array of filters to search typically from {@link filterPatternFly}. Defaults to {@link SEARCH_FILTERS}.
  * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
  * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
  * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
@@ -253,10 +251,10 @@ const dynamicFilterPatternFly = async (
   filters: FilterPatternFlyFilters | undefined,
   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
   {
-    prioritizedFilters = PRIORITY_FILTERS,
+    searchFilters = SEARCH_FILTERS,
     maxResultsLimit = 1,
     useExistingFilters = true
-  }: { prioritizedFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
+  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
   // Error name
   const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
@@ -296,7 +294,7 @@ const dynamicFilterPatternFly = async (
     });
 
   // Limit the filters to ones not already set
-  const filtersToTry = prioritizedFilters.filter(
+  const filtersToTry = searchFilters.filter(
     filter => !(useExistingFilters && filters && filters[filter])
   );
 
@@ -307,12 +305,9 @@ const dynamicFilterPatternFly = async (
       passFail(filterPatternFly.memo(filters, mcpResources))
     ]);
   } catch {
-    // If no close matches, return the base filter.
-    const original = await filterPatternFly.memo(filters, mcpResources);
-
-    return {
-      ...original
-    };
+    // Technically, this should never get to this point since we're passing the original filters as
+    // a parallel filter into the `any`, but if it does, return the base filter.
+    return filterPatternFly.memo(filters, mcpResources);
   } finally {
     abortController.abort();
   }
@@ -347,7 +342,7 @@ dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.res
  * @param [settings.maxResults] - Maximum number of results to return. Defaults to `10`.
  * @returns Object containing search results and matched URLs
  *   - `isSearchWildCardAll`: Whether the search query matched all resources
- *   - `firstExactMatch`: `@deprecated` See {@link SearchPatternFlyResults.firstExactMatch}.
+ *   - `firstExactMatch`: `@deprecated` See {@link SearchPatternFlyResults#exactMatches} Exact-ranked result
  *   - `exactMatches`: Exact matches within search results
  *   - `remainingMatches`: Contrast to `exactMatches`, the remaining matches within search results
  *   - `searchResults`: All search results, exact and remaining matches
@@ -366,16 +361,24 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const updatedFilters = filters || {};
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
   const uriMatchName = updatedResources.uriIndex?.get(coercedSearchQuery.toLowerCase());
   const hashMatchName = updatedResources.hashIndex?.get(coercedSearchQuery.toLowerCase());
+
+  const isUriLike = pathMatchName !== undefined ||
+    uriMatchName !== undefined ||
+    isUrl(coercedSearchQuery, { isStrict: false, allowedProtocols: ['patternfly'] });
+
+  const isHashLike = hashMatchName !== undefined || isShaHexLike(coercedSearchQuery);
+
   let search: FuzzySearch | undefined;
   let searchResults: FuzzySearchResult[] = [];
 
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
     searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
-  } else if (pathMatchName || uriMatchName || hashMatchName) {
+  } else if (isUriLike || isHashLike) {
     searchResults = [
       {
         matchType: 'exact',
@@ -475,7 +478,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
   return {
     isSearchWildCardAll,
-    // @deprecated firstExactMatch — name-vs-query check misses hash/URI/path lookups; kept for backward compatibility.
+    // @deprecated firstExactMatch - Use exactMatches[0] or searchResults
     firstExactMatch: sortedExactMatches[0],
     exactMatches: sortedExactMatches.slice(0, maxResults),
     remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
