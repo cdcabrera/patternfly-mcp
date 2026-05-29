@@ -139,13 +139,15 @@ const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'c
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param [mcpResources] - An optional map of available PatternFly documentation entries to search.
  *     Internally, defaults to `getPatternFlyMcpResources.resources`
+ * @param [signal] - Optional abort signal; breaks the resource loop when aborted.
  * @returns {Promise<FilterPatternFlyResults>} - Filtered PatternFly results.
  * - `byEntry`: Array of filtered documentation entries.
  * - `byResource`: Map of filtered resources by resource name.
  */
 const filterPatternFly = async (
   filters: FilterPatternFlyFilters | undefined,
-  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>
+  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
+  signal?: AbortSignal
 ): Promise<FilterPatternFlyResults> => {
   const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const resources = (getResources as PatternFlyMcpAvailableResources)?.resources ||
@@ -175,6 +177,10 @@ const filterPatternFly = async (
   };
 
   for (const [name, resource] of resources) {
+    if (signal?.aborted) {
+      break;
+    }
+
     const matchedEntries = resource.entries.filter(entry => {
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
@@ -222,16 +228,20 @@ const filterPatternFly = async (
 };
 
 /**
- * Memoized version of filterPatternFly
+ * Memoized version of filterPatternFly.
+ *
+ * @note Cache key is for filters and map only to avoid the signal arg. This is by design
+ * and lets the signal still be forwarded to the underlying function.
  */
-filterPatternFly.memo = memo(filterPatternFly, DEFAULT_OPTIONS.resourceMemoOptions.default);
+filterPatternFly.memo = memo(filterPatternFly, { ...DEFAULT_OPTIONS.resourceMemoOptions.default, cacheErrors: false, keyHash: args => args.slice(0, 2) });
 
 /**
  * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
  * wins. If no matches, return the base filter.
  *
- * @note In the future we can expand AbortController into the filter and search functions, for now
- * this is a light implementation.
+ * @note Parallel passes call `filterPatternFly.memo(..., signal)`. `memo` caches are customized for:
+ * - `keyHash: args => args.slice(0, 2)` to avoid the signal arg in the cache key, letting it pass through.
+ * - `cacheErrors: false` to avoid caching rejected passes.
  *
  * @param searchQuery - Search query.
  * @param filters - Available filters for PatternFly data.
@@ -297,12 +307,12 @@ const dynamicFilterPatternFly = async (
   try {
     return await Promise.any([
       ...filtersToTry.map(filter =>
-        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources))),
-      passFail(filterPatternFly.memo(filters, mcpResources))
+        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources, signal))),
+      passFail(filterPatternFly.memo(filters, mcpResources, signal))
     ]);
   } catch {
     // Technically, this should never get to this point since we're passing the original filters as
-    // a parallel filter into the `any`, but if it does, return the base filter.
+    // a parallel filter into the `any`, but if it does, return the base filter (no signal — finally aborts).
     return filterPatternFly.memo(filters, mcpResources);
   } finally {
     abortController.abort();
