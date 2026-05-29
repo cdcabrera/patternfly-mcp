@@ -5,6 +5,7 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
+import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -236,18 +237,24 @@ const filterPatternFly = async (
 /**
  * Memoized version of filterPatternFly.
  *
- * @note Cache key is for filters and map only to avoid the signal arg. This is by design
- * and lets the signal still be forwarded to the underlying function.
+ * @note Cache key hashes filters + map only (`generateHash(args.slice(0, 2))`); optional
+ * `{ signal, signalError }` settings are forwarded on cache miss but excluded from the key.
  */
-filterPatternFly.memo = memo(filterPatternFly, { ...DEFAULT_OPTIONS.resourceMemoOptions.default, cacheErrors: false, keyHash: args => args.slice(0, 2) });
+filterPatternFly.memo = memo(filterPatternFly, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+  cacheErrors: false,
+  keyHash: args => generateHash(args.slice(0, 2))
+});
 
 /**
  * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
  * wins. If no matches, return the base filter.
  *
- * @note Parallel passes call `filterPatternFly.memo(..., signal)`. `memo` caches are customized for:
- * - `keyHash: args => args.slice(0, 2)` to avoid the signal arg in the cache key, letting it pass through.
- * - `cacheErrors: false` to avoid caching rejected passes.
+ * @note Parallel passes call `filterPatternFly.memo(..., settings)` with one shared
+ * `{ signal, signalError }` object. Memo is customized for:
+ * - `keyHash: args => generateHash(args.slice(0, 2))` — settings excluded from cache key.
+ * - `cacheErrors: false` — rejected/aborted passes are not cached.
+ * - `signalError` — aborted siblings throw instead of returning partial results (avoids cache poison).
  *
  * @param searchQuery - Search query.
  * @param filters - Available filters for PatternFly data.

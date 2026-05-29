@@ -214,7 +214,7 @@ describe('dynamicFilterPatternFly', () => {
     expect(result.byEntry.map(entry => entry.name)).toEqual(expectedNames);
   });
 
-  it('should call filterPatternFly.memo on parallel passes with one shared AbortSignal', async () => {
+  it('should call filterPatternFly.memo on parallel passes with one shared settings object', async () => {
     const memoSpy = jest.spyOn(filterPatternFly, 'memo');
 
     await dynamicFilterPatternFly(
@@ -226,9 +226,13 @@ describe('dynamicFilterPatternFly', () => {
 
     expect(memoSpy.mock.calls.length).toBeGreaterThan(0);
 
-    const signals = memoSpy.mock.calls
-      .map(call => call[2])
-      .filter(({ signal }: any) => signal instanceof AbortSignal);
+    const settingsArgs = memoSpy.mock.calls.map(call => call[2]);
+
+    expect(new Set(settingsArgs).size).toBe(1);
+
+    const signals = settingsArgs
+      .map(settings => settings?.signal)
+      .filter((signal): signal is AbortSignal => signal instanceof AbortSignal);
 
     expect(signals.length).toBe(memoSpy.mock.calls.length);
     expect(new Set(signals).size).toBe(1);
@@ -236,22 +240,41 @@ describe('dynamicFilterPatternFly', () => {
     memoSpy.mockRestore();
   });
 
-  it('should resolve the same filtered result through memo with different signals', async () => {
+  it('should cache filterPatternFly.memo by filters and map only, not settings', async () => {
     const filters = { name: 'moda' };
-    const first = await filterPatternFly.memo(
+    const first = filterPatternFly.memo(
       filters,
       mockResources as any,
       { signal: new AbortController().signal }
     );
-    const second = await filterPatternFly.memo(
+    const second = filterPatternFly.memo(
       filters,
       mockResources as any,
       { signal: new AbortController().signal }
     );
 
-    expect(first.byEntry).toEqual(second.byEntry);
-    expect(first.byEntry.map(entry => entry.name)).toEqual(['modal']);
-    expect(second.byEntry.map(entry => entry.name)).toEqual(['modal']);
+    expect(first).toBe(second);
+    await expect(first).resolves.toMatchObject({
+      byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
+    });
+  });
+
+  it('should not poison memo with partial results after a parallel pass wins', async () => {
+    await dynamicFilterPatternFly(
+      'modal',
+      {},
+      mockResources as any,
+      { searchFilters: ['name', 'section'] }
+    );
+
+    const result = await dynamicFilterPatternFly(
+      'components',
+      {},
+      mockResources as any,
+      { searchFilters: ['name'] }
+    );
+
+    expect(result.byEntry.map(entry => entry.name)).toEqual(['button', 'button', 'modal', 'card']);
   });
 
   it('should read memo on the fallback path when no pass matches maxResultsLimit', async () => {
