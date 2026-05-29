@@ -317,10 +317,6 @@ describe('dynamicFilterPatternFly', () => {
 
   it('should read memo on the fallback path when no pass matches maxResultsLimit', async () => {
     const memoSpy = jest.spyOn(filterPatternFly, 'memo');
-    const mockException = new DOMException('Filter operation aborted', 'AbortError');
-    const mockController = new AbortController();
-
-    mockController.abort();
 
     const result = await dynamicFilterPatternFly(
       'components',
@@ -330,7 +326,7 @@ describe('dynamicFilterPatternFly', () => {
     );
 
     expect(result.byEntry.map(entry => entry.name)).toEqual(['button', 'button', 'modal', 'card']);
-    expect(memoSpy).toHaveBeenCalledWith({}, mockResources, { signal: mockController.signal, signalError: mockException });
+    expect(memoSpy).toHaveBeenCalledWith({}, mockResources);
 
     memoSpy.mockRestore();
   });

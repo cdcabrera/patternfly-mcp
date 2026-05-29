@@ -145,19 +145,9 @@ const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
  * proper handling of non-string values. Future updates should align with the string coercion used
  * in other code base searches.
  *
- * @performance
- * Benchmarks show cold starts execute in ~5.5–6.0ms for the entire search-to-filter run as-is.
- * This is not expected to be a bottleneck even if current indexes increase at a measured pace
- * in the short-term. But it is worth noting that the filter loop is NOT forcing `setImmediate`
- * unconditionally at this scale since that would introduce event-loop scheduling overhead that
- * would degrade speed and increase CPU thrashing.
- *
- * Instead, to optimize, we're using a time-sliced guard clause. It executes synchronously at max speed
- * under normal conditions but transforms into an async cooperative yield if the execution
- * time breaches the threshold.
- *
- * This is intended to be a temporary measure until we can implement a more efficient search and filter,
- * using threads or other techniques.
+ * @performance At current catalog scale (~5–6ms cold), the filter loop stays synchronous.
+ * When `signal` is set, optional time-slicing (`maxSyncTime` + `setImmediate` every 200 resources)
+ * yields if execution exceeds the threshold — skipped on normal memo paths without a signal.
  *
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param [mcpResources] - An optional map of available PatternFly documentation entries to search.
@@ -224,6 +214,7 @@ const filterPatternFly = async (
     }
 
     const matchedEntries = resource.entries.filter(entry => {
+      // Throw on abort so memo rejects the pass (avoids caching partial entry batches).
       if (signal?.aborted) {
         if (signalError) {
           throw signalError;
@@ -382,9 +373,8 @@ const dynamicFilterPatternFly = async (
       passFail(filterPatternFly.memo(filters, mcpResources, settings))
     ]);
   } catch {
-    // Technically, this should never get to this point since we're passing the original filters as
-    // a parallel filter into the `any`, but if it does, return the base filter (no signal — finally aborts).
-    return filterPatternFly.memo(filters, mcpResources, settings);
+    // Base pass is in the race; if all reject, rescan without signal (finally aborts shared controller).
+    return filterPatternFly.memo(filters, mcpResources);
   } finally {
     abortController.abort();
   }
