@@ -92,7 +92,7 @@ describe('filterPatternFly', () => {
 
     controller.abort();
 
-    const result = await filterPatternFly(undefined, mockResources as any, controller.signal);
+    const result = await filterPatternFly(undefined, mockResources as any, { signal: controller.signal });
 
     expect(result.byEntry).toEqual([]);
     expect(result.byResource.size).toBe(0);
@@ -228,7 +228,7 @@ describe('dynamicFilterPatternFly', () => {
 
     const signals = memoSpy.mock.calls
       .map(call => call[2])
-      .filter(signal => signal instanceof AbortSignal);
+      .filter(({ signal }: any) => signal instanceof AbortSignal);
 
     expect(signals.length).toBe(memoSpy.mock.calls.length);
     expect(new Set(signals).size).toBe(1);
@@ -241,12 +241,12 @@ describe('dynamicFilterPatternFly', () => {
     const first = await filterPatternFly.memo(
       filters,
       mockResources as any,
-      new AbortController().signal
+      { signal: new AbortController().signal }
     );
     const second = await filterPatternFly.memo(
       filters,
       mockResources as any,
-      new AbortController().signal
+      { signal: new AbortController().signal }
     );
 
     expect(first.byEntry).toEqual(second.byEntry);

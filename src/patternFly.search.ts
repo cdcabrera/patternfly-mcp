@@ -139,7 +139,9 @@ const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'c
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param [mcpResources] - An optional map of available PatternFly documentation entries to search.
  *     Internally, defaults to `getPatternFlyMcpResources.resources`
- * @param [signal] - Optional abort signal; breaks the resource loop when aborted.
+ * @param [settings] - Optional settings object
+ * @param [settings.signal] - Optional abort signal; breaks the resource loop when aborted.
+ * @param [settings.signalError] - Optional error to throw when aborted.
  * @returns {Promise<FilterPatternFlyResults>} - Filtered PatternFly results.
  * - `byEntry`: Array of filtered documentation entries.
  * - `byResource`: Map of filtered resources by resource name.
@@ -147,7 +149,7 @@ const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'c
 const filterPatternFly = async (
   filters: FilterPatternFlyFilters | undefined,
   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
-  signal?: AbortSignal
+  { signal, signalError }: { signal?: AbortSignal, signalError?: Error | DOMException } = {}
 ): Promise<FilterPatternFlyResults> => {
   const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const resources = (getResources as PatternFlyMcpAvailableResources)?.resources ||
@@ -177,6 +179,10 @@ const filterPatternFly = async (
   };
 
   for (const [name, resource] of resources) {
+    if (signal?.aborted && signalError) {
+      throw signalError;
+    }
+
     if (signal?.aborted) {
       break;
     }
@@ -305,10 +311,12 @@ const dynamicFilterPatternFly = async (
   );
 
   try {
+    const settings = { signal, signalError: new DOMException('Filter operation aborted', 'AbortError') };
+
     return await Promise.any([
       ...filtersToTry.map(filter =>
-        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources, signal))),
-      passFail(filterPatternFly.memo(filters, mcpResources, signal))
+        passFail(filterPatternFly.memo({ ...filters, [filter]: searchQuery }, mcpResources, settings))),
+      passFail(filterPatternFly.memo(filters, mcpResources, settings))
     ]);
   } catch {
     // Technically, this should never get to this point since we're passing the original filters as
