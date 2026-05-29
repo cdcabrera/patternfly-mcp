@@ -530,12 +530,27 @@ describe('searchPatternFly', () => {
     memoSpy.mockRestore();
   });
 
-  it('should not call filterPatternFly.memo for scoped non-dynamic filtering', async () => {
+  it('should call filterPatternFly.memo for scoped non-dynamic filtering', async () => {
     const memoSpy = jest.spyOn(filterPatternFly, 'memo');
 
     await searchPatternFly('button', {}, mockOptions);
 
-    expect(memoSpy).not.toHaveBeenCalled();
+    expect(memoSpy).toHaveBeenCalledTimes(1);
+    expect(memoSpy).toHaveBeenCalledWith({}, expect.any(Map));
+
+    memoSpy.mockRestore();
+  });
+
+  it('should reuse filterPatternFly.memo cache for repeated identical scoped searches', async () => {
+    const memoSpy = jest.spyOn(filterPatternFly, 'memo');
+
+    const first = searchPatternFly('button', {}, mockOptions);
+    const second = searchPatternFly('button', {}, mockOptions);
+
+    await Promise.all([first, second]);
+
+    expect(memoSpy).toHaveBeenCalledTimes(2);
+    expect(memoSpy.mock.results[0]?.value).toBe(memoSpy.mock.results[1]?.value);
 
     memoSpy.mockRestore();
   });

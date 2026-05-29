@@ -182,9 +182,10 @@ type FilterPatternFlyMemoArgs = [
  * - Exact "version" filtering only
  * - Has `prefix`, `suffix` filtering for any non-"version" field.
  *
- * @note Memoization: {@link filterPatternFly.memo} is for MCP resource handlers (full-catalog reads).
- * Search and {@link dynamicFilterPatternFly} call bare {@link filterPatternFly} on scoped maps — memo there
- * needs cache-poison guards; see {@link dynamicFilterPatternFly} developer note before reintroducing it.
+ * @note Memoization: {@link filterPatternFly.memo} caches by `filters` + `resources` map content. Used for MCP
+ * resource handlers (full-catalog reads) and {@link searchPatternFly}'s non-dynamic scoped filter pass.
+ * {@link dynamicFilterPatternFly}'s `Promise.any` race still calls bare {@link filterPatternFly}; see that
+ * function's developer note before reintroducing memo there.
  *
  * @note Filter formats are generally assumed to be string values. If expanding to other types, ensure
  * proper handling of non-string values. Future updates should align with the string coercion used
@@ -324,9 +325,10 @@ const filterPatternFly = async (
 /**
  * Memoized version of filterPatternFly for MCP resource handlers.
  *
- * @note Use {@link filterPatternFly.memo} for full-catalog MCP resource reads (index/template handlers).
- * Do **not** use it inside {@link dynamicFilterPatternFly}'s `Promise.any` race or its fallback — see that
- * function's developer note for why and how to reintroduce memo there safely.
+ * @note Use {@link filterPatternFly.memo} for full-catalog MCP resource reads (index/template handlers) and
+ * {@link searchPatternFly}'s non-dynamic scoped filter pass. Do **not** use it inside
+ * {@link dynamicFilterPatternFly}'s `Promise.any` race or its fallback — see that function's developer note for
+ * why and how to reintroduce memo there safely.
  *
  * @note Cache key hashes `filters` and `resources` only. `signal`, `signalError`, and `maxSyncTime` are
  * forwarded on cache miss but excluded from the key. `cacheErrors: false` — rejected/aborted passes are not cached.
@@ -349,10 +351,10 @@ filterPatternFly.memo = memo(filterPatternFly, {
  * pass; longer `searchFilters` lists are truncated from the front. Keep {@link SEARCH_FILTERS}
  * aligned with product priority — do not randomize pass order or truncation.
  *
- * @note **Memo split (read before changing this race).** {@link filterPatternFly.memo} stays on MCP
- * resource handlers only. This function calls bare {@link filterPatternFly} in the `Promise.any` race
- * and in the catch fallback. That is intentional: perf testing showed memo here was a net loss once
- * cache-poison handling was included.
+ * @note **Memo split (read before changing this race).** {@link filterPatternFly.memo} is used for MCP
+ * resource handlers and {@link searchPatternFly}'s non-dynamic path, but this function calls bare
+ * {@link filterPatternFly} in the `Promise.any` race and in the catch fallback. That is intentional: perf
+ * testing showed memo here was a net loss once cache-poison handling was included.
  *
  * @note **Do not drop `filterPatternFly.memo` into `Promise.any` or the fallback without the guards
  * below.** Parallel passes share filters/maps but differ by abort timing; memoizing naively caches partial
@@ -468,7 +470,8 @@ dynamicFilterPatternFly.memo = memo(dynamicFilterPatternFly, DEFAULT_OPTIONS.res
  * dictates that this function remains purely data-driven, apply default versions in the caller.
  * See both MCP resources and tools for examples.
  *
- * @note Uses `filterPatternFly` for additional filtering.
+ * @note Non-dynamic filtering uses {@link filterPatternFly.memo} on the scoped `searchResultsFilterMap`
+ * (cache key = filters + map content). Dynamic filtering uses {@link dynamicFilterPatternFly.memo} instead.
  *
  * @param searchQuery - Search query. Values are coerced to string for fuzzy search.
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
@@ -574,7 +577,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   if (dynamicFilter && !isSearchWildCardAll) {
     filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
   } else {
-    filtered = await filterPatternFly(updatedFilters, searchResultsFilterMap);
+    filtered = await filterPatternFly.memo(updatedFilters, searchResultsFilterMap);
   }
 
   const { byResource } = filtered;
