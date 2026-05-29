@@ -2,12 +2,8 @@ import {
   dynamicFilterPatternFly,
   filterPatternFly,
   searchPatternFly,
-  type FilterPatternFlyFilters,
-  type FilterPatternFlySettings
+  type FilterPatternFlyFilters
 } from '../patternFly.search';
-
-/** Mirrors module-internal dynamic-pass settings for memo cache tests. */
-type FilterPatternFlyDynamicPassSettings = FilterPatternFlySettings & { _passId: string };
 
 describe('filterPatternFly', () => {
   const mockResources = new Map([
@@ -253,7 +249,7 @@ describe('dynamicFilterPatternFly', () => {
     const passId = 'test-pass-id';
     const filters = { name: 'moda' };
     const signalError = new DOMException('', 'AbortError');
-    const settings: FilterPatternFlyDynamicPassSettings = {
+    const settings = {
       _passId: passId,
       signal: new AbortController().signal,
       signalError
@@ -273,12 +269,12 @@ describe('dynamicFilterPatternFly', () => {
     const first = filterPatternFly.memo(
       filters,
       mockResources as any,
-      { _passId: 'pass-a', signal: new AbortController().signal, signalError } satisfies FilterPatternFlyDynamicPassSettings
+      { _passId: 'pass-a', signal: new AbortController().signal, signalError } as any
     );
     const second = filterPatternFly.memo(
       filters,
       mockResources as any,
-      { _passId: 'pass-b', signal: new AbortController().signal, signalError } satisfies FilterPatternFlyDynamicPassSettings
+      { _passId: 'pass-b', signal: new AbortController().signal, signalError } as any
     );
 
     expect(first).not.toBe(second);
@@ -293,7 +289,7 @@ describe('dynamicFilterPatternFly', () => {
   it('should not share filterPatternFly.memo cache between scoped dynamic passes and plain passes', async () => {
     const filters = { name: 'moda' };
     const signalError = new DOMException('', 'AbortError');
-    const dynamicSettings: FilterPatternFlyDynamicPassSettings = {
+    const dynamicSettings = {
       _passId: 'dynamic-pass-id',
       signal: new AbortController().signal,
       signalError

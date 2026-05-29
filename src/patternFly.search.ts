@@ -134,6 +134,7 @@ interface FilterPatternFlySettings {
 /**
  * Dynamic-filter race settings — extends {@link FilterPatternFlySettings} with memo scope.
  *
+ * @interface FilterPatternFlyDynamicPassSettings
  * @internal Set only by {@link dynamicFilterPatternFly}; not part of the public API.
  */
 interface FilterPatternFlyDynamicPassSettings extends FilterPatternFlySettings {
@@ -170,7 +171,6 @@ type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
 /**
  * Used for configuring the `filterPatternFly.memo`.
  *
- * @typedef FilterPatternFlyMemoArgs
  * @property {FilterPatternFlyFilters} 0 The filters to be applied, which specify the behavior or conditions for the memoized functionality.
  * @property {FilterPatternFlyMcpResources} [1] Optional MCP resources configuration to be utilized during memo execution.
  * @property {FilterPatternFlyDynamicPassSettings} [2] Optional dynamic pass settings that influence runtime behavior or processing settings.
@@ -178,7 +178,7 @@ type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
 type FilterPatternFlyMemoArgs = [
   filters: FilterPatternFlyFilters | undefined,
   mcpResources?: FilterPatternFlyMcpResources | undefined,
-  settings?: FilterPatternFlyDynamicPassSettings | undefined
+  settings?: FilterPatternFlySettings | undefined
 ];
 
 /**
@@ -215,7 +215,7 @@ type FilterPatternFlyMemoArgs = [
 const filterPatternFly = async (
   filters: FilterPatternFlyFilters | undefined,
   mcpResources?: FilterPatternFlyMcpResources,
-  { maxSyncTime = 25, signal, signalError }: FilterPatternFlyDynamicPassSettings = {}
+  { maxSyncTime = 25, signal, signalError }: FilterPatternFlySettings = {}
 ): Promise<FilterPatternFlyResults> => {
   const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const resources = (getResources as PatternFlyMcpAvailableResources)?.resources ||
@@ -340,7 +340,7 @@ filterPatternFly.memo = memo(filterPatternFly, {
   keyHash: (args: Readonly<FilterPatternFlyMemoArgs>) => {
     const [filters, resources, settings] = args;
 
-    return generateHash([filters, resources, settings?._passId]);
+    return generateHash([filters, resources, (settings as FilterPatternFlyDynamicPassSettings)?._passId]);
   }
 });
 
