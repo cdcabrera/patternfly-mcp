@@ -5,6 +5,7 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
+import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -121,7 +122,7 @@ interface SearchPatternFlyOptions {
  *
  * @property [maxSyncTime] - Max synchronous time slice in milliseconds before yielding when `signal` is set. Defaults to `25`.
  * @property [signal] - Abort signal; breaks the resource loop when aborted.
- * @property [signalError] - Error to throw when aborted (avoids caching partial results on memo paths).
+ * @property [signalError] - Error to throw when aborted (avoids returning partial results on sibling passes).
  */
 interface FilterPatternFlySettings {
   maxSyncTime?: number;
@@ -157,6 +158,19 @@ type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
   Map<string, PatternFlyMcpResourceFilteredMetadata>;
 
 /**
+ * Used for configuring the `filterPatternFly.memo`.
+ *
+ * @property {FilterPatternFlyFilters} 0 The filters to be applied, which specify the behavior or conditions for the memoized functionality.
+ * @property {FilterPatternFlyMcpResources} [1] Optional MCP resources configuration to be utilized during memo execution.
+ * @property {FilterPatternFlySettings} [2] Optional settings that influence runtime behavior or processing settings.
+ */
+type FilterPatternFlyMemoArgs = [
+  filters: FilterPatternFlyFilters | undefined,
+  mcpResources?: FilterPatternFlyMcpResources | undefined,
+  settings?: FilterPatternFlySettings | undefined
+];
+
+/**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
  *
  * @note It is tempting to apply a default version to this function. Do not. Architecture
@@ -168,9 +182,9 @@ type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
  * - Exact "version" filtering only
  * - Has `prefix`, `suffix` filtering for any non-"version" field.
  *
- * @note Careful on memoization, it can be a performance hit. Typically, a smaller result set is used
- * in combination with search. You're not necessarily looking at the entire catalog being filtered unless
- * the call is coming from MCP resources, and even then other indexes may be used.
+ * @note Memoization: {@link filterPatternFly.memo} is for MCP resource handlers (full-catalog reads).
+ * Search and {@link dynamicFilterPatternFly} call bare {@link filterPatternFly} on scoped maps — memo there
+ * needs cache-poison guards; see {@link dynamicFilterPatternFly} developer note before reintroducing it.
  *
  * @note Filter formats are generally assumed to be string values. If expanding to other types, ensure
  * proper handling of non-string values. Future updates should align with the string coercion used
@@ -178,7 +192,7 @@ type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
  *
  * @performance At current catalog scale (~5–6ms cold), the filter loop stays synchronous.
  * When `signal` is set, optional time-slicing (`maxSyncTime` + `setImmediate` every 200 resources)
- * yields if execution exceeds the threshold — skipped on normal memo paths without a signal.
+ * yields if execution exceeds the threshold — skipped when no signal is set.
  *
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param [mcpResources] - An optional map of available PatternFly documentation entries to search.
@@ -245,7 +259,7 @@ const filterPatternFly = async (
     }
 
     const matchedEntries = resource.entries.filter(entry => {
-      // Throw on abort so memo rejects the pass (avoids caching partial entry batches).
+      // Throw on abort so sibling passes reject instead of returning partial entry batches.
       if (signal?.aborted) {
         if (signalError) {
           throw signalError;
@@ -308,6 +322,26 @@ const filterPatternFly = async (
 };
 
 /**
+ * Memoized version of filterPatternFly for MCP resource handlers.
+ *
+ * @note Use {@link filterPatternFly.memo} for full-catalog MCP resource reads (index/template handlers).
+ * Do **not** use it inside {@link dynamicFilterPatternFly}'s `Promise.any` race or its fallback — see that
+ * function's developer note for why and how to reintroduce memo there safely.
+ *
+ * @note Cache key hashes `filters` and `resources` only. `signal`, `signalError`, and `maxSyncTime` are
+ * forwarded on cache miss but excluded from the key. `cacheErrors: false` — rejected/aborted passes are not cached.
+ */
+filterPatternFly.memo = memo(filterPatternFly, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+  cacheErrors: false,
+  keyHash: (args: Readonly<FilterPatternFlyMemoArgs>) => {
+    const [filters, resources] = args;
+
+    return generateHash([filters, resources]);
+  }
+});
+
+/**
  * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
  * wins. If no matches, return the base filter.
  *
@@ -315,15 +349,29 @@ const filterPatternFly = async (
  * pass; longer `searchFilters` lists are truncated from the front. Keep {@link SEARCH_FILTERS}
  * aligned with product priority — do not randomize pass order or truncation.
  *
- * @note Be careful on using memo in the `promise.any` and the fallback, it can actually be a
- * dramatic performance hit once you end resolving all the accidental cache poisoning that pops up.
- * We solved the cache poison last time by:
- * - Having parallel passes share one settings object per race (`signal`, `signalError`, and a module-private `_passId` UUID)
- *     so memo entries from that race didn't collide with plain 2-arg memo or other races.
- * - The `_passId: randomUUID()` on the `settings` object was then hashed with the memo `keyHash` callback for the
- *     {@link filterPatternFly} function.
- * - Used `cacheErrors: false` on the {@link filterPatternFly} memo, where rejected/aborted passes are not cached.
- * - Used `signalError` in {@link filterPatternFly}, where aborted siblings can throw instead of returning partial results
+ * @note **Memo split (read before changing this race).** {@link filterPatternFly.memo} stays on MCP
+ * resource handlers only. This function calls bare {@link filterPatternFly} in the `Promise.any` race
+ * and in the catch fallback. That is intentional: perf testing showed memo here was a net loss once
+ * cache-poison handling was included.
+ *
+ * @note **Do not drop `filterPatternFly.memo` into `Promise.any` or the fallback without the guards
+ * below.** Parallel passes share filters/maps but differ by abort timing; memoizing naively caches partial
+ * results from losing passes or collides entries across races. Fixing that cost more than memo saved.
+ *
+ * @note **If you need memo back in this race, reproduce all of the following (prior working design):**
+ * - Give each `Promise.any` race one shared settings object (`signal`, `signalError`, and a module-private
+ *   `_passId` from `randomUUID()`) so memo keys from that race do not collide with MCP {@link filterPatternFly.memo}
+ *   calls or other concurrent races.
+ * - Extend settings with internal `_passId?: string` (not public API) and hash it in {@link filterPatternFly.memo}'s
+ *   `keyHash` alongside `filters` and `resources`: `generateHash([filters, resources, settings._passId])`.
+ * - Keep `cacheErrors: false` on {@link filterPatternFly.memo} so rejected/aborted passes are never cached.
+ * - Keep `signalError` on {@link filterPatternFly} so aborted siblings **throw** instead of returning partial
+ *   `byEntry` batches (otherwise memo stores poisoned slices).
+ * - Still call bare {@link filterPatternFly} on the catch fallback unless you also scope that path's cache key
+ *   (fallback runs without `signal` after `finally` aborts the shared controller).
+ *
+ * @note Parallel passes today share one settings object per race (`signal`, `signalError`) so aborted siblings
+ * throw via `signalError` even without memo.
  *
  * @param searchQuery - Search query.
  * @param filters - Available filters for PatternFly data.
@@ -394,7 +442,7 @@ const dynamicFilterPatternFly = async (
   };
 
   try {
-    // Be care of placing memo here, it can be a performance hit.
+    // See dynamicFilterPatternFly @note — do not memoize here without _passId keyHash + cacheErrors: false + signalError.
     return await Promise.any([
       ...filtersToTry.map(filter =>
         passFail(filterPatternFly({ ...filters, [filter]: searchQuery }, mcpResources, settings))),
