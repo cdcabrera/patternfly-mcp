@@ -1,4 +1,9 @@
-import { dynamicFilterPatternFly, filterPatternFly, searchPatternFly } from '../patternFly.search';
+import {
+  dynamicFilterPatternFly,
+  filterPatternFly,
+  searchPatternFly,
+  type FilterPatternFlyFilters
+} from '../patternFly.search';
 
 describe('filterPatternFly', () => {
   const mockResources = new Map([
@@ -257,6 +262,39 @@ describe('dynamicFilterPatternFly', () => {
     await expect(first).resolves.toMatchObject({
       byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
     });
+  });
+
+  it('should cap parallel filter passes when searchFilters exceeds the internal limit', async () => {
+    const memoSpy = jest.spyOn(filterPatternFly, 'memo');
+    const oversizedFilters = [
+      'name',
+      'section',
+      'category',
+      'version',
+      'path',
+      'name',
+      'section',
+      'category',
+      'version',
+      'path',
+      'name',
+      'section',
+      'category',
+      'version',
+      'path'
+    ];
+
+    await dynamicFilterPatternFly(
+      'modal',
+      {},
+      mockResources as any,
+      { searchFilters: oversizedFilters as (keyof FilterPatternFlyFilters)[] }
+    );
+
+    // 5 capped filter passes + 1 base pass (matches SEARCH_FILTERS length)
+    expect(memoSpy).toHaveBeenCalledTimes(6);
+
+    memoSpy.mockRestore();
   });
 
   it('should not poison memo with partial results after a parallel pass wins', async () => {

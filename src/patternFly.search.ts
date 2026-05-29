@@ -116,10 +116,18 @@ interface SearchPatternFlyOptions {
 }
 
 /**
- * A list of the available search filters used for matching and processing
- * filter patterns. Each filter corresponds to a specific key in {@link FilterPatternFlyFilters}.
+ * Filter keys tried in parallel by {@link dynamicFilterPatternFly}. Order is priority
+ * (e.g. `name` first for hash/entry id and URI narrowing). Do not randomize — truncation
+ * and `Promise.any` both keep this sequence; reorder only with intentional product priority.
  */
 const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'category', 'version', 'path'];
+
+/**
+ * Max parallel dynamic-filter passes (excluding the always-included base pass). Matches
+ * {@link SEARCH_FILTERS} length; longer custom `searchFilters` arrays are truncated from the
+ * front so priority order is preserved. Do not randomize the slice.
+ */
+const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
 
 /**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
@@ -255,12 +263,16 @@ filterPatternFly.memo = memo(filterPatternFly, {
  * - `keyHash: args => generateHash(args.slice(0, 2))` — settings excluded from cache key.
  * - `cacheErrors: false` — rejected/aborted passes are not cached.
  * - `signalError` — aborted siblings throw instead of returning partial results (avoids cache poison).
+ * - Parallel pass count is at most {@link MAX_DYNAMIC_FILTER_PASSES} filter passes plus one base pass;
+ *   longer `searchFilters` lists are truncated from the front. Keep {@link SEARCH_FILTERS} aligned
+ *   with product priority — do not randomize pass order or truncation.
  *
  * @param searchQuery - Search query.
  * @param filters - Available filters for PatternFly data.
  * @param mcpResources - Scoped resources for PatternFly data.
  * @param [options] - Optional settings object
  * @param [options.searchFilters] - Array of filters to search typically from {@link filterPatternFly}. Defaults to {@link SEARCH_FILTERS}.
+ * @param [options.maxFilterPasses] - Max number of parallel filter passes. Defaults to {@link MAX_DYNAMIC_FILTER_PASSES}.
  * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
  * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
  * @returns {Promise<FilterPatternFlyResults>} - A Promise resolving to the filtering results.
@@ -271,9 +283,10 @@ const dynamicFilterPatternFly = async (
   mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
   {
     searchFilters = SEARCH_FILTERS,
+    maxFilterPasses = MAX_DYNAMIC_FILTER_PASSES,
     maxResultsLimit = 1,
     useExistingFilters = true
-  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
+  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
   // Error name
   const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
@@ -312,10 +325,10 @@ const dynamicFilterPatternFly = async (
       throw err;
     });
 
-  // Limit the filters to ones not already set
-  const filtersToTry = searchFilters.filter(
-    filter => !(useExistingFilters && filters && filters[filter])
-  );
+  // Limit the filters to ones not already set; cap parallel passes to avoid runaway fan-out.
+  const filtersToTry = searchFilters
+    .filter(filter => !(useExistingFilters && filters && filters[filter]))
+    .slice(0, maxFilterPasses);
 
   try {
     const settings = { signal, signalError: new DOMException('Filter operation aborted', 'AbortError') };
