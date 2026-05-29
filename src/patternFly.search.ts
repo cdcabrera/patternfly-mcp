@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   fuzzySearch,
   type FuzzySearch,
@@ -116,6 +117,30 @@ interface SearchPatternFlyOptions {
 }
 
 /**
+ * Optional settings for {@link filterPatternFly}.
+ *
+ * @interface FilterPatternFlySettings
+ *
+ * @property [maxSyncTime] - Max synchronous time slice in milliseconds before yielding when `signal` is set. Defaults to `25`.
+ * @property [signal] - Abort signal; breaks the resource loop when aborted.
+ * @property [signalError] - Error to throw when aborted (avoids caching partial results on memo paths).
+ */
+interface FilterPatternFlySettings {
+  maxSyncTime?: number;
+  signal?: AbortSignal;
+  signalError?: Error | DOMException;
+}
+
+/**
+ * Dynamic-filter race settings — extends {@link FilterPatternFlySettings} with memo scope.
+ *
+ * @internal Set only by {@link dynamicFilterPatternFly}; not part of the public API.
+ */
+interface FilterPatternFlyDynamicPassSettings extends FilterPatternFlySettings {
+  _passId?: string;
+}
+
+/**
  * Filter keys tried in parallel by {@link dynamicFilterPatternFly}. Order is priority
  * (e.g. `name` first for hash/entry id and URI narrowing). Do not randomize — truncation
  * and `Promise.any` both keep this sequence; reorder only with intentional product priority.
@@ -128,6 +153,33 @@ const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['name', 'section', 'c
  * front so priority order is preserved. Do not randomize the slice.
  */
 const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
+
+/**
+ * Filtering and manage PatternFly MCP resources.
+ *
+ * Allows handling resources as
+ * - a `Promise` that resolves to `PatternFlyMcpAvailableResources`
+ *    - Use the `Promise` when the resources are retrieved asynchronously and require processing upon resolution.
+ * - a `Map` instance where the key is a string and the value is `PatternFlyMcpResourceFilteredMetadata`.
+ *    - Use the `Map` when the resources are already available and stored in key-value pairs for quick access.
+ *
+ */
+type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
+  Map<string, PatternFlyMcpResourceFilteredMetadata>;
+
+/**
+ * Used for configuring the `filterPatternFly.memo`.
+ *
+ * @typedef FilterPatternFlyMemoArgs
+ * @property {FilterPatternFlyFilters} 0 The filters to be applied, which specify the behavior or conditions for the memoized functionality.
+ * @property {FilterPatternFlyMcpResources} [1] Optional MCP resources configuration to be utilized during memo execution.
+ * @property {FilterPatternFlyDynamicPassSettings} [2] Optional dynamic pass settings that influence runtime behavior or processing settings.
+ */
+type FilterPatternFlyMemoArgs = [
+  filters: FilterPatternFlyFilters | undefined,
+  mcpResources?: FilterPatternFlyMcpResources | undefined,
+  settings?: FilterPatternFlyDynamicPassSettings | undefined
+];
 
 /**
  * Apply sequenced priority filters for predictable filtering, filter PatternFly data.
@@ -152,18 +204,18 @@ const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
  * @param {FilterPatternFlyFilters} filters - Available filters for PatternFly data.
  * @param [mcpResources] - An optional map of available PatternFly documentation entries to search.
  *     Internally, defaults to `getPatternFlyMcpResources.resources`
- * @param [settings] - Optional settings object
+ * @param [settings] - Optional {@link FilterPatternFlySettings}.
+ * @param [settings.maxSyncTime] - Optional maximum synchronous time slice in milliseconds before yielding to event loop.
  * @param [settings.signal] - Optional abort signal; breaks the resource loop when aborted.
  * @param [settings.signalError] - Optional error to throw when aborted.
- * @param [settings.maxSyncTime] - Optional maximum synchronous time slice in milliseconds before yielding to event loop.
  * @returns {Promise<FilterPatternFlyResults>} - Filtered PatternFly results.
  * - `byEntry`: Array of filtered documentation entries.
  * - `byResource`: Map of filtered resources by resource name.
  */
 const filterPatternFly = async (
   filters: FilterPatternFlyFilters | undefined,
-  mcpResources?: Promise<PatternFlyMcpAvailableResources> | Map<string, PatternFlyMcpResourceFilteredMetadata>,
-  { maxSyncTime = 25, signal, signalError }: { maxSyncTime?: number, signal?: AbortSignal, signalError?: Error | DOMException } = {}
+  mcpResources?: FilterPatternFlyMcpResources,
+  { maxSyncTime = 25, signal, signalError }: FilterPatternFlyDynamicPassSettings = {}
 ): Promise<FilterPatternFlyResults> => {
   const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const resources = (getResources as PatternFlyMcpAvailableResources)?.resources ||
@@ -279,27 +331,30 @@ const filterPatternFly = async (
 /**
  * Memoized version of filterPatternFly.
  *
- * @note Cache key hashes filters + map only (`generateHash(args.slice(0, 2))`); optional
- * `{ signal, signalError }` settings are forwarded on cache miss but excluded from the key.
+ * @note Cache key hashes filters, map, and optional `_passId` when set by dynamic filtering.
+ * `signal`, `signalError`, and `maxSyncTime` are forwarded on cache miss but excluded from the key.
  */
 filterPatternFly.memo = memo(filterPatternFly, {
   ...DEFAULT_OPTIONS.resourceMemoOptions.default,
   cacheErrors: false,
-  keyHash: args => generateHash(args.slice(0, 2))
+  keyHash: (args: Readonly<FilterPatternFlyMemoArgs>) => {
+    const [filters, resources, settings] = args;
+
+    return generateHash([filters, resources, settings?._passId]);
+  }
 });
 
 /**
  * Filter down the tightest possible results. The first pass that matches `maxResultsLimit`
  * wins. If no matches, return the base filter.
  *
- * @note Parallel passes call `filterPatternFly.memo(..., settings)` with one shared
- * `{ signal, signalError }` object. Memo is customized for:
- * - `keyHash: args => generateHash(args.slice(0, 2))` — settings excluded from cache key.
- * - `cacheErrors: false` — rejected/aborted passes are not cached.
- * - `signalError` — aborted siblings throw instead of returning partial results (avoids cache poison).
- * - Parallel pass count is at most {@link MAX_DYNAMIC_FILTER_PASSES} filter passes plus one base pass;
- *   longer `searchFilters` lists are truncated from the front. Keep {@link SEARCH_FILTERS} aligned
- *   with product priority — do not randomize pass order or truncation.
+ * @note Parallel passes share one settings object per race (`signal`, `signalError`, and a
+ * module-private `_passId` UUID) so memo entries from that race do not collide with plain 2-arg
+ * memo or other races. `cacheErrors: false` — rejected/aborted passes are not cached.
+ * `signalError` — aborted siblings throw instead of returning partial results (avoids cache poison).
+ * Parallel pass count is at most {@link MAX_DYNAMIC_FILTER_PASSES} filter passes plus one base
+ * pass; longer `searchFilters` lists are truncated from the front. Keep {@link SEARCH_FILTERS}
+ * aligned with product priority — do not randomize pass order or truncation.
  *
  * @param searchQuery - Search query.
  * @param filters - Available filters for PatternFly data.
@@ -364,7 +419,11 @@ const dynamicFilterPatternFly = async (
     .filter(filter => !(useExistingFilters && filters && filters[filter]))
     .slice(0, maxFilterPasses);
 
-  const settings = { signal, signalError: new DOMException('Filter operation aborted', 'AbortError') };
+  const settings: FilterPatternFlyDynamicPassSettings = {
+    _passId: randomUUID(),
+    signal,
+    signalError: new DOMException('Filter operation aborted', 'AbortError')
+  };
 
   try {
     return await Promise.any([
@@ -558,6 +617,7 @@ export {
   searchPatternFly,
   type FilterPatternFlyFilters,
   type FilterPatternFlyResults,
+  type FilterPatternFlySettings,
   type SearchPatternFlyResult,
   type SearchPatternFlyResults
 };

@@ -2,8 +2,12 @@ import {
   dynamicFilterPatternFly,
   filterPatternFly,
   searchPatternFly,
-  type FilterPatternFlyFilters
+  type FilterPatternFlyFilters,
+  type FilterPatternFlySettings
 } from '../patternFly.search';
+
+/** Mirrors module-internal dynamic-pass settings for memo cache tests. */
+type FilterPatternFlyDynamicPassSettings = FilterPatternFlySettings & { _passId: string };
 
 describe('filterPatternFly', () => {
   const mockResources = new Map([
@@ -245,23 +249,70 @@ describe('dynamicFilterPatternFly', () => {
     memoSpy.mockRestore();
   });
 
-  it('should cache filterPatternFly.memo by filters and map only, not settings', async () => {
+  it('should cache filterPatternFly.memo by filters and map when pass id matches', async () => {
+    const passId = 'test-pass-id';
     const filters = { name: 'moda' };
-    const first = filterPatternFly.memo(
-      filters,
-      mockResources as any,
-      { signal: new AbortController().signal }
-    );
-    const second = filterPatternFly.memo(
-      filters,
-      mockResources as any,
-      { signal: new AbortController().signal }
-    );
+    const signalError = new DOMException('', 'AbortError');
+    const settings: FilterPatternFlyDynamicPassSettings = {
+      _passId: passId,
+      signal: new AbortController().signal,
+      signalError
+    };
+    const first = filterPatternFly.memo(filters, mockResources as any, settings);
+    const second = filterPatternFly.memo(filters, mockResources as any, settings);
 
     expect(first).toBe(second);
     await expect(first).resolves.toMatchObject({
       byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
     });
+  });
+
+  it('should not reuse filterPatternFly.memo cache across pass ids', async () => {
+    const filters = { name: 'moda' };
+    const signalError = new DOMException('', 'AbortError');
+    const first = filterPatternFly.memo(
+      filters,
+      mockResources as any,
+      { _passId: 'pass-a', signal: new AbortController().signal, signalError } satisfies FilterPatternFlyDynamicPassSettings
+    );
+    const second = filterPatternFly.memo(
+      filters,
+      mockResources as any,
+      { _passId: 'pass-b', signal: new AbortController().signal, signalError } satisfies FilterPatternFlyDynamicPassSettings
+    );
+
+    expect(first).not.toBe(second);
+    await expect(first).resolves.toMatchObject({
+      byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
+    });
+    await expect(second).resolves.toMatchObject({
+      byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
+    });
+  });
+
+  it('should not share filterPatternFly.memo cache between scoped dynamic passes and plain passes', async () => {
+    const filters = { name: 'moda' };
+    const signalError = new DOMException('', 'AbortError');
+    const dynamicSettings: FilterPatternFlyDynamicPassSettings = {
+      _passId: 'dynamic-pass-id',
+      signal: new AbortController().signal,
+      signalError
+    };
+    const dynamicPass = filterPatternFly.memo(filters, mockResources as any, dynamicSettings);
+    const plainPass = filterPatternFly.memo(filters, mockResources as any);
+
+    expect(dynamicPass).not.toBe(plainPass);
+
+    await expect(dynamicPass).resolves.toMatchObject({
+      byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
+    });
+    await expect(plainPass).resolves.toMatchObject({
+      byEntry: expect.arrayContaining([expect.objectContaining({ name: 'modal' })])
+    });
+
+    const plainPassAgain = filterPatternFly.memo(filters, mockResources as any);
+
+    expect(plainPassAgain).toBe(plainPass);
   });
 
   it('should cap parallel filter passes when searchFilters exceeds the internal limit', async () => {
