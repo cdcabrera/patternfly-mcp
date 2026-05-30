@@ -37,11 +37,7 @@ const URI_DESCRIPTION = `Filter by PatternFly version and category. ${URI_TEMPLA
 const CONFIG = {
   title: 'PatternFly Components Index',
   description: `A list of all PatternFly component names available for documentation retrieval. ${URI_DESCRIPTION}`,
-  mimeType: 'text/markdown',
-  annotations: {
-    priority: 0.9,
-    audience: ['assistant' as const]
-  }
+  mimeType: 'text/markdown'
 };
 
 /**
@@ -211,7 +207,15 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
       list,
       complete
     }),
-    CONFIG,
+    options?.contextManagement
+      ? {
+        ...CONFIG,
+        annotations: {
+          priority: 0.9,
+          audience: ['assistant' as const]
+        }
+      }
+      : CONFIG,
     callback,
     {
       complete,

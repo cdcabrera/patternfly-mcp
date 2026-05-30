@@ -18,11 +18,7 @@ const URI_TEMPLATE = 'patternfly://context';
 const CONFIG = {
   title: 'PatternFly Design System Context',
   description: 'Information about the PatternFly design system and how to use this MCP server, including environment and troubleshooting information.',
-  mimeType: 'text/markdown',
-  annotations: {
-    priority: 0.5,
-    audience: ['assistant' as const]
-  }
+  mimeType: 'text/markdown'
 };
 
 /**
@@ -98,7 +94,15 @@ const patternFlyContextResource = (options = getOptions()): McpResource => {
   return [
     NAME,
     URI_TEMPLATE,
-    CONFIG,
+    options?.contextManagement
+      ? {
+        ...CONFIG,
+        annotations: {
+          priority: 0.5,
+          audience: ['assistant' as const]
+        }
+      }
+      : CONFIG,
     callback
   ];
 };

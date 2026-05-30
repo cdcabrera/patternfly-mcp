@@ -47,7 +47,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
       { version: updatedVersion },
-      { allowWildCardAll: true, dynamicFilter: true, maxResults: options.minMax.toolSearches.max }
+      { allowWildCardAll: true, maxResults: options.minMax.toolSearches.max }
     );
 
     assertInput(
@@ -168,12 +168,6 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional()
           .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true
       }
     },
     callback,

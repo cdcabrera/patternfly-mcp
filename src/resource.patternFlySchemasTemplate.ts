@@ -37,11 +37,7 @@ const URI_DESCRIPTION = `Filter by PatternFly version and category. ${URI_TEMPLA
 const CONFIG = {
   title: 'PatternFly Component Schema',
   description: `Retrieve the JSON Schema for a specific PatternFly component by name. ${URI_DESCRIPTION}`,
-  mimeType: 'application/json',
-  annotations: {
-    priority: 0.3,
-    audience: ['assistant' as const]
-  }
+  mimeType: 'application/json'
 };
 
 /**
@@ -168,7 +164,15 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
       list,
       complete
     }),
-    CONFIG,
+    options?.contextManagement
+      ? {
+        ...CONFIG,
+        annotations: {
+          priority: 0.3,
+          audience: ['assistant' as const]
+        }
+      }
+      : CONFIG,
     callback,
     {
       complete

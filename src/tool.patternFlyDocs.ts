@@ -240,12 +240,6 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
           .optional().describe('The name of a PatternFly component or resource to fetch documentation for (e.g., "Button", "Table", "Writing")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true
       }
     },
     callback,
