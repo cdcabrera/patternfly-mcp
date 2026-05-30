@@ -168,6 +168,12 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional()
           .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true
       }
     },
     callback,

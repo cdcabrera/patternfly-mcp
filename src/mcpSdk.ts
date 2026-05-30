@@ -4,14 +4,16 @@ import {
   type ResourceMetadata,
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type Tool } from '@modelcontextprotocol/sdk/types.js';
 import { type GlobalOptions } from './options';
 import { listAllCombinations, listIncrementalCombinations, splitUri } from './server.helpers';
 
 /**
  * A tool registered with the MCP server.
  *
- * @note Use of `any` here is intentional as part of a pass-through policy around
- * `inputSchema`. Input schemas are actually reconstructed as part of the
+ * @note Use of `any` here is intentional as part of this typing. This is part of a general
+ * pass-through policy around our SDK types.
+ * - `inputSchema`: Input schemas are actually reconstructed as part of the
  * tools-as-plugins architecture to help guarantee that a minimal tool schema is
  * always available and minimally valid.
  *
@@ -20,6 +22,7 @@ import { listAllCombinations, listIncrementalCombinations, splitUri } from './se
  *    - `schema.description` `{string}`: Concise description of functionality for the tool.
  *    - `schema.inputSchema` `{*}`: Internally, a raw Zod schema. Externally, a JSON or raw Zod schema. External tools are
  *       converted to Zod for user convenience.
+ *    - `schema.annotations` `{Object}`: Optional annotations for the tool.
  * 2. `handler` `{Function}`: Resource handler function for returning content.
  * 3. `_config` `{Object}`: Internal Tool configuration.
  *    - `config.shouldRegister`: Optional callback to determine if the tool should be registered.
@@ -29,6 +32,7 @@ type McpTool = [
   schema: {
     description: string;
     inputSchema: any;
+    annotations?: Tool['annotations'] | any;
   },
   handler: (arg?: unknown) => any | Promise<any>,
   _config?: {
@@ -98,6 +102,17 @@ interface McpResourceMetadata {
  *     resource registry. {@link McpResourceMetadata}
  * 5. `_config` `{Object}`: Internal Resource configuration.
  *    - `_config.shouldRegister` `{Function|Promise}`: Optional callback to determine if the resource should be registered.
+ *
+ * @note Annotations help with prioritizing resources and help manage context. They contain 3 primary properties:
+ * - `priority`: A ranking from `0.0` to `1.0`. `1.0` being the highest priority, and `0.0` being the lowest.
+ * - `audience`: This can be `user` or `assistant`, possibly both.
+ * - `lastModified': an ISO 8601 formatted string, representing the last time the resource was modified, helps invalidate caches.
+ *
+ * How to assign a priority:
+ * - `Indexes`: A resource index for directory nav is generally higher `0.8` to `1.0`, it's an anchor
+ *     point if the model needs a map.
+ * - `Dynamic resource templates`: A resource template that contains dynamic content is generally lower `0.3` to `0.5`,
+ *     it's a placeholder for a resource, and can generally shift. It can also be reattained by calling again.
  */
 type McpResource = [
   name: string,

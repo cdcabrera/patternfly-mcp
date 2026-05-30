@@ -58,7 +58,11 @@ const URI_DESCRIPTION = `Filter by PatternFly version, category, and section. ${
 const CONFIG = {
   title: 'PatternFly Documentation Index',
   description: `A list of PatternFly documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
-  mimeType: 'text/markdown'
+  mimeType: 'text/markdown',
+  annotations: {
+    priority: 1.0,
+    audience: ['assistant' as const]
+  }
 };
 
 /**

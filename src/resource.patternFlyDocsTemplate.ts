@@ -39,7 +39,11 @@ const URI_DESCRIPTION = `Filter by PatternFly version, category, and section. ${
 const CONFIG = {
   title: 'PatternFly Documentation Page',
   description: `Retrieve specific PatternFly documentation by name or path. ${URI_DESCRIPTION}`,
-  mimeType: 'text/markdown'
+  mimeType: 'text/markdown',
+  annotations: {
+    priority: 0.4,
+    audience: ['assistant' as const]
+  }
 };
 
 /**
