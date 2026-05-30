@@ -21,7 +21,7 @@ import { listAllCombinations, listIncrementalCombinations, splitUri } from './se
  *    - `schema.inputSchema` `{*}`: Internally, a raw Zod schema. Externally, a JSON or raw Zod schema. External tools are
  *       converted to Zod for user convenience.
  * 2. `handler` `{Function}`: Resource handler function for returning content.
- * 3. `config` `{Object}`: Tool configuration.
+ * 3. `_config` `{Object}`: Internal Tool configuration.
  *    - `config.shouldRegister`: Optional callback to determine if the tool should be registered.
  */
 type McpTool = [
@@ -31,7 +31,7 @@ type McpTool = [
     inputSchema: any;
   },
   handler: (arg?: unknown) => any | Promise<any>,
-  config?: {
+  _config?: {
     shouldRegister?: (options: GlobalOptions) => boolean | Promise<boolean>;
   }
 ];
@@ -90,19 +90,24 @@ interface McpResourceMetadata {
 /**
  * A resource registered with the MCP server.
  *
- * 0. `name`: Registered name of the resource.
- * 1. `uriOrTemplate`: URI string or template. {@link ResourceTemplate}
- * 2. `config`: Resource configuration metadata. {@link ResourceMetadata}
- * 3. `handler`: Resource handler function.
- * 4. `metadata`: Optional **internal metadata** object, not used by the standard MCP SDK
+ * 0. `name` `{string}`: Registered name of the resource.
+ * 1. `uriOrTemplate` `{string}`: URI string or template. {@link ResourceTemplate}
+ * 2. `config` `{Object}`: Resource configuration metadata. {@link ResourceMetadata}
+ * 3. `handler` `{Function}`: Resource handler function.
+ * 4. `metadata` `{Object}`: Optional **internal metadata** object, not used by the standard MCP SDK
  *     resource registry. {@link McpResourceMetadata}
+ * 5. `_config` `{Object}`: Internal Resource configuration.
+ *    - `_config.shouldRegister` `{Function|Promise}`: Optional callback to determine if the resource should be registered.
  */
 type McpResource = [
   name: string,
   uriOrTemplate: string | ResourceTemplate,
   config: ResourceMetadata,
   handler: (...args: any[]) => any | Promise<any>,
-  metadata?: McpResourceMetadata | undefined
+  metadata?: McpResourceMetadata | undefined,
+  _config?: {
+    shouldRegister?: (options: GlobalOptions) => boolean | Promise<boolean>;
+  }
 ];
 
 /**

@@ -530,7 +530,7 @@ describe('token-saver mode, HTTP transport', () => {
   beforeAll(async () => {
     CLIENT = await startServer({
       isHttp: true,
-      experimentalContextManagement: 'token-saver'
+      experimentalContextManagement: true
     });
   });
 

@@ -9,7 +9,6 @@ import {
 } from './options';
 import {
   DEFAULT_OPTIONS,
-  CONTEXT_MANAGEMENT,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
@@ -120,7 +119,6 @@ const setOptions = (
 
   assertProtocol(base.patternflyOptions.urlWhitelist, base.patternflyOptions.urlWhitelistProtocols);
 
-  const baseContextManagement = CONTEXT_MANAGEMENT.includes(base.contextManagement) ? base.contextManagement : DEFAULT_OPTIONS.contextManagement;
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
 
@@ -131,7 +129,6 @@ const setOptions = (
 
   const merged: GlobalOptions = {
     ...base,
-    contextManagement: baseContextManagement,
     experimental: baseExperimental,
     mode: MODE_LEVELS.includes(base.mode) ? base.mode : DEFAULT_OPTIONS.mode,
     logging: {

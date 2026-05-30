@@ -74,7 +74,6 @@ export const startServer = async (
   const updatedOptions: PfMcpOptions = {
     isHttp: true,
     ...options,
-    experimentalContextManagement: options.experimentalContextManagement || 'default',
     http: {
       port: 8000,
       host: '127.0.0.1',

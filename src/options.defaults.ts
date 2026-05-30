@@ -10,9 +10,9 @@ import { getNodeMajorVersion } from './options.helpers';
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
- * @property contextManagement - Strategy for managing agent context and response sizes.
- *    - 'default': Standard text-heavy responses.
- *    - 'token-saver': High-efficiency mode using McpResource links.
+ * @property contextManagement - Strategy for managing agent context and response sizes, primarily within MCP tools.
+ *    - 'false': Default standard text-heavy responses.
+ *    - 'true': High-efficiency mode for MCP tools, using McpResource links.
  * @property contextPath - Current working directory.
  * @property contextUrl - Current working directory URL.
  * @property docsPaths - List of allowed local documentation directories handled by `docsPathSlug`
@@ -52,7 +52,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property xhrFetch - XHR and Fetch options.
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
-  contextManagement: 'default' | 'token-saver';
+  contextManagement: boolean;
   contextPath: string;
   contextUrl: string;
   docsPaths: string[];
@@ -501,11 +501,6 @@ const URL_REGEX = /^(https?:)\/\//i;
 const MODE_LEVELS: DefaultOptions['mode'][] = ['cli', 'programmatic', 'test'];
 
 /**
- * Available context management settings.
- */
-const CONTEXT_MANAGEMENT: DefaultOptions['contextManagement'][] = ['default', 'token-saver'];
-
-/**
  * Available plugin isolation settings.
  */
 const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict'];
@@ -519,7 +514,7 @@ const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict']
  * @type {DefaultOptions} Default options object.
  */
 const DEFAULT_OPTIONS: DefaultOptions = {
-  contextManagement: 'default',
+  contextManagement: false,
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
   contextUrl: pathToFileURL((process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd())).href,
   docsPaths: [],
@@ -556,7 +551,6 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 
 export {
   DEFAULT_OPTIONS,
-  CONTEXT_MANAGEMENT,
   LOG_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,

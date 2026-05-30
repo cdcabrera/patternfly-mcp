@@ -166,7 +166,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     },
     callback,
     {
-      shouldRegister: opts => opts.contextManagement === 'token-saver'
+      shouldRegister: opts => opts.contextManagement === true
     }
   ];
 };

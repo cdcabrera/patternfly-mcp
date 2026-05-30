@@ -172,7 +172,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     },
     callback,
     {
-      shouldRegister: opts => opts.contextManagement === 'default' || opts.contextManagement === undefined
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };
