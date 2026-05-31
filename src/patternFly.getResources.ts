@@ -175,6 +175,7 @@ type PatternFlyMcpResourceMetadata = {
  * @property pathIndex - Patternfly documentation path->name map for helping refine search results.
  * @property uriIndex - Patternfly documentation uri->name map for helping refine search results.
  * @property hashIndex - Patternfly documentation hash->name map for helping refine search results.
+ * @property versionIndex - Patternfly documentation sort by the latest version first, then alphabetically by entries
  * @property byPath - Patternfly documentation by path with entries
  * @property byUri - `@deprecated Under review. Use uriIndex`. Patternfly documentation by uri with entries
  * @property byVersion - Patternfly documentation by version with entries
@@ -190,6 +191,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   pathIndex: Map<string, string>;
   uriIndex: Map<string, string>;
   hashIndex: Map<string, string>;
+  versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   byPath: PatternFlyMcpResourcesByPath;
   byUri: PatternFlyMcpResourcesByUri;
   byVersion: PatternFlyMcpResourcesByVersion;
@@ -504,6 +506,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const pathIndexMap = new Map<string, string>();
   const uriIndexMap = new Map<string, string>();
   const hashIndexMap = new Map<string, string>();
+  const versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
@@ -623,9 +626,15 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     });
   });
 
-  Object.entries(byVersion).forEach(([_version, entries]) => {
-    entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-  });
+  Object.entries(byVersion)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .forEach(([_version, entries]) => {
+      entries
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+        .forEach((entry, _index) => {
+          versionIndex.push(entry);
+        });
+    });
 
   const filteredKeywords = filterKeywords(rawKeywordsMap);
 
@@ -645,6 +654,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     pathIndex: pathIndexMap,
     uriIndex: uriIndexMap,
     hashIndex: hashIndexMap,
+    versionIndex,
     byPath,
     // @deprecated byUri - Under review
     byUri,
