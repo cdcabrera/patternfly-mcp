@@ -34,6 +34,7 @@ type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata,
  * @property [section] - Section to filter search results. Defaults to undefined for all sections.
  * @property [name] - Name, or hash id, to filter search results. Defaults to undefined for all names and IDs.
  * @property [path] - Document path, or URI, to filter search results. Defaults to undefined for all paths and URIs.
+ * @property [id] - Document ID to filter search results. Defaults to undefined for all IDs and URIs.
  */
 interface FilterPatternFlyFilters {
   version?: string | undefined;
@@ -41,6 +42,7 @@ interface FilterPatternFlyFilters {
   section?: string | undefined;
   name?: string | undefined;
   path?: string | undefined;
+  id?: string | undefined;
 }
 
 /**
@@ -48,8 +50,8 @@ interface FilterPatternFlyFilters {
  *
  * @interface FilterPatternFlyResults
  *
- * @property {PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta} byEntry - Array of filtered documentation entries.
- * @property {Map<string, PatternFlyMcpResourceFilteredMetadata>} byResource - Map of filtered resources by resource name.
+ * @property byEntry - Array of filtered documentation entries.
+ * @property byResource - Map of filtered resources by resource name.
  */
 interface FilterPatternFlyResults {
   byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
@@ -280,8 +282,11 @@ const filterPatternFly = async (
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
         filterMatch(entry.groupId, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
+      const matchesId = !updatedFilters.id || filterMatch(entry.groupId, updatedFilters.id) ||
+        filterMatch(entry.id, updatedFilters.id);
+
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesPath && matchesName;
+      return matchesVersion && matchesCategory && matchesSection && matchesPath && matchesName && matchesId;
     });
 
     if (signal?.aborted) {
@@ -303,6 +308,7 @@ const filterPatternFly = async (
         versionContextualProperties = {
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
+          uriId: versions[updatedFilters.version]?.uriId,
           uriSchemas: versions[updatedFilters.version]?.uriSchemas,
           uriSchemasId: versions[updatedFilters.version]?.uriSchemasId
         };

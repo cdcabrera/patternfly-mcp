@@ -76,9 +76,12 @@ interface PatternFlyMcpComponentNames {
  * @property name - The name of document entry.
  * @property displayCategory - The display category of document entry.
  * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
- * @property uriId - The resource's exact URI for the document entry.
+ * @property uriId - The resource's query ID with exact URI for the document entry.
+ * @property uriHash - The resource's exact URI for the document entry.
  * @property uriSchemas - The parent resource's general URI for the related component schemas, if they exist.
- * @property uriSchemasId - The resource's schemas URI for the component schemas, if they exist. Keyed by
+ * @property uriSchemasId - The resource's schemas URI with query ID for the component schemas, if they exist. Keyed with
+ *     the parent resource's `groupId` since the URIs are the same for sibling entries.
+ * @property uriSchemasHash - The resource's schemas exact URI for the component schemas, if they exist. Keyed with
  *     the parent resource's `groupId` since the URIs are the same for sibling entries.
  */
 type PatternFlyMcpDocsMeta = {
@@ -88,8 +91,10 @@ type PatternFlyMcpDocsMeta = {
   displayCategory: string;
   uri: string;
   uriId: string;
+  uriHash: string;
   uriSchemas?: string | undefined;
   uriSchemasId?: string | undefined;
+  uriSchemasHash?: string | undefined;
 };
 
 /**
@@ -133,7 +138,7 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  *
  * Contextual properties
  * - Contextual properties are populated based on search and filtering.
- * - Do not expect them to exist, make sure to conditionally load them.
+ * - Do not expect them to exist, make sure to confirm. You may need to conditionally load them.
  *
  * @property name - The name of component entry.
  * @property entries - All entry PatternFly documentation entries.
@@ -141,8 +146,11 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @property groupId - The unique identifier for the document group.
  * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
  * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
+ * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
+ * @property uriHash - see {@link PatternFlyMcpDocsMeta.uriHash} **CONTEXTUAL**.
  * @property uriSchemas - see {@link PatternFlyMcpDocsMeta.uriSchemas} **CONTEXTUAL**.
  * @property uriSchemasId - see {@link PatternFlyMcpDocsMeta.uriSchemasId} **CONTEXTUAL**.
+ * @property uriSchemasHash - see {@link PatternFlyMcpDocsMeta.uriSchemasHash} **CONTEXTUAL**.
  */
 type PatternFlyMcpResourceMetadata = {
   name: string;
@@ -152,8 +160,11 @@ type PatternFlyMcpResourceMetadata = {
 
   isSchemasAvailable: boolean | undefined;
   uri: string | undefined;
+  uriId: string | undefined;
+  uriHash: string | undefined;
   uriSchemas: string | undefined;
   uriSchemasId: string | undefined;
+  uriSchemasHash: string | undefined;
 };
 
 /**
@@ -524,10 +535,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         groupId,
         entries: [],
         versions: {},
+        id: undefined,
         isSchemasAvailable: undefined,
         uri: undefined,
+        uriId: undefined,
+        uriHash: undefined,
         uriSchemas: undefined,
-        uriSchemasId: undefined
+        uriSchemasId: undefined,
+        uriSchemasHash: undefined
       });
     }
 
@@ -540,11 +555,13 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-      const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
+      const uriId = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ id }, { prefix: true })}`;
+      const uriHash = `patternfly://docs/${encodeURIComponent(id)}`;
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uri.toLowerCase(), name);
       uriIndexMap.set(uriId.toLowerCase(), name);
+      uriIndexMap.set(uriHash.toLowerCase(), name);
 
       if (path) {
         pathIndexMap.set(path.toLowerCase(), name);
@@ -554,8 +571,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         groupId,
         isSchemasAvailable,
         uri,
+        uriId,
+        uriHash,
         uriSchemas: undefined,
         uriSchemasId: undefined,
+        uriSchemasHash: undefined,
         entries: []
       };
 
@@ -563,16 +583,20 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
       let uriSchemas;
       let uriSchemasId;
+      let uriSchemasHash;
 
       if (isSchemasAvailable) {
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-        uriSchemasId = `patternfly://schemas/${encodeURIComponent(groupId)}`;
+        uriSchemasId = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
+        uriSchemasHash = `patternfly://schemas/${encodeURIComponent(groupId)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasId = uriSchemasId;
+        resource.versions[version].uriSchemasHash = uriSchemasHash;
 
         uriIndexMap.set(uriSchemas.toLowerCase(), name);
         uriIndexMap.set(uriSchemasId.toLowerCase(), name);
+        uriIndexMap.set(uriSchemasHash.toLowerCase(), name);
       }
 
       const extendedEntry = {
@@ -584,8 +608,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         displayCategory,
         uri,
         uriId,
+        uriHash,
         uriSchemas,
-        uriSchemasId
+        uriSchemasId,
+        uriSchemasHash
       } as (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta);
 
       if (path) {

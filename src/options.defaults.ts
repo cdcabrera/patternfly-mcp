@@ -136,6 +136,7 @@ interface LoggingOptions {
  *
  * @property urlString Minimum and maximum length for URL strings.
  * @property resourceSearches Minimum and maximum number of resource results for searches.
+ * @property sha1Hex Minimum and maximum length for SHA-1 hex strings.
  * @property toolSearches Minimum and maximum number of tool results for searches.
  * @property inputStrings Minimum and maximum length for input strings.
  * @property docsToLoad Minimum and maximum number of docs to load.
@@ -146,6 +147,10 @@ interface MinMax {
     max: number;
   }
   resourceSearches: {
+    min: number;
+    max: number;
+  }
+  sha1Hex: {
     min: number;
     max: number;
   }
@@ -340,6 +345,10 @@ const MIN_MAX: MinMax = {
   resourceSearches: {
     min: 0,
     max: 15
+  },
+  sha1Hex: {
+    min: 40,
+    max: 40
   },
   toolSearches: {
     min: 0,
