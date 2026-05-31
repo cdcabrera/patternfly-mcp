@@ -186,7 +186,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
- * Resource creator for the components index and metadata resources.
+ * Resource creator for components and metadata resources.
  *
  * @note The `metaConfig` determines if a metadata resource is generated. Remove
  * the config to disable it.
@@ -194,7 +194,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlyComponentsIndexResource = (options = getOptions()): McpResource => {
+const patternFlyComponentsResource = (options = getOptions()): McpResource => {
   const list = async () => runWithOptions(options, async () => listResources.memo());
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
@@ -228,7 +228,7 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
 };
 
 export {
-  patternFlyComponentsIndexResource,
+  patternFlyComponentsResource,
   listResources,
   resourceCallback,
   uriCategoryComplete,

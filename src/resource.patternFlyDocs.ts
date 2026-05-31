@@ -392,7 +392,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
+const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
@@ -432,7 +432,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
 };
 
 export {
-  patternFlyDocsIndexResource,
+  patternFlyDocsResource,
   listResources,
   resourceCallback,
   uriCategoryComplete,

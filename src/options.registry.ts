@@ -2,8 +2,10 @@ import { type McpToolCreator, type McpResourceCreator } from './mcpSdk';
 import { searchPatternFlyTool } from './tool.searchPatternFly';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
+import { patternFlyComponentsResource } from './resource.patternFlyComponents';
 import { patternFlyComponentsIndexResource } from './resource.patternFlyComponentsIndex';
 import { patternFlyContextResource } from './resource.patternFlyContext';
+import { patternFlyDocsResource } from './resource.patternFlyDocs';
 import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
 import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
 import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
@@ -31,7 +33,9 @@ const builtinResources: McpResourceCreator[] = [
   patternFlyDocsIndexResource,
   patternFlyDocsTemplateResource,
   patternFlySchemasIndexResource,
-  patternFlySchemasTemplateResource
+  patternFlySchemasTemplateResource,
+  patternFlyComponentsResource,
+  patternFlyDocsResource
 ];
 
 export { builtinTools, builtinResources };

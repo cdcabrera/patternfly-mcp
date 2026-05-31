@@ -145,6 +145,7 @@ type PatternFlyMcpKeywordsMap = Map<string, Map<string, string[]>>;
  * @property versions - Entry segmented by versions. Contains all the same properties.
  * @property groupId - The unique identifier for the document group.
  * @property isSchemasAvailable - see {@link PatternFlyMcpDocsMeta.isSchemasAvailable} **CONTEXTUAL**.
+ * @property id - see {@link PatternFlyMcpDocsMeta.id} **CONTEXTUAL**.
  * @property uri - see {@link PatternFlyMcpDocsMeta.uri} **CONTEXTUAL**.
  * @property uriId - see {@link PatternFlyMcpDocsMeta.uriId} **CONTEXTUAL**.
  * @property uriHash - see {@link PatternFlyMcpDocsMeta.uriHash} **CONTEXTUAL**.
@@ -159,6 +160,7 @@ type PatternFlyMcpResourceMetadata = {
   groupId: string;
 
   isSchemasAvailable: boolean | undefined;
+  id: string | undefined;
   uri: string | undefined;
   uriId: string | undefined;
   uriHash: string | undefined;
@@ -570,6 +572,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.versions[version] ??= {
         groupId,
         isSchemasAvailable,
+        id,
         uri,
         uriId,
         uriHash,
