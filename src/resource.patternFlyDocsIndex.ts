@@ -185,9 +185,8 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * Resource callback for the documentation index.
  *
  * @note The callback response is a high-level index potentially grouping multiple "entries"
- * by a single URI. This is an optimization already, but we can review moving responses over
- * to using resource IDs instead of the current grouping uri mechanism IF we opt to review
- * pagination.
+ * by a single URI. See {@link ./resource.patternFlyDocs} for the final combined format
+ * under `contextManagment`.
  *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
@@ -310,15 +309,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
       list,
       complete
     }),
-    options?.contextManagement
-      ? {
-        ...CONFIG,
-        annotations: {
-          priority: 1.0,
-          audience: ['assistant' as const]
-        }
-      }
-      : CONFIG,
+    CONFIG,
     callback,
     {
       complete,
@@ -328,6 +319,9 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the PatternFly documentation index.'
       }
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

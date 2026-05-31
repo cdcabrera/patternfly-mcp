@@ -200,19 +200,14 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
       list,
       complete
     }),
-    options?.contextManagement
-      ? {
-        ...CONFIG,
-        annotations: {
-          priority: 0.4,
-          audience: ['assistant' as const]
-        }
-      }
-      : CONFIG,
+    CONFIG,
     callback,
     {
       complete,
       registerAllSearchCombinations: true
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

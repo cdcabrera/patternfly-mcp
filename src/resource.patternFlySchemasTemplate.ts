@@ -164,18 +164,13 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
       list,
       complete
     }),
-    options?.contextManagement
-      ? {
-        ...CONFIG,
-        annotations: {
-          priority: 0.3,
-          audience: ['assistant' as const]
-        }
-      }
-      : CONFIG,
+    CONFIG,
     callback,
     {
       complete
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

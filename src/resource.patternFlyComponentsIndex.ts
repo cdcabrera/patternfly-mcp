@@ -207,15 +207,7 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
       list,
       complete
     }),
-    options?.contextManagement
-      ? {
-        ...CONFIG,
-        annotations: {
-          priority: 0.9,
-          audience: ['assistant' as const]
-        }
-      }
-      : CONFIG,
+    CONFIG,
     callback,
     {
       complete,
@@ -224,6 +216,9 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly components.'
       }
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };
