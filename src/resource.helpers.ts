@@ -1,5 +1,79 @@
 import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { buildSearchString, stringJoin } from './server.helpers';
+
+/**
+ * Returns a consistent summarized, or full version, of the input text with:
+ * - YAML front matter, if defined, is added to the front of the content.
+ * - Full and summary links, if a URL is provided, are added to the end of the content.
+ * - Summaries truncate to a configurable maximum length.
+ * - Full content is returned as-is
+ *
+ * @param content - Input text to summarize or format.
+ * @param [settings] - Optional settings object.
+ * @param [settings.url] - URL to link to.
+ * @param [settings.frontMatter] - YAML front matter to include in the content.
+ * @param [settings.detailType] - Whether to return a full or summary version of the content. Defaults to 'full'.
+ * @param [settings.summaryLength] - The maximum length of the summary. Defaults to 250 characters.
+ * @returns Formatted content with optional YAML front matter and links.
+ */
+const formatSummaryFullContent = (
+  content: string,
+  {
+    url,
+    frontMatter,
+    detailType = 'full',
+    summaryLength = 250
+  }: { url?: string; frontMatter?: Record<string, string>; detailType?: 'full' | 'summary'; summaryLength?: number } = {}
+) => {
+  const isSummary = detailType === 'summary';
+  let detailLink;
+  let updatedLink;
+  let updatedFrontMatter;
+
+  if (url) {
+    detailLink = isSummary
+      ? `full_uri: ${url}${buildSearchString({ detail: 'full' }, { base: url })}`
+      : `summary_uri: ${url}${buildSearchString({ detail: 'summary' }, { base: url })}`;
+
+    updatedLink = isSummary && url
+      ? `[Read full documentation](${url})`
+      : `[Read summary documentation](${url})`;
+  }
+
+  if (detailLink || Object.entries(frontMatter || {}).length) {
+    updatedFrontMatter = stringJoin.newlineFiltered(
+      `---`,
+      ...Object.entries(frontMatter || {}).map(([key, value]) => `${key}: ${value}`),
+      detailLink,
+      `---`
+    );
+  }
+
+  if (detailType === 'full' || content.length <= summaryLength) {
+    return stringJoin.newlineFiltered(
+      updatedFrontMatter,
+      content,
+      updatedLink
+    );
+  }
+
+  // Try to find a good breaking point, like the end of a sentence or paragraph.
+  const truncated = content.substring(0, summaryLength);
+  const lastPeriod = truncated.lastIndexOf('.');
+  const lastNewline = truncated.lastIndexOf('\n');
+  const breakPoint = Math.max(lastPeriod, lastNewline);
+
+  const updatedContent = breakPoint > summaryLength * 0.7
+    ? content.substring(0, breakPoint + 1).trim()
+    : truncated.trim();
+
+  return stringJoin.newlineFiltered(
+    updatedFrontMatter,
+    updatedContent,
+    updatedLink
+  );
+};
 
 /**
  * Creates an object containing methods for encoding and decoding cursor values.
@@ -115,4 +189,4 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   };
 };
 
-export { encodeDecodeCursor, nextCursor, paramCompletion };
+export { encodeDecodeCursor, formatSummaryFullContent, nextCursor, paramCompletion };
