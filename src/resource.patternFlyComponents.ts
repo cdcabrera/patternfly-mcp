@@ -14,7 +14,7 @@ import {
   type PatternFlyListResourceResult,
   type ExtendedCompleteResourceTemplateCallback
 } from './resource.patternFlyDocsIndex';
-import { paramCompletion } from './resource.helpers';
+import {nextCursor, paramCompletion} from './resource.helpers';
 
 /**
  * Name of the resource.
@@ -52,7 +52,36 @@ const CONFIG = {
  *
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
-const listResources = async () => {
+const listResources = async (_extra: unknown, cursor?: string | undefined) => {
+  const { versionIndex } = await getPatternFlyMcpResources.memo();
+  const { start, end, next } = nextCursor({ cursor, pageSize: 50, size: versionIndex.length });
+  const resources: PatternFlyListResourceResult[] = [];
+
+  versionIndex.slice(start, end).forEach((entry, _index) => {
+    if (entry.section === 'components' && entry.isSchemasAvailable) {
+      resources.push({
+        uri: entry.uriId,
+        name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
+        description: entry.description,
+        mimeType: 'text/markdown'
+      });
+    }
+  });
+
+  /* This should be generated.
+      {
+        uri: 'patternfly://components/index',
+        mimeType: 'text/markdown',
+        name: 'Component Index',
+        description: `Component index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
+      },*/
+
+  return {
+    nextCursor: next,
+    resources
+  };
+
+  /*
   const { availableVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -79,6 +108,7 @@ const listResources = async () => {
       ...resources.sort((a, b) => a.name.localeCompare(b.name))
     ]
   };
+  */
 };
 
 /**
