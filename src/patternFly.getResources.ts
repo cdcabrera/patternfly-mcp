@@ -89,6 +89,7 @@ type PatternFlyMcpDocsMeta = {
   groupId: string;
   name: string;
   displayCategory: string;
+  isSchemasAvailable: boolean;
   uri: string;
   uriId: string;
   uriHash: string;
@@ -568,6 +569,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
       const uriId = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ id }, { prefix: true })}`;
       const uriHash = `patternfly://docs/${encodeURIComponent(id)}`;
+      // const uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+      // const uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
+      // const uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uri.toLowerCase(), name);
@@ -585,11 +589,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         uri,
         uriId,
         uriHash,
-        uriSchemas: undefined,
-        uriSchemasId: undefined,
         uriComponent: undefined,
         uriComponentId: undefined,
         uriComponentHash: undefined,
+        uriSchemas: undefined,
+        uriSchemasId: undefined,
         entries: []
       };
 
@@ -604,18 +608,19 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       if (isSchemasAvailable) {
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
         uriSchemasId = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
+
+        resource.versions[version].uriSchemas = uriSchemas;
+        resource.versions[version].uriSchemasId = uriSchemasId;
+
+        uriIndexMap.set(uriSchemas.toLowerCase(), name);
+        uriIndexMap.set(uriSchemasId.toLowerCase(), name);
+      }
+
+      if (entry.section === 'components' && entry.category === 'react') {
         uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
         uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
         uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
 
-        resource.versions[version].uriSchemas = uriSchemas;
-        resource.versions[version].uriSchemasId = uriSchemasId;
-        resource.versions[version].uriComponent = uriComponent;
-        resource.versions[version].uriComponentId = uriComponentId;
-        resource.versions[version].uriComponentHash = uriComponentHash;
-
-        uriIndexMap.set(uriSchemas.toLowerCase(), name);
-        uriIndexMap.set(uriSchemasId.toLowerCase(), name);
         uriIndexMap.set(uriComponent.toLowerCase(), name);
         uriIndexMap.set(uriComponentId.toLowerCase(), name);
         uriIndexMap.set(uriComponentHash.toLowerCase(), name);
@@ -625,6 +630,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         ...entry,
         id,
         groupId,
+        isSchemasAvailable,
         name,
         displayName,
         displayCategory,

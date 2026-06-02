@@ -68,6 +68,75 @@ const CONFIG = {
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
+  /*
+  const { availableVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();
+  const resources: PatternFlyListResourceResult[] = [];
+
+  const componentsIndex = Array.from(byVersionComponentNames)
+    .filter(([version, _entry]) => availableVersions.includes(version))
+    .sort(([a], [b]) => b.localeCompare(a))
+    .flatMap(([_version, components]) => Object.values(components))
+    .sort(({ displayName: aDisplayName }, { displayName: bDisplayName }) => aDisplayName.localeCompare(bDisplayName));
+
+  const { start, end, next } = nextCursor({ cursor, pageSize: 50, size: componentsIndex.length });
+
+  componentsIndex.slice(start, end).forEach(([version]) => {
+      resources.push({
+        uri: `patternfly://components/index?version=${encodeURIComponent(version)}`,
+        mimeType: 'text/markdown',
+        name: `Component Index (${version})`,
+        description: `Component documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
+      });
+    });
+
+  return {
+    resources: [
+      {
+        uri: 'patternfly://components/index',
+        mimeType: 'text/markdown',
+        name: 'Components Index (Latest)',
+        description: `Component documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
+      },
+      ...resources.sort((a, b) => a.name.localeCompare(b.name))
+    ]
+  };*/
+  const { availableVersions, byVersionComponentNames, versionIndex } = await getPatternFlyMcpResources.memo();
+  const { start, end, next } = nextCursor({ cursor, pageSize: 50, size: versionIndex.length });
+  const resources: PatternFlyListResourceResult[] = [];
+
+  // const componentsIndex = Array.from(byVersionComponentNames)
+  //  .filter(([version, _entry]) => availableVersions.includes(version))
+  //  .sort(([a], [b]) => b.localeCompare(a))
+  //  .flatMap(([_version, components]) => Object.values(components))
+  //  .sort(({ displayName: aDisplayName }, { displayName: bDisplayName }) => aDisplayName.localeCompare(bDisplayName));
+
+  // componentsIndex
+  // componentsIndex
+  versionIndex
+    .filter(entry => entry.uriComponentId !== undefined)
+    .slice(start, end).forEach((entry, _index) => {
+      resources.push({
+        uri: entry.uriComponentId as string,
+        name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
+        description: entry.description,
+        mimeType: 'text/markdown'
+      });
+    });
+
+  return {
+    nextCursor: next,
+    resources: [
+      {
+        uri: 'patternfly://components/index',
+        mimeType: 'text/markdown',
+        name: 'Component Index',
+        description: `Component index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
+      },
+      ...resources
+    ]
+  };
+
+  /*
   const { versionIndex } = await getPatternFlyMcpResources.memo();
   const { start, end, next } = nextCursor({ cursor, pageSize: 50, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
@@ -89,12 +158,13 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
         mimeType: 'text/markdown',
         name: 'Component Index',
         description: `Component index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
-      },*/
+      },* /
 
   return {
     nextCursor: next,
     resources
   };
+  */
 
   /*
   const { availableVersions, byVersionComponentNames } = await getPatternFlyMcpResources.memo();

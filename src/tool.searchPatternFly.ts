@@ -106,11 +106,17 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         }
 
         if (entry.uriComponentId && !results.has(entry.uriComponentId)) {
+          let description = `Component API reference for ${entry.displayName}.`;
+
+          if (entry.isSchemasAvailable) {
+            description = `Component API reference, property definitions, and JSON schema for ${entry.displayName}.`;
+          }
+
           results.set(entry.uriComponentId, {
             type: 'resource_link',
             uri: entry.uriComponentId,
-            name: `${entry.displayName} - Technical Specs (${entry.version})`,
-            description: `Component API reference, property definitions, and JSON schema for ${entry.displayName}.`,
+            name: `${entry.displayName} - Technical Overview (${entry.version})`,
+            description,
             mimeType: 'text/markdown'
           });
         }
