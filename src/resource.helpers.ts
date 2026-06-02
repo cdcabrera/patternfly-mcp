@@ -20,16 +20,28 @@ import { buildSearchString, stringJoin } from './server.helpers';
 const formatSummaryFullContent = (
   content: string,
   {
-    url,
-    frontMatter,
+    descLinkSummary = 'Read summary documentation',
+    descLinkFull = 'Read full documentation',
+    descTruncate = 'truncated content',
+    descTruncateCode = 'truncated code block',
     detailType = 'full',
-    summaryLength = 250
-  }: { url?: string; frontMatter?: Record<string, string>; detailType?: 'full' | 'summary'; summaryLength?: number } = {}
+    frontMatter,
+    summaryLength = 250,
+    url
+  }: {
+    descLinkSummary?: string;
+    descLinkFull?: string;
+    descTruncate?: string;
+    descTruncateCode?: string;
+    detailType?: 'full' | 'summary';
+    frontMatter?: Record<string, string>;
+    summaryLength?: number;
+    url?: string;
+  } = {}
 ) => {
   const isSummary = detailType === 'summary';
   let detailLink;
   let updatedLink;
-  let updatedFrontMatter;
 
   if (url) {
     detailLink = isSummary
@@ -37,18 +49,17 @@ const formatSummaryFullContent = (
       : `summary_uri: ${url}${buildSearchString({ detail: 'summary' }, { base: url })}`;
 
     updatedLink = isSummary && url
-      ? `[Read full documentation](${url})`
-      : `[Read summary documentation](${url})`;
+      ? `[${descLinkFull}](${url})`
+      : `[${descLinkSummary}](${url})`;
   }
 
-  if (detailLink || Object.entries(frontMatter || {}).length) {
-    updatedFrontMatter = stringJoin.newlineFiltered(
-      `---`,
-      ...Object.entries(frontMatter || {}).map(([key, value]) => `${key}: ${value}`),
-      detailLink,
-      `---`
-    );
-  }
+  const updatedFrontMatter = stringJoin.newlineFiltered(
+    `---`,
+    ...Object.entries(frontMatter || {}).map(([key, value]) => `${key}: ${value}`),
+    detailLink,
+    `detail: ${(isSummary && 'full') || 'summary'}`,
+    `---`
+  );
 
   if (detailType === 'full' || content.length <= summaryLength) {
     return stringJoin.newlineFiltered(
@@ -58,19 +69,40 @@ const formatSummaryFullContent = (
     );
   }
 
-  // Try to find a good breaking point, like the end of a sentence or paragraph.
-  const truncated = content.substring(0, summaryLength);
-  const lastPeriod = truncated.lastIndexOf('.');
-  const lastNewline = truncated.lastIndexOf('\n');
-  const breakPoint = Math.max(lastPeriod, lastNewline);
+  let truncated = content.substring(0, summaryLength);
 
+  // Protect Code Blocks: If we are inside a code block, close it or back out.
+  const codeBlockCount = (truncated.match(/```/g) || []).length;
+
+  // If we are inside an odd number of code blocks, close it.
+  if (codeBlockCount % 2 === 1) {
+    const lastCodeBlock = truncated.lastIndexOf('```');
+
+    if (lastCodeBlock > summaryLength * 0.5) {
+      truncated = truncated.substring(0, lastCodeBlock).trim();
+    } else {
+      truncated += '\n... [' + descTruncateCode + ']\n```';
+    }
+  }
+
+  // Protect Headers: Don't end on a trailing header line.
+  const lastNewline = truncated.lastIndexOf('\n');
+  const lastLine = truncated.substring(lastNewline + 1);
+
+  if (lastLine.trim().startsWith('#')) {
+    truncated = truncated.substring(0, lastNewline).trim();
+  }
+
+  // Breakpoint check
+  const lastPeriod = truncated.lastIndexOf('.');
+  const breakPoint = Math.max(lastPeriod, truncated.lastIndexOf('\n'));
   const updatedContent = breakPoint > summaryLength * 0.7
-    ? content.substring(0, breakPoint + 1).trim()
+    ? truncated.substring(0, breakPoint + 1).trim()
     : truncated.trim();
 
   return stringJoin.newlineFiltered(
     updatedFrontMatter,
-    updatedContent,
+    `${updatedContent}... [${descTruncate}]`,
     updatedLink
   );
 };

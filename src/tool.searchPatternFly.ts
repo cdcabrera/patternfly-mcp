@@ -101,17 +101,17 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             uri: entry.uriId,
             name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
             description: entry.description,
-            mimeType: 'text/markdown'
+            mimeType: 'text/markdown' // this should default to summary
           });
         }
 
-        if (entry.uriSchemasId && !results.has(entry.uriSchemasId)) {
-          results.set(entry.uriSchemasId, {
+        if (entry.uriComponentId && !results.has(entry.uriComponentId)) {
+          results.set(entry.uriComponentId, {
             type: 'resource_link',
-            uri: entry.uriSchemasId,
+            uri: entry.uriComponentId,
             name: `${entry.displayName} - JSON Schemas (${entry.version})`,
             description: `${entry.displayName} component JSON schemas.`,
-            mimeType: 'application/json'
+            mimeType: 'text/markdown' // this should default to summary
           });
         }
       });

@@ -6,7 +6,6 @@ import {
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { buildSearchString, stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringShaHex } from './server.assertions';
 import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
@@ -14,7 +13,11 @@ import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
-import { nextCursor, paramCompletion } from './resource.helpers';
+import {
+  formatSummaryFullContent,
+  nextCursor,
+  paramCompletion
+} from './resource.helpers';
 
 /**
  * Extended callback type that combines the `CompleteResourceTemplateCallback` type
@@ -99,7 +102,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
       {
         uri: 'patternfly://docs/index',
         mimeType: 'text/markdown',
-        name: 'Docs Index',
+        name: 'Documentation Index',
         description: `Documentation index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
       },
       ...resources
@@ -119,7 +122,7 @@ listResources.memo = memo(listResources);
  * @returns The list of available details.
  */
 const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detail: string) => {
-  const levels = ['summary', 'detail'];
+  const levels = ['summary', 'full'];
   const closest = findClosest.memo(detail, levels) as string | undefined;
 
   return closest ? [closest] : [];
@@ -218,8 +221,8 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { category, detail, name, section, id, version } = variables || {};
-  const normalizedDetail = findClosest.memo(detail, ['detail', 'summary']) || 'summary';
+  const { category, detail = 'summary', name, section, id, version } = variables || {};
+  const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
   let updatedId;
 
   assertInputStringLength(name, {
@@ -349,37 +352,19 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   return {
-    contents: docs.map(({ uri, path, resolvedPath, content }) => {
-      const detailLink = normalizedDetail === 'summary'
-        ? `full_uri: ${uri}${buildSearchString({ detail: 'full' })}`
-        : `summary_uri: ${uri}${buildSearchString({ detail: 'summary' })}`;
-
-      const updatedContent = normalizedDetail === 'summary'
-        ? content.substring(0, 250).replace(/(##|###|####|#####|######)[^#]*$/, '').replace(/\s[^\s]*$/, '')
-        : content;
-
-      const updatedLink = normalizedDetail === 'summary'
-        ? `[Read full documentation](${uri})`
-        : `[Read summary documentation](${uri})`;
-
-      return {
-        uri,
-        mimeType: 'text/markdown',
-        text: stringJoin.newline(
-          `---`,
-          `document: ${resolvedPath || path}`,
-          `name: ${updatedName}`,
-          `version: ${updatedVersion}`,
-          `detail: ${normalizedDetail}`,
-          detailLink,
-          `---`,
-          '',
-          updatedContent,
-          '',
-          updatedLink
-        )
-      };
-    })
+    contents: docs.map(({ uri, path, resolvedPath, content }) => ({
+      uri,
+      mimeType: 'text/markdown',
+      text: formatSummaryFullContent(content, {
+        url: uri,
+        detailType: normalizedDetail,
+        frontMatter: {
+          document: resolvedPath || path,
+          name: updatedName,
+          version: updatedVersion
+        }
+      })
+    }))
   };
 };
 

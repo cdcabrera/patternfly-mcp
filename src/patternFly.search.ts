@@ -276,7 +276,9 @@ const filterPatternFly = async (
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
       const matchesPath = !updatedFilters.path || filterMatch(entry.path, updatedFilters.path) ||
         filterMatch(entry.uriId, updatedFilters.path) || filterMatch(entry.uriSchemas, updatedFilters.path) ||
-        filterMatch(entry.uriSchemasId, updatedFilters.path) || filterMatch(entry.uri, updatedFilters.path);
+        filterMatch(entry.uriComponent, updatedFilters.path) || filterMatch(entry.uriSchemasId, updatedFilters.path) ||
+        filterMatch(entry.uriComponentId, updatedFilters.path) || filterMatch(entry.uriComponentHash, updatedFilters.path) ||
+        filterMatch(entry.uri, updatedFilters.path);
 
       // Filter order matters specific id -> group id -> group name
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
@@ -310,7 +312,9 @@ const filterPatternFly = async (
           uri: versions[updatedFilters.version]?.uri,
           uriId: versions[updatedFilters.version]?.uriId,
           uriSchemas: versions[updatedFilters.version]?.uriSchemas,
-          uriSchemasId: versions[updatedFilters.version]?.uriSchemasId
+          uriSchemasId: versions[updatedFilters.version]?.uriSchemasId,
+          uriComponent: versions[updatedFilters.version]?.uriComponent,
+          uriComponentId: versions[updatedFilters.version]?.uriComponentId
         };
       }
 
