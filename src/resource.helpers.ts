@@ -11,10 +11,14 @@ import { buildSearchString, stringJoin } from './server.helpers';
  *
  * @param content - Input text to summarize or format.
  * @param [settings] - Optional settings object.
- * @param [settings.url] - URL to link to.
- * @param [settings.frontMatter] - YAML front matter to include in the content.
+ * @param [settings.descLinkSummary='Read summary documentation'] - Description for the summary link.
+ * @param [settings.descLinkFull='Read full documentation'] - Description for the full link.
+ * @param [settings.descTruncate='truncated content'] - Description for the truncated content link.
+ * @param [settings.descTruncateCode='truncated code block'] - Description for the truncated code block link.
  * @param [settings.detailType] - Whether to return a full or summary version of the content. Defaults to 'full'.
+ * @param [settings.frontMatter] - YAML front matter to include in the content.
  * @param [settings.summaryLength] - The maximum length of the summary. Defaults to 250 characters.
+ * @param [settings.url] - URL to link to.
  * @returns Formatted content with optional YAML front matter and links.
  */
 const formatSummaryFullContent = (
