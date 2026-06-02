@@ -321,10 +321,12 @@ const filterPatternFly = async (
           isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
           uri: versions[updatedFilters.version]?.uri,
           uriId: versions[updatedFilters.version]?.uriId,
+          uriHash: versions[updatedFilters.version]?.uriHash,
           uriSchemas: versions[updatedFilters.version]?.uriSchemas,
           uriSchemasId: versions[updatedFilters.version]?.uriSchemasId,
           uriComponent: versions[updatedFilters.version]?.uriComponent,
-          uriComponentId: versions[updatedFilters.version]?.uriComponentId
+          uriComponentId: versions[updatedFilters.version]?.uriComponentId,
+          uriComponentHash: versions[updatedFilters.version]?.uriComponentHash
         };
       }
 

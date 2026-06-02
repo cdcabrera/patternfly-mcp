@@ -621,6 +621,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
         uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
 
+        resource.versions[version].uriComponent = uriComponent;
+        resource.versions[version].uriComponentId = uriComponentId;
+        resource.versions[version].uriComponentHash = uriComponentHash;
+
         uriIndexMap.set(uriComponent.toLowerCase(), name);
         uriIndexMap.set(uriComponentId.toLowerCase(), name);
         uriIndexMap.set(uriComponentHash.toLowerCase(), name);
