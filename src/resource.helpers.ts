@@ -44,36 +44,80 @@ const formatSummaryFullContent = (
   } = {}
 ) => {
   const isSummary = detailType === 'summary';
-  let detailLink;
+  const prefix = 'pfmcp_';
+
+  let strippedContent = content;
+  const existingFrontMatter: Record<string, string> = {};
+
+  // Extract existing frontmatter from the beginning of the content.
+  const frontMatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+
+  if (frontMatterMatch) {
+    strippedContent = content.slice(frontMatterMatch[0].length);
+    const rawYaml = frontMatterMatch[1] || '';
+
+    // Basic key-value parsing for YAML frontmatter.
+    rawYaml.split(/\r?\n/).forEach(line => {
+      const separatorIndex = line.indexOf(':');
+
+      if (separatorIndex !== -1) {
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim();
+
+        if (key) {
+          existingFrontMatter[key] = value;
+        }
+      }
+    });
+  }
+
+  const ourFrontMatter: Record<string, string> = {};
+
+  // Add prefixes to our frontmatter properties.
+  if (frontMatter) {
+    Object.entries(frontMatter).forEach(([key, value]) => {
+      if (value) {
+        ourFrontMatter[`${prefix}${key}`] = value;
+      }
+    });
+  }
+
+  // Add detail links and current detail type with prefixes.
+  if (url) {
+    const linkKey = isSummary ? `${prefix}full_uri` : `${prefix}summary_uri`;
+    const searchParams = isSummary ? { detail: 'full' } : { detail: 'summary' };
+
+    ourFrontMatter[linkKey] = `${url}${buildSearchString(searchParams, { base: url, prefix: true })}`;
+  }
+
+  ourFrontMatter[`${prefix}detail`] = isSummary ? 'full' : 'summary';
+
+  // Merge existing frontmatter with ours. Ours takes precedence for collisions.
+  const mergedFrontMatter = { ...existingFrontMatter, ...ourFrontMatter };
+
+  const updatedFrontMatter = stringJoin.newlineFiltered(
+    '---',
+    ...Object.entries(mergedFrontMatter).map(([key, value]) => `${key}: ${value}`),
+    '---'
+  );
+
   let updatedLink;
 
   if (url) {
-    detailLink = isSummary
-      ? `full_uri: ${url}${buildSearchString({ detail: 'full' }, { base: url })}`
-      : `summary_uri: ${url}${buildSearchString({ detail: 'summary' }, { base: url })}`;
-
-    updatedLink = isSummary && url
+    updatedLink = isSummary
       ? `[${descLinkFull}](${url})`
       : `[${descLinkSummary}](${url})`;
   }
 
-  const updatedFrontMatter = stringJoin.newlineFiltered(
-    `---`,
-    ...Object.entries(frontMatter || {}).map(([key, value]) => (value && `${key}: ${value}`) || undefined),
-    detailLink,
-    `detail: ${(isSummary && 'full') || 'summary'}`,
-    `---`
-  );
-
-  if (detailType === 'full' || content.length <= summaryLength) {
+  if (detailType === 'full' || strippedContent.length <= summaryLength) {
     return stringJoin.newlineFiltered(
       updatedFrontMatter,
-      content,
+      strippedContent,
       updatedLink
     );
   }
 
-  let truncated = content.substring(0, summaryLength);
+  let truncated = strippedContent.substring(0, summaryLength);
 
   // Protect Code Blocks: If we are inside a code block, close it or back out.
   const codeBlockCount = (truncated.match(/```/g) || []).length;
