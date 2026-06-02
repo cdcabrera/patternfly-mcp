@@ -83,28 +83,25 @@ const CONFIG = {
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
+  const pageSize = 50;
   const { versionIndex } = await getPatternFlyMcpResources.memo();
-  const { start, end, next } = nextCursor({ cursor, pageSize: 50, size: versionIndex.length });
+  const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
   versionIndex.slice(start, end).forEach((entry, _index) => {
+    const actualIndex = start + 1;
+
     resources.push({
       uri: entry.uriId,
-      name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
+      name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${versionIndex.length} resources)`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
   });
 
-  /*
-  {
-    uri: 'patternfly://docs/index',
-    mimeType: 'text/markdown',
-    name: 'Documentation Index',
-    description: `Documentation index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
-  },*/
-
   return {
+    totalCount: versionIndex.length,
+    pageSize,
     nextCursor: next,
     resources
   };
