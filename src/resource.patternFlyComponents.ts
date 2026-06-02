@@ -49,7 +49,7 @@ const URI_DESCRIPTION = `Filter by PatternFly version and category. ${URI_TEMPLA
  */
 const CONFIG = {
   title: 'PatternFly Components Index',
-  description: `A list of all PatternFly component names available for documentation retrieval. ${URI_DESCRIPTION}`,
+  description: `A list of all PatternFly components available for documentation retrieval. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown',
   annotations: {
     priority: 0.9,
@@ -83,17 +83,18 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
       });
     });
 
+  /**
+   * {
+   *   uri: 'patternfly://components/index',
+   *   mimeType: 'text/markdown',
+   *   name: 'Component Index',
+   *   description: `Component index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
+   * }
+   */
+
   return {
     nextCursor: next,
-    resources: [
-      {
-        uri: 'patternfly://components/index',
-        mimeType: 'text/markdown',
-        name: 'Component Index',
-        description: `Component index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
-      },
-      ...resources
-    ]
+    resources
   };
 };
 

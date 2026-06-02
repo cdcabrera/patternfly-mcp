@@ -44,6 +44,16 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
     options.repoBugs && `- **Report bugs:** ${options.repoBugs}`
   );
 
+  let availableMcpResources = `- **MCP resources:** Can be used to list, filter, and read available documentation resources.`;
+
+  if (options.contextManagement) {
+    availableMcpResources = stringJoin.newline(
+      availableMcpResources,
+      '   - Use `patternfly://docs/{name}` for usage design and example patterns, accessibility guidelines, and more.',
+      '   - Use `patternfly://components/{name}` for component documentation, prop names, and technical specifications.'
+    );
+  }
+
   const availableToolFunctions = options.contextManagement ? 'search, list and access' : 'search, fetch and display';
   const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
@@ -59,7 +69,7 @@ PatternFly provides React components, design guidelines, and development tools f
 **PatternFly MCP Server:**
 This MCP server provides tools and resources to access all PatternFly documentation resources ranging from design to development.
 - **MCP tools:** Can be used to ${availableToolFunctions} available documentation resources.
-- **MCP resources:** Can be used to list, filter, and read available documentation resources.
+${availableMcpResources}
 
 **Environment:**
 - **MCP Server Mode:** ${options.mode}

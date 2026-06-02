@@ -96,17 +96,17 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
     });
   });
 
+  /*
+  {
+    uri: 'patternfly://docs/index',
+    mimeType: 'text/markdown',
+    name: 'Documentation Index',
+    description: `Documentation index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
+  },*/
+
   return {
     nextCursor: next,
-    resources: [
-      {
-        uri: 'patternfly://docs/index',
-        mimeType: 'text/markdown',
-        name: 'Documentation Index',
-        description: `Documentation index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
-      },
-      ...resources
-    ]
+    resources
   };
 };
 
