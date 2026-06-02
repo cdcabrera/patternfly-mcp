@@ -3,6 +3,44 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { buildSearchString, stringJoin } from './server.helpers';
 
 /**
+ * Parses YAML front matter from the beginning of the content.
+ *
+ * @param content - Input text that may contain YAML front matter.
+ * @returns An object containing the parsed front matter and the content with the front matter removed.
+ */
+const parseFrontMatter = (content: string) => {
+  let strippedContent = content;
+  const frontMatter: Record<string, string> = {};
+
+  // Extract existing frontmatter from the beginning of the content.
+  const frontMatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+
+  if (frontMatterMatch) {
+    strippedContent = content.slice(frontMatterMatch[0].length);
+    const rawYaml = frontMatterMatch[1] || '';
+
+    // Basic key-value parsing for YAML frontmatter.
+    rawYaml.split(/\r?\n/).forEach(line => {
+      const separatorIndex = line.indexOf(':');
+
+      if (separatorIndex !== -1) {
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim();
+
+        if (key) {
+          frontMatter[key] = value;
+        }
+      }
+    });
+  }
+
+  return {
+    frontMatter,
+    content: strippedContent
+  };
+};
+
+/**
  * Returns a consistent summarized, or full version, of the input text with:
  * - YAML front matter, if defined, is added to the front of the content.
  * - Full and summary links, if a URL is provided, are added to the end of the content.
@@ -17,6 +55,7 @@ import { buildSearchString, stringJoin } from './server.helpers';
  * @param [settings.descTruncateCode='truncated code block'] - Description for the truncated code block link.
  * @param [settings.detailType] - Whether to return a full or summary version of the content. Defaults to 'full'.
  * @param [settings.frontMatter] - YAML front matter to include in the content.
+ * @param [settings.frontMatterPrefix='pfmcp_'] - Prefix to add to frontmatter keys.
  * @param [settings.summaryLength] - The maximum length of the summary. Defaults to 250 characters.
  * @param [settings.url] - URL to link to.
  * @returns Formatted content with optional YAML front matter and links.
@@ -30,6 +69,7 @@ const formatSummaryFullContent = (
     descTruncateCode = 'truncated code block',
     detailType = 'full',
     frontMatter,
+    frontMatterPrefix = 'pfmcp_',
     summaryLength = 250,
     url
   }: {
@@ -39,41 +79,58 @@ const formatSummaryFullContent = (
     descTruncateCode?: string;
     detailType?: 'full' | 'summary';
     frontMatter?: Record<string, string | undefined>;
+    frontMatterPrefix?: string;
     summaryLength?: number;
     url?: string | undefined;
   } = {}
 ) => {
   const isSummary = detailType === 'summary';
-  let detailLink;
+  const { frontMatter: existingFrontMatter, content: strippedContent } = parseFrontMatter(content);
+  const updatedFrontMatter: Record<string, string> = {};
+
+  // Add prefixes to our frontmatter properties.
+  if (frontMatter) {
+    Object.entries(frontMatter).forEach(([key, value]) => {
+      if (value) {
+        updatedFrontMatter[`${frontMatterPrefix}${key}`] = value;
+      }
+    });
+  }
+
+  // Add detail links and current detail type with prefixes.
+  if (url) {
+    const linkKey = isSummary ? `${frontMatterPrefix}full_uri` : `${frontMatterPrefix}summary_uri`;
+    const searchParams = isSummary ? { detail: 'full' } : { detail: 'summary' };
+
+    updatedFrontMatter[linkKey] = `${url}${buildSearchString(searchParams, { base: url, prefix: true })}`;
+  }
+
+  updatedFrontMatter[`${frontMatterPrefix}detail`] = isSummary ? 'full' : 'summary';
+
+  // Merge existing frontmatter with internal. Internal takes priority.
+  const mergedFrontMatter = stringJoin.newlineFiltered(
+    '---',
+    ...Object.entries({ ...existingFrontMatter, ...updatedFrontMatter }).map(([key, value]) => `${key}: ${value}`),
+    '---'
+  );
+
   let updatedLink;
 
   if (url) {
-    detailLink = isSummary
-      ? `full_uri: ${url}${buildSearchString({ detail: 'full' }, { base: url })}`
-      : `summary_uri: ${url}${buildSearchString({ detail: 'summary' }, { base: url })}`;
-
-    updatedLink = isSummary && url
+    updatedLink = isSummary
       ? `[${descLinkFull}](${url})`
       : `[${descLinkSummary}](${url})`;
   }
 
-  const updatedFrontMatter = stringJoin.newlineFiltered(
-    `---`,
-    ...Object.entries(frontMatter || {}).map(([key, value]) => (value && `${key}: ${value}`) || undefined),
-    detailLink,
-    `detail: ${(isSummary && 'full') || 'summary'}`,
-    `---`
-  );
-
-  if (detailType === 'full' || content.length <= summaryLength) {
+  if (detailType === 'full' || strippedContent.length <= summaryLength) {
     return stringJoin.newlineFiltered(
-      updatedFrontMatter,
-      content,
+      mergedFrontMatter,
+      strippedContent,
       updatedLink
     );
   }
 
-  let truncated = content.substring(0, summaryLength);
+  let truncated = strippedContent.substring(0, summaryLength);
 
   // Protect Code Blocks: If we are inside a code block, close it or back out.
   const codeBlockCount = (truncated.match(/```/g) || []).length;
@@ -105,7 +162,7 @@ const formatSummaryFullContent = (
     : truncated.trim();
 
   return stringJoin.newlineFiltered(
-    updatedFrontMatter,
+    mergedFrontMatter,
     `${updatedContent}... [${descTruncate}]`,
     updatedLink
   );
@@ -189,6 +246,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion || filters.version });
 
   const names = new Set<string>();
+  const ids = new Set<string>();
   const categories = new Set<string>();
   const sections = new Set<string>();
   const versions = new Set<string>();
@@ -197,6 +255,10 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   for (const entry of byEntry) {
     if (typeof entry.name === 'string') {
       names.add(entry.name);
+    }
+
+    if (typeof entry.id === 'string') {
+      ids.add(entry.id);
     }
 
     if (typeof entry.category === 'string') {
@@ -218,6 +280,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
 
   return {
     names: Array.from(names).sort(),
+    ids: Array.from(ids).sort(),
     categories: Array.from(categories).sort(),
     schemas: Array.from(schemas).sort(),
     sections: Array.from(sections).sort(),
@@ -225,4 +288,4 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   };
 };
 
-export { encodeDecodeCursor, formatSummaryFullContent, nextCursor, paramCompletion };
+export { encodeDecodeCursor, formatSummaryFullContent, nextCursor, paramCompletion, parseFrontMatter };

@@ -83,13 +83,13 @@ const CONFIG = {
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
-  const pageSize = 50;
+  const pageSize = 15;
   const { versionIndex } = await getPatternFlyMcpResources.memo();
   const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
-  versionIndex.slice(start, end).forEach((entry, _index) => {
-    const actualIndex = start + 1;
+  versionIndex.slice(start, end).forEach((entry, index) => {
+    const actualIndex = start + index + 1;
 
     resources.push({
       uri: entry.uriId,
@@ -141,8 +141,8 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The list of available names.
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
-  const { version, category, section } = context?.arguments || {};
-  const { names } = await paramCompletion({ category, name, section, version });
+  const { version, category, section, id } = context?.arguments || {};
+  const { names } = await paramCompletion({ category, name, section, version, id });
 
   return names;
 };
@@ -153,6 +153,25 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: s
 uriNameComplete.memo = memo(uriNameComplete);
 
 /**
+ * ID completion callback for the URI template.
+ *
+ * @param id - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available IDs.
+ */
+const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, context) => {
+  const { version, category, section, name } = context?.arguments || {};
+  const { ids } = await paramCompletion({ category, name, section, version, id });
+
+  return ids;
+};
+
+/**
+ * Memoized version of uriIdComplete.
+ */
+uriIdComplete.memo = memo(uriIdComplete);
+
+/**
  * Category completion callback for the URI template.
  *
  * @param category - The value to filter-by/complete.
@@ -160,8 +179,8 @@ uriNameComplete.memo = memo(uriNameComplete);
  * @returns The list of available categories, or an empty list.
  */
 const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
-  const { version, section, name } = context?.arguments || {};
-  const { categories } = await paramCompletion({ category, name, section, version });
+  const { version, section, name, id } = context?.arguments || {};
+  const { categories } = await paramCompletion({ category, name, section, version, id });
 
   return categories;
 };
@@ -179,8 +198,8 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  * @returns The list of available sections, or an empty list.
  */
 const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (section: string, context) => {
-  const { version, category, name } = context?.arguments || {};
-  const { sections } = await paramCompletion({ category, name, section, version });
+  const { version, category, name, id } = context?.arguments || {};
+  const { sections } = await paramCompletion({ category, name, section, version, id });
 
   return sections;
 };
@@ -198,8 +217,8 @@ uriSectionComplete.memo = memo(uriSectionComplete);
  * @returns The list of available versions, or an empty list.
  */
 const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
-  const { section, category, name } = context?.arguments || {};
-  const { versions } = await paramCompletion({ category, name, section, version });
+  const { section, category, name, id } = context?.arguments || {};
+  const { versions } = await paramCompletion({ category, name, section, version, id });
 
   return versions;
 };
@@ -378,6 +397,8 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
+    name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
+    id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
     detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
     category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
     section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
@@ -419,6 +440,7 @@ export {
   resourceCallback,
   uriCategoryComplete,
   uriDetailComplete,
+  uriIdComplete,
   uriNameComplete,
   uriSectionComplete,
   uriVersionComplete,
