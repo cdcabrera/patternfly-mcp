@@ -24,7 +24,6 @@ import {
   type ExtendedCompleteResourceTemplateCallback
 } from './resource.patternFlyDocsIndex';
 import {
-  formatSummaryFullContent,
   nextCursor,
   paramCompletion
 } from './resource.helpers';
