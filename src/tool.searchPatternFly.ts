@@ -95,7 +95,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       .flat()
       .filter(entry => entry.path)
       .forEach(entry => {
-        if (entry.uriId && !results.has(entry.uriId)) {
+        if (entry.uriId && !entry.uriComponentId && !results.has(entry.uriId)) {
           results.set(entry.uriId, {
             type: 'resource_link',
             uri: entry.uriId,
@@ -106,17 +106,19 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         }
 
         if (entry.uriComponentId && !results.has(entry.uriComponentId)) {
-          let description = `Component API reference for ${entry.displayName}.`;
+          let updatedName = `${entry.displayName} - Technical Overview`;
+          let updatedDesc = `Component API reference for ${entry.displayName}.`;
 
           if (entry.isSchemasAvailable) {
-            description = `Component API reference, property definitions, and JSON schema for ${entry.displayName}.`;
+            updatedName = `${entry.displayName} - Technical Specs`;
+            updatedDesc = `Component API reference, property definitions, and JSON schema for ${entry.displayName}.`;
           }
 
           results.set(entry.uriComponentId, {
             type: 'resource_link',
             uri: entry.uriComponentId,
-            name: `${entry.displayName} - Technical Overview (${entry.version})`,
-            description,
+            name: `${updatedName} (${entry.version})`,
+            description: updatedDesc,
             mimeType: 'text/markdown'
           });
         }

@@ -77,7 +77,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
     .slice(start, end).forEach((entry, _index) => {
       resources.push({
         uri: entry.uriComponentId as string,
-        name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
+        name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version})`,
         description: entry.description,
         mimeType: 'text/markdown'
       });
