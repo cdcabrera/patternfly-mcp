@@ -101,7 +101,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             uri: entry.uriId,
             name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
             description: entry.description,
-            mimeType: 'text/markdown' // this should default to summary
+            mimeType: 'text/markdown'
           });
         }
 
@@ -109,9 +109,9 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           results.set(entry.uriComponentId, {
             type: 'resource_link',
             uri: entry.uriComponentId,
-            name: `${entry.displayName} - JSON Schemas (${entry.version})`,
-            description: `${entry.displayName} component JSON schemas.`,
-            mimeType: 'text/markdown' // this should default to summary
+            name: `${entry.displayName} - Technical Specs (${entry.version})`,
+            description: `Component API reference, property definitions, and JSON schema for ${entry.displayName}.`,
+            mimeType: 'text/markdown'
           });
         }
       });

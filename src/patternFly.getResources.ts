@@ -507,6 +507,9 @@ const mutateKeyWordsMap = (
  * are populated during search and filter services when `entries` are matched against PF versions. Review
  * separating the typings for clarity.
  *
+ * @note Need to re-eval component resources being "schema-dependent". Under the experimental-context-management
+ * we've temporarily made them dependent since schemas include specs. This may shift under related API work.
+ *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
