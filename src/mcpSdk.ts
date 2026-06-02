@@ -122,7 +122,7 @@ type McpResource = [
   metadata?: McpResourceMetadata | undefined,
   _config?: {
     shouldRegister?: (options: GlobalOptions) => boolean | Promise<boolean>;
-  }
+  } | undefined
 ];
 
 /**

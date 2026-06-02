@@ -47,7 +47,7 @@ type PatternFlyListResourceResult = {
 /**
  * Name of the resource.
  */
-const NAME = 'patternfly-docs-index';
+const NAME = 'patternfly-docs';
 
 /**
  * URI template for the resource.

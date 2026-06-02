@@ -368,6 +368,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
 
     // Create a new meta-resource
     const metaResource = (opts = options): McpResource => {
+      const _config = resourceCreator(opts)[5];
       const metaCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
           const updatedText = await resolveMetaText(variables);
@@ -391,12 +392,15 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
           description: metaDescription,
           mimeType: metaMimeType
         },
-        metaCallback
+        metaCallback,
+        undefined,
+        _config
       ];
     };
 
     // Add the meta-resource enhancement to the existing resource
     const enhancedResource = (opts = options): McpResource => {
+      const _config = resourceCreator(opts)[5];
       const metaEnhancedCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
           const result = await callback(passedUri, variables);
@@ -422,7 +426,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
           };
         });
 
-      return [name, uriOrTemplate, config, metaEnhancedCallback, metadata];
+      return [name, uriOrTemplate, config, metaEnhancedCallback, metadata, _config];
     };
 
     // Add the resources back in

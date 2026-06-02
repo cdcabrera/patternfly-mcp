@@ -32,7 +32,7 @@ import {
 /**
  * Name of the resource.
  */
-const NAME = 'patternfly-components-index';
+const NAME = 'patternfly-components';
 
 /**
  * URI template for the resource.
