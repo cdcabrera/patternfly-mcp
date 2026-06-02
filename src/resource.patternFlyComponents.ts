@@ -68,31 +68,27 @@ const CONFIG = {
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
+  const pageSize = 50;
   const { versionIndex } = await getPatternFlyMcpResources.memo();
-  const { start, end, next } = nextCursor({ cursor, pageSize: 50, size: versionIndex.length });
+  const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
   versionIndex
     .filter(entry => entry.uriComponentId !== undefined)
     .slice(start, end).forEach((entry, _index) => {
+      const actualIndex = start + 1;
+
       resources.push({
         uri: entry.uriComponentId as string,
-        name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version})`,
+        name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version}) (${actualIndex}/${versionIndex.length} components)`,
         description: entry.description,
         mimeType: 'text/markdown'
       });
     });
 
-  /**
-   * {
-   *   uri: 'patternfly://components/index',
-   *   mimeType: 'text/markdown',
-   *   name: 'Component Index',
-   *   description: `Component index for PatternFly. Showing ${start + 1}-${end + 1} of ${versionIndex.length} results. ${URI_DESCRIPTION}`
-   * }
-   */
-
   return {
+    totalCount: versionIndex.length,
+    pageSize,
     nextCursor: next,
     resources
   };
