@@ -83,13 +83,13 @@ const CONFIG = {
  * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
-  const pageSize = 50;
+  const pageSize = 15;
   const { versionIndex } = await getPatternFlyMcpResources.memo();
   const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
-  versionIndex.slice(start, end).forEach((entry, _index) => {
-    const actualIndex = start + 1;
+  versionIndex.slice(start, end).forEach((entry, index) => {
+    const actualIndex = start + index + 1;
 
     resources.push({
       uri: entry.uriId,
