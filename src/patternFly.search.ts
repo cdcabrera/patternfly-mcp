@@ -46,16 +46,26 @@ interface FilterPatternFlyFilters {
 }
 
 /**
+ * Filtered documentation entry, {@link PatternFlyMcpDocsCatalogDoc} {@link PatternFlyMcpDocsMeta}.
+ */
+type FilterPatternFlyResultsEntry = PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta;
+
+/**
+ * Filtered resources by resource name, {@link PatternFlyMcpResourceFilteredMetadata}
+ */
+type FilterPatternFlyResultsResource = PatternFlyMcpResourceFilteredMetadata;
+
+/**
  * Result object returned by filterPatternFly.
  *
  * @interface FilterPatternFlyResults
  *
- * @property byEntry - Array of filtered documentation entries.
- * @property byResource - Map of filtered resources by resource name.
+ * @property byEntry - Array of filtered documentation entries, {@link FilterPatternFlyResultsByEntry}
+ * @property byResource - Map of filtered resources by resource name, {@link FilterPatternFlyResultsByResource}
  */
 interface FilterPatternFlyResults {
-  byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
-  byResource: Map<string, PatternFlyMcpResourceFilteredMetadata>;
+  byEntry: FilterPatternFlyResultsEntry[];
+  byResource: Map<string, FilterPatternFlyResultsResource>;
 }
 
 /**
@@ -231,8 +241,8 @@ const filterPatternFly = async (
   }
 
   // Filter matching for resources and entries
-  const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
-  const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
+  const byResource = new Map<string, FilterPatternFlyResultsResource>();
+  const byEntry: FilterPatternFlyResultsEntry[] = [];
   const filterMatch = (propertyValue: unknown, filterValue: string) => {
     const normalizePropertyValue = String(propertyValue).trim().toLowerCase();
 
@@ -656,6 +666,8 @@ export {
   searchPatternFly,
   type FilterPatternFlyFilters,
   type FilterPatternFlyResults,
+  type FilterPatternFlyResultsEntry,
+  type FilterPatternFlyResultsResource,
   type FilterPatternFlySettings,
   type SearchPatternFlyResult,
   type SearchPatternFlyResults

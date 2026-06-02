@@ -34,9 +34,9 @@ const formatSummaryFullContent = (
     descTruncate?: string;
     descTruncateCode?: string;
     detailType?: 'full' | 'summary';
-    frontMatter?: Record<string, string>;
+    frontMatter?: Record<string, string | undefined>;
     summaryLength?: number;
-    url?: string;
+    url?: string | undefined;
   } = {}
 ) => {
   const isSummary = detailType === 'summary';
@@ -55,7 +55,7 @@ const formatSummaryFullContent = (
 
   const updatedFrontMatter = stringJoin.newlineFiltered(
     `---`,
-    ...Object.entries(frontMatter || {}).map(([key, value]) => `${key}: ${value}`),
+    ...Object.entries(frontMatter || {}).map(([key, value]) => (value && `${key}: ${value}`) || undefined),
     detailLink,
     `detail: ${(isSummary && 'full') || 'summary'}`,
     `---`

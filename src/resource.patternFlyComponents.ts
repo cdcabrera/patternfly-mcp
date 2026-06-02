@@ -18,7 +18,7 @@ import {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources
 } from './patternFly.getResources';
-import { filterPatternFly } from './patternFly.search';
+import { filterPatternFly, type FilterPatternFlyResultsResource } from './patternFly.search';
 import {
   type PatternFlyListResourceResult,
   type ExtendedCompleteResourceTemplateCallback
@@ -138,7 +138,6 @@ listResources.memo = memo(listResources);
  * @returns The list of available details.
  */
 const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detail: string) => {
-  // const levels = ['summary', 'full', 'schema', 'props', 'examples'];
   const levels = ['summary', 'full'];
   const closest = findClosest.memo(detail, levels) as string | undefined;
 
@@ -200,9 +199,7 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
   const { version, category, id, name, detail = 'summary' } = variables || {};
-  // category provides "react" = examples, design, etc...
-  // const normalizedDetail = (findClosest.memo(detail, ['summary', 'full', 'schema', 'props', 'examples']) || detail) as 'full' | 'summary' | 'schema' | 'props' | 'examples';
-  const normalizedDetail = (findClosest.memo(detail, ['summary', 'full', 'schema', 'props']) || detail) as 'full' | 'summary' | 'schema' | 'props';
+  const normalizedDetail = (findClosest.memo(detail, ['summary', 'full']) || detail) as 'summary' | 'full';
   const section = 'components';
   let updatedId;
 
@@ -248,7 +245,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const updatedVersion = normalizedVersion || latestVersion;
   const updatedName = name.trim();
 
-  const { byResource, byEntry } = await filterPatternFly.memo({
+  const { byResource } = await filterPatternFly.memo({
     id: updatedId,
     version: updatedVersion,
     name: updatedName,
@@ -256,8 +253,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     section
   });
 
+  const resource: FilterPatternFlyResultsResource | undefined = byResource.get(name);
+
   assertInput(
-    byResource.get(name) !== undefined,
+    resource !== undefined,
     () => {
       let suggestionMessage = '';
 
@@ -275,6 +274,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
+  /**
+   * Get the JSON schema for the component.
+   *
+   * @param name - Name of the component.
+   * @returns The JSON schema for the component.
+   */
   const getSchema = async (name: string) => {
     const schema = await getPatternFlyComponentSchema.memo(name);
 
@@ -287,158 +292,110 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
           suggestionMessage = ` Component schemas are only available for PatternFly versions ${availableSchemasVersions.join(', ')}`;
         }
 
-        return `No component found for "${passedUri?.toString()}".${suggestionMessage}`;
+        return `No component schema found for "${passedUri?.toString()}".${suggestionMessage}`;
       }
     );
 
     return schema;
   };
 
+  /**
+   * Get the JSON schema properties for the component.
+   *
+   * @param name - Name of the component.
+   * @returns The JSON schema properties.
+   */
   const getProps = async (name: string) => {
     const { title, properties } = await getSchema(name);
 
     return { title, properties, isProps: Object.entries(properties).length > 0 };
   };
 
-  const getSummary = async (resource) => {
-    //id: updatedId,
-    //     version: updatedVersion,
-    //     name: updatedName,
-    //     category,
-    //     section
-    // const { categories } = await paramCompletion({ category, name: updatedName, section, version: updatedVersion });
-    const categories = new Set(resource.entries.map(entry => entry.displayCategory));
-    const categoryList = Array
-      .from(categories)
-      .sort()
-      .map(category =>
-        `[${category}](${resource.uriComponentId}${buildSearchString({ category }, { prefix: true, base: resource.uriComponentId })})`);
-    // const categories = new Set(resource.entries.map(entry => entry.displayCategory));
+  /**
+   * Get a summary of the component.
+   *
+   * @param res - The resource object.
+   * @returns The summary response object for the component.
+   */
+  const getOverview = async (res: FilterPatternFlyResultsResource) => {
+    const { properties } = res.isSchemasAvailable ? await getProps(name) : { properties: {} };
+    const propNames = Object.keys(properties).join(', ') || 'None';
 
-    // Should have cross links to other entries under docs? // could just show props on summary?
+    // Cross-links to docs
+    const categories = new Set(res.entries.map(entry => entry.displayCategory));
+    const categoryLinks = Array.from(categories).sort()
+      .map(category => `[${category}](${res.uriId}${buildSearchString({ category }, { prefix: true, base: res.uriComponentId })})`);
 
-    const { isProps, ...props } = await getProps(name);
-    let updatedProps;
-
-    if (isProps) {
-      updatedProps = stringJoin.newline(
-        '**Props metadata**',
+    const docsContent = categoryLinks.length
+      ? stringJoin.newline(
         '',
-        `Title: ${props.title}`,
-        `Properties:`,
-        '```json',
-        // JSON.stringify([Object.entries(props.properties).sort(([a], [b]) => a.localeCompare(b))], null, 2),
-        JSON.stringify(props.properties, null, 2),
-        '',
-        '```'
-      );
-    }
+        '### Documentation & guidelines',
+        ...categoryLinks.map(category => `   - ${category}`)
+      )
+      : '';
 
-    const content = stringJoin.newlineFiltered(
-      `Component "${updatedName}",${(resource.isSchemasAvailable && ' JSON Schema is available.') || ' JSON Schema not available.'}`,
-      (categoryList.length && 'Information available for:') || '',
-      ...categoryList,
-      updatedProps
-      // resource.isSchemasAvailable ? `[Props JSON Schema](${resource.uriComponentId}${buildSearchString({ category }, { prefix: true, base: resource.uriComponentId })})` : '',
-      // resource.isSchemasAvailable ? `[Full JSON Schema](${resource.uriComponentId}${buildSearchString({ category }, { prefix: true, base: resource.uriComponentId })})` : ''
+    const content = stringJoin.newline(
+      `# ${updatedName} (Technical overview)`,
+      `- **Version:** ${updatedVersion}`,
+      `- **Available Props:** ${propNames}`,
+      docsContent
     );
 
-    return [
-      {
-        uri: resource.uriComponentId,
-        mimeType: 'text/markdown',
-        text: formatSummaryFullContent(content, {
-          descLinkSummary: 'Props JSON Schema',
-          descLinkFull: 'Full JSON Schema',
-          url: resource.isSchemasAvailable ? resource.uriComponentId : undefined,
-          detailType: normalizedDetail,
-          frontMatter: {
-            document: resource.uriComponentId,
-            name: updatedName,
-            version: updatedVersion
-          }
-        })
-      }
-    ];
-  };
-
-  const getFull = async (resource) => {
-    const schema = await getSchema(name);
-    const summary = await getSummary(resource);
-
-    return [
-      ...summary,
-      {
-        uri: resource.uriSchema,
-        mimeType: 'application/json',
-        text: JSON.stringify(schema, null, 2)
-      }
-    ];
-  };
-  // CATEGORY SHOULD ACTUALLY BE THE FILTER DRIVER OF HELPING WHAT SHOWS... DESIGN, EXAMPLES. DETAIL SHOULD REMAIN AS 2 VALUES.
-  // full returns an entry for schema, props, AND examples, AND doc
-  // summary returns a brief summary of the component with a list of available links to the other entries
-  // schema returns the JSON schema for the component
-  // props returns the JSON schema properties for the component
-
-  /*
-  const detailLevel = async ({ name }) => {
-    switch (normalizedDetail) {
-      case 'schema':
-        const schema = await getSchema(name);
-
-        return {
-          mimeType: 'application/json',
-          text: JSON.stringify(schema, null, 2)
-        };
-      case 'props':
-        const props = await getProps(name);
-
-        return {
-          mimeType: 'application/json',
-          text: JSON.stringify(props, null, 2)
-        };
-      case 'full':
-        break;
-      case 'summary':
-      default:
-        break;
-    }
-  };
-  */
-
-  return {
-    contents: []
-  };
-
-  /*
-  const docsIndex = Array.from(byResource.values())
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((resource, index) =>
-    // const searchString = buildSearchString({ category }, { prefix: true, base: resource.uri });
-
-    // return `${index + 1}. [${resource.name} (${updatedVersion})](${resource.uri}${searchString || ''})`;
-
-      ({
-        uri,
-        mimeType: 'text/markdown',
-        ...detailLevel()
-      }));
-
-  return {
-    contents: [{
-      uri: passedUri?.toString(),
+    return {
+      uri: res.uriComponentId,
       mimeType: 'text/markdown',
-      text: stringJoin.newline(
-        `# PatternFly Components Index for "${updatedVersion}"`,
-        '',
-        '',
-        ...docsIndex || []
-      )
-    }]
+      text: formatSummaryFullContent(content, {
+        descLinkSummary: 'View summary technical specs',
+        descLinkFull: 'View full technical specs',
+        url: res.isSchemasAvailable ? res.uriComponentId : undefined,
+        detailType: normalizedDetail,
+        frontMatter: {
+          document: res.uriComponentId,
+          name: updatedName,
+          version: updatedVersion
+        },
+        summaryLength: 500
+      })
+    };
   };
 
-   */
+  const markdownOverview = await getOverview(resource);
+
+  if (normalizedDetail === 'summary') {
+    return {
+      contents: [markdownOverview]
+    };
+  }
+
+  const updatedSchemas = [];
+
+  if (resource.isSchemasAvailable) {
+    const schema = await getSchema(name);
+    const props = await getProps(name);
+    const uri = `${resource.uriComponentId}${buildSearchString({ detail: 'full' }, { prefix: true, base: resource.uriComponentId })}`;
+
+    if (props.isProps) {
+      updatedSchemas.push({
+        uri,
+        mimeType: 'application/json',
+        text: JSON.stringify(schema?.properties, null, 2)
+      });
+    }
+
+    updatedSchemas.push({
+      uri,
+      mimeType: 'application/json',
+      text: JSON.stringify(schema, null, 2)
+    });
+  }
+
+  return {
+
+    contents: [
+      markdownOverview,
+      ...updatedSchemas
+    ]
+  };
 };
 
 /**
