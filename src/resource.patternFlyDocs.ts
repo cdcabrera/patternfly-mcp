@@ -96,7 +96,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
 
     resources.push({
       uri: entry.uri as string,
-      name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${terminalDocs.length} resources)`,
+      name: `${entry.displayName} (${actualIndex}/${terminalDocs.length})`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
@@ -141,15 +141,14 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The list of available IDs.
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, _context) => {
-  const { contextManagementHashIndex } = await getPatternFlyMcpResources.memo();
-  const suggestions = Array.from(contextManagementHashIndex.values())
+  const { hashIndex } = await getPatternFlyContextManagementResources.memo();
+
+  return Array.from(hashIndex.values())
     .filter((record: ContextManagementPatternFlyHashRecord) =>
       record.id.includes(id.toLowerCase()) ||
       record.name.toLowerCase().includes(id.toLowerCase()) ||
       record.displayName.toLowerCase().includes(id.toLowerCase()))
     .map((record: ContextManagementPatternFlyHashRecord) => record.id);
-
-  return suggestions;
 };
 
 /**
