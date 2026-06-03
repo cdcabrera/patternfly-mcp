@@ -68,7 +68,7 @@ describe('resourceCallback', () => {
     }
 
     await expect(runWithOptions(options, async () =>
-      resourceCallback(new URL(terminalRecord.uri), { id: terminalRecord.id })
+      resourceCallback(new URL(terminalRecord.uri as string), { id: terminalRecord.id })
     )).rejects.toThrow('Collection hub not found');
   });
 });

@@ -95,7 +95,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
     const actualIndex = start + index + 1;
 
     resources.push({
-      uri: entry.uri,
+      uri: entry.uri as string,
       name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${terminalDocs.length} resources)`,
       description: entry.description,
       mimeType: 'text/markdown'

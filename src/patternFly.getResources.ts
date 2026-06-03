@@ -231,7 +231,7 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  */
 type ContextManagementPatternFlyHashRecord = {
   id: string;
-  uri: string;
+  uri?: string;
   componentUri?: string;
   collectionUri?: string;
   canonicalUri: string;
@@ -587,16 +587,12 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     );
 
     const groupId = generateHash(name);
-    const uri = `patternfly://docs/${groupId}`;
-    const componentUri = `patternfly://components/${groupId}`;
     const collectionUri = `patternfly://collections/${groupId}`;
     const description = `Documentation group for ${name}.`;
     const displayName = `${name} (Group)`;
 
     const groupRecord: ContextManagementPatternFlyHashRecord = {
       id: groupId,
-      uri,
-      componentUri,
       collectionUri,
       canonicalUri: collectionUri,
       name,
