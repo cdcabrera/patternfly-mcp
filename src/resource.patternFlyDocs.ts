@@ -141,8 +141,8 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The list of available names.
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
-  const { version, category, section } = context?.arguments || {};
-  const { names } = await paramCompletion({ category, name, section, version });
+  const { version, category, section, id } = context?.arguments || {};
+  const { names } = await paramCompletion({ category, name, section, version, id });
 
   return names;
 };
@@ -179,8 +179,8 @@ uriIdComplete.memo = memo(uriIdComplete);
  * @returns The list of available categories, or an empty list.
  */
 const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
-  const { version, section, name } = context?.arguments || {};
-  const { categories } = await paramCompletion({ category, name, section, version });
+  const { version, section, name, id } = context?.arguments || {};
+  const { categories } = await paramCompletion({ category, name, section, version, id });
 
   return categories;
 };
@@ -198,8 +198,8 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  * @returns The list of available sections, or an empty list.
  */
 const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (section: string, context) => {
-  const { version, category, name } = context?.arguments || {};
-  const { sections } = await paramCompletion({ category, name, section, version });
+  const { version, category, name, id } = context?.arguments || {};
+  const { sections } = await paramCompletion({ category, name, section, version, id });
 
   return sections;
 };
@@ -217,8 +217,8 @@ uriSectionComplete.memo = memo(uriSectionComplete);
  * @returns The list of available versions, or an empty list.
  */
 const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
-  const { section, category, name } = context?.arguments || {};
-  const { versions } = await paramCompletion({ category, name, section, version });
+  const { section, category, name, id } = context?.arguments || {};
+  const { versions } = await paramCompletion({ category, name, section, version, id });
 
   return versions;
 };

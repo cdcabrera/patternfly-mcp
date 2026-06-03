@@ -125,9 +125,9 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The list of available names, or an empty list.
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
-  const { version, category } = context?.arguments || {};
+  const { version, category, id } = context?.arguments || {};
   const section = 'components';
-  const { names } = await paramCompletion({ category, name, section, version });
+  const { names } = await paramCompletion({ category, name, section, version, id });
 
   return names;
 };
@@ -165,9 +165,9 @@ uriIdComplete.memo = memo(uriIdComplete);
  * @returns The list of available categories, or an empty list.
  */
 const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
-  const { version, name } = context?.arguments || {};
+  const { version, name, id } = context?.arguments || {};
   const section = 'components';
-  const { categories } = await paramCompletion({ category, name, section, version });
+  const { categories } = await paramCompletion({ category, name, section, version, id });
 
   return categories;
 };
@@ -185,9 +185,9 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  * @returns The list of available versions, or an empty list.
  */
 const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
-  const { category, name } = context?.arguments || {};
+  const { category, name, id } = context?.arguments || {};
   const section = 'components';
-  const { versions } = await paramCompletion({ category, name, section, version });
+  const { versions } = await paramCompletion({ category, name, section, version, id });
 
   return versions;
 };
