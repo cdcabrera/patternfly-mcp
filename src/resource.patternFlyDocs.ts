@@ -378,7 +378,7 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
-    // name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
+    name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
     detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
     category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
     section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
