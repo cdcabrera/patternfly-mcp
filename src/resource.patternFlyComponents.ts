@@ -14,10 +14,12 @@ import { findClosest } from './server.search';
 import { getOptions, runWithOptions } from './options.context';
 import {
   getPatternFlyComponentSchema,
-  getPatternFlyMcpResources
+  getPatternFlyMcpResources,
+  type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import {
   filterPatternFly,
+  filterPatternFlyContext,
   type FilterPatternFlyResultsResource
 } from './patternFly.search';
 import {
@@ -159,10 +161,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     inputDisplayName: 'id'
   });
 
-  const { byResource, byEntry } = await filterPatternFly.memo({
+  const records = await filterPatternFlyContext.memo({
     id: id as string,
     section
   });
+  const byEntry = Array.from(records.values());
 
   assertInput(
     byEntry.length > 0,
@@ -177,7 +180,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  const resource = byEntry.length > 0 ? byResource.get(byEntry[0]!.name) : undefined;
+  const record = byEntry[0] as ContextManagementPatternFlyHashRecord;
+  const { resources } = await getPatternFlyMcpResources.memo();
+  const resource = resources.get(record.name);
 
   assertInput(resource !== undefined, `No component resource found for "${id}".`);
 
@@ -214,16 +219,16 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
    * Get a summary of the component.
    *
    * @param res - The resource object.
+   * @param currentRecord - The current context management record.
    * @returns The summary response object for the component.
    */
-  const getOverview = async (res: FilterPatternFlyResultsResource) => {
-    const { properties } = res.isSchemasAvailable ? await getProps(res.name) : { properties: {} };
+  const getOverview = async (res: FilterPatternFlyResultsResource, currentRecord: ContextManagementPatternFlyHashRecord) => {
+    const { properties } = currentRecord.isSchemasAvailable ? await getProps(currentRecord.name) : { properties: {} };
     const propNames = Object.keys(properties).join(', ') || 'None';
 
-    const firstEntry = res.entries[0];
-    const version = firstEntry?.version || 'unknown';
-    const uriId = res.uriId || firstEntry?.uriId;
-    const uriComponentId = res.uriComponentId || firstEntry?.uriComponentId;
+    const version = currentRecord.version || 'unknown';
+    const uriId = `patternfly://docs/${currentRecord.id}`;
+    const uriComponentId = `patternfly://components/${currentRecord.id}`;
 
     // Cross-links to docs
     const categories = new Set(res.entries.map(entry => entry.displayCategory));
@@ -239,13 +244,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       : '';
 
     const content = stringJoin.newline(
-      `# ${res.name} (Technical overview)`,
+      `# ${currentRecord.name} (Technical overview)`,
       `- **Version:** ${version}`,
       `- **Available Props:** ${propNames}`,
       docsContent
     );
 
-    const canonicalUri = uriComponentId || uriId || res.uriHash || passedUri.toString();
+    const canonicalUri = uriComponentId || uriId || passedUri.toString();
 
     return {
       uri: canonicalUri,
@@ -253,11 +258,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       text: formatSummaryFullContent(content, {
         descLinkSummary: 'View summary technical specs',
         descLinkFull: 'View full technical specs',
-        url: res.isSchemasAvailable ? uriComponentId || uriId : undefined,
+        url: currentRecord.isSchemasAvailable ? uriComponentId || uriId : undefined,
         detailType: normalizedDetail,
         frontMatter: {
           document: uriComponentId || uriId,
-          name: res.name,
+          name: currentRecord.name,
           version
         },
         summaryLength: 500
@@ -265,7 +270,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     };
   };
 
-  const markdownOverview = await getOverview(resource as FilterPatternFlyResultsResource);
+  const markdownOverview = await getOverview(resource as FilterPatternFlyResultsResource, record);
 
   if (normalizedDetail === 'summary') {
     return {

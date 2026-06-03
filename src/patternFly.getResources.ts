@@ -236,8 +236,11 @@ type ContextManagementPatternFlyHashRecord = {
   category: string;
   section: string;
   displayName: string;
+  displayCategory: string;
+  description: string;
   path: string;
   isGroup: boolean;
+  isSchemasAvailable: boolean;
 };
 
 /**
@@ -565,12 +568,15 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     contextManagementHashIndexMap.set(groupId.toLowerCase(), {
       id: groupId,
       name,
-      version: 'latest',
+      version: versionContext.latestVersion,
       category: 'Documentation',
       section: 'Documentation',
       displayName: name,
+      displayCategory: 'Documentation',
+      description: `Documentation group for ${name}.`,
       path: '',
-      isGroup: true
+      isGroup: true,
+      isSchemasAvailable: false
     });
 
     if (!resources.has(name)) {
@@ -645,8 +651,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         category: entry.category || '',
         section: entry.section || '',
         displayName,
+        displayCategory,
+        description: entry.description || '',
         path: path || '',
-        isGroup: false
+        isGroup: false,
+        isSchemasAvailable: !!isSchemasAvailable
       });
 
       let uriSchemas;

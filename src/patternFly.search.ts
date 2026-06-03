@@ -2,16 +2,19 @@ import {
   fuzzySearch,
   type FuzzySearch,
   type FuzzySearchOptions,
-  type FuzzySearchResult
+  type FuzzySearchResult,
+  type FuzzySearchResultMatchType
 } from './server.search';
 import { memo } from './server.caching';
 import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
+  contextManagementDecodeHash,
   type PatternFlyMcpAvailableResources,
   type PatternFlyMcpDocsMeta,
-  type PatternFlyMcpResourceMetadata
+  type PatternFlyMcpResourceMetadata,
+  type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
 
@@ -69,6 +72,173 @@ interface FilterPatternFlyResults {
 }
 
 /**
+ * Optimized filtering for context management.
+ *
+ * @param filters - Filters to apply.
+ * @param [mcpResources] - PatternFly resources.
+ * @returns Map of ID to Record.
+ */
+const filterPatternFlyContext = async (
+  filters: FilterPatternFlyFilters | undefined,
+  mcpResources?: FilterPatternFlyMcpResources
+): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
+  const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
+  const hashIndex = (getResources as PatternFlyMcpAvailableResources).contextManagementHashIndex;
+
+  if (!filters || Object.keys(filters).length === 0) {
+    return hashIndex;
+  }
+
+  const results = new Map<string, ContextManagementPatternFlyHashRecord>();
+
+  // Fast-path: O(1) lookup if id is provided
+  if (filters.id) {
+    const record = contextManagementDecodeHash(filters.id, getResources as PatternFlyMcpAvailableResources);
+    if (record) {
+      results.set(record.id, record);
+      return results;
+    }
+  }
+
+  // Fallback: O(N) filtering on the flattened index
+  const normalizedFilters = Object.fromEntries(
+    Object.entries(filters)
+      .filter(([_key, value]) => (typeof value === 'string' || typeof value === 'number') && String(value).trim().length > 0)
+      .map(([key, value]) => [key, String(value).trim().toLowerCase()])
+  );
+
+  const filterMatch = (propertyValue: unknown, filterValue: string) => {
+    const normalizePropertyValue = String(propertyValue).trim().toLowerCase();
+
+    return normalizePropertyValue === filterValue ||
+      normalizePropertyValue.startsWith(filterValue) ||
+      normalizePropertyValue.endsWith(filterValue);
+  };
+
+  for (const record of hashIndex.values()) {
+    const matchesVersion = !normalizedFilters.version || record.version.toLowerCase() === normalizedFilters.version;
+    const matchesCategory = !normalizedFilters.category || filterMatch(record.category, normalizedFilters.category) || filterMatch(record.displayCategory, normalizedFilters.category);
+    const matchesSection = !normalizedFilters.section || filterMatch(record.section, normalizedFilters.section);
+    const matchesName = !normalizedFilters.name || filterMatch(record.name, normalizedFilters.name) || filterMatch(record.displayName, normalizedFilters.name) || filterMatch(record.id, normalizedFilters.name);
+    const matchesPath = !normalizedFilters.path || filterMatch(record.path, normalizedFilters.path);
+
+    if (matchesVersion && matchesCategory && matchesSection && matchesName && matchesPath) {
+      results.set(record.id, record);
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Memoized version of filterPatternFlyContext.
+ */
+filterPatternFlyContext.memo = memo(filterPatternFlyContext, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+  cacheErrors: false,
+  keyHash: (args: Readonly<FilterPatternFlyMemoArgs>) => {
+    const [filters, resources] = args;
+
+    return generateHash([filters, resources]);
+  }
+});
+
+/**
+ * Specialized search for context management.
+ *
+ * @param searchQuery - The search query.
+ * @param filters - Filters to apply.
+ * @param options - Search options.
+ * @returns Search results.
+ */
+const searchPatternFlyContext = async (
+  searchQuery: string,
+  filters: FilterPatternFlyFilters | undefined,
+  { mcpResources, allowWildCardAll = false, maxDistance = 3, maxResults = 10 }: SearchPatternFlyOptions = {}
+): Promise<SearchPatternFlyContextResults> => {
+  const query = searchQuery.trim().toLowerCase();
+  const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
+  const filteredRecords = await filterPatternFlyContext.memo(filters, getResources);
+
+  const isWildCardAll = query === '*' || query === 'all' || query === '';
+  const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+
+  if (isSearchWildCardAll) {
+    const allResults: SearchPatternFlyContextResult[] = Array.from(filteredRecords.values()).map(record => ({
+      id: record.id,
+      matchType: 'all',
+      distance: 0,
+      record,
+      uri: record.section === 'components' && record.category === 'react'
+        ? `patternfly://components/${record.id}`
+        : `patternfly://docs/${record.id}`
+    }));
+
+    return {
+      exactMatches: allResults,
+      remainingMatches: [],
+      searchResults: allResults.slice(0, maxResults)
+    };
+  }
+
+  // If the query is a hash, try O(1) resolution first
+  const recordByHash = contextManagementDecodeHash(query, getResources as PatternFlyMcpAvailableResources);
+  if (recordByHash && filteredRecords.has(recordByHash.id)) {
+    const result: SearchPatternFlyContextResult = {
+      id: recordByHash.id,
+      matchType: 'exact',
+      distance: 0,
+      record: recordByHash,
+      uri: recordByHash.section === 'components' && recordByHash.category === 'react'
+        ? `patternfly://components/${recordByHash.id}`
+        : `patternfly://docs/${recordByHash.id}`
+    };
+    return {
+      exactMatches: [result],
+      remainingMatches: [],
+      searchResults: [result]
+    };
+  }
+
+  // Use fuzzy search on the remaining records
+  const searchItems = Array.from(filteredRecords.values()).map(record => ({
+    id: record.id,
+    searchString: `${record.name} ${record.displayName} ${record.description}`.toLowerCase()
+  }));
+
+  const { results: searchResults } = fuzzySearch(query, searchItems.map(i => i.searchString), {
+    maxDistance,
+    maxResults
+  });
+
+  const finalResults: SearchPatternFlyContextResult[] = searchResults.map(res => {
+    // fuzzySearch returns the matched string in 'item'. We find which record it belonged to.
+    const item = searchItems.find(i => i.searchString === res.item);
+    const record = filteredRecords.get(item!.id)!;
+    return {
+      id: record.id,
+      matchType: res.matchType,
+      distance: res.distance,
+      record,
+      uri: record.section === 'components' && record.category === 'react'
+        ? `patternfly://components/${record.id}`
+        : `patternfly://docs/${record.id}`
+    };
+  });
+
+  return {
+    exactMatches: finalResults.filter(r => r.matchType === 'exact' || r.matchType === 'all'),
+    remainingMatches: finalResults.filter(r => r.matchType !== 'exact' && r.matchType !== 'all'),
+    searchResults: finalResults
+  };
+};
+
+/**
+ * Memoized version of searchPatternFlyContext.
+ */
+searchPatternFlyContext.memo = memo(searchPatternFlyContext);
+
+/**
  * Search result object returned by searchPatternFly. Includes additional metadata.
  *
  * @interface SearchPatternFlyResult
@@ -106,6 +276,26 @@ interface SearchPatternFlyResults {
   searchResults: SearchPatternFlyResult[];
   totalPotentialMatches: number;
   totalResults: number;
+}
+
+/**
+ * Optimized search result for context management.
+ */
+interface SearchPatternFlyContextResult {
+  id: string;
+  matchType: FuzzySearchResultMatchType;
+  distance: number;
+  record: ContextManagementPatternFlyHashRecord;
+  uri: string;
+}
+
+/**
+ * Results for context management search.
+ */
+interface SearchPatternFlyContextResults {
+  exactMatches: SearchPatternFlyContextResult[];
+  remainingMatches: SearchPatternFlyContextResult[];
+  searchResults: SearchPatternFlyContextResult[];
 }
 
 /**
@@ -167,6 +357,7 @@ const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
  *
  */
 type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
+  PatternFlyMcpAvailableResources |
   Map<string, PatternFlyMcpResourceFilteredMetadata>;
 
 /**
@@ -669,12 +860,16 @@ searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.s
 export {
   dynamicFilterPatternFly,
   filterPatternFly,
+  filterPatternFlyContext,
   searchPatternFly,
+  searchPatternFlyContext,
   type FilterPatternFlyFilters,
   type FilterPatternFlyResults,
   type FilterPatternFlyResultsEntry,
   type FilterPatternFlyResultsResource,
   type FilterPatternFlySettings,
   type SearchPatternFlyResult,
-  type SearchPatternFlyResults
+  type SearchPatternFlyResults,
+  type SearchPatternFlyContextResult,
+  type SearchPatternFlyContextResults
 };

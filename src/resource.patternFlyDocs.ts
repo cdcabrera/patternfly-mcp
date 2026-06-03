@@ -11,7 +11,7 @@ import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { filterPatternFly } from './patternFly.search';
+import { filterPatternFly, filterPatternFlyContext } from './patternFly.search';
 import {
   formatSummaryFullContent,
   nextCursor
@@ -169,9 +169,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     inputDisplayName: 'id'
   });
 
-  const { byEntry } = await filterPatternFly.memo({
+  const records = await filterPatternFlyContext.memo({
     id: id as string
   });
+  const byEntry = Array.from(records.values());
 
   assertInput(
     byEntry.length > 0,
@@ -191,7 +192,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   try {
     const docPaths = byEntry
       .filter(({ path }) => path)
-      .map(({ path, uriId }) => ({ doc: path, uri: uriId }));
+      .map((record) => ({
+        doc: record.path,
+        uri: record.section === 'components' && record.category === 'react'
+          ? `patternfly://components/${record.id}`
+          : `patternfly://docs/${record.id}`
+      }));
 
     if (docPaths.length > 0) {
       // `processDocsFunction` has de-dup docs baked in

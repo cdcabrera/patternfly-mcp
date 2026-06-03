@@ -4,7 +4,7 @@ import { type McpTool } from './mcpSdk';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions } from './options.context';
-import { searchPatternFly } from './patternFly.search';
+import { searchPatternFly, searchPatternFlyContext } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { findClosest } from './server.search';
@@ -43,14 +43,19 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const { latestVersion, keywordsIndex } = await getPatternFlyMcpResources.memo();
+    const { latestVersion, keywordsIndex, contextManagementHashIndex } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
 
-    const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
-      searchQuery,
+    const query = String(searchQuery).trim();
+    const isWildCardAll = query === '*' || query.toLowerCase() === 'all' || query === '';
+    const allowWildCardAll = true;
+    const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
+
+    const { exactMatches, remainingMatches, searchResults } = await searchPatternFlyContext.memo(
+      query,
       { version: updatedVersion },
-      { allowWildCardAll: true, dynamicFilter: true, maxResults: options.minMax.resourceSearches.max }
+      { allowWildCardAll, maxResults: options.minMax.resourceSearches.max }
     );
 
     assertInput(
@@ -63,7 +68,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
-      const suggestion = findClosest.memo(searchQuery, keywordsIndex.reverse(), { maxDistance: 5 });
+      const suggestion = findClosest.memo(query, Array.from(contextManagementHashIndex.values()).map(r => r.name).reverse(), { maxDistance: 5 });
       const hint = suggestion ? `Try a search for "${suggestion}".` : `Try a broader search.`;
 
       return {
@@ -90,39 +95,38 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
 
     const results = new Map<string, Record<string, unknown>>();
 
-    parseResults
-      .map(result => result.entries)
-      .flat()
-      .filter(entry => entry.path)
-      .forEach(entry => {
-        if (entry.uriId && !entry.uriComponentId && !results.has(entry.uriId)) {
-          results.set(entry.uriId, {
-            type: 'resource_link',
-            uri: entry.uriId,
-            name: `${entry.displayName} - ${entry.displayCategory} (${entry.version})`,
-            description: entry.description,
-            mimeType: 'text/markdown'
-          });
+    parseResults.forEach(result => {
+      const { record, uri } = result;
+      if (results.has(uri)) {
+        return;
+      }
+
+      if (record.section === 'components' && record.category === 'react') {
+        let updatedName = `${record.displayName} - Technical Overview`;
+        let updatedDesc = `Component API reference for ${record.displayName}.`;
+
+        if (record.isSchemasAvailable) {
+          updatedName = `${record.displayName} - Technical Specs`;
+          updatedDesc = `Component API reference, property definitions, and JSON schema for ${record.displayName}.`;
         }
 
-        if (entry.uriComponentId && !results.has(entry.uriComponentId)) {
-          let updatedName = `${entry.displayName} - Technical Overview`;
-          let updatedDesc = `Component API reference for ${entry.displayName}.`;
-
-          if (entry.isSchemasAvailable) {
-            updatedName = `${entry.displayName} - Technical Specs`;
-            updatedDesc = `Component API reference, property definitions, and JSON schema for ${entry.displayName}.`;
-          }
-
-          results.set(entry.uriComponentId, {
-            type: 'resource_link',
-            uri: entry.uriComponentId,
-            name: `${updatedName} (${entry.version})`,
-            description: updatedDesc,
-            mimeType: 'text/markdown'
-          });
-        }
-      });
+        results.set(uri, {
+          type: 'resource_link',
+          uri,
+          name: `${updatedName} (${record.version})`,
+          description: updatedDesc,
+          mimeType: 'text/markdown'
+        });
+      } else {
+        results.set(uri, {
+          type: 'resource_link',
+          uri,
+          name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
+          description: record.description,
+          mimeType: 'text/markdown'
+        });
+      }
+    });
 
     const resultValues = Array.from(results.values());
 
@@ -145,7 +149,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     if (isSearchWildCardAll) {
       summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing ${resultValues.length} ${basePluralResource} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
+        `Only showing ${resultValues.length} ${basePluralResource} out of ${contextManagementHashIndex.size} potential matches. Use a more specific query.`
       );
     } else if (exactMatches.length > 0) {
       summaryTitle = stringJoin.newline(
