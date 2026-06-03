@@ -600,8 +600,8 @@ const filterPatternFly = async (
   }
 
   // Filter matching for resources and entries
-  const byResource = new Map<string, FilterPatternFlyResultsResource>();
-  const byEntry: FilterPatternFlyResultsEntry[] = [];
+  const byResource = new Map<string, PatternFlyMcpResourceFilteredMetadata>();
+  const byEntry: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const filterMatch = (propertyValue: unknown, filterValue: string) => {
     const normalizePropertyValue = String(propertyValue).trim().toLowerCase();
 
@@ -644,20 +644,15 @@ const filterPatternFly = async (
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
       const matchesPath = !updatedFilters.path || filterMatch(entry.path, updatedFilters.path) ||
-        filterMatch(entry.uriId, updatedFilters.path) || filterMatch(entry.uriHash, updatedFilters.path) ||
-        filterMatch(entry.uriSchemas, updatedFilters.path) || filterMatch(entry.uriComponent, updatedFilters.path) ||
-        filterMatch(entry.uriSchemasId, updatedFilters.path) || filterMatch(entry.uriComponentId, updatedFilters.path) ||
-        filterMatch(entry.uriComponentHash, updatedFilters.path) || filterMatch(entry.uri, updatedFilters.path);
+        filterMatch(entry.uriId, updatedFilters.path) || filterMatch(entry.uriSchemas, updatedFilters.path) ||
+        filterMatch(entry.uriSchemasId, updatedFilters.path) || filterMatch(entry.uri, updatedFilters.path);
 
       // Filter order matters specific id -> group id -> group name
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
         filterMatch(entry.groupId, updatedFilters.name) || filterMatch(entry.name, updatedFilters.name);
 
-      const matchesId = !updatedFilters.id || filterMatch(entry.groupId, updatedFilters.id) ||
-        filterMatch(entry.id, updatedFilters.id);
-
       // Any missing filter registers as true. Only filters that are active run their check.
-      return matchesVersion && matchesCategory && matchesSection && matchesPath && matchesName && matchesId;
+      return matchesVersion && matchesCategory && matchesSection && matchesPath && matchesName;
     });
 
     if (signal?.aborted) {
@@ -674,22 +669,13 @@ const filterPatternFly = async (
       let versionContextualProperties = {};
 
       // Apply version contextual properties, typically group/resource related URIs.
-      const effectiveVersion = updatedFilters.version; // || matchedEntries[0]?.version?.toLowerCase();
-
-      if (effectiveVersion && versions?.[effectiveVersion]) {
+      if (updatedFilters.version && versions?.[updatedFilters.version]) {
         // General props version dependent
         versionContextualProperties = {
-          isSchemasAvailable: versions[effectiveVersion]?.isSchemasAvailable,
-          uri: versions[effectiveVersion]?.uri,
-          uriId: versions[effectiveVersion]?.uriId,
-          uriHash: versions[effectiveVersion]?.uriHash,
-          uriSchemas: versions[effectiveVersion]?.uriSchemas,
-          uriSchemasId: versions[effectiveVersion]?.uriSchemasId,
-          uriComponent: versions[effectiveVersion]?.uriComponent,
-          uriComponentId: versions[effectiveVersion]?.uriComponentId,
-          uriComponentHash: versions[effectiveVersion]?.uriComponentHash,
-          contextManagementUri: versions[effectiveVersion]?.contextManagementUri,
-          contextManagementComponentUri: versions[effectiveVersion]?.contextManagementComponentUri
+          isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
+          uri: versions[updatedFilters.version]?.uri,
+          uriSchemas: versions[updatedFilters.version]?.uriSchemas,
+          uriSchemasId: versions[updatedFilters.version]?.uriSchemasId
         };
       }
 

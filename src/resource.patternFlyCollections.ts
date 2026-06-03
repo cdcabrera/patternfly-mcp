@@ -79,7 +79,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
 
     resources.push({
       uri: entry.collectionUri!,
-      name: `${entry.name} (Collection Hub) (${actualIndex}/${collectionsIndex.length} collections)`,
+      name: `${entry.displayName} Collection Hub (${actualIndex}/${collectionsIndex.length})`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
@@ -105,7 +105,7 @@ listResources.memo = memo(listResources);
  * @param variables - Variables for the resource.
  * @returns The resource contents.
  */
-export const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>) => {
+const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>) => {
   const { id } = variables || {};
 
   if (!id || typeof id !== 'string') {
@@ -127,8 +127,10 @@ export const resourceCallback = async (passedUri: URL, variables: Record<string,
 
   let content = `---\npfmcp_collection: ${record.collectionUri}\npfmcp_name: ${record.name}\n---\n`;
 
-  content += `# ${record.name} (Collection Hub)\n\n`;
+  content += `# ${record.displayName} Collection Hub\n\n`;
   content += `${record.description}\n\n`;
+
+  content += `Found ${techSpecs.length} total related technical specifications and ${docs.length} documentation resources. Use the attached documentation and component IDs to discover more PatternFly context.\n\n`;
 
   if (techSpecs.length > 0) {
     content += '### Technical Specifications\n';
@@ -224,7 +226,7 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
  */
-export const patternFlyCollectionsResource = (options = getOptions()): McpResource => {
+const patternFlyCollectionsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
@@ -251,4 +253,16 @@ export const patternFlyCollectionsResource = (options = getOptions()): McpResour
       shouldRegister: opts => opts.contextManagement === true
     }
   ];
+};
+
+export {
+  patternFlyCollectionsResource,
+  listResources,
+  resourceCallback,
+  uriDetailComplete,
+  uriIdComplete,
+  NAME,
+  URI_TEMPLATE,
+  URI_DESCRIPTION,
+  CONFIG
 };

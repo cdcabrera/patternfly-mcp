@@ -588,8 +588,9 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
     const groupId = generateHash(name);
     const collectionUri = `patternfly://collections/${groupId}`;
-    const description = `Documentation group for ${name}.`;
-    const displayName = `${name} (Group)`;
+    const description = `Collection hub for ${name} resources.`;
+    const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
+    const displayName = `${capitalizedName} Collections Hub`;
 
     const groupRecord: ContextManagementPatternFlyHashRecord = {
       id: groupId,
@@ -600,7 +601,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       category: 'Documentation',
       section: 'Documentation',
       displayName,
-      displayCategory: 'Documentation',
+      displayCategory: 'Collection',
       description,
       path: '',
       isGroup: true,
@@ -630,11 +631,15 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
       let finalDisplayName = baseDisplayName;
 
-      if (!finalDisplayName.toLowerCase().includes(displayCategory.toLowerCase())) {
+      const lowerDisplayName = finalDisplayName.toLowerCase();
+      const lowerCategory = displayCategory.toLowerCase();
+      const versionTag = `(${version})`;
+
+      if (!lowerDisplayName.includes(lowerCategory)) {
         finalDisplayName += ` - ${displayCategory}`;
       }
-      if (!finalDisplayName.toLowerCase().includes(`(${version})`)) {
-        finalDisplayName += ` (${version})`;
+      if (!lowerDisplayName.includes(versionTag)) {
+        finalDisplayName += ` ${versionTag}`;
       }
 
       const displayName = finalDisplayName;
@@ -711,9 +716,6 @@ getPatternFlyContextManagementResources.memo = memo(getPatternFlyContextManageme
  * are populated during search and filter services when `entries` are matched against PF versions. Review
  * separating the typings for clarity.
  *
- * @note Need to re-eval component resources being "schema-dependent". Under the experimental-context-management
- * we've temporarily made them dependent since schemas include specs. This may shift under related API work.
- *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
  * @returns A multifaceted documentation breakdown. Use the "memoized" property for performance.
  */
@@ -730,8 +732,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const pathIndexMap = new Map<string, string>();
   const uriIndexMap = new Map<string, string>();
   const hashIndexMap = new Map<string, string>();
-  const contextManagementHashIndexMap = new Map<string, ContextManagementPatternFlyHashRecord>();
-  const versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
@@ -740,31 +740,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     const name = unifiedName.toLowerCase();
     const groupId = generateHash(name);
 
-    const uri = `patternfly://docs/${groupId}`;
-    const componentUri = `patternfly://components/${groupId}`;
-    const collectionUri = `patternfly://collections/${groupId}`;
-    const displayName = `${name} (Group)`;
-    const description = `Documentation group for ${name}.`;
-
     hashIndexMap.set(groupId.toLowerCase(), name);
-    contextManagementHashIndexMap.set(groupId.toLowerCase(), {
-      id: groupId,
-      uri,
-      componentUri,
-      collectionUri,
-      canonicalUri: collectionUri,
-      name,
-      version: versionContext.latestVersion,
-      category: 'Documentation',
-      section: 'Documentation',
-      displayName,
-      displayCategory: 'Documentation',
-      description,
-      path: '',
-      isGroup: true,
-      isSchemasAvailable: false,
-      searchString: `${name} ${displayName} ${description}`.toLowerCase()
-    });
 
     if (!resources.has(name)) {
       // Include search and filter contextual `undefined` metadata for each resource.
@@ -773,18 +749,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         groupId,
         entries: [],
         versions: {},
-        id: undefined,
         isSchemasAvailable: undefined,
         uri: undefined,
-        uriId: undefined,
-        uriHash: undefined,
         uriSchemas: undefined,
-        uriSchemasId: undefined,
-        uriComponent: undefined,
-        uriComponentId: undefined,
-        uriComponentHash: undefined,
-        contextManagementUri: undefined,
-        contextManagementComponentUri: undefined
+        uriSchemasId: undefined
       });
     }
 
@@ -797,15 +765,11 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
       const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-      const uriId = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ id, version }, { prefix: true })}`;
-      const uriHash = `patternfly://docs/${encodeURIComponent(id)}`;
-      const contextManagementUri = `patternfly://docs/${id}`;
+      const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uri.toLowerCase(), name);
       uriIndexMap.set(uriId.toLowerCase(), name);
-      uriIndexMap.set(uriHash.toLowerCase(), name);
-      uriIndexMap.set(contextManagementUri.toLowerCase(), name);
 
       if (path) {
         pathIndexMap.set(path.toLowerCase(), name);
@@ -814,65 +778,20 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       resource.versions[version] ??= {
         groupId,
         isSchemasAvailable,
-        id,
         uri,
-        uriId,
-        uriHash,
-        uriComponent: undefined,
-        uriComponentId: undefined,
-        uriComponentHash: undefined,
-        contextManagementUri: undefined,
-        contextManagementComponentUri: undefined,
         uriSchemas: undefined,
         uriSchemasId: undefined,
         entries: []
       };
 
-      const displayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
+      const displayName = entry.displayName || name;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
-
-      let finalDisplayName = displayName;
-
-      if (!finalDisplayName.toLowerCase().includes(displayCategory.toLowerCase())) {
-        finalDisplayName += ` - ${displayCategory}`;
-      }
-      if (!finalDisplayName.toLowerCase().includes(`(${version})`)) {
-        finalDisplayName += ` (${version})`;
-      }
-
-      const fullDisplayName = finalDisplayName;
-      const description = entry.description || '';
-      const contextManagementUriVal = `patternfly://docs/${id}`;
-      const contextManagementComponentUriVal = `patternfly://components/${id}`;
-
-      contextManagementHashIndexMap.set(id.toLowerCase(), {
-        id,
-        uri: contextManagementUriVal,
-        componentUri: contextManagementComponentUriVal,
-        canonicalUri: entry.section === 'components' && entry.category === 'react' ? contextManagementComponentUriVal : contextManagementUriVal,
-        name,
-        version,
-        category: entry.category || '',
-        section: entry.section || '',
-        displayName: fullDisplayName,
-        displayCategory,
-        description,
-        path: path || '',
-        isGroup: false,
-        isSchemasAvailable: Boolean(isSchemasAvailable),
-        searchString: `${name} ${fullDisplayName} ${description}`.toLowerCase()
-      });
-
       let uriSchemas;
       let uriSchemasId;
-      let uriComponent;
-      let uriComponentId;
-      let uriComponentHash;
-      let contextManagementComponentUri;
 
       if (isSchemasAvailable) {
         uriSchemas = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-        uriSchemasId = `patternfly://schemas/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
+        uriSchemasId = `patternfly://schemas/${encodeURIComponent(groupId)}`;
 
         resource.versions[version].uriSchemas = uriSchemas;
         resource.versions[version].uriSchemasId = uriSchemasId;
@@ -881,41 +800,17 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         uriIndexMap.set(uriSchemasId.toLowerCase(), name);
       }
 
-      if (entry.section === 'components' && entry.category === 'react') {
-        uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-        uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id, version }, { prefix: true })}`;
-        uriComponentHash = `patternfly://components/${encodeURIComponent(id)}`;
-        contextManagementComponentUri = `patternfly://components/${id}`;
-
-        resource.versions[version].uriComponent = uriComponent;
-        resource.versions[version].uriComponentId = uriComponentId;
-        resource.versions[version].uriComponentHash = uriComponentHash;
-        resource.versions[version].contextManagementComponentUri = contextManagementComponentUri;
-
-        uriIndexMap.set(uriComponent.toLowerCase(), name);
-        uriIndexMap.set(uriComponentId.toLowerCase(), name);
-        uriIndexMap.set(uriComponentHash.toLowerCase(), name);
-        uriIndexMap.set(contextManagementComponentUri.toLowerCase(), name);
-      }
-
       const extendedEntry = {
         ...entry,
         id,
         groupId,
-        isSchemasAvailable,
         name,
         displayName,
         displayCategory,
         uri,
         uriId,
-        uriHash,
         uriSchemas,
-        uriSchemasId,
-        uriComponent,
-        uriComponentId,
-        uriComponentHash,
-        contextManagementUri,
-        contextManagementComponentUri
+        uriSchemasId
       } as (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta);
 
       if (path) {
@@ -928,11 +823,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       if (uriSchemas) {
         byUri[uriSchemas] ??= [];
         byUri[uriSchemas]?.push(extendedEntry);
-      }
-
-      if (uriComponent) {
-        byUri[uriComponent] ??= [];
-        byUri[uriComponent]?.push(extendedEntry);
       }
 
       byVersion[version] ??= [];
@@ -961,15 +851,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     });
   });
 
-  Object.entries(byVersion)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([_version, entries]) => {
-      entries
-        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
-        .forEach((entry, _index) => {
-          versionIndex.push(entry);
-        });
-    });
+  Object.entries(byVersion).forEach(([_version, entries]) => {
+    entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  });
 
   const filteredKeywords = filterKeywords(rawKeywordsMap);
 
@@ -989,8 +873,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     pathIndex: pathIndexMap,
     uriIndex: uriIndexMap,
     hashIndex: hashIndexMap,
-    contextManagementHashIndex: contextManagementHashIndexMap,
-    versionIndex,
     byPath,
     // @deprecated byUri - Under review
     byUri,

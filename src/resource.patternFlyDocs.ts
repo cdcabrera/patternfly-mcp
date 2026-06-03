@@ -18,7 +18,8 @@ import {
 import { filterPatternFlyContext } from './patternFly.search';
 import {
   formatSummaryFullContent,
-  nextCursor
+  nextCursor,
+  paramCompletionContext
 } from './resource.helpers';
 
 /**
@@ -136,25 +137,74 @@ uriDetailComplete.memo = memo(uriDetailComplete);
 /**
  * ID completion callback for the URI template.
  *
- * @param id - The value to complete.
- * @param _context - The completion context.
+ * @param value - The value to complete.
+ * @param context - The completion context.
  * @returns The list of available IDs.
  */
-const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, _context) => {
-  const { hashIndex } = await getPatternFlyContextManagementResources.memo();
+const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
+  const { ids } = await paramCompletionContext({ name: value, ...context?.arguments });
 
-  return Array.from(hashIndex.values())
-    .filter((record: ContextManagementPatternFlyHashRecord) =>
-      record.id.includes(id.toLowerCase()) ||
-      record.name.toLowerCase().includes(id.toLowerCase()) ||
-      record.displayName.toLowerCase().includes(id.toLowerCase()))
-    .map((record: ContextManagementPatternFlyHashRecord) => record.id);
+  return ids;
 };
 
 /**
  * Memoized version of uriIdComplete.
  */
 uriIdComplete.memo = memo(uriIdComplete);
+
+/**
+ * Version completion callback for the URI template.
+ *
+ * @param value - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available versions
+ */
+const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
+  const { versions } = await paramCompletionContext({ version: value, ...context?.arguments });
+
+  return versions;
+};
+
+/**
+ * Memoized version of uriIdComplete.
+ */
+uriVersionComplete.memo = memo(uriVersionComplete);
+
+/**
+ * Category completion callback for the URI template.
+ *
+ * @param value - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available categories
+ */
+const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
+  const { categories } = await paramCompletionContext({ category: value, ...context?.arguments });
+
+  return categories;
+};
+
+/**
+ * Memoized version of uriIdComplete.
+ */
+uriCategoryComplete.memo = memo(uriCategoryComplete);
+
+/**
+ * Section completion callback for the URI template.
+ *
+ * @param value - The value to complete.
+ * @param context - The completion context.
+ * @returns The list of available sections
+ */
+const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
+  const { sections } = await paramCompletionContext({ section: value, ...context?.arguments });
+
+  return sections;
+};
+
+/**
+ * Memoized version of uriIdComplete.
+ */
+uriSectionComplete.memo = memo(uriSectionComplete);
 
 /**
  * Return content. Resource callback for the documentation template.
@@ -264,7 +314,10 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
     id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
-    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args))
+    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
+    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args)),
+    category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+    section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args))
   };
 
   const callback: McpResource[3] = async (uri, variables) =>
@@ -281,11 +334,12 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
     {
       complete,
       registerAllSearchCombinations: true,
+      // this entire block was a hypothetical that somehow stuck? investigate pre-collections.
       indexConfig: {
-        uri: 'patternfly://docs/index{?version}'
+        uri: 'patternfly://docs/index{?version,category,section}'
       },
       metaConfig: {
-        uri: 'patternfly://docs/meta{?version}',
+        uri: 'patternfly://docs/meta{?version,category,section}',
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the PatternFly documentation index.'
       }
@@ -302,6 +356,9 @@ export {
   resourceCallback,
   uriDetailComplete,
   uriIdComplete,
+  uriVersionComplete,
+  uriCategoryComplete,
+  uriSectionComplete,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,
