@@ -3,6 +3,44 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { buildSearchString, stringJoin } from './server.helpers';
 
 /**
+ * Parses YAML front matter from the beginning of the content.
+ *
+ * @param content - Input text that may contain YAML front matter.
+ * @returns An object containing the parsed front matter and the content with the front matter removed.
+ */
+const parseFrontMatter = (content: string) => {
+  let strippedContent = content;
+  const frontMatter: Record<string, string> = {};
+
+  // Extract existing frontmatter from the beginning of the content.
+  const frontMatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+
+  if (frontMatterMatch) {
+    strippedContent = content.slice(frontMatterMatch[0].length);
+    const rawYaml = frontMatterMatch[1] || '';
+
+    // Basic key-value parsing for YAML frontmatter.
+    rawYaml.split(/\r?\n/).forEach(line => {
+      const separatorIndex = line.indexOf(':');
+
+      if (separatorIndex !== -1) {
+        const key = line.slice(0, separatorIndex).trim();
+        const value = line.slice(separatorIndex + 1).trim();
+
+        if (key) {
+          frontMatter[key] = value;
+        }
+      }
+    });
+  }
+
+  return {
+    frontMatter,
+    content: strippedContent
+  };
+};
+
+/**
  * Returns a consistent summarized, or full version, of the input text with:
  * - YAML front matter, if defined, is added to the front of the content.
  * - Full and summary links, if a URL is provided, are added to the end of the content.
@@ -46,30 +84,7 @@ const formatSummaryFullContent = (
   const isSummary = detailType === 'summary';
   const prefix = 'pfmcp_';
 
-  let strippedContent = content;
-  const existingFrontMatter: Record<string, string> = {};
-
-  // Extract existing frontmatter from the beginning of the content.
-  const frontMatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
-
-  if (frontMatterMatch) {
-    strippedContent = content.slice(frontMatterMatch[0].length);
-    const rawYaml = frontMatterMatch[1] || '';
-
-    // Basic key-value parsing for YAML frontmatter.
-    rawYaml.split(/\r?\n/).forEach(line => {
-      const separatorIndex = line.indexOf(':');
-
-      if (separatorIndex !== -1) {
-        const key = line.slice(0, separatorIndex).trim();
-        const value = line.slice(separatorIndex + 1).trim();
-
-        if (key) {
-          existingFrontMatter[key] = value;
-        }
-      }
-    });
-  }
+  const { frontMatter: existingFrontMatter, content: strippedContent } = parseFrontMatter(content);
 
   const ourFrontMatter: Record<string, string> = {};
 
@@ -269,4 +284,4 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   };
 };
 
-export { encodeDecodeCursor, formatSummaryFullContent, nextCursor, paramCompletion };
+export { encodeDecodeCursor, formatSummaryFullContent, nextCursor, paramCompletion, parseFrontMatter };

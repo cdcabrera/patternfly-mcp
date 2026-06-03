@@ -1,7 +1,8 @@
 import {
   formatSummaryFullContent,
   encodeDecodeCursor,
-  nextCursor
+  nextCursor,
+  parseFrontMatter
 } from '../resource.helpers';
 
 describe('resource.helpers', () => {
@@ -117,6 +118,47 @@ describe('resource.helpers', () => {
       const result = nextCursor(params);
 
       expect(result).toEqual(expected);
+    });
+  });
+
+  describe('parseFrontMatter', () => {
+    it('should return empty frontMatter if none exists', () => {
+      const content = '# No Frontmatter';
+      const result = parseFrontMatter(content);
+
+      expect(result.frontMatter).toEqual({});
+      expect(result.content).toBe(content);
+    });
+
+    it('should parse simple YAML frontmatter', () => {
+      const content = '---\ntitle: My Page\ncategory: component\n---\n# Content';
+      const result = parseFrontMatter(content);
+
+      expect(result.frontMatter).toEqual({
+        title: 'My Page',
+        category: 'component'
+      });
+      expect(result.content).toBe('# Content');
+    });
+
+    it('should handle different line endings', () => {
+      const content = '---\r\ntitle: Windows Style\r\n---\r\n# Content';
+      const result = parseFrontMatter(content);
+
+      expect(result.frontMatter).toEqual({
+        title: 'Windows Style'
+      });
+      expect(result.content).toBe('# Content');
+    });
+
+    it('should handle empty or malformed lines in frontmatter', () => {
+      const content = '---\ntitle: Valid\nInvalidLine\n: NoKey\n---\n# Content';
+      const result = parseFrontMatter(content);
+
+      expect(result.frontMatter).toEqual({
+        title: 'Valid'
+      });
+      expect(result.content).toBe('# Content');
     });
   });
 });
