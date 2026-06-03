@@ -55,6 +55,7 @@ const parseFrontMatter = (content: string) => {
  * @param [settings.descTruncateCode='truncated code block'] - Description for the truncated code block link.
  * @param [settings.detailType] - Whether to return a full or summary version of the content. Defaults to 'full'.
  * @param [settings.frontMatter] - YAML front matter to include in the content.
+ * @param [settings.frontMatterPrefix='pfmcp_'] - Prefix to add to frontmatter keys.
  * @param [settings.summaryLength] - The maximum length of the summary. Defaults to 250 characters.
  * @param [settings.url] - URL to link to.
  * @returns Formatted content with optional YAML front matter and links.
@@ -68,6 +69,7 @@ const formatSummaryFullContent = (
     descTruncateCode = 'truncated code block',
     detailType = 'full',
     frontMatter,
+    frontMatterPrefix = 'pfmcp_',
     summaryLength = 250,
     url
   }: {
@@ -77,42 +79,38 @@ const formatSummaryFullContent = (
     descTruncateCode?: string;
     detailType?: 'full' | 'summary';
     frontMatter?: Record<string, string | undefined>;
+    frontMatterPrefix?: string;
     summaryLength?: number;
     url?: string | undefined;
   } = {}
 ) => {
   const isSummary = detailType === 'summary';
-  const prefix = 'pfmcp_';
-
   const { frontMatter: existingFrontMatter, content: strippedContent } = parseFrontMatter(content);
-
-  const ourFrontMatter: Record<string, string> = {};
+  const updatedFrontMatter: Record<string, string> = {};
 
   // Add prefixes to our frontmatter properties.
   if (frontMatter) {
     Object.entries(frontMatter).forEach(([key, value]) => {
       if (value) {
-        ourFrontMatter[`${prefix}${key}`] = value;
+        updatedFrontMatter[`${frontMatterPrefix}${key}`] = value;
       }
     });
   }
 
   // Add detail links and current detail type with prefixes.
   if (url) {
-    const linkKey = isSummary ? `${prefix}full_uri` : `${prefix}summary_uri`;
+    const linkKey = isSummary ? `${frontMatterPrefix}full_uri` : `${frontMatterPrefix}summary_uri`;
     const searchParams = isSummary ? { detail: 'full' } : { detail: 'summary' };
 
-    ourFrontMatter[linkKey] = `${url}${buildSearchString(searchParams, { base: url, prefix: true })}`;
+    updatedFrontMatter[linkKey] = `${url}${buildSearchString(searchParams, { base: url, prefix: true })}`;
   }
 
-  ourFrontMatter[`${prefix}detail`] = isSummary ? 'full' : 'summary';
+  updatedFrontMatter[`${frontMatterPrefix}detail`] = isSummary ? 'full' : 'summary';
 
-  // Merge existing frontmatter with ours. Ours takes precedence for collisions.
-  const mergedFrontMatter = { ...existingFrontMatter, ...ourFrontMatter };
-
-  const updatedFrontMatter = stringJoin.newlineFiltered(
+  // Merge existing frontmatter with internal. Internal takes priority.
+  const mergedFrontMatter = stringJoin.newlineFiltered(
     '---',
-    ...Object.entries(mergedFrontMatter).map(([key, value]) => `${key}: ${value}`),
+    ...Object.entries({ ...existingFrontMatter, ...updatedFrontMatter }).map(([key, value]) => `${key}: ${value}`),
     '---'
   );
 
@@ -126,7 +124,7 @@ const formatSummaryFullContent = (
 
   if (detailType === 'full' || strippedContent.length <= summaryLength) {
     return stringJoin.newlineFiltered(
-      updatedFrontMatter,
+      mergedFrontMatter,
       strippedContent,
       updatedLink
     );
@@ -164,7 +162,7 @@ const formatSummaryFullContent = (
     : truncated.trim();
 
   return stringJoin.newlineFiltered(
-    updatedFrontMatter,
+    mergedFrontMatter,
     `${updatedContent}... [${descTruncate}]`,
     updatedLink
   );
