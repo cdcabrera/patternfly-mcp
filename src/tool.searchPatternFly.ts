@@ -4,8 +4,8 @@ import { type McpTool } from './mcpSdk';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions } from './options.context';
-import { searchPatternFly, searchPatternFlyContext } from './patternFly.search';
-import { getPatternFlyMcpResources } from './patternFly.getResources';
+import { searchPatternFlyContext } from './patternFly.search';
+import { getPatternFlyContextManagementResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { findClosest } from './server.search';
 
@@ -43,7 +43,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const { latestVersion, keywordsIndex, contextManagementHashIndex } = await getPatternFlyMcpResources.memo();
+    const { latestVersion, hashIndex } = await getPatternFlyContextManagementResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
 
@@ -68,7 +68,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
-      const suggestion = findClosest.memo(query, Array.from(contextManagementHashIndex.values()).map(r => r.name).reverse(), { maxDistance: 5 });
+      const suggestion = findClosest.memo(query, Array.from(hashIndex.values()).map(record => record.name).reverse(), { maxDistance: 5 });
       const hint = suggestion ? `Try a search for "${suggestion}".` : `Try a broader search.`;
 
       return {
@@ -97,6 +97,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
 
     parseResults.forEach(result => {
       const { record, uri } = result;
+
       if (results.has(uri)) {
         return;
       }
@@ -149,7 +150,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     if (isSearchWildCardAll) {
       summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing ${resultValues.length} ${basePluralResource} out of ${contextManagementHashIndex.size} potential matches. Use a more specific query.`
+        `Only showing ${resultValues.length} ${basePluralResource} out of ${hashIndex.size} potential matches. Use a more specific query.`
       );
     } else if (exactMatches.length > 0) {
       summaryTitle = stringJoin.newline(

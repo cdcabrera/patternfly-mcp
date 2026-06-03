@@ -10,8 +10,9 @@ import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
-  contextManagementDecodeHash,
+  getPatternFlyContextManagementResources,
   type PatternFlyMcpAvailableResources,
+  type ContextManagementResources,
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResourceMetadata,
   type ContextManagementPatternFlyHashRecord
@@ -72,6 +73,107 @@ interface FilterPatternFlyResults {
 }
 
 /**
+ * Optimized dynamic filter for context management.
+ *
+ * @param searchQuery - The search query.
+ * @param filters - Filters to apply.
+ * @param resources - Context management resources.
+ * @returns Map of ID to Record.
+ */
+const dynamicFilterPatternFlyContext = async (
+  searchQuery: string,
+  filters: FilterPatternFlyFilters | undefined,
+  resources: ContextManagementResources
+): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
+  const query = searchQuery.trim().toLowerCase();
+  const results = new Map<string, ContextManagementPatternFlyHashRecord>();
+
+  if (!query) {
+    return results;
+  }
+
+  const { hashIndex, nameIndex, pathIndex } = resources;
+
+  // Parallel race for exact matches
+  try {
+    const matchedRecord = await Promise.any([
+      // ID lookup
+      (async () => {
+        const record = hashIndex.get(query);
+
+        if (record) {
+          return record;
+        }
+
+        throw new Error('No ID match');
+      })(),
+      // Name lookup (first exact match)
+      (async () => {
+        const ids = nameIndex.get(query);
+
+        if (ids && ids.length > 0) {
+          const firstId = ids[0] as string;
+          const record = hashIndex.get(firstId);
+
+          if (record) {
+            return record;
+          }
+        }
+
+        throw new Error('No Name match');
+      })(),
+      // Path lookup
+      (async () => {
+        const id = pathIndex.get(query);
+
+        if (id) {
+          const record = hashIndex.get(id);
+
+          if (record) {
+            return record;
+          }
+        }
+
+        throw new Error('Path match');
+      })()
+    ]);
+
+    if (matchedRecord) {
+      // If we have other filters, we must ensure the matched record satisfies them
+      const normalizedFilters = Object.fromEntries(
+        Object.entries(filters || {})
+          .filter(([_key, value]) => (typeof value === 'string' ||
+            typeof value === 'number') &&
+            String(value).trim().length > 0)
+          .map(([key, value]) => [key, String(value).trim().toLowerCase()])
+      );
+
+      const filterMatch = (propertyValue: unknown, filterValue: string) => {
+        const normalizePropertyValue = String(propertyValue).trim().toLowerCase();
+
+        return normalizePropertyValue === filterValue ||
+          normalizePropertyValue.startsWith(filterValue) ||
+          normalizePropertyValue.endsWith(filterValue);
+      };
+
+      const matchesVersion = !normalizedFilters.version || matchedRecord.version.toLowerCase() === normalizedFilters.version;
+      const matchesCategory = !normalizedFilters.category ||
+        filterMatch(matchedRecord.category, normalizedFilters.category) ||
+        filterMatch(matchedRecord.displayCategory, normalizedFilters.category);
+      const matchesSection = !normalizedFilters.section || filterMatch(matchedRecord.section, normalizedFilters.section);
+
+      if (matchesVersion && matchesCategory && matchesSection) {
+        results.set(matchedRecord.id, matchedRecord);
+      }
+    }
+  } catch {
+    // Promise.any fails if all promises reject - that's fine, we fall back to O(N)
+  }
+
+  return results;
+};
+
+/**
  * Optimized filtering for context management.
  *
  * @param filters - Filters to apply.
@@ -82,23 +184,40 @@ const filterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
   mcpResources?: FilterPatternFlyMcpResources
 ): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
-  const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
-  const hashIndex = (getResources as PatternFlyMcpAvailableResources).contextManagementHashIndex;
+  const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
+  const hashIndex = (getResources as ContextManagementResources).hashIndex;
 
   if (!filters || Object.keys(filters).length === 0) {
     return hashIndex;
   }
 
-  const results = new Map<string, ContextManagementPatternFlyHashRecord>();
-
   // Fast-path: O(1) lookup if id is provided
   if (filters.id) {
-    const record = contextManagementDecodeHash(filters.id, getResources as PatternFlyMcpAvailableResources);
+    const record = hashIndex.get(filters.id.toLowerCase());
+
     if (record) {
+      const results = new Map<string, ContextManagementPatternFlyHashRecord>();
+
       results.set(record.id, record);
+
       return results;
     }
   }
+
+  // Try dynamic filter for exact Name or Path matches if those filters are provided
+  if (filters.name || filters.path) {
+    const dynamicResults = await dynamicFilterPatternFlyContext(
+      filters.name || filters.path || '',
+      filters,
+      getResources as ContextManagementResources
+    );
+
+    if (dynamicResults.size === 1) {
+      return dynamicResults;
+    }
+  }
+
+  const results = new Map<string, ContextManagementPatternFlyHashRecord>();
 
   // Fallback: O(N) filtering on the flattened index
   const normalizedFilters = Object.fromEntries(
@@ -117,9 +236,14 @@ const filterPatternFlyContext = async (
 
   for (const record of hashIndex.values()) {
     const matchesVersion = !normalizedFilters.version || record.version.toLowerCase() === normalizedFilters.version;
-    const matchesCategory = !normalizedFilters.category || filterMatch(record.category, normalizedFilters.category) || filterMatch(record.displayCategory, normalizedFilters.category);
+    const matchesCategory = !normalizedFilters.category ||
+      filterMatch(record.category, normalizedFilters.category) ||
+      filterMatch(record.displayCategory, normalizedFilters.category);
     const matchesSection = !normalizedFilters.section || filterMatch(record.section, normalizedFilters.section);
-    const matchesName = !normalizedFilters.name || filterMatch(record.name, normalizedFilters.name) || filterMatch(record.displayName, normalizedFilters.name) || filterMatch(record.id, normalizedFilters.name);
+    const matchesName = !normalizedFilters.name ||
+      filterMatch(record.name, normalizedFilters.name) ||
+      filterMatch(record.displayName, normalizedFilters.name) ||
+      filterMatch(record.id, normalizedFilters.name);
     const matchesPath = !normalizedFilters.path || filterMatch(record.path, normalizedFilters.path);
 
     if (matchesVersion && matchesCategory && matchesSection && matchesName && matchesPath) {
@@ -149,6 +273,10 @@ filterPatternFlyContext.memo = memo(filterPatternFlyContext, {
  * @param searchQuery - The search query.
  * @param filters - Filters to apply.
  * @param options - Search options.
+ * @param [options.mcpResources] - PatternFly resources.
+ * @param [options.allowWildCardAll] - Whether to allow wild card all search.
+ * @param [options.maxDistance] - Maximum distance for fuzzy search.
+ * @param [options.maxResults] - Maximum results for fuzzy search.
  * @returns Search results.
  */
 const searchPatternFlyContext = async (
@@ -157,8 +285,9 @@ const searchPatternFlyContext = async (
   { mcpResources, allowWildCardAll = false, maxDistance = 3, maxResults = 10 }: SearchPatternFlyOptions = {}
 ): Promise<SearchPatternFlyContextResults> => {
   const query = searchQuery.trim().toLowerCase();
-  const getResources = await (mcpResources || getPatternFlyMcpResources.memo());
-  const filteredRecords = await filterPatternFlyContext.memo(filters, getResources);
+  const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
+  const resources = getResources as ContextManagementResources;
+  const filteredRecords = await filterPatternFlyContext.memo(filters, resources);
 
   const isWildCardAll = query === '*' || query === 'all' || query === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
@@ -169,9 +298,9 @@ const searchPatternFlyContext = async (
       matchType: 'all',
       distance: 0,
       record,
-      uri: record.section === 'components' && record.category === 'react'
-        ? `patternfly://components/${record.id}`
-        : `patternfly://docs/${record.id}`
+      uri: record.componentUri && record.section === 'components' && record.category === 'react'
+        ? record.componentUri
+        : record.uri
     }));
 
     return {
@@ -182,17 +311,19 @@ const searchPatternFlyContext = async (
   }
 
   // If the query is a hash, try O(1) resolution first
-  const recordByHash = contextManagementDecodeHash(query, getResources as PatternFlyMcpAvailableResources);
+  const recordByHash = resources.hashIndex.get(query);
+
   if (recordByHash && filteredRecords.has(recordByHash.id)) {
     const result: SearchPatternFlyContextResult = {
       id: recordByHash.id,
       matchType: 'exact',
       distance: 0,
       record: recordByHash,
-      uri: recordByHash.section === 'components' && recordByHash.category === 'react'
-        ? `patternfly://components/${recordByHash.id}`
-        : `patternfly://docs/${recordByHash.id}`
+      uri: recordByHash.componentUri && recordByHash.section === 'components' && recordByHash.category === 'react'
+        ? recordByHash.componentUri
+        : recordByHash.uri
     };
+
     return {
       exactMatches: [result],
       remainingMatches: [],
@@ -214,21 +345,23 @@ const searchPatternFlyContext = async (
   const finalResults: SearchPatternFlyContextResult[] = searchResults.map(res => {
     // fuzzySearch returns the matched string in 'item'. We find which record it belonged to.
     const item = searchItems.find(i => i.searchString === res.item);
+
     const record = filteredRecords.get(item!.id)!;
+
     return {
       id: record.id,
       matchType: res.matchType,
       distance: res.distance,
       record,
-      uri: record.section === 'components' && record.category === 'react'
-        ? `patternfly://components/${record.id}`
-        : `patternfly://docs/${record.id}`
+      uri: record.componentUri && record.section === 'components' && record.category === 'react'
+        ? record.componentUri
+        : record.uri
     };
   });
 
   return {
-    exactMatches: finalResults.filter(r => r.matchType === 'exact' || r.matchType === 'all'),
-    remainingMatches: finalResults.filter(r => r.matchType !== 'exact' && r.matchType !== 'all'),
+    exactMatches: finalResults.filter(result => result.matchType === 'exact' || result.matchType === 'all'),
+    remainingMatches: finalResults.filter(result => result.matchType !== 'exact' && result.matchType !== 'all'),
     searchResults: finalResults
   };
 };
@@ -358,6 +491,7 @@ const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
  */
 type FilterPatternFlyMcpResources = | Promise<PatternFlyMcpAvailableResources> |
   PatternFlyMcpAvailableResources |
+  ContextManagementResources |
   Map<string, PatternFlyMcpResourceFilteredMetadata>;
 
 /**

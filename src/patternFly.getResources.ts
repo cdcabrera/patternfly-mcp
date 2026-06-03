@@ -231,6 +231,8 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  */
 type ContextManagementPatternFlyHashRecord = {
   id: string;
+  uri: string;
+  componentUri?: string;
   name: string;
   version: string;
   category: string;
@@ -241,6 +243,18 @@ type ContextManagementPatternFlyHashRecord = {
   path: string;
   isGroup: boolean;
   isSchemasAvailable: boolean;
+};
+
+/**
+ * Lean available resources for context management.
+ */
+type ContextManagementResources = {
+  hashIndex: Map<string, ContextManagementPatternFlyHashRecord>;
+  nameIndex: Map<string, string[]>;
+  pathIndex: Map<string, string>;
+  versionIndex: ContextManagementPatternFlyHashRecord[];
+  latestVersion: string;
+  availableVersions: string[];
 };
 
 /**
@@ -529,6 +543,105 @@ const mutateKeyWordsMap = (
 };
 
 /**
+ * Lean available resources for context management.
+ *
+ * @param contextPathOverride - Context path for updating the returned PatternFly versions.
+ * @returns A lean documentation breakdown for context management. Use the "memoized" property for performance.
+ */
+const getPatternFlyContextManagementResources = async (contextPathOverride?: string): Promise<ContextManagementResources> => {
+  const versionContext = await getPatternFlyVersionContext.memo(contextPathOverride);
+  const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
+  const { byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
+  const originalDocs = await getPatternFlyDocsCatalog.memo();
+
+  const hashIndex = new Map<string, ContextManagementPatternFlyHashRecord>();
+  const nameIndex = new Map<string, string[]>();
+  const pathIndex = new Map<string, string>();
+  const versionIndex: ContextManagementPatternFlyHashRecord[] = [];
+
+  const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
+
+  catalog.forEach(([unifiedName, entries]) => {
+    const name = unifiedName.toLowerCase();
+    const groupId = generateHash(name);
+    const groupRecord: ContextManagementPatternFlyHashRecord = {
+      id: groupId,
+      uri: `patternfly://docs/${groupId}`,
+      componentUri: `patternfly://components/${groupId}`,
+      name,
+      version: versionContext.latestVersion,
+      category: 'Documentation',
+      section: 'Documentation',
+      displayName: name,
+      displayCategory: 'Documentation',
+      description: `Documentation group for ${name}.`,
+      path: '',
+      isGroup: true,
+      isSchemasAvailable: false
+    };
+
+    hashIndex.set(groupId.toLowerCase(), groupRecord);
+    nameIndex.set(name, [...(nameIndex.get(name) || []), groupId]);
+
+    entries.forEach(entry => {
+      const version = (entry.version || 'unknown').toLowerCase();
+      const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
+      const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
+      const displayName = entry.displayName || name;
+      const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
+
+      const record: ContextManagementPatternFlyHashRecord = {
+        id,
+        uri: `patternfly://docs/${id}`,
+        componentUri: `patternfly://components/${id}`,
+        name,
+        version,
+        category: entry.category || '',
+        section: entry.section || '',
+        displayName,
+        displayCategory,
+        description: entry.description || '',
+        path: entry.path || '',
+        isGroup: false,
+        isSchemasAvailable: Boolean(isSchemasAvailable)
+      };
+
+      hashIndex.set(id.toLowerCase(), record);
+      nameIndex.set(name, [...(nameIndex.get(name) || []), id]);
+      if (entry.path) {
+        pathIndex.set(entry.path.toLowerCase(), id);
+      }
+      versionIndex.push(record);
+    });
+  });
+
+  // Sort versionIndex: version (desc), name (asc)
+  versionIndex.sort((a, b) => {
+    const versionCompare = b.version.localeCompare(a.version, undefined, { numeric: true, sensitivity: 'base' });
+
+    if (versionCompare !== 0) {
+      return versionCompare;
+    }
+
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  });
+
+  return {
+    hashIndex,
+    nameIndex,
+    pathIndex,
+    versionIndex,
+    latestVersion: versionContext.latestVersion,
+    availableVersions: versionContext.availableVersions
+  };
+};
+
+/**
+ * Memoized version of getPatternFlyContextManagementResources.
+ */
+getPatternFlyContextManagementResources.memo = memo(getPatternFlyContextManagementResources);
+
+/**
  * Get a multifaceted resources breakdown from PatternFly.
  *
  * @note `resources.set(name...` includes `undefined` PF version contextual metadata by design. These values
@@ -567,6 +680,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     hashIndexMap.set(groupId.toLowerCase(), name);
     contextManagementHashIndexMap.set(groupId.toLowerCase(), {
       id: groupId,
+      uri: `patternfly://docs/${groupId}`,
+      componentUri: `patternfly://components/${groupId}`,
       name,
       version: versionContext.latestVersion,
       category: 'Documentation',
@@ -646,6 +761,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       contextManagementHashIndexMap.set(id.toLowerCase(), {
         id,
+        uri: `patternfly://docs/${id}`,
+        componentUri: `patternfly://components/${id}`,
         name,
         version,
         category: entry.category || '',
@@ -655,7 +772,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         description: entry.description || '',
         path: path || '',
         isGroup: false,
-        isSchemasAvailable: !!isSchemasAvailable
+        isSchemasAvailable: Boolean(isSchemasAvailable)
       });
 
       let uriSchemas;
@@ -843,6 +960,7 @@ export {
   contextManagementDecodeHash,
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
+  getPatternFlyContextManagementResources,
   getPatternFlyComponentNames,
   mutateKeyWordsMap,
   setCategoryDisplayLabel,
@@ -851,6 +969,7 @@ export {
   type PatternFlyMcpComponentNamesDoc,
   type PatternFlyComponentSchema,
   type PatternFlyMcpAvailableResources,
+  type ContextManagementResources,
   type PatternFlyMcpResourceMetadata,
   type PatternFlyMcpDocsMeta,
   type PatternFlyMcpResources,

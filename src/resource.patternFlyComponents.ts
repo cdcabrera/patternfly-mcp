@@ -15,10 +15,10 @@ import { getOptions, runWithOptions } from './options.context';
 import {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
+  getPatternFlyContextManagementResources,
   type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import {
-  filterPatternFly,
   filterPatternFlyContext,
   type FilterPatternFlyResultsResource
 } from './patternFly.search';
@@ -71,17 +71,17 @@ const CONFIG = {
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
-  const { versionIndex } = await getPatternFlyMcpResources.memo();
+  const { versionIndex } = await getPatternFlyContextManagementResources.memo();
   const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
   versionIndex
-    .filter(entry => entry.contextManagementComponentUri !== undefined)
+    .filter(entry => entry.componentUri !== undefined)
     .slice(start, end).forEach((entry, index) => {
       const actualIndex = start + index + 1;
 
       resources.push({
-        uri: entry.contextManagementComponentUri as string,
+        uri: entry.componentUri as string,
         name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version}) (${actualIndex}/${versionIndex.length} components)`,
         description: entry.description,
         mimeType: 'text/markdown'
@@ -227,8 +227,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     const propNames = Object.keys(properties).join(', ') || 'None';
 
     const version = currentRecord.version || 'unknown';
-    const uriId = `patternfly://docs/${currentRecord.id}`;
-    const uriComponentId = `patternfly://components/${currentRecord.id}`;
+    const uriId = currentRecord.uri;
+    const uriComponentId = currentRecord.componentUri;
 
     // Cross-links to docs
     const categories = new Set(res.entries.map(entry => entry.displayCategory));

@@ -10,8 +10,11 @@ import { assertInput, assertInputStringLength } from './server.assertions';
 import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
-import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { filterPatternFly, filterPatternFlyContext } from './patternFly.search';
+import {
+  getPatternFlyMcpResources,
+  getPatternFlyContextManagementResources
+} from './patternFly.getResources';
+import { filterPatternFlyContext } from './patternFly.search';
 import {
   formatSummaryFullContent,
   nextCursor
@@ -82,7 +85,7 @@ const CONFIG = {
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
-  const { versionIndex } = await getPatternFlyMcpResources.memo();
+  const { versionIndex } = await getPatternFlyContextManagementResources.memo();
   const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -90,7 +93,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
     const actualIndex = start + index + 1;
 
     resources.push({
-      uri: entry.contextManagementUri!,
+      uri: entry.uri,
       name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${versionIndex.length} resources)`,
       description: entry.description,
       mimeType: 'text/markdown'
@@ -192,11 +195,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   try {
     const docPaths = byEntry
       .filter(({ path }) => path)
-      .map((record) => ({
+      .map(record => ({
         doc: record.path,
-        uri: record.section === 'components' && record.category === 'react'
-          ? `patternfly://components/${record.id}`
-          : `patternfly://docs/${record.id}`
+        uri: record.componentUri && record.section === 'components' && record.category === 'react'
+          ? record.componentUri
+          : record.uri
       }));
 
     if (docPaths.length > 0) {
