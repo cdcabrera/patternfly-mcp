@@ -130,20 +130,27 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       ? `Search results for PatternFly version "${updatedVersion}" and`
       : `Search results for`;
 
+    const basePluralResource = resultValues.length === 1 ? 'resource' : 'resources';
+
+    const baseSummaryTitle = stringJoin.filtered(
+      `Found ${resultValues.length} related ${basePluralResource}.`,
+      resultValues.length ? `Use the attached ${basePluralResource} to access and read full content.` : ''
+    );
+
     let summaryTitle = stringJoin.newline(
       `# ${summaryTitlePatternFly} "${searchQuery}".`,
-      `Found ${resultValues.length} related ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
+      baseSummaryTitle
     );
 
     if (isSearchWildCardAll) {
       summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing ${resultValues.length} ${resultValues.length === 1 ? 'resource' : 'resources'} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
+        `Only showing ${resultValues.length} ${basePluralResource} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
       );
     } else if (exactMatches.length > 0) {
       summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "${searchQuery}".`,
-        `Found ${resultValues.length} ${resultValues.length === 1 ? 'resource' : 'resources'}. Use the attached resources to access and read full content.`
+        `Found ${resultValues.length} exact ${basePluralResource}. Use the attached ${basePluralResource} to access and read full content.`
       );
     }
 
