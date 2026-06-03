@@ -78,99 +78,61 @@ interface FilterPatternFlyResults {
  * @param searchQuery - The search query.
  * @param filters - Filters to apply.
  * @param resources - Context management resources.
+ * @param [options] - Optional settings object.
  * @returns Map of ID to Record.
  */
 const dynamicFilterPatternFlyContext = async (
   searchQuery: string,
   filters: FilterPatternFlyFilters | undefined,
-  resources: ContextManagementResources
+  resources: ContextManagementResources,
+  {
+    searchFilters = ['id', 'name', 'path'],
+    maxResultsLimit = 1,
+  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
 ): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
   const query = searchQuery.trim().toLowerCase();
-  const results = new Map<string, ContextManagementPatternFlyHashRecord>();
 
   if (!query) {
-    return results;
+    return new Map();
   }
 
-  const { hashIndex, nameIndex, pathIndex } = resources;
+  const abortController = new AbortController();
+  const { signal } = abortController;
 
-  // Parallel race for exact matches
-  try {
-    const matchedRecord = await Promise.any([
-      // ID lookup
-      (async () => {
-        const record = hashIndex.get(query);
-
-        if (record) {
-          return record;
-        }
-
-        throw new Error('No ID match');
-      })(),
-      // Name lookup (first exact match)
-      (async () => {
-        const ids = nameIndex.get(query);
-
-        if (ids && ids.length > 0) {
-          const firstId = ids[0] as string;
-          const record = hashIndex.get(firstId);
-
-          if (record) {
-            return record;
-          }
-        }
-
-        throw new Error('No Name match');
-      })(),
-      // Path lookup
-      (async () => {
-        const id = pathIndex.get(query);
-
-        if (id) {
-          const record = hashIndex.get(id);
-
-          if (record) {
-            return record;
-          }
-        }
-
-        throw new Error('Path match');
-      })()
-    ]);
-
-    if (matchedRecord) {
-      // If we have other filters, we must ensure the matched record satisfies them
-      const normalizedFilters = Object.fromEntries(
-        Object.entries(filters || {})
-          .filter(([_key, value]) => (typeof value === 'string' ||
-            typeof value === 'number') &&
-            String(value).trim().length > 0)
-          .map(([key, value]) => [key, String(value).trim().toLowerCase()])
-      );
-
-      const filterMatch = (propertyValue: unknown, filterValue: string) => {
-        const normalizePropertyValue = String(propertyValue).trim().toLowerCase();
-
-        return normalizePropertyValue === filterValue ||
-          normalizePropertyValue.startsWith(filterValue) ||
-          normalizePropertyValue.endsWith(filterValue);
-      };
-
-      const matchesVersion = !normalizedFilters.version || matchedRecord.version.toLowerCase() === normalizedFilters.version;
-      const matchesCategory = !normalizedFilters.category ||
-        filterMatch(matchedRecord.category, normalizedFilters.category) ||
-        filterMatch(matchedRecord.displayCategory, normalizedFilters.category);
-      const matchesSection = !normalizedFilters.section || filterMatch(matchedRecord.section, normalizedFilters.section);
-
-      if (matchesVersion && matchesCategory && matchesSection) {
-        results.set(matchedRecord.id, matchedRecord);
+  // Run match and handle abort
+  const passFail = (promise: Promise<Map<string, ContextManagementPatternFlyHashRecord>>) =>
+    promise.then(output => {
+      if (signal.aborted || output.size !== maxResultsLimit) {
+        throw new Error('Dynamic filter pass did not match maxResultsLimit');
       }
-    }
-  } catch {
-    // Promise.any fails if all promises reject - that's fine, we fall back to O(N)
-  }
 
-  return results;
+      abortController.abort();
+
+      return output;
+    }).catch((err: unknown) => {
+      if (signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        throw new Error('Dynamic filter pass did not match maxResultsLimit');
+      }
+
+      throw err;
+    });
+
+  const settings = {
+    signal,
+    signalError: new DOMException('Filter operation aborted', 'AbortError')
+  };
+
+  try {
+    return await Promise.any(
+      searchFilters.map(filter =>
+        passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings))
+      )
+    );
+  } catch {
+    return new Map();
+  } finally {
+    abortController.abort();
+  }
 };
 
 /**
@@ -178,14 +140,18 @@ const dynamicFilterPatternFlyContext = async (
  *
  * @param filters - Filters to apply.
  * @param [mcpResources] - PatternFly resources.
+ * @param [settings] - Optional {@link FilterPatternFlySettings}.
  * @returns Map of ID to Record.
  */
 const filterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
-  mcpResources?: FilterPatternFlyMcpResources
+  mcpResources?: FilterPatternFlyMcpResources,
+  { maxSyncTime = 25, signal, signalError }: FilterPatternFlySettings = {}
 ): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
   const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
-  const hashIndex = (getResources as ContextManagementResources).hashIndex;
+  const resources = getResources as ContextManagementResources;
+  const hashIndex = resources.hashIndex;
+  const startTime = (signal && performance.now()) || undefined;
 
   if (!filters || Object.keys(filters).length === 0) {
     return hashIndex;
@@ -204,16 +170,37 @@ const filterPatternFlyContext = async (
     }
   }
 
-  // Try dynamic filter for exact Name or Path matches if those filters are provided
-  if (filters.name || filters.path) {
-    const dynamicResults = await dynamicFilterPatternFlyContext(
-      filters.name || filters.path || '',
-      filters,
-      getResources as ContextManagementResources
-    );
+  // Fast-path: O(1) lookup if name is provided and matches exactly one ID
+  if (filters.name) {
+    const ids = resources.nameIndex.get(filters.name.toLowerCase());
 
-    if (dynamicResults.size === 1) {
-      return dynamicResults;
+    if (ids && ids.length === 1) {
+      const record = hashIndex.get(ids[0] as string);
+
+      if (record) {
+        const results = new Map<string, ContextManagementPatternFlyHashRecord>();
+
+        results.set(record.id, record);
+
+        return results;
+      }
+    }
+  }
+
+  // Fast-path: O(1) lookup if path is provided
+  if (filters.path) {
+    const id = resources.pathIndex.get(filters.path.toLowerCase());
+
+    if (id) {
+      const record = hashIndex.get(id);
+
+      if (record) {
+        const results = new Map<string, ContextManagementPatternFlyHashRecord>();
+
+        results.set(record.id, record);
+
+        return results;
+      }
     }
   }
 
@@ -234,7 +221,26 @@ const filterPatternFlyContext = async (
       normalizePropertyValue.endsWith(filterValue);
   };
 
+  const isBlocking = (i: number) =>
+    signal && startTime && (i % 200 === 0) && (performance.now() - startTime > maxSyncTime);
+
+  let index = 0;
+
   for (const record of hashIndex.values()) {
+    if (isBlocking(index)) {
+      await new Promise(resolve => setImmediate(resolve));
+    }
+
+    index += 1;
+
+    if (signal?.aborted) {
+      if (signalError) {
+        throw signalError;
+      }
+
+      break;
+    }
+
     const matchesVersion = !normalizedFilters.version || record.version.toLowerCase() === normalizedFilters.version;
     const matchesCategory = !normalizedFilters.category ||
       filterMatch(record.category, normalizedFilters.category) ||
@@ -282,12 +288,22 @@ filterPatternFlyContext.memo = memo(filterPatternFlyContext, {
 const searchPatternFlyContext = async (
   searchQuery: string,
   filters: FilterPatternFlyFilters | undefined,
-  { mcpResources, allowWildCardAll = false, maxDistance = 3, maxResults = 10 }: SearchPatternFlyOptions = {}
+  { mcpResources, allowWildCardAll = false, dynamicFilter = true, maxDistance = 3, maxResults = 10 }: SearchPatternFlyOptions = {}
 ): Promise<SearchPatternFlyContextResults> => {
   const query = searchQuery.trim().toLowerCase();
   const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
   const resources = getResources as ContextManagementResources;
-  const filteredRecords = await filterPatternFlyContext.memo(filters, resources);
+  let filteredRecords: Map<string, ContextManagementPatternFlyHashRecord>;
+
+  if (dynamicFilter && query && query !== '*') {
+    filteredRecords = await dynamicFilterPatternFlyContext(query, filters, resources);
+
+    if (filteredRecords.size === 0) {
+      filteredRecords = await filterPatternFlyContext.memo(filters, resources);
+    }
+  } else {
+    filteredRecords = await filterPatternFlyContext.memo(filters, resources);
+  }
 
   const isWildCardAll = query === '*' || query === 'all' || query === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
@@ -993,6 +1009,7 @@ searchPatternFly.memo = memo(searchPatternFly, DEFAULT_OPTIONS.toolMemoOptions.s
 
 export {
   dynamicFilterPatternFly,
+  dynamicFilterPatternFlyContext,
   filterPatternFly,
   filterPatternFlyContext,
   searchPatternFly,
