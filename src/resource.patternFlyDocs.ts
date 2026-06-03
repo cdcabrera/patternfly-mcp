@@ -11,7 +11,6 @@ import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
 import { isShaHexLike } from './server.helpers';
 import {
@@ -53,12 +52,12 @@ const NAME = 'patternfly-docs';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{name}{?id,version,category,section,detail}';
+const URI_TEMPLATE = 'patternfly://docs/{name}{?id,detail}';
 
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly ID or version, category, section. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly name, ID, or detail. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -142,13 +141,13 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The list of available names.
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
-  const { version, category, section, id } = context?.arguments || {};
+  const { id } = context?.arguments || {};
 
   if (isShaHexLike(id)) {
     return [];
   }
 
-  const { names } = await paramCompletion({ category, name, section, version, id });
+  const { names } = await paramCompletion({ name, id });
 
   return names;
 };
@@ -166,13 +165,13 @@ uriNameComplete.memo = memo(uriNameComplete);
  * @returns The list of available IDs.
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, context) => {
-  const { version, category, section, name } = context?.arguments || {};
+  const { name } = context?.arguments || {};
 
   if (isShaHexLike(name)) {
     return [];
   }
 
-  const { ids } = await paramCompletion({ category, name, section, version, id });
+  const { ids } = await paramCompletion({ name, id });
 
   return ids;
 };
@@ -183,78 +182,6 @@ const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: strin
 uriIdComplete.memo = memo(uriIdComplete);
 
 /**
- * Category completion callback for the URI template.
- *
- * @param category - The value to filter-by/complete.
- * @param context - The completion context containing arguments for the URI template.
- * @returns The list of available categories, or an empty list.
- */
-const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
-  const { version, section, name, id } = context?.arguments || {};
-
-  if (isShaHexLike(name) || isShaHexLike(id)) {
-    return [];
-  }
-
-  const { categories } = await paramCompletion({ category, name, section, version, id });
-
-  return categories;
-};
-
-/**
- * Memoized version of uriCategoryComplete.
- */
-uriCategoryComplete.memo = memo(uriCategoryComplete);
-
-/**
- * Section completion callback for the URI template.
- *
- * @param section - The value to filter-by/complete.
- * @param context - The completion context containing arguments for the URI template.
- * @returns The list of available sections, or an empty list.
- */
-const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (section: string, context) => {
-  const { version, category, name, id } = context?.arguments || {};
-
-  if (isShaHexLike(name) || isShaHexLike(id)) {
-    return [];
-  }
-
-  const { sections } = await paramCompletion({ category, name, section, version, id });
-
-  return sections;
-};
-
-/**
- * Memoized version of uriSectionComplete.
- */
-uriSectionComplete.memo = memo(uriSectionComplete);
-
-/**
- * Name completion callback for the URI template.
- *
- * @param version - The value to complete.
- * @param context - The completion context containing arguments for the URI template.
- * @returns The list of available versions, or an empty list.
- */
-const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
-  const { section, category, name, id } = context?.arguments || {};
-
-  if (isShaHexLike(name) || isShaHexLike(id)) {
-    return [];
-  }
-
-  const { versions } = await paramCompletion({ category, name, section, version, id });
-
-  return versions;
-};
-
-/**
- * Memoized version of uriVersionComplete.
- */
-uriVersionComplete.memo = memo(uriVersionComplete);
-
-/**
  * Return content. Resource callback for the documentation template.
  *
  * @param passedUri - URI of the resource.
@@ -263,12 +190,12 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { category, detail = 'summary', name, section, id, version } = variables || {};
+  const { detail = 'summary', name, id } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
   const isNameHash = isShaHexLike(name);
   const isIdHash = isShaHexLike(id);
   const isTerminalId = isNameHash || isIdHash;
-  let updatedId;
+  let updatedId: string | undefined;
 
   assertInputStringLength(name, {
     ...options.minMax.inputStrings,
@@ -287,58 +214,21 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   }
 
-  if (!isTerminalId) {
-    if (version) {
-      assertInputStringLength(version, {
-        ...options.minMax.inputStrings,
-        inputDisplayName: 'version'
-      });
-    }
-
-    if (section) {
-      assertInputStringLength(section, {
-        ...options.minMax.inputStrings,
-        inputDisplayName: 'section'
-      });
-    }
-
-    if (category) {
-      assertInputStringLength(category, {
-        ...options.minMax.inputStrings,
-        inputDisplayName: 'category'
-      });
-    }
-  }
-
   const {
-    availableVersions,
     latestVersion
   } = await getPatternFlyMcpResources.memo();
-  let updatedVersion: string | undefined;
 
   if (isTerminalId) {
-    // Terminal ID bypasses version normalization and lock down to ID only.
     updatedId = (isIdHash ? id : name) as string;
-    updatedVersion = latestVersion;
-  } else {
-    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version as string);
-
-    assertInput(
-      !version || Boolean(normalizedVersion),
-      `Invalid PatternFly version "${(version as string)?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-    );
-
-    updatedVersion = normalizedVersion || latestVersion;
   }
 
+  const updatedVersion = latestVersion;
   const updatedName = isTerminalId ? undefined : (name as string).trim();
 
   const { byEntry } = await filterPatternFly.memo({
     id: updatedId,
-    version: updatedVersion,
-    name: updatedName,
-    category: isTerminalId ? undefined : (category as string),
-    section: isTerminalId ? undefined : (section as string)
+    version: updatedId ? undefined : latestVersion,
+    name: updatedName
   });
 
   assertInput(
@@ -346,15 +236,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     () => {
       let suggestionMessage = '';
 
-      if (id || version || category || section) {
-        const variableList = [
-          (version && 'id') || undefined,
-          (version && 'version') || undefined,
-          (category && 'category') || undefined,
-          (section && 'section') || undefined
-        ].filter(Boolean).join(', ');
-
-        suggestionMessage = ` Try using different parameters for ${variableList}.`;
+      if (id) {
+        suggestionMessage = ' Try using a different ID.';
       }
 
       return `No documentation found for "${updatedName || updatedId}".${suggestionMessage}`;
@@ -390,21 +273,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   assertInput(
     docs.length > 0,
-    () => {
-      let suggestionMessage = '';
-
-      if (version || category || section) {
-        const variableList = [
-          (version && 'version') || undefined,
-          (category && 'category') || undefined,
-          (section && 'section') || undefined
-        ].filter(Boolean).join(', ');
-
-        suggestionMessage = ` Try using different parameters for ${variableList}.`;
-      }
-
-      return `"${updatedName}" was found, but no documentation resources are available for it.${suggestionMessage}`;
-    }
+    () => `"${updatedName}" was found, but no documentation resources are available for it.`
   );
 
   return {
@@ -439,10 +308,7 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
     name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
     id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
-    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
-    category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
-    section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
-    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
+    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args))
   };
 
   const callback: McpResource[3] = async (uri, variables) =>
@@ -478,12 +344,9 @@ export {
   patternFlyDocsResource,
   listResources,
   resourceCallback,
-  uriCategoryComplete,
   uriDetailComplete,
   uriIdComplete,
   uriNameComplete,
-  uriSectionComplete,
-  uriVersionComplete,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,

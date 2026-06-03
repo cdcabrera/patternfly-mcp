@@ -566,12 +566,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const path = entry.path;
-      const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+      const uri = `patternfly://docs/${encodeURIComponent(name)}`;
       const uriId = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ id }, { prefix: true })}`;
       const uriHash = `patternfly://docs/${encodeURIComponent(id)}`;
-      // const uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-      // const uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
-      // const uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uri.toLowerCase(), name);
@@ -617,7 +614,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       }
 
       if (entry.section === 'components' && entry.category === 'react') {
-        uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+        uriComponent = `patternfly://components/${encodeURIComponent(name)}`;
         uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id }, { prefix: true })}`;
         uriComponentHash = `patternfly://components/${encodeURIComponent(id)}`;
 
