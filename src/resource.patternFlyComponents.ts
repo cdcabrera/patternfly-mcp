@@ -138,6 +138,26 @@ const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: s
 uriNameComplete.memo = memo(uriNameComplete);
 
 /**
+ * ID completion callback for the URI template.
+ *
+ * @param id - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available IDs, or an empty list.
+ */
+const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, context) => {
+  const { version, category, name } = context?.arguments || {};
+  const section = 'components';
+  const { ids } = await paramCompletion({ category, name, section, version, id });
+
+  return ids;
+};
+
+/**
+ * Memoized version of uriIdComplete.
+ */
+uriIdComplete.memo = memo(uriIdComplete);
+
+/**
  * Category completion callback for the URI template.
  *
  * @param category - The value to filter-by/complete.
@@ -400,6 +420,7 @@ const patternFlyComponentsResource = (options = getOptions()): McpResource => {
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
     name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
+    id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
     detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
     category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
     version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
@@ -433,10 +454,11 @@ const patternFlyComponentsResource = (options = getOptions()): McpResource => {
 export {
   patternFlyComponentsResource,
   listResources,
+  uriCategoryComplete,
   uriDetailComplete,
+  uriIdComplete,
   uriNameComplete,
   resourceCallback,
-  uriCategoryComplete,
   uriVersionComplete,
   NAME,
   URI_TEMPLATE,

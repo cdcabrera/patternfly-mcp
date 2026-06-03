@@ -2,8 +2,23 @@ import {
   formatSummaryFullContent,
   encodeDecodeCursor,
   nextCursor,
-  parseFrontMatter
+  parseFrontMatter,
+  paramCompletion
 } from '../resource.helpers';
+import { filterPatternFly } from '../patternFly.search';
+import { normalizeEnumeratedPatternFlyVersion } from '../patternFly.helpers';
+
+jest.mock('../patternFly.search', () => ({
+  filterPatternFly: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../patternFly.helpers', () => ({
+  normalizeEnumeratedPatternFlyVersion: {
+    memo: jest.fn()
+  }
+}));
 
 describe('resource.helpers', () => {
   describe('formatSummaryFullContent', () => {
@@ -159,6 +174,44 @@ describe('resource.helpers', () => {
         title: 'Valid'
       });
       expect(result.content).toBe('# Content');
+    });
+  });
+
+  describe('paramCompletion', () => {
+    it('should extract and sort all parameters including IDs', async () => {
+      (normalizeEnumeratedPatternFlyVersion.memo as jest.Mock).mockResolvedValue('v6');
+      (filterPatternFly.memo as jest.Mock).mockResolvedValue({
+        byEntry: [
+          { name: 'button', id: 'hash1', category: 'core', section: 'components', version: 'v6' },
+          { name: 'alert', id: 'hash2', category: 'core', section: 'components', version: 'v6' },
+          { name: 'button', id: 'hash3', category: 'react', section: 'components', version: 'v5' }
+        ]
+      });
+
+      const result = await paramCompletion({ version: 'v6' });
+
+      expect(result).toEqual({
+        names: ['alert', 'button'],
+        ids: ['hash1', 'hash2', 'hash3'],
+        categories: ['core', 'react'],
+        schemas: [],
+        sections: ['components'],
+        versions: ['v5', 'v6']
+      });
+    });
+
+    it('should identify schemas', async () => {
+      (normalizeEnumeratedPatternFlyVersion.memo as jest.Mock).mockResolvedValue(undefined);
+      (filterPatternFly.memo as jest.Mock).mockResolvedValue({
+        byEntry: [
+          { name: 'button', id: 'hash1', uriSchemas: 'some-uri' },
+          { name: 'alert', id: 'hash2' }
+        ]
+      });
+
+      const result = await paramCompletion({});
+
+      expect(result.schemas).toEqual(['button']);
     });
   });
 });

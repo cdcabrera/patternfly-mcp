@@ -246,6 +246,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion || filters.version });
 
   const names = new Set<string>();
+  const ids = new Set<string>();
   const categories = new Set<string>();
   const sections = new Set<string>();
   const versions = new Set<string>();
@@ -254,6 +255,10 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   for (const entry of byEntry) {
     if (typeof entry.name === 'string') {
       names.add(entry.name);
+    }
+
+    if (typeof entry.id === 'string') {
+      ids.add(entry.id);
     }
 
     if (typeof entry.category === 'string') {
@@ -275,6 +280,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
 
   return {
     names: Array.from(names).sort(),
+    ids: Array.from(ids).sort(),
     categories: Array.from(categories).sort(),
     schemas: Array.from(schemas).sort(),
     sections: Array.from(sections).sort(),
