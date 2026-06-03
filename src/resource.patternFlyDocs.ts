@@ -6,7 +6,7 @@ import {
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { assertInput, assertInputStringLength, assertInputStringShaHex } from './server.assertions';
+import { assertInput, assertInputStringLength } from './server.assertions';
 import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
@@ -52,12 +52,12 @@ const NAME = 'patternfly-docs';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/{name}{?id,detail}';
+const URI_TEMPLATE = 'patternfly://docs/{nameOrId}{?version,detail}';
 
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly name, ID, or detail. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly name, ID, version, or detail. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -92,7 +92,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
     const actualIndex = start + index + 1;
 
     resources.push({
-      uri: entry.uriId,
+      uri: entry.uriHash,
       name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${versionIndex.length} resources)`,
       description: entry.description,
       mimeType: 'text/markdown'
@@ -131,55 +131,52 @@ const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detai
 uriDetailComplete.memo = memo(uriDetailComplete);
 
 /**
- * Name completion callback for the URI template.
+ * Name or ID completion callback for the URI template.
  *
- * @note If version is not available, the latest version is used to refine the search results
- * since it aligns with the default behavior of the PatternFly documentation.
- *
- * @param name - The value to complete.
+ * @param nameOrId - The value to complete.
  * @param context - The completion context.
- * @returns The list of available names.
+ * @returns The list of available names or IDs.
  */
-const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
-  const { id } = context?.arguments || {};
+const uriNameOrIdComplete: ExtendedCompleteResourceTemplateCallback = async (nameOrId: string, context) => {
+  const { version } = context?.arguments || {};
 
-  if (isShaHexLike(id)) {
+  if (isShaHexLike(nameOrId)) {
     return [];
   }
 
-  const { names } = await paramCompletion({ name, id });
+  const { names, ids } = await paramCompletion({ name: nameOrId, version });
 
-  return names;
+  return [...names, ...ids];
 };
 
 /**
- * Memoized version of uriNameComplete.
+ * Memoized version of uriNameOrIdComplete.
  */
-uriNameComplete.memo = memo(uriNameComplete);
+uriNameOrIdComplete.memo = memo(uriNameOrIdComplete);
 
 /**
- * ID completion callback for the URI template.
+ * Version completion callback for the URI template.
  *
- * @param id - The value to complete.
+ * @param version - The value to complete.
  * @param context - The completion context.
- * @returns The list of available IDs.
+ * @returns The list of available versions.
  */
-const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, context) => {
-  const { name } = context?.arguments || {};
+const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
+  const { nameOrId } = context?.arguments || {};
 
-  if (isShaHexLike(name)) {
+  if (isShaHexLike(nameOrId)) {
     return [];
   }
 
-  const { ids } = await paramCompletion({ name, id });
+  const { versions } = await paramCompletion({ name: nameOrId, version });
 
-  return ids;
+  return versions;
 };
 
 /**
- * Memoized version of uriIdComplete.
+ * Memoized version of uriVersionComplete.
  */
-uriIdComplete.memo = memo(uriIdComplete);
+uriVersionComplete.memo = memo(uriVersionComplete);
 
 /**
  * Return content. Resource callback for the documentation template.
@@ -190,44 +187,39 @@ uriIdComplete.memo = memo(uriIdComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { detail = 'summary', name, id } = variables || {};
+  const { detail = 'summary', nameOrId, version } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
-  const isNameHash = isShaHexLike(name);
-  const isIdHash = isShaHexLike(id);
-  const isTerminalId = isNameHash || isIdHash;
+  const isTerminalId = isShaHexLike(nameOrId);
   let updatedId: string | undefined;
+  let updatedName: string | undefined;
 
-  assertInputStringLength(name, {
+  assertInputStringLength(nameOrId, {
     ...options.minMax.inputStrings,
-    inputDisplayName: 'name'
+    inputDisplayName: 'nameOrId'
   });
 
-  if (id) {
-    assertInputStringShaHex(id, {
-      ...options.minMax.sha1Hex,
-      inputDisplayName: 'id'
-    });
+  if (isTerminalId) {
+    updatedId = nameOrId as string;
+  } else {
+    updatedName = (nameOrId as string).trim();
+  }
 
-    // Be lenient, only apply the ID if it's different from name.
-    if (id !== name) {
-      updatedId = id;
-    }
+  if (version) {
+    assertInputStringLength(version, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'version'
+    });
   }
 
   const {
     latestVersion
   } = await getPatternFlyMcpResources.memo();
 
-  if (isTerminalId) {
-    updatedId = (isIdHash ? id : name) as string;
-  }
-
-  const updatedVersion = latestVersion;
-  const updatedName = isTerminalId ? undefined : (name as string).trim();
+  const updatedVersion = isTerminalId ? undefined : version || latestVersion;
 
   const { byEntry } = await filterPatternFly.memo({
     id: updatedId,
-    version: updatedId ? undefined : latestVersion,
+    version: updatedVersion,
     name: updatedName
   });
 
@@ -236,7 +228,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     () => {
       let suggestionMessage = '';
 
-      if (id) {
+      if (updatedId) {
         suggestionMessage = ' Try using a different ID.';
       }
 
@@ -285,7 +277,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         detailType: normalizedDetail,
         frontMatter: {
           document: resolvedPath || path,
-          name: updatedName,
+          name: byEntry[0]?.name || updatedName || updatedId,
           version: updatedVersion
         }
       })
@@ -306,8 +298,8 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
-    name: async (...args) => runWithOptions(options, async () => uriNameComplete.memo(...args)),
-    id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
+    nameOrId: async (...args) => runWithOptions(options, async () => uriNameOrIdComplete.memo(...args)),
+    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args)),
     detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args))
   };
 
@@ -345,8 +337,8 @@ export {
   listResources,
   resourceCallback,
   uriDetailComplete,
-  uriIdComplete,
-  uriNameComplete,
+  uriVersionComplete,
+  uriNameOrIdComplete,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,
