@@ -233,6 +233,7 @@ type ContextManagementPatternFlyHashRecord = {
   id: string;
   uri: string;
   componentUri?: string;
+  collectionUri?: string;
   canonicalUri: string;
   name: string;
   version: string;
@@ -255,6 +256,7 @@ type ContextManagementResources = {
   nameIndex: Map<string, string[]>;
   pathIndex: Map<string, string>;
   versionIndex: ContextManagementPatternFlyHashRecord[];
+  collectionsIndex: ContextManagementPatternFlyHashRecord[];
   suggestionList: string[];
   latestVersion: string;
   availableVersions: string[];
@@ -561,6 +563,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
   const nameIndex = new Map<string, string[]>();
   const pathIndex = new Map<string, string>();
   const versionIndex: ContextManagementPatternFlyHashRecord[] = [];
+  const collectionsIndex: ContextManagementPatternFlyHashRecord[] = [];
 
   const catalogMap = new Map<string, (PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc)[]>();
 
@@ -586,6 +589,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     const groupId = generateHash(name);
     const uri = `patternfly://docs/${groupId}`;
     const componentUri = `patternfly://components/${groupId}`;
+    const collectionUri = `patternfly://collections/${groupId}`;
     const description = `Documentation group for ${name}.`;
     const displayName = `${name} (Group)`;
 
@@ -593,7 +597,8 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       id: groupId,
       uri,
       componentUri,
-      canonicalUri: uri,
+      collectionUri,
+      canonicalUri: collectionUri,
       name,
       version: versionContext.latestVersion,
       category: 'Documentation',
@@ -608,6 +613,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     };
 
     hashIndex.set(groupId.toLowerCase(), groupRecord);
+    collectionsIndex.push(groupRecord);
     if (!nameIndex.has(name)) {
       nameIndex.set(name, []);
     }
@@ -690,6 +696,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     nameIndex,
     pathIndex,
     versionIndex,
+    collectionsIndex,
     suggestionList,
     latestVersion: versionContext.latestVersion,
     availableVersions: versionContext.availableVersions
@@ -739,6 +746,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
     const uri = `patternfly://docs/${groupId}`;
     const componentUri = `patternfly://components/${groupId}`;
+    const collectionUri = `patternfly://collections/${groupId}`;
     const displayName = `${name} (Group)`;
     const description = `Documentation group for ${name}.`;
 
@@ -747,7 +755,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       id: groupId,
       uri,
       componentUri,
-      canonicalUri: uri,
+      collectionUri,
+      canonicalUri: collectionUri,
       name,
       version: versionContext.latestVersion,
       category: 'Documentation',

@@ -11,9 +11,6 @@ import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import {
-  stringJoin
-} from './server.helpers';
-import {
   getPatternFlyMcpResources,
   getPatternFlyContextManagementResources,
   type ContextManagementPatternFlyHashRecord
@@ -90,22 +87,23 @@ const CONFIG = {
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
-  const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
+  const terminalDocs = versionIndex.filter(record => !record.isGroup);
+  const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalDocs.length });
   const resources: PatternFlyListResourceResult[] = [];
 
-  versionIndex.slice(start, end).forEach((entry, index) => {
+  terminalDocs.slice(start, end).forEach((entry, index) => {
     const actualIndex = start + index + 1;
 
     resources.push({
       uri: entry.uri,
-      name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${versionIndex.length} resources)`,
+      name: `${entry.displayName} - ${entry.displayCategory} (${entry.version}) (${actualIndex}/${terminalDocs.length} resources)`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
   });
 
   return {
-    totalCount: versionIndex.length,
+    totalCount: terminalDocs.length,
     pageSize,
     nextCursor: next,
     resources
@@ -144,12 +142,12 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, _context) => {
   const { contextManagementHashIndex } = await getPatternFlyMcpResources.memo();
-  const suggestions = Array.from(contextManagementHashIndex.entries())
-    .filter(([hash, record]) =>
-      hash.includes(id.toLowerCase()) ||
+  const suggestions = Array.from(contextManagementHashIndex.values())
+    .filter((record: ContextManagementPatternFlyHashRecord) =>
+      record.id.includes(id.toLowerCase()) ||
       record.name.toLowerCase().includes(id.toLowerCase()) ||
       record.displayName.toLowerCase().includes(id.toLowerCase()))
-    .map(([hash]) => hash);
+    .map((record: ContextManagementPatternFlyHashRecord) => record.id);
 
   return suggestions;
 };
@@ -194,67 +192,41 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
+  if (record.isGroup) {
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `The ID "${id}" refers to a collection hub. Please use patternfly://collections/${id} instead.`
+    );
+  }
+
   const docs = [];
 
-  if (record.isGroup) {
-    const resources = await getPatternFlyContextManagementResources.memo();
-    const relatedIds = resources.nameIndex.get(record.name) || [];
-    const relatedRecords = relatedIds
-      .map(relatedId => resources.hashIndex.get(relatedId))
-      .filter((rec): rec is ContextManagementPatternFlyHashRecord => rec !== undefined && !rec.isGroup);
+  try {
+    const docPaths = record.path
+      ? [{
+        doc: record.path,
+        uri: record.canonicalUri
+      }]
+      : [];
 
-    const categories = Array.from(new Set(relatedRecords.map(rec => rec.displayCategory))).sort();
+    if (docPaths.length > 0) {
+      // `processDocsFunction` has de-dup docs baked in
+      const processedDocs = await processDocsFunction.memo(docPaths);
 
-    const content = stringJoin.newline(
-      `# ${record.name} (Documentation Group)`,
-      `This is a documentation group for ${record.name}. Select a category below to view specific documentation.`,
-      '',
-      '### Available Documentation',
-
-      ...categories.map(category => {
-        const catRecords = relatedRecords.filter(rec => rec.displayCategory === category);
-        // Prefer latest version for the group link
-        const latestCat = catRecords[0]; // sorted desc by version in versionIndex but here we just need any or latest
-
-        return latestCat ? `   - [${category}](${latestCat.canonicalUri})` : '';
-      }).filter(Boolean)
-    );
-
-    docs.push({
-      uri: record.canonicalUri,
-      path: '',
-      resolvedPath: '',
-      content,
-      isSuccess: true
-    });
-  } else {
-    try {
-      const docPaths = record.path
-        ? [{
-          doc: record.path,
-          uri: record.canonicalUri
-        }]
-        : [];
-
-      if (docPaths.length > 0) {
-        // `processDocsFunction` has de-dup docs baked in
-        const processedDocs = await processDocsFunction.memo(docPaths);
-
-        // Failures are `log.debugged` in `processDocsFunction`.
-        for (const response of processedDocs) {
-          if (response.isSuccess) {
-            docs.push({
-              ...response
-            });
-          }
+      // Failures are `log.debugged` in `processDocsFunction`.
+      for (const response of processedDocs) {
+        if (response.isSuccess) {
+          docs.push({
+            ...response
+          });
         }
       }
-    } catch (error) {
-      throw new McpError(
-        ErrorCode.InternalError,
-        `Failed to fetch documentation: ${error}`
-      );
     }
+  } catch (error) {
+    throw new McpError(
+      ErrorCode.InternalError,
+      `Failed to fetch documentation: ${error}`
+    );
   }
 
   assertInput(

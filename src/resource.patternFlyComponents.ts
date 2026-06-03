@@ -72,24 +72,23 @@ const CONFIG = {
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
-  const { start, end, next } = nextCursor({ cursor, pageSize, size: versionIndex.length });
+  const terminalComponents = versionIndex.filter(entry => !entry.isGroup && entry.componentUri !== undefined);
+  const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalComponents.length });
   const resources: PatternFlyListResourceResult[] = [];
 
-  versionIndex
-    .filter(entry => entry.componentUri !== undefined)
-    .slice(start, end).forEach((entry, index) => {
-      const actualIndex = start + index + 1;
+  terminalComponents.slice(start, end).forEach((entry, index) => {
+    const actualIndex = start + index + 1;
 
-      resources.push({
-        uri: entry.componentUri as string,
-        name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version}) (${actualIndex}/${versionIndex.length} components)`,
-        description: entry.description,
-        mimeType: 'text/markdown'
-      });
+    resources.push({
+      uri: entry.componentUri as string,
+      name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version}) (${actualIndex}/${terminalComponents.length} components)`,
+      description: entry.description,
+      mimeType: 'text/markdown'
     });
+  });
 
   return {
-    totalCount: versionIndex.length,
+    totalCount: terminalComponents.length,
     pageSize,
     nextCursor: next,
     resources
@@ -128,12 +127,12 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, _context) => {
   const { contextManagementHashIndex } = await getPatternFlyMcpResources.memo();
-  const suggestions = Array.from(contextManagementHashIndex.entries())
-    .filter(([hash, record]) =>
-      hash.includes(id.toLowerCase()) ||
+  const suggestions = Array.from(contextManagementHashIndex.values())
+    .filter((record: ContextManagementPatternFlyHashRecord) =>
+      record.id.includes(id.toLowerCase()) ||
       record.name.toLowerCase().includes(id.toLowerCase()) ||
       record.displayName.toLowerCase().includes(id.toLowerCase()))
-    .map(([hash]) => hash);
+    .map((record: ContextManagementPatternFlyHashRecord) => record.id);
 
   return suggestions;
 };
@@ -172,7 +171,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
       if (id) {
         if (record?.isGroup) {
-          suggestionMessage = ` "${id}" is a documentation group, not a specific component. Try accessing it via patternfly://docs/${id}.`;
+          suggestionMessage = ` "${id}" is a collection hub, not a specific component technical overview. Try accessing it via patternfly://collections/${id}.`;
         } else {
           suggestionMessage = ' Try using a different ID.';
         }
