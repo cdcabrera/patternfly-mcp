@@ -328,7 +328,9 @@ const filterPatternFly = async (
           uriSchemasId: versions[effectiveVersion]?.uriSchemasId,
           uriComponent: versions[effectiveVersion]?.uriComponent,
           uriComponentId: versions[effectiveVersion]?.uriComponentId,
-          uriComponentHash: versions[effectiveVersion]?.uriComponentHash
+          uriComponentHash: versions[effectiveVersion]?.uriComponentHash,
+          contextManagementUri: versions[effectiveVersion]?.contextManagementUri,
+          contextManagementComponentUri: versions[effectiveVersion]?.contextManagementComponentUri
         };
       }
 
