@@ -175,10 +175,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const records = await filterPatternFlyContext.memo({
     id: id as string
   });
-  const byEntry = Array.from(records.values());
+  const record = records.get(id as string);
 
   assertInput(
-    byEntry.length > 0,
+    record !== undefined,
     () => {
       let suggestionMessage = '';
 
@@ -193,14 +193,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const docs = [];
 
   try {
-    const docPaths = byEntry
-      .filter(({ path }) => path)
-      .map(record => ({
+    const docPaths = record.path
+      ? [{
         doc: record.path,
-        uri: record.componentUri && record.section === 'components' && record.category === 'react'
-          ? record.componentUri
-          : record.uri
-      }));
+        uri: record.canonicalUri
+      }]
+      : [];
 
     if (docPaths.length > 0) {
       // `processDocsFunction` has de-dup docs baked in
@@ -236,8 +234,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         detailType: normalizedDetail,
         frontMatter: {
           document: resolvedPath || path,
-          name: byEntry[0]?.name || (id as string),
-          version: byEntry[0]?.version
+          name: record?.name || (id as string),
+          version: record?.version
         }
       })
     }))

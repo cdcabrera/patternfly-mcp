@@ -154,7 +154,6 @@ uriIdComplete.memo = memo(uriIdComplete);
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
   const { detail = 'summary', id } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['summary', 'full']) || detail) as 'summary' | 'full';
-  const section = 'components';
 
   assertInputStringLength(id, {
     ...options.minMax.inputStrings,
@@ -162,13 +161,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   });
 
   const records = await filterPatternFlyContext.memo({
-    id: id as string,
-    section
+    id: id as string
   });
-  const byEntry = Array.from(records.values());
+  const record = records.get(id as string);
 
   assertInput(
-    byEntry.length > 0,
+    record !== undefined,
     () => {
       let suggestionMessage = '';
 
@@ -179,8 +177,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       return `No component found for "${id}".${suggestionMessage}`;
     }
   );
-
-  const record = byEntry[0] as ContextManagementPatternFlyHashRecord;
   const { resources } = await getPatternFlyMcpResources.memo();
   const resource = resources.get(record.name);
 
@@ -229,6 +225,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     const version = currentRecord.version || 'unknown';
     const uriId = currentRecord.uri;
     const uriComponentId = currentRecord.componentUri;
+    const canonicalUri = currentRecord.canonicalUri;
 
     // Cross-links to docs
     const categories = new Set(res.entries.map(entry => entry.displayCategory));
@@ -249,8 +246,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       `- **Available Props:** ${propNames}`,
       docsContent
     );
-
-    const canonicalUri = uriComponentId || uriId || passedUri.toString();
 
     return {
       uri: canonicalUri,
