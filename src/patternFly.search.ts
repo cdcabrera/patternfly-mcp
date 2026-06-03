@@ -315,18 +315,20 @@ const filterPatternFly = async (
       let versionContextualProperties = {};
 
       // Apply version contextual properties, typically group/resource related URIs.
-      if (updatedFilters.version && versions?.[updatedFilters.version]) {
+      const effectiveVersion = updatedFilters.version || matchedEntries[0]?.version?.toLowerCase();
+
+      if (effectiveVersion && versions?.[effectiveVersion]) {
         // General props version dependent
         versionContextualProperties = {
-          isSchemasAvailable: versions[updatedFilters.version]?.isSchemasAvailable,
-          uri: versions[updatedFilters.version]?.uri,
-          uriId: versions[updatedFilters.version]?.uriId,
-          uriHash: versions[updatedFilters.version]?.uriHash,
-          uriSchemas: versions[updatedFilters.version]?.uriSchemas,
-          uriSchemasId: versions[updatedFilters.version]?.uriSchemasId,
-          uriComponent: versions[updatedFilters.version]?.uriComponent,
-          uriComponentId: versions[updatedFilters.version]?.uriComponentId,
-          uriComponentHash: versions[updatedFilters.version]?.uriComponentHash
+          isSchemasAvailable: versions[effectiveVersion]?.isSchemasAvailable,
+          uri: versions[effectiveVersion]?.uri,
+          uriId: versions[effectiveVersion]?.uriId,
+          uriHash: versions[effectiveVersion]?.uriHash,
+          uriSchemas: versions[effectiveVersion]?.uriSchemas,
+          uriSchemasId: versions[effectiveVersion]?.uriSchemasId,
+          uriComponent: versions[effectiveVersion]?.uriComponent,
+          uriComponentId: versions[effectiveVersion]?.uriComponentId,
+          uriComponentHash: versions[effectiveVersion]?.uriComponentHash
         };
       }
 

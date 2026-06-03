@@ -384,16 +384,18 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       docsContent
     );
 
+    const canonicalUri = res.uriComponentId || res.uriId || res.uriHash || passedUri.toString();
+
     return {
-      uri: res.uriComponentId,
+      uri: canonicalUri,
       mimeType: 'text/markdown',
       text: formatSummaryFullContent(content, {
         descLinkSummary: 'View summary technical specs',
         descLinkFull: 'View full technical specs',
-        url: res.isSchemasAvailable ? res.uriComponentId : undefined,
+        url: res.isSchemasAvailable ? (res.uriComponentId || res.uriId) : undefined,
         detailType: normalizedDetail,
         frontMatter: {
-          document: res.uriComponentId,
+          document: res.uriComponentId || res.uriId,
           name: updatedName,
           version: updatedVersion
         },
@@ -415,7 +417,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   if (resource.isSchemasAvailable) {
     const schema = await getSchema(name);
     const props = await getProps(name);
-    const uri = `${resource.uriComponentId}${buildSearchString({ detail: 'full' }, { prefix: true, base: resource.uriComponentId })}`;
+    const uri = `${markdownOverview.uri}${buildSearchString({ detail: 'full' }, { prefix: true, base: markdownOverview.uri })}`;
 
     if (props.isProps) {
       updatedSchemas.push({
