@@ -18,7 +18,11 @@ import {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources
 } from './patternFly.getResources';
-import { filterPatternFly, type FilterPatternFlyResultsResource } from './patternFly.search';
+import {
+  filterPatternFly,
+  FilterPatternFlyResultsEntry,
+  type FilterPatternFlyResultsResource
+} from './patternFly.search';
 import {
   type PatternFlyListResourceResult,
   type ExtendedCompleteResourceTemplateCallback
@@ -273,6 +277,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   if (isTerminalId) {
     // Terminal ID bypasses version normalization and lock down to ID only.
     updatedId = (isIdHash ? id : name) as string;
+    updatedVersion = latestVersion;
   } else {
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version as string);
 
@@ -291,15 +296,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     version: updatedVersion,
     name: updatedName,
     category: isTerminalId ? undefined : (category as string),
-    section
+    section: isTerminalId ? undefined : (section as string)
   });
 
-  const resource: FilterPatternFlyResultsResource | undefined = isTerminalId
-    ? byEntry.length > 0 ? byResource.get(byEntry[0]!.name) : undefined
-    : byResource.get(name as string);
+  // const resource: FilterPatternFlyResultsResource | undefined = isTerminalId
+  //  ? byEntry.length > 0 ? byResource.get(byEntry[0]!.name) : undefined
+  //   : byResource.get(name as string);
 
   assertInput(
-    resource !== undefined,
+    byEntry.length > 0,
     () => {
       let suggestionMessage = '';
 
@@ -316,6 +321,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       return `No component found for "${updatedName || updatedId}".${suggestionMessage}`;
     }
   );
+
+  const resource = ;
 
   /**
    * Get the JSON schema for the component.

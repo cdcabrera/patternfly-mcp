@@ -319,6 +319,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   if (isTerminalId) {
     // Terminal ID bypasses version normalization and lock down to ID only.
     updatedId = (isIdHash ? id : name) as string;
+    updatedVersion = latestVersion;
   } else {
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version as string);
 

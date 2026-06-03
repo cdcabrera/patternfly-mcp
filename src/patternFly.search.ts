@@ -315,7 +315,7 @@ const filterPatternFly = async (
       let versionContextualProperties = {};
 
       // Apply version contextual properties, typically group/resource related URIs.
-      const effectiveVersion = updatedFilters.version || matchedEntries[0]?.version?.toLowerCase();
+      const effectiveVersion = updatedFilters.version; // || matchedEntries[0]?.version?.toLowerCase();
 
       if (effectiveVersion && versions?.[effectiveVersion]) {
         // General props version dependent
