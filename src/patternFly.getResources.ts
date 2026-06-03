@@ -719,7 +719,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
-  const catalog = mergeCatalogEntries(originalDocs, componentNamesByDocs);
+  const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
@@ -734,7 +734,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       version: versionContext.latestVersion,
       category: 'Documentation',
       section: 'Documentation',
-      displayName: `${name} (Group)`,
+      displayName: name,
       displayCategory: 'Documentation',
       description: `Documentation group for ${name}.`,
       path: '',
@@ -804,9 +804,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         entries: []
       };
 
+      const displayName = entry.displayName || name;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
-      const baseDisplayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
-      const displayName = `${baseDisplayName} - ${displayCategory} (${version})`;
 
       contextManagementHashIndexMap.set(id.toLowerCase(), {
         id,
