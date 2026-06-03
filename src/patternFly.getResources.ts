@@ -543,6 +543,53 @@ const mutateKeyWordsMap = (
 };
 
 /**
+ * Merges documentation catalog and component names, preferring richer documentation
+ * when multiple entries exist for the same component name and version.
+ *
+ * @param originalDocs - Original documentation catalog
+ * @param componentNamesByDocs - Component names by documentation entries
+ * @returns Merged catalog entries
+ */
+const mergeCatalogEntries = (
+  originalDocs: PatternFlyMcpDocsCatalog,
+  componentNamesByDocs: Map<string, PatternFlyMcpComponentNamesDoc[]>
+): [string, (PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc)[]][] => {
+  const catalogMap = new Map<string, (PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc)[]>();
+
+  // Add from componentNamesByDocs first (as fallbacks)
+  for (const [name, entries] of componentNamesByDocs) {
+    catalogMap.set(name.toLowerCase(), entries);
+  }
+
+  // Add from originalDocs, merging if name already exists
+  Object.entries(originalDocs.docs).forEach(([name, entries]) => {
+    const lowerName = name.toLowerCase();
+
+    const existing = catalogMap.get(lowerName) || [];
+
+    catalogMap.set(lowerName, [...existing, ...entries]);
+  });
+
+  // Deduplicate: if we have non-schema entries for a version, remove schema entries for that same version
+  for (const [name, entries] of catalogMap) {
+    const nonSchemaVersions = new Set(
+      entries
+        .filter(entry => entry.source !== 'schemas')
+        .map(entry => (entry.version || 'unknown').toLowerCase())
+    );
+
+    if (nonSchemaVersions.size > 0) {
+      const filteredEntries = entries.filter(entry =>
+        entry.source !== 'schemas' || !nonSchemaVersions.has((entry.version || 'unknown').toLowerCase()));
+
+      catalogMap.set(name, filteredEntries);
+    }
+  }
+
+  return Array.from(catalogMap.entries());
+};
+
+/**
  * Lean available resources for context management.
  *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
@@ -559,7 +606,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
   const pathIndex = new Map<string, string>();
   const versionIndex: ContextManagementPatternFlyHashRecord[] = [];
 
-  const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
+  const catalog = mergeCatalogEntries(originalDocs, componentNamesByDocs);
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
@@ -572,7 +619,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       version: versionContext.latestVersion,
       category: 'Documentation',
       section: 'Documentation',
-      displayName: name,
+      displayName: `${name} (Group)`,
       displayCategory: 'Documentation',
       description: `Documentation group for ${name}.`,
       path: '',
@@ -587,8 +634,9 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       const version = (entry.version || 'unknown').toLowerCase();
       const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
-      const displayName = entry.displayName || name;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
+      const baseDisplayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
+      const displayName = `${baseDisplayName} - ${displayCategory} (${version})`;
 
       const record: ContextManagementPatternFlyHashRecord = {
         id,
@@ -671,7 +719,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const versionIndex: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[] = [];
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
-  const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
+  const catalog = mergeCatalogEntries(originalDocs, componentNamesByDocs);
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
@@ -686,7 +734,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       version: versionContext.latestVersion,
       category: 'Documentation',
       section: 'Documentation',
-      displayName: name,
+      displayName: `${name} (Group)`,
       displayCategory: 'Documentation',
       description: `Documentation group for ${name}.`,
       path: '',
@@ -756,8 +804,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         entries: []
       };
 
-      const displayName = entry.displayName || name;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
+      const baseDisplayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
+      const displayName = `${baseDisplayName} - ${displayCategory} (${version})`;
 
       contextManagementHashIndexMap.set(id.toLowerCase(), {
         id,

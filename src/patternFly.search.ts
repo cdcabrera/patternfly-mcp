@@ -79,6 +79,8 @@ interface FilterPatternFlyResults {
  * @param filters - Filters to apply.
  * @param resources - Context management resources.
  * @param [options] - Optional settings object.
+ * @param [options.searchFilters] - List of filter keys to try in parallel.
+ * @param [options.maxResultsLimit] - Maximum results limit for the dynamic filter pass.
  * @returns Map of ID to Record.
  */
 const dynamicFilterPatternFlyContext = async (
@@ -87,7 +89,7 @@ const dynamicFilterPatternFlyContext = async (
   resources: ContextManagementResources,
   {
     searchFilters = ['id', 'name', 'path'],
-    maxResultsLimit = 1,
+    maxResultsLimit = 1
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
 ): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
   const query = searchQuery.trim().toLowerCase();
@@ -124,9 +126,7 @@ const dynamicFilterPatternFlyContext = async (
 
   try {
     return await Promise.any(
-      searchFilters.map(filter =>
-        passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings))
-      )
+      searchFilters.map(filter => passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings)))
     );
   } catch {
     return new Map();
@@ -141,6 +141,9 @@ const dynamicFilterPatternFlyContext = async (
  * @param filters - Filters to apply.
  * @param [mcpResources] - PatternFly resources.
  * @param [settings] - Optional {@link FilterPatternFlySettings}.
+ * @param [settings.maxSyncTime] - Max synchronous time slice in milliseconds before yielding.
+ * @param [settings.signal] - Abort signal.
+ * @param [settings.signalError] - Error to throw when aborted.
  * @returns Map of ID to Record.
  */
 const filterPatternFlyContext = async (
@@ -281,6 +284,7 @@ filterPatternFlyContext.memo = memo(filterPatternFlyContext, {
  * @param options - Search options.
  * @param [options.mcpResources] - PatternFly resources.
  * @param [options.allowWildCardAll] - Whether to allow wild card all search.
+ * @param [options.dynamicFilter] - Whether to allow dynamic filtering.
  * @param [options.maxDistance] - Maximum distance for fuzzy search.
  * @param [options.maxResults] - Maximum results for fuzzy search.
  * @returns Search results.
