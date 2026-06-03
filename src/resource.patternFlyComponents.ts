@@ -166,12 +166,16 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const record = records.get(id as string);
 
   assertInput(
-    record !== undefined,
+    record !== undefined && !record.isGroup,
     () => {
       let suggestionMessage = '';
 
       if (id) {
-        suggestionMessage = ' Try using a different ID.';
+        if (record?.isGroup) {
+          suggestionMessage = ` "${id}" is a documentation group, not a specific component. Try accessing it via patternfly://docs/${id}.`;
+        } else {
+          suggestionMessage = ' Try using a different ID.';
+        }
       }
 
       return `No component found for "${id}".${suggestionMessage}`;

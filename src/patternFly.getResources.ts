@@ -593,7 +593,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       id: groupId,
       uri,
       componentUri,
-      canonicalUri: componentUri,
+      canonicalUri: uri,
       name,
       version: versionContext.latestVersion,
       category: 'Documentation',
@@ -625,7 +625,17 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
       const baseDisplayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
-      const displayName = `${baseDisplayName} - ${displayCategory} (${version})`;
+
+      let finalDisplayName = baseDisplayName;
+
+      if (!finalDisplayName.toLowerCase().includes(displayCategory.toLowerCase())) {
+        finalDisplayName += ` - ${displayCategory}`;
+      }
+      if (!finalDisplayName.toLowerCase().includes(`(${version})`)) {
+        finalDisplayName += ` (${version})`;
+      }
+
+      const displayName = finalDisplayName;
       const description = entry.description || '';
       const uri = `patternfly://docs/${id}`;
       const componentUri = `patternfly://components/${id}`;
@@ -729,7 +739,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
     const uri = `patternfly://docs/${groupId}`;
     const componentUri = `patternfly://components/${groupId}`;
-    const displayName = name;
+    const displayName = `${name} (Group)`;
     const description = `Documentation group for ${name}.`;
 
     hashIndexMap.set(groupId.toLowerCase(), name);
@@ -737,7 +747,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       id: groupId,
       uri,
       componentUri,
-      canonicalUri: componentUri,
+      canonicalUri: uri,
       name,
       version: versionContext.latestVersion,
       category: 'Documentation',
@@ -815,7 +825,17 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       const displayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
       const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
-      const fullDisplayName = `${displayName} - ${displayCategory} (${version})`;
+
+      let finalDisplayName = displayName;
+
+      if (!finalDisplayName.toLowerCase().includes(displayCategory.toLowerCase())) {
+        finalDisplayName += ` - ${displayCategory}`;
+      }
+      if (!finalDisplayName.toLowerCase().includes(`(${version})`)) {
+        finalDisplayName += ` (${version})`;
+      }
+
+      const fullDisplayName = finalDisplayName;
       const description = entry.description || '';
       const contextManagementUriVal = `patternfly://docs/${id}`;
       const contextManagementComponentUriVal = `patternfly://components/${id}`;

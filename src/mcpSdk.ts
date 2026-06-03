@@ -69,6 +69,7 @@ interface McpResourceMetadataMetaConfig {
   name?: string;
   title?: string;
   description?: string;
+  valueLimit?: number | undefined;
   searchFields?: string[] | undefined;
   mimeType?: 'text/markdown' | 'application/json';
   metaHandler?: (params: Record<string, string> | undefined) => Promise<unknown> | unknown;

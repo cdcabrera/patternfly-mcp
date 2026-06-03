@@ -11,8 +11,12 @@ import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
 import {
+  stringJoin
+} from './server.helpers';
+import {
   getPatternFlyMcpResources,
-  getPatternFlyContextManagementResources
+  getPatternFlyContextManagementResources,
+  type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
 import {
@@ -192,32 +196,65 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   const docs = [];
 
-  try {
-    const docPaths = record.path
-      ? [{
-        doc: record.path,
-        uri: record.canonicalUri
-      }]
-      : [];
+  if (record.isGroup) {
+    const resources = await getPatternFlyContextManagementResources.memo();
+    const relatedIds = resources.nameIndex.get(record.name) || [];
+    const relatedRecords = relatedIds
+      .map(relatedId => resources.hashIndex.get(relatedId))
+      .filter((rec): rec is ContextManagementPatternFlyHashRecord => rec !== undefined && !rec.isGroup);
 
-    if (docPaths.length > 0) {
-      // `processDocsFunction` has de-dup docs baked in
-      const processedDocs = await processDocsFunction.memo(docPaths);
+    const categories = Array.from(new Set(relatedRecords.map(rec => rec.displayCategory))).sort();
 
-      // Failures are `log.debugged` in `processDocsFunction`.
-      for (const response of processedDocs) {
-        if (response.isSuccess) {
-          docs.push({
-            ...response
-          });
+    const content = stringJoin.newline(
+      `# ${record.name} (Documentation Group)`,
+      `This is a documentation group for ${record.name}. Select a category below to view specific documentation.`,
+      '',
+      '### Available Documentation',
+
+      ...categories.map(category => {
+        const catRecords = relatedRecords.filter(rec => rec.displayCategory === category);
+        // Prefer latest version for the group link
+        const latestCat = catRecords[0]; // sorted desc by version in versionIndex but here we just need any or latest
+
+        return latestCat ? `   - [${category}](${latestCat.canonicalUri})` : '';
+      }).filter(Boolean)
+    );
+
+    docs.push({
+      uri: record.canonicalUri,
+      path: '',
+      resolvedPath: '',
+      content,
+      isSuccess: true
+    });
+  } else {
+    try {
+      const docPaths = record.path
+        ? [{
+          doc: record.path,
+          uri: record.canonicalUri
+        }]
+        : [];
+
+      if (docPaths.length > 0) {
+        // `processDocsFunction` has de-dup docs baked in
+        const processedDocs = await processDocsFunction.memo(docPaths);
+
+        // Failures are `log.debugged` in `processDocsFunction`.
+        for (const response of processedDocs) {
+          if (response.isSuccess) {
+            docs.push({
+              ...response
+            });
+          }
         }
       }
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to fetch documentation: ${error}`
+      );
     }
-  } catch (error) {
-    throw new McpError(
-      ErrorCode.InternalError,
-      `Failed to fetch documentation: ${error}`
-    );
   }
 
   assertInput(

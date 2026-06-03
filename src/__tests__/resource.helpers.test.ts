@@ -30,7 +30,7 @@ describe('resource.helpers', () => {
 
       expect(result).toContain('# My Title');
       expect(result).toContain('---');
-      expect(result).toContain('pfmcp_detail: summary');
+      expect(result).toContain('pfmcp_detail: full');
     });
 
     it('should prefix passed frontMatter keys', () => {
@@ -56,7 +56,7 @@ describe('resource.helpers', () => {
       expect(result).toContain('title: Original Title');
       expect(result).toContain('category: core');
       expect(result).toContain('pfmcp_name: test-name');
-      expect(result).toContain('pfmcp_detail: summary');
+      expect(result).toContain('pfmcp_detail: full');
       expect(result).toContain('# My Title');
     });
 
@@ -67,8 +67,8 @@ describe('resource.helpers', () => {
       });
 
       expect(result).toContain('pfmcp_full_uri: patternfly://test?detail=full');
-      expect(result).toContain('pfmcp_detail: full');
-      expect(result).toContain('[Read full documentation](patternfly://test)');
+      expect(result).toContain('pfmcp_detail: summary');
+      expect(result).toContain('[Read full documentation](patternfly://test?detail=full)');
     });
 
     it('should handle full detailType and prefix links', () => {
@@ -78,8 +78,8 @@ describe('resource.helpers', () => {
       });
 
       expect(result).toContain('pfmcp_summary_uri: patternfly://test?detail=summary');
-      expect(result).toContain('pfmcp_detail: summary');
-      expect(result).toContain('[Read summary documentation](patternfly://test)');
+      expect(result).toContain('pfmcp_detail: full');
+      expect(result).toContain('[Read summary documentation](patternfly://test?detail=summary)');
     });
 
     it.each([

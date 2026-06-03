@@ -104,6 +104,49 @@ describe('setMetadataOptions', () => {
     expect(content).toContain('cat1');
   });
 
+  it('should respect the valueLimit for completions', async () => {
+    const manyValues = Array.from({ length: 50 }, (_, i) => `val${i}`);
+    const complete = jest.fn().mockResolvedValue(manyValues);
+    const options = setMetadataOptions({
+      name: 'test',
+      baseUri: 'test://uri',
+      searchParams: [],
+      config: { title: 'Test Value Limit' } as any,
+      metaConfig: { valueLimit: 10 },
+      complete: { version: complete },
+      valueLimit: 10,
+      registerAllSearchCombinations: undefined
+    });
+
+    const content = await options.metaHandler({});
+
+    expect(content).toContain('val0');
+    expect(content).toContain('val9');
+    expect(content).not.toContain('val10');
+    expect(content).toContain('... (40 more)');
+  });
+
+  it('should default to a valueLimit of 25 for completions', async () => {
+    const manyValues = Array.from({ length: 50 }, (_, i) => `val${i}`);
+    const complete = jest.fn().mockResolvedValue(manyValues);
+    const options = setMetadataOptions({
+      name: 'test',
+      baseUri: 'test://uri',
+      searchParams: [],
+      config: { title: 'Test Default Limit' } as any,
+      metaConfig: {},
+      complete: { version: complete },
+      registerAllSearchCombinations: undefined
+    });
+
+    const content = await options.metaHandler({});
+
+    expect(content).toContain('val0');
+    expect(content).toContain('val24');
+    expect(content).not.toContain('val25');
+    expect(content).toContain('... (25 more)');
+  });
+
   it('should fall back to empty values when a complete callback throws', async () => {
     const throwingComplete = jest.fn().mockRejectedValue(new Error('network error'));
     const options = setMetadataOptions({

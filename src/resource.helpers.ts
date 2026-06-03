@@ -105,7 +105,7 @@ const formatSummaryFullContent = (
     updatedFrontMatter[linkKey] = `${url}${buildSearchString(searchParams, { base: url, prefix: true })}`;
   }
 
-  updatedFrontMatter[`${frontMatterPrefix}detail`] = isSummary ? 'full' : 'summary';
+  updatedFrontMatter[`${frontMatterPrefix}detail`] = detailType;
 
   // Merge existing frontmatter with internal. Internal takes priority.
   const mergedFrontMatter = stringJoin.newlineFiltered(
@@ -117,9 +117,12 @@ const formatSummaryFullContent = (
   let updatedLink;
 
   if (url) {
+    const searchParams = isSummary ? { detail: 'full' } : { detail: 'summary' };
+    const parameterizedUrl = `${url}${buildSearchString(searchParams, { base: url, prefix: true })}`;
+
     updatedLink = isSummary
-      ? `[${descLinkFull}](${url})`
-      : `[${descLinkSummary}](${url})`;
+      ? `[${descLinkFull}](${parameterizedUrl})`
+      : `[${descLinkSummary}](${parameterizedUrl})`;
   }
 
   if (detailType === 'full' || strippedContent.length <= summaryLength) {
