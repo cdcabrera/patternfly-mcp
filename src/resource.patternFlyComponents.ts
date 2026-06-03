@@ -24,6 +24,7 @@ import {
   type ExtendedCompleteResourceTemplateCallback
 } from './resource.patternFlyDocsIndex';
 import {
+  formatSummaryFullContent,
   nextCursor,
   paramCompletion
 } from './resource.helpers';
@@ -331,9 +332,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     return {
       uri: res.uriComponentId,
       mimeType: 'text/markdown',
-      text: content
-
-      /*
       text: formatSummaryFullContent(content, {
         descLinkSummary: 'View summary technical specs',
         descLinkFull: 'View full technical specs',
@@ -346,7 +344,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         },
         summaryLength: 500
       })
-       */
     };
   };
 
