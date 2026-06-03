@@ -13,6 +13,7 @@ import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
+import { isShaHexLike } from './server.helpers';
 import {
   formatSummaryFullContent,
   nextCursor,
@@ -142,6 +143,11 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
   const { version, category, section, id } = context?.arguments || {};
+
+  if (isShaHexLike(id)) {
+    return [];
+  }
+
   const { names } = await paramCompletion({ category, name, section, version, id });
 
   return names;
@@ -161,6 +167,11 @@ uriNameComplete.memo = memo(uriNameComplete);
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, context) => {
   const { version, category, section, name } = context?.arguments || {};
+
+  if (isShaHexLike(name)) {
+    return [];
+  }
+
   const { ids } = await paramCompletion({ category, name, section, version, id });
 
   return ids;
@@ -180,6 +191,11 @@ uriIdComplete.memo = memo(uriIdComplete);
  */
 const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
   const { version, section, name, id } = context?.arguments || {};
+
+  if (isShaHexLike(name) || isShaHexLike(id)) {
+    return [];
+  }
+
   const { categories } = await paramCompletion({ category, name, section, version, id });
 
   return categories;
@@ -199,6 +215,11 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  */
 const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (section: string, context) => {
   const { version, category, name, id } = context?.arguments || {};
+
+  if (isShaHexLike(name) || isShaHexLike(id)) {
+    return [];
+  }
+
   const { sections } = await paramCompletion({ category, name, section, version, id });
 
   return sections;
@@ -218,6 +239,11 @@ uriSectionComplete.memo = memo(uriSectionComplete);
  */
 const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
   const { section, category, name, id } = context?.arguments || {};
+
+  if (isShaHexLike(name) || isShaHexLike(id)) {
+    return [];
+  }
+
   const { versions } = await paramCompletion({ category, name, section, version, id });
 
   return versions;
@@ -239,6 +265,9 @@ uriVersionComplete.memo = memo(uriVersionComplete);
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
   const { category, detail = 'summary', name, section, id, version } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
+  const isNameHash = isShaHexLike(name);
+  const isIdHash = isShaHexLike(id);
+  const isTerminalId = isNameHash || isIdHash;
   let updatedId;
 
   assertInputStringLength(name, {
@@ -258,47 +287,57 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   }
 
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
+  if (!isTerminalId) {
+    if (version) {
+      assertInputStringLength(version, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'version'
+      });
+    }
 
-  if (section) {
-    assertInputStringLength(section, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'section'
-    });
-  }
+    if (section) {
+      assertInputStringLength(section, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'section'
+      });
+    }
 
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
-    });
+    if (category) {
+      assertInputStringLength(category, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'category'
+      });
+    }
   }
 
   const {
     availableVersions,
     latestVersion
   } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  let updatedVersion: string | undefined;
 
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
+  if (isTerminalId) {
+    // Terminal ID bypasses version normalization and lock down to ID only.
+    updatedId = (isIdHash ? id : name) as string;
+  } else {
+    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version as string);
 
-  const updatedVersion = normalizedVersion || latestVersion;
-  const updatedName = name.trim();
+    assertInput(
+      !version || Boolean(normalizedVersion),
+      `Invalid PatternFly version "${(version as string)?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+    );
+
+    updatedVersion = normalizedVersion || latestVersion;
+  }
+
+  const updatedName = isTerminalId ? undefined : (name as string).trim();
 
   const { byEntry } = await filterPatternFly.memo({
     id: updatedId,
     version: updatedVersion,
     name: updatedName,
-    category,
-    section
+    category: isTerminalId ? undefined : (category as string),
+    section: isTerminalId ? undefined : (section as string)
   });
 
   assertInput(
@@ -317,7 +356,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         suggestionMessage = ` Try using different parameters for ${variableList}.`;
       }
 
-      return `No documentation found for "${updatedName}".${suggestionMessage}`;
+      return `No documentation found for "${updatedName || updatedId}".${suggestionMessage}`;
     }
   );
 

@@ -618,8 +618,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
       if (entry.section === 'components' && entry.category === 'react') {
         uriComponent = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
-        uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id: groupId }, { prefix: true })}`;
-        uriComponentHash = `patternfly://components/${encodeURIComponent(groupId)}`;
+        uriComponentId = `patternfly://components/${encodeURIComponent(name)}${buildSearchString({ id }, { prefix: true })}`;
+        uriComponentHash = `patternfly://components/${encodeURIComponent(id)}`;
 
         resource.versions[version].uriComponent = uriComponent;
         resource.versions[version].uriComponentId = uriComponentId;

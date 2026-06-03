@@ -5,7 +5,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type McpResource } from './mcpSdk';
 import { memo } from './server.caching';
-import { buildSearchString, stringJoin } from './server.helpers';
+import { buildSearchString, isShaHexLike, stringJoin } from './server.helpers';
 import {
   assertInput,
   assertInputStringLength,
@@ -126,6 +126,11 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  */
 const uriNameComplete: ExtendedCompleteResourceTemplateCallback = async (name: string, context) => {
   const { version, category, id } = context?.arguments || {};
+
+  if (isShaHexLike(id)) {
+    return [];
+  }
+
   const section = 'components';
   const { names } = await paramCompletion({ category, name, section, version, id });
 
@@ -146,6 +151,11 @@ uriNameComplete.memo = memo(uriNameComplete);
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, context) => {
   const { version, category, name } = context?.arguments || {};
+
+  if (isShaHexLike(name)) {
+    return [];
+  }
+
   const section = 'components';
   const { ids } = await paramCompletion({ category, name, section, version, id });
 
@@ -166,6 +176,11 @@ uriIdComplete.memo = memo(uriIdComplete);
  */
 const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (category: string, context) => {
   const { version, name, id } = context?.arguments || {};
+
+  if (isShaHexLike(name) || isShaHexLike(id)) {
+    return [];
+  }
+
   const section = 'components';
   const { categories } = await paramCompletion({ category, name, section, version, id });
 
@@ -186,6 +201,11 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  */
 const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (version: string, context) => {
   const { category, name, id } = context?.arguments || {};
+
+  if (isShaHexLike(name) || isShaHexLike(id)) {
+    return [];
+  }
+
   const section = 'components';
   const { versions } = await paramCompletion({ category, name, section, version, id });
 
@@ -209,6 +229,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const { version, category, id, name, detail = 'summary' } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['summary', 'full']) || detail) as 'summary' | 'full';
   const section = 'components';
+  const isNameHash = isShaHexLike(name);
+  const isIdHash = isShaHexLike(id);
+  const isTerminalId = isNameHash || isIdHash;
   let updatedId;
 
   assertInputStringLength(name, {
@@ -228,40 +251,52 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   }
 
-  if (version) {
-    assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'version'
-    });
-  }
+  if (!isTerminalId) {
+    if (version) {
+      assertInputStringLength(version, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'version'
+      });
+    }
 
-  if (category) {
-    assertInputStringLength(category, {
-      ...options.minMax.inputStrings,
-      inputDisplayName: 'category'
-    });
+    if (category) {
+      assertInputStringLength(category, {
+        ...options.minMax.inputStrings,
+        inputDisplayName: 'category'
+      });
+    }
   }
 
   const { availableVersions, availableSchemasVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  let updatedVersion: string | undefined;
 
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
+  if (isTerminalId) {
+    // Terminal ID bypasses version normalization and lock down to ID only.
+    updatedId = (isIdHash ? id : name) as string;
+  } else {
+    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version as string);
 
-  const updatedVersion = normalizedVersion || latestVersion;
-  const updatedName = name.trim();
+    assertInput(
+      !version || Boolean(normalizedVersion),
+      `Invalid PatternFly version "${(version as string)?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+    );
 
-  const { byResource } = await filterPatternFly.memo({
+    updatedVersion = normalizedVersion || latestVersion;
+  }
+
+  const updatedName = isTerminalId ? undefined : (name as string).trim();
+
+  const { byResource, byEntry } = await filterPatternFly.memo({
     id: updatedId,
     version: updatedVersion,
     name: updatedName,
-    category,
+    category: isTerminalId ? undefined : (category as string),
     section
   });
 
-  const resource: FilterPatternFlyResultsResource | undefined = byResource.get(name);
+  const resource: FilterPatternFlyResultsResource | undefined = isTerminalId
+    ? byEntry.length > 0 ? byResource.get(byEntry[0]!.name) : undefined
+    : byResource.get(name as string);
 
   assertInput(
     resource !== undefined,
@@ -278,7 +313,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         suggestionMessage = ` Try using different parameters for ${variableList}.`;
       }
 
-      return `No component found for "${updatedName}".${suggestionMessage}`;
+      return `No component found for "${updatedName || updatedId}".${suggestionMessage}`;
     }
   );
 
@@ -296,7 +331,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       () => {
         let suggestionMessage = '';
 
-        if (!availableSchemasVersions.includes(updatedVersion)) {
+        if (updatedVersion && !availableSchemasVersions.includes(updatedVersion)) {
           suggestionMessage = ` Component schemas are only available for PatternFly versions ${availableSchemasVersions.join(', ')}`;
         }
 
