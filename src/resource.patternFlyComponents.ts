@@ -14,13 +14,11 @@ import { findClosest } from './server.search';
 import { getOptions, runWithOptions } from './options.context';
 import {
   getPatternFlyComponentSchema,
-  getPatternFlyMcpResources,
   getPatternFlyContextManagementResources,
   type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import {
-  filterPatternFlyContext,
-  type FilterPatternFlyResultsResource
+  filterPatternFlyContext
 } from './patternFly.search';
 import {
   type PatternFlyListResourceResult,
@@ -81,7 +79,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
 
     resources.push({
       uri: entry.componentUri as string,
-      name: `${entry.displayName} - ${entry.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview'} (${entry.version}) (${actualIndex}/${terminalComponents.length} components)`,
+      name: `${entry.displayName} (${actualIndex}/${terminalComponents.length})`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
@@ -126,15 +124,14 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The list of available IDs.
  */
 const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string, _context) => {
-  const { contextManagementHashIndex } = await getPatternFlyMcpResources.memo();
-  const suggestions = Array.from(contextManagementHashIndex.values())
+  const { hashIndex } = await getPatternFlyContextManagementResources.memo();
+
+  return Array.from(hashIndex.values())
     .filter((record: ContextManagementPatternFlyHashRecord) =>
       record.id.includes(id.toLowerCase()) ||
       record.name.toLowerCase().includes(id.toLowerCase()) ||
       record.displayName.toLowerCase().includes(id.toLowerCase()))
     .map((record: ContextManagementPatternFlyHashRecord) => record.id);
-
-  return suggestions;
 };
 
 /**
@@ -180,10 +177,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       return `No component found for "${id}".${suggestionMessage}`;
     }
   );
-  const { resources } = await getPatternFlyMcpResources.memo();
-  const resource = resources.get(record.name);
+  const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name, version: record.version });
+  const allRecords = Array.from(allRecordsMap.values());
 
-  assertInput(resource !== undefined, `No component resource found for "${id}".`);
+  assertInput(allRecords.length > 0, `No component resource found for "${id}".`);
 
   /**
    * Get the JSON schema for the component.
@@ -217,11 +214,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   /**
    * Get a summary of the component.
    *
-   * @param res - The resource object.
+   * @param allRecords - All related context records.
    * @param currentRecord - The current context management record.
    * @returns The summary response object for the component.
    */
-  const getOverview = async (res: FilterPatternFlyResultsResource, currentRecord: ContextManagementPatternFlyHashRecord) => {
+  const getOverview = async (allRecords: ContextManagementPatternFlyHashRecord[], currentRecord: ContextManagementPatternFlyHashRecord) => {
     const { properties } = currentRecord.isSchemasAvailable ? await getProps(currentRecord.name) : { properties: {} };
     const propNames = Object.keys(properties).join(', ') || 'None';
 
@@ -231,7 +228,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     const canonicalUri = currentRecord.canonicalUri;
 
     // Cross-links to docs
-    const categories = new Set(res.entries.map(entry => entry.displayCategory));
+    const categories = new Set(allRecords.map(record => record.displayCategory));
     const categoryLinks = Array.from(categories).sort()
       .map(category => `[${category}](${uriId}${buildSearchString({ category }, { prefix: true, base: uriComponentId })})`);
 
@@ -268,7 +265,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     };
   };
 
-  const markdownOverview = await getOverview(resource as FilterPatternFlyResultsResource, record);
+  const markdownOverview = await getOverview(allRecords, record);
 
   if (normalizedDetail === 'summary') {
     return {
@@ -278,9 +275,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   const updatedSchemas = [];
 
-  if (resource.isSchemasAvailable) {
-    const schema = await getSchema(resource.name);
-    const props = await getProps(resource.name);
+  if (record.isSchemasAvailable) {
+    const schema = await getSchema(record.name);
+    const props = await getProps(record.name);
     const uri = `${markdownOverview.uri}${buildSearchString({ detail: 'full' }, { prefix: true, base: markdownOverview.uri })}`;
 
     if (props.isProps) {
