@@ -439,6 +439,7 @@ const patternFlyComponentsResource = (options = getOptions()): McpResource => {
     callback,
     {
       complete,
+      registerAllSearchCombinations: true,
       metaConfig: {
         uri: 'patternfly://components/meta{?version}',
         title: `${CONFIG.title} Metadata`,
