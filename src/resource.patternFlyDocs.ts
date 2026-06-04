@@ -249,6 +249,5 @@ export {
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,
-  CONFIG,
-  type PatternFlyListResourceResult
+  CONFIG
 };
