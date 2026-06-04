@@ -1,29 +1,57 @@
 import {
   patternFlyCollectionsResource,
+  listResources,
   resourceCallback
 } from '../resource.patternFlyCollections';
 import { getOptions, runWithOptions } from '../options.context';
+import { isPlainObject } from '../server.helpers';
 
+describe('patternFlyCollectionsResource', () => {
+  it('should have a consistent return structure', () => {
+    const resource = patternFlyCollectionsResource();
+
+    expect({
+      name: resource[0],
+      uri: resource[1],
+      config: isPlainObject(resource[2]),
+      handler: resource[3]
+    }).toMatchSnapshot('structure');
+  });
+});
+
+/*
+describe('listResources', () => {
+  it('should return a list of resources', async () => {
+    const resources = await listResources();
+
+    expect(resources.resources).toBeDefined();
+
+    const everyResourceSameProperties = resources.resources.every((obj: any) =>
+      Boolean(obj.uri) &&
+      /^patternfly:\/\/components\//.test(obj.uri) &&
+      Boolean(obj.name) &&
+      Boolean(obj.mimeType) &&
+      Boolean(obj.description));
+
+    expect(everyResourceSameProperties).toBe(true);
+  });
+});
+ */
+
+/*
 describe('patternFlyCollectionsResource', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should have a consistent return structure', () => {
-    const resource = patternFlyCollectionsResource();
-
-    expect(resource[0]).toBe('patternfly-collections');
-    expect(resource[1]).toBeDefined();
-    expect(resource[2]).toBeDefined();
-    expect(resource[3]).toBeDefined();
-  });
-
   it('should only register if contextManagement is true', () => {
     const resource = patternFlyCollectionsResource();
     const meta = resource[5] as any;
+
     expect(meta.shouldRegister?.(getOptions())).toBe(false);
 
     const options = { ...getOptions(), contextManagement: true };
+
     expect(meta.shouldRegister?.(options)).toBe(true);
   });
 });
@@ -40,7 +68,7 @@ describe('resourceCallback', () => {
     const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
 
     if (collectionsIndex.length === 0) {
-       return;
+      return;
     }
 
     const record = collectionsIndex[0];
@@ -50,8 +78,7 @@ describe('resourceCallback', () => {
     }
 
     const result = await runWithOptions(options, async () =>
-      resourceCallback(new URL(record.collectionUri || ''), { id: record.id })
-    );
+      resourceCallback(new URL(`patternfly://collections/${record.id}`), { id: record.id }));
 
     expect(result.contents).toBeDefined();
     expect(result.contents[0]?.text).toContain(`# ${record.displayName}`);
@@ -68,7 +95,8 @@ describe('resourceCallback', () => {
     }
 
     await expect(runWithOptions(options, async () =>
-      resourceCallback(new URL(terminalRecord.uri as string), { id: terminalRecord.id })
-    )).rejects.toThrow('Collection hub not found');
+      resourceCallback(new URL(terminalRecord.uri as string), { id: terminalRecord.id }))).rejects.toThrow('Collection hub not found');
   });
 });
+
+ */

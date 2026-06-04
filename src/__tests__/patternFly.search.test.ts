@@ -1,7 +1,10 @@
 import {
   dynamicFilterPatternFly,
+  dynamicFilterPatternFlyContext,
   filterPatternFly,
+  filterPatternFlyContext,
   searchPatternFly,
+  searchPatternFlyContext,
   type FilterPatternFlyFilters
 } from '../patternFly.search';
 
@@ -602,6 +605,181 @@ describe('searchPatternFly', () => {
 
     const first = searchPatternFly('button', {}, mockOptions);
     const second = searchPatternFly('button', {}, mockOptions);
+
+    await Promise.all([first, second]);
+
+    expect(memoSpy).toHaveBeenCalledTimes(2);
+    expect(memoSpy.mock.results[0]?.value).toBe(memoSpy.mock.results[1]?.value);
+
+    memoSpy.mockRestore();
+  });
+});
+
+describe('searchPatternFlyContext', () => {
+  const mockMcpResources = {
+    resources: new Map([
+      ['button', {
+        name: 'button',
+        groupId: 'btn-group',
+        entries: [
+          { id: 'btn-v6-hash', name: 'button', version: 'v6', section: 'components', category: 'action', groupId: 'btn-group' },
+          { id: 'btn-v5-hash', name: 'button', version: 'v5', section: 'components', category: 'action', groupId: 'btn-group' }
+        ],
+        versions: {
+          v6: { uri: 'patternfly://docs/button?version=v6', isSchemasAvailable: true },
+          v5: { uri: 'patternfly://docs/button?version=v5', isSchemasAvailable: false }
+        }
+      }],
+      ['modal', {
+        name: 'modal',
+        groupId: 'mdl-group',
+        entries: [{ id: 'mdl-v6-hash', name: 'modal', version: 'v6', section: 'components', category: 'view', groupId: 'mdl-group' }],
+        versions: { v6: { uri: 'patternfly://docs/modal?version=v6', isSchemasAvailable: true } }
+      }]
+    ]),
+    keywordsIndex: [
+      'button',
+      'modal',
+      'btn-v6-hash',
+      'mdl-v6-hash',
+      'patternfly://docs/button',
+      'patternfly://docs/modal'
+    ],
+    keywordsMap: new Map([
+      ['button', new Map([['v6', ['button']], ['v5', ['button']]])],
+      ['modal', new Map([['v6', ['modal']]])],
+      ['btn-v6-hash', new Map([['v6', ['button']]])],
+      ['mdl-v6-hash', new Map([['v6', ['modal']]])],
+      ['patternfly://docs/button', new Map([['v6', ['button']], ['v5', ['button']]])],
+      ['patternfly://docs/modal', new Map([['v6', ['modal']]])]
+    ]),
+    latestVersion: 'v6'
+  };
+
+  const mockOptions = { mcpResources: Promise.resolve(mockMcpResources) as any };
+
+  it.each([
+    {
+      description: 'exact match',
+      search: 'button',
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'partial prefix',
+      search: 'but',
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'prefix'
+    },
+    {
+      description: 'partial suffix',
+      search: 'ton',
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'suffix'
+    },
+    {
+      description: 'partial contains',
+      search: 'utto',
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'contains'
+    },
+    {
+      description: 'patternfly:// URI with filter',
+      search: 'patternfly://docs/modal',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'modal',
+      expectedType: 'exact'
+    },
+    {
+      description: 'patternfly:// URI without filter',
+      search: 'patternfly://docs/modal',
+      expectedLength: 1,
+      expectedName: 'modal',
+      expectedType: 'exact'
+    },
+    {
+      description: 'hash entry id with filter',
+      search: 'btn-v6-hash',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'hash entry id without filter',
+      search: 'btn-v6-hash',
+      options: { dynamicFilter: false },
+      expectedLength: 2,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'version filter',
+      search: 'button',
+      filters: { version: 'v5' },
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    }
+  ])('should return search results, $description', async ({ search, filters, options, expectedLength, expectedName, expectedType }) => {
+    const { searchResults } = await searchPatternFlyContext(search, { ...filters }, { ...options, ...mockOptions });
+
+    expect(searchResults?.length).toBe(expectedLength);
+    expect(searchResults?.[0]?.matchType).toBe(expectedType);
+    expect(searchResults?.[0]?.record?.name).toBe(expectedName);
+  });
+
+  it.each([
+    {
+      description: 'wildcard search',
+      search: '*'
+    },
+    {
+      description: 'all search',
+      search: 'all'
+    },
+    {
+      description: 'empty all search',
+      search: ''
+    }
+  ])('should return an array of all available results, $description', async ({ search }) => {
+    const { searchResults } = await searchPatternFlyContext(search, undefined, { allowWildCardAll: true, ...mockOptions });
+
+    expect(searchResults?.length).toBe(2);
+    expect(searchResults?.[0]?.matchType).toBe('all');
+  });
+
+  it('should not call filterPatternFlyContext.memo when dynamicFilter is enabled', async () => {
+    const memoSpy = jest.spyOn(filterPatternFlyContext, 'memo');
+
+    await searchPatternFlyContext('patternfly://docs/modal', {}, { dynamicFilter: true, ...mockOptions });
+
+    expect(memoSpy).not.toHaveBeenCalled();
+
+    memoSpy.mockRestore();
+  });
+
+  it('should call filterPatternFlyContext.memo for scoped non-dynamic filtering', async () => {
+    const memoSpy = jest.spyOn(filterPatternFlyContext, 'memo');
+
+    await searchPatternFlyContext('button', {}, mockOptions);
+
+    expect(memoSpy).toHaveBeenCalledTimes(1);
+    expect(memoSpy).toHaveBeenCalledWith({}, expect.any(Map));
+
+    memoSpy.mockRestore();
+  });
+
+  it('should reuse filterPatternFlyContext.memo cache for repeated identical scoped searches', async () => {
+    const memoSpy = jest.spyOn(filterPatternFlyContext, 'memo');
+
+    const first = searchPatternFlyContext('button', {}, mockOptions);
+    const second = searchPatternFlyContext('button', {}, mockOptions);
 
     await Promise.all([first, second]);
 

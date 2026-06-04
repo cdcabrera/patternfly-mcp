@@ -621,5 +621,18 @@ describe('token-saver mode', () => {
       expect(item.type).toBe('resource_link');
       expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas|components)\//);
     });
+
+    const link = resources.find((item: any) => item.uri.startsWith('patternfly://docs/'));
+
+    expect(link).toBeDefined();
+
+    // Verify we can read the resource using the discovered ID
+    const readResponse = await CLIENT.send({
+      method: 'resources/read',
+      params: { uri: link.uri }
+    });
+
+    expect(readResponse.result.contents[0].text).toBeDefined();
+    expect(readResponse.result.contents[0].uri).toBe(link.uri);
   });
 });
