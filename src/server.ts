@@ -117,7 +117,18 @@ interface ServerInstance {
  */
 const registerServerResources = async (resources: McpResourceCreator[], server: McpServer, options = getOptions(), session = getSessionOptions()) => {
   for (const resourceCreator of resources) {
-    const [name, uri, config, callback, metadata] = resourceCreator(options);
+    const [name, uri, config, callback, metadata, _config] = resourceCreator(options);
+
+    const shouldRegister = _config?.shouldRegister;
+
+    if (shouldRegister) {
+      const status = await shouldRegister(options);
+
+      if (!status) {
+        log.debug(`Skipping resource registration: ${name}`);
+        continue;
+      }
+    }
 
     try {
       registerResource(server, name, uri, config, (...args: unknown[]) =>
@@ -156,7 +167,17 @@ const registerServerResources = async (resources: McpResourceCreator[], server: 
  */
 const registerServerTools = async (tools: McpToolCreator[], server: McpServer, options = getOptions(), session = getSessionOptions()) => {
   for (const toolCreator of tools) {
-    const [name, schema, callback] = toolCreator(options);
+    const [name, schema, callback, _config] = toolCreator(options);
+    const shouldRegister = _config?.shouldRegister;
+
+    if (shouldRegister) {
+      const status = await shouldRegister(options);
+
+      if (!status) {
+        log.debug(`Skipping tool registration: ${name}`);
+        continue;
+      }
+    }
 
     // Do NOT normalize schemas here. This is by design and is a fallback check for malformed schemas.
     const isZod = isZodSchema(schema?.inputSchema) || isZodRawShape(schema?.inputSchema);

@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { isWhitelistedUrl, stringJoin } from './server.helpers';
+import { isShaHexLike, isWhitelistedUrl, stringJoin } from './server.helpers';
 import { DEFAULT_OPTIONS, type WhitelistUrl } from './options.defaults';
 
 /**
@@ -138,6 +138,28 @@ function assertInputStringNumberEnumLike(
 }
 
 /**
+ * Assert/validate that a given input string is an SHA-1 hex string with a specified length.
+ *
+ * @param input - Input string to validate.
+ * @param options - Validation options
+ * @param options.max - Maximum length of each string in the array. `Required`
+ * @param options.min - Minimum length of each string in the array. `Required`
+ * @param [options.inputDisplayName] - Display name for the input. Used in the default error messages. Defaults to 'Input'.
+ * @param [options.message] - Error description. A default error message with optional `inputDisplayName` is generated if not provided.
+ *
+ * @throws McpError If input is not an SHA-1 hex string, and it does not meet length requirements.
+ */
+function assertInputStringShaHex(
+  input: unknown,
+  { max, min, inputDisplayName, message }: { max: number; min: number; inputDisplayName?: string; message?: string }
+): asserts input is string {
+  const isValid = isShaHexLike(input, { maxLength: max, minLength: min });
+  const updatedDescription = max === min ? `with a length of ${min} characters` : `with a length from ${min} to ${max} characters`;
+
+  mcpAssert(isValid, message || `"${inputDisplayName || 'Input'}" must be a SHA-1 hex ${updatedDescription}`);
+}
+
+/**
  * Assert/validate that a given input URL string, or array of URL strings, is whitelisted against a provided list of URLs.
  *
  * @param input - Input URL string, or array of URL strings, to validate.
@@ -184,5 +206,6 @@ export {
   assertInputStringLength,
   assertInputStringArrayEntryLength,
   assertInputStringNumberEnumLike,
+  assertInputStringShaHex,
   assertInputUrlWhiteListed
 };

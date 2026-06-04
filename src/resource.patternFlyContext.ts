@@ -43,7 +43,14 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
     options.repoSupport && `- **Troubleshooting guidance:** ${options.repoSupport}`,
     options.repoBugs && `- **Report bugs:** ${options.repoBugs}`
   );
+  const activeExperimentalFeatures = options.experimental.join(', ') || 'None';
+  let availableMcpResources = `- **MCP resources:** Can be used to list, filter, and read available documentation resources.`;
 
+  if (options.contextManagement) {
+    availableMcpResources = `- **MCP resources:** Can be used to list and access available documentation records.`;
+  }
+
+  const availableToolFunctions = options.contextManagement ? 'search, list and access' : 'search, fetch and display';
   const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
 **What is PatternFly?**
@@ -57,13 +64,14 @@ PatternFly provides React components, design guidelines, and development tools f
 
 **PatternFly MCP Server:**
 This MCP server provides tools and resources to access all PatternFly documentation resources ranging from design to development.
-- **MCP tools:** Can be used to search, fetch and display available documentation resources.
-- **MCP resources:** Can be used to list, filter and display available documentation resources.
+- **MCP tools:** Can be used to ${availableToolFunctions} available documentation resources.
+${availableMcpResources}
 
 **Environment:**
 - **MCP Server Mode:** ${options.mode}
 - **MCP Server Version:** ${options.version || 'Unknown'}
 - **Node.js Major Version:** ${options.nodeVersion || 'Unknown'}
+- **Active Experimental Features:** ${activeExperimentalFeatures}
 
 ${(troubleshooting && stringJoin.newline('**Troubleshooting:**', troubleshooting)) || ''}
 `;
@@ -92,7 +100,15 @@ const patternFlyContextResource = (options = getOptions()): McpResource => {
   return [
     NAME,
     URI_TEMPLATE,
-    CONFIG,
+    options?.contextManagement
+      ? {
+        ...CONFIG,
+        annotations: {
+          priority: 0.5,
+          audience: ['assistant' as const]
+        }
+      }
+      : CONFIG,
     callback
   ];
 };
