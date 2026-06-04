@@ -134,23 +134,6 @@ const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detai
  */
 uriDetailComplete.memo = memo(uriDetailComplete);
 
-/**
- * ID completion callback for the URI template.
- *
- * @param value - The value to complete.
- * @param context - The completion context.
- * @returns The list of available IDs.
- */
-const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
-  const { ids } = await paramCompletionContext({ name: value, ...context?.arguments });
-
-  return ids;
-};
-
-/**
- * Memoized version of uriIdComplete.
- */
-uriIdComplete.memo = memo(uriIdComplete);
 
 /**
  * Version completion callback for the URI template.
@@ -313,7 +296,6 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
   const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
-    id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
     detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
     version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args)),
     category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
@@ -334,10 +316,6 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
     {
       complete,
       registerAllSearchCombinations: true,
-      // this entire block was a hypothetical that somehow stuck? investigate pre-collections.
-      indexConfig: {
-        uri: 'patternfly://docs/index{?version,category,section}'
-      },
       metaConfig: {
         uri: 'patternfly://docs/meta{?version,category,section}',
         title: `${CONFIG.title} Metadata`,
@@ -355,7 +333,6 @@ export {
   listResources,
   resourceCallback,
   uriDetailComplete,
-  uriIdComplete,
   uriVersionComplete,
   uriCategoryComplete,
   uriSectionComplete,

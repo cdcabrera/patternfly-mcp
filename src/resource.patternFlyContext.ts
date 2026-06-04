@@ -53,7 +53,7 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
       '   - Use `patternfly://docs/{id}{?detail}` for usage design and example patterns, accessibility guidelines, and more. (Default: `detail=summary`)',
       '   - Use `patternfly://components/{id}{?detail}` for component documentation, prop names, and technical specifications. (Default: `detail=summary`)',
       '   - Use `patternfly://collections/{id}` to browse related groups of resources.',
-      '   - **Important**: Always start by searching with `searchPatternFly` to discover the stable `id`. Use `detail=summary` for initial discovery and only use `detail=full` when you are ready to implement code.'
+      '   - **Important**: Direct `id` completion is reserved for collection hubs. For specific documentation or components, always use `searchPatternFly` first to discover the stable `id`. Use `detail=summary` for initial discovery and only use `detail=full` when you are ready to implement code.'
     );
   }
 
