@@ -42,7 +42,7 @@ const CONFIG = {
   description: `A list of PatternFly documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown',
   annotations: {
-    priority: 1.0,
+    priority: 0.9,
     audience: ['assistant' as const]
   }
 };
@@ -124,6 +124,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   if (record.isCollection) {
+    // assert here
     throw new McpError(
       ErrorCode.InvalidParams,
       `The ID "${id}" refers to a collection hub. Please use patternfly://collections/${id} instead.`

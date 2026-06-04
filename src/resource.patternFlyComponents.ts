@@ -53,7 +53,7 @@ const CONFIG = {
   description: `A list of all PatternFly components available for documentation retrieval. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown',
   annotations: {
-    priority: 0.9,
+    priority: 0.8,
     audience: ['assistant' as const]
   }
 };

@@ -81,6 +81,17 @@ describe('resourceCallback', () => {
     expect(result.contents?.[0]?.text).toContain('Available Props: variant');
   });
 
+  it('should return informational message when schemas are unavailable', async () => {
+    (filterPatternFlyContext.memo as any).mockResolvedValue(new Map([
+      ['loremIpsum', { id: 'loremIpsum', name: 'DocOnly', isCollection: false, isSchemasAvailable: false }]
+    ]));
+
+    const result = await resourceCallback(new URL('patternfly://components/loremIpsum'), { id: 'loremIpsum' });
+
+    expect(result.contents?.[0]?.text).toContain('Technical specifications and JSON schemas are not available');
+    expect(result.contents?.[0]?.text).toContain('patternfly://docs/loremIpsum');
+  });
+
   it.each([
     {
       description: 'undefined id',
