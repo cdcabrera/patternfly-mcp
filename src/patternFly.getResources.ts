@@ -21,6 +21,7 @@ import {
   INDEX_EXCEPTION_WORDS,
   INDEX_NOISE_WORDS
 } from './docs.filterWords';
+import { ROOT_COLLECTIONS } from './docs.collections';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -212,7 +213,7 @@ type ContextManagementPatternFlyHashRecord = {
   displayCategory: string;
   description: string;
   path: string;
-  isGroup: boolean;
+  isCollection: boolean;
   isSchemasAvailable: boolean;
   searchString: string;
 };
@@ -548,13 +549,6 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     catalogMap.set(lowerName, [...existing, ...entries]);
   }
 
-  const ROOT_COLLECTIONS = [
-    { name: 'Components', description: 'Technical specifications for all PatternFly components.' },
-    { name: 'Charts', description: 'Data visualization components and guidelines.' },
-    { name: 'Layouts', description: 'Structural layout components and guidelines.' },
-    { name: 'Forms', description: 'Form controls and related documentation.' }
-  ];
-
   const rootCollectionRecords: ContextManagementPatternFlyHashRecord[] = ROOT_COLLECTIONS.map(collection => {
     const id = generateHash(`root:collection:${collection.name.toLowerCase()}`);
     return {
@@ -564,20 +558,17 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       version: versionContext.latestVersion,
       category: 'Documentation',
       section: 'Documentation',
-      displayName: `${collection.name} Collection`,
+      displayName: collection.displayName,
       displayCategory: 'Collection',
       description: collection.description,
       path: '',
-      isGroup: true,
+      isCollection: true,
       isSchemasAvailable: false,
       searchString: `${collection.name} ${collection.description}`.toLowerCase()
     };
   });
 
-  rootCollectionRecords.forEach(record => {
-    hashIndex.set(record.id.toLowerCase(), record);
-    collectionsIndex.push(record);
-  });
+  const usedRootCollectionIds = new Set<string>();
 
   for (const [name, entries] of catalogMap) {
     const nonSchemaVersions = new Set(
@@ -602,7 +593,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       displayCategory: 'Collection',
       description,
       path: '',
-      isGroup: true,
+      isCollection: true,
       isSchemasAvailable: false,
       searchString: `${name} ${displayName} ${description}`.toLowerCase()
     };
@@ -649,18 +640,28 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
       const collectionIds = [groupId];
 
-      if (section === 'components') {
-        const root = rootCollectionRecords.find(r => r.name === 'Components');
-        if (root) collectionIds.push(root.id);
-      }
-      if (category === 'charts') {
-        const root = rootCollectionRecords.find(r => r.name === 'Charts');
-        if (root) collectionIds.push(root.id);
-      }
-      if (category === 'layouts') {
-        const root = rootCollectionRecords.find(r => r.name === 'Layouts');
-        if (root) collectionIds.push(root.id);
-      }
+      ROOT_COLLECTIONS.forEach(rootDef => {
+        const rootRecord = rootCollectionRecords.find(r => r.name.toLowerCase() === rootDef.name.toLowerCase());
+        if (!rootRecord) {
+          return;
+        }
+
+        const lowerSection = section.toLowerCase();
+        const lowerCategory = category.toLowerCase();
+
+        let matched = false;
+        if (rootDef.matches.sections?.some(s => s.toLowerCase() === lowerSection)) {
+          matched = true;
+        }
+        if (rootDef.matches.categories?.some(c => c.toLowerCase() === lowerCategory)) {
+          matched = true;
+        }
+
+        if (matched) {
+          collectionIds.push(rootRecord.id);
+          usedRootCollectionIds.add(rootRecord.id);
+        }
+      });
 
       const record: ContextManagementPatternFlyHashRecord = {
         id,
@@ -675,7 +676,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
         displayCategory,
         description,
         path: entry.path || '',
-        isGroup: false,
+        isCollection: false,
         isSchemasAvailable: Boolean(isSchemasAvailable),
         searchString: `${name} ${displayName} ${description}`.toLowerCase()
       };
@@ -691,6 +692,14 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       versionIndex.push(record);
     });
   }
+
+  // Add used root collections to the indexes
+  rootCollectionRecords.forEach(record => {
+    if (usedRootCollectionIds.has(record.id)) {
+      hashIndex.set(record.id.toLowerCase(), record);
+      collectionsIndex.push(record);
+    }
+  });
 
   // Sort versionIndex: version (desc), name (asc)
   versionIndex.sort((a, b) => {

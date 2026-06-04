@@ -70,7 +70,7 @@ const CONFIG = {
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
-  const terminalComponents = versionIndex.filter(entry => !entry.isGroup && entry.componentUri !== undefined);
+  const terminalComponents = versionIndex.filter(entry => !entry.isCollection && entry.componentUri !== undefined);
   const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalComponents.length });
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -162,12 +162,12 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const record = records.get(id as string);
 
   assertInput(
-    record !== undefined && !record.isGroup,
+    record !== undefined && !record.isCollection,
     () => {
       let suggestionMessage = '';
 
       if (id) {
-        if (record?.isGroup) {
+        if (record?.isCollection) {
           suggestionMessage = ` "${id}" is a collection hub, not a specific component technical overview. Try accessing it via patternfly://collections/${id}.`;
         } else {
           suggestionMessage = ' Try using a different ID.';
@@ -247,15 +247,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     );
 
     return {
-      uri: uriComponentId || uriId || passedUri.toString(),
+      uri: uriComponentId || passedUri.toString(),
       mimeType: 'text/markdown',
       text: formatSummaryFullContent(content, {
         descLinkSummary: 'View summary technical specs',
         descLinkFull: 'View full technical specs',
-        url: currentRecord.isSchemasAvailable ? uriComponentId || uriId : undefined,
+        url: currentRecord.isSchemasAvailable ? uriComponentId : undefined,
         detailType: normalizedDetail,
         frontMatter: {
-          document: uriComponentId || uriId,
+          document: uriComponentId || passedUri.toString(),
           name: currentRecord.name,
           version
         },
@@ -263,6 +263,22 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       })
     };
   };
+
+  if (!record.isSchemasAvailable) {
+    return {
+      contents: [{
+        uri: passedUri.toString(),
+        mimeType: 'text/markdown',
+        text: stringJoin.newline(
+          `# ${record.name} (Technical specifications unavailable)`,
+          '',
+          `Technical specifications and JSON schemas are not available for **${record.name}**.`,
+          '',
+          `You can find general documentation for this item at: patternfly://docs/${record.id}`
+        )
+      }]
+    };
+  }
 
   const markdownOverview = await getOverview(allRecords, record);
 

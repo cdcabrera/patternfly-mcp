@@ -61,7 +61,7 @@ describe('resourceCallback', () => {
   it('should throw error for non-group ID', async () => {
     const { getPatternFlyContextManagementResources } = await import('../patternFly.getResources');
     const { versionIndex } = await getPatternFlyContextManagementResources.memo();
-    const terminalRecord = versionIndex.find(record => !record.isGroup);
+    const terminalRecord = versionIndex.find(record => !record.isCollection);
 
     if (!terminalRecord) {
       return;

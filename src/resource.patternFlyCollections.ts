@@ -115,15 +115,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const records = await filterPatternFlyContext.memo({ id });
   const record = records.get(id);
 
-  if (!record || !record.isGroup) {
+  if (!record || !record.isCollection) {
     throw new McpError(ErrorCode.InvalidParams, `Collection hub not found for ID: ${id}`);
   }
 
   // Fetch all records for this name to build the hub
   const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name });
   const allRecords = Array.from(allRecordsMap.values());
-  const techSpecs = allRecords.filter(record => record.section === 'components' && record.category === 'react' && !record.isGroup);
-  const docs = allRecords.filter(record => (record.section !== 'components' || record.category !== 'react') && !record.isGroup);
+  const techSpecs = allRecords.filter(record => record.section === 'components' && record.category === 'react' && !record.isCollection);
+  const docs = allRecords.filter(record => (record.section !== 'components' || record.category !== 'react') && !record.isCollection);
 
   let content = `---\npfmcp_collection: patternfly://collections/${record.id}\npfmcp_name: ${record.name}\n---\n`;
 

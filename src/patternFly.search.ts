@@ -314,7 +314,7 @@ const searchPatternFlyContext = async (
         matchType: 'exact',
         distance: 0,
         record: recordByHash,
-        uri: recordByHash.isGroup ? `patternfly://collections/${recordByHash.id}` : (recordByHash.uri || '')
+        uri: recordByHash.isCollection ? `patternfly://collections/${recordByHash.id}` : (recordByHash.uri || '')
       };
 
       return {
@@ -337,7 +337,7 @@ const searchPatternFlyContext = async (
         matchType: 'exact',
         distance: 0,
         record,
-        uri: record.isGroup ? `patternfly://collections/${record.id}` : (record.uri || '')
+        uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
       };
 
       return {
@@ -361,7 +361,7 @@ const searchPatternFlyContext = async (
       matchType: 'all',
       distance: 0,
       record,
-      uri: record.isGroup ? `patternfly://collections/${record.id}` : (record.uri || '')
+      uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
     }));
 
     return {
@@ -389,7 +389,7 @@ const searchPatternFlyContext = async (
       matchType: res.matchType,
       distance: res.distance,
       record,
-      uri: record.isGroup ? `patternfly://collections/${record.id}` : (record.uri || '')
+      uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
     };
   });
 

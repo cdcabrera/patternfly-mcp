@@ -88,7 +88,7 @@ const CONFIG = {
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
-  const terminalDocs = versionIndex.filter(record => !record.isGroup);
+  const terminalDocs = versionIndex.filter(record => !record.isCollection);
   const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalDocs.length });
   const resources: PatternFlyListResourceResult[] = [];
 
@@ -241,7 +241,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     }
   );
 
-  if (record.isGroup) {
+  if (record.isCollection) {
     throw new McpError(
       ErrorCode.InvalidParams,
       `The ID "${id}" refers to a collection hub. Please use patternfly://collections/${id} instead.`
