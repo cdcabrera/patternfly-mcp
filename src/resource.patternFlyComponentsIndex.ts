@@ -125,6 +125,9 @@ uriVersionComplete.memo = memo(uriVersionComplete);
 /**
  * Resource callback for the documentation index.
  *
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
+ *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @param options - Options for the resource.
@@ -216,6 +219,9 @@ const patternFlyComponentsIndexResource = (options = getOptions()): McpResource 
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly components.'
       }
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

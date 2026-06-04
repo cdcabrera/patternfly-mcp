@@ -44,6 +44,20 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
     options.repoBugs && `- **Report bugs:** ${options.repoBugs}`
   );
 
+  let availableMcpResources = `- **MCP resources:** Can be used to list, filter, and read available documentation resources.`;
+
+  if (options.contextManagement) {
+    availableMcpResources = stringJoin.newline(
+      availableMcpResources,
+      '   - Use `searchPatternFly` to find the correct `id` for components, documentation, or collections.',
+      '   - Use `patternfly://docs/{id}{?detail}` for usage design and example patterns, accessibility guidelines, and more. (Default: `detail=summary`)',
+      '   - Use `patternfly://components/{id}{?detail}` for component documentation, prop names, and technical specifications. (Default: `detail=summary`)',
+      '   - Use `patternfly://collections/{id}` to browse related groups of resources.',
+      '   - **Important**: Direct `id` completion is reserved for collection hubs. For specific documentation or components, always use `searchPatternFly` first to discover the stable `id`. Use `detail=summary` for initial discovery and only use `detail=full` when you are ready to implement code.'
+    );
+  }
+
+  const availableToolFunctions = options.contextManagement ? 'search, list and access' : 'search, fetch and display';
   const context = `PatternFly is an open-source design system for building consistent, accessible user interfaces.
 
 **What is PatternFly?**
@@ -57,13 +71,14 @@ PatternFly provides React components, design guidelines, and development tools f
 
 **PatternFly MCP Server:**
 This MCP server provides tools and resources to access all PatternFly documentation resources ranging from design to development.
-- **MCP tools:** Can be used to search, fetch and display available documentation resources.
-- **MCP resources:** Can be used to list, filter and display available documentation resources.
+- **MCP tools:** Can be used to ${availableToolFunctions} available documentation resources.
+${availableMcpResources}
 
 **Environment:**
 - **MCP Server Mode:** ${options.mode}
 - **MCP Server Version:** ${options.version || 'Unknown'}
 - **Node.js Major Version:** ${options.nodeVersion || 'Unknown'}
+- **Context Management:** ${options.contextManagement}
 
 ${(troubleshooting && stringJoin.newline('**Troubleshooting:**', troubleshooting)) || ''}
 `;
@@ -92,7 +107,15 @@ const patternFlyContextResource = (options = getOptions()): McpResource => {
   return [
     NAME,
     URI_TEMPLATE,
-    CONFIG,
+    options?.contextManagement
+      ? {
+        ...CONFIG,
+        annotations: {
+          priority: 0.5,
+          audience: ['assistant' as const]
+        }
+      }
+      : CONFIG,
     callback
   ];
 };

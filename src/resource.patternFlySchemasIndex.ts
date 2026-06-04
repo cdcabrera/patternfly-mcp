@@ -148,8 +148,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 /**
  * Resource creator for the component schemas index and metadata resources.
  *
- * @note This resource is being considered for deprecation in favor of a more
- * all encompassing resource, like "resource.patternFlyComponentsIndex."
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
  *
  * @note The `metaConfig` determines if a metadata resource is generated. Remove
  * the config to disable it.
@@ -183,6 +183,9 @@ const patternFlySchemasIndexResource = (options = getOptions()): McpResource => 
         title: `${CONFIG.title} Metadata`,
         description: 'Use these parameters to filter the list of PatternFly component schemas.'
       }
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };

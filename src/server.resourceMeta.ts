@@ -39,6 +39,7 @@ interface SetMetadataOptions {
   config: McpResource[2];
   metaConfig: McpResourceMetadataMetaConfig | undefined;
   complete: McpResourceMetadata['complete'];
+  valueLimit?: number | undefined;
   registerAllSearchCombinations: McpResourceMetadata['registerAllSearchCombinations'];
 }
 
@@ -163,7 +164,7 @@ const getUriVariations = (baseUri: string, params: string[], allCombos = false):
  * @param {SetMetadataOptions} settings - Settings for configuring metadata options.
  * @returns An object containing the configured metadata options.
  */
-const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, complete, registerAllSearchCombinations }: SetMetadataOptions) => {
+const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, complete, valueLimit = 25, registerAllSearchCombinations }: SetMetadataOptions) => {
   // Set basic meta-properties from config or create them.
   const metaName = metaConfig?.name || `${name}-meta`;
   const metaTitle = metaConfig?.title || `${config.title} Metadata`;
@@ -196,6 +197,11 @@ const setMetadataOptions = ({ name, baseUri, searchParams, metaConfig, config, c
           if (complete[prop]) {
             try {
               values = await complete[prop]('', { arguments: { ...updatedParams } });
+
+              // Limit the number of values shown in meta-resources to avoid bloat.
+              if (values.length > valueLimit) {
+                values = [...values.slice(0, valueLimit), `... (${values.length - valueLimit} more)`];
+              }
             } catch {}
           }
 
@@ -354,6 +360,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
       metaConfig: metadata.metaConfig,
       config,
       complete: metadata.complete,
+      valueLimit: metadata.metaConfig.valueLimit,
       registerAllSearchCombinations: metadata.registerAllSearchCombinations
     });
 
@@ -368,6 +375,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
 
     // Create a new meta-resource
     const metaResource = (opts = options): McpResource => {
+      const _config = resourceCreator(opts)[5];
       const metaCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
           const updatedText = await resolveMetaText(variables);
@@ -391,12 +399,15 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
           description: metaDescription,
           mimeType: metaMimeType
         },
-        metaCallback
+        metaCallback,
+        undefined,
+        _config
       ];
     };
 
     // Add the meta-resource enhancement to the existing resource
     const enhancedResource = (opts = options): McpResource => {
+      const _config = resourceCreator(opts)[5];
       const metaEnhancedCallback: McpResource[3] = async (passedUri, variables) =>
         runWithOptions(opts, async () => {
           const result = await callback(passedUri, variables);
@@ -422,7 +433,7 @@ const setMetaResources = (resources: McpResourceCreator[], options = getOptions(
           };
         });
 
-      return [name, uriOrTemplate, config, metaEnhancedCallback, metadata];
+      return [name, uriOrTemplate, config, metaEnhancedCallback, metadata, _config];
     };
 
     // Add the resources back in

@@ -45,6 +45,9 @@ const CONFIG = {
 /**
  * Resource callback for the documentation template.
  *
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
+ *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @param options - Global options
@@ -205,6 +208,9 @@ const patternFlyDocsTemplateResource = (options = getOptions()): McpResource => 
     {
       complete,
       registerAllSearchCombinations: true
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };
