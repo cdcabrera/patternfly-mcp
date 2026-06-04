@@ -12,6 +12,7 @@
     "onsessioninitialized",
     "onsessionclosed",
     "patternfly",
+    "pfmcp",
     "prefault",
     "rereview",
     "rescan",

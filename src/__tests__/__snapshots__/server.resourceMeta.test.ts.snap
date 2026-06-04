@@ -73,6 +73,8 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is a t
     "title": "Test Metadata",
   },
   [Function],
+  undefined,
+  undefined,
 ]
 `;
 
@@ -107,6 +109,8 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is a t
     "title": "Test Metadata",
   },
   [Function],
+  undefined,
+  undefined,
 ]
 `;
 
@@ -138,6 +142,8 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is a t
     "title": "Test Metadata",
   },
   [Function],
+  undefined,
+  undefined,
 ]
 `;
 
@@ -151,6 +157,8 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is alm
     "title": "Test Metadata",
   },
   [Function],
+  undefined,
+  undefined,
 ]
 `;
 
@@ -164,6 +172,8 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is emp
     "title": "Test Metadata",
   },
   [Function],
+  undefined,
+  undefined,
 ]
 `;
 
@@ -193,5 +203,7 @@ exports[`setMetaResources should attempt to return a resource, metaConfig is uni
     "title": "Test Metadata",
   },
   [Function],
+  undefined,
+  undefined,
 ]
 `;
