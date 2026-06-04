@@ -1,4 +1,7 @@
-export interface RootCollectionDefinition {
+/**
+ * Root collection definition for dynamic generation.
+ */
+interface RootCollectionDefinition {
   name: string;
   displayName: string;
   description: string;
@@ -12,7 +15,10 @@ export interface RootCollectionDefinition {
   };
 }
 
-export const ROOT_COLLECTIONS: RootCollectionDefinition[] = [
+/**
+ * Root collections for PatternFly documentation.
+ */
+const ROOT_COLLECTIONS: RootCollectionDefinition[] = [
   {
     name: 'Components',
     displayName: 'Components Collection',
@@ -48,3 +54,5 @@ export const ROOT_COLLECTIONS: RootCollectionDefinition[] = [
     }
   }
 ];
+
+export { ROOT_COLLECTIONS, type RootCollectionDefinition };
