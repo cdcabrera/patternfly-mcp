@@ -1,7 +1,17 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import { patternFlyComponentsResource, listResources, resourceCallback } from '../resource.patternFlyComponents';
-import { getOptions, runWithOptions } from '../options.context';
 import { isPlainObject } from '../server.helpers';
+import { getPatternFlyContextManagementResources, getPatternFlyComponentSchema } from '../patternFly.getResources';
+import { filterPatternFlyContext } from '../patternFly.search';
+
+jest.mock('../patternFly.getResources', () => ({
+  getPatternFlyContextManagementResources: { memo: jest.fn() },
+  getPatternFlyComponentSchema: { memo: jest.fn() }
+}));
+
+jest.mock('../patternFly.search', () => ({
+  filterPatternFlyContext: { memo: jest.fn() }
+}));
 
 describe('patternFlyComponentsResource', () => {
   it('should have a consistent return structure', () => {
@@ -13,6 +23,14 @@ describe('patternFlyComponentsResource', () => {
       config: isPlainObject(resource[2]),
       handler: resource[3]
     }).toMatchSnapshot('structure');
+  });
+
+  it('should only register if contextManagement is true', () => {
+    const resource = patternFlyComponentsResource();
+    const meta = resource[5] as any;
+
+    expect(meta.shouldRegister?.({ contextManagement: false } as any)).toBe(false);
+    expect(meta.shouldRegister?.({ contextManagement: true } as any)).toBe(true);
   });
 });
 
@@ -31,32 +49,52 @@ describe('listResources', () => {
 
     expect(everyResourceSameProperties).toBe(true);
   });
+
+  it('should return a specific resource', async () => {
+    (getPatternFlyContextManagementResources.memo as any).mockResolvedValue({
+      versionIndex: [{ id: 'loremIpsum', displayName: 'lorem', description: 'desc' }]
+    });
+
+    const resources = await listResources(undefined, undefined);
+
+    expect(resources.resources).toBeDefined();
+    expect(resources.resources?.[0]?.uri).toBe('patternfly://components/loremIpsum');
+    expect(resources.resources?.[0]?.name).toContain('lorem');
+  });
 });
 
 describe('resourceCallback', () => {
-  it.each([
-    {
-      description: 'default',
-      variables: {
-        id: 'hash1'
-      },
-      expected: '# PatternFly Collections Index for "v6"'
-    }
-  ])('should return context content, $description', async ({ variables, expected }) => {
-    const result = await resourceCallback(undefined as any, variables);
+  it('should return content', async () => {
+    (filterPatternFlyContext.memo as any)
+      .mockResolvedValueOnce(new Map([['loremIpsum', { id: 'loremIpsum', name: 'button', displayName: 'Button', isCollection: true }]]));
 
-    expect(result.contents).toBeDefined();
+    (getPatternFlyComponentSchema.memo as any).mockResolvedValue({
+      title: 'Button Props',
+      properties: { variant: { type: 'string' } }
+    });
+
+    const result = await resourceCallback(undefined as any, { id: 'hash1' });
+
     expect(Object.keys(result.contents[0] as any)).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0]?.text).toContain(expected);
+    expect(result.contents?.[0]?.text).toBe('patternfly://components/loremIpsum');
+    expect(result.contents?.[0]?.text).toContain('Button (Technical overview)');
+    expect(result.contents?.[0]?.text).toContain('Available Props: variant');
   });
 
   it.each([
     {
-      description: 'id',
+      description: 'undefined id',
       variables: {
-        id: 'hash1'
+        id: undefined
       },
-      error: 'Invalid ID'
+      error: 'The "id" parameter is required.'
+    },
+    {
+      description: 'invalid id',
+      variables: {
+        id: 'invalid'
+      },
+      error: 'Collection hub not found'
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);

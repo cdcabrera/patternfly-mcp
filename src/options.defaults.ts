@@ -437,6 +437,11 @@ const TOOL_MEMO_OPTIONS = {
     cacheLimit: 10,
     expire: 10 * 60 * 1000, // 10 minute sliding cache
     cacheErrors: false
+  },
+  mcpResources: {
+    cacheLimit: 10,
+    expire: 3 * 60 * 1000, // 3 minute sliding cache
+    cacheErrors: false
   }
 };
 

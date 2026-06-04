@@ -18,6 +18,7 @@ import {
 } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
 import { nextCursor } from './resource.helpers';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -85,6 +86,46 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
 listResources.memo = memo(listResources);
 
 /**
+ * URI id completion callback.
+ *
+ * @param id - The value to complete.
+ * @returns The list of available IDs.
+ */
+const uriIdComplete: McpResourceMetadataCompleteMemo = async (id: string) => {
+  const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
+
+  const searchStr = (id || '').toLowerCase();
+  const matches = collectionsIndex.filter(record =>
+    record.id.toLowerCase().includes(searchStr) ||
+    record.name.toLowerCase().includes(searchStr));
+
+  return matches.map(record => record.id);
+};
+
+/**
+ * Memoized version of uriIdComplete.
+ */
+uriIdComplete.memo = memo(uriIdComplete);
+
+/**
+ * Detail completion callback for the URI template.
+ *
+ * @param detail - The value to complete.
+ * @returns The list of available details.
+ */
+const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string) => {
+  const levels = ['summary', 'full'];
+  const closest = findClosest.memo(detail, levels) as string | undefined;
+
+  return closest ? [closest] : [];
+};
+
+/**
+ * Memoized version of uriDetailComplete.
+ */
+uriDetailComplete.memo = memo(uriDetailComplete);
+
+/**
  * Main resource callback.
  *
  * @param passedUri - URI of the resource.
@@ -94,6 +135,7 @@ listResources.memo = memo(listResources);
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>) => {
   const { id } = variables || {};
 
+  // This needs to move to assertions and back to the SHA Check
   if (!id || typeof id !== 'string') {
     throw new McpError(ErrorCode.InvalidParams, 'The "id" parameter is required.');
   }
@@ -101,6 +143,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const records = await filterPatternFlyContext.memo({ id });
   const record = records.get(id);
 
+  // This needs to move to assertions
   if (!record || !record.isCollection) {
     throw new McpError(ErrorCode.InvalidParams, `Collection hub not found for ID: ${id}`);
   }
@@ -111,6 +154,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const techSpecs = allRecords.filter(record => record.section === 'components' && record.category === 'react' && !record.isCollection);
   const docs = allRecords.filter(record => (record.section !== 'components' || record.category !== 'react') && !record.isCollection);
 
+  // This should be using the format markdown for consistency
   let content = `---\npfmcp_collection: patternfly://collections/${record.id}\npfmcp_name: ${record.name}\n---\n`;
 
   content += `# ${record.displayName}\n\n`;
@@ -164,47 +208,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 /**
  * Memoized version of resourceCallback.
  */
-resourceCallback.memo = memo(resourceCallback);
-
-/**
- * URI id completion callback.
- *
- * @param id - The value to complete.
- * @returns The list of available IDs.
- */
-const uriIdComplete: McpResourceMetadataCompleteMemo = async (id: string) => {
-  const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
-
-  const searchStr = (id || '').toLowerCase();
-  const matches = collectionsIndex.filter(record =>
-    record.id.toLowerCase().includes(searchStr) ||
-    record.name.toLowerCase().includes(searchStr));
-
-  return matches.map(record => record.id);
-};
-
-/**
- * Memoized version of uriIdComplete.
- */
-uriIdComplete.memo = memo(uriIdComplete);
-
-/**
- * URI detail completion callback.
- *
- * @param detail - The value to complete.
- * @returns The list of available details.
- */
-const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string) => {
-  const levels = ['summary', 'full'];
-  const closest = findClosest.memo(detail, levels) as string | undefined;
-
-  return closest ? [closest] : [];
-};
-
-/**
- * Memoized version of uriDetailComplete.
- */
-uriDetailComplete.memo = memo(uriDetailComplete);
+resourceCallback.memo = memo(resourceCallback, DEFAULT_OPTIONS.toolMemoOptions.mcpResources);
 
 /**
  * PatternFly Collections Resource creator.
@@ -221,7 +225,7 @@ const patternFlyCollectionsResource = (options = getOptions()): McpResource => {
   };
 
   const callback: McpResource[3] = async (uri, variables) =>
-    runWithOptions(options, async () => resourceCallback(uri, variables));
+    runWithOptions(options, async () => resourceCallback.memo(uri, variables));
 
   return [
     NAME,

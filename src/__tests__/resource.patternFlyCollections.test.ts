@@ -4,8 +4,21 @@ import {
   listResources,
   resourceCallback
 } from '../resource.patternFlyCollections';
-import { getOptions, runWithOptions } from '../options.context';
 import { isPlainObject } from '../server.helpers';
+import { getPatternFlyContextManagementResources } from '../patternFly.getResources';
+import { filterPatternFlyContext } from '../patternFly.search';
+
+jest.mock('../patternFly.getResources', () => ({
+  getPatternFlyContextManagementResources: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../patternFly.search', () => ({
+  filterPatternFlyContext: {
+    memo: jest.fn()
+  }
+}));
 
 describe('patternFlyCollectionsResource', () => {
   it('should have a consistent return structure', () => {
@@ -17,6 +30,14 @@ describe('patternFlyCollectionsResource', () => {
       config: isPlainObject(resource[2]),
       handler: resource[3]
     }).toMatchSnapshot('structure');
+  });
+
+  it('should only register if contextManagement is true', () => {
+    const resource = patternFlyCollectionsResource();
+    const meta = resource[5] as any;
+
+    expect(meta.shouldRegister?.({ contextManagement: false } as any)).toBe(false);
+    expect(meta.shouldRegister?.({ contextManagement: true } as any)).toBe(true);
   });
 });
 
@@ -35,32 +56,47 @@ describe('listResources', () => {
 
     expect(everyResourceSameProperties).toBe(true);
   });
+
+  it('should return a specific resource', async () => {
+    (getPatternFlyContextManagementResources.memo as any).mockResolvedValue({
+      collectionsIndex: [{ id: 'loremIpsum', displayName: 'lorem', description: 'desc' }]
+    });
+
+    const resources = await listResources(undefined, undefined);
+
+    expect(resources.resources).toBeDefined();
+    expect(resources.resources?.[0]?.uri).toBe('patternfly://collections/loremIpsum');
+    expect(resources.resources?.[0]?.name).toContain('lorem');
+  });
 });
 
 describe('resourceCallback', () => {
-  it.each([
-    {
-      description: 'default',
-      variables: {
-        id: 'hash1'
-      },
-      expected: '# PatternFly Collections Index for "v6"'
-    }
-  ])('should return context content, $description', async ({ variables, expected }) => {
-    const result = await resourceCallback(undefined as any, variables);
+  it('should return content', async () => {
+    (filterPatternFlyContext.memo as any)
+      .mockResolvedValueOnce(new Map([['loremIpsum', { id: 'loremIpsum', name: 'button', displayName: 'Button', isCollection: true }]]));
 
-    expect(result.contents).toBeDefined();
+    const result = await resourceCallback(undefined as any, { id: 'hash1' });
+
     expect(Object.keys(result.contents[0] as any)).toEqual(['uri', 'mimeType', 'text']);
-    expect(result.contents[0]?.text).toContain(expected);
+    expect(result.contents?.[0]?.text).toBe('patternfly://collections/loremIpsum');
+    expect(result.contents?.[0]?.text).toContain('Technical Specifications');
+    expect(result.contents?.[0]?.text).toContain('Documentation & Guidelines');
   });
 
   it.each([
     {
-      description: 'id',
+      description: 'undefined id',
       variables: {
-        id: 'hash1'
+        id: undefined
       },
-      error: 'Invalid ID'
+      error: 'The "id" parameter is required.'
+    },
+    {
+      description: 'invalid id',
+      variables: {
+        id: 'invalid'
+      },
+      error: 'Collection hub not found'
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);

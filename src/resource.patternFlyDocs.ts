@@ -6,8 +6,7 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   type McpResource,
   type McpResourceListResult,
-  type McpResourceMetadataComplete,
-  type McpResourceMetadataCompleteMemo
+  type McpResourceMetadataComplete
 } from './mcpSdk';
 import { memo } from './server.caching';
 import { assertInput, assertInputStringLength } from './server.assertions';
@@ -17,6 +16,8 @@ import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyContextManagementResources } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
 import { formatSummaryFullContent, nextCursor } from './resource.helpers';
+import { uriDetailComplete } from './resource.patternFlyCollections';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -86,24 +87,6 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
  * Memoized version of listResources.
  */
 listResources.memo = memo(listResources);
-
-/**
- * Detail completion callback for the URI template.
- *
- * @param detail - The value to complete.
- * @returns The list of available details.
- */
-const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string) => {
-  const levels = ['summary', 'full'];
-  const closest = findClosest.memo(detail, levels) as string | undefined;
-
-  return closest ? [closest] : [];
-};
-
-/**
- * Memoized version of uriDetailComplete.
- */
-uriDetailComplete.memo = memo(uriDetailComplete);
 
 /**
  * Return content. Resource callback for the documentation template.
@@ -200,6 +183,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 };
 
 /**
+ * Memoized version of resourceCallback.
+ */
+resourceCallback.memo = memo(resourceCallback, DEFAULT_OPTIONS.toolMemoOptions.mcpResources);
+
+/**
  * Resource creator for the documentation index and metadata resources.
  *
  * @note The `metaConfig` determines if a metadata resource is generated. Remove
@@ -216,7 +204,7 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
   };
 
   const callback: McpResource[3] = async (uri, variables) =>
-    runWithOptions(options, async () => resourceCallback(uri, variables, options));
+    runWithOptions(options, async () => resourceCallback.memo(uri, variables, options));
 
   return [
     NAME,
@@ -245,7 +233,6 @@ export {
   patternFlyDocsResource,
   listResources,
   resourceCallback,
-  uriDetailComplete,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,
