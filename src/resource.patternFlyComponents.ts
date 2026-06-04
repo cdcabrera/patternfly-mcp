@@ -4,6 +4,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   type McpResource,
+  type McpResourceListResult,
   type McpResourceMetadataComplete,
   type McpResourceMetadataCompleteMemo
 } from './mcpSdk';
@@ -23,9 +24,6 @@ import {
 import {
   filterPatternFlyContext
 } from './patternFly.search';
-import {
-  type PatternFlyListResourceResult
-} from './resource.patternFlyDocsIndex';
 import {
   formatSummaryFullContent,
   nextCursor
@@ -67,14 +65,14 @@ const CONFIG = {
  * @note We use "byVersionComponentNames" instead of "byVersion" because it's specific to components.
  * Docs resources don't necessarily contain all components.
  *
- * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
+ * @returns The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
   const terminalComponents = versionIndex.filter(entry => !entry.isCollection && entry.componentUri !== undefined);
   const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalComponents.length });
-  const resources: PatternFlyListResourceResult[] = [];
+  const resources: McpResourceListResult[] = [];
 
   terminalComponents.slice(start, end).forEach((entry, index) => {
     const actualIndex = start + index + 1;

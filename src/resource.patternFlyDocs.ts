@@ -5,6 +5,7 @@ import {
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   type McpResource,
+  type McpResourceListResult,
   type McpResourceMetadataComplete,
   type McpResourceMetadataCompleteMemo
 } from './mcpSdk';
@@ -16,23 +17,6 @@ import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyContextManagementResources } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
 import { formatSummaryFullContent, nextCursor } from './resource.helpers';
-
-/**
- * List resources result type.
- *
- * @note This is temporary until MCP SDK exports ListResourcesResult.
- *
- * @property uri - The fully qualified URI of the resource.
- * @property name - A human-readable name for the resource.
- * @property [mimeType] - The MIME type of the content.
- * @property [description] - A brief hint for the model.
- */
-type PatternFlyListResourceResult = {
-  uri: string;
-  name: string;
-  mimeType?: string;
-  description?: string;
-};
 
 /**
  * Name of the resource.
@@ -70,14 +54,14 @@ const CONFIG = {
  *
  * @param _extra
  * @param cursor - The passed back cursor/page for pagination.
- * @returns {Promise<PatternFlyListResourceResult>} The list of available resources.
+ * @returns The list of available resources.
  */
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
   const terminalDocs = versionIndex.filter(record => !record.isCollection);
   const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalDocs.length });
-  const resources: PatternFlyListResourceResult[] = [];
+  const resources: McpResourceListResult[] = [];
 
   terminalDocs.slice(start, end).forEach((entry, index) => {
     const actualIndex = start + index + 1;

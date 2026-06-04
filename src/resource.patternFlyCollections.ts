@@ -5,6 +5,7 @@ import {
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   type McpResource,
+  type McpResourceListResult,
   type McpResourceMetadataComplete,
   type McpResourceMetadataCompleteMemo
 } from './mcpSdk';
@@ -17,16 +18,6 @@ import {
 } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
 import { nextCursor } from './resource.helpers';
-
-/**
- * List resources result type.
- */
-type PatternFlyListResourceResult = {
-  uri: string;
-  name: string;
-  mimeType?: string;
-  description?: string;
-};
 
 /**
  * Name of the resource.
@@ -67,7 +58,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
   const { start, end, next } = nextCursor({ cursor, pageSize, size: collectionsIndex.length });
-  const resources: PatternFlyListResourceResult[] = [];
+  const resources: McpResourceListResult[] = [];
 
   collectionsIndex.slice(start, end).forEach((entry, index) => {
     const actualIndex = start + index + 1;

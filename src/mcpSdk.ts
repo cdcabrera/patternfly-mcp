@@ -107,6 +107,23 @@ interface McpResourceMetadata {
 }
 
 /**
+ * List resources result type.
+ *
+ * @note This is temporary until MCP SDK exports ListResourcesResult.
+ *
+ * @property uri - The fully qualified URI of the resource.
+ * @property name - A human-readable name for the resource.
+ * @property [mimeType] - The MIME type of the content.
+ * @property [description] - A brief hint for the model.
+ */
+interface McpResourceListResult {
+  uri: string;
+  name: string;
+  mimeType?: string;
+  description?: string;
+}
+
+/**
  * A resource registered with the MCP server.
  *
  * 0. `name` `{string}`: Registered name of the resource.
@@ -245,6 +262,7 @@ export {
   registerResource,
   type McpTool,
   type McpToolCreator,
+  type McpResourceListResult,
   type McpResourceMetadataMetaConfig,
   type McpResourceMetadata,
   type McpResourceMetadataComplete,
