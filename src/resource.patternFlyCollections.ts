@@ -17,8 +17,10 @@ import {
   type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
-import { nextCursor } from './resource.helpers';
+import {formatSummaryFullContent, nextCursor} from './resource.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { assertInput, assertInputStringShaHex } from './server.assertions';
+import { stringJoin } from './server.helpers';
 
 /**
  * Name of the resource.
@@ -40,7 +42,7 @@ const URI_DESCRIPTION = `Filter by PatternFly ID and detail. ${URI_TEMPLATE}`;
  */
 const CONFIG = {
   title: 'PatternFly Collections Index',
-  description: `A list of PatternFly collection hubs for components and general topics. ${URI_DESCRIPTION}`,
+  description: `A list of PatternFly collections for resources and components. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown',
   annotations: {
     priority: 1.0,
@@ -133,73 +135,84 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>) => {
-  const { id } = variables || {};
+  const { detail = 'summary', id } = variables || {};
+  const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
 
-  // This needs to move to assertions and back to the SHA Check
-  if (!id || typeof id !== 'string') {
-    throw new McpError(ErrorCode.InvalidParams, 'The "id" parameter is required.');
-  }
+  assertInputStringShaHex(id, {
+    ...getOptions().minMax.inputStrings,
+    inputDisplayName: 'id'
+  });
 
   const records = await filterPatternFlyContext.memo({ id });
   const record = records.get(id);
 
-  // This needs to move to assertions
-  if (!record || !record.isCollection) {
-    throw new McpError(ErrorCode.InvalidParams, `Collection hub not found for ID: ${id}`);
-  }
+  assertInput(
+    record?.isCollection !== undefined,
+    () => `Collection not found for ID: ${id}`
+  );
 
   // Fetch all records for this name to build the hub
-  const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name });
-  const allRecords = Array.from(allRecordsMap.values());
-  const techSpecs = allRecords.filter(record => record.section === 'components' && record.category === 'react' && !record.isCollection);
-  const docs = allRecords.filter(record => (record.section !== 'components' || record.category !== 'react') && !record.isCollection);
+  // This highlights we might need a different approach on the filtering... like a negation or passing a function/callback for the filter
+  // like `section: (arg) => arg !== 'components'`, and maybe it should also be dynamic enough to allow filtering ON ALL available properties
+  // so we don't have to worry about adding or updating the filter function.
+  // const techSpecs = await filterPatternFlyContext.memo({ name: record.name, section: 'components', category: 'react', isCollection: false });
+  // const notTechSpecs = await filterPatternFlyContext.memo({ name: record.name, section: (arg) => arg !== 'components', category: (arg) => arg !== 'react', isCollection: false
+  // }); OR we return a broken out object like const { filtered, remaining } = await filterPatternFlyContext.memo...
+  const foundCollection = await filterPatternFlyContext.memo({ name: record.name });
+  const collection: ContextManagementPatternFlyHashRecord[] = Array
+    .from(foundCollection.values()).toSorted(({ displayName: displayNameA }, { displayName: displayNameB }) => displayNameA.localeCompare(displayNameB));
 
-  // This should be using the format markdown for consistency
-  let content = `---\npfmcp_collection: patternfly://collections/${record.id}\npfmcp_name: ${record.name}\n---\n`;
+  const techRecords = collection.filter(record => record.section === 'components' && record.category === 'react');
 
-  content += `# ${record.displayName}\n\n`;
-  content += `${record.description}\n\n`;
+  const resultsContent = stringJoin.basic(
+    `Found ${collection.length} related documentation ${collection.length === 1 ? 'resource' : 'resources'},`,
+    `and ${techRecords.length} related technical ${techRecords.length === 1 ? 'specification' : 'specifications'}.`,
+    'Use the attached documentation and component IDs to discover more PatternFly context.'
+  );
 
-  content += `Found ${techSpecs.length} total related technical specifications and ${docs.length} documentation resources. Use the attached documentation and component IDs to discover more PatternFly context.\n\n`;
+  const content = [
+    `# ${record.displayName}`,
+    '',
+    record.description,
+    '',
+    resultsContent,
+    ''
+  ];
 
-  if (techSpecs.length > 0) {
-    content += '### Technical Specifications\n';
-    techSpecs.forEach(spec => {
-      content += `- [${spec.displayName}](${spec.componentUri})\n`;
-    });
-    content += '\n';
-  }
+  if (collection.length > 0) {
+    const categoriesSeen = new Set<string>();
+    const collectionsContent: string[] = [];
 
-  if (docs.length > 0) {
-    content += '### Documentation & Guidelines\n';
+    collection.forEach(record => {
+      const isTechSpec = record.category === 'react' && record.section === 'components';
+      const recordUri = isTechSpec ? record.componentUri : record.uri;
 
-    // Group docs by displayCategory
-    const byCategory = docs.reduce((acc, doc) => {
-      const cat = doc.displayCategory;
+      if (!categoriesSeen.has(record.category)) {
+        const updatedCategory = isTechSpec ? 'Technical Specifications' : record.displayCategory;
 
-      if (!acc[cat]) {
-        acc[cat] = [];
+        categoriesSeen.add(updatedCategory);
+        collectionsContent.push(isTechSpec ? '### Technical Specifications' : `### ${record.displayCategory}`);
       }
-      acc[cat].push(doc);
 
-      return acc;
-    }, {} as Record<string, ContextManagementPatternFlyHashRecord[]>);
-
-    Object.entries(byCategory).forEach(([category, catDocs]) => {
-      content += `#### ${category}\n`;
-      catDocs.forEach(doc => {
-        content += `- [${doc.displayName}](${doc.uri})\n`;
-      });
-      content += '\n';
+      collectionsContent.push(`- [${record.displayName}](${recordUri})`);
     });
+
+    content.push(...collectionsContent);
   }
 
   return {
     contents: [
       {
-        uri: passedUri.toString(),
+        uri: passedUri.toString(), // placing "passed uri on here" means the detail may come through
+        // uri: `patternfly://collections/${record.id}`
         mimeType: CONFIG.mimeType,
-        text: content
+        text: formatSummaryFullContent(stringJoin.newline(...content), {
+          url: `patternfly://collections/${record.id}`,
+          detailType: normalizedDetail,
+          frontMatter: {
+            name: record.name
+          }
+        })
       }
     ]
   };

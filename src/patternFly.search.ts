@@ -88,6 +88,7 @@ const dynamicFilterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
   resources: ContextManagementResources,
   {
+    // Do we even need "path" here we don't allow filtering from the regular filter for that? Path was what's there before we process docs.json.
     searchFilters = ['id', 'name', 'path'],
     maxResultsLimit = 1
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
@@ -189,6 +190,7 @@ const filterPatternFlyContext = async (
       normalizePropertyValue.endsWith(filterValue);
   };
 
+  // these should be generated
   const isMatch = (record: ContextManagementPatternFlyHashRecord) => {
     const matchesVersion = !normalizedFilters.version || record.version.toLowerCase() === normalizedFilters.version;
     const matchesCategory = !normalizedFilters.category ||

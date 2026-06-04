@@ -215,7 +215,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         url: currentRecord.isSchemasAvailable ? uriComponentId : undefined,
         detailType: normalizedDetail,
         frontMatter: {
-          document: uriComponentId || passedUri.toString(),
+          resource: uriComponentId || passedUri.toString(),
           name: currentRecord.name,
           version
         },

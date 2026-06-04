@@ -134,10 +134,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const docs = [];
 
   try {
-    const docPaths = record.path
+    const docPaths = record.path && record.uri
       ? [{
         doc: record.path,
-        uri: record.uri || passedUri.toString()
+        uri: record.uri
+        // uri: record.uri || passedUri.toString()
       }]
       : [];
 
@@ -174,7 +175,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
         url: uri,
         detailType: normalizedDetail,
         frontMatter: {
-          document: resolvedPath || path,
+          resource: resolvedPath || path,
           name: record?.name || (id as string),
           version: record?.version
         }
