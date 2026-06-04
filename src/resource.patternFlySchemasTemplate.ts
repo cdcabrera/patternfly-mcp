@@ -65,6 +65,11 @@ uriNameComplete.memo = memo(uriNameComplete);
  *
  * @note We temporarily use `DEFAULT_OPTIONS` `latestSchemasVersion`
  *
+ * @note This resource is being considered for deprecation in favor of a more
+ * all-encompassing resource, like "resource.patternFlyComponents." See
+ * {@link ./resource.patternFlyComponents} for the final combined format activated
+ * under `contextManagement`.
+ *
  * @param passedUri - The URI of the resource.
  * @param variables - The variables of the resource.
  * @param options - Global options
@@ -168,6 +173,9 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
     callback,
     {
       complete
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };
