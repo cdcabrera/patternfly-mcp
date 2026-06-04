@@ -113,7 +113,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   let content = `---\npfmcp_collection: patternfly://collections/${record.id}\npfmcp_name: ${record.name}\n---\n`;
 
-  content += `# ${record.displayName} Collection Hub\n\n`;
+  content += `# ${record.displayName}\n\n`;
   content += `${record.description}\n\n`;
 
   content += `Found ${techSpecs.length} total related technical specifications and ${docs.length} documentation resources. Use the attached documentation and component IDs to discover more PatternFly context.\n\n`;

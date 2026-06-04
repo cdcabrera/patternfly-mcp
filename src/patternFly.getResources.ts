@@ -551,6 +551,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
   const rootCollectionRecords: ContextManagementPatternFlyHashRecord[] = ROOT_COLLECTIONS.map(collection => {
     const id = generateHash(`root:collection:${collection.name.toLowerCase()}`);
+
     return {
       id,
       collectionIds: [],
@@ -600,9 +601,11 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
     hashIndex.set(groupId.toLowerCase(), groupRecord);
     collectionsIndex.push(groupRecord);
+
     if (!nameIndex.has(name)) {
       nameIndex.set(name, []);
     }
+
     nameIndex.get(name)!.push(groupId);
 
     entries.forEach(entry => {
@@ -641,7 +644,8 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       const collectionIds = [groupId];
 
       ROOT_COLLECTIONS.forEach(rootDef => {
-        const rootRecord = rootCollectionRecords.find(r => r.name.toLowerCase() === rootDef.name.toLowerCase());
+        const rootRecord = rootCollectionRecords.find(record => record.name.toLowerCase() === rootDef.name.toLowerCase());
+
         if (!rootRecord) {
           return;
         }
@@ -650,10 +654,12 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
         const lowerCategory = category.toLowerCase();
 
         let matched = false;
-        if (rootDef.matches.sections?.some(s => s.toLowerCase() === lowerSection)) {
+
+        if (rootDef.matches.sections?.some(section => section.toLowerCase() === lowerSection)) {
           matched = true;
         }
-        if (rootDef.matches.categories?.some(c => c.toLowerCase() === lowerCategory)) {
+
+        if (rootDef.matches.categories?.some(category => category.toLowerCase() === lowerCategory)) {
           matched = true;
         }
 

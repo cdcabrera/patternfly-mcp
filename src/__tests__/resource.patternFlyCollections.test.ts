@@ -54,7 +54,7 @@ describe('resourceCallback', () => {
     );
 
     expect(result.contents).toBeDefined();
-    expect(result.contents[0]?.text).toContain(`# ${record.name} (Collection Hub)`);
+    expect(result.contents[0]?.text).toContain(`# ${record.displayName}`);
     expect(result.contents[0]?.text).toContain('pfmcp_collection:');
   });
 
