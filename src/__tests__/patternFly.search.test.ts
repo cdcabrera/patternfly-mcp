@@ -615,48 +615,299 @@ describe('searchPatternFly', () => {
   });
 });
 
-describe('searchPatternFlyContext', () => {
-  const mockMcpResources = {
-    resources: new Map([
-      ['button', {
-        name: 'button',
-        groupId: 'btn-group',
-        entries: [
-          { id: 'btn-v6-hash', name: 'button', version: 'v6', section: 'components', category: 'action', groupId: 'btn-group' },
-          { id: 'btn-v5-hash', name: 'button', version: 'v5', section: 'components', category: 'action', groupId: 'btn-group' }
-        ],
-        versions: {
-          v6: { uri: 'patternfly://docs/button?version=v6', isSchemasAvailable: true },
-          v5: { uri: 'patternfly://docs/button?version=v5', isSchemasAvailable: false }
-        }
-      }],
-      ['modal', {
-        name: 'modal',
-        groupId: 'mdl-group',
-        entries: [{ id: 'mdl-v6-hash', name: 'modal', version: 'v6', section: 'components', category: 'view', groupId: 'mdl-group' }],
-        versions: { v6: { uri: 'patternfly://docs/modal?version=v6', isSchemasAvailable: true } }
-      }]
-    ]),
-    keywordsIndex: [
-      'button',
-      'modal',
-      'btn-v6-hash',
-      'mdl-v6-hash',
-      'patternfly://docs/button',
-      'patternfly://docs/modal'
-    ],
-    keywordsMap: new Map([
-      ['button', new Map([['v6', ['button']], ['v5', ['button']]])],
-      ['modal', new Map([['v6', ['modal']]])],
-      ['btn-v6-hash', new Map([['v6', ['button']]])],
-      ['mdl-v6-hash', new Map([['v6', ['modal']]])],
-      ['patternfly://docs/button', new Map([['v6', ['button']], ['v5', ['button']]])],
-      ['patternfly://docs/modal', new Map([['v6', ['modal']]])]
-    ]),
-    latestVersion: 'v6'
+describe('filterPatternFlyContext', () => {
+  const mockContextResources = {
+    versionIndex: [
+      { id: 'hash1', name: 'button', section: 'components', category: 'action', version: 'v6', searchString: 'button v6 components action', isCollection: false },
+      { id: 'hash2', name: 'button', section: 'components', category: 'action', version: 'v5', searchString: 'button v5 components action', isCollection: false },
+      { id: 'hash3', name: 'modal', section: 'components', category: 'view', version: 'v6', searchString: 'modal v6 components view', isCollection: false }
+    ]
   };
 
-  const mockOptions = { mcpResources: Promise.resolve(mockMcpResources) as any };
+  it.each([
+    {
+      description: 'by name',
+      filters: { name: 'button' },
+      expectedIds: ['hash1', 'hash2']
+    },
+    {
+      description: 'by version',
+      filters: { version: 'v6' },
+      expectedIds: ['hash1', 'hash3']
+    }
+  ])('should return filtered context results, $description', async ({ filters, expectedIds }) => {
+    const result = await filterPatternFlyContext(filters, mockContextResources as any);
+
+    expect(Array.from(result.keys())).toEqual(expectedIds);
+  });
+});
+
+describe('dynamicFilterPatternFlyContext', () => {
+  const mockResources = new Map([
+    ['button', {
+      name: 'button',
+      entries: [
+        { name: 'button', section: 'components', category: 'action', version: 'v6' },
+        { name: 'button', section: 'components', category: 'action', version: 'v5' }
+      ]
+    }],
+    ['modal', {
+      name: 'modal',
+      entries: [
+        { name: 'modal', section: 'components', category: 'view', version: 'v6' }
+      ]
+    }],
+    ['card', {
+      name: 'card',
+      entries: [
+        { name: 'card', section: 'layouts', category: 'view', version: 'v6' }
+      ]
+    }]
+  ]);
+
+  it.each([
+    {
+      description: 'return immediate single match if filters already narrow it down',
+      searchQuery: 'ignored',
+      filters: { name: 'modal' },
+      options: {},
+      expectedNames: ['modal']
+    },
+    {
+      description: 'find a single match by applying searchQuery to "name"',
+      searchQuery: 'modal',
+      filters: {},
+      options: { searchFilters: ['name'] },
+      expectedNames: ['modal']
+    },
+    {
+      description: 'find a single match by applying searchQuery to "section"',
+      searchQuery: 'layouts',
+      filters: {},
+      options: { searchFilters: ['section'] },
+      expectedNames: ['card']
+    },
+    {
+      description: 'fallback to original results when using a broad section',
+      searchQuery: 'components',
+      filters: {},
+      options: { searchFilters: ['name'] },
+      expectedNames: ['button', 'button', 'modal', 'card']
+    },
+    {
+      description: 'fallback to original when using a broad category',
+      searchQuery: 'view',
+      filters: {},
+      options: {},
+      expectedNames: ['button', 'button', 'modal', 'card']
+    },
+    {
+      description: 'skip iterative filter if useExistingFilters is true and filter is already set',
+      searchQuery: 'modal',
+      filters: { name: 'button' },
+      options: { useExistingFilters: true, searchFilters: ['name'] },
+      expectedNames: ['button', 'button']
+    },
+    {
+      description: 'use custom searchFilters with increased max results',
+      searchQuery: 'view',
+      filters: {},
+      options: { searchFilters: ['category'], maxResultsLimit: 2 },
+      expectedNames: ['modal', 'card']
+    }
+  ])('should $description', async ({ searchQuery, filters, options, expectedNames }) => {
+    const result = await dynamicFilterPatternFlyContext(
+      searchQuery,
+      filters as any,
+      mockResources as any,
+      options as any
+    );
+
+    expect(Array.from(result.values()).map(result => result.name)).toEqual(expectedNames);
+  });
+
+  it.each([
+    {
+      description: 'name filter wins and aborts sibling section scans',
+      searchQuery: 'modal',
+      filters: {},
+      options: { searchFilters: ['name', 'section'] as const },
+      expectedNames: ['modal']
+    },
+    {
+      description: 'section filter wins and aborts sibling name scans',
+      searchQuery: 'layouts',
+      filters: {},
+      options: { searchFilters: ['section', 'name'] as const },
+      expectedNames: ['card']
+    }
+  ])('should wire parallel filter passes with shared signal when $description', async ({
+    searchQuery,
+    filters,
+    options,
+    expectedNames
+  }) => {
+    const result = await dynamicFilterPatternFlyContext(
+      searchQuery,
+      filters as any,
+      mockResources as any,
+      options as any
+    );
+
+    expect(Array.from(result.values()).map(result => result.name)).toEqual(expectedNames);
+  });
+
+  it('should not call filterPatternFlyContext.memo during parallel or fallback passes', async () => {
+    const memoSpy = jest.spyOn(filterPatternFly, 'memo');
+
+    await dynamicFilterPatternFlyContext(
+      'modal',
+      {},
+      mockResources as any,
+      { searchFilters: ['name', 'section'] }
+    );
+
+    await dynamicFilterPatternFlyContext(
+      'components',
+      {},
+      mockResources as any,
+      { searchFilters: ['name'] }
+    );
+
+    expect(memoSpy).not.toHaveBeenCalled();
+
+    memoSpy.mockRestore();
+  });
+
+  it('should cap parallel filter passes when searchFilters exceeds the internal limit', async () => {
+    const oversizedFilters = [
+      'name',
+      'section',
+      'category',
+      'version',
+      'path',
+      'name',
+      'section',
+      'category',
+      'version',
+      'path',
+      'name',
+      'section',
+      'category',
+      'version',
+      'path'
+    ];
+
+    const result = await dynamicFilterPatternFlyContext(
+      'modal',
+      {},
+      mockResources as any,
+      { searchFilters: oversizedFilters as (keyof FilterPatternFlyFilters)[] }
+    );
+
+    expect(Array.from(result.values()).map(result => result.name)).toEqual(['modal']);
+  });
+
+  it('should not return partial results after a parallel pass wins', async () => {
+    await dynamicFilterPatternFlyContext(
+      'modal',
+      {},
+      mockResources as any,
+      { searchFilters: ['name', 'section'] }
+    );
+
+    const result = await dynamicFilterPatternFlyContext(
+      'components',
+      {},
+      mockResources as any,
+      { searchFilters: ['name'] }
+    );
+
+    expect(Array.from(result.values()).map(result => result.name)).toEqual(['button', 'button', 'modal', 'card']);
+  });
+
+  it('should fallback to base filter when no pass matches maxResultsLimit', async () => {
+    const result = await dynamicFilterPatternFlyContext(
+      'components',
+      {},
+      mockResources as any,
+      { searchFilters: ['name'] }
+    );
+
+    expect(Array.from(result.values()).map(result => result.name)).toEqual(['button', 'button', 'modal', 'card']);
+  });
+
+  it('should cache by searchQuery, filters, and map', async () => {
+    const mockResource = new Map([
+      ['modal', {
+        entries: [
+          { name: 'modal', section: 'components', category: 'view', version: 'v6' }
+        ]
+      }]
+    ]);
+
+    const first = dynamicFilterPatternFlyContext.memo('modal', {}, mockResource as any);
+    const second = dynamicFilterPatternFlyContext.memo('modal', {}, mockResource as any);
+
+    expect(first).toBe(second);
+
+    await expect(first).resolves.toMatchObject({
+      byEntry: expect.arrayContaining([
+        expect.objectContaining({ name: 'modal' })
+      ])
+    });
+  });
+
+  it('should not keep rejected fallback failures in cache', async () => {
+    const mockResource = new Map([
+      ['modal', {
+        entries: [
+          { name: 'modal', section: 'components', category: 'view', version: 'v6' }
+        ]
+      }]
+    ]);
+    let resourceLoads = 0;
+
+    // Represents the number of filters and fallback.
+    const failThroughLoad = 7;
+    const flakyMcpResources = {
+      then(onFulfilled?: (value: any) => any, onRejected?: (reason: any) => any) {
+        resourceLoads += 1;
+
+        if (resourceLoads <= failThroughLoad) {
+          return Promise.reject(new Error('Failed to load')).then(onFulfilled, onRejected);
+        }
+
+        return Promise.resolve(mockResource).then(onFulfilled, onRejected);
+      }
+    };
+
+    await expect(dynamicFilterPatternFlyContext.memo('modal', {}, flakyMcpResources as any))
+      .rejects.toThrow('Failed to load');
+
+    await expect(dynamicFilterPatternFlyContext.memo('modal', {}, flakyMcpResources as any))
+      .resolves.toMatchObject({
+        byEntry: expect.arrayContaining([
+          expect.objectContaining({ name: 'modal' })
+        ])
+      });
+  });
+});
+
+describe('searchPatternFlyContext', () => {
+  const mockContextResources = {
+    hashIndex: new Map([
+      ['hash1', { id: 'hash1', name: 'button', searchString: 'button', isCollection: false }],
+      ['hash2', { id: 'hash2', name: 'modal', searchString: 'modal', isCollection: false }]
+    ]),
+    versionIndex: [
+      { id: 'hash1', name: 'button', searchString: 'button', isCollection: false },
+      { id: 'hash2', name: 'modal', searchString: 'modal', isCollection: false }
+    ],
+    availableVersions: ['v6', 'v5']
+  };
+
+  const mockOptions = { mcpResources: Promise.resolve(mockContextResources) as any };
 
   it.each([
     {
@@ -688,23 +939,8 @@ describe('searchPatternFlyContext', () => {
       expectedType: 'contains'
     },
     {
-      description: 'patternfly:// URI with filter',
-      search: 'patternfly://docs/modal',
-      options: { dynamicFilter: true },
-      expectedLength: 1,
-      expectedName: 'modal',
-      expectedType: 'exact'
-    },
-    {
-      description: 'patternfly:// URI without filter',
-      search: 'patternfly://docs/modal',
-      expectedLength: 1,
-      expectedName: 'modal',
-      expectedType: 'exact'
-    },
-    {
       description: 'hash entry id with filter',
-      search: 'btn-v6-hash',
+      search: 'hash1',
       options: { dynamicFilter: true },
       expectedLength: 1,
       expectedName: 'button',
@@ -712,7 +948,7 @@ describe('searchPatternFlyContext', () => {
     },
     {
       description: 'hash entry id without filter',
-      search: 'btn-v6-hash',
+      search: 'hash1',
       options: { dynamicFilter: false },
       expectedLength: 2,
       expectedName: 'button',

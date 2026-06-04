@@ -136,6 +136,18 @@ const dynamicFilterPatternFlyContext = async (
 };
 
 /**
+ * Memoized version of dynamicFilterPatternFlyContext
+ *
+ * @note `cacheErrors: false` so a rejected fallback doesn't stick. This aligns with
+ * {@link filterPatternFly.memo}. Parallel pass poison is avoided by calling bare
+ * {@link filterPatternFly} inside the race, not by this outer memo setting alone.
+ */
+dynamicFilterPatternFlyContext.memo = memo(dynamicFilterPatternFlyContext, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+  cacheErrors: false
+});
+
+/**
  * Optimized filtering for context management.
  *
  * @param filters - Filters to apply.
@@ -328,7 +340,7 @@ const searchPatternFlyContext = async (
   let filteredRecords: Map<string, ContextManagementPatternFlyHashRecord>;
 
   if (dynamicFilter && query && query !== '*') {
-    const dynamicResults = await dynamicFilterPatternFlyContext(query, filters, resources);
+    const dynamicResults = await dynamicFilterPatternFlyContext.memo(query, filters, resources);
 
     if (dynamicResults.size === 1) {
       const record = dynamicResults.values().next().value as ContextManagementPatternFlyHashRecord;
