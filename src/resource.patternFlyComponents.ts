@@ -1,9 +1,12 @@
 import {
   ResourceTemplate,
-  type ListResourcesCallback,
-  type CompleteResourceTemplateCallback
+  type ListResourcesCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type McpResource } from './mcpSdk';
+import {
+  type McpResource,
+  type McpResourceMetadataComplete,
+  type McpResourceMetadataCompleteMemo
+} from './mcpSdk';
 import { memo } from './server.caching';
 import { buildSearchString, stringJoin } from './server.helpers';
 import {
@@ -21,8 +24,7 @@ import {
   filterPatternFlyContext
 } from './patternFly.search';
 import {
-  type PatternFlyListResourceResult,
-  type ExtendedCompleteResourceTemplateCallback
+  type PatternFlyListResourceResult
 } from './resource.patternFlyDocsIndex';
 import {
   formatSummaryFullContent,
@@ -104,7 +106,7 @@ listResources.memo = memo(listResources);
  * @param detail - The value to complete.
  * @returns The list of available details.
  */
-const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detail: string) => {
+const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string) => {
   const levels = ['summary', 'full'];
   const closest = findClosest.memo(detail, levels) as string | undefined;
 
@@ -115,24 +117,6 @@ const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detai
  * Memoized version of uriDetailComplete.
  */
 uriDetailComplete.memo = memo(uriDetailComplete);
-
-/**
- * Version completion callback for the URI template.
- *
- * @param value - The value to complete.
- * @param context - The completion context.
- * @returns The list of available versions
- */
-const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
-  const { versions } = await paramCompletionContext({ version: value, ...context?.arguments });
-
-  return versions;
-};
-
-/**
- * Memoized version of uriVersionComplete.
- */
-uriVersionComplete.memo = memo(uriVersionComplete);
 
 /**
  * Resource callback for the documentation index.
@@ -325,9 +309,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlyComponentsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
-  const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
-    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
-    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
+  const complete: { [callback: string]: McpResourceMetadataComplete } = {
+    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args))
   };
 
   const callback: McpResource[3] = async (uri, variables) =>
@@ -345,9 +328,9 @@ const patternFlyComponentsResource = (options = getOptions()): McpResource => {
       complete,
       registerAllSearchCombinations: true,
       metaConfig: {
-        uri: 'patternfly://components/meta{?version}',
+        uri: 'patternfly://components/meta{?detail}',
         title: `${CONFIG.title} Metadata`,
-        description: 'Use these parameters to filter the PatternFly component index.'
+        description: 'Discover available parameters for PatternFly component ID-based resources.'
       }
     },
     {
@@ -361,7 +344,6 @@ export {
   listResources,
   resourceCallback,
   uriDetailComplete,
-  uriVersionComplete,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,

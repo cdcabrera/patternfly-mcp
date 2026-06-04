@@ -1,10 +1,13 @@
 import {
   ResourceTemplate,
-  type ListResourcesCallback,
-  type CompleteResourceTemplateCallback
+  type ListResourcesCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { type McpResource } from './mcpSdk';
+import {
+  type McpResource,
+  type McpResourceMetadataComplete,
+  type McpResourceMetadataCompleteMemo
+} from './mcpSdk';
 import { memo } from './server.caching';
 import { findClosest } from './server.search';
 import { getOptions, runWithOptions } from './options.context';
@@ -14,14 +17,6 @@ import {
 } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
 import { nextCursor } from './resource.helpers';
-
-/**
- * Extended callback type that combines the `CompleteResourceTemplateCallback` type
- * and an additional `memo` property.
- *
- * @extends CompleteResourceTemplateCallback
- */
-type ExtendedCompleteResourceTemplateCallback = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
 
 /**
  * List resources result type.
@@ -46,7 +41,7 @@ const URI_TEMPLATE = 'patternfly://collections/{id}{?detail}';
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly Collection ID and detail. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly ID and detail. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -186,7 +181,7 @@ resourceCallback.memo = memo(resourceCallback);
  * @param id - The value to complete.
  * @returns The list of available IDs.
  */
-const uriIdComplete: ExtendedCompleteResourceTemplateCallback = async (id: string) => {
+const uriIdComplete: McpResourceMetadataCompleteMemo = async (id: string) => {
   const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
 
   const searchStr = (id || '').toLowerCase();
@@ -208,7 +203,7 @@ uriIdComplete.memo = memo(uriIdComplete);
  * @param detail - The value to complete.
  * @returns The list of available details.
  */
-const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detail: string) => {
+const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string) => {
   const levels = ['summary', 'full'];
   const closest = findClosest.memo(detail, levels) as string | undefined;
 
@@ -229,7 +224,7 @@ uriDetailComplete.memo = memo(uriDetailComplete);
 const patternFlyCollectionsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
-  const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
+  const complete: { [callback: string]: McpResourceMetadataComplete } = {
     id: async (...args) => runWithOptions(options, async () => uriIdComplete.memo(...args)),
     detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args))
   };

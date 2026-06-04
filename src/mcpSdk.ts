@@ -76,6 +76,21 @@ interface McpResourceMetadataMetaConfig {
 }
 
 /**
+ * Complete callback for MCP resource templates.
+ */
+type McpResourceMetadataComplete = CompleteResourceTemplateCallback;
+
+/**
+ * Complete callback for MCP resource templates.
+ *
+ * The structure can provide:
+ * - A `CompleteResourceTemplateCallback` directly.
+ * - A function property requiring a `memo` property containing a memoized version of the callback.
+ */
+// type McpResourceMetadataComplete = CompleteResourceTemplateCallback | ({ memo?: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback);
+type McpResourceMetadataCompleteMemo = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
+
+/**
  * A resource metadata configuration for the MCP server.
  *
  * @property registerAllSearchCombinations - Whether to register all search combinations for the resource.
@@ -87,7 +102,7 @@ interface McpResourceMetadata {
   registerAllSearchCombinations?: boolean | undefined;
   metaConfig?: McpResourceMetadataMetaConfig;
   complete?: {
-    [key: string]: CompleteResourceTemplateCallback;
+    [callback: string]: McpResourceMetadataCompleteMemo | McpResourceMetadataComplete;
   } | undefined;
   [key: string]: unknown;
 }
@@ -233,6 +248,8 @@ export {
   type McpToolCreator,
   type McpResourceMetadataMetaConfig,
   type McpResourceMetadata,
+  type McpResourceMetadataComplete,
+  type McpResourceMetadataCompleteMemo,
   type McpResource,
   type McpResourceCreator
 };

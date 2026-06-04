@@ -1,34 +1,21 @@
 import {
   ResourceTemplate,
-  type ListResourcesCallback,
-  type CompleteResourceTemplateCallback
+  type ListResourcesCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { type McpResource } from './mcpSdk';
+import {
+  type McpResource,
+  type McpResourceMetadataComplete,
+  type McpResourceMetadataCompleteMemo
+} from './mcpSdk';
 import { memo } from './server.caching';
 import { assertInput, assertInputStringLength } from './server.assertions';
 import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
-import {
-  getPatternFlyMcpResources,
-  getPatternFlyContextManagementResources,
-  type ContextManagementPatternFlyHashRecord
-} from './patternFly.getResources';
+import { getPatternFlyContextManagementResources } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
-import {
-  formatSummaryFullContent,
-  nextCursor,
-  paramCompletionContext
-} from './resource.helpers';
-
-/**
- * Extended callback type that combines the `CompleteResourceTemplateCallback` type
- * and an additional `memo` property.
- *
- * @extends CompleteResourceTemplateCallback
- */
-type ExtendedCompleteResourceTemplateCallback = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
+import { formatSummaryFullContent, nextCursor } from './resource.helpers';
 
 /**
  * List resources result type.
@@ -122,7 +109,7 @@ listResources.memo = memo(listResources);
  * @param detail - The value to complete.
  * @returns The list of available details.
  */
-const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detail: string) => {
+const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string) => {
   const levels = ['summary', 'full'];
   const closest = findClosest.memo(detail, levels) as string | undefined;
 
@@ -133,61 +120,6 @@ const uriDetailComplete: ExtendedCompleteResourceTemplateCallback = async (detai
  * Memoized version of uriDetailComplete.
  */
 uriDetailComplete.memo = memo(uriDetailComplete);
-
-
-/**
- * Version completion callback for the URI template.
- *
- * @param value - The value to complete.
- * @param context - The completion context.
- * @returns The list of available versions
- */
-const uriVersionComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
-  const { versions } = await paramCompletionContext({ version: value, ...context?.arguments });
-
-  return versions;
-};
-
-/**
- * Memoized version of uriIdComplete.
- */
-uriVersionComplete.memo = memo(uriVersionComplete);
-
-/**
- * Category completion callback for the URI template.
- *
- * @param value - The value to complete.
- * @param context - The completion context.
- * @returns The list of available categories
- */
-const uriCategoryComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
-  const { categories } = await paramCompletionContext({ category: value, ...context?.arguments });
-
-  return categories;
-};
-
-/**
- * Memoized version of uriIdComplete.
- */
-uriCategoryComplete.memo = memo(uriCategoryComplete);
-
-/**
- * Section completion callback for the URI template.
- *
- * @param value - The value to complete.
- * @param context - The completion context.
- * @returns The list of available sections
- */
-const uriSectionComplete: ExtendedCompleteResourceTemplateCallback = async (value: string, context) => {
-  const { sections } = await paramCompletionContext({ section: value, ...context?.arguments });
-
-  return sections;
-};
-
-/**
- * Memoized version of uriIdComplete.
- */
-uriSectionComplete.memo = memo(uriSectionComplete);
 
 /**
  * Return content. Resource callback for the documentation template.
@@ -234,7 +166,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const docs = [];
 
   try {
-      const docPaths = record.path
+    const docPaths = record.path
       ? [{
         doc: record.path,
         uri: record.uri || passedUri.toString()
@@ -295,11 +227,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 const patternFlyDocsResource = (options = getOptions()): McpResource => {
   const list: ListResourcesCallback = async (...args) => runWithOptions(options, async () => listResources.memo(...args));
 
-  const complete: { [callback: string]: CompleteResourceTemplateCallback } = {
-    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args)),
-    version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args)),
-    category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
-    section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args))
+  const complete: { [callback: string]: McpResourceMetadataComplete } = {
+    detail: async (...args) => runWithOptions(options, async () => uriDetailComplete.memo(...args))
   };
 
   const callback: McpResource[3] = async (uri, variables) =>
@@ -317,9 +246,9 @@ const patternFlyDocsResource = (options = getOptions()): McpResource => {
       complete,
       registerAllSearchCombinations: true,
       metaConfig: {
-        uri: 'patternfly://docs/meta{?version,category,section}',
+        uri: 'patternfly://docs/meta{?detail}',
         title: `${CONFIG.title} Metadata`,
-        description: 'Use these parameters to filter the PatternFly documentation index.'
+        description: 'Discover available parameters for PatternFly documentation ID-based resources.'
       }
     },
     {
@@ -333,13 +262,9 @@ export {
   listResources,
   resourceCallback,
   uriDetailComplete,
-  uriVersionComplete,
-  uriCategoryComplete,
-  uriSectionComplete,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,
   CONFIG,
-  type ExtendedCompleteResourceTemplateCallback,
   type PatternFlyListResourceResult
 };
