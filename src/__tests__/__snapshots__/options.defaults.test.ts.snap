@@ -2,6 +2,7 @@
 
 exports[`options defaults should return specific properties: defaults 1`] = `
 {
+  "contextManagement": false,
   "contextPath": "/",
   "contextUrl": "file:///",
   "docsPathSlug": "documentation:",
@@ -29,6 +30,14 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "inputStrings": {
       "max": 256,
       "min": 1,
+    },
+    "resourceSearches": {
+      "max": 15,
+      "min": 0,
+    },
+    "sha1Hex": {
+      "max": 40,
+      "min": 40,
     },
     "toolSearches": {
       "max": 10,
