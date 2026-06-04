@@ -203,8 +203,7 @@ type ContextManagementPatternFlyHashRecord = {
   id: string;
   uri?: string;
   componentUri?: string;
-  collectionUri?: string;
-  canonicalUri: string;
+  collectionIds: string[];
   name: string;
   version: string;
   category: string;
@@ -549,6 +548,37 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     catalogMap.set(lowerName, [...existing, ...entries]);
   }
 
+  const ROOT_COLLECTIONS = [
+    { name: 'Components', description: 'Technical specifications for all PatternFly components.' },
+    { name: 'Charts', description: 'Data visualization components and guidelines.' },
+    { name: 'Layouts', description: 'Structural layout components and guidelines.' },
+    { name: 'Forms', description: 'Form controls and related documentation.' }
+  ];
+
+  const rootCollectionRecords: ContextManagementPatternFlyHashRecord[] = ROOT_COLLECTIONS.map(collection => {
+    const id = generateHash(`root:collection:${collection.name.toLowerCase()}`);
+    return {
+      id,
+      collectionIds: [],
+      name: collection.name,
+      version: versionContext.latestVersion,
+      category: 'Documentation',
+      section: 'Documentation',
+      displayName: `${collection.name} Collection`,
+      displayCategory: 'Collection',
+      description: collection.description,
+      path: '',
+      isGroup: true,
+      isSchemasAvailable: false,
+      searchString: `${collection.name} ${collection.description}`.toLowerCase()
+    };
+  });
+
+  rootCollectionRecords.forEach(record => {
+    hashIndex.set(record.id.toLowerCase(), record);
+    collectionsIndex.push(record);
+  });
+
   for (const [name, entries] of catalogMap) {
     const nonSchemaVersions = new Set(
       entries
@@ -557,16 +587,13 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     );
 
     const groupId = generateHash(name);
-    const collectionUri = `patternfly://collections/${groupId}`;
     const description = `Collection hub for ${name} resources.`;
     const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1);
     const displayName = `${capitalizedName} Collections Hub`;
 
     const groupRecord: ContextManagementPatternFlyHashRecord = {
       id: groupId,
-      collectionUri,
-      // "canonicalUri should be removed it's confusing we have collection which is the group.
-      canonicalUri: collectionUri,
+      collectionIds: [],
       name,
       version: versionContext.latestVersion,
       category: 'Documentation',
@@ -620,11 +647,26 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       const section = entry.section || '';
       const category = entry.category || '';
 
+      const collectionIds = [groupId];
+
+      if (section === 'components') {
+        const root = rootCollectionRecords.find(r => r.name === 'Components');
+        if (root) collectionIds.push(root.id);
+      }
+      if (category === 'charts') {
+        const root = rootCollectionRecords.find(r => r.name === 'Charts');
+        if (root) collectionIds.push(root.id);
+      }
+      if (category === 'layouts') {
+        const root = rootCollectionRecords.find(r => r.name === 'Layouts');
+        if (root) collectionIds.push(root.id);
+      }
+
       const record: ContextManagementPatternFlyHashRecord = {
         id,
         uri,
         componentUri,
-        canonicalUri: componentUri && section === 'components' && category === 'react' ? componentUri : uri,
+        collectionIds,
         name,
         version,
         category,

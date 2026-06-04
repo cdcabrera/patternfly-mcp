@@ -49,9 +49,11 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
   if (options.contextManagement) {
     availableMcpResources = stringJoin.newline(
       availableMcpResources,
-      '   - Use `patternfly://docs/{name}{?detail}` for usage design and example patterns, accessibility guidelines, and more. (Default: `detail=summary`)',
-      '   - Use `patternfly://components/{name}{?detail}` for component documentation, prop names, and technical specifications. (Default: `detail=summary`)',
-      '   - **Important**: Always start with `detail=summary` for discovery. Only use `detail=full` when you are ready to implement code.'
+      '   - Use `searchPatternFly` to find the correct `id` for components, documentation, or collections.',
+      '   - Use `patternfly://docs/{id}{?detail}` for usage design and example patterns, accessibility guidelines, and more. (Default: `detail=summary`)',
+      '   - Use `patternfly://components/{id}{?detail}` for component documentation, prop names, and technical specifications. (Default: `detail=summary`)',
+      '   - Use `patternfly://collections/{id}` to browse related groups of resources.',
+      '   - **Important**: Always start by searching with `searchPatternFly` to discover the stable `id`. Use `detail=summary` for initial discovery and only use `detail=full` when you are ready to implement code.'
     );
   }
 

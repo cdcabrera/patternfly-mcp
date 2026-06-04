@@ -251,10 +251,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const docs = [];
 
   try {
-    const docPaths = record.path
+      const docPaths = record.path
       ? [{
         doc: record.path,
-        uri: record.canonicalUri
+        uri: record.uri || passedUri.toString()
       }]
       : [];
 

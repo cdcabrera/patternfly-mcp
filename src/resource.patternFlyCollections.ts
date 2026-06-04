@@ -78,7 +78,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
     const actualIndex = start + index + 1;
 
     resources.push({
-      uri: entry.collectionUri!,
+      uri: `patternfly://collections/${entry.id}`,
       name: `${entry.displayName} Collection Hub (${actualIndex}/${collectionsIndex.length})`,
       description: entry.description,
       mimeType: 'text/markdown'
@@ -125,7 +125,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const techSpecs = allRecords.filter(record => record.section === 'components' && record.category === 'react' && !record.isGroup);
   const docs = allRecords.filter(record => (record.section !== 'components' || record.category !== 'react') && !record.isGroup);
 
-  let content = `---\npfmcp_collection: ${record.collectionUri}\npfmcp_name: ${record.name}\n---\n`;
+  let content = `---\npfmcp_collection: patternfly://collections/${record.id}\npfmcp_name: ${record.name}\n---\n`;
 
   content += `# ${record.displayName} Collection Hub\n\n`;
   content += `${record.description}\n\n`;

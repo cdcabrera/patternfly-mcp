@@ -107,7 +107,7 @@ interface McpResourceMetadata {
  * @note Annotations help with prioritizing resources and help manage context. They contain 3 primary properties:
  * - `priority`: A ranking from `0.0` to `1.0`. `1.0` being the highest priority, and `0.0` being the lowest.
  * - `audience`: This can be `user` or `assistant`, possibly both.
- * - `lastModified': an ISO 8601 formatted string, representing the last time the resource was modified, helps invalidate caches.
+ * - `lastModified`: an ISO 8601 formatted string, representing the last time the resource was modified, helps invalidate caches.
  *
  * How to assign a priority:
  * - `Indexes`: A resource index for directory nav is generally higher `0.8` to `1.0`, it's an anchor

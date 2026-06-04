@@ -225,7 +225,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     const version = currentRecord.version || 'unknown';
     const uriId = currentRecord.uri;
     const uriComponentId = currentRecord.componentUri;
-    const canonicalUri = currentRecord.canonicalUri;
 
     // Cross-links to docs
     const categories = new Set(allRecords.map(record => record.displayCategory));
@@ -248,7 +247,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     );
 
     return {
-      uri: canonicalUri,
+      uri: uriComponentId || uriId || passedUri.toString(),
       mimeType: 'text/markdown',
       text: formatSummaryFullContent(content, {
         descLinkSummary: 'View summary technical specs',
