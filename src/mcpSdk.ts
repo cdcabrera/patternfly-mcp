@@ -87,7 +87,6 @@ type McpResourceMetadataComplete = CompleteResourceTemplateCallback;
  * - A `CompleteResourceTemplateCallback` directly.
  * - A function property requiring a `memo` property containing a memoized version of the callback.
  */
-// type McpResourceMetadataComplete = CompleteResourceTemplateCallback | ({ memo?: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback);
 type McpResourceMetadataCompleteMemo = { memo: CompleteResourceTemplateCallback } & CompleteResourceTemplateCallback;
 
 /**
