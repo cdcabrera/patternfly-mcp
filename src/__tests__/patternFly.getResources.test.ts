@@ -3,7 +3,8 @@ import {
   getPatternFlyComponentSchema,
   getPatternFlyComponentNames,
   mutateKeyWordsMap,
-  getPatternFlyMcpResources
+  getPatternFlyMcpResources,
+  getPatternFlyContextManagementResources
 } from '../patternFly.getResources';
 
 describe('setCategoryDisplayLabel', () => {
@@ -173,5 +174,21 @@ describe('getPatternFlyMcpResources', () => {
 
     // Confirm that all pathless entries have unique IDs.
     expect(pathlessEntryIds.size).toBe(pathlessEntries.length);
+  });
+});
+
+describe('getPatternFlyContextManagementResources', () => {
+  it('should return multiple organized facets', async () => {
+    const result = await getPatternFlyContextManagementResources();
+
+    expect(result.hashIndex).toBeDefined();
+    expect(result.collectionsIndex.length).toBeGreaterThan(0);
+    expect(result.versionIndex.every(record => record.id && record.name)).toBe(true);
+
+    expect(Object.keys(result)).toMatchSnapshot('properties');
+  });
+
+  it('should have a memoized property', async () => {
+    expect(getPatternFlyContextManagementResources).toHaveProperty('memo');
   });
 });

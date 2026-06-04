@@ -140,8 +140,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 /**
  * Resource creator for the component schemas template.
  *
- * @note This resource is being considered for deprecation in favor of a more
- * all encompassing resource, like "resource.patternFlyComponentsTemplate."
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
@@ -168,6 +168,9 @@ const patternFlySchemasTemplateResource = (options = getOptions()): McpResource 
     callback,
     {
       complete
+    },
+    {
+      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
     }
   ];
 };
