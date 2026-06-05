@@ -131,8 +131,7 @@ const dynamicFilterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
   resources: ContextManagementResources,
   {
-    // Do we even need "path" here we don't allow filtering from the regular filter for that? Path was what's there before we process docs.json.
-    searchFilters = ['id', 'name', 'path'],
+    searchFilters = ['id', 'name', 'seriesName', 'collectionId', 'path'],
     maxResultsLimit = 1
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
 ): Promise<Map<string, ContextManagementPatternFlyIdRecord>> => {
@@ -168,9 +167,11 @@ const dynamicFilterPatternFlyContext = async (
     signalError: new DOMException('Filter operation aborted', 'AbortError')
   };
 
+  // Parallel pass over optimized indexes
   try {
     return await Promise.any(
-      searchFilters.map(filter => passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings)))
+      searchFilters.map(filter =>
+        passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings)))
     );
   } catch {
     return new Map();
