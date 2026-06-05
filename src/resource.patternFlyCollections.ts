@@ -159,7 +159,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   // }); OR we return a broken out object like const { filtered, remaining } = await filterPatternFlyContext.memo...
   const foundCollection = await filterPatternFlyContext.memo({ name: record.name });
   const collection: ContextManagementPatternFlyHashRecord[] = Array
-    .from(foundCollection.values()).toSorted(({ displayName: displayNameA }, { displayName: displayNameB }) => displayNameA.localeCompare(displayNameB));
+    .from(foundCollection.values())
+    .toSorted(({ displayName: displayNameA }, { displayName: displayNameB }) => displayNameA.localeCompare(displayNameB));
 
   const techRecords = collection.filter(record => record.section === 'components' && record.category === 'react');
 
