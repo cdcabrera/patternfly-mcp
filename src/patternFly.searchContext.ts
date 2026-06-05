@@ -264,27 +264,26 @@ const filterPatternFlyContext = async (
     return matchesVersion && matchesCategory && matchesSection && matchesName && matchesId && collectionId && matchesSeriesName;
   };
 
-  // 1. ID Lookup: O(1). Ignore all other filters if they enter an ID.
+  // 1. ID Lookup: O(1).
   if (normalizedFilters.id) {
     const record = idIndex.get(normalizedFilters.id);
 
-    // if (record && isMatch(record)) {
-    if (record) {
+    if (record && isMatch(record)) {
       results.set(record.id, record);
 
       return results;
     }
   }
 
-  // 2. Collection ID Lookup: O(K) where K is collection size. Ignore all other filters if they enter an ID.
+  // 2. Collection ID Lookup: O(K) where K is collection size.
   if (normalizedFilters.collectionId) {
     const collectionRecords = resources.collectionsIdIndex.get(normalizedFilters.collectionId);
 
     if (collectionRecords) {
       collectionRecords.forEach(record => {
-        // if (isMatch(record)) {
-        results.set(record.id, record);
-        // }
+        if (isMatch(record)) {
+          results.set(record.id, record);
+        }
       });
 
       if (results.size > 0) {
@@ -303,8 +302,7 @@ const filterPatternFlyContext = async (
       ids.forEach(id => {
         const record = idIndex.get(id);
 
-        // if (record && isMatch(record)) {
-        if (record) {
+        if (record && isMatch(record)) {
           results.set(record.id, record);
         }
       });
