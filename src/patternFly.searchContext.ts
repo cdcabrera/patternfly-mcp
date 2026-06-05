@@ -489,8 +489,6 @@ export {
   type FilterPatternFlyResultsEntry,
   type FilterPatternFlyResultsResource,
   type FilterPatternFlySettings,
-  type SearchPatternFlyResult,
-  type SearchPatternFlyResults,
   type SearchPatternFlyContextResult,
   type SearchPatternFlyContextResults,
   type SearchPatternFlyContextResultsRecord
