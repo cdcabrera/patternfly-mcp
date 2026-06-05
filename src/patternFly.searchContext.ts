@@ -1,9 +1,9 @@
 import {
-  fuzzySearch
+  fuzzySearch,
   // type FuzzySearch,
   // type FuzzySearchOptions,
   // type FuzzySearchResult,
-  // type FuzzySearchResultMatchType
+  type FuzzySearchResultMatchType
 } from './server.search';
 import { memo } from './server.caching';
 import { generateHash } from './server.helpers';
@@ -18,68 +18,102 @@ import {
   // type PatternFlyMcpResourceMetadata,
   type ContextManagementPatternFlyIdRecord
 } from './patternFly.getResourcesContext';
-// import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
-
-// type  = ContextManagementPatternFlyIdRecord | ContextManagementCollectionRecord;
 
 /**
- * A filtered MCP resource.
- *
- * @note Filtered resources lose their redundant version reference Map from `getPatternFlyMcpResources`
- * to simplify filtering. This data is STILL available inside the resource metadata, but is
- * potentially unnecessary since filtering already handles "version."
+ * Union for search record flexibility.
  */
-// type PatternFlyMcpResourceFilteredMetadata = Omit<PatternFlyMcpResourceMetadata, 'versions'>;
+type SearchPatternFlyContextResultsRecord = ContextManagementPatternFlyIdRecord | ContextManagementCollectionRecord;
 
 /**
- * Filters for specific properties of PatternFly data.
+ * A single search result match for context management.
+ *
+ * @interface SearchPatternFlyContextResult
+ *
+ * @property id - The unique ID (SHA-1 hash) of the record or collection.
+ * @property matchType - The type of match found (exact, prefix, fuzzy, all, etc.).
+ * @property distance - The edit distance for fuzzy matches (0 for exact).
+ * @property record - The actual record (Doc) or collection (Hub) object.
+ * @property uri - The standardized MCP resource URI.
+ */
+interface SearchPatternFlyContextResult {
+  id: string;
+  matchType: FuzzySearchResultMatchType;
+  distance: number;
+  record: SearchPatternFlyContextResultsRecord;
+  uri: string;
+}
+
+/**
+ * The collection of results returned by searchPatternFlyContext.
+ *
+ * @interface SearchPatternFlyContextResults
+ *
+ * @property exactMatches - Results that are high-confidence exact matches.
+ * @property remainingMatches - Results that are fuzzy or partial matches.
+ * @property searchResults - The combined list of all matches.
+ */
+interface SearchPatternFlyContextResults {
+  exactMatches: SearchPatternFlyContextResult[];
+  remainingMatches: SearchPatternFlyContextResult[];
+  searchResults: SearchPatternFlyContextResult[];
+}
+
+/**
+ * Options for the searchPatternFlyContext function.
+ *
+ * @interface SearchPatternFlyOptions
+ *
+ * @property [mcpResources] - Optional preloaded or pre-memoized PatternFly resources.
+ * @property [allowWildCardAll] - Whether to allow '*' or 'all' to return all filtered results.
+ * @property [dynamicFilter] - Whether to use parallel dynamic filtering for tighter matching.
+ * @property [maxDistance] - Maximum edit distance allowed for fuzzy search.
+ * @property [maxResults] - Maximum number of results to return.
+ */
+interface SearchPatternFlyOptions {
+  mcpResources?: Promise<ContextManagementResources> | ContextManagementResources;
+  allowWildCardAll?: boolean;
+  dynamicFilter?: boolean;
+  maxDistance?: number;
+  maxResults?: number;
+}
+
+/**
+ * Settings for the filterPatternFlyContext function.
+ *
+ * @interface FilterPatternFlySettings
+ *
+ * @property [maxSyncTime] - Max synchronous time (ms) before yielding to the event loop.
+ * @property [signal] - Abort signal to cancel a long-running search.
+ * @property [signalError] - Error to throw when the search is aborted.
+ */
+interface FilterPatternFlySettings {
+  maxSyncTime?: number;
+  signal?: AbortSignal;
+  signalError?: Error | DOMException;
+}
+
+/**
+ * Filters for narrowing down PatternFly resource searches.
  *
  * @interface FilterPatternFlyFilters
  *
- * @property [version] - PatternFly version to filter search results. Defaults to undefined for all versions.
- * @property [category] - Category to filter search results. Defaults to undefined for all categories.
- * @property [section] - Section to filter search results. Defaults to undefined for all sections.
- * @property [name] - Name, or hash id, to filter search results. Defaults to undefined for all names and IDs.
- * @property [path] - Document path, or URI, to filter search results. Defaults to undefined for all paths and URIs.
- * @property [id] - Document ID to filter search results. Defaults to undefined for all IDs and URIs.
+ * @property [version] - The version of the resource to filter by.
+ * @property [category] - The category of the resource to filter by.
+ * @property [section] - The section of the resource to filter by.
+ * @property [name] - The name of the resource to filter by.
+ * @property [id] - The ID of the resource to filter by.
+ * @property [collectionId] - The ID of the collection to filter by.
+ * @property [seriesName] - The base series name of the resource to filter by.
  */
-interface FilterPatternFlyFiltersContext {
-  version?: string | undefined;
-  category?: string | undefined;
-  section?: string | undefined;
-  name?: string | undefined;
-  id?: string | undefined;
-  collectionId?: string | undefined;
-  seriesName?: string | undefined;
+interface FilterPatternFlyFilters {
+  version?: string;
+  category?: string;
+  section?: string;
+  name?: string;
+  id?: string;
+  collectionId?: string;
+  seriesName?: string;
 }
-
-/**
- * Search results object returned by searchPatternFly.
- * Includes additional metadata and URLs.
- *
- * @interface SearchPatternFlyResults
- *
- * @property isSearchWildCardAll - Whether the search query matched all components
- * @property {SearchPatternFlyResult | undefined} firstExactMatch - `@deprecated Unreliable when the query is a hash, URI, or
- *     path (compares name to the query string). Prefer exactMatches[0] or searchResults`.
- * @property {SearchPatternFlyResult[]} exactMatches - Exact matches within search results
- * @property {SearchPatternFlyResult[]} remainingMatches - Contrast to `exactMatches`, the remaining matches within search results
- * @property {SearchPatternFlyResult[]} searchResults - All search results, exact and remaining matches
- * @property totalPotentialMatches - Total number of available PatternFly keywords to match on, what was possible before narrowing.
- * @property totalResults - Total number of actual resources that meet all criteria.
- */
-/*
-interface SearchPatternFlyResults {
-  isSearchWildCardAll: boolean;
-  // @deprecated Use exactMatches[0] or searchResults
-  firstExactMatch: SearchPatternFlyResult | undefined;
-  exactMatches: SearchPatternFlyResult[];
-  remainingMatches: SearchPatternFlyResult[];
-  searchResults: SearchPatternFlyResult[];
-  totalPotentialMatches: number;
-  totalResults: number;
-}
-(/)
 
 /**
  * Optimized dynamic filter for context management.
@@ -101,7 +135,7 @@ const dynamicFilterPatternFlyContext = async (
     searchFilters = ['id', 'name', 'path'],
     maxResultsLimit = 1
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
-): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
+): Promise<Map<string, ContextManagementPatternFlyIdRecord>> => {
   const query = searchQuery.trim().toLowerCase();
 
   if (!query) {
@@ -112,7 +146,7 @@ const dynamicFilterPatternFlyContext = async (
   const { signal } = abortController;
 
   // Run match and handle abort
-  const passFail = (promise: Promise<Map<string, ContextManagementPatternFlyHashRecord>>) =>
+  const passFail = (promise: Promise<Map<string, ContextManagementPatternFlyIdRecord>>) =>
     promise.then(output => {
       if (signal.aborted || output.size !== maxResultsLimit) {
         throw new Error('Dynamic filter pass did not match maxResultsLimit');
@@ -347,14 +381,14 @@ const searchPatternFlyContext = async (
   }
 
   // 2. Parallel / Dynamic Filtering Pass
-  let filteredRecords: Map<string, ContextManagementPatternFlyHashRecord>;
+  let filteredRecords: Map<string, SearchPatternFlyContextResultsRecord>;
 
   if (dynamicFilter && !isSearchAll) {
     const dynamicResults = await dynamicFilterPatternFlyContext.memo(query, filters, resources);
 
     // If dynamic filter found exactly one high-confidence result, return it as an exact match
     if (dynamicResults.size === 1) {
-      const record = dynamicResults.values().next().value as ContextManagementPatternFlyHashRecord;
+      const record = dynamicResults.values().next().value as SearchPatternFlyContextResultsRecord;
       const result: SearchPatternFlyContextResult = {
         id: record.id,
         matchType: 'exact',
@@ -393,7 +427,7 @@ const searchPatternFlyContext = async (
   }
 
   // 4. Fuzzy Search through Records + Collections
-  const search = new Map<string, ContextManagementPatternFlyIdRecord | ContextManagementCollectionRecord>();
+  const search = new Map<string, SearchPatternFlyContextResultsRecord>();
 
   [...filteredRecords.values(), ...resources.collectionsIndex.values()].forEach(record => {
     search.set(record.searchString, record);
@@ -405,7 +439,7 @@ const searchPatternFlyContext = async (
   });
 
   const finalResults: SearchPatternFlyContextResult[] = fuzzyResults.map(res => {
-    const item = search.get(res.item);
+    const item = search.get(res.item) as SearchPatternFlyContextResultsRecord;
 
     return {
       id: item.id,
@@ -440,5 +474,6 @@ export {
   type SearchPatternFlyResult,
   type SearchPatternFlyResults,
   type SearchPatternFlyContextResult,
-  type SearchPatternFlyContextResults
+  type SearchPatternFlyContextResults,
+  type SearchPatternFlyContextResultsRecord
 };
