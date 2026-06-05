@@ -68,6 +68,7 @@ interface PatternFlyMcpComponentNames {
  */
 type ContextManagementPatternFlyIdRecord = {
   id: string;
+  recordType: 'record';
   uri: string;
   collectionIds: string[];
   name: string;
@@ -88,6 +89,7 @@ type ContextManagementPatternFlyIdRecord = {
  */
 type ContextManagementCollectionRecord = {
   id: string;
+  recordType: 'collection';
   name: string;
   displayName: string;
   description: string;
@@ -100,6 +102,7 @@ type ContextManagementCollectionRecord = {
  *
  * @property collectionsIndex - Collections index. A collection ID to collection metadata lookup.
  * @property collectionsIdIndex - Collections id index. Use a collection ID to retrieve all records associated with a specific collection.
+ * @property collectionsLookup - Collections lookup. A collection ID to collection metadata lookup.
  * @property nameIndex - Name index. A record name to record ID lookup. Get all available record IDs associated with a name.
  * @property pathIndex - Path index.
  * @property idIndex - Id index. A record ID to record lookup
@@ -110,6 +113,7 @@ type ContextManagementCollectionRecord = {
 type ContextManagementResources = {
   collectionsIndex: Map<string, ContextManagementCollectionRecord>;
   collectionsIdIndex: Map<string, ContextManagementPatternFlyIdRecord[]>;
+  collectionsLookup: (id: string) => ContextManagementCollectionRecord | undefined;
   nameIndex: Map<string, string[]>;
   pathIndex: Map<string, string>;
   idIndex: Map<string, ContextManagementPatternFlyIdRecord>;
@@ -308,7 +312,8 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
       const normalizedRecord: ContextManagementPatternFlyIdRecord = {
         id: recordId,
-        uri: `patternfly://docs/${recordId}`,
+        recordType: 'record',
+        uri: `patternfly://records/${recordId}`,
         collectionIds: recordCollectionIds,
         name: recordDisplayName.toLowerCase(),
         seriesName: groupName,
@@ -342,10 +347,11 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       if (!collectionsIndex.has(groupCollectionId)) {
         collectionsIndex.set(groupCollectionId, {
           id: groupCollectionId,
+          recordType: 'collection',
           name: groupName,
           displayName: groupDisplayName,
           description: `Series of ${groupDisplayName}.`,
-          uri: `patternfly://collection/${groupCollectionId}`,
+          uri: `patternfly://collections/${groupCollectionId}`,
           searchString: `${groupName} ${groupDisplayName} series`.toLowerCase()
         });
       }
@@ -358,7 +364,8 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
             collectionsIndex.set(id, {
               ...setCollectionDisplayLabel(recordCollectionIndex.get(id) as string[]),
               id,
-              uri: `patternfly://collection/${id}`
+              recordType: 'collection',
+              uri: `patternfly://collections/${id}`
             });
           }
         }
@@ -370,10 +377,14 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
   recordsList.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }) || a.name.localeCompare(b.name));
 
+  // Collection lookup. Review allowing a custom parser into the lookup function.
+  const collectionsLookup = (id: string) => collectionsIndex.get(id);
+
   return {
     idIndex: hashIndex,
     collectionsIdIndex,
     collectionsIndex,
+    collectionsLookup,
     nameIndex,
     pathIndex,
     recordsList,
