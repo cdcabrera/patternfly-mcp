@@ -289,6 +289,14 @@ const filterPatternFlyContext = async (
    * @param record
    */
   const isMatch = (record: ContextManagementPatternFlyIdRecord) => {
+    if (signal?.aborted) {
+      if (signalError) {
+        throw signalError;
+      }
+
+      return false;
+    }
+
     const matchesVersion = !normalizedFilters.version || filterMatch(record.version, normalizedFilters.version);
     const matchesCategory = !normalizedFilters.category || filterMatch(record.category, normalizedFilters.category) ||
       filterMatch(record.displayCategory, normalizedFilters.category);
