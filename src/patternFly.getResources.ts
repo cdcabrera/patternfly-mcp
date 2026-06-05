@@ -21,7 +21,7 @@ import {
   INDEX_EXCEPTION_WORDS,
   INDEX_NOISE_WORDS
 } from './docs.filterWords';
-import { ROOT_COLLECTIONS } from './docs.collections';
+import { COLLECTIONS, type Collection } from './docs.collections';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -521,9 +521,14 @@ const mutateKeyWordsMap = (
  * Lean available resources for context management.
  *
  * @param contextPathOverride - Context path for updating the returned PatternFly versions.
+ * @param settings - Optional settings object.
+ * @param settings.collections - Collections to use for context management. Defaults to core collections.
  * @returns A lean documentation breakdown for context management. Use the "memoized" property for performance.
  */
-const getPatternFlyContextManagementResources = async (contextPathOverride?: string): Promise<ContextManagementResources> => {
+const getPatternFlyContextManagementResources = async (
+  contextPathOverride?: string,
+  { collections = COLLECTIONS }: { collections?: Collection[] } = {}
+): Promise<ContextManagementResources> => {
   const versionContext = await getPatternFlyVersionContext.memo(contextPathOverride);
   const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
   const { byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
@@ -549,7 +554,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     catalogMap.set(lowerName, [...existing, ...entries]);
   }
 
-  const rootCollectionRecords: ContextManagementPatternFlyHashRecord[] = ROOT_COLLECTIONS.map(collection => {
+  const rootCollectionRecords: ContextManagementPatternFlyHashRecord[] = collections.map(collection => {
     const id = generateHash(`root:collection:${collection.name.toLowerCase()}`);
 
     return {
@@ -643,7 +648,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
       const collectionIds = [groupId];
 
-      ROOT_COLLECTIONS.forEach(rootDef => {
+      collections.forEach(rootDef => {
         const rootRecord = rootCollectionRecords.find(record => record.name.toLowerCase() === rootDef.name.toLowerCase());
 
         if (!rootRecord) {
@@ -688,13 +693,17 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       };
 
       hashIndex.set(id.toLowerCase(), record);
+
       if (!nameIndex.has(name)) {
         nameIndex.set(name, []);
       }
+
       nameIndex.get(name)!.push(id);
+
       if (entry.path) {
         pathIndex.set(entry.path.toLowerCase(), id);
       }
+
       versionIndex.push(record);
     });
   }

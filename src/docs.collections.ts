@@ -1,14 +1,12 @@
 /**
  * Root collection definition for dynamic generation.
+ *
+ * @note Section or Category matches are used for dynamic collections' generation.
  */
-interface RootCollectionDefinition {
+interface Collection {
   name: string;
   displayName: string;
   description: string;
-  /**
-   * Section or Category to match against for dynamic generation.
-   * If a record matches any of these, it will be added to the collection.
-   */
   matches: {
     sections?: string[];
     categories?: string[];
@@ -16,9 +14,9 @@ interface RootCollectionDefinition {
 }
 
 /**
- * Root collections for PatternFly documentation.
+ * Core collections for PatternFly documentation.
  */
-const ROOT_COLLECTIONS: RootCollectionDefinition[] = [
+const COLLECTIONS: Collection[] = [
   {
     name: 'Components',
     displayName: 'Components Collection',
@@ -55,4 +53,4 @@ const ROOT_COLLECTIONS: RootCollectionDefinition[] = [
   }
 ];
 
-export { ROOT_COLLECTIONS, type RootCollectionDefinition };
+export { COLLECTIONS, type Collection };
