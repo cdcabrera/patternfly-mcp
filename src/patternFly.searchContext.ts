@@ -129,6 +129,7 @@ interface FilterPatternFlySettings {
  * @property [id] - The ID of the resource to filter by.
  * @property [collectionId] - The ID of the collection to filter by.
  * @property [seriesName] - The base series name of the resource to filter by.
+ * @property [recordType] - The type of the resource to filter by.
  */
 interface FilterPatternFlyFilters {
   version?: string;
@@ -138,6 +139,7 @@ interface FilterPatternFlyFilters {
   id?: string;
   collectionId?: string;
   seriesName?: string;
+  recordType?: string;
 }
 
 /**
@@ -304,10 +306,11 @@ const filterPatternFlyContext = async (
     const matchesName = !normalizedFilters.name || filterMatch(record.name, normalizedFilters.name) ||
       filterMatch(record.displayName, normalizedFilters.name);
     const matchesId = !normalizedFilters.id || filterMatch(record.id, normalizedFilters.id);
-    const collectionId = !normalizedFilters.collectionId || record.collectionIds.includes(normalizedFilters.collectionId);
+    const matchesCollectionId = !normalizedFilters.collectionId || record.collectionIds.includes(normalizedFilters.collectionId);
     const matchesSeriesName = !normalizedFilters.seriesName || filterMatch(record.seriesName, normalizedFilters.seriesName);
+    const matchesRecordType = !normalizedFilters.recordType || filterMatch(record.recordType, normalizedFilters.recordType);
 
-    return matchesVersion && matchesCategory && matchesSection && matchesName && matchesId && collectionId && matchesSeriesName;
+    return matchesVersion && matchesCategory && matchesSection && matchesName && matchesId && matchesCollectionId && matchesSeriesName && matchesRecordType;
   };
 
   // 1. ID Lookup: O(1).
@@ -431,7 +434,7 @@ const searchPatternFlyContext = async (
   if (exactMatch) {
     const filtered = await filterPatternFlyContext(filters, resources);
 
-    if (filtered.has(exactMatch.id)) {
+    if (exactMatch.recordType === 'collection' || filtered.has(exactMatch.id)) {
       const result: SearchPatternFlyContextResult = {
         id: exactMatch.id,
         matchType: 'exact',
