@@ -78,6 +78,31 @@ interface SearchPatternFlyOptions {
 }
 
 /**
+ * Filtering and manage PatternFly MCP resources.
+ *
+ * Allows handling resources as
+ * - a `Promise` that resolves to `PatternFlyMcpAvailableResources`
+ *    - Use the `Promise` when the resources are retrieved asynchronously and require processing upon resolution.
+ * - a `Map` instance where the key is a string and the value is `PatternFlyMcpResourceFilteredMetadata`.
+ *    - Use the `Map` when the resources are already available and stored in key-value pairs for quick access.
+ *
+ */
+type FilterPatternFlyMcpResources = Promise<ContextManagementResources> | ContextManagementResources;
+
+/**
+ * Used for configuring the `filterPatternFly.memo`.
+ *
+ * @property {FilterPatternFlyFilters} 0 The filters to be applied, which specify the behavior or conditions for the memoized functionality.
+ * @property {FilterPatternFlyMcpResources} [1] Optional MCP resources configuration to be utilized during memo execution.
+ * @property {FilterPatternFlySettings} [2] Optional settings that influence runtime behavior or processing settings.
+ */
+type FilterPatternFlyMemoArgs = [
+  filters: FilterPatternFlyFilters | undefined,
+  mcpResources?: FilterPatternFlyMcpResources | undefined,
+  settings?: FilterPatternFlySettings | undefined
+];
+
+/**
  * Settings for the filterPatternFlyContext function.
  *
  * @interface FilterPatternFlySettings
@@ -116,14 +141,30 @@ interface FilterPatternFlyFilters {
 }
 
 /**
+ * Filter keys tried in parallel by {@link dynamicFilterPatternFly}. Order is priority
+ * (e.g. `name` first for hash/entry id and URI narrowing). Do not randomize — truncation
+ * and `Promise.any` both keep this sequence; reorder only with intentional product priority.
+ */
+const SEARCH_FILTERS: (keyof FilterPatternFlyFilters)[] = ['id', 'name', 'seriesName', 'collectionId'];
+
+/**
+ * Max parallel dynamic-filter passes (excluding the always-included base pass). Matches
+ * {@link SEARCH_FILTERS} length; longer custom `searchFilters` arrays are truncated from the
+ * front so priority order is preserved. Do not randomize the slice.
+ */
+const MAX_DYNAMIC_FILTER_PASSES = SEARCH_FILTERS.length;
+
+/**
  * Optimized dynamic filter for context management.
  *
  * @param searchQuery - The search query.
  * @param filters - Filters to apply.
  * @param resources - Context management resources.
  * @param [options] - Optional settings object.
- * @param [options.searchFilters] - List of filter keys to try in parallel.
- * @param [options.maxResultsLimit] - Maximum results limit for the dynamic filter pass.
+ * @param [options.searchFilters] - Array of filters to search typically from {@link filterPatternFly}. Defaults to {@link SEARCH_FILTERS}.
+ * @param [options.maxFilterPasses] - Max number of parallel filter passes. Defaults to {@link MAX_DYNAMIC_FILTER_PASSES}.
+ * @param [options.maxResultsLimit] - Max number of results internal conditions need to match before they return the original result. Defaults to `1`.
+ * @param [options.useExistingFilters] - Use the existing filters or bypass them. Defaults to `true`.
  * @returns Map of ID to Record.
  */
 const dynamicFilterPatternFlyContext = async (
@@ -131,9 +172,11 @@ const dynamicFilterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
   resources: ContextManagementResources,
   {
-    searchFilters = ['id', 'name', 'seriesName', 'collectionId'],
-    maxResultsLimit = 1
-  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
+    searchFilters = SEARCH_FILTERS,
+    maxFilterPasses = MAX_DYNAMIC_FILTER_PASSES,
+    maxResultsLimit = 1,
+    useExistingFilters = true
+  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
 ): Promise<Map<string, ContextManagementPatternFlyIdRecord>> => {
   const query = searchQuery.trim().toLowerCase();
 
@@ -162,6 +205,10 @@ const dynamicFilterPatternFlyContext = async (
       throw err;
     });
 
+  const filtersToTry = searchFilters
+    .filter(filter => !(useExistingFilters && filters && filters[filter]))
+    .slice(0, maxFilterPasses);
+
   const settings = {
     signal,
     signalError: new DOMException('Filter operation aborted', 'AbortError')
@@ -169,12 +216,14 @@ const dynamicFilterPatternFlyContext = async (
 
   // Parallel pass over optimized indexes
   try {
-    return await Promise.any(
-      searchFilters.map(filter =>
-        passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings)))
-    );
+    return await Promise.any([
+      ...filtersToTry.map(filter =>
+        passFail(filterPatternFlyContext({ ...filters, [filter]: query }, resources, settings))),
+      passFail(filterPatternFlyContext(filters, resources, settings))
+    ]);
   } catch {
-    return new Map();
+    // return new Map();
+    return filterPatternFlyContext(filters, resources);
   } finally {
     abortController.abort();
   }
@@ -201,17 +250,6 @@ dynamicFilterPatternFlyContext.memo = memo(dynamicFilterPatternFlyContext, {
  * @param [settings.maxSyncTime] - Max synchronous time slice in milliseconds before yielding.
  * @param [settings.signal] - Abort signal.
  * @param [settings.signalError] - Error to throw when aborted.
- * @returns Map of ID to Record.
- */
-/**
- * Optimized filtering for context management.
- *
- * @param filters - Filters to apply.
- * @param [mcpResources] - PatternFly resources.
- * @param [settings] - Optional FilterPatternFlySettings.
- * @param settings.maxSyncTime
- * @param settings.signal
- * @param settings.signalError
  * @returns Map of ID to Record.
  */
 const filterPatternFlyContext = async (
@@ -418,11 +456,13 @@ const searchPatternFlyContext = async (
       return { exactMatches: [result], remainingMatches: [], searchResults: [result] };
     }
 
-    if (dynamicResults.size > 0) {
-      filteredRecords = dynamicResults;
-    } else {
-      filteredRecords = await filterPatternFlyContext.memo(filters, resources);
-    }
+    filteredRecords = dynamicResults;
+    // if (dynamicResults.size > 0) {
+    //  filteredRecords = dynamicResults;
+    // }
+    //  else {
+    //  filteredRecords = await filterPatternFlyContext.memo(filters, resources);
+    // }
   } else {
     filteredRecords = await filterPatternFlyContext.memo(filters, resources);
   }
@@ -485,9 +525,8 @@ export {
   filterPatternFlyContext,
   searchPatternFlyContext,
   type FilterPatternFlyFilters,
-  type FilterPatternFlyResults,
-  type FilterPatternFlyResultsEntry,
-  type FilterPatternFlyResultsResource,
+  type FilterPatternFlyMemoArgs,
+  type FilterPatternFlyMcpResources,
   type FilterPatternFlySettings,
   type SearchPatternFlyContextResult,
   type SearchPatternFlyContextResults,
