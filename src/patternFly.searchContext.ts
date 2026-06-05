@@ -131,7 +131,7 @@ const dynamicFilterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
   resources: ContextManagementResources,
   {
-    searchFilters = ['id', 'name', 'seriesName', 'collectionId', 'path'],
+    searchFilters = ['id', 'name', 'seriesName', 'collectionId'],
     maxResultsLimit = 1
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxResultsLimit?: number } = {}
 ): Promise<Map<string, ContextManagementPatternFlyIdRecord>> => {
@@ -203,23 +203,34 @@ dynamicFilterPatternFlyContext.memo = memo(dynamicFilterPatternFlyContext, {
  * @param [settings.signalError] - Error to throw when aborted.
  * @returns Map of ID to Record.
  */
+/**
+ * Optimized filtering for context management.
+ *
+ * @param filters - Filters to apply.
+ * @param [mcpResources] - PatternFly resources.
+ * @param [settings] - Optional FilterPatternFlySettings.
+ * @param settings.maxSyncTime
+ * @param settings.signal
+ * @param settings.signalError
+ * @returns Map of ID to Record.
+ */
 const filterPatternFlyContext = async (
   filters: FilterPatternFlyFilters | undefined,
   mcpResources?: FilterPatternFlyMcpResources,
   { maxSyncTime = 25, signal, signalError }: FilterPatternFlySettings = {}
-): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
+): Promise<Map<string, ContextManagementPatternFlyIdRecord>> => {
   const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
   const resources = getResources as ContextManagementResources;
-  const hashIndex = resources.idIndex;
+  const idIndex = resources.idIndex;
   const startTime = (signal && performance.now()) || undefined;
 
   if (!filters || Object.keys(filters).length === 0) {
-    return hashIndex;
+    return idIndex;
   }
 
-  const results = new Map<string, ContextManagementPatternFlyHashRecord>();
+  const results = new Map<string, ContextManagementPatternFlyIdRecord>();
 
-  // Fallback: O(N) filtering on the flattened index
+  // Normalize filters to lowercase for consistent matching
   const normalizedFilters = Object.fromEntries(
     Object.entries(filters)
       .filter(([_key, value]) => (typeof value === 'string' || typeof value === 'number') && String(value).trim().length > 0)
@@ -234,75 +245,83 @@ const filterPatternFlyContext = async (
       normalizePropertyValue.endsWith(filterValue);
   };
 
-  // these should be generated
-  const isMatch = (record: ContextManagementPatternFlyHashRecord) => {
-    const matchesVersion = !normalizedFilters.version || record.version.toLowerCase() === normalizedFilters.version;
-    const matchesCategory = !normalizedFilters.category ||
-      filterMatch(record.category, normalizedFilters.category) ||
+  /**
+   * Generalized matching logic that checks all provided filters against record properties.
+   *
+   * @param record
+   */
+  const isMatch = (record: ContextManagementPatternFlyIdRecord) => {
+    const matchesVersion = !normalizedFilters.version || filterMatch(record.version, normalizedFilters.version);
+    const matchesCategory = !normalizedFilters.category || filterMatch(record.category, normalizedFilters.category) ||
       filterMatch(record.displayCategory, normalizedFilters.category);
     const matchesSection = !normalizedFilters.section || filterMatch(record.section, normalizedFilters.section);
-    const matchesName = !normalizedFilters.name ||
-      filterMatch(record.name, normalizedFilters.name) ||
-      filterMatch(record.displayName, normalizedFilters.name) ||
-      filterMatch(record.id, normalizedFilters.name);
-    const matchesPath = !normalizedFilters.path || filterMatch(record.path, normalizedFilters.path);
+    const matchesName = !normalizedFilters.name || filterMatch(record.name, normalizedFilters.name) ||
+      filterMatch(record.displayName, normalizedFilters.name);
+    const matchesId = !normalizedFilters.id || filterMatch(record.id, normalizedFilters.id);
+    const collectionId = !normalizedFilters.collectionId || record.collectionIds.includes(normalizedFilters.collectionId);
+    const matchesSeriesName = !normalizedFilters.seriesName || filterMatch(record.seriesName, normalizedFilters.seriesName);
 
-    return matchesVersion && matchesCategory && matchesSection && matchesName && matchesPath;
+    return matchesVersion && matchesCategory && matchesSection && matchesName && matchesId && collectionId && matchesSeriesName;
   };
 
-  // Fast-path: O(1) lookup if id is provided
-  if (filters.id) {
-    const record = hashIndex.get(filters.id.toLowerCase());
+  // 1. ID Lookup: O(1). Ignore all other filters if they enter an ID.
+  if (normalizedFilters.id) {
+    const record = idIndex.get(normalizedFilters.id);
 
-    if (record && isMatch(record)) {
+    // if (record && isMatch(record)) {
+    if (record) {
       results.set(record.id, record);
 
       return results;
     }
   }
 
-  // Fast-path: O(V) lookup if name is provided
-  if (filters.name) {
-    const ids = resources.nameIndex.get(filters.name.toLowerCase());
+  // 2. Collection ID Lookup: O(K) where K is collection size. Ignore all other filters if they enter an ID.
+  if (normalizedFilters.collectionId) {
+    const collectionRecords = resources.collectionsIdIndex.get(normalizedFilters.collectionId);
 
-    if (ids) {
-      for (const id of ids) {
-        const record = hashIndex.get(id);
+    if (collectionRecords) {
+      collectionRecords.forEach(record => {
+        // if (isMatch(record)) {
+        results.set(record.id, record);
+        // }
+      });
 
-        if (record && isMatch(record)) {
-          results.set(record.id, record);
-        }
-      }
-
-      // If we have any results from the name lookup, return them immediately
-      // This is O(V) where V is the number of versions for a name.
       if (results.size > 0) {
         return results;
       }
     }
   }
 
-  // Fast-path: O(1) lookup if path is provided
-  if (filters.path) {
-    const id = resources.pathIndex.get(filters.path.toLowerCase());
+  // 3. Name or SeriesName Lookup: O(V) where V is versions count
+  const nameToTry = normalizedFilters.name || normalizedFilters.seriesName;
 
-    if (id) {
-      const record = hashIndex.get(id);
+  if (nameToTry) {
+    const ids = resources.nameIndex.get(nameToTry);
 
-      if (record && isMatch(record)) {
-        results.set(record.id, record);
+    if (ids) {
+      ids.forEach(id => {
+        const record = idIndex.get(id);
 
+        // if (record && isMatch(record)) {
+        if (record) {
+          results.set(record.id, record);
+        }
+      });
+
+      if (results.size > 0) {
         return results;
       }
     }
   }
 
+  // 4. FALLBACK: O(N) with Time-Slicing
   const isBlocking = (i: number) =>
     signal && startTime && (i % 200 === 0) && (performance.now() - startTime > maxSyncTime);
 
   let index = 0;
 
-  for (const record of hashIndex.values()) {
+  for (const record of idIndex.values()) {
     if (isBlocking(index)) {
       await new Promise(resolve => setImmediate(resolve));
     }
