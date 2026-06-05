@@ -71,6 +71,7 @@ const CONFIG = {
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { versionIndex } = await getPatternFlyContextManagementResources.memo();
+  // This logic is different than the collections logic.also we should already know whats not a collection
   const terminalComponents = versionIndex.filter(entry => !entry.isCollection && entry.componentUri !== undefined);
   const { start, end, next } = nextCursor({ cursor, pageSize, size: terminalComponents.length });
   const resources: McpResourceListResult[] = [];
