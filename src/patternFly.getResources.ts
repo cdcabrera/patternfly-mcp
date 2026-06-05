@@ -854,14 +854,11 @@ const getPatternFlyContextManagementResources = async (
   const nameIndex = new Map<string, string[]>();
   const pathIndex = new Map<string, string>();
   const versionIndex: ContextManagementPatternFlyHashRecord[] = [];
-  // const collectionsIndex: ContextManagementPatternFlyHashRecord[] = [];
 
-  // const collectionsIdIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
-  // const collectionsNameIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
-
-  // A collection hash against an array of record hashes
-  // const collectionsIndex = new Map<string, string[]>();
-  // const collections = new Map<string, { name: string, id: string }[]>();
+  // ID to Records Array
+  const collectionsIdIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
+  // ID to collection metadata
+  const collectionsIndex = new Map<string, ContextManagementCollectionRecord>();
 
   const recordsMap = new Map<string, (PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc)[]>();
 
@@ -877,34 +874,10 @@ const getPatternFlyContextManagementResources = async (
     recordsMap.set(lowerName, [...existing, ...records]);
   }
 
-  /*
-  const { collectionNameIndex } = patternFlyContextCollections.memo();
-  const collectionsIdIndex = new Map<string, (Collection & { id: string, uri: string })[]>();
-  const collectionsNameIndex = new Map<string, (Collection & { id: string, uri: string })[]>();
-
-  Array.from(recordsMap.keys()).forEach(name => {
-    const groupId = generateHash(`group:${name.toLowerCase()}`).toLowerCase();
-    const groupName = name;
-    const groupDisplayName = groupName.charAt(0).toUpperCase() + groupName.slice(1);
-    const groupUri = `patternfly://collections/${groupId}`;
-
-
-  });
-  */
-
-  // ID to Records Array
-  const collectionsIdIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
-  // ID to display name
-  // const collectionsIdToNameIndex = new Map<string, string>();
-  const collectionsIndex = new Map<string, ContextManagementCollectionRecord>();
-
   for (const [name, records] of recordsMap) {
     const groupCollectionId = generateHash(name).toLowerCase();
     const groupName = name;
     const groupDisplayName = groupName.charAt(0).toUpperCase() + groupName.slice(1);
-
-    // const groupCollectionsIdIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
-    // const groupCollectionsNameIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
 
     records.forEach(record => {
       const recordId = generateHash(record.path || `${groupName}:${record.version}:${record.section}:${record.category}:${record.pathSlug}:${record.source}`.toLowerCase());
@@ -916,8 +889,6 @@ const getPatternFlyContextManagementResources = async (
       const recordCategory = record.category.toLowerCase();
       const recordDescription = record.description || '';
 
-      // const recordCollectionSeriesValue = [groupName];
-
       const recordCollectionSectionValue = [record.section];
       const recordCollectionSectionId = generateHash(`${recordCollectionSectionValue.join(':')}`);
 
@@ -926,24 +897,12 @@ const getPatternFlyContextManagementResources = async (
 
       const recordCollectionValue = [record.section, record.category];
       const recordCollectionId = generateHash(`${recordCollectionValue.join(':')}`);
-      // const recordUri = `patternfly://docs/${recordId}`;
-      // const isComponent = recordSection === 'components' && recordCategory === 'components';
-
-      // collections are ephemeral they are only a hash and name. we create hashes based on pre-determined filters. the record carries those collections
-      // const generatedCollectionIds: { name: string, id: string }[] = getPatternFlyContextCollections({ name, record });
-      // const recordCollectionIds = [groupId, ...generatedCollectionIds.map(({ id }) => id)].map(hash => hash.toLowerCase());
-      // const generatedCollectionIds = getPatternFlyContextRecordCollections({ name, record, group: record });
-      // const recordCollectionIds = [groupId, ...generatedCollectionIds.values()];
-      // const recordCollectionIds = [...generatedCollectionIds.values()];
-      // const generatedCollectionIds = getPatternFlyContextRecordCollections({ name, record });
-      // const recordCollectionIds = [groupId, ...generatedCollectionIds.values()];
       const recordCollectionIds = [groupCollectionId, recordCollectionSectionId, recordCollectionCategoryId, recordCollectionId];
-      // const recordCollectionDisplayNames = [groupDisplayName, recordCollectionSectionDisplayName, recordCollectionCategoryDisplayName, recordCollectionDisplayName];
 
       const normalizedRecord: ContextManagementPatternFlyHashRecord = {
         id: recordId,
+        // uri: `patternfly://{uriType}/${recordId}`
         uri: `patternfly://docs/${recordId}`,
-        // uri: recordUri,
         // componentUri,
         collectionIds: recordCollectionIds,
         // collectionUris: recordCollectionIds.map(id => `patternfly://collections/${id}`),
@@ -973,17 +932,6 @@ const getPatternFlyContextManagementResources = async (
           description: `Series of ${groupDisplayName}.`,
           uri: `patternfly://collection/${groupCollectionId}`
         });
-
-        // collectionsIndex.set(recordCollectionSectionId, {
-        // ...setCollectionDisplayLabel.memo({ displayName: groupDisplayName })
-        // id: recordCollectionSectionId,
-        // name: record.se,
-        // displayName: recordCollectionSectionDisplayName,
-        // description: groupDescription,
-        // uri: `patternfly://collection/${groupCollectionId}`
-        // });
-
-        // collectionsIdToNameIndex.set(groupCollectionId, groupDisplayName);
       } else {
         collectionsIdIndex.get(groupCollectionId)?.push(normalizedRecord);
       }
@@ -991,18 +939,10 @@ const getPatternFlyContextManagementResources = async (
       if (!collectionsIdIndex.has(recordCollectionSectionId)) {
         collectionsIdIndex.set(recordCollectionSectionId, [normalizedRecord]);
 
-        // const recordCollectionSectionDisplayName = setCollectionDisplayLabel.memo(record as PatternFlyMcpDocsCatalogDoc);
-        // const recordCollectionSectionDisplayName = setCollectionDisplayLabel.memo(record as PatternFlyMcpDocsCatalogDoc);
-
-        // collectionsIdToNameIndex.set(recordCollectionSectionId, recordCollectionSectionDisplayName);
         collectionsIndex.set(recordCollectionSectionId, {
           ...setCollectionDisplayLabel(recordCollectionSectionValue),
           id: recordCollectionSectionId,
           uri: `patternfly://collection/${recordCollectionSectionId}`
-          // name: record.se,
-          // displayName: recordCollectionSectionDisplayName,
-          // description: groupDescription,
-          // uri: `patternfly://collection/${groupCollectionId}`
         });
       } else {
         collectionsIdIndex.get(recordCollectionSectionId)?.push(normalizedRecord);
@@ -1011,16 +951,10 @@ const getPatternFlyContextManagementResources = async (
       if (!collectionsIdIndex.has(recordCollectionCategoryId)) {
         collectionsIdIndex.set(recordCollectionCategoryId, [normalizedRecord]);
 
-        // const recordCollectionCategoryDisplayName = setCollectionDisplayLabel.memo(record as PatternFlyMcpDocsCatalogDoc);
-
-        // collectionsIdToNameIndex.set(recordCollectionCategoryId, recordCollectionCategoryDisplayName);
         collectionsIndex.set(recordCollectionCategoryId, {
           ...setCollectionDisplayLabel(recordCollectionCategoryValue),
           id: recordCollectionCategoryId,
           uri: `patternfly://collection/${recordCollectionCategoryId}`
-          // name: record.se,
-          // displayName: recordCollectionSectionDisplayName,
-          // description: groupDescription,
         });
       } else {
         collectionsIdIndex.get(recordCollectionCategoryId)?.push(normalizedRecord);
@@ -1029,17 +963,10 @@ const getPatternFlyContextManagementResources = async (
       if (!collectionsIdIndex.has(recordCollectionId)) {
         collectionsIdIndex.set(recordCollectionId, [normalizedRecord]);
 
-        // const recordCollectionDisplayName = setCollectionDisplayLabel.memo(record as PatternFlyMcpDocsCatalogDoc);
-
-        // collectionsIdToNameIndex.set(recordCollectionId, recordCollectionDisplayName);
         collectionsIndex.set(recordCollectionId, {
           ...setCollectionDisplayLabel(recordCollectionValue),
           id: recordCollectionId,
           uri: `patternfly://collection/${recordCollectionId}`
-          // name: record.se,
-          // displayName: recordCollectionSectionDisplayName,
-          // description: groupDescription,
-          // uri: `patternfly://collection/${groupCollectionId}`
         });
       } else {
         collectionsIdIndex.get(recordCollectionId)?.push(normalizedRecord);
@@ -1083,12 +1010,9 @@ const getPatternFlyContextManagementResources = async (
     return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
   });
 
-  // const suggestionList = Array.from(hashIndex.values()).map(record => record.name).reverse();
-
   return {
     idIndex: hashIndex,
     collectionsIdIndex,
-    // collectionsIndex: collectionsIdToNameIndex,
     collectionsIndex,
     nameIndex,
     pathIndex,
