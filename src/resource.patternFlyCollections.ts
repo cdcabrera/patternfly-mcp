@@ -17,7 +17,7 @@ import {
   type ContextManagementPatternFlyHashRecord
 } from './patternFly.getResources';
 import { filterPatternFlyContext } from './patternFly.search';
-import {formatSummaryFullContent, nextCursor} from './resource.helpers';
+import { formatSummaryFullContent, nextCursor } from './resource.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { assertInput, assertInputStringShaHex } from './server.assertions';
 import { stringJoin } from './server.helpers';
