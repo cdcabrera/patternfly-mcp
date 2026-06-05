@@ -2,7 +2,6 @@ import {
   ResourceTemplate,
   type ListResourcesCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   type McpResource,
   type McpResourceListResult,
