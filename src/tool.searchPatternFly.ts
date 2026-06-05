@@ -101,7 +101,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       }
 
       // 1. Handle Collection Hubs
-      if ('searchString' in record && !('section' in record)) {
+      if (record.recordType === 'collection') {
         results.set(uri, {
           type: 'resource_link',
           uri,
@@ -113,12 +113,15 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         return;
       }
 
+      // const isComponent = record.collectionIds.some(collectionId => collectionsLookup(collectionId)?.isComponent);
+      const { isComponent, isSchemasAvailable } = record.lookup();
+
       // 2. Handle Individual Records (Docs/Components)
-      if (record.section === 'components' && record.category === 'react') {
+      if (isComponent) {
         let updatedName = `${record.displayName} - Technical Overview`;
         let updatedDesc = `Component API reference for ${record.displayName}.`;
 
-        if (record.isSchemasAvailable) {
+        if (isSchemasAvailable) {
           updatedName = `${record.displayName} - Technical Specs`;
           updatedDesc = `Component API reference, property definitions, and JSON schema for ${record.displayName}.`;
         }

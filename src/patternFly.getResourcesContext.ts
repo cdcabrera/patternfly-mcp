@@ -63,6 +63,12 @@ interface PatternFlyMcpComponentNames {
   byLatestVersion?: PatternFlyMcpComponentNamesByVersion | undefined;
 }
 
+type ContextManagementRecordLookup = {
+  isComponent: boolean;
+  // isSchemasAvailable: boolean;
+  [key: string]: unknown
+};
+
 /**
  * Record for mapping a hash to metadata.
  */
@@ -82,6 +88,7 @@ type ContextManagementPatternFlyIdRecord = {
   searchString: string;
   seriesName: string;
   seriesDisplayName: string;
+  lookup: (id?: string) => ContextManagementRecordLookup;
 };
 
 /**
@@ -97,12 +104,18 @@ type ContextManagementCollectionRecord = {
   searchString: string; // Enables collection discovery via fuzzy search
 };
 
+/*
+type ContextManagementCollectionLookup = {
+  collection: ContextManagementCollectionRecord | undefined;
+  [key: string]: unknown
+};
+ */
+
 /**
  * Lean available resources for context management.
  *
  * @property collectionsIndex - Collections index. A collection ID to collection metadata lookup.
  * @property collectionsIdIndex - Collections id index. Use a collection ID to retrieve all records associated with a specific collection.
- * @property collectionsLookup - Collections lookup. A collection ID to collection metadata lookup.
  * @property nameIndex - Name index. A record name to record ID lookup. Get all available record IDs associated with a name.
  * @property pathIndex - Path index.
  * @property idIndex - Id index. A record ID to record lookup
@@ -113,7 +126,7 @@ type ContextManagementCollectionRecord = {
 type ContextManagementResources = {
   collectionsIndex: Map<string, ContextManagementCollectionRecord>;
   collectionsIdIndex: Map<string, ContextManagementPatternFlyIdRecord[]>;
-  collectionsLookup: (id: string) => ContextManagementCollectionRecord | undefined;
+  // collectionsLookup: (id: string) => ContextManagementCollectionLookup;
   nameIndex: Map<string, string[]>;
   pathIndex: Map<string, string>;
   idIndex: Map<string, ContextManagementPatternFlyIdRecord>;
@@ -214,7 +227,7 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
     }]);
   });
 
-  const byVersion = new Map();
+  const byVersion = new Map<string, Record<string, { isSchemasAvailable: boolean, displayName: string }>>();
 
   byVersion.set(
     latestSchemasVersion,
@@ -236,6 +249,30 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
  * Memoized version of getPatternFlyReactComponentNames.
  */
 getPatternFlyComponentNames.memo = memo(getPatternFlyComponentNames);
+
+/*
+const getPatternFlyContextManagementCollection = (collection: ContextManagementCollectionRecord, record: ContextManagementPatternFlyIdRecord) => {
+  // record.section === 'components' && record.category === 'react'
+  // const isComponent = collection?.name?.toLowerCase() === 'components';
+  // const isComponent = (collection?.name?.toLowerCase()?.includes('components') && collection?.name?.toLowerCase()?.includes('react')) || false;
+  const isComponent =
+
+  return {
+    isComponent,
+    isSchemasAvailable
+  };
+};
+*/
+
+const getPatternFlyContextManagementLookup = (
+  {
+    record, metadata
+  }:{ id?: string | undefined; record: ContextManagementPatternFlyIdRecord; collections?: Map<string, ContextManagementCollectionRecord>, metadata: Record<string, unknown> }
+): ContextManagementRecordLookup => ({
+  ...metadata,
+  isComponent: record.category === 'react' && record.section === 'components'
+  // isSchemasAvailable: Boolean(record.schemas)
+});
 
 /**
  * Temporary collection metadata. Review adding in something like setCategoryDisplayLabel or the `docs.collections` data.
@@ -284,13 +321,22 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     const groupCollectionId = generateHash(groupName).toLowerCase();
 
     records.forEach(record => {
+      // Extras that difficult to duck-type
+      const metadata: Record<string, unknown> = {
+        isSchemasAvailable: componentNames.byVersion.get(record.version)?.[name]?.isSchemasAvailable || false
+      };
+
       const recordId = generateHash(record.path || `${groupName}:${record.version}:${record.section}:${record.category}:${record.pathSlug}:${record.source}`.toLowerCase());
-      // const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
+      // const isSchemasAvailable = versionContext.latestSchemasVersion === record.version && componentNamesByVersion.get(record.version)?.[name]?.isSchemasAvailable;
       const recordVersion = (record.version || 'unknown').toLowerCase();
       const recordDisplayName = record.displayName || groupDisplayName;
       const recordSection = record.section.toLowerCase();
       const recordCategory = record.category.toLowerCase();
       const recordDescription = record.description || '';
+
+      // Review an "every variation" approach to collection IDs
+      const recordCollectionSourceValue = [record.source];
+      const recordCollectionSourceId = generateHash(`${recordCollectionSourceValue.join(':')}`);
 
       const recordCollectionSectionValue = [record.section];
       const recordCollectionSectionId = generateHash(`${recordCollectionSectionValue.join(':')}`);
@@ -305,6 +351,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
       const recordCollectionIndex = new Map<string, string[]>();
 
+      recordCollectionIndex.set(recordCollectionSourceId, recordCollectionSourceValue);
       recordCollectionIndex.set(groupCollectionId, [groupName]);
       recordCollectionIndex.set(recordCollectionSectionId, recordCollectionSectionValue);
       recordCollectionIndex.set(recordCollectionCategoryId, recordCollectionCategoryValue);
@@ -326,7 +373,9 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
         description: recordDescription,
         path: record.path || undefined,
         // isSchemasAvailable: Boolean(isSchemasAvailable),
-        searchString: `${groupName} ${recordDisplayName} ${recordDescription}`.toLowerCase()
+        searchString: `${groupName} ${recordDisplayName} ${recordDescription}`.toLowerCase(),
+        lookup: id =>
+          getPatternFlyContextManagementLookup({ id, record: normalizedRecord, collections: collectionsIndex, metadata })
       };
 
       // Indexing
@@ -352,7 +401,9 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
           displayName: groupDisplayName,
           description: `Series of ${groupDisplayName}.`,
           uri: `patternfly://collections/${groupCollectionId}`,
+          // series: [record],
           searchString: `${groupName} ${groupDisplayName} series`.toLowerCase()
+          // lookUp: (id) => collectionsIndex.get(id)
         });
       }
 
@@ -378,13 +429,31 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
   recordsList.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }) || a.name.localeCompare(b.name));
 
   // Collection lookup. Review allowing a custom parser into the lookup function.
-  const collectionsLookup = (id: string) => collectionsIndex.get(id);
+  /*
+  const collectionsLookup = (id: string, record?: ContextManagementPatternFlyIdRecord): ContextManagementCollectionLookup => {
+    const collection = collectionsIndex.get(id);
+
+    return {
+      collection,
+      ...getPatternFlyContextManagementCollection(collectionsIndex.get(id), record)
+    };
+  };
+  */
+
+  /*
+  const recordLookup = (record: ContextManagementRecord): ContextManagementRecordLookup => {
+    return {
+      record,
+      ...getPatternFlyContextManagementRecord(record)
+    };
+  };
+   */
 
   return {
     idIndex: hashIndex,
     collectionsIdIndex,
     collectionsIndex,
-    collectionsLookup,
+    // collectionsLookup,
     nameIndex,
     pathIndex,
     recordsList,
