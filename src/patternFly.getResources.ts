@@ -202,8 +202,8 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  */
 type ContextManagementPatternFlyHashRecord = {
   id: string;
-  uri?: string;
-  componentUri?: string;
+  // uri?: string;
+  // componentUri?: string;
   collectionIds: string[];
   name: string;
   version: string;
@@ -212,22 +212,33 @@ type ContextManagementPatternFlyHashRecord = {
   displayName: string;
   displayCategory: string;
   description: string;
-  path: string;
-  isCollection: boolean;
-  isSchemasAvailable: boolean;
+  path?: string | undefined;
+  // isCollection: boolean;
+  // isSchemasAvailable: boolean;
   searchString: string;
 };
 
 /**
  * Lean available resources for context management.
+ *
+ * @property collectionsIndex - Collections index. A collection ID to collection lookup.
+ * @property collectionsIdIndex - Collections id index. Use a collection ID to retrieve all records associated with a specific collection.
+ * @property nameIndex - Name index. A record name to record ID lookup. Get all available record IDs associated with a name.
+ * @property pathIndex - Path index.
+ * @property idIndex - Id index. A record ID to record lookup
+ * @property recordsList - Records list.
+ * @property latestVersion - Latest version. Latest available PF version.
+ * @property availableVersions - Available versions. All available PF versions.
  */
 type ContextManagementResources = {
-  hashIndex: Map<string, ContextManagementPatternFlyHashRecord>;
+  collectionsIndex: Map<string, Collection & { id: string }>;
+  collectionsIdIndex: Map<string, ContextManagementPatternFlyHashRecord[]>;
   nameIndex: Map<string, string[]>;
   pathIndex: Map<string, string>;
-  versionIndex: ContextManagementPatternFlyHashRecord[];
-  collectionsIndex: ContextManagementPatternFlyHashRecord[];
-  suggestionList: string[];
+  // hashIndex: Map<string, ContextManagementPatternFlyHashRecord>;
+  idIndex: Map<string, ContextManagementPatternFlyHashRecord>;
+  recordsList: ContextManagementPatternFlyHashRecord[];
+  // suggestionList: string[];
   latestVersion: string;
   availableVersions: string[];
 };
@@ -525,7 +536,8 @@ const mutateKeyWordsMap = (
  * @param settings.collections - Collections to use for context management. Defaults to core collections.
  * @returns A lean documentation breakdown for context management. Use the "memoized" property for performance.
  */
-const getPatternFlyContextManagementResources = async (
+/*
+const getPatternFlyContextManagementResourcesCRAP = async (
   contextPathOverride?: string,
   { collections = COLLECTIONS }: { collections?: Collection[] } = {}
 ): Promise<ContextManagementResources> => {
@@ -642,6 +654,7 @@ const getPatternFlyContextManagementResources = async (
       const displayName = finalDisplayName;
       const description = entry.description || '';
       const uri = `patternfly://docs/${id}`;
+      // why is this being applied to everything?
       const componentUri = `patternfly://components/${id}`;
       const section = entry.section || '';
       const category = entry.category || '';
@@ -736,6 +749,306 @@ const getPatternFlyContextManagementResources = async (
     versionIndex,
     collectionsIndex,
     suggestionList,
+    latestVersion: versionContext.latestVersion,
+    availableVersions: versionContext.availableVersions
+  };
+};
+ */
+
+const patternFlyContextCollections = (
+  { collections = COLLECTIONS }: { collections?: Collection[] } = {}
+): { collectionNameIndex: Map<string, Collection & { id: string }>, collectionIdIndex: Map<string, Collection & { id: string }> } => {
+  const collectionIdIndex = new Map<string, Collection & { id: string }>();
+  const collectionNameIndex = new Map<string, Collection & { id: string }>();
+
+  collections.forEach(collection => {
+    const collectionName = collection.name.toLowerCase();
+    const collectionId = generateHash(`collection:${collectionName}`);
+    const collectionRecord = { ...collection, id: collectionId };
+
+    collectionIdIndex.set(collectionId, collectionRecord);
+    collectionNameIndex.set(collectionName, collectionRecord);
+  });
+
+  return { collectionNameIndex, collectionIdIndex };
+};
+
+patternFlyContextCollections.memo = memo(patternFlyContextCollections);
+
+const getPatternFlyContextRecordCollections = (
+  { name, record }: { name: string; record: Record<string, unknown>; }
+) => {
+  // return a lookup Map<hash,collection name> or Map<hash,Record<name,unknown>[]>
+  const collectionIds = new Set<string>();
+  // const collectionIndex = new Map<string, Collection>();
+  const { collectionIdIndex } = patternFlyContextCollections.memo();
+
+  Array.from(collectionIdIndex.values()).forEach(collection => {
+    const collectionId = collection.id;
+    let matched = false;
+
+    Object.entries(collection.matches).forEach(([matchKey, matchValue]) => {
+      // If matching is an array find matches against records
+      if (Array.isArray(matchValue) && matchValue.some(val => val === record[matchKey])) {
+        matched = true;
+
+        return;
+      }
+
+      // If matching is anything else do an equality check
+      if (matchValue === record[matchKey as keyof ContextManagementPatternFlyHashRecord]) {
+        matched = true;
+
+        return;
+      }
+
+      // If matching is 'name' do a key and value check
+      if (matchKey === 'name' && matchValue === name) {
+        matched = true;
+
+        return;
+      }
+    });
+
+    if (matched) {
+      collectionIds.add(collectionId);
+    }
+  });
+
+  return collectionIds;
+};
+
+const getPatternFlyContextManagementResources = async (
+  contextPathOverride?: string
+): Promise<ContextManagementResources> => {
+  const versionContext = await getPatternFlyVersionContext.memo(contextPathOverride);
+  const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
+  const { byDocs: componentNamesByDocs } = componentNames;
+  const originalDocs = await getPatternFlyDocsCatalog.memo();
+
+  // const collectionsIndex = patternFlyContextCollections.memo();
+  const hashIndex = new Map<string, ContextManagementPatternFlyHashRecord>();
+  const nameIndex = new Map<string, string[]>();
+  const pathIndex = new Map<string, string>();
+  const versionIndex: ContextManagementPatternFlyHashRecord[] = [];
+  // const collectionsIndex: ContextManagementPatternFlyHashRecord[] = [];
+  const collectionsIdIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
+  // A collection hash against an array of record hashes
+  // const collectionsIndex = new Map<string, string[]>();
+  // const collections = new Map<string, { name: string, id: string }[]>();
+
+  const recordsMap = new Map<string, (PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc)[]>();
+
+  // Merging docs from both sources. We lowercase name keys for deduplication.
+  Object.entries(originalDocs.docs).forEach(([name, entries]) => {
+    recordsMap.set(name.toLowerCase(), [...entries]);
+  });
+
+  for (const [name, records] of componentNamesByDocs) {
+    const lowerName = name.toLowerCase();
+    const existing = recordsMap.get(lowerName) || [];
+
+    recordsMap.set(lowerName, [...existing, ...records]);
+  }
+
+  const { collectionNameIndex } = patternFlyContextCollections.memo();
+  const collectionsIndex = new Map<string, (Collection & { id: string })[]>();
+
+  Array.from(recordsMap.keys()).forEach(name => {
+    const groupId = generateHash(`group:${name}`).toLowerCase();
+    const groupName = name;
+    const groupDisplayName = groupName.charAt(0).toUpperCase() + groupName.slice(1);
+  });
+
+  for (const [name, records] of recordsMap) {
+    const groupId = generateHash(name).toLowerCase();
+    const groupName = name;
+    const groupDisplayName = groupName.charAt(0).toUpperCase() + groupName.slice(1);
+
+    records.forEach(record => {
+      const recordId = generateHash(record.path || `${groupName}:${record.version}:${record.section}:${record.category}:${record.pathSlug}:${record.source}`.toLowerCase());
+      // const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
+      const recordVersion = (record.version || 'unknown').toLowerCase();
+      const recordDisplayName = record.displayName || groupDisplayName;
+      const recordDisplayCategory = setCategoryDisplayLabel(record as PatternFlyMcpDocsCatalogDoc);
+      const recordSection = record.section.toLowerCase();
+      const recordCategory = record.category.toLowerCase();
+      const recordDescription = record.description || '';
+      // const recordUri = `patternfly://docs/${recordId}`;
+      // const isComponent = recordSection === 'components' && recordCategory === 'components';
+
+      // collections are ephemeral they are only a hash and name. we create hashes based on pre-determined filters. the record carries those collections
+      // const generatedCollectionIds: { name: string, id: string }[] = getPatternFlyContextCollections({ name, record });
+      // const recordCollectionIds = [groupId, ...generatedCollectionIds.map(({ id }) => id)].map(hash => hash.toLowerCase());
+      // const generatedCollectionIds = getPatternFlyContextRecordCollections({ name, record, group: record });
+      // const recordCollectionIds = [groupId, ...generatedCollectionIds.values()];
+      // const recordCollectionIds = [...generatedCollectionIds.values()];
+      const generatedCollectionIds = getPatternFlyContextRecordCollections({ name, record });
+      const recordCollectionIds = [groupId, ...generatedCollectionIds.values()];
+
+      const normalizedRecord: ContextManagementPatternFlyHashRecord = {
+        id: recordId,
+        // uri: recordUri,
+        // componentUri,
+        collectionIds: recordCollectionIds,
+        name: groupName,
+        version: recordVersion,
+        category: recordCategory,
+        section: recordSection,
+        displayName: recordDisplayName,
+        displayCategory: recordDisplayCategory,
+        description: recordDescription,
+        path: record.path || undefined,
+        // isSchemasAvailable: Boolean(isSchemasAvailable),
+        searchString: `${groupName} ${recordDisplayName} ${recordDescription}`.toLowerCase()
+      };
+
+      hashIndex.set(normalizedRecord.id, normalizedRecord);
+
+      normalizedRecord.collectionIds.forEach(collectionId => {
+        if (collectionsIdIndex.has(collectionId)) {
+          // collectionsIdIndex.get(collectionId)?.push(normalizedRecord.id);
+          collectionsIdIndex.get(collectionId)?.push(normalizedRecord);
+        } else {
+          // collectionsIdIndex.set(collectionId, [normalizedRecord.id]);
+          collectionsIdIndex.set(collectionId, [normalizedRecord]);
+        }
+      });
+
+      if (!nameIndex.has(name)) {
+        nameIndex.set(name, []);
+      }
+
+      nameIndex.get(name)?.push(recordId);
+      // nameIndex.get(name)?.push(normalizedRecord);
+
+      if (normalizedRecord.path) {
+        pathIndex.set(normalizedRecord.path.toLowerCase(), recordId);
+      }
+
+      versionIndex.push(normalizedRecord);
+    });
+
+    /*
+    entries.forEach(entry => {
+      const version = (entry.version || 'unknown').toLowerCase();
+
+      // Deduplicate: if we have non-schema entries for a version, remove schema entries for that same version
+      if (entry.source === 'schemas' && nonSchemaVersions.has(version)) {
+        return;
+      }
+
+      const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
+      const isSchemasAvailable = versionContext.latestSchemasVersion === version && componentNamesByVersion.get(version)?.[name]?.isSchemasAvailable;
+      const displayCategory = setCategoryDisplayLabel(entry as PatternFlyMcpDocsCatalogDoc);
+      const baseDisplayName = entry.displayName || name.charAt(0).toUpperCase() + name.slice(1);
+
+      let finalDisplayName = baseDisplayName;
+
+      const lowerDisplayName = finalDisplayName.toLowerCase();
+      const lowerCategory = displayCategory.toLowerCase();
+      const versionTag = `(${version})`;
+
+      if (!lowerDisplayName.includes(lowerCategory)) {
+        finalDisplayName += ` - ${displayCategory}`;
+      }
+      if (!lowerDisplayName.includes(versionTag)) {
+        finalDisplayName += ` ${versionTag}`;
+      }
+
+      const displayName = finalDisplayName;
+      const description = entry.description || '';
+      const uri = `patternfly://docs/${id}`;
+      // why is this being applied to everything?
+      const componentUri = `patternfly://components/${id}`;
+      const section = entry.section || '';
+      const category = entry.category || '';
+
+      const collectionIds = [groupId];
+
+      collections.forEach(rootDef => {
+        const rootRecord = rootCollectionRecords.find(record => record.name.toLowerCase() === rootDef.name.toLowerCase());
+
+        if (!rootRecord) {
+          return;
+        }
+
+        const lowerSection = section.toLowerCase();
+        const lowerCategory = category.toLowerCase();
+
+        let matched = false;
+
+        if (rootDef.matches.sections?.some(section => section.toLowerCase() === lowerSection)) {
+          matched = true;
+        }
+
+        if (rootDef.matches.categories?.some(category => category.toLowerCase() === lowerCategory)) {
+          matched = true;
+        }
+
+        if (matched) {
+          collectionIds.push(rootRecord.id);
+          usedRootCollectionIds.add(rootRecord.id);
+        }
+      });
+
+      const record: ContextManagementPatternFlyHashRecord = {
+        id,
+        uri,
+        componentUri,
+        collectionIds,
+        name,
+        version,
+        category,
+        section,
+        displayName,
+        displayCategory,
+        description,
+        path: entry.path || '',
+        isCollection: false,
+        isSchemasAvailable: Boolean(isSchemasAvailable),
+        searchString: `${name} ${displayName} ${description}`.toLowerCase()
+      };
+
+      hashIndex.set(id.toLowerCase(), record);
+
+      if (!nameIndex.has(name)) {
+        nameIndex.set(name, []);
+      }
+
+      nameIndex.get(name)!.push(id);
+
+      if (entry.path) {
+        pathIndex.set(entry.path.toLowerCase(), id);
+      }
+
+      versionIndex.push(record);
+     */
+    // });
+  }
+
+  // Sort versionIndex: version (desc), name (asc)
+  versionIndex.sort((a, b) => {
+    const versionCompare = b.version.localeCompare(a.version, undefined, { numeric: true, sensitivity: 'base' });
+
+    if (versionCompare !== 0) {
+      return versionCompare;
+    }
+
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  });
+
+  // const suggestionList = Array.from(hashIndex.values()).map(record => record.name).reverse();
+
+  return {
+    idIndex: hashIndex,
+    collectionsIdIndex,
+    collectionsIndex,
+    nameIndex,
+    pathIndex,
+    recordsList: versionIndex,
+    // suggestionList: Array.from(nameIndex.keys()).reverse(),
+    // suggestionList, can use the keys from nameIndex
     latestVersion: versionContext.latestVersion,
     availableVersions: versionContext.availableVersions
   };

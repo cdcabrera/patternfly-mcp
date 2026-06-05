@@ -772,7 +772,7 @@ const filterPatternFlyContext = async (
 ): Promise<Map<string, ContextManagementPatternFlyHashRecord>> => {
   const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
   const resources = getResources as ContextManagementResources;
-  const hashIndex = resources.hashIndex;
+  const hashIndex = resources.idIndex;
   const startTime = (signal && performance.now()) || undefined;
 
   if (!filters || Object.keys(filters).length === 0) {
@@ -923,7 +923,7 @@ const searchPatternFlyContext = async (
   const resources = getResources as ContextManagementResources;
 
   // If the query is a hash, try O(1) resolution first
-  const recordByHash = resources.hashIndex.get(query);
+  const recordByHash = resources.idIndex.get(query);
 
   if (recordByHash) {
     const results = await filterPatternFlyContext(filters, resources);
@@ -934,7 +934,8 @@ const searchPatternFlyContext = async (
         matchType: 'exact',
         distance: 0,
         record: recordByHash,
-        uri: recordByHash.isCollection ? `patternfly://collections/${recordByHash.id}` : (recordByHash.uri || '')
+        uri: recordByHash.uri
+        // uri: recordByHash.isCollection ? `patternfly://collections/${recordByHash.id}` : (recordByHash.uri || '')
       };
 
       return {
@@ -957,7 +958,8 @@ const searchPatternFlyContext = async (
         matchType: 'exact',
         distance: 0,
         record,
-        uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
+        uri: record.uri
+        // uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
       };
 
       return {
@@ -981,7 +983,8 @@ const searchPatternFlyContext = async (
       matchType: 'all',
       distance: 0,
       record,
-      uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
+      // uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
+      uri: record.uri
     }));
 
     return {
@@ -1009,7 +1012,8 @@ const searchPatternFlyContext = async (
       matchType: res.matchType,
       distance: res.distance,
       record,
-      uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
+      uri: record.uri
+      // uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
     };
   });
 

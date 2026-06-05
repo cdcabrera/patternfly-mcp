@@ -8,8 +8,9 @@ interface Collection {
   displayName: string;
   description: string;
   matches: {
-    sections?: string[];
-    categories?: string[];
+    // sections?: string[];
+    // categories?: string[];
+    [key: string]: unknown;
   };
 }
 
@@ -22,7 +23,9 @@ const COLLECTIONS: Collection[] = [
     displayName: 'Components Collection',
     description: 'Technical specifications and documentation for all PatternFly components.',
     matches: {
-      sections: ['components']
+      section: ['components'],
+      category: ['react'],
+      source: 'schemas'
     }
   },
   {
@@ -30,8 +33,8 @@ const COLLECTIONS: Collection[] = [
     displayName: 'Charts Collection',
     description: 'Data visualization components, charts, and related guidelines.',
     matches: {
-      sections: ['charts'],
-      categories: ['charts']
+      section: ['charts'],
+      category: ['charts']
     }
   },
   {
@@ -39,8 +42,8 @@ const COLLECTIONS: Collection[] = [
     displayName: 'Layouts Collection',
     description: 'Structural layout components and structural guidelines.',
     matches: {
-      sections: ['layouts'],
-      categories: ['layouts']
+      section: ['layouts'],
+      category: ['layouts']
     }
   },
   {
@@ -48,7 +51,7 @@ const COLLECTIONS: Collection[] = [
     displayName: 'Forms Collection',
     description: 'Form controls, inputs, and related form documentation.',
     matches: {
-      categories: ['forms']
+      category: ['forms']
     }
   }
 ];

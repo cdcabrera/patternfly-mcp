@@ -43,7 +43,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const { latestVersion, hashIndex, suggestionList } = await getPatternFlyContextManagementResources.memo();
+    const { latestVersion, hashIndex, nameIndex } = await getPatternFlyContextManagementResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
 
@@ -68,6 +68,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     );
 
     if (!isSearchWildCardAll && searchResults.length === 0) {
+      const suggestionList = Array.from(nameIndex.keys()).reverse();
       const suggestion = findClosest.memo(query, suggestionList, { maxDistance: 5 });
       const hint = suggestion ? `Try a search for "${suggestion}".` : `Try a broader search.`;
 
