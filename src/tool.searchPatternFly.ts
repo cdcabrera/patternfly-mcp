@@ -4,19 +4,16 @@ import { type McpTool } from './mcpSdk';
 import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions } from './options.context';
-import { searchPatternFlyContext } from './patternFly.search';
-import { getPatternFlyContextManagementResources } from './patternFly.getResources';
+import { searchPatternFlyContext } from './patternFly.searchContext';
+import { getPatternFlyContextManagementResources } from './patternFly.getResourcesContext';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { findClosest } from './server.search';
 
 /**
  * searchPatternFly tool function
  *
- * Searches for PatternFly resources using fuzzy search.
- * Returns MCP Resource Links when contextManagement: 'token-saver' is active.
- *
- * @note Review not filtering out resources without a path. These resources could be
- * inlined or handled with the upcoming on-demand session resource loader.
+ * Searches for PatternFly resources using the optimized context management system.
+ * Returns MCP Resource Links for both specific documents and collection hubs.
  *
  * @param options - Optional configuration options (defaults to OPTIONS)
  * @returns MCP tool tuple [name, schema, callback]
@@ -43,7 +40,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       });
     }
 
-    const { latestVersion, hashIndex, nameIndex } = await getPatternFlyContextManagementResources.memo();
+    // Get resources from the new context engine
+    const { latestVersion, idIndex, nameIndex } = await getPatternFlyContextManagementResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
     const updatedVersion = normalizedVersion || latestVersion;
 
@@ -52,6 +50,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     const allowWildCardAll = true;
     const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
 
+    // Execute search using the optimized context search function
     const { exactMatches, remainingMatches, searchResults } = await searchPatternFlyContext.memo(
       query,
       { version: updatedVersion },
@@ -67,6 +66,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       ErrorCode.InternalError
     );
 
+    // Provide helpful suggestions if no results are found
     if (!isSearchWildCardAll && searchResults.length === 0) {
       const suggestionList = Array.from(nameIndex.keys()).reverse();
       const suggestion = findClosest.memo(query, suggestionList, { maxDistance: 5 });
@@ -82,14 +82,11 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       };
     }
 
-    // Default to parsing all remainingMatches
+    // Prioritize results: exact/wildcard matches > distance 1 matches > remaining
     let parseResults = remainingMatches;
 
-    // Focus the result set. If there are exact matches, use those.
     if (isSearchWildCardAll || exactMatches.length > 0) {
       parseResults = exactMatches;
-
-    // Focus the result set. If there aren't any exactMatches, but we have "distance 1" matches, use those.
     } else if (searchResults.some(result => result.distance === 1)) {
       parseResults = searchResults.filter(result => result.distance === 1);
     }
@@ -103,6 +100,20 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         return;
       }
 
+      // 1. Handle Collection Hubs
+      if ('searchString' in record && !('section' in record)) {
+        results.set(uri, {
+          type: 'resource_link',
+          uri,
+          name: `${record.displayName} (Collection Hub)`,
+          description: record.description,
+          mimeType: 'text/markdown'
+        });
+
+        return;
+      }
+
+      // 2. Handle Individual Records (Docs/Components)
       if (record.section === 'components' && record.category === 'react') {
         let updatedName = `${record.displayName} - Technical Overview`;
         let updatedDesc = `Component API reference for ${record.displayName}.`;
@@ -151,7 +162,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     if (isSearchWildCardAll) {
       summaryTitle = stringJoin.newline(
         `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing ${resultValues.length} ${basePluralResource} out of ${hashIndex.size} potential matches. Use a more specific query.`
+        `Only showing ${resultValues.length} ${basePluralResource} out of ${idIndex.size} potential matches. Use a more specific query.`
       );
     } else if (exactMatches.length > 0) {
       summaryTitle = stringJoin.newline(
