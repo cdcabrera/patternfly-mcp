@@ -11,11 +11,7 @@ import {
 import { memo } from './server.caching';
 import { findClosest } from './server.search';
 import { getOptions, runWithOptions } from './options.context';
-import {
-  getPatternFlyContextManagementResources,
-  type ContextManagementPatternFlyHashRecord
-} from './patternFly.getResources';
-import { filterPatternFlyContext } from './patternFly.search';
+import { getPatternFlyContextManagementResources } from './patternFly.getResourcesContext';
 import { formatSummaryFullContent, nextCursor } from './resource.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { assertInput, assertInputStringShaHex } from './server.assertions';
@@ -59,22 +55,24 @@ const CONFIG = {
 const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   const pageSize = 15;
   const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
-  const { start, end, next } = nextCursor({ cursor, pageSize, size: collectionsIndex.length });
+  const collectionsList = Array.from(collectionsIndex.values());
+
+  const { start, end, next } = nextCursor({ cursor, pageSize, size: collectionsList.length });
   const resources: McpResourceListResult[] = [];
 
-  collectionsIndex.slice(start, end).forEach((entry, index) => {
+  collectionsList.slice(start, end).forEach((entry, index) => {
     const actualIndex = start + index + 1;
 
     resources.push({
       uri: `patternfly://collections/${entry.id}`,
-      name: `${entry.displayName} Collection Hub (${actualIndex}/${collectionsIndex.length})`,
+      name: `${entry.displayName} Collection Hub (${actualIndex}/${collectionsList.length})`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
   });
 
   return {
-    totalCount: collectionsIndex.length,
+    totalCount: collectionsList.length,
     pageSize,
     nextCursor: next,
     resources
@@ -94,9 +92,10 @@ listResources.memo = memo(listResources);
  */
 const uriIdComplete: McpResourceMetadataCompleteMemo = async (id: string) => {
   const { collectionsIndex } = await getPatternFlyContextManagementResources.memo();
+  const collectionsList = Array.from(collectionsIndex.values());
 
   const searchStr = (id || '').toLowerCase();
-  const matches = collectionsIndex.filter(record =>
+  const matches = collectionsList.filter(record =>
     record.id.toLowerCase().includes(searchStr) ||
     record.name.toLowerCase().includes(searchStr));
 
@@ -142,59 +141,44 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     inputDisplayName: 'id'
   });
 
-  const records = await filterPatternFlyContext.memo({ id });
-  const record = records.get(id);
+  // const records = await filterPatternFlyContext.memo({ id });
+  const { collectionsIndex, collectionsIdIndex } = await getPatternFlyContextManagementResources.memo();
+  const collection = collectionsIndex.get(id as string);
+
+  // const record = records.get(id);
 
   assertInput(
-    record?.isCollection !== undefined,
+    collection !== undefined,
     () => `Collection not found for ID: ${id}`
   );
 
-  // Fetch all records for this name to build the hub
-  // This highlights we might need a different approach on the filtering... like a negation or passing a function/callback for the filter
-  // like `section: (arg) => arg !== 'components'`, and maybe it should also be dynamic enough to allow filtering ON ALL available properties
-  // so we don't have to worry about adding or updating the filter function.
-  // const techSpecs = await filterPatternFlyContext.memo({ name: record.name, section: 'components', category: 'react', isCollection: false });
-  // const notTechSpecs = await filterPatternFlyContext.memo({ name: record.name, section: (arg) => arg !== 'components', category: (arg) => arg !== 'react', isCollection: false
-  // }); OR we return a broken out object like const { filtered, remaining } = await filterPatternFlyContext.memo...
-  const foundCollection = await filterPatternFlyContext.memo({ name: record.name });
-  const collection: ContextManagementPatternFlyHashRecord[] = Array
-    .from(foundCollection.values())
-    .toSorted(({ displayName: displayNameA }, { displayName: displayNameB }) => displayNameA.localeCompare(displayNameB));
-
-  const techRecords = collection.filter(record => record.section === 'components' && record.category === 'react');
-
-  const resultsContent = stringJoin.basic(
-    `Found ${collection.length} related documentation ${collection.length === 1 ? 'resource' : 'resources'},`,
-    `and ${techRecords.length} related technical ${techRecords.length === 1 ? 'specification' : 'specifications'}.`,
-    'Use the attached documentation and component IDs to discover more PatternFly context.'
-  );
+  const collectionRecords = collectionsIdIndex.get(id as string) || [];
+  const sortedRecords = collectionRecords.toSorted((a, b) => a.displayName.localeCompare(b.displayName));
 
   const content = [
-    `# ${record.displayName}`,
+    `# ${collection.displayName}`,
     '',
-    record.description,
+    collection.description,
     '',
-    resultsContent,
+    `Found ${collectionRecords.length} related PatternFly resources.`,
+    'Use the links below to access detailed technical documentation and specifications.',
     ''
   ];
 
-  if (collection.length > 0) {
+  if (sortedRecords.length > 0) {
     const categoriesSeen = new Set<string>();
     const collectionsContent: string[] = [];
 
-    collection.forEach(record => {
-      const isTechSpec = record.category === 'react' && record.section === 'components';
-      const recordUri = isTechSpec ? record.componentUri : record.uri;
+    sortedRecords.forEach(record => {
+      const isTechSpec = record.lookup().isComponent;
+      const updatedCategory = isTechSpec ? 'Technical Specifications' : record.displayCategory;
 
-      if (!categoriesSeen.has(record.category)) {
-        const updatedCategory = isTechSpec ? 'Technical Specifications' : record.displayCategory;
-
+      if (!categoriesSeen.has(updatedCategory)) {
         categoriesSeen.add(updatedCategory);
-        collectionsContent.push(isTechSpec ? '### Technical Specifications' : `### ${record.displayCategory}`);
+        collectionsContent.push(`### ${updatedCategory}`);
       }
 
-      collectionsContent.push(`- [${record.displayName}](${recordUri})`);
+      collectionsContent.push(`- [${record.displayName}](${record.uri})`);
     });
 
     content.push(...collectionsContent);
@@ -203,14 +187,13 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   return {
     contents: [
       {
-        uri: passedUri.toString(), // placing "passed uri on here" means the detail may come through
-        // uri: `patternfly://collections/${record.id}`
+        uri: passedUri.toString(),
         mimeType: CONFIG.mimeType,
         text: formatSummaryFullContent(stringJoin.newline(...content), {
-          url: `patternfly://collections/${record.id}`,
+          url: collection.uri,
           detailType: normalizedDetail,
           frontMatter: {
-            name: record.name
+            name: collection.name
           }
         })
       }

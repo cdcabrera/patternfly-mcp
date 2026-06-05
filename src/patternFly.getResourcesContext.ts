@@ -321,7 +321,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
     const groupCollectionId = generateHash(groupName).toLowerCase();
 
     records.forEach(record => {
-      // Extras that difficult to duck-type
+      // Reserve for extras that are challenging to duck-type, used via `record.lookup()`
       const metadata: Record<string, unknown> = {
         isSchemasAvailable: componentNames.byVersion.get(record.version)?.[name]?.isSchemasAvailable || false
       };
