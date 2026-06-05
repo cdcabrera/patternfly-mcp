@@ -13,11 +13,14 @@ import {
   getPatternFlyContextManagementResources,
   // type PatternFlyMcpAvailableResources,
   type ContextManagementResources,
+  type ContextManagementCollectionRecord,
   // type PatternFlyMcpDocsMeta,
   // type PatternFlyMcpResourceMetadata,
-  type ContextManagementPatternFlyHashRecord
+  type ContextManagementPatternFlyIdRecord
 } from './patternFly.getResourcesContext';
 // import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
+
+// type  = ContextManagementPatternFlyIdRecord | ContextManagementCollectionRecord;
 
 /**
  * A filtered MCP resource.
@@ -319,38 +322,37 @@ const searchPatternFlyContext = async (
   { mcpResources, allowWildCardAll = false, dynamicFilter = true, maxDistance = 3, maxResults = 10 }: SearchPatternFlyOptions = {}
 ): Promise<SearchPatternFlyContextResults> => {
   const query = searchQuery.trim().toLowerCase();
+  const isSearchAll = allowWildCardAll && (query === '*' || query === 'all' || query === '');
   const getResources = await (mcpResources || getPatternFlyContextManagementResources.memo());
   const resources = getResources as ContextManagementResources;
 
-  // If the query is a hash, try O(1) resolution first
-  const recordByHash = resources.idIndex.get(query);
+  const exactRecord = resources.idIndex.get(query);
+  const exactCollection = resources.collectionsIndex.get(query);
+  const exactMatch = exactRecord || exactCollection;
 
-  if (recordByHash) {
-    const results = await filterPatternFlyContext(filters, resources);
+  if (exactMatch) {
+    const filtered = await filterPatternFlyContext(filters, resources);
 
-    if (results.has(recordByHash.id)) {
+    if (filtered.has(exactMatch.id)) {
       const result: SearchPatternFlyContextResult = {
-        id: recordByHash.id,
+        id: exactMatch.id,
         matchType: 'exact',
         distance: 0,
-        record: recordByHash,
-        uri: recordByHash.uri
-        // uri: recordByHash.isCollection ? `patternfly://collections/${recordByHash.id}` : (recordByHash.uri || '')
+        record: exactMatch,
+        uri: exactMatch.uri
       };
 
-      return {
-        exactMatches: [result],
-        remainingMatches: [],
-        searchResults: [result]
-      };
+      return { exactMatches: [result], remainingMatches: [], searchResults: [result] };
     }
   }
 
+  // 2. Parallel / Dynamic Filtering Pass
   let filteredRecords: Map<string, ContextManagementPatternFlyHashRecord>;
 
-  if (dynamicFilter && query && query !== '*') {
+  if (dynamicFilter && !isSearchAll) {
     const dynamicResults = await dynamicFilterPatternFlyContext.memo(query, filters, resources);
 
+    // If dynamic filter found exactly one high-confidence result, return it as an exact match
     if (dynamicResults.size === 1) {
       const record = dynamicResults.values().next().value as ContextManagementPatternFlyHashRecord;
       const result: SearchPatternFlyContextResult = {
@@ -359,31 +361,27 @@ const searchPatternFlyContext = async (
         distance: 0,
         record,
         uri: record.uri
-        // uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
       };
 
-      return {
-        exactMatches: [result],
-        remainingMatches: [],
-        searchResults: [result]
-      };
+      return { exactMatches: [result], remainingMatches: [], searchResults: [result] };
     }
 
-    filteredRecords = dynamicResults.size > 0 ? dynamicResults : await filterPatternFlyContext.memo(filters, resources);
+    if (dynamicResults.size > 0) {
+      filteredRecords = dynamicResults;
+    } else {
+      filteredRecords = await filterPatternFlyContext.memo(filters, resources);
+    }
   } else {
     filteredRecords = await filterPatternFlyContext.memo(filters, resources);
   }
 
-  const isWildCardAll = query === '*' || query === 'all' || query === '';
-  const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
-
-  if (isSearchWildCardAll) {
+  // 3. Search ALL Pass
+  if (isSearchAll) {
     const allResults: SearchPatternFlyContextResult[] = Array.from(filteredRecords.values()).map(record => ({
       id: record.id,
       matchType: 'all',
       distance: 0,
       record,
-      // uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
       uri: record.uri
     }));
 
@@ -394,26 +392,27 @@ const searchPatternFlyContext = async (
     };
   }
 
-  // Use fuzzy search on the remaining records
-  const searchItems = Array.from(filteredRecords.values());
+  // 4. Fuzzy Search through Records + Collections
+  const search = new Map<string, ContextManagementPatternFlyIdRecord | ContextManagementCollectionRecord>();
 
-  const { results: searchResults } = fuzzySearch(query, searchItems.map(i => i.searchString), {
+  [...filteredRecords.values(), ...resources.collectionsIndex.values()].forEach(record => {
+    search.set(record.searchString, record);
+  });
+
+  const { results: fuzzyResults } = fuzzySearch(query, [...search.keys()], {
     maxDistance,
     maxResults
   });
 
-  const finalResults: SearchPatternFlyContextResult[] = searchResults.map(res => {
-    // fuzzySearch returns the matched string in 'item'.
-    // @note Search resolution here is O(N) but we will optimize this in the next step.
-    const record = searchItems.find(i => i.searchString === res.item)!;
+  const finalResults: SearchPatternFlyContextResult[] = fuzzyResults.map(res => {
+    const item = search.get(res.item);
 
     return {
-      id: record.id,
+      id: item.id,
       matchType: res.matchType,
       distance: res.distance,
-      record,
-      uri: record.uri
-      // uri: record.isCollection ? `patternfly://collections/${record.id}` : (record.uri || '')
+      record: item,
+      uri: item.uri
     };
   });
 

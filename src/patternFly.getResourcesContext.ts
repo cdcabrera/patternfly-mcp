@@ -66,7 +66,7 @@ interface PatternFlyMcpComponentNames {
 /**
  * Record for mapping a hash to metadata.
  */
-type ContextManagementPatternFlyHashRecord = {
+type ContextManagementPatternFlyIdRecord = {
   id: string;
   uri: string;
   collectionIds: string[];
@@ -109,11 +109,11 @@ type ContextManagementCollectionRecord = {
  */
 type ContextManagementResources = {
   collectionsIndex: Map<string, ContextManagementCollectionRecord>;
-  collectionsIdIndex: Map<string, ContextManagementPatternFlyHashRecord[]>;
+  collectionsIdIndex: Map<string, ContextManagementPatternFlyIdRecord[]>;
   nameIndex: Map<string, string[]>;
   pathIndex: Map<string, string>;
-  idIndex: Map<string, ContextManagementPatternFlyHashRecord>;
-  recordsList: ContextManagementPatternFlyHashRecord[];
+  idIndex: Map<string, ContextManagementPatternFlyIdRecord>;
+  recordsList: ContextManagementPatternFlyIdRecord[];
   latestVersion: string;
   availableVersions: string[];
 };
@@ -257,12 +257,12 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
   const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
   const originalDocs = await getPatternFlyDocsCatalog.memo();
 
-  const hashIndex = new Map<string, ContextManagementPatternFlyHashRecord>();
+  const hashIndex = new Map<string, ContextManagementPatternFlyIdRecord>();
   const nameIndex = new Map<string, string[]>();
   const pathIndex = new Map<string, string>();
-  const collectionsIdIndex = new Map<string, ContextManagementPatternFlyHashRecord[]>();
+  const collectionsIdIndex = new Map<string, ContextManagementPatternFlyIdRecord[]>();
   const collectionsIndex = new Map<string, ContextManagementCollectionRecord>();
-  const recordsList: ContextManagementPatternFlyHashRecord[] = [];
+  const recordsList: ContextManagementPatternFlyIdRecord[] = [];
 
   const recordsMap = new Map<string, (PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc)[]>();
 
@@ -306,7 +306,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       recordCollectionIndex.set(recordCollectionCategoryId, recordCollectionCategoryValue);
       recordCollectionIndex.set(recordCollectionId, recordCollectionValue);
 
-      const normalizedRecord: ContextManagementPatternFlyHashRecord = {
+      const normalizedRecord: ContextManagementPatternFlyIdRecord = {
         id: recordId,
         uri: `patternfly://docs/${recordId}`,
         collectionIds: recordCollectionIds,
@@ -418,6 +418,7 @@ export {
   getPatternFlyComponentSchema,
   getPatternFlyContextManagementResources,
   getPatternFlyComponentNames,
-  type ContextManagementPatternFlyHashRecord,
-  type ContextManagementResources
+  type ContextManagementPatternFlyIdRecord,
+  type ContextManagementResources,
+  type ContextManagementCollectionRecord
 };
