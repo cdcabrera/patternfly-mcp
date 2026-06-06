@@ -105,7 +105,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         results.set(uri, {
           type: 'resource_link',
           uri,
-          name: `${record.displayName} (Collection Hub)`,
+          name: `${record.displayName} (Collection)`,
           description: record.description,
           mimeType: 'text/markdown'
         });
@@ -133,15 +133,17 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           description: updatedDesc,
           mimeType: 'text/markdown'
         });
-      } else {
-        results.set(uri, {
-          type: 'resource_link',
-          uri,
-          name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
-          description: record.description,
-          mimeType: 'text/markdown'
-        });
+
+        return;
       }
+
+      results.set(uri, {
+        type: 'resource_link',
+        uri,
+        name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
+        description: record.description,
+        mimeType: 'text/markdown'
+      });
     });
 
     const resultValues = Array.from(results.values());

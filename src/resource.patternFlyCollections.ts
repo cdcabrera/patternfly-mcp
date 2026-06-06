@@ -65,7 +65,7 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
 
     resources.push({
       uri: `patternfly://collections/${entry.id}`,
-      name: `${entry.displayName} Collection Hub (${actualIndex}/${collectionsList.length})`,
+      name: `${entry.displayName} Collection (${actualIndex}/${collectionsList.length})`,
       description: entry.description,
       mimeType: 'text/markdown'
     });
@@ -133,7 +133,7 @@ uriDetailComplete.memo = memo(uriDetailComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>) => {
-  const { detail = 'summary', id } = variables || {};
+  const { detail = 'full', id } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['full', 'summary']) || detail) as 'full' | 'summary';
 
   assertInputStringShaHex(id, {
