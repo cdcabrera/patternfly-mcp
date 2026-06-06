@@ -148,11 +148,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 /**
  * Resource creator for the component schemas index and metadata resources.
  *
- * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
- * and {@link ./resource.patternFlyRecords} for `contextManagement`.
- *
  * @note The `metaConfig` determines if a metadata resource is generated. Remove
  * the config to disable it.
+ *
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple

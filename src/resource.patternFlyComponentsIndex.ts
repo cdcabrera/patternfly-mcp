@@ -125,9 +125,6 @@ uriVersionComplete.memo = memo(uriVersionComplete);
 /**
  * Resource callback for the documentation index.
  *
- * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
- * and {@link ./resource.patternFlyRecords} for `contextManagement`.
- *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @param options - Options for the resource.
@@ -189,6 +186,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
  *
  * @note The `metaConfig` determines if a metadata resource is generated. Remove
  * the config to disable it.
+ *
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple

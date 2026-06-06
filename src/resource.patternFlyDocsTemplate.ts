@@ -45,9 +45,6 @@ const CONFIG = {
 /**
  * Resource callback for the documentation template.
  *
- * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
- * and {@link ./resource.patternFlyRecords} for `contextManagement`.
- *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
  * @param options - Global options
@@ -180,6 +177,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
 /**
  * Resource creator for the documentation template.
+ *
+ * @note This resource is being considered for deprecation. See {@link ./resource.patternFlyCollections}
+ * and {@link ./resource.patternFlyRecords} for `contextManagement`.
  *
  * @param options - Global options
  * @returns {McpResource} The resource definition tuple
