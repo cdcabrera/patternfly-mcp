@@ -216,21 +216,24 @@ const resourceRecord = async (
 
   assertInput(docs.length > 0, `"${record.id}" was found, but failed to retrieve content.`);
 
-  return {
-    contents: [
-      ...docs.map(({ uri: url, path, content, displayName: name, version }) => ({
-        text: formatSummaryFullContent(content, {
-          url,
-          detailType: detail,
-          frontMatter: {
-            resource: path,
-            name,
-            version
-          }
-        })
-      }))
-    ]
-  };
+  return docs.map(({ uri: url, path, content, displayName: name, version }) => ({
+    text: formatSummaryFullContent(content, {
+      url,
+      detailType: detail,
+      frontMatter: {
+        resource: path,
+        name,
+        version
+      }
+    })
+  }));
+};
+
+const resourceComponentRecord = (
+  record: ContextManagementPatternFlyIdRecord,
+  detail: 'summary' | 'full'
+) => {
+
 };
 
 /**
@@ -259,11 +262,18 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   const capabilities = record.lookup();
 
-  if (capabilities.isComponent) {
-    // return handleComponentRecord(record, normalizedDetail, passedUri);
-  } // we shouldn't have to make a distinction between docs and components here... components can have paths it's just they can also have schemas
+  // if (capabilities.isComponent) {
+  // return handleComponentRecord(record, normalizedDetail);
+  // } // we shouldn't have to make a distinction between docs and components here... components can have paths it's just they can also have schemas
+  const recordResponse = await resourceRecord(record, normalizedDetail);
+  const componentResponse = await resourceComponentRecord(record, normalizedDetail);
 
-  return resourceRecord(record, normalizedDetail);
+  return {
+    contents: [
+      ...recordResponse,
+      ...componentResponse
+    ]
+  };
 };
 
 /**
@@ -309,6 +319,7 @@ export {
   listResources,
   resourceCallback,
   resourceRecord,
+  resourceComponentRecord,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,
