@@ -86,6 +86,7 @@ type ContextManagementPatternFlyIdRecord = {
   description: string;
   path?: string | undefined;
   searchString: string;
+  seriesId: string;
   seriesName: string;
   seriesDisplayName: string;
   lookup: (id?: string) => ContextManagementRecordLookup;
@@ -266,12 +267,12 @@ const getPatternFlyContextManagementCollection = (collection: ContextManagementC
 
 const getPatternFlyContextManagementLookup = (
   {
-    record, metadata
+    id, record, collections, metadata
   }:{ id?: string | undefined; record: ContextManagementPatternFlyIdRecord; collections?: Map<string, ContextManagementCollectionRecord>, metadata: Record<string, unknown> }
 ): ContextManagementRecordLookup => ({
   ...metadata,
+  collection: (id && collections?.get(id)) || undefined,
   isComponent: record.category === 'react' && record.section === 'components'
-  // isSchemasAvailable: Boolean(record.schemas)
 });
 
 /**
@@ -363,6 +364,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
         uri: `patternfly://records/${recordId}`,
         collectionIds: recordCollectionIds,
         name: recordDisplayName.toLowerCase(),
+        seriesId: groupCollectionId,
         seriesName: groupName,
         seriesDisplayName: groupDisplayName,
         version: recordVersion,

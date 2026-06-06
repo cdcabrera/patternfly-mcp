@@ -253,7 +253,7 @@ const resourceComponentRecord = async ({
   }
 
   // Handle components without available schemas
-  if (!capabilities.isSchemasAvailable) {
+  if (!record.path && !capabilities.isSchemasAvailable) {
     return [{
       uri: record.uri,
       mimeType: CONFIG.mimeType,
@@ -281,17 +281,17 @@ const resourceComponentRecord = async ({
   ];
 
   // Generate cross-links to Design, Accessibility, and writing guidelines
+  const seriesUri = record.lookup(record.seriesId).uri;
   const categories = new Set(allRecords.map(record => record.displayCategory));
-  const categoryLinks = Array.from(categories).sort()
-    .map(category => `[${category}](${record.uri}${buildSearchString({ category }, { prefix: true, base: record.uri })})`);
+  const categoryReferences = Array.from(categories).sort()
+    .map(category => (seriesUri && `[${category}](${seriesUri})`) || category);
 
-  if (categoryLinks.length > 0) {
+  if (categoryReferences.length > 0) {
     content.push('### Documentation & guidelines');
-    categoryLinks.forEach(link => content.push(`   - ${link}`));
+    categoryReferences.forEach(ref => content.push(`   - ${ref}`));
   }
 
   const mainContent = {
-    // uri: record.uri,
     uri: passedUri,
     mimeType: CONFIG.mimeType,
     text: formatSummaryFullContent(stringJoin.newline(...content), {
@@ -345,11 +345,9 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     () => `No record found for "${id}". Try using a different ID.`
   );
 
-  const recordResponse = await resourceRecord({ record, normalizedDetail, passedUri });
-
   const [recordResponse, componentResponse] = await Promise.all([
-
-    resourceComponentRecord(record, normalizedDetail)
+    resourceRecord({ record, detail: normalizedDetail, passedUri }),
+    resourceComponentRecord({ record, detail: normalizedDetail, passedUri })
   ]);
 
   const contents = [...recordResponse, ...componentResponse];
