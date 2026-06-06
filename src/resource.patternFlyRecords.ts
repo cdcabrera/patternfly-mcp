@@ -1,3 +1,4 @@
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   ResourceTemplate,
   type ListResourcesCallback
@@ -90,6 +91,9 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
   };
 };
 
+/**
+ * Memoized version of listResources.
+ */
 listResources.memo = memo(listResources);
 
 /**
@@ -102,11 +106,11 @@ listResources.memo = memo(listResources);
  */
 const handleComponentRecord = async (
   record: ContextManagementPatternFlyIdRecord,
-  detail: 'summary' | 'full',
-  passedUri: URL,
-  options = getOptions()
+  detail: 'summary' | 'full'
+ // passedUri: URL
 ) => {
   // Logic ported and optimized from resource.patternFlyComponents.ts
+  /*
   if (!record.lookup().isSchemasAvailable) {
     return {
       contents: [{
@@ -121,8 +125,9 @@ const handleComponentRecord = async (
         )
       }]
     };
-  }
+  }*/
 
+  /*
   // Get related records for cross-linking (PEER DISCOVERY)
   const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name, version: record.version });
   const allRecords = Array.from(allRecordsMap.values());
@@ -173,6 +178,7 @@ const handleComponentRecord = async (
       }
     ]
   };
+  */
 };
 
 /**
@@ -181,32 +187,49 @@ const handleComponentRecord = async (
  * @param record
  * @param detail
  */
-const handleStandardDocRecord = async (
+const resourceRecord = async (
   record: ContextManagementPatternFlyIdRecord,
   detail: 'summary' | 'full'
 ) => {
   // Logic ported and optimized from resource.patternFlyDocs.ts
   assertInput(record.path !== undefined, `No content path available for record: ${record.id}`);
 
-  const processedDocs = await processDocsFunction.memo([{
-    doc: record.path,
-    uri: record.uri
-  }]);
+  const docs = [];
 
-  const doc = processedDocs.find(doc => doc.isSuccess);
+  try {
+    const processedDocs = await processDocsFunction.memo([{
+      doc: record.path,
+      uri: record.uri,
+      displayName: record.displayName,
+      version: record.version
+    }]);
 
-  assertInput(doc !== undefined, `Failed to retrieve content for record: ${record.id}`);
+    // Failures are `log.debugged` in `processDocsFunction`.
+    for (const response of processedDocs) {
+      if (response.isSuccess) {
+        docs.push({
+          ...response
+        });
+      }
+    }
+  } catch {}
+
+  assertInput(docs.length > 0, `"${record.id}" was found, but failed to retrieve content.`);
 
   return {
-    contents: [{
-      uri: record.uri,
-      mimeType: 'text/markdown',
-      text: formatSummaryFullContent(doc?.content, {
-        url: record.uri,
-        detailType: detail,
-        frontMatter: { resource: record.path, name: record.displayName, version: record.version }
-      })
-    }]
+    contents: [
+      ...docs.map(({ uri: url, path, content, displayName: name, version }) => ({
+        text: formatSummaryFullContent(content, {
+          url,
+          detailType: detail,
+          frontMatter: {
+            resource: path,
+            name,
+            version
+          }
+        })
+      }))
+    ]
   };
 };
 
@@ -218,7 +241,7 @@ const handleStandardDocRecord = async (
  * @param options
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { detail = 'summary', id } = variables || {};
+  const { detail = 'full', id } = variables || {};
   const normalizedDetail = (findClosest.memo(detail, ['summary', 'full']) || detail) as 'summary' | 'full';
 
   assertInputStringShaHex(id, {
@@ -237,10 +260,10 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   const capabilities = record.lookup();
 
   if (capabilities.isComponent) {
-    return handleComponentRecord(record, normalizedDetail, passedUri, options);
-  }
+    // return handleComponentRecord(record, normalizedDetail, passedUri);
+  } // we shouldn't have to make a distinction between docs and components here... components can have paths it's just they can also have schemas
 
-  return handleStandardDocRecord(record, normalizedDetail, options);
+  return resourceRecord(record, normalizedDetail);
 };
 
 /**
@@ -285,6 +308,7 @@ export {
   patternFlyRecordsResource,
   listResources,
   resourceCallback,
+  resourceRecord,
   NAME,
   URI_TEMPLATE,
   URI_DESCRIPTION,

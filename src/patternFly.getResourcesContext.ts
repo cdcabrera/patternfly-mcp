@@ -396,6 +396,7 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       if (!collectionsIndex.has(groupCollectionId)) {
         collectionsIndex.set(groupCollectionId, {
           id: groupCollectionId,
+          // consider adding a "series" recordType. current behavior is of existing tools is around showing "series" results.
           recordType: 'collection',
           name: groupName,
           displayName: groupDisplayName,
