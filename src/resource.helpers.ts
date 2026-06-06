@@ -1,4 +1,4 @@
-import { filterPatternFly, filterPatternFlyContext, type FilterPatternFlyFilters } from './patternFly.search';
+import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { buildSearchString, stringJoin } from './server.helpers';
 
@@ -240,58 +240,6 @@ const nextCursor = ({ cursor, pageSize = 50, size }: { cursor: string | undefine
 };
 
 /**
- * Centralized completion logic for PatternFly resources and context management.
- *
- * @param filters
- */
-const paramCompletionContext = async (filters: FilterPatternFlyFilters) => {
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(filters.version);
-  const recordsMap = await filterPatternFlyContext.memo({ ...filters, version: normalizedVersion || filters.version });
-
-  const names = new Set<string>();
-  const ids = new Set<string>();
-  const categories = new Set<string>();
-  const sections = new Set<string>();
-  const versions = new Set<string>();
-  const schemas = new Set<string>();
-
-  for (const record of recordsMap.values()) {
-    if (typeof record.name === 'string') {
-      names.add(record.name);
-    }
-
-    if (typeof record.id === 'string') {
-      ids.add(record.id);
-    }
-
-    if (typeof record.category === 'string') {
-      categories.add(record.category);
-    }
-
-    if (typeof record.section === 'string') {
-      sections.add(record.section);
-    }
-
-    if (typeof record.version === 'string') {
-      versions.add(record.version);
-    }
-
-    if (record.isSchemasAvailable !== undefined && typeof record.name === 'string') {
-      schemas.add(record.name);
-    }
-  }
-
-  return {
-    names: Array.from(names).sort(),
-    ids: Array.from(ids).sort(),
-    categories: Array.from(categories).sort(),
-    schemas: Array.from(schemas).sort(),
-    sections: Array.from(sections).sort(),
-    versions: Array.from(versions).sort()
-  };
-};
-
-/**
  * Centralized completion logic for PatternFly resources.
  *
  * @param {FilterPatternFlyFilters} filters
@@ -337,4 +285,10 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   };
 };
 
-export { encodeDecodeCursor, formatSummaryFullContent, nextCursor, paramCompletion, paramCompletionContext, parseFrontMatter };
+export {
+  encodeDecodeCursor,
+  formatSummaryFullContent,
+  nextCursor,
+  paramCompletion,
+  parseFrontMatter
+};

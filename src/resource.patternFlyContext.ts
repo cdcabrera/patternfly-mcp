@@ -43,18 +43,11 @@ const resourceCallback = async (passedUri: URL, options = getOptions()) => {
     options.repoSupport && `- **Troubleshooting guidance:** ${options.repoSupport}`,
     options.repoBugs && `- **Report bugs:** ${options.repoBugs}`
   );
-
+  const activeExperimentalFeatures = options.experimental.join(', ') || 'None';
   let availableMcpResources = `- **MCP resources:** Can be used to list, filter, and read available documentation resources.`;
 
   if (options.contextManagement) {
-    availableMcpResources = stringJoin.newline(
-      availableMcpResources,
-      '   - Use `searchPatternFly` to find the correct `id` for components, documentation, or collections.',
-      '   - Use `patternfly://docs/{id}{?detail}` for usage design and example patterns, accessibility guidelines, and more. (Default: `detail=summary`)',
-      '   - Use `patternfly://components/{id}{?detail}` for component documentation, prop names, and technical specifications. (Default: `detail=summary`)',
-      '   - Use `patternfly://collections/{id}` to browse related groups of resources.',
-      '   - **Important**: Direct `id` completion is reserved for collection hubs. For specific documentation or components, always use `searchPatternFly` first to discover the stable `id`. Use `detail=summary` for initial discovery and only use `detail=full` when you are ready to implement code.'
-    );
+    availableMcpResources = `- **MCP resources:** Can be used to list and access available documentation records.`;
   }
 
   const availableToolFunctions = options.contextManagement ? 'search, list and access' : 'search, fetch and display';
@@ -78,7 +71,7 @@ ${availableMcpResources}
 - **MCP Server Mode:** ${options.mode}
 - **MCP Server Version:** ${options.version || 'Unknown'}
 - **Node.js Major Version:** ${options.nodeVersion || 'Unknown'}
-- **Context Management:** ${options.contextManagement}
+- **Active Experimental Features:** ${activeExperimentalFeatures}
 
 ${(troubleshooting && stringJoin.newline('**Troubleshooting:**', troubleshooting)) || ''}
 `;

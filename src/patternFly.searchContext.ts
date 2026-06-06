@@ -1,21 +1,14 @@
 import {
   fuzzySearch,
-  // type FuzzySearch,
-  // type FuzzySearchOptions,
-  // type FuzzySearchResult,
   type FuzzySearchResultMatchType
 } from './server.search';
 import { memo } from './server.caching';
 import { generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
-  // getPatternFlyMcpResources,
   getPatternFlyContextManagementResources,
-  // type PatternFlyMcpAvailableResources,
   type ContextManagementResources,
   type ContextManagementCollectionRecord,
-  // type PatternFlyMcpDocsMeta,
-  // type PatternFlyMcpResourceMetadata,
   type ContextManagementPatternFlyIdRecord
 } from './patternFly.getResourcesContext';
 
@@ -468,12 +461,6 @@ const searchPatternFlyContext = async (
     }
 
     filteredRecords = dynamicResults;
-    // if (dynamicResults.size > 0) {
-    //  filteredRecords = dynamicResults;
-    // }
-    //  else {
-    //  filteredRecords = await filterPatternFlyContext.memo(filters, resources);
-    // }
   } else {
     filteredRecords = await filterPatternFlyContext.memo(filters, resources);
   }
