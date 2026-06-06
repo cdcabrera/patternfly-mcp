@@ -77,9 +77,9 @@ const listResources = async (_extra: unknown, cursor?: string | undefined) => {
 
     resources.push({
       uri: entry.uri,
+      mimeType: 'text/markdown',
       name: `${entry.displayName} (${actualIndex}/${recordsList.length})`,
-      description: entry.description,
-      mimeType: 'text/markdown'
+      description: entry.description
     });
   });
 
@@ -107,7 +107,7 @@ listResources.memo = memo(listResources);
 const handleComponentRecord = async (
   record: ContextManagementPatternFlyIdRecord,
   detail: 'summary' | 'full'
- // passedUri: URL
+  // passedUri: URL
 ) => {
   // Logic ported and optimized from resource.patternFlyComponents.ts
   /*
@@ -182,17 +182,21 @@ const handleComponentRecord = async (
 };
 
 /**
- * Standard handler for markdown documentation records.
+ * Basic handler for records.
  *
- * @param record
- * @param detail
+ * @param params
+ * @param params.record - Record for loading documentation.
+ * @param params.detail - Detail level for documentation.
+ * @param params.passedUri - URI of the resource.
  */
-const resourceRecord = async (
-  record: ContextManagementPatternFlyIdRecord,
-  detail: 'summary' | 'full'
-) => {
-  // Logic ported and optimized from resource.patternFlyDocs.ts
-  assertInput(record.path !== undefined, `No content path available for record: ${record.id}`);
+const resourceRecord = async ({
+  record,
+  detail,
+  passedUri
+}: { record: ContextManagementPatternFlyIdRecord; detail: 'summary' | 'full'; passedUri: URL }) => {
+  if (!record.path) {
+    return [];
+  }
 
   const docs = [];
 
@@ -214,11 +218,11 @@ const resourceRecord = async (
     }
   } catch {}
 
-  assertInput(docs.length > 0, `"${record.id}" was found, but failed to retrieve content.`);
-
-  return docs.map(({ uri: url, path, content, displayName: name, version }) => ({
+  return docs.map(({ uri, path, content, displayName: name, version }) => ({
+    uri: passedUri,
+    mimeType: 'text/markdown',
     text: formatSummaryFullContent(content, {
-      url,
+      url: uri,
       detailType: detail,
       frontMatter: {
         resource: path,
@@ -229,11 +233,92 @@ const resourceRecord = async (
   }));
 };
 
-const resourceComponentRecord = (
-  record: ContextManagementPatternFlyIdRecord,
-  detail: 'summary' | 'full'
-) => {
+/**
+ * Component handler for records.
+ *
+ * @param params
+ * @param params.record - Record for loading documentation.
+ * @param params.detail - Detail level for documentation.
+ * @param params.passedUri - URI of the resource.
+ */
+const resourceComponentRecord = async ({
+  record,
+  detail,
+  passedUri
+}: { record: ContextManagementPatternFlyIdRecord; detail: 'summary' | 'full'; passedUri: URL }) => {
+  const capabilities = record.lookup();
 
+  if (!capabilities.isComponent) {
+    return [];
+  }
+
+  // Handle components without available schemas
+  if (!capabilities.isSchemasAvailable) {
+    return [{
+      uri: record.uri,
+      mimeType: CONFIG.mimeType,
+      text: stringJoin.newline(
+        `# ${record.displayName} (Technical specifications unavailable)`,
+        '',
+        `Technical specifications and JSON schemas are not available for **${record.displayName}**.`
+      )
+    }];
+  }
+
+  // Peer discovery for related documentation facets
+  const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name, version: record.version });
+  const allRecords = Array.from(allRecordsMap.values());
+
+  const schema = await getPatternFlyComponentSchema.memo(record.name);
+  const properties = schema?.properties || {};
+  const propNames = Object.keys(properties).join(', ') || 'None';
+
+  const content = [
+    `# ${record.displayName} (Technical ${detail === 'summary' ? 'overview' : 'specifications'})`,
+    `- **Version:** ${record.version}`,
+    `- **Available Props:** ${propNames}`,
+    ''
+  ];
+
+  // Generate cross-links to Design, Accessibility, and writing guidelines
+  const categories = new Set(allRecords.map(record => record.displayCategory));
+  const categoryLinks = Array.from(categories).sort()
+    .map(category => `[${category}](${record.uri}${buildSearchString({ category }, { prefix: true, base: record.uri })})`);
+
+  if (categoryLinks.length > 0) {
+    content.push('### Documentation & guidelines');
+    categoryLinks.forEach(link => content.push(`   - ${link}`));
+  }
+
+  const mainContent = {
+    // uri: record.uri,
+    uri: passedUri,
+    mimeType: CONFIG.mimeType,
+    text: formatSummaryFullContent(stringJoin.newline(...content), {
+      url: record.uri,
+      detailType: detail,
+      frontMatter: {
+        resource: record.uri,
+        name: record.displayName,
+        version: record.version
+      }
+    })
+  };
+
+  if (detail === 'summary') {
+    return [mainContent];
+  }
+
+  // Include the full JSON schema for deep technical analysis
+  return [
+    mainContent,
+    {
+      uri: passedUri,
+      // uri: `${record.uri}${buildSearchString({ detail: 'full' }, { prefix: true, base: record.uri })}`,
+      mimeType: 'application/json',
+      text: JSON.stringify(schema, null, 2)
+    }
+  ];
 };
 
 /**
@@ -260,19 +345,19 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     () => `No record found for "${id}". Try using a different ID.`
   );
 
-  const capabilities = record.lookup();
+  const recordResponse = await resourceRecord({ record, normalizedDetail, passedUri });
 
-  // if (capabilities.isComponent) {
-  // return handleComponentRecord(record, normalizedDetail);
-  // } // we shouldn't have to make a distinction between docs and components here... components can have paths it's just they can also have schemas
-  const recordResponse = await resourceRecord(record, normalizedDetail);
-  const componentResponse = await resourceComponentRecord(record, normalizedDetail);
+  const [recordResponse, componentResponse] = await Promise.all([
+
+    resourceComponentRecord(record, normalizedDetail)
+  ]);
+
+  const contents = [...recordResponse, ...componentResponse];
+
+  assertInput(contents.length > 0, `"${record.id}" was found, but no content is currently available.`);
 
   return {
-    contents: [
-      ...recordResponse,
-      ...componentResponse
-    ]
+    contents
   };
 };
 

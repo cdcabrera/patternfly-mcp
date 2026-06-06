@@ -171,6 +171,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
     sortedRecords.forEach(record => {
       const isTechSpec = record.lookup().isComponent;
+      // this should be coming from the displayCategory helper in getResourcesContext
       const updatedCategory = isTechSpec ? 'Technical Specifications' : record.displayCategory;
 
       if (!categoriesSeen.has(updatedCategory)) {
@@ -188,7 +189,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     contents: [
       {
         uri: passedUri.toString(),
-        mimeType: CONFIG.mimeType,
+        mimeType: 'text/markdown',
         text: formatSummaryFullContent(stringJoin.newline(...content), {
           url: collection.uri,
           detailType: normalizedDetail,
