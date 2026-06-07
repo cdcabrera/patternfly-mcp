@@ -126,9 +126,7 @@ const resourceRecord = async ({
     // Failures are `log.debugged` in `processDocsFunction`.
     for (const response of processedDocs) {
       if (response.isSuccess) {
-        docs.push({
-          ...response
-        });
+        docs.push({ ...response });
       }
     }
   } catch {}
@@ -139,11 +137,7 @@ const resourceRecord = async ({
     text: formatSummaryFullContent(content, {
       url: uri,
       detailType: detail,
-      frontMatter: {
-        resource: path,
-        name,
-        version
-      }
+      frontMatter: { resource: path, name, version }
     })
   }));
 };
@@ -173,24 +167,28 @@ const resourceComponentRecord = async ({
       uri: record.uri,
       mimeType: CONFIG.mimeType,
       text: stringJoin.newline(
-        `# ${record.displayName} (Technical specifications unavailable)`,
+        `## ${record.displayName} (Technical specifications unavailable)`,
         '',
         `Technical specifications and JSON schemas are not available for **${record.displayName}**.`
       )
     }];
   }
 
-  // Peer discovery for related documentation facets
-  const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name, version: record.version });
-  const allRecords = Array.from(allRecordsMap.values());
+  // Peer discovery for related documentation facets, Avoid seriesId, it pulls versionless records
+  // const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name, version: record.version });
+  const allRecordsMap = await filterPatternFlyContext.memo({ collectionId: record.seriesId });
+  const allRecords = Array.from(allRecordsMap.values())
+    .toSorted(
+      (a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }) || a.displayCategory.localeCompare(b.displayCategory)
+    );
 
   const schema = await getPatternFlyComponentSchema.memo(record.name);
   const properties = schema?.properties || {};
   const propNames = Object.keys(properties).join(', ') || 'None';
 
   const content = [
-    // This needs to align to the new display categories, otherwise it might conflict/be confusing to read.
-    `# ${record.displayName} (Technical ${detail === 'summary' ? 'overview' : 'specifications'})`,
+    // Review the "summary" and "specifications" copy against the new display categories; it might be confusing to read.
+    `## ${record.displayName} (Technical ${detail === 'summary' ? 'summary' : 'specifications'})`,
     `- **Version:** ${record.version}`,
     `- **Available Props:** ${propNames}`,
     ''
@@ -198,12 +196,13 @@ const resourceComponentRecord = async ({
 
   // Generate cross-links to Design, Accessibility, and writing guidelines
   const seriesUri = record.lookup(record.seriesId).uri;
-  const categories = new Set(allRecords.map(record => record.displayCategory));
-  const categoryReferences = Array.from(categories).sort()
-    .map(category => (seriesUri && `[${category}](${seriesUri})`) || category);
+
+  const categories = new Set(allRecords.map(record => `${record.displayCategory} (${record.version})`));
+
+  const categoryReferences = Array.from(categories).map(category => (seriesUri && `[${category}](${seriesUri})`) || category);
 
   if (categoryReferences.length > 0) {
-    content.push('### Documentation & guidelines');
+    content.push('### Related records');
     categoryReferences.forEach(ref => content.push(`   - ${ref}`));
   }
 
@@ -213,11 +212,7 @@ const resourceComponentRecord = async ({
     text: formatSummaryFullContent(stringJoin.newline(...content), {
       url: record.uri,
       detailType: detail,
-      frontMatter: {
-        resource: record.uri,
-        name: record.displayName,
-        version: record.version
-      }
+      frontMatter: { resource: record.uri, name: record.displayName, version: record.version }
     })
   };
 
@@ -225,12 +220,11 @@ const resourceComponentRecord = async ({
     return [mainContent];
   }
 
-  // Include the full JSON schema for deep technical analysis
+  // Include the full JSON schema
   return [
     mainContent,
     {
       uri: passedUri?.toString() || record.uri,
-      // uri: `${record.uri}${buildSearchString({ detail: 'full' }, { prefix: true, base: record.uri })}`,
       mimeType: 'application/json',
       text: JSON.stringify(schema, null, 2)
     }
@@ -270,9 +264,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   assertInput(contents.length > 0, `"${record.id}" was found, but no content is currently available.`);
 
-  return {
-    contents
-  };
+  return { contents };
 };
 
 /**
@@ -304,7 +296,7 @@ const patternFlyRecordsResource = (options = getOptions()): McpResource => {
       metaConfig: {
         uri: 'patternfly://records/meta{?detail}',
         title: `${CONFIG.title} Metadata`,
-        description: 'Discover available parameters for unified PatternFly records.'
+        description: 'Discover available parameters for PatternFly records.'
       }
     },
     {

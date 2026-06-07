@@ -183,7 +183,7 @@ const resourceSummaryTemplate = ({
   const updatedRecords = records.slice(0, 10);
 
   const content = stringJoin.newline(
-    `# ${collection.displayName} (Summary collection)`,
+    `# ${collection.displayName} (Collection summary)`,
     '',
     collection.description,
     '',
@@ -261,6 +261,9 @@ const resourceFullTemplate = ({
 
 /**
  * Main resource callback.
+ *
+ * @note Re-evaluate the use of empty collections; for empty records we throw an error.
+ * Because we allow configuration, there is a chance it's intentional.
  *
  * @param passedUri - URI of the resource.
  * @param variables - Variables for the resource.
@@ -379,7 +382,12 @@ const patternFlyCollectionsResource = (options = getOptions()): McpResource => {
     callback,
     {
       complete,
-      registerAllSearchCombinations: true
+      registerAllSearchCombinations: true,
+      metaConfig: {
+        uri: 'patternfly://collections/meta{?detail}',
+        title: `${CONFIG.title} Metadata`,
+        description: 'Discover available parameters for PatternFly collections.'
+      }
     },
     {
       shouldRegister: opts => opts.contextManagement === true

@@ -203,7 +203,7 @@ const setCategoryDisplayLabel = (record: Record<string, unknown>) => {
   const updatedSection = (record.section as string)?.trim()?.toLowerCase();
 
   if (updatedCategory === 'react' && updatedSection === 'components') {
-    return record.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview';
+    return record.isSchemasAvailable ? 'Component Specs' : 'Component Overview';
   }
 
   if (updatedSection === 'guidelines') {
