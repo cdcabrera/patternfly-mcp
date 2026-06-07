@@ -134,7 +134,7 @@ const resourceRecord = async ({
   } catch {}
 
   return docs.map(({ uri, path, content, displayName: name, version }) => ({
-    uri: passedUri,
+    uri: passedUri?.toString() || uri,
     mimeType: 'text/markdown',
     text: formatSummaryFullContent(content, {
       url: uri,
@@ -189,6 +189,7 @@ const resourceComponentRecord = async ({
   const propNames = Object.keys(properties).join(', ') || 'None';
 
   const content = [
+    // This needs to align to the new display categories, otherwise it might conflict/be confusing to read.
     `# ${record.displayName} (Technical ${detail === 'summary' ? 'overview' : 'specifications'})`,
     `- **Version:** ${record.version}`,
     `- **Available Props:** ${propNames}`,
@@ -207,7 +208,7 @@ const resourceComponentRecord = async ({
   }
 
   const mainContent = {
-    uri: passedUri,
+    uri: passedUri?.toString() || record.uri,
     mimeType: CONFIG.mimeType,
     text: formatSummaryFullContent(stringJoin.newline(...content), {
       url: record.uri,
@@ -228,7 +229,7 @@ const resourceComponentRecord = async ({
   return [
     mainContent,
     {
-      uri: passedUri,
+      uri: passedUri?.toString() || record.uri,
       // uri: `${record.uri}${buildSearchString({ detail: 'full' }, { prefix: true, base: record.uri })}`,
       mimeType: 'application/json',
       text: JSON.stringify(schema, null, 2)

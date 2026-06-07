@@ -169,14 +169,17 @@ getPatternFlyDocsCatalog.memo = memo(getPatternFlyDocsCatalog);
  * @param record - PatternFly documentation record
  * @returns The category display label
  */
-const setCategoryDisplayLabel = (record?: PatternFlyMcpDocsCatalogDoc) => {
-  let categoryLabel = typeof record?.category === 'string' ? record.category.trim().toLowerCase() : undefined;
+// const setCategoryDisplayLabel = (record?: PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc) => {
+const setCategoryDisplayLabel = (record: Record<string, unknown>) => {
+  const updatedCategory = (record.category as string)?.trim()?.toLowerCase() || undefined;
 
-  if (categoryLabel === undefined) {
+  if (updatedCategory === undefined) {
     return 'Documentation';
   }
 
-  switch (categoryLabel) {
+  let categoryLabel = updatedCategory;
+
+  switch (updatedCategory) {
     case 'grammar':
       categoryLabel = 'Grammar';
       break;
@@ -197,7 +200,17 @@ const setCategoryDisplayLabel = (record?: PatternFlyMcpDocsCatalogDoc) => {
       break;
   }
 
-  return record?.section?.trim()?.toLowerCase() === 'guidelines' ? 'AI Guidance' : categoryLabel;
+  const updatedSection = (record.section as string)?.trim()?.toLowerCase();
+
+  if (updatedCategory === 'react' && updatedSection === 'components') {
+    return record.isSchemasAvailable ? 'Technical Specs' : 'Technical Overview';
+  }
+
+  if (updatedSection === 'guidelines') {
+    return 'AI Guidance';
+  }
+
+  return categoryLabel;
 };
 
 /**
@@ -213,9 +226,16 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
   const latestByDocsFormat = new Map<string, PatternFlyMcpComponentNamesDoc[]>();
 
   names.forEach(name => {
+    const isSchemasAvailable = name !== 'Table';
+    let description = `Component React reference for ${name}.`;
+
+    if (isSchemasAvailable) {
+      description = `Component React reference and JSON schema for ${name}.`;
+    }
+
     latestByDocsFormat.set(name.toLowerCase(), [{
       displayName: name,
-      description: `PatternFly React component: ${name}`,
+      description,
       pathSlug: `schemas-${name}`.toLowerCase(),
       category: 'react',
       section: 'components',
@@ -304,13 +324,13 @@ const setCollectionDisplayLabel = (
     };
   }
 
-  // Fallback to dynamic generation if no config match is found
+  // Fallback to dynamic generation if no config match is found, typically for groups/series.
   const label = values.map(value => value.charAt(0).toUpperCase() + value.slice(1)).join(' - ');
 
   return {
     name: label,
-    displayName: `${label} Collection`,
-    description: `Series of PatternFly resources under "${label}."`,
+    displayName: label,
+    description: `Series of resources under "${label}."`,
     searchString: values.join(' ').toLowerCase()
   };
 };
@@ -352,8 +372,9 @@ const getPatternFlyContextManagementResources = async (
 
     records.forEach(record => {
       // Reserve for extras that are challenging to duck-type, used via `record.lookup()`
+      const isSchemasAvailable = componentNames.byVersion.get(record.version)?.[name]?.isSchemasAvailable || false;
       const metadata: Record<string, unknown> = {
-        isSchemasAvailable: componentNames.byVersion.get(record.version)?.[name]?.isSchemasAvailable || false
+        isSchemasAvailable
       };
 
       const recordId = generateHash(record.path || `${groupName}:${record.version}:${record.section}:${record.category}:${record.pathSlug}:${record.source}`.toLowerCase());
@@ -422,7 +443,8 @@ const getPatternFlyContextManagementResources = async (
         category: recordCategory,
         section: recordSection,
         displayName: recordDisplayName,
-        displayCategory: setCategoryDisplayLabel(record as PatternFlyMcpDocsCatalogDoc),
+        displayCategory: setCategoryDisplayLabel({ ...record, isSchemasAvailable }),
+        // displayCategory: setCategoryDisplayLabel(record as PatternFlyMcpDocsCatalogDoc),
         description: recordDescription,
         path: record.path || undefined,
         // isSchemasAvailable: Boolean(isSchemasAvailable),
@@ -445,7 +467,8 @@ const getPatternFlyContextManagementResources = async (
       }
       recordsList.push(normalizedRecord);
 
-      // Collection Indexing
+      /*
+      // Create series/collection metadata if it doesn't exist.
       if (!collectionsIndex.has(groupCollectionId)) {
         collectionsIndex.set(groupCollectionId, {
           id: groupCollectionId,
@@ -459,8 +482,9 @@ const getPatternFlyContextManagementResources = async (
           searchString: `${groupName} ${groupDisplayName} series`.toLowerCase()
           // lookUp: (id) => collectionsIndex.get(id)
         });
-      }
+      }*/
 
+      // Create collection metadata if it doesn't exist. Map records to collection IDs.
       recordCollectionIds.forEach(id => {
         if (!collectionsIdIndex.has(id)) {
           // collectionsIdIndex.set(id, []);

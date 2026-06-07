@@ -20,7 +20,7 @@ interface Collection {
 const COLLECTIONS: Collection[] = [
   {
     name: 'Components',
-    displayName: 'Components Collection',
+    displayName: 'Components',
     description: 'Technical specifications and documentation for all PatternFly components.',
     matches: {
       section: ['components'],
@@ -30,7 +30,7 @@ const COLLECTIONS: Collection[] = [
   },
   {
     name: 'Charts',
-    displayName: 'Charts Collection',
+    displayName: 'Charts',
     description: 'Data visualization components, charts, and related guidelines.',
     matches: {
       section: ['charts'],
@@ -39,7 +39,7 @@ const COLLECTIONS: Collection[] = [
   },
   {
     name: 'Layouts',
-    displayName: 'Layouts Collection',
+    displayName: 'Layouts',
     description: 'Structural layout components and structural guidelines.',
     matches: {
       section: ['layouts'],
@@ -48,7 +48,7 @@ const COLLECTIONS: Collection[] = [
   },
   {
     name: 'Forms',
-    displayName: 'Forms Collection',
+    displayName: 'Forms',
     description: 'Form controls, inputs, and related form documentation.',
     matches: {
       category: ['forms']

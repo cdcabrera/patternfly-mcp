@@ -10,12 +10,20 @@ import {
 } from './mcpSdk';
 import { memo } from './server.caching';
 import { findClosest } from './server.search';
-import { getOptions, runWithOptions } from './options.context';
-import { getPatternFlyContextManagementResources } from './patternFly.getResourcesContext';
-import { formatSummaryFullContent, nextCursor } from './resource.helpers';
-import { DEFAULT_OPTIONS } from './options.defaults';
 import { assertInput, assertInputStringShaHex } from './server.assertions';
 import { stringJoin } from './server.helpers';
+import { getOptions, runWithOptions } from './options.context';
+import {
+  type ContextManagementCollectionRecord,
+  type ContextManagementPatternFlyIdRecord,
+  getPatternFlyContextManagementResources
+} from './patternFly.getResourcesContext';
+import {
+  formatResourceContent,
+  formatSummaryFullContent,
+  nextCursor
+} from './resource.helpers';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -126,6 +134,132 @@ const uriDetailComplete: McpResourceMetadataCompleteMemo = async (detail: string
 uriDetailComplete.memo = memo(uriDetailComplete);
 
 /**
+ * Empty resource template.
+ *
+ * @param params
+ * @param params.collection - Collection for loading resources.
+ * @param params.passedUri - URI of the resource.
+ * @returns Empty resource contents.
+ */
+const resourceEmptyTemplate = ({
+  collection,
+  passedUri
+}: { collection: ContextManagementCollectionRecord; passedUri: URL }) => {
+  const content = stringJoin.newline(
+    `# ${collection.displayName} (Empty collection)`,
+    '',
+    collection.description,
+    '',
+    `## Collection record summary (0/0):`,
+    'No records found in this collection.'
+  );
+
+  return {
+    contents: [{
+      uri: passedUri.toString(),
+      mimeType: 'text/markdown',
+      text: formatResourceContent(content, {
+        frontMatter: { name: collection.name }
+      })
+    }]
+  };
+};
+
+/**
+ * Summary resource template.
+ *
+ * @param params
+ * @param params.collection - Collection for loading resources.
+ * @param params.records - Records for loading resources.
+ * @param params.detail - Detail level for resources.
+ * @param params.passedUri - URI of the resource.
+ */
+const resourceSummaryTemplate = ({
+  collection,
+  records,
+  detail,
+  passedUri
+}: { collection: ContextManagementCollectionRecord; records: ContextManagementPatternFlyIdRecord[]; detail: 'summary' | 'full'; passedUri: URL }) => {
+  const updatedRecords = records.slice(0, 10);
+
+  const content = stringJoin.newline(
+    `# ${collection.displayName} (Summary collection)`,
+    '',
+    collection.description,
+    '',
+    `## Collection ${records.length === 1 ? 'record' : 'records'} summary (${updatedRecords.length}/${records.length}):`,
+    ...updatedRecords.map(record => `- [${record.displayName} ${record.displayCategory} (${record.version})](${record.uri})`)
+  );
+
+  return {
+    contents: [{
+      uri: passedUri.toString(),
+      mimeType: 'text/markdown',
+      text: formatSummaryFullContent(content, {
+        url: collection.uri,
+        detailType: detail,
+        frontMatter: { name: collection.name },
+        summaryLength: content.length
+      })
+    }]
+  };
+};
+
+/**
+ * Summary resource template.
+ *
+ * @param params
+ * @param params.collection - Collection for loading resources.
+ * @param params.records - Records for loading resources.
+ * @param params.detail - Detail level for resources.
+ * @param params.passedUri - URI of the resource.
+ */
+const resourceFullTemplate = ({
+  collection,
+  records,
+  detail,
+  passedUri
+}: { collection: ContextManagementCollectionRecord; records: ContextManagementPatternFlyIdRecord[]; detail: 'summary' | 'full'; passedUri: URL }) => {
+  const content = [
+    `# ${collection.displayName} (Collection)`,
+    '',
+    collection.description,
+    '',
+    `## Collection ${records.length === 1 ? 'record' : 'records'}  (${records.length}/${records.length}):`
+  ];
+
+  const categoriesSeen = new Set<string>();
+  const collectionsContent: string[] = [];
+
+  records.forEach(record => {
+    if (!categoriesSeen.has(record.displayCategory)) {
+      categoriesSeen.add(record.displayCategory);
+      collectionsContent.push(`### ${record.displayCategory}`);
+    }
+
+    collectionsContent.push(`- [${record.displayName} (${record.version})](${record.uri})`);
+  });
+
+  content.push(...collectionsContent);
+
+  return {
+    contents: [{
+      uri: passedUri.toString(),
+      mimeType: 'text/markdown',
+      text: formatSummaryFullContent(
+        stringJoin.newline(...content),
+        {
+          url: collection.uri,
+          detailType: detail,
+          frontMatter: { name: collection.name },
+          summaryLength: content.length
+        }
+      )
+    }]
+  };
+};
+
+/**
  * Main resource callback.
  *
  * @param passedUri - URI of the resource.
@@ -141,20 +275,30 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     inputDisplayName: 'id'
   });
 
-  // const records = await filterPatternFlyContext.memo({ id });
   const { collectionsIndex, collectionsIdIndex } = await getPatternFlyContextManagementResources.memo();
-  const collection = collectionsIndex.get(id as string);
-
-  // const record = records.get(id);
+  const collection = collectionsIndex.get(id);
 
   assertInput(
     collection !== undefined,
-    () => `Collection not found for ID: ${id}`
+    () => `No collection found for "${id}". Try using a different ID.`
   );
 
-  const collectionRecords = collectionsIdIndex.get(id as string) || [];
-  const sortedRecords = collectionRecords.toSorted((a, b) => a.displayName.localeCompare(b.displayName));
+  const collectionRecords = collectionsIdIndex.get(id) || [];
+  // Sort by version, then name for scenarios where collections span versions.
+  const records = collectionRecords
+    .toSorted((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }) || a.displayName.localeCompare(b.displayName));
 
+  if (records.length > 0) {
+    return resourceEmptyTemplate({ collection, passedUri });
+  }
+
+  if (normalizedDetail === 'summary') {
+    return resourceSummaryTemplate({ collection, records, detail: normalizedDetail, passedUri });
+  }
+
+  return resourceFullTemplate({ collection, records, detail: normalizedDetail, passedUri });
+
+  /*
   const content = [
     `# ${collection.displayName}`,
     '',
@@ -200,6 +344,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       }
     ]
   };
+  */
 };
 
 /**

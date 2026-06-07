@@ -78,8 +78,8 @@ const formatSummaryFullContent = (
     descTruncate?: string;
     descTruncateCode?: string;
     detailType?: 'full' | 'summary';
-    frontMatter?: Record<string, string | undefined>;
-    frontMatterPrefix?: string;
+    frontMatter?: Record<string, string | undefined> | undefined;
+    frontMatterPrefix?: string | undefined;
     summaryLength?: number;
     url?: string | undefined;
   } = {}
@@ -170,6 +170,24 @@ const formatSummaryFullContent = (
     updatedLink
   );
 };
+
+/**
+ * Format the given resource content by applying front matter metadata and an optional prefix.
+ *
+ * @param content - Content to be formatted.
+ * @param options - Formatting options.
+ * @param [options.frontMatter] - Key-value pairs. See {@link formatSummaryFullContent}.
+ * @param [options.frontMatterPrefix] - An optional prefix. See {@link formatSummaryFullContent}.
+ * @return The formatted resource content.
+ */
+const formatResourceContent = (content: string, {
+  frontMatter,
+  frontMatterPrefix
+}: { frontMatter?: Record<string, string | undefined>; frontMatterPrefix?: string; }) => formatSummaryFullContent(content, {
+  url: undefined,
+  frontMatter,
+  frontMatterPrefix
+});
 
 /**
  * Creates an object containing methods for encoding and decoding cursor values.
@@ -288,6 +306,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
 export {
   encodeDecodeCursor,
   formatSummaryFullContent,
+  formatResourceContent,
   nextCursor,
   paramCompletion,
   parseFrontMatter

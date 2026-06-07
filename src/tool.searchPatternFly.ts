@@ -114,27 +114,35 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       }
 
       // 2. Handle Individual Records (Docs/Components)
-      const { isComponent, isSchemasAvailable } = record.lookup();
+      /*
+      const { isComponent } = record.lookup();
 
       if (isComponent) {
+        /*
         let updatedName = `${record.displayName} - Technical Overview`;
+        // Review removing this desc
         let updatedDesc = `Component API reference for ${record.displayName}.`;
 
         if (isSchemasAvailable) {
           updatedName = `${record.displayName} - Technical Specs`;
+          // Review removing this desc
           updatedDesc = `Component API reference, property definitions, and JSON schema for ${record.displayName}.`;
         }
+        * /
+
+        // const updatedLabel = isSchemasAvailable ? 'Technical Specs' : `Technical Overview`;
 
         results.set(uri, {
           type: 'resource_link',
           uri,
-          name: `${updatedName} (${record.version})`,
-          description: updatedDesc,
+          name: `${record.displayName} - ${record.category} (${record.version})`,
+          description: record.description,
           mimeType: 'text/markdown'
         });
 
         return;
       }
+      */
 
       results.set(uri, {
         type: 'resource_link',
