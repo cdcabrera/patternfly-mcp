@@ -1,4 +1,3 @@
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   ResourceTemplate,
   type ListResourcesCallback
@@ -9,7 +8,7 @@ import {
   type McpResourceMetadataComplete
 } from './mcpSdk';
 import { memo } from './server.caching';
-import { buildSearchString, stringJoin } from './server.helpers';
+import { stringJoin } from './server.helpers';
 import {
   assertInput,
   assertInputStringShaHex
@@ -17,6 +16,7 @@ import {
 import { findClosest } from './server.search';
 import { processDocsFunction } from './server.getResources';
 import { getOptions, runWithOptions } from './options.context';
+import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyComponentSchema,
   getPatternFlyContextManagementResources,
@@ -30,7 +30,6 @@ import {
   nextCursor
 } from './resource.helpers';
 import { uriDetailComplete } from './resource.patternFlyCollections';
-import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Name of the resource.
@@ -55,7 +54,7 @@ const CONFIG = {
   description: `A list of all PatternFly records including documentation and component technical specs. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown',
   annotations: {
-    priority: 0.9,
+    priority: 1.0,
     audience: ['assistant' as const]
   }
 };

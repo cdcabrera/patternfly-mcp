@@ -48,7 +48,7 @@ const CONFIG = {
   description: `A list of PatternFly collections for resources and components. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown',
   annotations: {
-    priority: 1.0,
+    priority: 0.9,
     audience: ['assistant' as const]
   }
 };
@@ -300,54 +300,6 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   }
 
   return resourceFullTemplate({ collection, records, detail: normalizedDetail, passedUri });
-
-  /*
-  const content = [
-    `# ${collection.displayName}`,
-    '',
-    collection.description,
-    '',
-    `Found ${collectionRecords.length} related PatternFly resources.`,
-    'Use the links below to access detailed technical documentation and specifications.',
-    ''
-  ];
-
-  if (sortedRecords.length > 0) {
-    const categoriesSeen = new Set<string>();
-    const collectionsContent: string[] = [];
-
-    sortedRecords.forEach(record => {
-      const isTechSpec = record.lookup().isComponent;
-      // this should be coming from the displayCategory helper in getResourcesContext
-      const updatedCategory = isTechSpec ? 'Technical Specifications' : record.displayCategory;
-
-      if (!categoriesSeen.has(updatedCategory)) {
-        categoriesSeen.add(updatedCategory);
-        collectionsContent.push(`### ${updatedCategory}`);
-      }
-
-      collectionsContent.push(`- [${record.displayName}](${record.uri})`);
-    });
-
-    content.push(...collectionsContent);
-  }
-
-  return {
-    contents: [
-      {
-        uri: passedUri.toString(),
-        mimeType: 'text/markdown',
-        text: formatSummaryFullContent(stringJoin.newline(...content), {
-          url: collection.uri,
-          detailType: normalizedDetail,
-          frontMatter: {
-            name: collection.name
-          }
-        })
-      }
-    ]
-  };
-  */
 };
 
 /**

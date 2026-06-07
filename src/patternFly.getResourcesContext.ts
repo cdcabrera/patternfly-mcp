@@ -3,7 +3,7 @@ import {
   getComponentSchema
 } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
-import {generateHash, listIncrementalCombinations} from './server.helpers';
+import { generateHash, listIncrementalCombinations } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext
@@ -15,7 +15,6 @@ import {
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
 import { COLLECTIONS, type Collection } from './docs.collections';
-import {map} from "zod";
 
 /**
  * Map of PatternFly component names to their versioned metadata.
@@ -268,24 +267,24 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
  */
 getPatternFlyComponentNames.memo = memo(getPatternFlyComponentNames);
 
-/*
-const getPatternFlyContextManagementCollection = (collection: ContextManagementCollectionRecord, record: ContextManagementPatternFlyIdRecord) => {
-  // record.section === 'components' && record.category === 'react'
-  // const isComponent = collection?.name?.toLowerCase() === 'components';
-  // const isComponent = (collection?.name?.toLowerCase()?.includes('components') && collection?.name?.toLowerCase()?.includes('react')) || false;
-  const isComponent =
-
-  return {
-    isComponent,
-    isSchemasAvailable
-  };
-};
-*/
-
+/**
+ * Retrieve a lookup object associated with records.
+ *
+ * Combines metadata with additional information derived from the provided input parameters.
+ *
+ * @param params - Input parameters.
+ * @param params.id - Identifier for locating a specific collection.
+ * @param params.record - The record containing context management information.
+ * @param params.collections - Map of collection records, keyed by string identifiers.
+ * @param params.metadata - Metadata to be included in the lookup object.
+ *
+ * @returns A lookup object that can include metadata, collection data, and a flag
+ * indicating if the target is a React component within the "components" section.
+ */
 const getPatternFlyContextManagementLookup = (
   {
     id, record, collections, metadata
-  }:{ id?: string | undefined; record: ContextManagementPatternFlyIdRecord; collections?: Map<string, ContextManagementCollectionRecord>, metadata: Record<string, unknown> }
+  }:{ id: string | undefined; record: ContextManagementPatternFlyIdRecord; collections: Map<string, ContextManagementCollectionRecord>, metadata: Record<string, unknown> }
 ): ContextManagementRecordLookup => ({
   ...metadata,
   collection: (id && collections?.get(id)) || undefined,
@@ -339,7 +338,9 @@ const setCollectionDisplayLabel = (
  * Core Resource Discovery Engine
  *
  * @param contextPathOverride
- * @param collectionProps - Optional collection properties to include in the resource discovery
+ * @param options - Optional configuration options.
+ * @param [options.collectionProps] - Collection properties to include in the resource discovery
+ * @returns Context management resources.
  */
 const getPatternFlyContextManagementResources = async (
   contextPathOverride?: string, { collectionProps = ['section', 'category', 'source'] }: { collectionProps?: string[] } = {}
@@ -405,31 +406,6 @@ const getPatternFlyContextManagementResources = async (
         recordCollectionIndex.set(id, combo);
       });
 
-      // Review an "every variation" approach to collection IDs
-      /*
-      const recordCollectionSourceValue = [record.source];
-      const recordCollectionSourceId = generateHash(`${recordCollectionSourceValue.join(':')}`);
-
-      const recordCollectionSectionValue = [record.section];
-      const recordCollectionSectionId = generateHash(`${recordCollectionSectionValue.join(':')}`);
-
-      const recordCollectionCategoryValue = [record.category];
-      const recordCollectionCategoryId = generateHash(`${recordCollectionCategoryValue.join(':')}`);
-
-      const recordCollectionValue = [record.section, record.category];
-      const recordCollectionId = generateHash(`${recordCollectionValue.join(':')}`);
-
-      const recordCollectionIds = [groupCollectionId, recordCollectionSectionId, recordCollectionCategoryId, recordCollectionId];
-
-      const recordCollectionIndex = new Map<string, string[]>();
-
-      recordCollectionIndex.set(recordCollectionSourceId, recordCollectionSourceValue);
-      recordCollectionIndex.set(groupCollectionId, [groupName]);
-      recordCollectionIndex.set(recordCollectionSectionId, recordCollectionSectionValue);
-      recordCollectionIndex.set(recordCollectionCategoryId, recordCollectionCategoryValue);
-      recordCollectionIndex.set(recordCollectionId, recordCollectionValue);
-      */
-
       const normalizedRecord: ContextManagementPatternFlyIdRecord = {
         id: recordId,
         recordType: 'record',
@@ -444,10 +420,8 @@ const getPatternFlyContextManagementResources = async (
         section: recordSection,
         displayName: recordDisplayName,
         displayCategory: setCategoryDisplayLabel({ ...record, isSchemasAvailable }),
-        // displayCategory: setCategoryDisplayLabel(record as PatternFlyMcpDocsCatalogDoc),
         description: recordDescription,
         path: record.path || undefined,
-        // isSchemasAvailable: Boolean(isSchemasAvailable),
         searchString: `${groupName} ${recordDisplayName} ${recordDescription}`.toLowerCase(),
         lookup: id =>
           getPatternFlyContextManagementLookup({ id, record: normalizedRecord, collections: collectionsIndex, metadata })
@@ -467,35 +441,15 @@ const getPatternFlyContextManagementResources = async (
       }
       recordsList.push(normalizedRecord);
 
-      /*
-      // Create series/collection metadata if it doesn't exist.
-      if (!collectionsIndex.has(groupCollectionId)) {
-        collectionsIndex.set(groupCollectionId, {
-          id: groupCollectionId,
-          // consider adding a "series" recordType. current behavior is of existing tools is around showing "series" results.
-          recordType: 'collection',
-          name: groupName,
-          displayName: groupDisplayName,
-          description: `Series of ${groupDisplayName}.`,
-          uri: `patternfly://collections/${groupCollectionId}`,
-          // series: [record],
-          searchString: `${groupName} ${groupDisplayName} series`.toLowerCase()
-          // lookUp: (id) => collectionsIndex.get(id)
-        });
-      }*/
-
       // Create collection metadata if it doesn't exist. Map records to collection IDs.
       recordCollectionIds.forEach(id => {
         if (!collectionsIdIndex.has(id)) {
-          // collectionsIdIndex.set(id, []);
-          // if (recordCollectionIndex.has(id)) {
           collectionsIndex.set(id, {
             ...setCollectionDisplayLabel(recordCollectionIndex.get(id) || [], normalizedRecord),
             id,
             recordType: 'collection',
             uri: `patternfly://collections/${id}`
           });
-          // }
         }
 
         collectionsIdIndex.get(id)?.push(normalizedRecord);
@@ -505,32 +459,10 @@ const getPatternFlyContextManagementResources = async (
 
   recordsList.sort((a, b) => b.version.localeCompare(a.version, undefined, { numeric: true }) || a.name.localeCompare(b.name));
 
-  // Collection lookup. Review allowing a custom parser into the lookup function.
-  /*
-  const collectionsLookup = (id: string, record?: ContextManagementPatternFlyIdRecord): ContextManagementCollectionLookup => {
-    const collection = collectionsIndex.get(id);
-
-    return {
-      collection,
-      ...getPatternFlyContextManagementCollection(collectionsIndex.get(id), record)
-    };
-  };
-  */
-
-  /*
-  const recordLookup = (record: ContextManagementRecord): ContextManagementRecordLookup => {
-    return {
-      record,
-      ...getPatternFlyContextManagementRecord(record)
-    };
-  };
-   */
-
   return {
     idIndex: hashIndex,
     collectionsIdIndex,
     collectionsIndex,
-    // collectionsLookup,
     nameIndex,
     pathIndex,
     recordsList,

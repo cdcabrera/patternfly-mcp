@@ -15,6 +15,8 @@ import { findClosest } from './server.search';
  * Searches for PatternFly resources using the optimized context management system.
  * Returns MCP Resource Links for both specific documents and collection hubs.
  *
+ * @note Review moving JSON schemas to having their own record IDs.
+ *
  * @param options - Optional configuration options (defaults to OPTIONS)
  * @returns MCP tool tuple [name, schema, callback]
  */
@@ -113,37 +115,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         return;
       }
 
-      // 2. Handle Individual Records (Docs/Components)
-      /*
-      const { isComponent } = record.lookup();
-
-      if (isComponent) {
-        /*
-        let updatedName = `${record.displayName} - Technical Overview`;
-        // Review removing this desc
-        let updatedDesc = `Component API reference for ${record.displayName}.`;
-
-        if (isSchemasAvailable) {
-          updatedName = `${record.displayName} - Technical Specs`;
-          // Review removing this desc
-          updatedDesc = `Component API reference, property definitions, and JSON schema for ${record.displayName}.`;
-        }
-        * /
-
-        // const updatedLabel = isSchemasAvailable ? 'Technical Specs' : `Technical Overview`;
-
-        results.set(uri, {
-          type: 'resource_link',
-          uri,
-          name: `${record.displayName} - ${record.category} (${record.version})`,
-          description: record.description,
-          mimeType: 'text/markdown'
-        });
-
-        return;
-      }
-      */
-
+      // 2. Handle Individual Records
       results.set(uri, {
         type: 'resource_link',
         uri,
