@@ -322,11 +322,19 @@ const filterPatternFlyContext = async (
     const collectionRecords = resources.collectionsIdIndex.get(normalizedFilters.collectionId);
 
     if (collectionRecords) {
-      collectionRecords.forEach(record => {
+      for (const record of collectionRecords) {
+        if (signal?.aborted) {
+          if (signalError) {
+            throw signalError;
+          }
+
+          break;
+        }
+
         if (isMatch(record)) {
           results.set(record.id, record);
         }
-      });
+      }
 
       if (results.size > 0) {
         return results;
@@ -341,13 +349,21 @@ const filterPatternFlyContext = async (
     const ids = resources.nameIndex.get(nameToTry);
 
     if (ids) {
-      ids.forEach(id => {
+      for (const id of ids) {
+        if (signal?.aborted) {
+          if (signalError) {
+            throw signalError;
+          }
+
+          break;
+        }
+
         const record = idIndex.get(id);
 
         if (record && isMatch(record)) {
           results.set(record.id, record);
         }
-      });
+      }
 
       if (results.size > 0) {
         return results;
