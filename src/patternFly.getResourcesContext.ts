@@ -3,7 +3,7 @@ import {
   getComponentSchema
 } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
-import { generateHash } from './server.helpers';
+import {generateHash, listIncrementalCombinations} from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext
@@ -14,11 +14,8 @@ import {
   type PatternFlyMcpDocsCatalog,
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
-
-/**
- * Derive the component schema type from @patternfly/patternfly-component-schemas
- */
-type PatternFlyComponentSchema = Awaited<ReturnType<typeof getPatternFlyComponentSchema>>;
+import { COLLECTIONS, type Collection } from './docs.collections';
+import {map} from "zod";
 
 /**
  * Map of PatternFly component names to their versioned metadata.
@@ -276,25 +273,57 @@ const getPatternFlyContextManagementLookup = (
 });
 
 /**
- * Temporary collection metadata. Review adding in something like setCategoryDisplayLabel or the `docs.collections` data.
+ * Generate collection metadata from configuration or record metadata.
  *
- * @param values
+ * @param values - Array of string values to derive collection label from.
+ * @param record - Record containing metadata for the PatternFly resource.
+ * @param options - Optional configuration options.
+ * @param options.collections - Custom collection configuration to use instead of default.
  */
-const setCollectionDisplayLabel = (values: string[]) => (
-  {
-    name: values.join(' - '),
-    displayName: values.join(' - '),
-    description: `Series of ${values.join(' - ')}`,
-    searchString: values.join(' ').toLowerCase()
+const setCollectionDisplayLabel = (
+  values: string[],
+  record: ContextManagementPatternFlyIdRecord,
+  { collections = COLLECTIONS }: { collections?: Collection[] } = {}
+) => {
+  // Try to find a match to `collections` config
+  const match = collections.find(collection => Object.entries(collection.matches).every(([key, matchValues]) => {
+    const recordValue = String(record[key as keyof ContextManagementPatternFlyIdRecord] || '').toLowerCase();
+    const matchArray = Array.isArray(matchValues)
+      ? matchValues.map(value => String(value).toLowerCase())
+      : [String(matchValues).toLowerCase()];
+
+    return matchArray.includes(recordValue);
+  }));
+
+  if (match) {
+    return {
+      name: match.name,
+      displayName: match.displayName,
+      description: match.description,
+      searchString: `${match.name} ${match.displayName} ${match.description}`.toLowerCase()
+    };
   }
-);
+
+  // Fallback to dynamic generation if no config match is found
+  const label = values.map(value => value.charAt(0).toUpperCase() + value.slice(1)).join(' - ');
+
+  return {
+    name: label,
+    displayName: `${label} Collection`,
+    description: `Series of PatternFly resources under "${label}."`,
+    searchString: values.join(' ').toLowerCase()
+  };
+};
 
 /**
  * Core Resource Discovery Engine
  *
  * @param contextPathOverride
+ * @param collectionProps - Optional collection properties to include in the resource discovery
  */
-const getPatternFlyContextManagementResources = async (contextPathOverride?: string): Promise<ContextManagementResources> => {
+const getPatternFlyContextManagementResources = async (
+  contextPathOverride?: string, { collectionProps = ['section', 'category', 'source'] }: { collectionProps?: string[] } = {}
+): Promise<ContextManagementResources> => {
   const versionContext = await getPatternFlyVersionContext.memo(contextPathOverride);
   const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
   const originalDocs = await getPatternFlyDocsCatalog.memo();
@@ -328,14 +357,35 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       };
 
       const recordId = generateHash(record.path || `${groupName}:${record.version}:${record.section}:${record.category}:${record.pathSlug}:${record.source}`.toLowerCase());
-      // const isSchemasAvailable = versionContext.latestSchemasVersion === record.version && componentNamesByVersion.get(record.version)?.[name]?.isSchemasAvailable;
       const recordVersion = (record.version || 'unknown').toLowerCase();
       const recordDisplayName = record.displayName || groupDisplayName;
       const recordSection = record.section.toLowerCase();
       const recordCategory = record.category.toLowerCase();
       const recordDescription = record.description || '';
 
+      // Collect collection values
+      const rawCollectionValues = Object.entries(record)
+        .filter(([key, _value]) => collectionProps.includes(key))
+        .map(([_key, value]) => String(value).toLowerCase());
+
+      const combinations = listIncrementalCombinations(rawCollectionValues).filter(arr => arr.length > 0);
+
+      // Always set a series ID is always first
+      const recordCollectionIds = [groupCollectionId];
+      const recordCollectionIndex = new Map<string, string[]>();
+
+      recordCollectionIndex.set(groupCollectionId, [groupName]);
+
+      // Set generated collection IDs
+      combinations.forEach(combo => {
+        const id = generateHash(combo.join(':')).toLowerCase();
+
+        recordCollectionIds.push(id);
+        recordCollectionIndex.set(id, combo);
+      });
+
       // Review an "every variation" approach to collection IDs
+      /*
       const recordCollectionSourceValue = [record.source];
       const recordCollectionSourceId = generateHash(`${recordCollectionSourceValue.join(':')}`);
 
@@ -357,12 +407,13 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
       recordCollectionIndex.set(recordCollectionSectionId, recordCollectionSectionValue);
       recordCollectionIndex.set(recordCollectionCategoryId, recordCollectionCategoryValue);
       recordCollectionIndex.set(recordCollectionId, recordCollectionValue);
+      */
 
       const normalizedRecord: ContextManagementPatternFlyIdRecord = {
         id: recordId,
         recordType: 'record',
         uri: `patternfly://records/${recordId}`,
-        collectionIds: recordCollectionIds,
+        collectionIds: [...new Set(recordCollectionIds)],
         name: recordDisplayName.toLowerCase(),
         seriesId: groupCollectionId,
         seriesName: groupName,
@@ -412,16 +463,15 @@ const getPatternFlyContextManagementResources = async (contextPathOverride?: str
 
       recordCollectionIds.forEach(id => {
         if (!collectionsIdIndex.has(id)) {
-          collectionsIdIndex.set(id, []);
-
-          if (recordCollectionIndex.has(id)) {
-            collectionsIndex.set(id, {
-              ...setCollectionDisplayLabel(recordCollectionIndex.get(id) as string[]),
-              id,
-              recordType: 'collection',
-              uri: `patternfly://collections/${id}`
-            });
-          }
+          // collectionsIdIndex.set(id, []);
+          // if (recordCollectionIndex.has(id)) {
+          collectionsIndex.set(id, {
+            ...setCollectionDisplayLabel(recordCollectionIndex.get(id) || [], normalizedRecord),
+            id,
+            recordType: 'collection',
+            uri: `patternfly://collections/${id}`
+          });
+          // }
         }
 
         collectionsIdIndex.get(id)?.push(normalizedRecord);
