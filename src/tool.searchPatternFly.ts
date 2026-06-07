@@ -54,7 +54,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     const { exactMatches, remainingMatches, searchResults } = await searchPatternFlyContext.memo(
       query,
       { version: updatedVersion },
-      { allowWildCardAll, maxResults: options.minMax.resourceSearches.max }
+      { allowWildCardAll, dynamicFilter: true, maxResults: options.minMax.resourceSearches.max }
     );
 
     assertInput(
@@ -113,10 +113,9 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         return;
       }
 
-      // const isComponent = record.collectionIds.some(collectionId => collectionsLookup(collectionId)?.isComponent);
+      // 2. Handle Individual Records (Docs/Components)
       const { isComponent, isSchemasAvailable } = record.lookup();
 
-      // 2. Handle Individual Records (Docs/Components)
       if (isComponent) {
         let updatedName = `${record.displayName} - Technical Overview`;
         let updatedDesc = `Component API reference for ${record.displayName}.`;
