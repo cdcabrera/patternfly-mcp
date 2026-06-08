@@ -12,11 +12,12 @@ exports[`searchPatternFlyTool, callback should have a specific markdown format: 
 [
   {
     "text": "# Search results for PatternFly version "v6" and "button".
-Found 7 exact resources. Use the attached resources to access and read full content.",
+Found 2 collections with 5 related resources. Use the attached resources to access and read full content.",
     "type": "text",
   },
   {
     "description": "A resource collection series for Button",
+    "groupId": "123456",
     "mimeType": "text/markdown",
     "name": "Button (Collection)",
     "type": "resource_link",
@@ -24,6 +25,7 @@ Found 7 exact resources. Use the attached resources to access and read full cont
   },
   {
     "description": "Design Guidelines",
+    "groupId": "123456",
     "mimeType": "text/markdown",
     "name": "Button - Design (v6)",
     "type": "resource_link",
@@ -31,6 +33,7 @@ Found 7 exact resources. Use the attached resources to access and read full cont
   },
   {
     "description": "Component JSON schema with property definitions for Button.",
+    "groupId": "123456",
     "mimeType": "text/markdown",
     "name": "Button - JSON Schema (v6)",
     "type": "resource_link",
@@ -38,6 +41,7 @@ Found 7 exact resources. Use the attached resources to access and read full cont
   },
   {
     "description": "A resource collection series for Lorem Button",
+    "groupId": "654321",
     "mimeType": "text/markdown",
     "name": "Lorem Button (Collection)",
     "type": "resource_link",
@@ -45,6 +49,7 @@ Found 7 exact resources. Use the attached resources to access and read full cont
   },
   {
     "description": "Design Guidelines",
+    "groupId": "654321",
     "mimeType": "text/markdown",
     "name": "Lorem Button - Design (v6)",
     "type": "resource_link",
@@ -52,6 +57,7 @@ Found 7 exact resources. Use the attached resources to access and read full cont
   },
   {
     "description": "Design Guidelines",
+    "groupId": "654321",
     "mimeType": "text/markdown",
     "name": "Lorem Button - Guidelines (v6)",
     "type": "resource_link",
@@ -59,6 +65,7 @@ Found 7 exact resources. Use the attached resources to access and read full cont
   },
   {
     "description": "Component JSON schema with property definitions for Lorem Button.",
+    "groupId": "654321",
     "mimeType": "text/markdown",
     "name": "Lorem Button - JSON Schema (v6)",
     "type": "resource_link",
