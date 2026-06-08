@@ -135,6 +135,11 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     },
   },
   "toolMemoOptions": {
+    "mcpResources": {
+      "cacheErrors": false,
+      "cacheLimit": 10,
+      "expire": 180000,
+    },
     "searchPatternFlyDocs": {
       "cacheErrors": false,
       "cacheLimit": 10,

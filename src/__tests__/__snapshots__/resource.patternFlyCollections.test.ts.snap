@@ -1,0 +1,40 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`patternFlyCollectionsResource should have a consistent return structure: structure 1`] = `
+{
+  "config": true,
+  "handler": [Function],
+  "name": "patternfly-collections",
+  "uri": ResourceTemplate {
+    "_callbacks": {
+      "complete": {
+        "detail": [Function],
+        "id": [Function],
+      },
+      "list": [Function],
+    },
+    "_uriTemplate": UriTemplate {
+      "parts": [
+        "patternfly://collections/",
+        {
+          "exploded": false,
+          "name": "id",
+          "names": [
+            "id",
+          ],
+          "operator": "",
+        },
+        {
+          "exploded": false,
+          "name": "detail",
+          "names": [
+            "detail",
+          ],
+          "operator": "?",
+        },
+      ],
+      "template": "patternfly://collections/{id}{?detail}",
+    },
+  },
+}
+`;

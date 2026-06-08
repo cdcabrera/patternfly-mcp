@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`getPatternFlyContextManagementResources should return multiple organized facets: properties 1`] = `
+[
+  "idIndex",
+  "collectionsIdIndex",
+  "collectionsIndex",
+  "nameIndex",
+  "pathIndex",
+  "recordsList",
+  "latestVersion",
+  "availableVersions",
+]
+`;

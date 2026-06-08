@@ -1,8 +1,8 @@
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
-import { patternFlyDocsResource, listResources, resourceCallback } from '../resource.patternFlyDocs';
+import { patternFlyRecordsResource, listResources, resourceCallback } from '../resource.patternFlyRecords';
 import { isPlainObject } from '../server.helpers';
-import { getPatternFlyContextManagementResources } from '../patternFly.getResources';
-import { filterPatternFlyContext } from '../patternFly.search';
+import { getPatternFlyContextManagementResources } from '../patternFly.getResourcesContext';
+import { filterPatternFlyContext } from '../patternFly.searchContext';
 import { processDocsFunction } from '../server.getResources';
 
 jest.mock('../patternFly.getResources', () => ({
@@ -17,9 +17,9 @@ jest.mock('../server.getResources', () => ({
   processDocsFunction: { memo: jest.fn() }
 }));
 
-describe('patternFlyDocsResource', () => {
+describe('patternFlyRecordsResource', () => {
   it('should have a consistent return structure', () => {
-    const resource = patternFlyDocsResource();
+    const resource = patternFlyRecordsResource();
 
     expect({
       name: resource[0],
@@ -30,7 +30,7 @@ describe('patternFlyDocsResource', () => {
   });
 
   it('should only register if contextManagement is true', () => {
-    const resource = patternFlyDocsResource();
+    const resource = patternFlyRecordsResource();
     const meta = resource[5] as any;
 
     expect(meta.shouldRegister?.({ contextManagement: false } as any)).toBe(false);

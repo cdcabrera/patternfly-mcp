@@ -5,8 +5,8 @@ import {
   resourceCallback
 } from '../resource.patternFlyCollections';
 import { isPlainObject } from '../server.helpers';
-import { getPatternFlyContextManagementResources } from '../patternFly.getResources';
-import { filterPatternFlyContext } from '../patternFly.search';
+import { getPatternFlyContextManagementResources } from '../patternFly.getResourcesContext';
+import { filterPatternFlyContext } from '../patternFly.searchContext';
 
 jest.mock('../patternFly.getResources', () => ({
   getPatternFlyContextManagementResources: {
