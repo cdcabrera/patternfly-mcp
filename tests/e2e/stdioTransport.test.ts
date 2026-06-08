@@ -600,17 +600,15 @@ describe('token-saver mode', () => {
 
     const [summary, ...resources] = response?.result?.content || [];
 
-    console.warn(summary);
-    console.warn(resources);
-
     expect(summary.type).toBe('text');
 
     resources.forEach((item: any) => {
       expect(item.type).toBe('resource_link');
-      expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas|components)\//);
+      expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas)\//);
     });
 
-    const link = resources.find((item: any) => item.uri.startsWith('patternfly://docs/'));
+    // const link = resources.find((item: any) => item.uri.startsWith('patternfly://docs/'));
+    const link = resources.find((item: any) => item.uri.startsWith('patternfly://docs/') && !item.name.includes('Collection'));
 
     expect(link).toBeDefined();
 

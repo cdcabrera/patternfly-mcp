@@ -568,7 +568,7 @@ describe('token-saver mode, HTTP transport', () => {
 
     resources.forEach((item: any) => {
       expect(item.type).toBe('resource_link');
-      expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas|components)\//);
+      expect(item.uri).toMatch(/^patternfly:\/\/(docs|schemas)\//);
     });
   });
 });
