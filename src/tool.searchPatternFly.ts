@@ -1,0 +1,199 @@
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+import { type McpTool } from './mcpSdk';
+import { stringJoin } from './server.helpers';
+import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
+import { findClosest } from './server.search';
+import { getOptions } from './options.context';
+import { searchPatternFly } from './patternFly.search';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
+import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+
+/**
+ * searchPatternFlyDocs tool function
+ *
+ * Searches for PatternFly resources. Returns MCP Resource Links for both
+ * specific documents, JSON schemas, and collections.
+ *
+ * @note This is the initial update to confirm the concepts for a larger set of
+ * updates that tie into the concepts of `collections` and `records`. The full
+ * optimizations include API work, skills-as-tools, refactoring getResources
+ * search, and MCP resources.
+ *
+ * @param options - Optional configuration options (defaults to OPTIONS)
+ * @returns MCP tool tuple [name, schema, callback]
+ */
+const searchPatternFlyTool = (options = getOptions()): McpTool => {
+  const callback = async (args: any = {}) => {
+    const { query: searchQuery, version } = args;
+    const isVersion = typeof version === 'string' && version.length > 0;
+
+    assertInputStringLength(searchQuery, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'searchQuery'
+    });
+
+    if (isVersion) {
+      assertInputStringLength(version, {
+        max: options.minMax.inputStrings.max,
+        min: 2,
+        inputDisplayName: 'version'
+      });
+
+      assertInputStringNumberEnumLike(version, options.patternflyOptions.availableSearchVersions, {
+        inputDisplayName: 'version'
+      });
+    }
+
+    const { keywordsIndex, latestVersion } = await getPatternFlyMcpResources.memo();
+    const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
+    const updatedVersion = normalizedVersion || latestVersion;
+
+    const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
+      searchQuery,
+      { version: updatedVersion },
+      { allowWildCardAll: true, dynamicFilter: true, maxResults: options.minMax.toolSearches.max }
+    );
+
+    assertInput(
+      !isSearchWildCardAll || (isSearchWildCardAll && searchResults.length > 0),
+      stringJoin.newline(
+        `Internal Search Error: The server failed to retrieve PatternFly resources for query "${searchQuery}"`,
+        'Ensure documentation resources are loaded or restart the server.'
+      ),
+      ErrorCode.InternalError
+    );
+
+    if (!isSearchWildCardAll && searchResults.length === 0) {
+      const hint = findClosest.memo(searchQuery, keywordsIndex.toReversed(), { maxDistance: 5 }) || '';
+
+      return {
+        content: [{
+          type: 'text',
+          text: stringJoin.newlineFiltered(
+            `No PatternFly resources found matching "${searchQuery}". ${hint}`
+          )
+        }]
+      };
+    }
+
+    // Default to parsing all remainingMatches
+    let parseResults = remainingMatches;
+
+    if (isSearchWildCardAll || exactMatches.length > 0) {
+      parseResults = exactMatches;
+    } else if (searchResults.some(result => result.distance === 1)) {
+      parseResults = searchResults.filter(result => result.distance === 1);
+    }
+
+    const summaryTitlePatternFly = updatedVersion
+      ? `Search results for PatternFly version "${updatedVersion}" and`
+      : `Search results for`;
+
+    const basePluralResource = parseResults.length === 1 ? 'resource' : 'resources';
+
+    const baseSummaryTitle = stringJoin.filtered(
+      `Found ${parseResults.length} related ${basePluralResource}.`,
+      parseResults.length ? `Use the attached ${basePluralResource} to access and read full content.` : ''
+    );
+
+    let summaryTitle = stringJoin.newline(
+      `# ${summaryTitlePatternFly} "${searchQuery}".`,
+      baseSummaryTitle
+    );
+
+    if (isSearchWildCardAll) {
+      summaryTitle = stringJoin.newline(
+        `# ${summaryTitlePatternFly} "all" resources.`,
+        `Only showing ${parseResults.length} ${basePluralResource} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
+      );
+    } else if (exactMatches.length > 0) {
+      summaryTitle = stringJoin.newline(
+        `# ${summaryTitlePatternFly} "${searchQuery}".`,
+        `Found ${parseResults.length} exact ${basePluralResource}. Use the attached ${basePluralResource} to access and read full content.`
+      );
+    }
+
+    const results = new Map<string, Record<string, unknown>>();
+
+    parseResults.forEach(result => {
+      if (results.has(result.groupId)) {
+        return;
+      }
+
+      const recordNames = new Set<string>();
+
+      result.entries.forEach(record => {
+        if (record.uriId) {
+          recordNames.add(record.displayName);
+
+          results.set(record.uriId, {
+            type: 'resource_link',
+            uri: record.uriId,
+            name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
+            description: record.description,
+            mimeType: 'text/markdown'
+          });
+        }
+
+        if (record.uriSchemasId) {
+          recordNames.add(record.displayName);
+
+          results.set(record.uriId, {
+            type: 'resource_link',
+            uri: record.uriId,
+            name: `${record.displayName} - JSON Schema (${record.version})`,
+            description: `Component JSON schema with property definitions for ${record.displayName}.`,
+            mimeType: 'text/markdown'
+          });
+        }
+      });
+
+      const collectionNames = `${[...recordNames].slice(0, 3).join(', ')}${(recordNames.size > 3 && ', and more') || ''}`;
+
+      results.set(result.groupId, {
+        type: 'resource_link',
+        uri: `patternfly://docs/${result.groupId}`,
+        name: `${result.name} (Collection)`,
+        description: `A resource collection series for ${collectionNames}`,
+        mimeType: 'text/markdown'
+      });
+    });
+
+    const resultValues = Array.from(results.values());
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: summaryTitle
+        },
+        ...resultValues
+      ]
+    };
+  };
+
+  return [
+    'searchPatternFly',
+    {
+      description: `Search PatternFly components, documentation, guidelines, and resource links by keywords or '*' for all.`,
+      inputSchema: {
+        query: z.string()
+          .min(options.minMax.inputStrings.min)
+          .max(options.minMax.inputStrings.max)
+          .describe('Case-insensitive, full or partial keyword query (e.g., "button", "react", "*")'),
+        version: z.enum(options.patternflyOptions.availableSearchVersions)
+          .optional()
+          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
+      }
+    },
+    callback,
+    {
+      shouldRegister: opts => opts.contextManagement === true
+    }
+  ];
+};
+
+searchPatternFlyTool.toolName = 'searchPatternFly';
+
+export { searchPatternFlyTool };
