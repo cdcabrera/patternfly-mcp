@@ -87,6 +87,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     }
 
     const results = new Map<string, Record<string, unknown>>();
+    const groupSortNames = new Map<string, string>();
     let numberCollections = 0;
     let numberRecords = 0;
 
@@ -100,7 +101,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       const recordNames = new Set<string>();
 
       result.entries.forEach(record => {
-        if (record.uriId && !results.has(record.uriId)) {
+        if (record.uriId && record.path && !results.has(record.uriId)) {
           numberRecords += 1;
           recordNames.add(record.displayName);
 
@@ -109,7 +110,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             uri: record.uriId,
             name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
             description: record.description,
-            mimeType: 'text/markdown'
+            mimeType: 'text/markdown',
+            groupId: result.groupId
           });
         }
 
@@ -122,38 +124,46 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             uri: record.uriSchemasId,
             name: `${record.displayName} - JSON Schema (${record.version})`,
             description: `Component JSON schema with property definitions for ${record.displayName}.`,
-            mimeType: 'text/markdown'
+            mimeType: 'text/markdown',
+            groupId: result.groupId
           });
         }
       });
 
-      const collectionName = recordNames.size === 1 ? [...recordNames][0] : result.name;
+      if (!result.entries) {
+        return;
+      }
+
+      const collectionName = (recordNames.size === 1 ? [...recordNames][0] : result.name) as string;
       const collectionNames =
         `${[...recordNames].slice(0, 3).join(', ')}${(recordNames.size > 3 && ', and more') || ''}`.trim() || result.name;
+
+      // Track the name used for sorting this entire group
+      groupSortNames.set(result.groupId, collectionName.toLowerCase());
 
       results.set(result.groupId, {
         type: 'resource_link',
         uri: `patternfly://docs/${result.groupId}`,
         name: `${collectionName} (Collection)`,
         description: `A resource collection series for ${collectionNames}`,
-        mimeType: 'text/markdown'
+        mimeType: 'text/markdown',
+        groupId: result.groupId
       });
     });
 
     const resultValues = Array.from(results.values()).sort((a, b) => {
-      // 1. Extract base names for grouping (e.g., "Button")
-      const getGroupName = (item: string) =>
-        (item.split(' (Collection)')[0] || '').split(' - ')[0] as string;
+      const gidA = a.groupId as string;
+      const gidB = b.groupId as string;
 
-      const groupA = getGroupName(a.name as string);
-      const groupB = getGroupName(b.name as string);
+      // 1. Sort by Group (using the Collection's name)
+      if (gidA !== gidB) {
+        const nameA = groupSortNames.get(gidA) || '';
+        const nameB = groupSortNames.get(gidB) || '';
 
-      // 2. Sort by Group Name (Alphabetical)
-      if (groupA !== groupB) {
-        return groupA.localeCompare(groupB);
+        return nameA.localeCompare(nameB);
       }
 
-      // 3. Define Priority within the same group
+      // 2. Define Priority within the same group
       const getPriority = (item: string) => {
         const name = item.toLowerCase();
 
@@ -174,7 +184,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         return priorityA - priorityB;
       }
 
-      // 4. Fallback to name comparison within the same priority level
+      // 3. Fallback to name comparison within the same priority level
       return (a.name as string).localeCompare(b.name as string);
     });
 
@@ -201,9 +211,13 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         `Only showing ${totalCollectionsRecords} ${basePluralResource} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
       );
     } else if (exactMatches.length > 0) {
-      summaryTitle = stringJoin.newline(
+      summaryTitle = stringJoin.newlineFiltered(
         `# ${summaryTitlePatternFly} "${searchQuery}".`,
-        `Found ${totalCollectionsRecords} exact ${basePluralResource}. Use the attached ${basePluralResource} to access and read full content.`
+        stringJoin.filtered(
+          numberCollections > 0 && `Found ${numberCollections} ${numberCollections === 1 ? 'collection' : 'collections'} with ${numberRecords} related resources.`,
+          numberCollections < 0 && `Found ${totalCollectionsRecords} exact ${basePluralResource}.`,
+          `Use the attached ${basePluralResource} to access and read full content.`
+        )
       );
     }
 
