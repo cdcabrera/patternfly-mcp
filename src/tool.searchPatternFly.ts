@@ -5,7 +5,7 @@ import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { findClosest } from './server.search';
 import { getOptions } from './options.context';
-import { searchPatternFly } from './patternFly.search';
+import { searchPatternFly, type SearchPatternFlyResults } from './patternFly.search';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 
@@ -30,7 +30,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
 
     assertInputStringLength(searchQuery, {
       ...options.minMax.inputStrings,
-      inputDisplayName: 'searchQuery'
+      inputDisplayName: 'query'
     });
 
     if (isVersion) {
@@ -86,45 +86,22 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       parseResults = searchResults.filter(result => result.distance === 1);
     }
 
-    const summaryTitlePatternFly = updatedVersion
-      ? `Search results for PatternFly version "${updatedVersion}" and`
-      : `Search results for`;
-
-    const basePluralResource = parseResults.length === 1 ? 'resource' : 'resources';
-
-    const baseSummaryTitle = stringJoin.filtered(
-      `Found ${parseResults.length} related ${basePluralResource}.`,
-      parseResults.length ? `Use the attached ${basePluralResource} to access and read full content.` : ''
-    );
-
-    let summaryTitle = stringJoin.newline(
-      `# ${summaryTitlePatternFly} "${searchQuery}".`,
-      baseSummaryTitle
-    );
-
-    if (isSearchWildCardAll) {
-      summaryTitle = stringJoin.newline(
-        `# ${summaryTitlePatternFly} "all" resources.`,
-        `Only showing ${parseResults.length} ${basePluralResource} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
-      );
-    } else if (exactMatches.length > 0) {
-      summaryTitle = stringJoin.newline(
-        `# ${summaryTitlePatternFly} "${searchQuery}".`,
-        `Found ${parseResults.length} exact ${basePluralResource}. Use the attached ${basePluralResource} to access and read full content.`
-      );
-    }
-
     const results = new Map<string, Record<string, unknown>>();
+    let numberCollections = 0;
+    let numberRecords = 0;
 
     parseResults.forEach(result => {
       if (results.has(result.groupId)) {
         return;
       }
 
+      numberCollections += 1;
+
       const recordNames = new Set<string>();
 
       result.entries.forEach(record => {
-        if (record.uriId) {
+        if (record.uriId && !results.has(record.uriId)) {
+          numberRecords += 1;
           recordNames.add(record.displayName);
 
           results.set(record.uriId, {
@@ -136,12 +113,13 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           });
         }
 
-        if (record.uriSchemasId) {
+        if (record.uriSchemasId && !results.has(record.uriSchemasId)) {
+          numberRecords += 1;
           recordNames.add(record.displayName);
 
-          results.set(record.uriId, {
+          results.set(record.uriSchemasId, {
             type: 'resource_link',
-            uri: record.uriId,
+            uri: record.uriSchemasId,
             name: `${record.displayName} - JSON Schema (${record.version})`,
             description: `Component JSON schema with property definitions for ${record.displayName}.`,
             mimeType: 'text/markdown'
@@ -149,18 +127,85 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         }
       });
 
-      const collectionNames = `${[...recordNames].slice(0, 3).join(', ')}${(recordNames.size > 3 && ', and more') || ''}`;
+      const collectionName = recordNames.size === 1 ? [...recordNames][0] : result.name;
+      const collectionNames =
+        `${[...recordNames].slice(0, 3).join(', ')}${(recordNames.size > 3 && ', and more') || ''}`.trim() || result.name;
 
       results.set(result.groupId, {
         type: 'resource_link',
         uri: `patternfly://docs/${result.groupId}`,
-        name: `${result.name} (Collection)`,
+        name: `${collectionName} (Collection)`,
         description: `A resource collection series for ${collectionNames}`,
         mimeType: 'text/markdown'
       });
     });
 
-    const resultValues = Array.from(results.values());
+    const resultValues = Array.from(results.values()).sort((a, b) => {
+      // 1. Extract base names for grouping (e.g., "Button")
+      const getGroupName = (item: string) =>
+        (item.split(' (Collection)')[0] || '').split(' - ')[0] as string;
+
+      const groupA = getGroupName(a.name as string);
+      const groupB = getGroupName(b.name as string);
+
+      // 2. Sort by Group Name (Alphabetical)
+      if (groupA !== groupB) {
+        return groupA.localeCompare(groupB);
+      }
+
+      // 3. Define Priority within the same group
+      const getPriority = (item: string) => {
+        const name = item.toLowerCase();
+
+        if (name.endsWith('(collection)')) {
+          return 0;
+        }
+        if (name.includes('json schema')) {
+          return 2;
+        }
+
+        return 1;
+      };
+
+      const priorityA = getPriority(a.name as string);
+      const priorityB = getPriority(b.name as string);
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // 4. Fallback to name comparison within the same priority level
+      return (a.name as string).localeCompare(b.name as string);
+    });
+
+    const summaryTitlePatternFly = updatedVersion
+      ? `Search results for PatternFly version "${updatedVersion}" and`
+      : `Search results for`;
+
+    const totalCollectionsRecords = numberCollections + numberRecords;
+    const basePluralResource = totalCollectionsRecords === 1 ? 'resource' : 'resources';
+
+    const baseSummaryTitle = stringJoin.filtered(
+      `Found ${totalCollectionsRecords} related ${basePluralResource}.`,
+      totalCollectionsRecords > 0 ? `Use the attached ${basePluralResource} to access and read full content.` : ''
+    );
+
+    let summaryTitle = stringJoin.newline(
+      `# ${summaryTitlePatternFly} "${searchQuery}".`,
+      baseSummaryTitle
+    );
+
+    if (isSearchWildCardAll) {
+      summaryTitle = stringJoin.newline(
+        `# ${summaryTitlePatternFly} "all" resources.`,
+        `Only showing ${totalCollectionsRecords} ${basePluralResource} out of ${totalPotentialMatches} potential matches. Use a more specific query.`
+      );
+    } else if (exactMatches.length > 0) {
+      summaryTitle = stringJoin.newline(
+        `# ${summaryTitlePatternFly} "${searchQuery}".`,
+        `Found ${totalCollectionsRecords} exact ${basePluralResource}. Use the attached ${basePluralResource} to access and read full content.`
+      );
+    }
 
     return {
       content: [
