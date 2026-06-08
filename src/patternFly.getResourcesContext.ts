@@ -59,9 +59,15 @@ interface PatternFlyMcpComponentNames {
   byLatestVersion?: PatternFlyMcpComponentNamesByVersion | undefined;
 }
 
+/**
+ * Lookup object, store, and access context-related information in a structured format.
+ *
+ * Properties:
+ * - `isComponent`: Boolean indicating whether the entity is treated as a component.
+ * - `[key: string]`: Allow for additional properties to be dynamically added.
+ */
 type ContextManagementRecordLookup = {
   isComponent: boolean;
-  // isSchemasAvailable: boolean;
   [key: string]: unknown
 };
 
@@ -115,7 +121,7 @@ type ContextManagementCollectionLookup = {
  * @property collectionsIdIndex - Collections id index. Use a collection ID to retrieve all records associated with a specific collection.
  * @property nameIndex - Name index. A record name to record ID lookup. Get all available record IDs associated with a name.
  * @property pathIndex - Path index.
- * @property idIndex - Id index. A record ID to record lookup
+ * @property idIndex - ID index. A record ID to record lookup
  * @property recordsList - Records list.
  * @property latestVersion - Latest version. Latest available PF version.
  * @property availableVersions - Available versions. All available PF versions.
@@ -123,7 +129,6 @@ type ContextManagementCollectionLookup = {
 type ContextManagementResources = {
   collectionsIndex: Map<string, ContextManagementCollectionRecord>;
   collectionsIdIndex: Map<string, ContextManagementPatternFlyIdRecord[]>;
-  // collectionsLookup: (id: string) => ContextManagementCollectionLookup;
   nameIndex: Map<string, string[]>;
   pathIndex: Map<string, string>;
   idIndex: Map<string, ContextManagementPatternFlyIdRecord>;
@@ -168,7 +173,6 @@ getPatternFlyDocsCatalog.memo = memo(getPatternFlyDocsCatalog);
  * @param record - PatternFly documentation record
  * @returns The category display label
  */
-// const setCategoryDisplayLabel = (record?: PatternFlyMcpDocsCatalogDoc | PatternFlyMcpComponentNamesDoc) => {
 const setCategoryDisplayLabel = (record: Record<string, unknown>) => {
   const updatedCategory = (record.category as string)?.trim()?.toLowerCase() || undefined;
 
@@ -504,6 +508,10 @@ const getPatternFlyComponentSchema = async (componentName: string) => {
 getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 export {
+  getPatternFlyDocsCatalog,
+  getPatternFlyContextManagementLookup,
+  setCategoryDisplayLabel,
+  setCollectionDisplayLabel,
   getPatternFlyComponentSchema,
   getPatternFlyContextManagementResources,
   getPatternFlyComponentNames,

@@ -173,7 +173,7 @@ const resourceComponentRecord = async ({
     }];
   }
 
-  // Peer discovery for related documentation facets, Avoid seriesId, it pulls versionless records
+  // Peer discovery for related documentation facets, `seriesId` pulls all related records without version context.
   // const allRecordsMap = await filterPatternFlyContext.memo({ name: record.name, version: record.version });
   const allRecordsMap = await filterPatternFlyContext.memo({ collectionId: record.seriesId });
   const allRecords = Array.from(allRecordsMap.values())
