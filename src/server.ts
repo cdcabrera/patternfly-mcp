@@ -10,7 +10,7 @@ import {
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
-import { log, type LogEvent } from './logger';
+import { formatUnknownError, log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { composeTools, sendToolsHostShutdown } from './server.tools';
 import { composeResources } from './server.resources';
@@ -122,7 +122,13 @@ const registerServerResources = async (resources: McpResourceCreator[], server: 
     const shouldRegister = _config?.shouldRegister;
 
     if (shouldRegister) {
-      const status = await shouldRegister(options);
+      let status = false;
+
+      try {
+        status = await shouldRegister(options);
+      } catch (error) {
+        log.error(`Error executing shouldRegister for resource ${name}`, formatUnknownError(error));
+      }
 
       if (!status) {
         log.debug(`Skipping resource registration: ${name}`);
@@ -171,7 +177,13 @@ const registerServerTools = async (tools: McpToolCreator[], server: McpServer, o
     const shouldRegister = _config?.shouldRegister;
 
     if (shouldRegister) {
-      const status = await shouldRegister(options);
+      let status = false;
+
+      try {
+        status = await shouldRegister(options);
+      } catch (error) {
+        log.error(`Error executing shouldRegister for tool ${name}`, formatUnknownError(error));
+      }
 
       if (!status) {
         log.debug(`Skipping tool registration: ${name}`);
