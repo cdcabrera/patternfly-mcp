@@ -12,7 +12,7 @@ GitHub workflows perform checks for
 - Dependency Auditing: Automated `npm audit` checks to identify and block critical-risk vulnerabilities in the project's dependency tree, running on every dependency change and daily thereafter.
 - Conditional Data Auditing: If and when related files are updated, an automated audit verifies the integrity and reachability of PatternFly documentation entries.
 
-> Core contributors may receive an automated pass on Layer-1 Gatekeeper policy checks when the workflow makes an allowance. This pass does not remove the remaining steps of automated review, or the later layers of review and runtime boundaries.
+> Core contributors may receive an automated pass on Layer-1 policy checks when the workflow makes an allowance. This pass does not remove the remaining steps of automated review, or the later layers of review and runtime boundaries.
 
 ## Layer 2: Human Review
 

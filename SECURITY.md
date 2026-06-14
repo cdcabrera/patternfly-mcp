@@ -18,7 +18,7 @@ Security concerns for this MCP server include:
 ## Contribution Guardrails
 
 To maintain codebase integrity:
-- PRs from non-core contributors that modify core behavior or exceed established file limits are considered placed on a general **Policy Hold** until they are reviewed in-depth to ensure architectural alignment.
+- PRs from non-core contributors that modify core behavior or exceed established file limits are considered placed on **Policy Hold** until they are reviewed in-depth to ensure architectural alignment.
 - PRs from community contributors can refer to the mirrored guidance and status in the **GitHub Actions workflow logs** for helpful feedback.
 - PRs require a secondary review by a Maintainer to be promoted from Policy Hold status.
 

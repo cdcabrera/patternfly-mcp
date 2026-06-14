@@ -16,10 +16,12 @@
     "rereview",
     "rescan",
     "rsort",
+    "sandboxing",
     "sparkline",
     "streamable",
     "treeify",
     "unrepresentable",
-    "unsub"
+    "unsub",
+    "untampered"
   ]
 }
