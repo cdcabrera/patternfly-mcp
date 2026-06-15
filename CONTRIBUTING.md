@@ -77,7 +77,7 @@ Development pull requests (PRs) should be opened against the default branch.
 >  - overly complex TypeScript generics or generally over-the-top typings
 >  - dramatic unit test snapshot updates
 >  - affects any file not directly associated with the issue being resolved
->  - affects "many" files
+>  - affects "many" files (more than 15 files)
 >  - contains or is a minor grammatical fix
 >
 > You will be asked to either:

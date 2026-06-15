@@ -12,13 +12,13 @@ GitHub workflows perform checks for
 - Dependency Auditing: Automated `npm audit` checks to identify and block critical-risk vulnerabilities in the project's dependency tree, running on every dependency change and daily thereafter.
 - Conditional Data Auditing: If and when related files are updated, an automated audit verifies the integrity and reachability of PatternFly documentation entries.
 
-> Core contributors may receive an automated pass on Layer-1 policy checks when the workflow makes an allowance. This pass does not remove the remaining steps of automated review, or the later layers of review and runtime boundaries.
+> Core contributors may receive an automated pass on Layer-1 policy checks when the workflow makes an allowance. This pass does not remove the remaining steps of automated review, nor the later layers of review and runtime boundaries.
 
 ## Layer 2: Human Review
 
 A maintainer reviews every PR for intent-level issues that automated tools miss:
 
-- **Intent-based Filtering:** Automated labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact. For contributions where Layer-1 uses workflow log output, maintainers use this output for prioritization.
+- **Intent-based Filtering:** Labeling is leveraged to prioritize reviews and identify high-risk changes based on their potential impact. Maintainers use workflow log outputs from Layer-1 to prioritize reviews for these contributions.
 - **Architectural Alignment:** Every PR is verified against the [planned architecture](./docs/architecture.md) to ensure long-term stability.
 - **Guideline Adherence Verification:** Maintainers verify that contributions follow established patterns and do not interfere with internal validation mechanisms designed to ensure contributors have performed a full context review.
 - **Credential & Secret Scanning:** Manual verification that no sensitive environment variables or keys are exposed in tests or documentation.
