@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './mcpSdk';
 import { processDocsFunction, type ProcessedDoc } from './server.getResources';
-import { stringJoin } from './server.helpers';
+import { stringJoin, isPatternFlyUri } from './server.helpers';
 import {
   assertInput,
   assertInputStringLength,
@@ -78,8 +78,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const updatedVersion = normalizedVersion || latestVersion;
     const updatedName = name?.trim();
 
-    const pfUris = updatedUrlList.filter(url => new RegExp('patternfly://', 'i').test(url));
-    const finalUrlList = updatedUrlList.filter(url => !new RegExp('patternfly://', 'i').test(url));
+    const pfUris: string[] = updatedUrlList.filter(isPatternFlyUri);
+    const finalUrlList: string[] = updatedUrlList.filter(url => !isPatternFlyUri(url));
 
     for (const uri of pfUris) {
       const { exactMatches } = await searchPatternFly.memo(uri, { version: updatedVersion });

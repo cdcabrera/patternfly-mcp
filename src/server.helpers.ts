@@ -245,6 +245,14 @@ const isUrl = (str: unknown, { allowedProtocols = ['file', 'http', 'https', 'dat
 };
 
 /**
+ * Check if a value is a valid PatternFly URI.
+ *
+ * @param uri - URI to check
+ * @returns `true` if the string is a valid PatternFly URI.
+ */
+const isPatternFlyUri = (uri: unknown): uri is string => isUrl(uri, { allowedProtocols: ['patternfly'] });
+
+/**
  * Check if a value is a valid path.
  *
  * @param str - String to check
@@ -757,6 +765,7 @@ export {
   freezeObject,
   generateHash,
   hashCode,
+  isPatternFlyUri,
   hashNormalizeValue,
   isAsync,
   isObject,

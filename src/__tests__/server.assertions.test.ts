@@ -5,6 +5,7 @@ import {
   assertInputStringArrayEntryLength,
   assertInputStringNumberEnumLike
 } from '../server.assertions';
+import { isPatternFlyUri } from '../server.helpers';
 
 describe('assertInput', () => {
   it.each([
@@ -14,7 +15,7 @@ describe('assertInput', () => {
     },
     {
       description: 'pattern in string validation with callback format',
-      condition: () => new RegExp('patternfly://', 'i').test('fly://lorem-ipsum')
+      condition: () => isPatternFlyUri('fly://lorem-ipsum')
     },
     {
       description: 'array entry length validation',
