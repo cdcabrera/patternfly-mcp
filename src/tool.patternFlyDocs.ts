@@ -245,7 +245,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       description: `Get markdown documentation and component JSON schemas for PatternFly resources and components.
 
       **Usage**:
-        1. Input a component or resource name (e.g., "Button", "Writing") OR a PatternFly resource URI (e.g., "patternfly://docs/Button") OR a list of up to ${options.minMax.docsToLoad.max} documentation URLs/URIs at a time (typically from searchPatternFlyDocs results).
+        1. Input a component or resource name (e.g., "Button", "Writing") OR a list of up to ${options.minMax.docsToLoad.max} patternfly:// URIs or documentation URLs at a time (typically from searchPatternFlyDocs results).
 
       **Returns**:
         - Markdown documentation
@@ -253,7 +253,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       `,
       inputSchema: {
         urlList: z.array(z.url().min(options.minMax.urlString.min).max(options.minMax.urlString.max)).max(options.minMax.docsToLoad.max)
-          .optional().describe(`The list of URLs or patternfly:// URIs to fetch the documentation from (max ${options.minMax.docsToLoad.max} at a time)`),
+          .optional().describe(`The list of patternfly:// URIs or URLs to fetch the documentation from (max ${options.minMax.docsToLoad.max} at a time)`),
         name: z.string().max(options.minMax.inputStrings.max)
           .optional().describe('The name of a PatternFly component or patternfly:// URI resource to fetch documentation for (e.g., "Button", "patternfly://docs/Button")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
