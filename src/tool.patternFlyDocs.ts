@@ -98,7 +98,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       const { searchResults, exactMatches } = await searchPatternFly.memo(updatedName, { version: updatedVersion });
 
       assertInput(
-        exactMatches.length > 0 && exactMatches.every(match => match.entries.some(entry => Boolean(entry.path))),
+        exactMatches.length > 0 && exactMatches.every(match => match.isSchemasAvailable || match.entries.some(entry => Boolean(entry.path))),
         () => {
           const suggestions = searchResults.map(result => result.item).slice(0, 3);
           const suggestionMessage = suggestions.length
@@ -152,7 +152,28 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       );
     }
 
-    if (docs.length === 0) {
+    if (docs.length === 0 && updatedName) {
+      const { exactMatches } = await searchPatternFly.memo(updatedName, { version: updatedVersion });
+
+      for (const match of exactMatches) {
+        if (match.isSchemasAvailable && !schemasSeen.has(match.name)) {
+          schemasSeen.add(match.name);
+          const schema = await getPatternFlyComponentSchema.memo(match.name);
+
+          if (schema) {
+            schemaResults.push(stringJoin.newline(
+              `# Component Schema for ${match.name} (${updatedVersion})`,
+              `This machine-readable JSON schema defines the component's props, types, and validation rules.`,
+              '```json',
+              JSON.stringify(schema, null, 2),
+              '```'
+            ));
+          }
+        }
+      }
+    }
+
+    if (docs.length === 0 && schemaResults.length === 0) {
       const nameFilter = `**Name**: ${updatedName || '*'}`;
       const versionFilter = `**PatternFly Version**: ${updatedVersion || '*'}`;
       const urlListBlock = updatedUrlList.map((url: string, index: number) => `  ${index + 1}. ${url}`).join('\n');

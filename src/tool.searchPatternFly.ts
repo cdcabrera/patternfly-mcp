@@ -1,7 +1,7 @@
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { type McpTool } from './mcpSdk';
-import { stringJoin } from './server.helpers';
+import { stringJoin, buildSearchString } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { findClosest } from './server.search';
 import { getOptions } from './options.context';
@@ -106,9 +106,11 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           numberRecords += 1;
           recordNames.add(record.displayName);
 
-          results.set(record.uriId, {
+          const recordUri = `${record.uriId}${buildSearchString({ version: record.version }, { prefix: true })}`;
+
+          results.set(recordUri, {
             type: 'resource_link',
-            uri: record.uriId,
+            uri: recordUri,
             name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
             description: record.description,
             mimeType: 'text/markdown',
@@ -120,9 +122,11 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           numberRecords += 1;
           recordNames.add(record.displayName);
 
-          results.set(record.uriSchemasId, {
+          const schemaUri = `${record.uriSchemasId}${buildSearchString({ version: record.version }, { prefix: true })}`;
+
+          results.set(schemaUri, {
             type: 'resource_link',
-            uri: record.uriSchemasId,
+            uri: schemaUri,
             name: `${record.displayName} - JSON Schema (${record.version})`,
             description: `Component JSON schema with property definitions for ${record.displayName}.`,
             mimeType: 'text/markdown',
@@ -142,10 +146,14 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       // Track the name used for sorting this entire group
       groupSortNames.set(result.groupId, collectionName.toLowerCase());
 
+      const hasDocs = result.entries.some(entry => Boolean(entry.path));
+      const versionQuery = buildSearchString({ version: updatedVersion }, { prefix: true });
+      const collectionUri = `patternfly://${hasDocs ? 'docs' : 'schemas'}/${result.groupId}${versionQuery}`;
+
       results.set(result.groupId, {
         type: 'resource_link',
-        uri: `patternfly://docs/${result.groupId}`,
-        name: `${collectionName} (Collection)`,
+        uri: collectionUri,
+        name: `${collectionName} (${hasDocs ? 'Collection' : 'Schema Collection'})`,
         description: `A resource collection series for ${collectionNames}`,
         mimeType: 'text/markdown',
         groupId: result.groupId
