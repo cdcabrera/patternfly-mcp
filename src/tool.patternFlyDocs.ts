@@ -252,10 +252,10 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         - Component JSON schemas, if available
       `,
       inputSchema: {
-        urlList: z.array(z.string().min(options.minMax.urlString.min).max(options.minMax.urlString.max)).max(options.minMax.docsToLoad.max)
+        urlList: z.array(z.url().min(options.minMax.urlString.min).max(options.minMax.urlString.max)).max(options.minMax.docsToLoad.max)
           .optional().describe(`The list of URLs or patternfly:// URIs to fetch the documentation from (max ${options.minMax.docsToLoad.max} at a time)`),
         name: z.string().max(options.minMax.inputStrings.max)
-          .optional().describe('The name or patternfly:// URI of a PatternFly component or resource to fetch documentation for (e.g., "Button", "patternfly://docs/Button")'),
+          .optional().describe('The name of a PatternFly component or patternfly:// URI resource to fetch documentation for (e.g., "Button", "patternfly://docs/Button")'),
         version: z.enum(options.patternflyOptions.availableSearchVersions)
           .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
