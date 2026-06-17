@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { type McpTool } from './mcpSdk';
 import { processDocsFunction, type ProcessedDoc } from './server.getResources';
-import { stringJoin, isPatternFlyUri } from './server.helpers';
+import { stringJoin } from './server.helpers';
 import {
   assertInput,
   assertInputStringLength,
@@ -14,6 +14,7 @@ import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
 import { getPatternFlyMcpResources, getPatternFlyComponentSchema, setCategoryDisplayLabel } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { isPatternFlyUri } from './patternFly.support';
 
 /**
  * usePatternFlyDocs tool function

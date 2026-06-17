@@ -1,11 +1,11 @@
 import assert from 'node:assert';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
-  isPatternFlyUri,
   isUrl,
   isWhitelistedUrl,
   stringJoin
 } from './server.helpers';
+import { isPatternFlyUri } from './patternFly.support';
 import { DEFAULT_OPTIONS, type WhitelistUrl } from './options.defaults';
 
 /**
