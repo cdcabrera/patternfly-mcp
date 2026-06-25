@@ -28,6 +28,8 @@
     "build": "npm run build:clean; npm run test:types; pkgroll",
     "build:clean": "rm -rf dist",
     "build:watch": "npm run build -- --watch",
+    "container:build": "bash ./scripts/container.build.sh",
+    "container:start": "bash ./scripts/container.run.sh",
     "release": "changelog --non-cc --link-url https://github.com/patternfly/patternfly-mcp.git",
     "start": "node dist/cli.js --log-stderr",
     "start:dev": "tsx watch src/cli.ts --verbose --log-stderr",
