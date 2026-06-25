@@ -6,7 +6,7 @@ A comprehensive guide to PatternFly MCP Server tools, resources, and configurati
 - [Built-in tools](#built-in-tools)
 - [Built-in resources](#built-in-resources)
 - [MCP client configuration](#mcp-client-configuration)
-- [Running via container](#running-via-container-podman--docker)
+- [Running via container](#running-via-container-podman)
 - [Custom MCP tool plugins](#custom-mcp-tool-plugins)
 - [Experimental settings](./experimental.md)
 - [Troubleshooting](#troubleshooting)
@@ -217,13 +217,13 @@ The server can also be launched from a container image instead of `npx`. This is
 From the repository root:
 
 ```bash
-bash ./scripts/container/build.sh
+bash ./scripts/container.build.sh
 ```
 
 or using Node.js and NPM:
 
-```
-npm run build:container
+```sh
+npm run container:build
 ```
 
 This produces the following images:
@@ -262,7 +262,7 @@ You can confirm by running `$ podman images` from the terminal. View the [Contai
 #### Smoke test
 
 ```bash
-podman run --rm localhost/patternfly-mcp:latest node -e "console.log(process.versions.node)"  # -> 24.x
+podman run --rm --entrypoint node localhost/patternfly-mcp:latest -e "console.log(process.versions.node)"  # -> 24.x
 ```
 
 #### Running in HTTP transport mode
