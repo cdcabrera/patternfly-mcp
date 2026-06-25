@@ -201,23 +201,40 @@ Depending on your environment, you may have to delay updating to the minimum Nod
 }
 ```
 
-### Running via container (podman / docker)
+### Running via container (podman)
 
-The server can also be launched from an OCI container image instead of `npx`. This is useful when you want a pinned, sandboxed runtime that doesn't depend on the host's Node.js installation. The container is a stdio MCP server like any other — the MCP client just spawns `podman` (or `docker`) instead of `npx`.
+The server can also be launched from a container image instead of `npx`. This is useful when you want a pinned, sandboxed runtime that doesn't depend on the host's Node.js installation. Running with an MCP client simply spawns `podman` (or `docker`) instead of `npx`.
 
-> **Prerequisites:** [Podman](https://podman.io/) (preferred) or Docker installed and on `PATH`. On macOS, run `podman machine start` once before first use.
+> **Prerequisites:**
+> You can use Podman or Docker to run the container.
+>
+> We recommend using Podman Desktop for convenience:
+> - [Podman Desktop](https://podman-desktop.io/downloads)
+> - [Podman](https://podman.io/)
 
 #### Build the image locally
 
 From the repository root:
 
 ```bash
-./scripts/container/build.sh
+bash ./scripts/container/build.sh
 ```
 
-This produces `localhost/patternfly-mcp:<version>`, `:<version>-node24`, `:sha-<short>`, and `:latest`. See `Containerfile` for the image definition.
+or using Node.js and NPM:
 
-#### MCP client configuration (locally built image)
+```
+npm run build:container
+```
+
+This produces the following images:
+- `localhost/patternfly-mcp:<version>`,
+- `localhost/patternfly-mcp:<version>-node24`,
+- `localhost/patternfly-mcp:sha-<short>`
+- `localhost/patternfly-mcp:latest`.
+
+You can confirm by running `$ podman images` from the terminal. View the [Containerfile](../Containerfile) for the image definition.
+
+#### Running your local image, MCP client configuration
 
 ```json
 {
@@ -232,24 +249,21 @@ This produces `localhost/patternfly-mcp:<version>`, `:<version>-node24`, `:sha-<
         "localhost/patternfly-mcp:latest",
         "--log-stderr"
       ],
-      "description": "PatternFly rules and documentation (locally built container)"
+      "description": "PatternFly rules and documentation (local container)"
     }
   }
 }
 ```
 
-> `-i` (interactive stdin) is **required** for stdio MCP. Do **not** pass `-t`. Anything appended after the image name is forwarded verbatim to the CLI, so every flag (`--verbose`, `--http`, `--port`, `--tool`, …) works without rebuilding.
-
-The same shape works with `docker` by replacing `"command": "podman"` with `"command": "docker"`.
+> **Important**:
+> - `-i` (interactive stdin) is **required** for stdio MCP. Do **not** pass `-t`. Anything appended after the image name is forwarded verbatim to the CLI, so every flag (`--verbose`, `--http`, `--port`, `--tool`, ...) works without rebuilding.
+> - The same configuration should work with `docker`, just replace `"command": "podman"` with `"command": "docker"`.
 
 #### Smoke test
 
 ```bash
-podman run --rm -i localhost/patternfly-mcp:latest --help
 podman run --rm localhost/patternfly-mcp:latest node -e "console.log(process.versions.node)"  # -> 24.x
 ```
-
-> A registry-hosted variant pointing at `ghcr.io/patternfly/patternfly-mcp:<version>` will be added once the automated publication workflow (`.github/workflows/container-publish.yml`) is in place.
 
 ## Custom MCP tool plugins
 
