@@ -203,14 +203,12 @@ Depending on your environment, you may have to delay updating to the minimum Nod
 
 ### Running via container (podman)
 
-The server can also be launched from a container image instead of `npx`. This is useful when you want a pinned, sandboxed runtime that doesn't depend on the host's Node.js installation. Running with an MCP client simply spawns `podman` (or `docker`) instead of `npx`.
+The server can also be launched from a container image instead of `npx`. This is useful when you want a pinned, sandboxed runtime that doesn't depend on the host's Node.js installation. Running with an MCP client spawns `podman` (or `docker`) instead of `npx`.
 
 > **Prerequisites:**
-> You can use Podman or Docker to run the container.
+> Podman is the supported container runtime for PatternFly MCP. We recommend [Podman Desktop](https://podman-desktop.io/downloads) or [Podman](https://podman.io/).
 >
-> We recommend using Podman Desktop for convenience:
-> - [Podman Desktop](https://podman-desktop.io/downloads)
-> - [Podman](https://podman.io/)
+> We make a minimal effort to support Docker runs, but additional configuration may be required and is beyond our current scope.
 
 #### Build the image locally
 
@@ -257,7 +255,9 @@ You can confirm by running `$ podman images` from the terminal. View the [Contai
 
 > **Important**:
 > - `-i` (interactive stdin) is **required** for stdio MCP. Do **not** pass `-t`. Anything appended after the image name is forwarded verbatim to the CLI, so every flag (`--verbose`, `--http`, `--port`, `--tool`, ...) works without rebuilding.
-> - The same configuration should work with `docker`, just replace `"command": "podman"` with `"command": "docker"`.
+> - If you're attempting to run the same configuration with Docker, you'll need to make at least two adjustments:
+>    - replace `"command": "podman"` with `"command": "docker"`
+>    - and remove the `--userns=keep-id` flag
 
 #### Smoke test
 
