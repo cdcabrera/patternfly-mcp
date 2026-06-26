@@ -208,7 +208,7 @@ The server can also be launched from a container image instead of `npx`. This is
 > **Prerequisites:**
 > Podman is the supported container runtime for PatternFly MCP. We recommend [Podman Desktop](https://podman-desktop.io/downloads) or [Podman](https://podman.io/).
 >
-> We make a minimal effort to support Docker runs, but additional configuration may be required and is beyond our current scope.
+> We make a minimal effort to support Docker, and additional configuration may be required.
 
 #### Build the image locally
 
