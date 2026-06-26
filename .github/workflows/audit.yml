@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run container audit
-        run: npm run test:audit:container
+        run: npm run audit:container
 
   documentation-audit:
     name: Documentation Audit

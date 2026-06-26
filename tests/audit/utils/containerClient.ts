@@ -70,6 +70,7 @@ const startContainer = async ({
 
   return startServer({
     command: engine,
+    serverPath: '',
     args: updatedArgs
   });
 };
