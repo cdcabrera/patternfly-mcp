@@ -3,7 +3,6 @@ import { resolveContainerEngine, startContainer, type StdioTransportClient } fro
 const engine: any = resolveContainerEngine();
 
 describeSkip(engine !== undefined)('Container Audit', () => {
-  const image = 'localhost/patternfly-mcp:latest';
   let CLIENT: StdioTransportClient;
 
   beforeAll(async () => {
