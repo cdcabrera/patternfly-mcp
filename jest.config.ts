@@ -77,6 +77,13 @@ export default {
       roots: ['<rootDir>/tests/audit'],
       testMatch: ['<rootDir>/tests/audit/**/*.test.ts'],
       ...baseConfig
+    },
+    {
+      displayName: 'container',
+      roots: ['<rootDir>/tests/container'],
+      testMatch: ['<rootDir>/tests/container/**/*.test.ts'],
+      setupFilesAfterEnv: ['<rootDir>/tests/container/jest.setupTests.ts'],
+      ...baseConfig
     }
   ]
 };

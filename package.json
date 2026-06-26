@@ -36,6 +36,7 @@
     "test": "npm run test:spell && npm run test:spell-docs && npm run test:lint && npm run test:types && jest --selectProjects unit",
     "test:audit": "jest --selectProjects audit",
     "test:ci": "npm test -- --coverage",
+    "test:container": "bash ./scripts/container.build.sh && NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects container",
     "test:dev": "npm test -- --watchAll",
     "test:integration": "npm run build && NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects e2e",
     "test:integration-dev": "npm run test:integration -- --watchAll",
