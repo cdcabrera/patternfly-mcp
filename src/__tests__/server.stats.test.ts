@@ -79,12 +79,13 @@ describe('createServerStats', () => {
     tracker.unsubscribe();
   });
 
-  it('should correctly clean up timers on unsubscribe', () => {
-    const tracker = createServerStats();
-    const spy = jest.spyOn(Promise, 'allSettled');
+  it('should correctly clean up timers on unsubscribe', async () => {
+    const tracker = createServerStats(statsOptions);
 
-    tracker.unsubscribe();
+    tracker.startStats();
+    const results = await tracker.unsubscribe();
 
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(results).toHaveLength(2);
+    expect(results.every(result => result.status === 'fulfilled')).toBe(true);
   });
 });

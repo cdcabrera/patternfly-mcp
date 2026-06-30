@@ -77,10 +77,11 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       promise: undefined
     };
 
-    // Run, repeat, or return passed func.
     const task = async (): Promise<TReturn | undefined> => {
-      const shouldRepeat = state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat);
-      // const startFunc = timeoutFunction(() => (state.isRunning ? updatedFunc(...args) : Promise.reject(new Error('Canceled'))), {
+      if (!state.isRunning || (updatedRepeat !== undefined && state.count >= updatedRepeat)) {
+        return undefined;
+      }
+
       const startFunc = timeoutFunction(() => {
         if (state.isRunning) {
           state.count += 1;
@@ -93,7 +94,6 @@ const deferTask = <TArgs extends unknown[], TReturn>(
           value: () => ({ ...state })
         });
 
-        // return Promise.resolve(undefined);
         return undefined;
       }, {
         timeout: updatedTimeoutMs,
@@ -118,7 +118,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
         return Promise.reject(error);
       });
 
-      if (shouldRepeat) {
+      if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
         return task();
       }
 
@@ -187,7 +187,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
             value: () => ({ ...state, error })
           });
 
-          console.error('Defer task stopped with error', error);
+          log.error('Defer task stopped with error', error);
         });
       }
     };

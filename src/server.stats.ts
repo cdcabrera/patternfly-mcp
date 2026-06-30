@@ -105,20 +105,18 @@ const transportReport = (
  * @note `undefined` repeat means the task will run indefinitely.
  */
 transportReport.deferTask = deferTask(transportReport, {
-  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
+  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.transport,
   repeat: undefined
 });
 
 /**
  * Creates a telemetry tracker for a server instance.
  *
- * - Starts the health report timer.
- *
  * @param {StatsSession} [statsOptions] - Session-specific stats options.
  * @param {GlobalOptions} [options] - Global server options.
  * @returns - An object with methods to manage server telemetry:
  *  - `getStats`: Resolve server stats and channel IDs.
- *  - `setStats`: Uses the HTTP server handle and starts the transport report timer.
+ *  - `startStats`: Start health and transport report timers.
  *  - `unsubscribe`: Cleans up timers and resources.
  */
 const createServerStats = (statsOptions = getStatsOptions(), options = getOptions()) => {
@@ -141,7 +139,7 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
     getStats: (): Promise<Stats> => statsPromise,
 
     /**
-     * Uses the HTTP server handle and starts the transport report timer.
+     * Starts health and transport report timers and resolves stats.
      *
      * @param {HttpServerHandle} [httpHandle] - Handle for the HTTP server if available.
      */
