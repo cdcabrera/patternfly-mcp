@@ -41,6 +41,8 @@ interface DeferTaskHandle<TReturn> {
  * @property [timeoutMs] - Max time for a single execution. (default `1000`)
  * @property [repeat] - Number of loops. (default `1`)
  * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
+ * @property [intervalMs] - Non-blocking delay in ms between task executions. See
+ *     {@link MIN_INTERVAL_MS}.
  */
 interface DeferTaskOptions {
   cancelMs?: number;
@@ -48,7 +50,14 @@ interface DeferTaskOptions {
   timeoutMs?: number;
   repeat?: number | undefined;
   errorMessage?: string;
+  intervalMs?: number;
 }
+
+/**
+ * Minimum interval ms allowed for {@link DeferTaskOptions.intervalMs} for repeating
+ * tasks.
+ */
+const MIN_INTERVAL_MS = 250;
 
 /**
  * Create a managed, repeatable, cancellable task wrapper.
@@ -107,24 +116,67 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     debug = () => {},
     repeat = 1,
     timeoutMs,
-    errorMessage = 'Task timed out'
+    errorMessage = 'Task timed out',
+    intervalMs = MIN_INTERVAL_MS
   }: DeferTaskOptions = {}
 ) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
   const updatedTimeoutMs = timeoutMs ?? 1000;
+  const updatedIntervalMs = intervalMs;
   const updatedFunc = async (...args: TArgs) =>
     (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
+
+  if (updatedRepeat !== 1) {
+    if (intervalMs === undefined) {
+      throw new Error(
+        `deferTask: repeating tasks require an explicit intervalMs option with a minimum of ${MIN_INTERVAL_MS}ms`
+      );
+    }
+
+    if (!Number.isFinite(intervalMs) || intervalMs < MIN_INTERVAL_MS) {
+      throw new Error(
+        `deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms received ${intervalMs} instead`
+      );
+    }
+  }
 
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
     const state: {
       isRunning: boolean;
       count: number;
-      promise?: Promise<TReturn | undefined> | undefined
+      promise?: Promise<TReturn | undefined> | undefined;
+      delayTimer?: NodeJS.Timeout | undefined;
+      resolveDelay?: (() => void) | undefined;
     } = {
       isRunning: true,
       count: 0,
-      promise: undefined
+      promise: undefined,
+      delayTimer: undefined,
+      resolveDelay: undefined
     };
+
+    /**
+     * Delay helper that resolves after ms or when cancelled.
+     *
+     * @param ms - Delay in milliseconds.
+     */
+    const delay = (ms: number) =>
+      new Promise<void>(resolve => {
+        const onDone = () => {
+          if (state.delayTimer) {
+            clearTimeout(state.delayTimer);
+            state.delayTimer = undefined;
+          }
+
+          state.resolveDelay = undefined;
+
+          resolve();
+        };
+
+        state.resolveDelay = onDone;
+        state.delayTimer = setTimeout(onDone, ms);
+        state.delayTimer?.unref();
+      });
 
     const task = async (): Promise<TReturn | undefined> => {
       if (!state.isRunning || (updatedRepeat !== undefined && state.count >= updatedRepeat)) {
@@ -168,6 +220,14 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       });
 
       if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
+        if (updatedIntervalMs !== undefined) {
+          await delay(updatedIntervalMs);
+        }
+
+        if (!state.isRunning) {
+          return result;
+        }
+
         return task();
       }
 
@@ -225,6 +285,10 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       stop: async () => {
         state.isRunning = false;
 
+        if (state.resolveDelay) {
+          state.resolveDelay();
+        }
+
         debug({
           type: 'stop',
           value: () => ({ ...state })
@@ -243,4 +307,4 @@ const deferTask = <TArgs extends unknown[], TReturn>(
   };
 };
 
-export { deferTask, type DeferTaskOptions, type DeferTaskHandle, type DeferTaskDebugHandler };
+export { deferTask, type DeferTaskOptions, type DeferTaskHandle, type DeferTaskDebugHandler, MIN_INTERVAL_MS };

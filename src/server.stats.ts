@@ -6,6 +6,7 @@ import { type HttpServerHandle } from './server.http';
 import { publish, type StatReport } from './stats';
 import { DEFAULT_OPTIONS, type StatsSession } from './options.defaults';
 import { deferTask, type DeferTaskHandle } from './server.task';
+import { log } from './logger';
 
 /**
  * Transport-specific telemetry report.
@@ -55,7 +56,7 @@ const healthReport = (statsOptions: StatsSession) => {
  * @note `undefined` repeat means the task will run indefinitely.
  */
 healthReport.deferTask = deferTask(healthReport, {
-  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
+  intervalMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
   repeat: undefined
 });
 
@@ -105,7 +106,7 @@ const transportReport = (
  * @note `undefined` repeat means the task will run indefinitely.
  */
 transportReport.deferTask = deferTask(transportReport, {
-  timeoutMs: DEFAULT_OPTIONS.stats.reportIntervalMs.transport,
+  intervalMs: DEFAULT_OPTIONS.stats.reportIntervalMs.transport,
   repeat: undefined
 });
 
@@ -153,8 +154,12 @@ const createServerStats = (statsOptions = getStatsOptions(), options = getOption
       // Start the transport report. Defining repeat as undefined keeps the loop infinite.
       transportTask = transportReport.deferTask({ httpPort }, statsOptions);
 
-      void healthTask.start();
-      void transportTask.start();
+      void healthTask.start().catch(err => {
+        log.error('Health telemetry loop failed to start or run', err);
+      });
+      void transportTask.start().catch(err => {
+        log.error('Transport telemetry loop failed to start or run', err);
+      });
 
       resolveStatsPromise(stats);
     },

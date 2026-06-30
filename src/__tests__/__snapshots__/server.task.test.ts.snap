@@ -6,16 +6,20 @@ exports[`deferTask should cancel a task 1`] = `
     "type": "start",
     "value": {
       "count": 1,
+      "delayTimer": undefined,
       "isRunning": false,
       "promise": Promise {},
+      "resolveDelay": undefined,
     },
   },
   {
     "type": "run",
     "value": {
       "count": 1,
+      "delayTimer": undefined,
       "isRunning": false,
       "promise": Promise {},
+      "resolveDelay": undefined,
     },
   },
 ]

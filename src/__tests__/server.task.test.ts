@@ -1,4 +1,4 @@
-import { deferTask } from '../server.task';
+import { deferTask, MIN_INTERVAL_MS } from '../server.task';
 
 describe('deferTask', () => {
   beforeEach(() => {
@@ -38,7 +38,18 @@ describe('deferTask', () => {
     const handle = deferTask(mockFunc, { debug, timeoutMs: 10, ...options })();
 
     handle.isRunning();
-    const result = await handle.start();
+    const startPromise = handle.start();
+
+    if (options?.repeat && options.repeat > 1) {
+      for (let i = 0; i < options.repeat; i++) {
+        await jest.advanceTimersByTimeAsync(MIN_INTERVAL_MS);
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      }
+    }
+
+    const result = await startPromise;
 
     expect(result).toBe(expected);
     expect(mockFunc).toHaveBeenCalledTimes(options?.repeat ?? 1);
@@ -48,7 +59,7 @@ describe('deferTask', () => {
   it('should stop a task', async () => {
     const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockReturnValue('stopped');
-    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 5, timeoutMs: 100 })();
+    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 5, timeoutMs: 100, intervalMs: MIN_INTERVAL_MS })();
 
     handle.start();
     expect(handle.isRunning()).toBe(true);
@@ -63,7 +74,7 @@ describe('deferTask', () => {
   it('should cancel a task', async () => {
     const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockReturnValue('lorem ipsum');
-    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 3, cancelMs: 100, timeoutMs: 110 })();
+    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 3, cancelMs: 100, timeoutMs: 110, intervalMs: MIN_INTERVAL_MS })();
 
     await Promise.allSettled([
       handle.start(),
@@ -94,5 +105,68 @@ describe('deferTask', () => {
     expect(handle).toMatchSnapshot('handle');
 
     expect(mockDebug.mock.calls).toMatchSnapshot();
+  });
+
+  it('should introduce a delay between repetitions when intervalMs is provided', async () => {
+    const mockFunc = jest.fn().mockReturnValue('lorem');
+    const handle = deferTask(mockFunc, { repeat: 3, intervalMs: 500, timeoutMs: 100 })();
+
+    const startPromise = handle.start();
+
+    // First execution runs immediately
+    await jest.advanceTimersByTimeAsync(0);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+
+    // After 500ms, second execution runs
+    await jest.advanceTimersByTimeAsync(500);
+    expect(mockFunc).toHaveBeenCalledTimes(2);
+
+    // After another 500ms, third execution runs
+    await jest.advanceTimersByTimeAsync(500);
+    expect(mockFunc).toHaveBeenCalledTimes(3);
+
+    const result = await startPromise;
+
+    expect(result).toBe('lorem');
+  });
+
+  it('should stop immediately and cancel the delay when stop is called', async () => {
+    const mockFunc = jest.fn().mockReturnValue('ipsum');
+    const handle = deferTask(mockFunc, { repeat: 3, intervalMs: 5000, timeoutMs: 100 })();
+
+    const startPromise = handle.start();
+
+    // First execution runs immediately
+    await jest.advanceTimersByTimeAsync(0);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+
+    // Stop while in the 5000ms delay before second execution
+    const stopPromise = handle.stop();
+
+    // The start promise should resolve immediately and not run mockFunc again
+    await startPromise;
+    await stopPromise;
+
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+    expect(handle.isRunning()).toBe(false);
+  });
+
+  it.each([
+    {
+      description: 'zero intervalMs',
+      expected: 'deferTask: intervalMs must be >= 250ms received 0 instead',
+      options: { repeat: 3, intervalMs: 0 }
+    },
+    {
+      description: 'intervalMs is less than MIN_INTERVAL_MS',
+      expected: `deferTask: intervalMs must be >= 250ms received 100 instead`,
+      options: { repeat: 3, intervalMs: 100 }
+    }
+  ])('should throw an error for intervalMs, $description', ({ expected, options }) => {
+    const mockFunc = jest.fn();
+
+    expect(() => {
+      deferTask(mockFunc, options as any)();
+    }).toThrow(expected);
   });
 });
