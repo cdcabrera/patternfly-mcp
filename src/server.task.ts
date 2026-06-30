@@ -102,17 +102,38 @@ interface DeferTaskOptions {
  * // Stop the task
  * await pollFunc.deferTask.stop();
  */
+/**
+ * Minimum interval allowed in milliseconds for repeating tasks.
+ */
+const MIN_INTERVAL_MS = 250;
+
 const deferTask = <TArgs extends unknown[], TReturn>(
   func: ((...args: TArgs) => TReturn | Promise<TReturn>) | Promise<TReturn>,
-  {
+  options: DeferTaskOptions = {}
+) => {
+  const {
     cancelMs,
     debug = () => {},
-    repeat = 1,
     timeoutMs,
     errorMessage = 'Task timed out',
-    intervalMs = 0
-  }: DeferTaskOptions = {}
-) => {
+    intervalMs
+  } = options;
+
+  const repeat = 'repeat' in options ? options.repeat : 1;
+
+  if (repeat !== 1) {
+    if (intervalMs === undefined) {
+      throw new Error(
+        'deferTask: repeating tasks require an explicit intervalMs'
+      );
+    }
+    if (!Number.isFinite(intervalMs) || intervalMs < MIN_INTERVAL_MS) {
+      throw new Error(
+        `deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms (got ${intervalMs})`
+      );
+    }
+  }
+
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
   const updatedTimeoutMs = timeoutMs ?? 1000;
   const updatedIntervalMs = intervalMs;
@@ -286,4 +307,4 @@ const deferTask = <TArgs extends unknown[], TReturn>(
   };
 };
 
-export { deferTask, type DeferTaskOptions, type DeferTaskHandle, type DeferTaskDebugHandler };
+export { deferTask, type DeferTaskOptions, type DeferTaskHandle, type DeferTaskDebugHandler, MIN_INTERVAL_MS };
