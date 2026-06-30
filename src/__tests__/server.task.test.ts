@@ -24,13 +24,13 @@ describe('deferTask', () => {
     {
       description: 'sync options',
       mockFunc: jest.fn().mockReturnValue('lorem ipsum'),
-      options: { repeat: 3, intervalMs: MIN_INTERVAL_MS },
+      options: { repeat: 3 },
       expected: 'lorem ipsum'
     },
     {
       description: 'async options',
       mockFunc: jest.fn().mockResolvedValue('lorem ipsum'),
-      options: { repeat: 3, intervalMs: MIN_INTERVAL_MS },
+      options: { repeat: 3 },
       expected: 'lorem ipsum'
     }
   ])('should execute a task, $description', async ({ mockFunc, options, expected }) => {
@@ -42,7 +42,7 @@ describe('deferTask', () => {
 
     if (options?.repeat && options.repeat > 1) {
       for (let i = 0; i < options.repeat; i++) {
-        await jest.advanceTimersByTimeAsync(options.intervalMs ?? 1);
+        await jest.advanceTimersByTimeAsync(MIN_INTERVAL_MS);
         await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
@@ -151,49 +151,22 @@ describe('deferTask', () => {
     expect(handle.isRunning()).toBe(false);
   });
 
-  describe('MIN_INTERVAL_MS guard', () => {
-    it('should throw an error if repeat !== 1 and intervalMs is undefined', () => {
-      const mockFunc = jest.fn();
+  it.each([
+    {
+      description: 'zero intervalMs',
+      expected: 'deferTask: intervalMs must be >= 250ms received 0 instead',
+      options: { repeat: 3, intervalMs: 0 }
+    },
+    {
+      description: 'intervalMs is less than MIN_INTERVAL_MS',
+      expected: `deferTask: intervalMs must be >= 250ms received 100 instead`,
+      options: { repeat: 3, intervalMs: 100 }
+    }
+  ])('should throw an error for intervalMs, $description', ({ expected, options }) => {
+    const mockFunc = jest.fn();
 
-      expect(() => {
-        deferTask(mockFunc, { repeat: 3 })();
-      }).toThrow('deferTask: repeating tasks require an explicit intervalMs');
-    });
-
-    it('should throw an error if repeat !== 1 and intervalMs is less than MIN_INTERVAL_MS', () => {
-      const mockFunc = jest.fn();
-
-      expect(() => {
-        deferTask(mockFunc, { repeat: 3, intervalMs: 100 })();
-      }).toThrow(`deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms (got 100)`);
-    });
-
-    it('should throw an error if repeat !== 1 and intervalMs is non-finite', () => {
-      const mockFunc = jest.fn();
-
-      expect(() => {
-        deferTask(mockFunc, { repeat: 3, intervalMs: NaN })();
-      }).toThrow(`deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms (got NaN)`);
-    });
-
-    it('should not throw if repeat !== 1 and intervalMs is >= MIN_INTERVAL_MS', () => {
-      const mockFunc = jest.fn();
-
-      expect(() => {
-        deferTask(mockFunc, { repeat: 3, intervalMs: MIN_INTERVAL_MS })();
-      }).not.toThrow();
-    });
-
-    it('should not throw if repeat === 1 and intervalMs is undefined or less than MIN_INTERVAL_MS', () => {
-      const mockFunc = jest.fn();
-
-      expect(() => {
-        deferTask(mockFunc, { repeat: 1 })();
-      }).not.toThrow();
-
-      expect(() => {
-        deferTask(mockFunc, { repeat: 1, intervalMs: 50 })();
-      }).not.toThrow();
-    });
+    expect(() => {
+      deferTask(mockFunc, options as any)();
+    }).toThrow(expected);
   });
 });

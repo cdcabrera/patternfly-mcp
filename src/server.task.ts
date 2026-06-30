@@ -41,7 +41,8 @@ interface DeferTaskHandle<TReturn> {
  * @property [timeoutMs] - Max time for a single execution. (default `1000`)
  * @property [repeat] - Number of loops. (default `1`)
  * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
- * @property [intervalMs] - Non-blocking delay in ms between task executions.
+ * @property [intervalMs] - Non-blocking delay in ms between task executions. See
+ *     {@link MIN_INTERVAL_MS}.
  */
 interface DeferTaskOptions {
   cancelMs?: number;
@@ -51,6 +52,12 @@ interface DeferTaskOptions {
   errorMessage?: string;
   intervalMs?: number;
 }
+
+/**
+ * Minimum interval ms allowed for {@link DeferTaskOptions.intervalMs} for repeating
+ * tasks.
+ */
+const MIN_INTERVAL_MS = 250;
 
 /**
  * Create a managed, repeatable, cancellable task wrapper.
@@ -102,43 +109,36 @@ interface DeferTaskOptions {
  * // Stop the task
  * await pollFunc.deferTask.stop();
  */
-/**
- * Minimum interval allowed in milliseconds for repeating tasks.
- */
-const MIN_INTERVAL_MS = 250;
-
 const deferTask = <TArgs extends unknown[], TReturn>(
   func: ((...args: TArgs) => TReturn | Promise<TReturn>) | Promise<TReturn>,
-  options: DeferTaskOptions = {}
-) => {
-  const {
+  {
     cancelMs,
     debug = () => {},
+    repeat = 1,
     timeoutMs,
     errorMessage = 'Task timed out',
-    intervalMs
-  } = options;
-
-  const repeat = 'repeat' in options ? options.repeat : 1;
-
-  if (repeat !== 1) {
-    if (intervalMs === undefined) {
-      throw new Error(
-        'deferTask: repeating tasks require an explicit intervalMs'
-      );
-    }
-    if (!Number.isFinite(intervalMs) || intervalMs < MIN_INTERVAL_MS) {
-      throw new Error(
-        `deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms (got ${intervalMs})`
-      );
-    }
-  }
-
+    intervalMs = MIN_INTERVAL_MS
+  }: DeferTaskOptions = {}
+) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
   const updatedTimeoutMs = timeoutMs ?? 1000;
   const updatedIntervalMs = intervalMs;
   const updatedFunc = async (...args: TArgs) =>
     (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
+
+  if (updatedRepeat !== 1) {
+    if (intervalMs === undefined) {
+      throw new Error(
+        `deferTask: repeating tasks require an explicit intervalMs option with a minimum of ${MIN_INTERVAL_MS}ms`
+      );
+    }
+
+    if (!Number.isFinite(intervalMs) || intervalMs < MIN_INTERVAL_MS) {
+      throw new Error(
+        `deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms received ${intervalMs} instead`
+      );
+    }
+  }
 
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
     const state: {
