@@ -2,13 +2,16 @@ import { isAsync, isPromise, timeoutFunction } from './server.helpers';
 import { log } from './logger';
 
 /**
- * Debug handler callback.
+ * Debug handler callback invoked for deferTask lifecycle events.
  *
  * @template TReturn Return type of the memoized function.
  *
- * @param info - Object containing debugging information.
- * @param info.type - Information debugging category.
- * @param info.value - Value associated with the debug operation.
+ * @param info - Event payload. Object containing debugging information.
+ * @param info.type - Information debugging category. Available options:
+ *   `start` | `run` | `run:stopped` | `run:error` | `run:cancel` | `stop`
+ *   | `stop:error` | `isRunning`
+ * @param info.value - Returns a snapshot of internal-state (`isRunning`,
+ *   `count`, and optionally `error`).
  * @param {MemoCache<TReturn>} info.cache - MemoCache array
  */
 type DeferTaskDebugHandler = (info: { type: string; value: unknown; [key: string]: unknown; }) => void;
@@ -31,11 +34,13 @@ interface DeferTaskHandle<TReturn> {
 /**
  * Options for the deferred task.
  *
- * @property [cancelMs] - Hard cutoff for cancellation (infinite if undefined)
- * @property {DeferTaskDebugHandler} [debug] - Debug callback function
- * @property [timeoutMs] - Max time for a single execution (default `1000`)
- * @property [repeat] - Number of loops (default `1`)
- * @property [errorMessage] - Custom error for timeouts
+ * @property [cancelMs] - Hard ms cutoff for cancellation. `undefined`
+ *     disables the cutoff. (default `undefined`)
+ * @property {DeferTaskDebugHandler} [debug] - Debug callback for lifecycle events.
+ *     See {@link deferTask}.
+ * @property [timeoutMs] - Max time for a single execution. (default `1000`)
+ * @property [repeat] - Number of loops. (default `1`)
+ * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
  */
 interface DeferTaskOptions {
   cancelMs?: number;
@@ -46,10 +51,54 @@ interface DeferTaskOptions {
 }
 
 /**
- * Create a managed task that can be repeated, timed out, and stopped.
+ * Create a managed, repeatable, cancellable task wrapper.
  *
- * @param func - The function or promise to be run
- * @param {DeferTaskOptions} [options={}] - Configurable options.
+ * Wraps a function (sync or async) or a raw Promise and returns a *factory*.
+ * Calling it with the wrapped function's arguments produces a {@link DeferTaskHandle}
+ * exposing `start()`, `stop()`, and `isRunning()`.
+ *
+ * Options:
+ * - `repeat`: number of executions. Defaults to `1`. Pass `undefined` to repeat
+ *   **indefinitely** until `stop()` is called, `cancelMs` fires, or the task throws.
+ * - `timeoutMs`: per-execution timeout. Defaults to `1000` ms. Exceeding it rejects
+ *   `start()` with `errorMessage` and emits a `run:error` debug event.
+ * - `cancelMs`: hard cutoff across the entire `start()` lifetime. `undefined` (default)
+ *   disables the cutoff. When it fires, `start()` rejects with `'Task canceled'` and
+ *   emits a `run:cancel` debug event.
+ * - `errorMessage`: message used for the per-execution timeout rejection.
+ *   Defaults to `'Task timed out'`.
+ * - `debug`: callback invoked for lifecycle events. Emitted `type` values:
+ *   `start`, `run`, `run:stopped`, `run:error`, `run:cancel`, `stop`, `stop:error`,
+ *   `isRunning`. `info.value` is a thunk returning a snapshot of internal state.
+ *
+ * @template TArgs Tuple of arguments forwarded to `func` on each execution.
+ * @template TReturn Resolved value type of `func`.
+ *
+ * @param func Function (sync or async) or a Promise to execute. When a Promise is
+ *     provided, it is awaited on each repetition (i.e. the same settled value is
+ *     reused).
+ * @param {DeferTaskOptions} options Optional {@link DeferTaskOptions} controlling
+ *     repeat, timeout, cancel, debug, and error message behavior.
+ * @returns A factory `(...args: TArgs) => DeferTaskHandle<TReturn>`. Each
+ *     invocation produces an independent handle with its own running state.
+ *
+ * @example Basic use
+ * const handle = deferTask(pollFunc, { repeat: undefined, timeoutMs: 5000 })(passedArgsToPollFunc);
+ * // Start the task
+ * void handle.start();
+ * // Stop the task
+ * await handle.stop();
+ *
+ * @example Application pattern
+ * // Function to poll
+ * const pollFunc = async (passedArgsToPollFunc: string) => {}
+ * // Create a handle for the task
+ * pollFunc.deferTask = deferTask(pollFunc, { repeat: undefined, timeoutMs: 5000 });
+ *
+ * // Start the task.
+ * void pollFunc.deferTask.start(passedArgsToPollFunc);
+ * // Stop the task
+ * await pollFunc.deferTask.stop();
  */
 const deferTask = <TArgs extends unknown[], TReturn>(
   func: ((...args: TArgs) => TReturn | Promise<TReturn>) | Promise<TReturn>,
