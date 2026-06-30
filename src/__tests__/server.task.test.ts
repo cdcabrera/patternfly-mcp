@@ -38,7 +38,18 @@ describe('deferTask', () => {
     const handle = deferTask(mockFunc, { debug, timeoutMs: 10, ...options })();
 
     handle.isRunning();
-    const result = await handle.start();
+    const startPromise = handle.start();
+
+    if (options?.repeat && options.repeat > 1) {
+      for (let i = 0; i < options.repeat; i++) {
+        await jest.advanceTimersByTimeAsync(1);
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+      }
+    }
+
+    const result = await startPromise;
 
     expect(result).toBe(expected);
     expect(mockFunc).toHaveBeenCalledTimes(options?.repeat ?? 1);

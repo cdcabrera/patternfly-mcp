@@ -110,7 +110,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     repeat = 1,
     timeoutMs,
     errorMessage = 'Task timed out',
-    intervalMs
+    intervalMs = 0
   }: DeferTaskOptions = {}
 ) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
