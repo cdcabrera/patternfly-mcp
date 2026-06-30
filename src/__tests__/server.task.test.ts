@@ -95,4 +95,48 @@ describe('deferTask', () => {
 
     expect(mockDebug.mock.calls).toMatchSnapshot();
   });
+
+  it('should introduce a delay between repetitions when intervalMs is provided', async () => {
+    const mockFunc = jest.fn().mockReturnValue('lorem');
+    const handle = deferTask(mockFunc, { repeat: 3, intervalMs: 500, timeoutMs: 100 })();
+
+    const startPromise = handle.start();
+
+    // First execution runs immediately
+    await jest.advanceTimersByTimeAsync(0);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+
+    // After 500ms, second execution runs
+    await jest.advanceTimersByTimeAsync(500);
+    expect(mockFunc).toHaveBeenCalledTimes(2);
+
+    // After another 500ms, third execution runs
+    await jest.advanceTimersByTimeAsync(500);
+    expect(mockFunc).toHaveBeenCalledTimes(3);
+
+    const result = await startPromise;
+
+    expect(result).toBe('lorem');
+  });
+
+  it('should stop immediately and cancel the delay when stop is called', async () => {
+    const mockFunc = jest.fn().mockReturnValue('ipsum');
+    const handle = deferTask(mockFunc, { repeat: 3, intervalMs: 5000, timeoutMs: 100 })();
+
+    const startPromise = handle.start();
+
+    // First execution runs immediately
+    await jest.advanceTimersByTimeAsync(0);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+
+    // Stop while in the 5000ms delay before second execution
+    const stopPromise = handle.stop();
+
+    // The start promise should resolve immediately and not run mockFunc again
+    await startPromise;
+    await stopPromise;
+
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+    expect(handle.isRunning()).toBe(false);
+  });
 });
