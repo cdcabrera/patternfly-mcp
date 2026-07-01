@@ -38,7 +38,7 @@ interface DeferTaskHandle<TReturn> {
  *     disables the cutoff. (default `undefined`)
  * @property {DeferTaskDebugHandler} [debug] - Debug callback for lifecycle events.
  *     See {@link deferTask}.
- * @property [timeoutMs] - Max time for a single execution. (default `1000`)
+ * @property [timeoutMs] - Max time for a single execution cycle. (default `1000`)
  * @property [repeat] - Number of loops. (default `1`)
  */
 interface DeferTaskOptions {
@@ -64,13 +64,10 @@ const MIN_TIMEOUT_MS = 250;
  * Options:
  * - `repeat`: number of executions. Defaults to `1`. Pass `undefined` to repeat
  *   **indefinitely** until `stop()` is called, `cancelMs` fires, or the task throws.
- * - `timeoutMs`: per-execution timeout. Defaults to `1000` ms. Exceeding it rejects
- *   `start()` with `errorMessage` and emits a `run:error` debug event.
+ * - `timeoutMs`: per-execution cycle duration. Defaults to `1000` ms.
  * - `cancelMs`: hard cutoff across the entire `start()` lifetime. `undefined` (default)
  *   disables the cutoff. When it fires, `start()` rejects with `'Task canceled'` and
  *   emits a `run:cancel` debug event.
- * - `errorMessage`: message used for the per-execution timeout rejection.
- *   Defaults to `'Task timed out'`.
  * - `debug`: callback invoked for lifecycle events. Emitted `type` values:
  *   `start`, `run`, `run:stopped`, `run:error`, `run:cancel`, `stop`, `stop:error`,
  *   `isRunning`. `info.value` is a thunk returning a snapshot of internal state.
@@ -82,7 +79,7 @@ const MIN_TIMEOUT_MS = 250;
  *     provided, it is awaited on each repetition (i.e. the same settled value is
  *     reused).
  * @param {DeferTaskOptions} options Optional {@link DeferTaskOptions} controlling
- *     repeat, timeout, cancel, debug, and error message behavior.
+ *     repeat, timeout, cancel, and debug behavior.
  * @returns A factory `(...args: TArgs) => DeferTaskHandle<TReturn>`. Each
  *     invocation produces an independent handle with its own running state.
  *
@@ -92,17 +89,6 @@ const MIN_TIMEOUT_MS = 250;
  * void handle.start();
  * // Stop the task
  * await handle.stop();
- *
- * @example Application pattern
- * // Function to poll
- * const pollFunc = async (passedArgsToPollFunc: string) => {}
- * // Create a handle for the task
- * pollFunc.deferTask = deferTask(pollFunc, { repeat: undefined, timeoutMs: 5000 });
- *
- * // Start the task.
- * void pollFunc.deferTask.start(passedArgsToPollFunc);
- * // Stop the task
- * await pollFunc.deferTask.stop();
  */
 const deferTask = <TArgs extends unknown[], TReturn>(
   func: ((...args: TArgs) => TReturn | Promise<TReturn>) | Promise<TReturn>,
@@ -110,117 +96,62 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     cancelMs,
     debug = () => {},
     repeat = 1,
-    timeoutMs
+    timeoutMs = 1000
   }: DeferTaskOptions = {}
 ) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
-  const updatedTimeoutMs = timeoutMs ?? 1000;
-  const updatedFunc = async (...args: TArgs) =>
-    (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
 
-  if (updatedRepeat !== 1) {
-    if (!Number.isFinite(updatedTimeoutMs) || updatedTimeoutMs < MIN_TIMEOUT_MS) {
-      throw new Error(
-        `deferTask: timeoutMs must be >= ${MIN_TIMEOUT_MS}ms received ${updatedTimeoutMs} instead`
-      );
-    }
+  if (updatedRepeat !== 1 && (!Number.isFinite(timeoutMs) || timeoutMs < MIN_TIMEOUT_MS)) {
+    throw new Error(`deferTask: timeoutMs must be >= ${MIN_TIMEOUT_MS}ms received ${timeoutMs} instead`);
   }
 
+  const taskFunc = async (...args: TArgs): Promise<TReturn> =>
+    (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
+
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
-    const state: {
-      isRunning: boolean;
-      count: number;
-      promise?: Promise<TReturn | undefined> | undefined;
-      delayTimer?: NodeJS.Timeout | undefined;
-      resolveDelay?: (() => void) | undefined;
-    } = {
+    const state = {
       isRunning: true,
       count: 0,
-      promise: undefined,
-      delayTimer: undefined,
-      resolveDelay: undefined
+      promise: undefined as Promise<TReturn | undefined> | undefined,
+      delayTimer: undefined as NodeJS.Timeout | undefined,
+      resolveDelay: undefined as (() => void) | undefined
     };
 
-    /**
-     * Delay helper that resolves after ms or when cancelled.
-     *
-     * @param ms - Delay in milliseconds.
-     */
-    const delay = (ms: number) =>
-      new Promise<void>(resolve => {
-        const onDone = () => {
-          if (state.delayTimer) {
-            clearTimeout(state.delayTimer);
-            state.delayTimer = undefined;
-          }
+    const delay = (ms: number) => new Promise<void>(resolve => {
+      state.resolveDelay = () => {
+        clearTimeout(state.delayTimer);
+        state.delayTimer = undefined;
+        state.resolveDelay = undefined;
+        resolve();
+      };
+      state.delayTimer = setTimeout(state.resolveDelay, ms).unref();
+    });
 
-          state.resolveDelay = undefined;
-
-          resolve();
-        };
-
-        state.resolveDelay = onDone;
-        state.delayTimer = setTimeout(onDone, ms);
-        state.delayTimer?.unref();
-      });
+    const getJittered = () => timeoutMs * (0.9 + Math.random() * 0.2);
 
     const task = async (): Promise<TReturn | undefined> => {
+      await delay(getJittered());
       let result: TReturn | undefined;
 
-      // Requirement: Delay-before-run (Prevents startup spikes)
-      await delay(updatedTimeoutMs * (0.9 + Math.random() * 0.2));
-
       while (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
-        // 1. Calculate the total cycle time with jitter (e.g., 30s +/- 3s)
-        const jitteredMs = updatedTimeoutMs * (0.9 + Math.random() * 0.2);
-
-        // 2. Start the pacing window immediately
-        const pacing = delay(jitteredMs);
-
-        if (!state.isRunning) {
-          debug({
-            type: 'run:stopped',
-            value: () => ({ ...state })
-          });
-          break;
-        }
-
-        debug({
-          type: 'run',
-          value: () => ({ ...state })
-        });
-
+        const pacing = delay(getJittered());
+        debug({ type: 'run', value: () => ({ ...state }) });
         state.count++;
 
-        // 3. Execute the task
-        // We remove the internal timeoutFunction wrap to simplify the loop,
-        // relying on the pacing window to define the tempo.
-        result = await updatedFunc(...args).catch(error => {
+        result = await taskFunc(...args).catch(error => {
           state.isRunning = false;
-
-          debug({
-            type: 'run:error',
-            value: () => ({ ...state, error })
-          });
-
+          debug({ type: 'run:error', value: () => ({ ...state, error }) });
           log.error('Defer task error', error);
-
-          return Promise.reject(error);
+          throw error;
         });
 
-        // 4. Await the REMAINDER of the pacing window
-        // This ensures the next cycle starts exactly jitteredMs after the current one started.
-        // If execution was fast, we wait. If slow, we move on immediately.
         if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
           await pacing;
         }
       }
 
       if (!state.isRunning) {
-        debug({
-          type: 'run:stopped',
-          value: () => ({ ...state })
-        });
+        debug({ type: 'run:stopped', value: () => ({ ...state }) });
       }
 
       return result;
@@ -228,70 +159,37 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
     return {
       isRunning: () => {
-        debug({
-          type: 'isRunning',
-          value: () => ({ ...state })
-        });
-
+        debug({ type: 'isRunning', value: () => ({ ...state }) });
         return state.isRunning;
       },
       start: async () => {
         state.isRunning = true;
-        let updatedTask: Promise<TReturn | undefined>;
+        debug({ type: 'start', value: () => ({ ...state }) });
 
-        debug({
-          type: 'start',
-          value: () => ({ ...state })
-        });
+        const run = async () => {
+          const res = await task();
+          state.isRunning = false;
+          return res;
+        };
 
-        if (cancelMs !== undefined) {
-          updatedTask = timeoutFunction(async () => {
-            const response = await task();
-
-            state.isRunning = false;
-
-            return response;
-          }, {
-            timeout: cancelMs,
-            errorMessage: 'Task canceled'
-          }).catch(error => {
-            state.isRunning = false;
-
-            debug({
-              type: 'run:cancel',
-              value: () => ({ ...state, error })
-            });
-
-            log.error('Defer task canceled', error);
-
-            return Promise.reject(error);
-          });
-        } else {
-          updatedTask = task();
-        }
-
-        state.promise = updatedTask;
+        state.promise = cancelMs !== undefined
+          ? timeoutFunction(run, { timeout: cancelMs, errorMessage: 'Task canceled' })
+              .catch(error => {
+                state.isRunning = false;
+                debug({ type: 'run:cancel', value: () => ({ ...state, error }) });
+                log.error('Defer task canceled', error);
+                throw error;
+              })
+          : run();
 
         return state.promise;
       },
       stop: async () => {
         state.isRunning = false;
-
-        if (state.resolveDelay) {
-          state.resolveDelay();
-        }
-
-        debug({
-          type: 'stop',
-          value: () => ({ ...state })
-        });
-
+        state.resolveDelay?.();
+        debug({ type: 'stop', value: () => ({ ...state }) });
         await state.promise?.catch(error => {
-          debug({
-            type: 'stop:error',
-            value: () => ({ ...state, error })
-          });
-
+          debug({ type: 'stop:error', value: () => ({ ...state, error }) });
           log.error('Defer task stopped with error', error);
         });
       }
