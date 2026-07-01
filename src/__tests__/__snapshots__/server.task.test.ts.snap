@@ -138,13 +138,13 @@ exports[`deferTask should stop a task 1`] = `
   ],
   [
     {
-      "type": "stop",
+      "type": "run:stopped",
       "value": [Function],
     },
   ],
   [
     {
-      "type": "run:stopped",
+      "type": "stop",
       "value": [Function],
     },
   ],

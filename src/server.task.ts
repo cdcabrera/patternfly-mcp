@@ -130,39 +130,48 @@ const deferTask = <TArgs extends unknown[], TReturn>(
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
     const state = structuredClone(baseState);
 
-    const delay = (ms: number) => new Promise<void>(resolve => {
-      state.resolveDelay = () => {
+    const delay = (ms: number) => new Promise<boolean>(resolve => {
+      const onDone = () => {
         clearTimeout(state.delayTimer);
 
         state.delayTimer = undefined;
         state.resolveDelay = undefined;
 
-        resolve();
+        if (!state.isRunning) {
+          debug({
+            type: 'run:stopped',
+            value: () => ({ ...state })
+          });
+        }
+
+        resolve(state.isRunning);
       };
 
-      state.delayTimer = setTimeout(state.resolveDelay, ms).unref();
+      if (!state.isRunning) {
+        onDone();
+
+        return;
+      }
+
+      state.resolveDelay = onDone;
+      state.delayTimer = setTimeout(onDone, ms).unref();
     });
 
     // Get a random'ish number to avoid potential long-running syncs
-    const getJitter = () => updatedTimeoutMs * (0.9 + Math.random() * 0.2);
+    const jitter = () => delay(updatedTimeoutMs * (0.9 + Math.random() * 0.2));
 
     // Set up the task
     const task = async (): Promise<TReturn | undefined> => {
-      await delay(getJitter());
+      if (!await jitter()) {
+        return undefined;
+      }
 
       const run = async (): Promise<TReturn | undefined> => {
         if (!state.isRunning || (updatedRepeat !== undefined && state.count >= updatedRepeat)) {
-          if (!state.isRunning) {
-            debug({
-              type: 'run:stopped',
-              value: () => ({ ...state })
-            });
-          }
-
           return undefined;
         }
 
-        const pacing = delay(getJitter());
+        const pacing = jitter();
 
         debug({
           type: 'run',
@@ -185,7 +194,9 @@ const deferTask = <TArgs extends unknown[], TReturn>(
         });
 
         if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
-          await pacing;
+          if (!await pacing) {
+            return result;
+          }
 
           return run();
         }
