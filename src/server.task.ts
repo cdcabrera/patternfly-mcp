@@ -124,6 +124,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
         state.resolveDelay = undefined;
         resolve();
       };
+
       state.delayTimer = setTimeout(state.resolveDelay, ms).unref();
     });
 
@@ -131,17 +132,29 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
     const task = async (): Promise<TReturn | undefined> => {
       await delay(getJittered());
+
       let result: TReturn | undefined;
 
       while (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
         const pacing = delay(getJittered());
-        debug({ type: 'run', value: () => ({ ...state }) });
-        state.count++;
+
+        debug({
+          type: 'run',
+          value: () => ({ ...state })
+        });
+
+        state.count += 1;
 
         result = await taskFunc(...args).catch(error => {
           state.isRunning = false;
-          debug({ type: 'run:error', value: () => ({ ...state, error }) });
+
+          debug({
+            type: 'run:error',
+            value: () => ({ ...state, error })
+          });
+
           log.error('Defer task error', error);
+
           throw error;
         });
 
@@ -151,7 +164,10 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       }
 
       if (!state.isRunning) {
-        debug({ type: 'run:stopped', value: () => ({ ...state }) });
+        debug({
+          type: 'run:stopped',
+          value: () => ({ ...state })
+        });
       }
 
       return result;
@@ -160,36 +176,60 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     return {
       isRunning: () => {
         debug({ type: 'isRunning', value: () => ({ ...state }) });
+
         return state.isRunning;
       },
       start: async () => {
         state.isRunning = true;
-        debug({ type: 'start', value: () => ({ ...state }) });
+
+        debug({
+          type: 'start',
+          value: () => ({ ...state })
+        });
 
         const run = async () => {
-          const res = await task();
+          const response = await task();
+
           state.isRunning = false;
-          return res;
+
+          return response;
         };
 
-        state.promise = cancelMs !== undefined
-          ? timeoutFunction(run, { timeout: cancelMs, errorMessage: 'Task canceled' })
-              .catch(error => {
-                state.isRunning = false;
-                debug({ type: 'run:cancel', value: () => ({ ...state, error }) });
-                log.error('Defer task canceled', error);
-                throw error;
-              })
-          : run();
+        if (cancelMs === undefined) {
+          state.promise = run();
+        } else {
+          state.promise = timeoutFunction(run, { timeout: cancelMs, errorMessage: 'Task canceled' })
+            .catch(error => {
+              state.isRunning = false;
+
+              debug({
+                type: 'run:cancel',
+                value: () => ({ ...state, error })
+              });
+
+              log.error('Defer task canceled', error);
+
+              throw error;
+            });
+        }
 
         return state.promise;
       },
       stop: async () => {
         state.isRunning = false;
         state.resolveDelay?.();
-        debug({ type: 'stop', value: () => ({ ...state }) });
+
+        debug({
+          type: 'stop',
+          value: () => ({ ...state })
+        });
+
         await state.promise?.catch(error => {
-          debug({ type: 'stop:error', value: () => ({ ...state, error }) });
+          debug({
+            type: 'stop:error',
+            value: () => ({ ...state, error })
+          });
+
           log.error('Defer task stopped with error', error);
         });
       }
