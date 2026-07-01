@@ -150,9 +150,18 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     const task = async (): Promise<TReturn | undefined> => {
       await delay(getJitter());
 
-      let result: TReturn | undefined;
+      const run = async (): Promise<TReturn | undefined> => {
+        if (!state.isRunning || (updatedRepeat !== undefined && state.count >= updatedRepeat)) {
+          if (!state.isRunning) {
+            debug({
+              type: 'run:stopped',
+              value: () => ({ ...state })
+            });
+          }
 
-      while (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
+          return undefined;
+        }
+
         const pacing = delay(getJitter());
 
         debug({
@@ -162,7 +171,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
         state.count += 1;
 
-        result = await taskFunc(...args).catch(error => {
+        const result = await taskFunc(...args).catch(error => {
           state.isRunning = false;
 
           debug({
@@ -177,17 +186,14 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
         if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
           await pacing;
+
+          return run();
         }
-      }
 
-      if (!state.isRunning) {
-        debug({
-          type: 'run:stopped',
-          value: () => ({ ...state })
-        });
-      }
+        return result;
+      };
 
-      return result;
+      return run();
     };
 
     return {
