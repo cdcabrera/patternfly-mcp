@@ -41,8 +41,9 @@ interface DeferTaskHandle<TReturn> {
  * @property [timeoutMs] - Max time for a single execution. (default `1000`)
  * @property [repeat] - Number of loops. (default `1`)
  * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
- * @property [intervalMs] - Non-blocking delay in ms between task executions. See
- *     {@link MIN_INTERVAL_MS}.
+ * @property [randomizedDelayMs] - Optional internal non-blocking delay override in ms.
+ *     Automatically derived from {@link DeferTaskOptions.timeoutMs} with jitter if not
+ *     provided.
  */
 interface DeferTaskOptions {
   cancelMs?: number;
@@ -50,14 +51,14 @@ interface DeferTaskOptions {
   timeoutMs?: number;
   repeat?: number | undefined;
   errorMessage?: string;
-  intervalMs?: number;
+  randomizedDelayMs?: number;
 }
 
 /**
- * Minimum interval ms allowed for {@link DeferTaskOptions.intervalMs} for repeating
+ * Minimum delay ms allowed for {@link DeferTaskOptions.timeoutMs} for repeating
  * tasks.
  */
-const MIN_INTERVAL_MS = 250;
+const MIN_TIMEOUT_MS = 250;
 
 /**
  * Create a managed, repeatable, cancellable task wrapper.
@@ -117,28 +118,34 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     repeat = 1,
     timeoutMs,
     errorMessage = 'Task timed out',
-    intervalMs = MIN_INTERVAL_MS
+    randomizedDelayMs
   }: DeferTaskOptions = {}
 ) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
   const updatedTimeoutMs = timeoutMs ?? 1000;
-  const updatedIntervalMs = intervalMs;
   const updatedFunc = async (...args: TArgs) =>
     (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
 
   if (updatedRepeat !== 1) {
-    if (intervalMs === undefined) {
+    if (!Number.isFinite(updatedTimeoutMs) || updatedTimeoutMs < MIN_TIMEOUT_MS) {
       throw new Error(
-        `deferTask: repeating tasks require an explicit intervalMs option with a minimum of ${MIN_INTERVAL_MS}ms`
-      );
-    }
-
-    if (!Number.isFinite(intervalMs) || intervalMs < MIN_INTERVAL_MS) {
-      throw new Error(
-        `deferTask: intervalMs must be >= ${MIN_INTERVAL_MS}ms received ${intervalMs} instead`
+        `deferTask: timeoutMs must be >= ${MIN_TIMEOUT_MS}ms received ${updatedTimeoutMs} instead`
       );
     }
   }
+
+  /**
+   * Pacing delay helper that calculates jitter.
+   *
+   * @returns {number} Delay in milliseconds.
+   */
+  const getPacingDelay = () => {
+    if (randomizedDelayMs !== undefined) {
+      return randomizedDelayMs;
+    }
+
+    return updatedTimeoutMs * (0.9 + Math.random() * 0.2);
+  };
 
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
     const state: {
@@ -183,6 +190,12 @@ const deferTask = <TArgs extends unknown[], TReturn>(
         return undefined;
       }
 
+      await delay(getPacingDelay());
+
+      if (!state.isRunning) {
+        return undefined;
+      }
+
       const startFunc = timeoutFunction(() => {
         if (state.isRunning) {
           state.count += 1;
@@ -220,10 +233,6 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       });
 
       if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
-        if (updatedIntervalMs !== undefined) {
-          await delay(updatedIntervalMs);
-        }
-
         if (!state.isRunning) {
           return result;
         }
@@ -253,8 +262,8 @@ const deferTask = <TArgs extends unknown[], TReturn>(
         });
 
         if (cancelMs !== undefined) {
-          updatedTask = timeoutFunction(() => {
-            const response = task();
+          updatedTask = timeoutFunction(async () => {
+            const response = await task();
 
             state.isRunning = false;
 
@@ -307,4 +316,4 @@ const deferTask = <TArgs extends unknown[], TReturn>(
   };
 };
 
-export { deferTask, type DeferTaskOptions, type DeferTaskHandle, type DeferTaskDebugHandler, MIN_INTERVAL_MS };
+export { deferTask, type DeferTaskOptions, type DeferTaskHandle, type DeferTaskDebugHandler, MIN_TIMEOUT_MS };

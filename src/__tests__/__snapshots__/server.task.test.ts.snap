@@ -5,7 +5,7 @@ exports[`deferTask should cancel a task 1`] = `
   {
     "type": "start",
     "value": {
-      "count": 1,
+      "count": 3,
       "delayTimer": undefined,
       "isRunning": false,
       "promise": Promise {},
@@ -15,7 +15,27 @@ exports[`deferTask should cancel a task 1`] = `
   {
     "type": "run",
     "value": {
-      "count": 1,
+      "count": 3,
+      "delayTimer": undefined,
+      "isRunning": false,
+      "promise": Promise {},
+      "resolveDelay": undefined,
+    },
+  },
+  {
+    "type": "run",
+    "value": {
+      "count": 3,
+      "delayTimer": undefined,
+      "isRunning": false,
+      "promise": Promise {},
+      "resolveDelay": undefined,
+    },
+  },
+  {
+    "type": "run",
+    "value": {
+      "count": 3,
       "delayTimer": undefined,
       "isRunning": false,
       "promise": Promise {},
@@ -35,13 +55,13 @@ exports[`deferTask should enforce a timeout 1`] = `
   ],
   [
     {
-      "type": "run",
+      "type": "isRunning",
       "value": [Function],
     },
   ],
   [
     {
-      "type": "isRunning",
+      "type": "run",
       "value": [Function],
     },
   ],

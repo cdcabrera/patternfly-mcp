@@ -56,7 +56,7 @@ const healthReport = (statsOptions: StatsSession) => {
  * @note `undefined` repeat means the task will run indefinitely.
  */
 healthReport.deferTask = deferTask(healthReport, {
-  intervalMs: DEFAULT_OPTIONS.stats.reportIntervalMs.health,
+  timeoutMs: DEFAULT_OPTIONS.stats.reportTimeoutMs.health,
   repeat: undefined
 });
 
@@ -106,7 +106,7 @@ const transportReport = (
  * @note `undefined` repeat means the task will run indefinitely.
  */
 transportReport.deferTask = deferTask(transportReport, {
-  intervalMs: DEFAULT_OPTIONS.stats.reportIntervalMs.transport,
+  timeoutMs: DEFAULT_OPTIONS.stats.reportTimeoutMs.transport,
   repeat: undefined
 });
 
