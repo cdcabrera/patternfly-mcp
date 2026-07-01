@@ -142,19 +142,18 @@ describe('deferTask', () => {
   it.each([
     {
       description: 'zero timeoutMs',
-      expected: `deferTask: timeoutMs must be >= ${MIN_TIMEOUT_MS}ms received 0 instead`,
       options: { repeat: 3, timeoutMs: 0 }
     },
     {
       description: 'timeoutMs is less than MIN_TIMEOUT_MS',
-      expected: `deferTask: timeoutMs must be >= ${MIN_TIMEOUT_MS}ms received 100 instead`,
       options: { repeat: 3, timeoutMs: 100 }
     }
-  ])('should throw an error for timeoutMs, $description', ({ expected, options }) => {
+  ])('should log an issue for unacceptable timeoutMs, $description', ({ options }) => {
     const mockFunc = jest.fn();
+    const mockDebug = jest.fn();
 
-    expect(() => {
-      deferTask(mockFunc, options as any)();
-    }).toThrow(expected);
+    deferTask(mockFunc, { ...options, debug: mockDebug } as any)();
+
+    expect(mockDebug.mock.calls[0][0].type).toBe('initialize');
   });
 });

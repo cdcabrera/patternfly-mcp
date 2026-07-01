@@ -96,47 +96,64 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     cancelMs,
     debug = () => {},
     repeat = 1,
-    timeoutMs = 1000
+    timeoutMs
   }: DeferTaskOptions = {}
 ) => {
+  const defaultTimeoutMs = 1000;
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
+  const updatedTimeoutMs = typeof timeoutMs !== 'number' || timeoutMs < MIN_TIMEOUT_MS ? defaultTimeoutMs : timeoutMs;
+  const baseState = {
+    isRunning: true,
+    count: 0,
+    promise: undefined as Promise<TReturn | undefined> | undefined,
+    delayTimer: undefined as NodeJS.Timeout | undefined,
+    resolveDelay: undefined as (() => void) | undefined
+  };
 
-  if (updatedRepeat !== 1 && (!Number.isFinite(timeoutMs) || timeoutMs < MIN_TIMEOUT_MS)) {
-    throw new Error(`deferTask: timeoutMs must be >= ${MIN_TIMEOUT_MS}ms received ${timeoutMs} instead`);
+  if (typeof timeoutMs === 'number' && timeoutMs < MIN_TIMEOUT_MS) {
+    debug({
+      type: 'initialize',
+      value: () => ({
+        ...baseState
+      })
+    });
+
+    log.debug(
+      `deferTask: timeoutMs must be greater than ${MIN_TIMEOUT_MS}ms for ${func?.toString()?.substring(25) || 'function unknown('}...`,
+      `Received ${timeoutMs}ms, using default ${defaultTimeoutMs}ms.`
+    );
   }
 
   const taskFunc = async (...args: TArgs): Promise<TReturn> =>
     (!isAsync(func) && isPromise(func) ? func as Promise<TReturn> : (func as (...args: TArgs) => TReturn | Promise<TReturn>)(...args));
 
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
-    const state = {
-      isRunning: true,
-      count: 0,
-      promise: undefined as Promise<TReturn | undefined> | undefined,
-      delayTimer: undefined as NodeJS.Timeout | undefined,
-      resolveDelay: undefined as (() => void) | undefined
-    };
+    const state = structuredClone(baseState);
 
     const delay = (ms: number) => new Promise<void>(resolve => {
       state.resolveDelay = () => {
         clearTimeout(state.delayTimer);
+
         state.delayTimer = undefined;
         state.resolveDelay = undefined;
+
         resolve();
       };
 
       state.delayTimer = setTimeout(state.resolveDelay, ms).unref();
     });
 
-    const getJittered = () => timeoutMs * (0.9 + Math.random() * 0.2);
+    // Get a random'ish number to avoid potential long-running syncs
+    const getJitter = () => updatedTimeoutMs * (0.9 + Math.random() * 0.2);
 
+    // Set up the task
     const task = async (): Promise<TReturn | undefined> => {
-      await delay(getJittered());
+      await delay(getJitter());
 
       let result: TReturn | undefined;
 
       while (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
-        const pacing = delay(getJittered());
+        const pacing = delay(getJitter());
 
         debug({
           type: 'run',
@@ -155,7 +172,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
           log.error('Defer task error', error);
 
-          throw error;
+          return Promise.reject(error);
         });
 
         if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
