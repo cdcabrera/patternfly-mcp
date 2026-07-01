@@ -99,7 +99,6 @@ describe('deferTask', () => {
     expect(mockFunc).toHaveBeenCalled();
   });
 
-
   it('should introduce a delay before each execution when timeoutMs is provided', async () => {
     const mockFunc = jest.fn().mockReturnValue('lorem');
     const handle = deferTask(mockFunc, { repeat: 3, timeoutMs: 500 })();
