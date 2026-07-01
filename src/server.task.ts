@@ -196,11 +196,12 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
         try {
           await delay(jitterMs, state.controller?.signal);
-        } catch (error: any) {
-          if (error.name === 'AbortError') {
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
             return undefined;
           }
-          throw error;
+
+          return Promise.reject(error);
         }
 
         return task();
