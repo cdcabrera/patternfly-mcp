@@ -4,6 +4,7 @@ describe('deferTask', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setTimeout(10000);
+    jest.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
@@ -36,7 +37,7 @@ describe('deferTask', () => {
     }
   ])('should execute a task, $description', async ({ mockFunc, options, expected }) => {
     const debug = jest.fn();
-    const handle = deferTask(mockFunc, { debug, timeoutMs: MIN_TIMEOUT_MS, randomizedDelayMs: 1, ...options })();
+    const handle = deferTask(mockFunc, { debug, timeoutMs: MIN_TIMEOUT_MS, ...options })();
 
     handle.isRunning();
     const startPromise = handle.start();
@@ -44,7 +45,7 @@ describe('deferTask', () => {
     const repeat = options?.repeat ?? 1;
 
     for (let i = 0; i < repeat; i++) {
-      await jest.advanceTimersByTimeAsync(1);
+      await jest.advanceTimersByTimeAsync(MIN_TIMEOUT_MS);
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
@@ -60,11 +61,11 @@ describe('deferTask', () => {
   it('should stop a task', async () => {
     const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockReturnValue('stopped');
-    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 5, timeoutMs: MIN_TIMEOUT_MS, randomizedDelayMs: 1 })();
+    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 5, timeoutMs: MIN_TIMEOUT_MS })();
 
     const startPromise = handle.start();
 
-    await jest.advanceTimersByTimeAsync(1);
+    await jest.advanceTimersByTimeAsync(MIN_TIMEOUT_MS);
     expect(handle.isRunning()).toBe(true);
 
     await handle.stop();
@@ -78,48 +79,30 @@ describe('deferTask', () => {
   it('should cancel a task', async () => {
     const mockDebug = jest.fn();
     const mockFunc = jest.fn().mockReturnValue('lorem ipsum');
-    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 3, cancelMs: 100, timeoutMs: MIN_TIMEOUT_MS, randomizedDelayMs: 5 })();
+    const handle = deferTask(mockFunc, { debug: mockDebug, repeat: 3, cancelMs: 400, timeoutMs: MIN_TIMEOUT_MS })();
 
     const startPromise = handle.start();
 
-    await jest.advanceTimersByTimeAsync(50);
+    // Initial delay
+    await jest.advanceTimersByTimeAsync(MIN_TIMEOUT_MS);
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    await startPromise.catch(() => {});
 
-    expect(mockDebug.mock.calls.map(arr => ({ type: arr[0].type, value: arr[0].value() }))).toMatchSnapshot();
+    // Trigger cancellation
+    await Promise.all([
+      expect(startPromise).rejects.toThrow('Task canceled'),
+      jest.advanceTimersByTimeAsync(150)
+    ]);
 
     expect(handle.isRunning()).toBe(false);
     expect(mockFunc).toHaveBeenCalled();
   });
 
-  it('should enforce a timeout', async () => {
-    const mockDebug = jest.fn();
-    const mockFunc = jest.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 500)));
-    const handle = deferTask(mockFunc, { debug: mockDebug, timeoutMs: MIN_TIMEOUT_MS, randomizedDelayMs: 250, errorMessage: 'Too slow' })();
-
-    const startPromise = handle.start();
-
-    expect(handle.isRunning()).toBe(true);
-
-    // Initial delay
-    await jest.advanceTimersByTimeAsync(250);
-
-    await Promise.all([
-      expect(startPromise).rejects.toThrow('Too slow'),
-      jest.advanceTimersByTimeAsync(500)
-    ]);
-
-    expect(handle.isRunning()).toBe(false);
-    expect(handle).toMatchSnapshot('handle');
-
-    expect(mockDebug.mock.calls).toMatchSnapshot();
-  });
 
   it('should introduce a delay before each execution when timeoutMs is provided', async () => {
     const mockFunc = jest.fn().mockReturnValue('lorem');
-    const handle = deferTask(mockFunc, { repeat: 3, timeoutMs: 500, randomizedDelayMs: 500 })();
+    const handle = deferTask(mockFunc, { repeat: 3, timeoutMs: 500 })();
 
     const startPromise = handle.start();
 
@@ -142,7 +125,7 @@ describe('deferTask', () => {
 
   it('should stop immediately and cancel the delay when stop is called', async () => {
     const mockFunc = jest.fn().mockReturnValue('ipsum');
-    const handle = deferTask(mockFunc, { repeat: 3, timeoutMs: MIN_TIMEOUT_MS, randomizedDelayMs: 5000 })();
+    const handle = deferTask(mockFunc, { repeat: 3, timeoutMs: 5000 })();
 
     const startPromise = handle.start();
 

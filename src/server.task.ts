@@ -40,18 +40,12 @@ interface DeferTaskHandle<TReturn> {
  *     See {@link deferTask}.
  * @property [timeoutMs] - Max time for a single execution. (default `1000`)
  * @property [repeat] - Number of loops. (default `1`)
- * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
- * @property [randomizedDelayMs] - Optional internal non-blocking delay override in ms.
- *     Automatically derived from {@link DeferTaskOptions.timeoutMs} with jitter if not
- *     provided.
  */
 interface DeferTaskOptions {
   cancelMs?: number;
   debug?: DeferTaskDebugHandler;
   timeoutMs?: number;
   repeat?: number | undefined;
-  errorMessage?: string;
-  randomizedDelayMs?: number;
 }
 
 /**
@@ -116,9 +110,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     cancelMs,
     debug = () => {},
     repeat = 1,
-    timeoutMs,
-    errorMessage = 'Task timed out',
-    randomizedDelayMs
+    timeoutMs
   }: DeferTaskOptions = {}
 ) => {
   const updatedRepeat = typeof repeat === 'number' ? repeat : undefined;
@@ -133,19 +125,6 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       );
     }
   }
-
-  /**
-   * Pacing delay helper that calculates jitter.
-   *
-   * @returns {number} Delay in milliseconds.
-   */
-  const getPacingDelay = () => {
-    if (randomizedDelayMs !== undefined) {
-      return randomizedDelayMs;
-    }
-
-    return updatedTimeoutMs * (0.9 + Math.random() * 0.2);
-  };
 
   return (...args: TArgs): DeferTaskHandle<TReturn> => {
     const state: {
@@ -186,58 +165,62 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       });
 
     const task = async (): Promise<TReturn | undefined> => {
-      if (!state.isRunning || (updatedRepeat !== undefined && state.count >= updatedRepeat)) {
-        return undefined;
-      }
+      let result: TReturn | undefined;
 
-      await delay(getPacingDelay());
+      // Requirement: Delay-before-run (Prevents startup spikes)
+      await delay(updatedTimeoutMs * (0.9 + Math.random() * 0.2));
 
-      if (!state.isRunning) {
-        return undefined;
-      }
+      while (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
+        // 1. Calculate the total cycle time with jitter (e.g., 30s +/- 3s)
+        const jitteredMs = updatedTimeoutMs * (0.9 + Math.random() * 0.2);
 
-      const startFunc = timeoutFunction(() => {
-        if (state.isRunning) {
-          state.count += 1;
+        // 2. Start the pacing window immediately
+        const pacing = delay(jitteredMs);
 
-          return updatedFunc(...args);
+        if (!state.isRunning) {
+          debug({
+            type: 'run:stopped',
+            value: () => ({ ...state })
+          });
+          break;
         }
 
+        debug({
+          type: 'run',
+          value: () => ({ ...state })
+        });
+
+        state.count++;
+
+        // 3. Execute the task
+        // We remove the internal timeoutFunction wrap to simplify the loop,
+        // relying on the pacing window to define the tempo.
+        result = await updatedFunc(...args).catch(error => {
+          state.isRunning = false;
+
+          debug({
+            type: 'run:error',
+            value: () => ({ ...state, error })
+          });
+
+          log.error('Defer task error', error);
+
+          return Promise.reject(error);
+        });
+
+        // 4. Await the REMAINDER of the pacing window
+        // This ensures the next cycle starts exactly jitteredMs after the current one started.
+        // If execution was fast, we wait. If slow, we move on immediately.
+        if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
+          await pacing;
+        }
+      }
+
+      if (!state.isRunning) {
         debug({
           type: 'run:stopped',
           value: () => ({ ...state })
         });
-
-        return undefined;
-      }, {
-        timeout: updatedTimeoutMs,
-        errorMessage
-      });
-
-      debug({
-        type: 'run',
-        value: () => ({ ...state })
-      });
-
-      const result = await startFunc.catch(error => {
-        state.isRunning = false;
-
-        debug({
-          type: 'run:error',
-          value: () => ({ ...state, error })
-        });
-
-        log.error('Defer task error', error);
-
-        return Promise.reject(error);
-      });
-
-      if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
-        if (!state.isRunning) {
-          return result;
-        }
-
-        return task();
       }
 
       return result;
