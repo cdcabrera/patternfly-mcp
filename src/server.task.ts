@@ -50,6 +50,28 @@ interface DeferTaskOptions {
   errorMessage?: string;
 }
 
+const delay = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Delay aborted', 'AbortError'));
+
+      return;
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    timer.unref?.();
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('Delay aborted', 'AbortError'));
+    };
+
+    signal?.addEventListener('abort', onAbort);
+  });
+
 /**
  * Create a managed, repeatable, cancellable task wrapper.
  *
@@ -119,11 +141,13 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     const state: {
       isRunning: boolean;
       count: number;
-      promise?: Promise<TReturn | undefined> | undefined
+      promise?: Promise<TReturn | undefined> | undefined;
+      controller?: AbortController | undefined;
     } = {
       isRunning: true,
       count: 0,
-      promise: undefined
+      promise: undefined,
+      controller: undefined
     };
 
     const task = async (): Promise<TReturn | undefined> => {
@@ -168,6 +192,17 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       });
 
       if (state.isRunning && (updatedRepeat === undefined || state.count < updatedRepeat)) {
+        const jitterMs = updatedTimeoutMs * (0.9 + Math.random() * 0.2);
+
+        try {
+          await delay(jitterMs, state.controller?.signal);
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            return undefined;
+          }
+          throw error;
+        }
+
         return task();
       }
 
@@ -185,6 +220,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       },
       start: async () => {
         state.isRunning = true;
+        state.controller = new AbortController();
         let updatedTask: Promise<TReturn | undefined>;
 
         debug({
@@ -224,6 +260,7 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       },
       stop: async () => {
         state.isRunning = false;
+        state.controller?.abort();
 
         debug({
           type: 'stop',

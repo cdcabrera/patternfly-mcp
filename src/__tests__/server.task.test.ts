@@ -3,6 +3,7 @@ import { deferTask } from '../server.task';
 describe('deferTask', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    jest.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
@@ -38,7 +39,15 @@ describe('deferTask', () => {
     const handle = deferTask(mockFunc, { debug, timeoutMs: 10, ...options })();
 
     handle.isRunning();
-    const result = await handle.start();
+    const resultPromise = handle.start();
+
+    if (options?.repeat) {
+      for (let i = 1; i < options.repeat; i++) {
+        await jest.advanceTimersByTimeAsync(10);
+      }
+    }
+
+    const result = await resultPromise;
 
     expect(result).toBe(expected);
     expect(mockFunc).toHaveBeenCalledTimes(options?.repeat ?? 1);

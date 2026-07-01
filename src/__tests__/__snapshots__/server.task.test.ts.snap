@@ -5,6 +5,7 @@ exports[`deferTask should cancel a task 1`] = `
   {
     "type": "start",
     "value": {
+      "controller": AbortController {},
       "count": 1,
       "isRunning": false,
       "promise": Promise {},
@@ -13,6 +14,7 @@ exports[`deferTask should cancel a task 1`] = `
   {
     "type": "run",
     "value": {
+      "controller": AbortController {},
       "count": 1,
       "isRunning": false,
       "promise": Promise {},
