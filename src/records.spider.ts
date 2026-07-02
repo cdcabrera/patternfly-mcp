@@ -1,6 +1,7 @@
 import { loadFileFetch } from './server.getResources';
 import { getOptions } from './options.context';
 import { log, formatUnknownError } from './logger';
+import { assertInputUrlWhiteListed } from './server.assertions';
 
 /**
  * Result emitted by the spider for each crawled page.
@@ -39,15 +40,16 @@ interface CrawlControl {
 type CrawlStep = (emit: CrawlEmit, control: CrawlControl) => void | Promise<void>;
 
 /**
- * Options for the spider engine.
+ * Settings for the spider engine.
  *
- * @interface CrawlOptions
+ * @interface CrawlSettings
+ *
  * @property fetchRaw - Custom fetch implementation. Defaults to `loadFileFetch`.
  * @property visited - Set of already visited URLs to avoid cycles.
  * @property maxRequests - Maximum number of requests to perform.
  * @property signal - AbortSignal for cancellation.
  */
-interface CrawlOptions {
+interface CrawlSettings {
   fetchRaw?: (url: string, init?: { signal?: AbortSignal }) => Promise<{ status: number; body: unknown } | null>;
   visited?: Set<string>;
   maxRequests?: number;
@@ -59,18 +61,23 @@ interface CrawlOptions {
  *
  * @param seeds - Starting URLs
  * @param step - Crawl step function
- * @param options - Options
+ * @param settings - Settings
  * @returns List of emitted results
  */
 const crawl = async (
   seeds: string[],
   step: CrawlStep,
-  options: CrawlOptions = {}
+  settings: CrawlSettings = {}
 ): Promise<CrawlEmit[]> => {
+  const options = getOptions();
+
+  // Validate seeds against whitelist
+  assertInputUrlWhiteListed(seeds, options.patternflyOptions.urlWhitelist, { inputDisplayName: 'Spider seeds' });
+
   const {
     fetchRaw = async (url, init) => {
       // Default to loadFileFetch which handles timeout, retry, and soft-404
-      const res = await loadFileFetch(url, getOptions(), init?.signal);
+      const res = await loadFileFetch(url, options, init?.signal ? { signal: init.signal } : undefined);
 
       if (res.content === null) {
         return null;
@@ -81,7 +88,7 @@ const crawl = async (
     visited = new Set<string>(),
     maxRequests = 500,
     signal
-  } = options;
+  } = settings;
 
   const queue: string[] = [...seeds];
   const emits: CrawlEmit[] = [];
@@ -99,6 +106,14 @@ const crawl = async (
     const url = queue.shift();
 
     if (!url || visited.has(url)) {
+      continue;
+    }
+
+    // Validate URL against whitelist before crawling
+    try {
+      assertInputUrlWhiteListed(url, options.patternflyOptions.urlWhitelist);
+    } catch (error) {
+      log.debug(`Spider skipping non-whitelisted URL ${url}: ${formatUnknownError(error)}`);
       continue;
     }
 
@@ -141,5 +156,5 @@ export {
   type CrawlEmit,
   type CrawlControl,
   type CrawlStep,
-  type CrawlOptions
+  type CrawlSettings
 };

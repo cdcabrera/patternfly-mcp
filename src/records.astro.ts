@@ -1,27 +1,27 @@
-import { type CrawlEmit, type CrawlControl, type CrawlOptions, crawl, type CrawlStep } from './records.spider';
+import { type CrawlEmit, type CrawlControl, type CrawlSettings, crawl, type CrawlStep } from './records.spider';
+import { getOptions } from './options.context';
 
 /**
- * Options for the Astro spider.
+ * Settings for the Astro spider.
  *
- * @interface AstroCrawlOptions
+ * @interface AstroCrawlSettings
  * @property base - Base URL for the Astro API.
  */
-interface AstroCrawlOptions extends CrawlOptions {
+interface AstroCrawlSettings extends CrawlSettings {
   base?: string;
 }
-
-/** The base URL for the Astro API. */
-const ASTRO_API_BASE = 'https://www.patternfly.org/api';
 
 /**
  * Astro-specific CrawlStep factory.
  * Translates Astro's positional URL segments into semantic context.
  *
- * @param base - Base URL for the Astro API. Defaults to `ASTRO_API_BASE`.
+ * @param base - Base URL for the Astro API. Defaults to global options API setting.
  * @returns A CrawlStep function.
  */
-const makeAstroCrawlStep = (base: string = ASTRO_API_BASE): CrawlStep => {
-  const root = base.replace(/\/+$/, '');
+const makeAstroCrawlStep = (base?: string): CrawlStep => {
+  const options = getOptions();
+  const rootBase = base || options.patternflyOptions.api;
+  const root = rootBase.replace(/\/+$/, '');
 
   return async (emit: CrawlEmit, control: CrawlControl) => {
     const rel = emit.url.startsWith(root) ? emit.url.slice(root.length) : emit.url;
@@ -105,14 +105,15 @@ const makeAstroCrawlStep = (base: string = ASTRO_API_BASE): CrawlStep => {
 /**
  * Run the Astro spider starting from the versions index.
  *
- * @param options - Crawl options including optional Astro base URL.
+ * @param settings - Crawl settings including optional Astro base URL.
  * @returns List of results.
  */
-const runAstroSpider = async (options: AstroCrawlOptions = {}) => {
-  const base = options.base || ASTRO_API_BASE;
+const runAstroSpider = async (settings: AstroCrawlSettings = {}) => {
+  const options = getOptions();
+  const base = settings.base || options.patternflyOptions.api;
   const seed = `${base.replace(/\/+$/, '')}/versions`;
 
-  return crawl([seed], makeAstroCrawlStep(base), options);
+  return crawl([seed], makeAstroCrawlStep(base), settings);
 };
 
-export { ASTRO_API_BASE, makeAstroCrawlStep, runAstroSpider, type AstroCrawlOptions };
+export { makeAstroCrawlStep, runAstroSpider, type AstroCrawlSettings };

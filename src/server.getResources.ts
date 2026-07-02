@@ -6,7 +6,7 @@ import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isUrl, isPath, createError } from './server.helpers';
+import { isUrl, isPath, createError, generateHash } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
 /**
@@ -137,11 +137,18 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  *
  * @param url - URL to fetch
  * @param options - Global options
- * @param [signal] - Optional AbortSignal for request cancellation
+ * @param settings - Fetch settings
+ * @param [settings.signal] - Optional AbortSignal for request cancellation
+ * @param [settings.timeoutMs] - Optional timeout in milliseconds
+ * @param [settings.retry] - Optional retry flag
  * @returns The fetched content as a string, or null for Soft-404s.
  */
-const fetchUrlFunction = async (url: string, options = getOptions(), signal?: AbortSignal) => {
-  const { timeoutMs, retry } = options.xhrFetch;
+const fetchUrlFunction = async (
+  url: string,
+  options = getOptions(),
+  settings: { signal?: AbortSignal; timeoutMs?: number; retry?: boolean } = {}
+) => {
+  const { signal, timeoutMs = options.xhrFetch.timeoutMs, retry = options.xhrFetch.retry } = settings;
 
   const performFetch = async (): Promise<string | null | { retry: true, status: number, statusText: string }> => {
     const controller = new AbortController();
@@ -216,7 +223,17 @@ const fetchUrlFunction = async (url: string, options = getOptions(), signal?: Ab
 /**
  * Memoized version of fetchUrlFunction. Use default memo options.
  */
-fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptions.fetchUrl);
+fetchUrlFunction.memo = memo(fetchUrlFunction, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.fetchUrl,
+  keyHash: args => {
+    const [url, options, settings] = args;
+    // Ignore signal in cache key to avoid busting the cache on every crawl
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { signal, ...restSettings } = settings || {};
+
+    return generateHash([url, options, restSettings]);
+  }
+});
 
 /**
  * Resolve a local path against a base directory.
@@ -300,13 +317,20 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  *
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
  * @param options - Global options
- * @param [signal] - Optional AbortSignal for request cancellation
+ * @param settings - Fetch settings
+ * @param [settings.signal] - Optional AbortSignal for request cancellation
+ * @param [settings.timeoutMs] - Optional timeout in milliseconds
+ * @param [settings.retry] - Optional retry flag
  * @returns Resolves to an object containing the loaded content, path, and the resolved path.
  *     If a Soft-404 is detected, `content` is `null`.
  * @throws {Error} If the path cannot be accessed in the current mode. Includes `path` and `resolvedPath`
  *     properties when available.
  */
-const loadFileFetch = async (pathOrUrl: string, options = getOptions(), signal?: AbortSignal) => {
+const loadFileFetch = async (
+  pathOrUrl: string,
+  options = getOptions(),
+  settings: { signal?: AbortSignal; timeoutMs?: number; retry?: boolean } = {}
+) => {
   let updatedPathOrUrl = pathOrUrl;
 
   try {
@@ -324,7 +348,7 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions(), signal?:
     let content;
 
     if (isUrl(updatedPathOrUrl)) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl, options, signal);
+      content = await fetchUrlFunction.memo(updatedPathOrUrl, options, settings);
     } else {
       content = await readLocalFileFunction.memo(updatedPathOrUrl);
     }
@@ -344,16 +368,17 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions(), signal?:
  *
  * @param queue - List of paths or URLs to load
  * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ * @param options - Global options
  * @returns An array of `PromiseSettledResult` objects, one for each input path or URL.
  */
-const promiseQueue = async (queue: string[], limit = 5) => {
+const promiseQueue = async (queue: string[], limit = 5, options = getOptions()) => {
   const results = [];
   const slidingQueue = new Set();
   let activeCount = 0;
 
   for (const item of queue) {
     // Use a sliding window to limit the number of concurrent promises.
-    const promise = loadFileFetch(item).finally(() => {
+    const promise = loadFileFetch(item, options).finally(() => {
       slidingQueue.delete(promise);
       activeCount -= 1;
     });

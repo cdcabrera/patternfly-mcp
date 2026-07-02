@@ -1,6 +1,16 @@
 import { crawl } from '../records.spider';
+import { runWithOptions } from '../options.context';
+import { DEFAULT_OPTIONS } from '../options.defaults';
 
 describe('records.spider', () => {
+  const mockOptions = {
+    ...DEFAULT_OPTIONS,
+    patternflyOptions: {
+      ...DEFAULT_OPTIONS.patternflyOptions,
+      urlWhitelist: ['root', 'child1', 'child2', '1', '2', 'ok', '404'] as any[]
+    }
+  };
+
   it('should crawl in FIFO order and respect cycle guard', async () => {
     const visitedUrls: string[] = [];
     const fetchRaw = jest.fn().mockImplementation(async url => {
@@ -25,7 +35,7 @@ describe('records.spider', () => {
       }
     });
 
-    await crawl(['root'], step, { fetchRaw });
+    await runWithOptions(mockOptions, () => crawl(['root'], step, { fetchRaw }));
 
     expect(visitedUrls).toEqual(['root', 'child1', 'child2']);
     expect(step).toHaveBeenCalledTimes(3);
@@ -37,7 +47,13 @@ describe('records.spider', () => {
       control.enqueue(`${emit.url}/next`);
     });
 
-    const results = await crawl(['1'], step, { fetchRaw, maxRequests: 3 });
+    const results = await runWithOptions({
+      ...mockOptions,
+      patternflyOptions: {
+        ...mockOptions.patternflyOptions,
+        urlWhitelist: ['1', '1/next', '1/next/next'] as any[]
+      }
+    }, () => crawl(['1'], step, { fetchRaw, maxRequests: 3 }));
 
     expect(results).toHaveLength(3);
     expect(fetchRaw).toHaveBeenCalledTimes(3);
@@ -53,7 +69,7 @@ describe('records.spider', () => {
     });
     const step = jest.fn();
 
-    const results = await crawl(['ok', '404'], step, { fetchRaw });
+    const results = await runWithOptions(mockOptions, () => crawl(['ok', '404'], step, { fetchRaw }));
 
     expect(results).toHaveLength(1);
     expect(results[0]?.url).toBe('ok');
@@ -69,7 +85,7 @@ describe('records.spider', () => {
     });
     const step = jest.fn();
 
-    const results = await crawl(['1', '2'], step, { fetchRaw, signal: controller.signal });
+    const results = await runWithOptions(mockOptions, () => crawl(['1', '2'], step, { fetchRaw, signal: controller.signal }));
 
     expect(results).toHaveLength(1);
     expect(fetchRaw).toHaveBeenCalledTimes(1);

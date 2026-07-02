@@ -474,6 +474,7 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   },
   urlWhitelist: [
     'https://patternfly.org',
+    'https://www.patternfly.org',
     'https://github.com/patternfly',
     'https://raw.githubusercontent.com/patternfly'
   ],

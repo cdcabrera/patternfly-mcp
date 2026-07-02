@@ -304,9 +304,7 @@ describe('fetchUrlFunction', () => {
         signal.addEventListener('abort', () => reject(new Error('Aborted')));
       }));
 
-      const fetchPromise = fetchUrlFunction('https://example.com/timeout', {
-        xhrFetch: { timeoutMs: 100 }
-      } as any);
+      const fetchPromise = fetchUrlFunction('https://example.com/timeout', undefined, { timeoutMs: 100 });
 
       jest.advanceTimersByTime(150);
 
@@ -323,7 +321,7 @@ describe('fetchUrlFunction', () => {
         signal.addEventListener('abort', () => reject(new Error('Aborted by signal')));
       }));
 
-      const fetchPromise = fetchUrlFunction('https://example.com/external-signal', undefined, controller.signal);
+      const fetchPromise = fetchUrlFunction('https://example.com/external-signal', undefined, { signal: controller.signal });
 
       controller.abort();
 

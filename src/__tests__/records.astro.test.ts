@@ -1,7 +1,10 @@
 import { crawl } from '../records.spider';
-import { makeAstroCrawlStep, ASTRO_API_BASE } from '../records.astro';
+import { makeAstroCrawlStep } from '../records.astro';
+import { DEFAULT_OPTIONS } from '../options.defaults';
 
 describe('records.astro', () => {
+  const ASTRO_API_BASE = DEFAULT_OPTIONS.patternflyOptions.api;
+
   it('should parse Astro versions and enqueue them', async () => {
     const fetchRaw = jest.fn().mockImplementation(async url => {
       if (url === `${ASTRO_API_BASE}/versions`) {
