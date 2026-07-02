@@ -6,7 +6,7 @@ import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
-import { isUrl, isPath, createError } from './server.helpers';
+import { isUrl, isPath, createError, generateHash } from './server.helpers';
 import { log, formatUnknownError } from './logger';
 
 /**
@@ -15,7 +15,7 @@ import { log, formatUnknownError } from './logger';
  * @template T - Metadata that can be returned with the processed document.
  */
 type ProcessedDocSuccess<T = Record<string, unknown>> = {
-  content: string;
+  content: string | null;
   path: string;
   resolvedPath: string;
   isSuccess: true;
@@ -27,7 +27,7 @@ type ProcessedDocSuccess<T = Record<string, unknown>> = {
  * @template T - Metadata that can be returned with the processed document.
  */
 type ProcessedDocFailure<T = Record<string, unknown>> = {
-  content: string;
+  content: string | null;
   path: string | undefined;
   resolvedPath: string | undefined;
   isSuccess: false;
@@ -136,36 +136,104 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * @note Review expanding fetch to handle more file types like JSON.
  *
  * @param url - URL to fetch
- * @param options - Options
- * @returns The fetched content as a string.
+ * @param options - Global options
+ * @param settings - Fetch settings
+ * @param [settings.signal] - Optional AbortSignal for request cancellation
+ * @param [settings.timeoutMs] - Optional timeout in milliseconds
+ * @param [settings.retry] - Optional retry flag
+ * @returns The fetched content as a string, or null for Soft-404s.
  */
-const fetchUrlFunction = async (url: string, options = getOptions()) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.xhrFetch.timeoutMs);
+const fetchUrlFunction = async (
+  url: string,
+  options = getOptions(),
+  settings: { signal?: AbortSignal; timeoutMs?: number; retry?: boolean } = {}
+) => {
+  const { signal, timeoutMs = options.xhrFetch.timeoutMs, retry = options.xhrFetch.retry } = settings;
 
-  // Allow the process to exit
-  timeout.unref();
+  const performFetch = async (): Promise<string | null | { retry: true, status: number, statusText: string }> => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: 'text/plain, text/markdown, */*' }
-    });
+    // Allow the process to exit
+    timeout.unref();
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+    if (signal) {
+      signal.addEventListener('abort', () => controller.abort());
     }
 
-    return await response.text();
-  } finally {
-    clearTimeout(timeout);
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: 'text/plain, text/markdown, */*' }
+      });
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        if (retry && response.status >= 500 && response.status <= 599) {
+          return { retry: true, status: response.status, statusText: response.statusText };
+        }
+        throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+      }
+
+      const text = await response.text();
+
+      // Soft-404 checks for body content
+      if (!text || text.trim() === '' || text === '{}' || text === '[]') {
+        return null;
+      }
+
+      // Soft-404 checks for JSON sentinel
+      try {
+        const json = JSON.parse(text);
+
+        if (json && typeof json === 'object' && (json.error?.toLowerCase() === 'not found')) {
+          return null;
+        }
+      } catch {
+        // Not JSON
+      }
+
+      return text;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const result = await performFetch();
+
+  if (result && typeof result === 'object' && 'retry' in result) {
+    // Wait briefly (100ms) before retrying
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const retryResult = await performFetch();
+
+    if (retryResult && typeof retryResult === 'object' && 'retry' in retryResult) {
+      throw new Error(`Failed to fetch ${url}: ${retryResult.status} ${retryResult.statusText}`);
+    }
+
+    return retryResult as string | null;
   }
+
+  return result as string | null;
 };
 
 /**
  * Memoized version of fetchUrlFunction. Use default memo options.
  */
-fetchUrlFunction.memo = memo(fetchUrlFunction, DEFAULT_OPTIONS.resourceMemoOptions.fetchUrl);
+fetchUrlFunction.memo = memo(fetchUrlFunction, {
+  ...DEFAULT_OPTIONS.resourceMemoOptions.fetchUrl,
+  keyHash: args => {
+    const [url, options, settings] = args;
+    // Ignore signal in cache key to avoid busting the cache on every crawl
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { signal, ...restSettings } = settings || {};
+
+    return generateHash([url, options, restSettings]);
+  }
+});
 
 /**
  * Resolve a local path against a base directory.
@@ -248,31 +316,48 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  * Load a file from disk or `URL`, depending on the input type.
  *
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
- * @param options - Options
+ * @param options - Global options
+ * @param settings - Fetch settings
+ * @param [settings.signal] - Optional AbortSignal for request cancellation
+ * @param [settings.timeoutMs] - Optional timeout in milliseconds
+ * @param [settings.retry] - Optional retry flag
  * @returns Resolves to an object containing the loaded content, path, and the resolved path.
+ *     If a Soft-404 is detected, `content` is `null`.
  * @throws {Error} If the path cannot be accessed in the current mode. Includes `path` and `resolvedPath`
  *     properties when available.
  */
-const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+const loadFileFetch = async (
+  pathOrUrl: string,
+  options = getOptions(),
+  settings: { signal?: AbortSignal; timeoutMs?: number; retry?: boolean } = {}
+) => {
   let updatedPathOrUrl = pathOrUrl;
 
   try {
     if (options.mode === 'test') {
       const mockContent = await mockPathOrUrlFunction(pathOrUrl);
 
-      return { content: mockContent, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
+      return {
+        content: mockContent === undefined ? null : mockContent,
+        resolvedPath: updatedPathOrUrl,
+        path: pathOrUrl
+      };
     }
 
-    updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
+    updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl, { sep }, options);
     let content;
 
     if (isUrl(updatedPathOrUrl)) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl);
+      content = await fetchUrlFunction.memo(updatedPathOrUrl, options, settings);
     } else {
       content = await readLocalFileFunction.memo(updatedPathOrUrl);
     }
 
-    return { content, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
+    return {
+      content: content === undefined ? null : content,
+      resolvedPath: updatedPathOrUrl,
+      path: pathOrUrl
+    };
   } catch (error) {
     throw createError(error, {}, { resolvedPath: updatedPathOrUrl, path: pathOrUrl });
   }
@@ -283,16 +368,17 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
  *
  * @param queue - List of paths or URLs to load
  * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ * @param options - Global options
  * @returns An array of `PromiseSettledResult` objects, one for each input path or URL.
  */
-const promiseQueue = async (queue: string[], limit = 5) => {
+const promiseQueue = async (queue: string[], limit = 5, options = getOptions()) => {
   const results = [];
   const slidingQueue = new Set();
   let activeCount = 0;
 
   for (const item of queue) {
     // Use a sliding window to limit the number of concurrent promises.
-    const promise = loadFileFetch(item).finally(() => {
+    const promise = loadFileFetch(item, options).finally(() => {
       slidingQueue.delete(promise);
       activeCount -= 1;
     });

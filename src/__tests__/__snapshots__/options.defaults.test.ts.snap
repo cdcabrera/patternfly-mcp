@@ -51,6 +51,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "nodeVersion": 22,
   "nodeVersionPreferred": 22,
   "patternflyOptions": {
+    "api": "https://www.patternfly.org/api",
     "availableResourceVersions": [
       "6.0.0",
     ],
@@ -74,6 +75,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     },
     "urlWhitelist": [
       "https://patternfly.org",
+      "https://www.patternfly.org",
       "https://github.com/patternfly",
       "https://raw.githubusercontent.com/patternfly",
     ],
@@ -142,7 +144,8 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "urlRegex": /\\^\\(https\\?:\\)\\\\/\\\\//i,
   "version": "0.0.0",
   "xhrFetch": {
-    "timeoutMs": 15000,
+    "retry": true,
+    "timeoutMs": 10000,
   },
 }
 `;
