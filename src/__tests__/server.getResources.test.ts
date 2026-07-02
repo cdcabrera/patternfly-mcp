@@ -218,13 +218,103 @@ describe('fetchUrlFunction', () => {
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
-    await expect(fetchUrlFunction('https://example.com/missing.md'))
-      .rejects
-      .toThrow('Failed to fetch https://example.com/missing.md: 404 Not Found');
+    const result = await fetchUrlFunction('https://example.com/missing.md');
+
+    expect(result).toBeNull();
   });
 
   it('should have memo property', () => {
     expect(fetchUrlFunction.memo).toBeDefined();
+  });
+
+  describe('enhancements', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should retry once on 5xx error', async () => {
+      (global.fetch as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 503,
+          statusText: 'Service Unavailable'
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: async () => 'success after retry'
+        });
+
+      const fetchPromise = fetchUrlFunction('https://example.com/retry');
+
+      // Advance timers to trigger retry after 100ms
+      await jest.advanceTimersByTimeAsync(150);
+
+      const result = await fetchPromise;
+
+      expect(result).toBe('success after retry');
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return null for 404 status (Soft-404)', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      });
+
+      const result = await fetchUrlFunction('https://example.com/404');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null for empty body (Soft-404)', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => ''
+      });
+
+      const result = await fetchUrlFunction('https://example.com/empty');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null for JSON error sentinel (Soft-404)', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ error: 'not found' })
+      });
+
+      const result = await fetchUrlFunction('https://example.com/sentinel');
+
+      expect(result).toBeNull();
+    });
+
+    it('should abort on timeout', async () => {
+      const abortSpy = jest.spyOn(AbortController.prototype, 'abort');
+
+      (global.fetch as jest.Mock).mockImplementation((_url, { signal }) => new Promise((_, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('Aborted')));
+      }));
+
+      const fetchPromise = fetchUrlFunction('https://example.com/timeout', {
+        xhrFetch: { timeoutMs: 100 }
+      } as any);
+
+      jest.advanceTimersByTime(150);
+
+      await expect(fetchPromise).rejects.toThrow('Aborted');
+
+      expect(abortSpy).toHaveBeenCalled();
+      abortSpy.mockRestore();
+    });
   });
 });
 

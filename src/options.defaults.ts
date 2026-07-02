@@ -295,9 +295,11 @@ interface StatsSession extends StatsOptions {
  * @interface XhrFetchOptions
  *
  * @property timeoutMs Timeout for XHR and Fetch requests (ms).
+ * @property retry Enable single retry on 5xx errors.
  */
 interface XhrFetchOptions {
   timeoutMs: number;
+  retry: boolean;
 }
 
 /**
@@ -441,7 +443,8 @@ const STATS_OPTIONS: StatsOptions = {
  * Default XHR and Fetch options.
  */
 const XHR_FETCH_OPTIONS: XhrFetchOptions = {
-  timeoutMs: 15_000
+  timeoutMs: 10_000,
+  retry: true
 };
 
 /**
