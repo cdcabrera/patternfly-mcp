@@ -1,15 +1,26 @@
-import { type CrawlEmit, type CrawlControl, type CrawlOptions, crawl } from './records.spider';
+import { type CrawlEmit, type CrawlControl, type CrawlOptions, crawl, type CrawlStep } from './records.spider';
 
+/**
+ * Options for the Astro spider.
+ *
+ * @interface AstroCrawlOptions
+ * @property base - Base URL for the Astro API.
+ */
+interface AstroCrawlOptions extends CrawlOptions {
+  base?: string;
+}
+
+/** The base URL for the Astro API. */
 const ASTRO_API_BASE = 'https://www.patternfly.org/api';
 
 /**
  * Astro-specific CrawlStep factory.
  * Translates Astro's positional URL segments into semantic context.
  *
- * @param base - Base URL for the Astro API
- * @returns A CrawlStep function
+ * @param base - Base URL for the Astro API. Defaults to `ASTRO_API_BASE`.
+ * @returns A CrawlStep function.
  */
-function makeAstroCrawlStep(base: string = ASTRO_API_BASE) {
+const makeAstroCrawlStep = (base: string = ASTRO_API_BASE): CrawlStep => {
   const root = base.replace(/\/+$/, '');
 
   return async (emit: CrawlEmit, control: CrawlControl) => {
@@ -18,7 +29,7 @@ function makeAstroCrawlStep(base: string = ASTRO_API_BASE) {
     const depth = segments.length;
 
     // We only try to parse JSON if we are not at a leaf node or if it looks like JSON
-    let json: any = null;
+    let json: unknown = null;
 
     try {
       if (emit.body.trim().startsWith('{') || emit.body.trim().startsWith('[')) {
@@ -31,7 +42,11 @@ function makeAstroCrawlStep(base: string = ASTRO_API_BASE) {
     // Root: /versions -> enqueues /<version>
     if (depth === 1 && segments[0] === 'versions') {
       if (Array.isArray(json)) {
-        json.forEach(version => control.enqueue(`${root}/${version}`));
+        json.forEach(version => {
+          if (typeof version === 'string') {
+            control.enqueue(`${root}/${version}`);
+          }
+        });
       }
 
       return;
@@ -44,7 +59,11 @@ function makeAstroCrawlStep(base: string = ASTRO_API_BASE) {
       if (Array.isArray(json)) {
         const baseUrl = emit.url.replace(/\/+$/, '');
 
-        json.forEach(pathSegment => control.enqueue(`${baseUrl}/${pathSegment}`));
+        json.forEach(pathSegment => {
+          if (typeof pathSegment === 'string') {
+            control.enqueue(`${baseUrl}/${pathSegment}`);
+          }
+        });
       }
 
       // At depth 3, also probe for props and css as per legacy adapter
@@ -81,19 +100,19 @@ function makeAstroCrawlStep(base: string = ASTRO_API_BASE) {
       /* eslint-enable no-param-reassign */
     }
   };
-}
+};
 
 /**
  * Run the Astro spider starting from the versions index.
  *
- * @param options - Crawl options
- * @returns List of results
+ * @param options - Crawl options including optional Astro base URL.
+ * @returns List of results.
  */
-async function runAstroSpider(options: CrawlOptions = {}) {
-  const base = (options as any).base || ASTRO_API_BASE;
+const runAstroSpider = async (options: AstroCrawlOptions = {}) => {
+  const base = options.base || ASTRO_API_BASE;
   const seed = `${base.replace(/\/+$/, '')}/versions`;
 
   return crawl([seed], makeAstroCrawlStep(base), options);
-}
+};
 
-export { ASTRO_API_BASE, makeAstroCrawlStep, runAstroSpider };
+export { ASTRO_API_BASE, makeAstroCrawlStep, runAstroSpider, type AstroCrawlOptions };

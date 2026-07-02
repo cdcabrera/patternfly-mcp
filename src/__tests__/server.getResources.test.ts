@@ -315,6 +315,20 @@ describe('fetchUrlFunction', () => {
       expect(abortSpy).toHaveBeenCalled();
       abortSpy.mockRestore();
     });
+
+    it('should respect external AbortSignal', async () => {
+      const controller = new AbortController();
+
+      (global.fetch as jest.Mock).mockImplementation((_url, { signal }) => new Promise((_, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('Aborted by signal')));
+      }));
+
+      const fetchPromise = fetchUrlFunction('https://example.com/external-signal', undefined, controller.signal);
+
+      controller.abort();
+
+      await expect(fetchPromise).rejects.toThrow('Aborted by signal');
+    });
   });
 });
 

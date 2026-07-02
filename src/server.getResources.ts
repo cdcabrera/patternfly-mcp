@@ -136,11 +136,12 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * @note Review expanding fetch to handle more file types like JSON.
  *
  * @param url - URL to fetch
- * @param options - Options
+ * @param options - Global options
+ * @param [signal] - Optional AbortSignal for request cancellation
  * @returns The fetched content as a string, or null for Soft-404s.
  */
-const fetchUrlFunction = async (url: string, options = getOptions()) => {
-  const { timeoutMs = options.xhrFetch.timeoutMs, retry = options.xhrFetch.retry } = options as any;
+const fetchUrlFunction = async (url: string, options = getOptions(), signal?: AbortSignal) => {
+  const { timeoutMs, retry } = options.xhrFetch;
 
   const performFetch = async (): Promise<string | null | { retry: true, status: number, statusText: string }> => {
     const controller = new AbortController();
@@ -148,6 +149,10 @@ const fetchUrlFunction = async (url: string, options = getOptions()) => {
 
     // Allow the process to exit
     timeout.unref();
+
+    if (signal) {
+      signal.addEventListener('abort', () => controller.abort());
+    }
 
     try {
       const response = await fetch(url, {
@@ -294,13 +299,14 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  * Load a file from disk or `URL`, depending on the input type.
  *
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
- * @param options - Options
+ * @param options - Global options
+ * @param [signal] - Optional AbortSignal for request cancellation
  * @returns Resolves to an object containing the loaded content, path, and the resolved path.
  *     If a Soft-404 is detected, `content` is `null`.
  * @throws {Error} If the path cannot be accessed in the current mode. Includes `path` and `resolvedPath`
  *     properties when available.
  */
-const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+const loadFileFetch = async (pathOrUrl: string, options = getOptions(), signal?: AbortSignal) => {
   let updatedPathOrUrl = pathOrUrl;
 
   try {
@@ -318,7 +324,7 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
     let content;
 
     if (isUrl(updatedPathOrUrl)) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl, options);
+      content = await fetchUrlFunction.memo(updatedPathOrUrl, options, signal);
     } else {
       content = await readLocalFileFunction.memo(updatedPathOrUrl);
     }

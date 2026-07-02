@@ -181,6 +181,7 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
 /**
  * PatternFly-specific options.
  *
+ * @property api URL to the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
  * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
  * @property availableSchemasVersions List of available PatternFly schema versions to the MCP server.
@@ -196,6 +197,7 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
  * @property urlWhitelistProtocols List of allowed URL protocols to validate against when fetching PatternFly resources.
  */
 interface PatternFlyOptions {
+  api: string;
   availableResourceVersions: ('6.0.0')[];
   availableSearchVersions: ('current' | 'latest' | 'v6')[];
   availableSchemasVersions: ('v6')[];
@@ -456,6 +458,7 @@ const CHANNEL_BASENAME = 'pf-mcp';
  * Default PatternFly-specific options.
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
+  api: 'https://www.patternfly.org/api',
   availableResourceVersions: ['6.0.0'],
   availableSearchVersions: ['current', 'latest', 'v6'],
   availableSchemasVersions: ['v6'],
