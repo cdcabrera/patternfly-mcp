@@ -6,6 +6,7 @@
   "type": "module",
   "imports": {
     "~docsCatalog": "./src/docs.json",
+    "#recordsHost": "./dist/records.host.js",
     "#toolsHost": "./dist/server.toolsHost.js"
   },
   "exports": {
