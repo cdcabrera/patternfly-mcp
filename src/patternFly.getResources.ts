@@ -21,6 +21,7 @@ import {
   INDEX_EXCEPTION_WORDS,
   INDEX_NOISE_WORDS
 } from './docs.filterWords';
+// import type { ApiContent } from './records.patternFlyApi';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -197,6 +198,71 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
 }
 
 /**
+ * In-memory blend registry. Round 1 only: additive, cleared on restart.
+ * Keyed by `${version}::${section}::${item}` -> ApiContent[].
+ */
+/*
+const apiRegistry = new Map<string, ApiContent[]>();
+
+const keyOf = (content: ApiContent) => {
+  const { version = '', section = '', item = '' } = content.semanticContext || {};
+
+  return `${version}::${section}::${item}`;
+};
+*/
+
+/**
+ * Read-side accessor consumed by patternFly.getResources adapters (narrow contract).
+ * Returns a snapshot map so callers cannot mutate the registry.
+ */
+// const getBlendedApiContent = (): ReadonlyMap<string, ApiContent[]> => apiRegistry;
+
+/**
+ * Blend API content into the in-memory registry and invalidate dependent memos
+ * so subsequent reads re-derive with API data included.
+ *
+ * This function intentionally does NOT reach into patternFly.getResources internals.
+ * The adapter side reads via getBlendedApiContent().
+ *
+ * @param api
+ */
+/*
+const blendApiIntoCatalog = (api: ApiContent[]): number => {
+  if (!Array.isArray(api) || api.length === 0) {
+    return 0;
+  }
+
+  for (const entry of api) {
+    const key = keyOf(entry);
+    const bucket = apiRegistry.get(key);
+
+    if (bucket) {
+      bucket.push(entry);
+    } else {
+      apiRegistry.set(key, [entry]);
+    }
+  }
+
+  // Invalidate dependent memos. `.clear()` is additive from Commit 2.
+  try {
+    getPatternFlyDocsCatalog.memo.clear();
+  } catch (error) {
+    log.warn('blend: catalog clear failed', error);
+  }
+
+  try {
+    getPatternFlyMcpResources.memo.clear();
+  } catch (error) {
+    log.warn('blend: resources clear failed', error);
+  }
+
+  log.info(`blend: merged ${api.length} api entries; catalog memo cleared`);
+
+  return api.length;
+};
+*/
+
+/**
  * Lazy load the PatternFly documentation catalog.
  *
  * @returns PatternFly documentation catalog JSON, or fallback catalog if import fails.
@@ -261,6 +327,10 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
   }
 
   return entry?.section?.trim()?.toLowerCase() === 'guidelines' ? 'AI Guidance' : categoryLabel;
+};
+
+const getPatternFlyAPi = async () => {
+
 };
 
 /**
