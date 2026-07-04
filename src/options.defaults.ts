@@ -181,6 +181,11 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
 /**
  * PatternFly-specific options.
  *
+ * @property api PatternFly API.
+ * @property api.base URL starting base for crawling the PatternFly API.
+ * @property api.versions URL Get the available PatternFly API versions. Versions are required to crawl.
+ * @property api.componentPaths List of additional PatternFly API component paths to try.
+ * @property api.crawlTimeoutMs Timeout in milliseconds for crawling the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
  * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
  * @property availableSchemasVersions List of available PatternFly schema versions to the MCP server.
@@ -196,6 +201,14 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
  * @property urlWhitelistProtocols List of allowed URL protocols to validate against when fetching PatternFly resources.
  */
 interface PatternFlyOptions {
+  api: {
+    base: string;
+    versions: string;
+    componentPaths: string[];
+    crawlTimeoutMs: number;
+    enabled: boolean;
+    concurrency: number;
+  },
   availableResourceVersions: ('6.0.0')[];
   availableSearchVersions: ('current' | 'latest' | 'v6')[];
   availableSchemasVersions: ('v6')[];
@@ -294,9 +307,13 @@ interface StatsSession extends StatsOptions {
  *
  * @interface XhrFetchOptions
  *
+ * @property allowBinary Allow binary data to be returned.
+ * @property maxSizeBytes Maximum size of a single request (bytes).
  * @property timeoutMs Timeout for XHR and Fetch requests (ms).
  */
 interface XhrFetchOptions {
+  allowBinary: boolean;
+  maxSizeBytes: number;
   timeoutMs: number;
 }
 
@@ -391,6 +408,12 @@ const RESOURCE_MEMO_OPTIONS = {
   default: {
     cacheLimit: 3
   },
+  medium: {
+    cacheLimit: 25
+  },
+  high: {
+    cacheLimit: 50
+  },
   fetchUrl: {
     cacheLimit: 100,
     expire: 3 * 60 * 1000, // 3 minute sliding cache
@@ -441,6 +464,8 @@ const STATS_OPTIONS: StatsOptions = {
  * Default XHR and Fetch options.
  */
 const XHR_FETCH_OPTIONS: XhrFetchOptions = {
+  allowBinary: false,
+  maxSizeBytes: 1024 * 1024 * 5,
   timeoutMs: 15_000
 };
 
@@ -453,6 +478,17 @@ const CHANNEL_BASENAME = 'pf-mcp';
  * Default PatternFly-specific options.
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
+  api: {
+    base: 'https://main.patternfly-org.pages.dev/api',
+    versions: 'https://main.patternfly-org.pages.dev/api/versions',
+    componentPaths: [
+      'props',
+      'css'
+    ],
+    crawlTimeoutMs: 180_000,
+    enabled: false,
+    concurrency: 4
+  },
   availableResourceVersions: ['6.0.0'],
   availableSearchVersions: ['current', 'latest', 'v6'],
   availableSchemasVersions: ['v6'],
@@ -469,6 +505,7 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   urlWhitelist: [
     'https://patternfly.org',
     'https://github.com/patternfly',
+    'https://main.patternfly-org.pages.dev',
     'https://raw.githubusercontent.com/patternfly'
   ],
   urlWhitelistProtocols: ['http', 'https']

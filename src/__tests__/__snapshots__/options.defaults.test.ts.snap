@@ -51,6 +51,17 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "nodeVersion": 22,
   "nodeVersionPreferred": 22,
   "patternflyOptions": {
+    "api": {
+      "base": "https://main.patternfly-org.pages.dev/api",
+      "componentPaths": [
+        "props",
+        "css",
+      ],
+      "concurrency": 4,
+      "crawlTimeoutMs": 180000,
+      "enabled": false,
+      "versions": "https://main.patternfly-org.pages.dev/api/versions",
+    },
     "availableResourceVersions": [
       "6.0.0",
     ],
@@ -75,6 +86,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "urlWhitelist": [
       "https://patternfly.org",
       "https://github.com/patternfly",
+      "https://main.patternfly-org.pages.dev",
       "https://raw.githubusercontent.com/patternfly",
     ],
     "urlWhitelistProtocols": [
@@ -104,6 +116,12 @@ exports[`options defaults should return specific properties: defaults 1`] = `
       "cacheErrors": false,
       "cacheLimit": 100,
       "expire": 180000,
+    },
+    "high": {
+      "cacheLimit": 50,
+    },
+    "medium": {
+      "cacheLimit": 25,
     },
     "readFile": {
       "cacheErrors": false,
@@ -142,6 +160,8 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "urlRegex": /\\^\\(https\\?:\\)\\\\/\\\\//i,
   "version": "0.0.0",
   "xhrFetch": {
+    "allowBinary": false,
+    "maxSizeBytes": 5242880,
     "timeoutMs": 15000,
   },
 }
