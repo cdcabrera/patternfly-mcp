@@ -51,6 +51,14 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "nodeVersion": 22,
   "nodeVersionPreferred": 22,
   "patternflyOptions": {
+    "api": {
+      "componentPaths": [
+        "props",
+        "css",
+      ],
+      "url": "https://main.patternfly-org.pages.dev/api",
+      "versions": "https://main.patternfly-org.pages.dev/api/versions",
+    },
     "availableResourceVersions": [
       "6.0.0",
     ],
@@ -75,6 +83,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
     "urlWhitelist": [
       "https://patternfly.org",
       "https://github.com/patternfly",
+      "https://main.patternfly-org.pages.dev",
       "https://raw.githubusercontent.com/patternfly",
     ],
     "urlWhitelistProtocols": [
