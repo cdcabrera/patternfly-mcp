@@ -76,7 +76,18 @@ describe('resourceCallback', () => {
     mockReadFile.mockResolvedValue(mockContent);
     mockFetch.mockResolvedValue({
       ok: true,
-      text: () => mockContent
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => (name === 'content-type' ? 'text/plain' : null)
+      },
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(mockContent) })
+            .mockResolvedValueOnce({ done: true, value: undefined })
+        })
+      }
     } as any);
 
     const result = await resourceCallback(
@@ -151,7 +162,18 @@ describe('resourceCallback', () => {
     mockReadFile.mockResolvedValue(mockContent);
     mockFetch.mockResolvedValue({
       ok: true,
-      text: () => mockContent
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => (name === 'content-type' ? 'text/plain' : null)
+      },
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(mockContent) })
+            .mockResolvedValueOnce({ done: true, value: undefined })
+        })
+      }
     } as any);
 
     const uri = new URL('patternfly://docs/test');

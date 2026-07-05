@@ -7,6 +7,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl, isPath, createError } from './server.helpers';
+import { FetchError, setFetch } from './server.fetch';
 import { log, formatUnknownError } from './logger';
 
 /**
@@ -133,33 +134,21 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
 /**
  * Fetch content from a URL with timeout and error handling
  *
- * @note Review expanding fetch to handle more file types like JSON.
+ * @note Minor guard against unexpected binary content. Currently, binary content
+ * is unsupported. See {@link XhrFetchOptions}
  *
  * @param url - URL to fetch
- * @param options - Options
  * @returns The fetched content as a string.
  */
-const fetchUrlFunction = async (url: string, options = getOptions()) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.xhrFetch.timeoutMs);
+const fetchUrlFunction = async (url: string): Promise<string> => {
+  const { get } = setFetch();
+  const { data, type } = await get(url); // throws FetchError on any failure
 
-  // Allow the process to exit
-  timeout.unref();
-
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: 'text/plain, text/markdown, */*' }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.text();
-  } finally {
-    clearTimeout(timeout);
+  if (type === 'binary') {
+    throw new FetchError({ message: `Cannot return binary content (${url}).` });
   }
+
+  return typeof data === 'string' ? data : JSON.stringify(data);
 };
 
 /**

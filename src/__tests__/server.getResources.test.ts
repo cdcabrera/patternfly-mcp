@@ -190,10 +190,27 @@ describe('fetchUrlFunction', () => {
     global.fetch = jest.fn();
   });
 
-  it('should attempt to fetch a URL with correct headers', async () => {
+  it('should attempt to fetch a URL', async () => {
     const mockResponse = {
       ok: true,
-      text: jest.fn().mockResolvedValue('fetched content')
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => {
+          if (name === 'content-type') {
+            return 'text/plain';
+          }
+
+          return null;
+        }
+      },
+      body: {
+        getReader: () => ({
+          read: jest.fn()
+            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('fetched content') })
+            .mockResolvedValueOnce({ done: true, value: undefined })
+        })
+      }
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -203,7 +220,7 @@ describe('fetchUrlFunction', () => {
     expect(global.fetch).toHaveBeenCalledWith(
       'https://example.com/doc.md',
       expect.objectContaining({
-        headers: { Accept: 'text/plain, text/markdown, */*' }
+        method: 'GET'
       })
     );
     expect(result).toBe('fetched content');
@@ -213,7 +230,10 @@ describe('fetchUrlFunction', () => {
     const mockResponse = {
       ok: false,
       status: 404,
-      statusText: 'Not Found'
+      statusText: 'Not Found',
+      headers: {
+        get: () => null
+      }
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
