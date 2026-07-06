@@ -185,6 +185,7 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
  * @property api.url URL to the PatternFly API.
  * @property api.versions URL to the PatternFly API available PF versions.
  * @property api.componentPaths List of additional PatternFly API component paths to try.
+ * @property api.crawlTimeoutMs Timeout in milliseconds for crawling the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
  * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
  * @property availableSchemasVersions List of available PatternFly schema versions to the MCP server.
@@ -204,6 +205,7 @@ interface PatternFlyOptions {
     url: string;
     versions: string;
     componentPaths: string[];
+    crawlTimeoutMs: number;
   },
   availableResourceVersions: ('6.0.0')[];
   availableSearchVersions: ('current' | 'latest' | 'v6')[];
@@ -474,7 +476,8 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     componentPaths: [
       'props',
       'css'
-    ]
+    ],
+    crawlTimeoutMs: 180_000
   },
   availableResourceVersions: ['6.0.0'],
   availableSearchVersions: ['current', 'latest', 'v6'],
