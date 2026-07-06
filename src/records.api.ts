@@ -1,6 +1,6 @@
-import { formatUnknownError, log } from './logger';
+import { log } from './logger';
 // import {} from './server.task';
-import { promiseQueue } from './server.getResources';
+import { processDocsFunction, type ProcessedDoc } from './server.getResources';
 import { memo } from './server.caching';
 import { isPlainObject, joinUrl } from './server.helpers';
 import { getOptions } from './options.context';
@@ -93,13 +93,55 @@ isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.d
  *   - `path`: The initial path provided or resolved during the process.
  *   - `resolvedPath`: The full resolved path of the crawled content.
  */
+/**
+ * Recursively crawls a list of URLs.
+ *
+ * This function takes a list of URLs to crawl, processes their corresponding content,
+ * and optionally follows additional paths defined in the component paths configuration.
+ * It ensures that visited URLs are tracked to prevent duplicate processing.
+ *
+ * @param urls - The list of URLs to crawl.
+ * @param [options] - An optional configuration object.
+ * @returns {Promise<ProcessedDoc[]>} A promise that resolves to an array of processed documents,
+ *     each containing information about the crawling result, status, and content.
+ */
 const crawler = async (urls: string[], options = getOptions()) => {
   // const queue: string[] = [...urls].map(url => buildUrl([url]));
+  const componentPaths = options.patternflyOptions.api.componentPaths;
   const queue: string[] = [...urls];
-  const visited = new Set<string>();
+  // const visited = new Set<string>();
+
+  const settled = await processDocsFunction(queue);
+  const content: ProcessedDoc[] = [];
+
+  for (const res of settled) {
+    if (res.isSuccess && !isEmptyPayload.memo(res.content)) {
+      const { payload } = parsePayload.memo(res.content);
+      // visited.add(res.path);
+
+      if (Array.isArray(payload)) {
+        // Apply the extra componentPaths
+        const updatedPayload = [...payload].map(path => joinUrl(res.path, path));
+        const crawledContent = await crawler(updatedPayload);
+
+        // Filter the extra componentPaths out if they fail
+        const filteredCrawledContent = crawledContent.filter(
+          ({ path, isSuccess }) => !isSuccess && componentPaths.some(componentPath => path?.includes(componentPath))
+        );
+
+        content.push(...filteredCrawledContent);
+
+        continue;
+      }
+    }
+
+    content.push({ ...res });
+  }
+
+  /*
   const settled = await promiseQueue(queue);
   // const content = new Map<string, unknown>();
-  const content: { content?: unknown; path?: string; resolvedPath?: string }[] = [];
+  const content: { content?: unknown; path?: string; resolvedPath?: string; status: 'fulfilled' | 'rejected' }[] = [];
 
   // settled.forEach((res, index) => {
   for (const [index, res] of settled.entries()) {
@@ -117,7 +159,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
 
         content.push(...crawledContent);
       } else {
-        content.push({ ...res.value });
+        content.push({ ...res.value, status: res.status });
       }
 
       log.debug(`API crawler fulfilled ${segmentBaseUrl}`);
@@ -126,22 +168,62 @@ const crawler = async (urls: string[], options = getOptions()) => {
     }
 
     if (res.status === 'rejected') {
+      content.push({ path: segmentBaseUrl, status: res.status });
       log.debug(`API crawler rejected ${segmentBaseUrl}:`, formatUnknownError(res.reason));
     }
   }
+  */
 
   return content;
 };
 
 /**
+ * Get and process available API versions.
+ *
+ * @param [options=getOptions()] - Configuration options.
+ * @returns {Promise<string[]>} A promise that resolves to an array of processed version URLs.
+ */
+const getVersions = async (options = getOptions()) => {
+  const versionUrl = options.patternflyOptions.api.versions;
+  const processedVersions = await processDocsFunction([versionUrl]);
+  const versions: string[] = [];
+
+  if (processedVersions[0]) {
+    const response = processedVersions[0];
+
+    if (response.isSuccess) {
+      const { payload } = parsePayload.memo(response.content);
+
+      if (Array.isArray(payload)) {
+        versions.push(...payload.map(version => joinUrl(options.patternflyOptions.api.base, version)));
+      }
+    }
+  }
+
+  if (versions.length === 0) {
+    log.error(`No API versions available ${versionUrl}.`);
+  }
+
+  return versions;
+};
+
+/**
  * Initiate API crawl.
  *
- * @param [options=getOptions()] - Configuration options used for the API crawl. Uses default options if not specified.
  * @returns A promise resolving to an array of content entries.
  */
-const apiSpider = async (options = getOptions()) => {
+const apiSpider = async () => {
   log.info(`API spider crawl started`);
-  const content = await crawler([options.patternflyOptions.api.base]);
+
+  const seedVersions = await getVersions();
+  const content = await crawler(seedVersions);
+
+  /**
+   * Spider shouldn't be doing double duty as the API crawler and full data parser.
+   *
+   * 1. Now we can pull out the version, section, category from the returned content/path after the crawl
+   * 2. Need to setup a the managed task so we time the crawl out. Simple interrupt may work so it closes gracefully with the last group of fetches.
+   */
 
   log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
 
