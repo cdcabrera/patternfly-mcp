@@ -182,8 +182,8 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
  * PatternFly-specific options.
  *
  * @property api PatternFly API.
- * @property api.url URL to the PatternFly API.
- * @property api.versions URL to the PatternFly API available PF versions.
+ * @property api.spec URL to the PatternFly API spec.
+ * @property api.base URL starting base for crawling the PatternFly API. Starts with the available PF versions.
  * @property api.componentPaths List of additional PatternFly API component paths to try.
  * @property api.crawlTimeoutMs Timeout in milliseconds for crawling the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
@@ -202,8 +202,8 @@ type WhitelistUrl = `${'http' | 'https'}://${string}`;
  */
 interface PatternFlyOptions {
   api: {
-    url: string;
-    versions: string;
+    spec: string;
+    base: string;
     componentPaths: string[];
     crawlTimeoutMs: number;
   },
@@ -406,6 +406,12 @@ const RESOURCE_MEMO_OPTIONS = {
   default: {
     cacheLimit: 3
   },
+  medium: {
+    cacheLimit: 25
+  },
+  high: {
+    cacheLimit: 50
+  },
   fetchUrl: {
     cacheLimit: 100,
     expire: 3 * 60 * 1000, // 3 minute sliding cache
@@ -471,8 +477,8 @@ const CHANNEL_BASENAME = 'pf-mcp';
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   api: {
-    versions: 'https://main.patternfly-org.pages.dev/api/versions',
-    url: 'https://main.patternfly-org.pages.dev/api',
+    base: 'https://main.patternfly-org.pages.dev/api/versions',
+    spec: 'https://main.patternfly-org.pages.dev/api',
     componentPaths: [
       'props',
       'css'

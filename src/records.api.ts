@@ -1,8 +1,10 @@
-import {} from './server.task';
-import {} from './server.getResources';
-import {} from './server.fetch';
+import { formatUnknownError, log } from './logger';
+// import {} from './server.task';
+import { promiseQueue } from './server.getResources';
 import { memo } from './server.caching';
-import { isPlainObject } from './server.helpers';
+import { isPlainObject, joinUrl } from './server.helpers';
+import { getOptions } from './options.context';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Parses the given payload and determines its state and structure.
@@ -39,7 +41,7 @@ const parsePayload = (payload: unknown) => {
 /**
  * Memoized version of parsePayload.
  */
-parsePayload.memo = memo(parsePayload);
+parsePayload.memo = memo(parsePayload, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
  * Determines if the parsed payload is empty.
@@ -47,7 +49,7 @@ parsePayload.memo = memo(parsePayload);
  * @param payload - Data to be parsed and evaluated for emptiness.
  * @returns Returns `true` if the parsed payload is empty, otherwise `false`.
  */
-const isEmptyParsedPayload = (payload: unknown): boolean => {
+const isEmptyParsedPayload = (payload: unknown) => {
   const { isEmpty } = parsePayload.memo(payload);
 
   return isEmpty;
@@ -56,7 +58,7 @@ const isEmptyParsedPayload = (payload: unknown): boolean => {
 /**
  * Memoized version of isEmptyParsedPayload.
  */
-isEmptyParsedPayload.memo = memo(isEmptyParsedPayload);
+isEmptyParsedPayload.memo = memo(isEmptyParsedPayload, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
  * Determines if the payload is empty.
@@ -64,24 +66,87 @@ isEmptyParsedPayload.memo = memo(isEmptyParsedPayload);
  * @param payload - Data to be evaluated for emptiness.
  * @returns Returns `true` if the payload is empty, otherwise `false`.
  */
-const isEmptyPayload = (payload: unknown): boolean => {
+const isEmptyPayload = (payload: unknown) => {
   if (typeof payload === 'string') {
     const trimmedPayload = payload.trim();
 
     return trimmedPayload === '' || trimmedPayload === '{}' || trimmedPayload === '[]' || trimmedPayload === 'null' || trimmedPayload === '""';
   }
 
-  return payload === null || payload === undefined || isEmptyParsedPayload(payload);
+  return payload === null || payload === undefined || isEmptyParsedPayload.memo(payload);
 };
 
 /**
  * Memoized version of isEmptyPayload.
  */
-isEmptyPayload.memo = memo(isEmptyPayload);
+isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
-const crawler = () => {};
+/**
+ * Recursively crawls a list of URLs.
+ *
+ * Resolves paths and fetches content; built specifically around the PatternFly API response structure.
+ *
+ * @param urls - The list of URLs to crawl.
+ * @param [options] - An optional configuration object.
+ * @returns A Promise resolving to an array of content objects. Each object should include:
+ *   - `content`: The raw or processed content retrieved from the crawled paths.
+ *   - `path`: The initial path provided or resolved during the process.
+ *   - `resolvedPath`: The full resolved path of the crawled content.
+ */
+const crawler = async (urls: string[], options = getOptions()) => {
+  // const queue: string[] = [...urls].map(url => buildUrl([url]));
+  const queue: string[] = [...urls];
+  const visited = new Set<string>();
+  const settled = await promiseQueue(queue);
+  // const content = new Map<string, unknown>();
+  const content: { content?: unknown; path?: string; resolvedPath?: string }[] = [];
 
-const apiSpider = () => {};
+  // settled.forEach((res, index) => {
+  for (const [index, res] of settled.entries()) {
+    const segmentBaseUrl = queue[index] as string;
+
+    if (res.status === 'fulfilled' && !isEmptyPayload.memo(res.value.content)) {
+      visited.add(res.value.path);
+
+      const { payload } = parsePayload.memo(res.value.content);
+
+      if (Array.isArray(payload)) {
+        // Apply the extra componentPaths
+        const updatedPayload = [...payload, ...options.patternflyOptions.api.componentPaths].map(path => joinUrl(res.value.path, path));
+        const crawledContent = await crawler(updatedPayload);
+
+        content.push(...crawledContent);
+      } else {
+        content.push({ ...res.value });
+      }
+
+      log.debug(`API crawler fulfilled ${segmentBaseUrl}`);
+
+      continue;
+    }
+
+    if (res.status === 'rejected') {
+      log.debug(`API crawler rejected ${segmentBaseUrl}:`, formatUnknownError(res.reason));
+    }
+  }
+
+  return content;
+};
+
+/**
+ * Initiate API crawl.
+ *
+ * @param [options=getOptions()] - Configuration options used for the API crawl. Uses default options if not specified.
+ * @returns A promise resolving to an array of content entries.
+ */
+const apiSpider = async (options = getOptions()) => {
+  log.info(`API spider crawl started`);
+  const content = await crawler([options.patternflyOptions.api.base]);
+
+  log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
+
+  return content;
+};
 
 export {
   apiSpider,
