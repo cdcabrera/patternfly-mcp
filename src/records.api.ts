@@ -2,7 +2,7 @@ import { log } from './logger';
 // import {} from './server.task';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
-import { isPlainObject, joinUrl, parseUrl } from './server.helpers';
+import { isPlainObject, joinUrl } from './server.helpers';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 
@@ -179,11 +179,11 @@ const getVersions = async (options = getOptions()) => {
  * @returns The list of processed API content with metadata.
  */
 const contentMetadata = (apiProcessedDocs: ApiProcessedDoc[], options = getOptions()): ApiContent[] => {
+  const base = options.patternflyOptions.api.base;
   const componentPaths = options.patternflyOptions.api.componentPaths;
 
   return apiProcessedDocs.map(({ content, resolvedPath }) => {
-    const parsed = parseUrl(resolvedPath);
-    const [version, section, item, facet, ...remaining] = parsed?.path?.split('/')?.filter(Boolean) || [];
+    const [version, section, item, facet, ...remaining] = resolvedPath.replace(base, '').split('/').filter(Boolean) || [];
     const kind = facet && (componentPaths.includes(facet) || remaining.includes(facet)) ? facet : 'doc';
 
     return {
