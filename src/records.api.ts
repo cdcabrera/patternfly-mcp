@@ -33,7 +33,7 @@ interface ApiContent {
 }
 
 // type ApiProcessedDoc = NonNullable<ProcessedDoc>;
-interface ApiProcessedDoc {
+interface ApiCrawler {
   content: string;
   path: string;
   resolvedPath: string;
@@ -108,10 +108,10 @@ isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.d
  * @returns {Promise<ProcessedDoc[]>} A promise that resolves to an array of processed documents,
  *     each containing information about the crawling result, status, and content.
  */
-const crawler = async (urls: string[], options = getOptions()): Promise<ApiProcessedDoc[]> => {
+const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawler[]> => {
   const componentPaths = options.patternflyOptions.api.componentPaths;
   const settled = await processDocsFunction(urls);
-  const content: ApiProcessedDoc[] = [];
+  const content: ApiCrawler[] = [];
 
   for (const res of settled) {
     const { isEmpty, payload } = parsePayload.memo(res.content);
@@ -172,17 +172,17 @@ const getVersions = async (options = getOptions()) => {
 };
 
 /**
- * Process content metadata.
+ * Process content metadata from response paths.
  *
- * @param apiProcessedDocs - The list of processed content.
+ * @param apiResponses - The list of pre-metadata content.
  * @param [options=getOptions()] - Configuration options.
  * @returns The list of processed API content with metadata.
  */
-const contentMetadata = (apiProcessedDocs: ApiProcessedDoc[], options = getOptions()): ApiContent[] => {
+const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): ApiContent[] => {
   const base = options.patternflyOptions.api.base;
   const componentPaths = options.patternflyOptions.api.componentPaths;
 
-  return apiProcessedDocs.map(({ content, resolvedPath }) => {
+  return apiResponses.map(({ content, resolvedPath }) => {
     const [version, section, item, facet, ...remaining] = resolvedPath.replace(base, '').split('/').filter(Boolean) || [];
     const kind = facet && (componentPaths.includes(facet) || remaining.includes(facet)) ? facet : 'doc';
 
@@ -232,5 +232,7 @@ export {
   apiSpider,
   crawler,
   isEmptyPayload,
-  parsePayload
+  parsePayload,
+  type ApiContent,
+  type ApiCrawler
 };
