@@ -289,15 +289,8 @@ const setFetch = (options = getOptions()): SetFetch => {
         })
         : [];
 
-      // const mimeType = response.headers.get('content-type') || 'application/octet-stream';
       const mimeType = response.headers.get('content-type') || '';
       const { type, data } = await parsePayload({ blob: new Blob(chunks as BlobPart[], { type: mimeType }), mimeType });
-
-      console.warn('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-      console.warn('>>>', url);
-      console.warn('>>>', mimeType, type, data);
-      console.warn('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
-
       const result: FetchResponse = { type, status: response.status, statusText: response.statusText, data };
 
       updateState({ phase: 'success', progress: 100, type, data });

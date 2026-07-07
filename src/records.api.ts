@@ -28,7 +28,8 @@ const parsePayload = (payload: unknown) => {
       isEmpty = false;
     } else {
       isEmpty = (Array.isArray(parsedPayload) && parsedPayload.length === 0) ||
-        (isPlainObject(parsedPayload) && Object.keys(parsedPayload).length === 0);
+        (isPlainObject(parsedPayload) && Object.keys(parsedPayload).length === 0) ||
+        parsedPayload === null;
     }
   } catch {
     parsedPayload = updatedPayload;
@@ -44,23 +45,6 @@ const parsePayload = (payload: unknown) => {
 parsePayload.memo = memo(parsePayload, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
- * Determines if the parsed payload is empty.
- *
- * @param payload - Data to be parsed and evaluated for emptiness.
- * @returns Returns `true` if the parsed payload is empty, otherwise `false`.
- */
-const isEmptyParsedPayload = (payload: unknown) => {
-  const { isEmpty } = parsePayload.memo(payload);
-
-  return isEmpty;
-};
-
-/**
- * Memoized version of isEmptyParsedPayload.
- */
-isEmptyParsedPayload.memo = memo(isEmptyParsedPayload, DEFAULT_OPTIONS.resourceMemoOptions.default);
-
-/**
  * Determines if the payload is empty.
  *
  * @param payload - Data to be evaluated for emptiness.
@@ -73,7 +57,7 @@ const isEmptyPayload = (payload: unknown) => {
     return trimmedPayload === '' || trimmedPayload === '{}' || trimmedPayload === '[]' || trimmedPayload === 'null' || trimmedPayload === '""';
   }
 
-  return payload === null || payload === undefined || isEmptyParsedPayload.memo(payload);
+  return payload === null || payload === undefined || parsePayload.memo(payload).isEmpty;
 };
 
 /**
@@ -88,141 +72,38 @@ isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.d
  *
  * @param urls - The list of URLs to crawl.
  * @param [options] - An optional configuration object.
- * @returns A Promise resolving to an array of content objects. Each object should include:
- *   - `content`: The raw or processed content retrieved from the crawled paths.
- *   - `path`: The initial path provided or resolved during the process.
- *   - `resolvedPath`: The full resolved path of the crawled content.
- */
-/**
- * Recursively crawls a list of URLs.
- *
- * This function takes a list of URLs to crawl, processes their corresponding content,
- * and optionally follows additional paths defined in the component paths configuration.
- * It ensures that visited URLs are tracked to prevent duplicate processing.
- *
- * @param urls - The list of URLs to crawl.
- * @param [options] - An optional configuration object.
  * @returns {Promise<ProcessedDoc[]>} A promise that resolves to an array of processed documents,
  *     each containing information about the crawling result, status, and content.
  */
 const crawler = async (urls: string[], options = getOptions()) => {
-  // const queue: string[] = [...urls].map(url => buildUrl([url]));
   const componentPaths = options.patternflyOptions.api.componentPaths;
-  const queue: string[] = [...urls];
-  // const visited: string[] = [];
-
-  const settled = await processDocsFunction(queue);
+  const settled = await processDocsFunction(urls);
   const content: ProcessedDoc[] = [];
 
   for (const res of settled) {
     const { isEmpty, payload } = parsePayload.memo(res.content);
 
-    if (res.path) {
-      // 407
-      // visited.push(res.path);
-    }
-
     if (res.isSuccess) {
-      // 307
-      // visited.push(res.path);
-
-      if (!isEmpty) {
-        // 223
-        // visited.push(res.path);
-      }
-
       if (Array.isArray(payload)) {
         if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
           if (!isEmpty) {
             content.push({ ...res });
-            // visited.push(res.path);
           }
           continue;
         }
 
         const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
-        // const { content: crawledContent, visited: visitedCrawl } = await crawler(updatedPayload);
         const crawledContent = await crawler(updatedPayload);
 
-        // visited.push(...visitedCrawl);
         content.push(...crawledContent);
         continue;
       }
 
-      // Filter out component path arrays, consider it to be content.
-      /*
-      if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
-        if (Array.isArray(payload)) {
-          if (payload.length) {
-            content.push({ ...res });
-          }
-
-          continue;
-        }
-      }
-
-       */
-
-      /*
-      // if (Array.isArray(payload) && !componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
-      // Consider remaining arrays to be API lists to be crawled.
-      if (Array.isArray(payload)) {
-        // Apply the extra componentPaths
-        const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
-        const crawledContent = await crawler(updatedPayload);
-
-        // Filter the extra componentPaths out if they fail
-        // const filteredCrawledContent = crawledContent.filter(
-        //  ({ path }) => !componentPaths.some(componentPath => path?.includes(componentPath))
-        // );
-
-        content.push(...crawledContent);
-
-        continue;
-      }
-      */
       if (!isEmpty) {
-        // visited.push(res.path);
         content.push({ ...res });
       }
     }
   }
-
-  /*
-  const settled = await promiseQueue(queue);
-  // const content = new Map<string, unknown>();
-  const content: { content?: unknown; path?: string; resolvedPath?: string; status: 'fulfilled' | 'rejected' }[] = [];
-
-  // settled.forEach((res, index) => {
-  for (const [index, res] of settled.entries()) {
-    const segmentBaseUrl = queue[index] as string;
-
-    if (res.status === 'fulfilled' && !isEmptyPayload.memo(res.value.content)) {
-      visited.add(res.value.path);
-
-      const { payload } = parsePayload.memo(res.value.content);
-
-      if (Array.isArray(payload)) {
-        // Apply the extra componentPaths
-        const updatedPayload = [...payload, ...options.patternflyOptions.api.componentPaths].map(path => joinUrl(res.value.path, path));
-        const crawledContent = await crawler(updatedPayload);
-
-        content.push(...crawledContent);
-      } else {
-        content.push({ ...res.value, status: res.status });
-      }
-
-      log.debug(`API crawler fulfilled ${segmentBaseUrl}`);
-
-      continue;
-    }
-
-    if (res.status === 'rejected') {
-      content.push({ path: segmentBaseUrl, status: res.status });
-      log.debug(`API crawler rejected ${segmentBaseUrl}:`, formatUnknownError(res.reason));
-    }
-  }
-  */
 
   return content;
 };
@@ -231,7 +112,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
  * Get and process available API versions.
  *
  * @param [options=getOptions()] - Configuration options.
- * @returns {Promise<string[]>} A promise that resolves to an array of processed version URLs.
+ * @returns A promise that resolves to an array of processed version URLs.
  */
 const getVersions = async (options = getOptions()) => {
   const versionUrl = options.patternflyOptions.api.versions;
@@ -283,6 +164,6 @@ const apiSpider = async () => {
 export {
   apiSpider,
   crawler,
-  isEmptyParsedPayload,
-  isEmptyPayload
+  isEmptyPayload,
+  parsePayload
 };
