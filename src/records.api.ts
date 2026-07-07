@@ -109,7 +109,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
   // const queue: string[] = [...urls].map(url => buildUrl([url]));
   const componentPaths = options.patternflyOptions.api.componentPaths;
   const queue: string[] = [...urls];
-  const visited: string[] = [];
+  // const visited: string[] = [];
 
   const settled = await processDocsFunction(queue);
   const content: ProcessedDoc[] = [];
@@ -135,15 +135,16 @@ const crawler = async (urls: string[], options = getOptions()) => {
         if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
           if (!isEmpty) {
             content.push({ ...res });
-            visited.push(res.path);
+            // visited.push(res.path);
           }
           continue;
         }
 
         const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
-        const { content: crawledContent, visited: visitedCrawl } = await crawler(updatedPayload);
+        // const { content: crawledContent, visited: visitedCrawl } = await crawler(updatedPayload);
+        const crawledContent = await crawler(updatedPayload);
 
-        visited.push(...visitedCrawl);
+        // visited.push(...visitedCrawl);
         content.push(...crawledContent);
         continue;
       }
@@ -181,7 +182,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
       }
       */
       if (!isEmpty) {
-        visited.push(res.path);
+        // visited.push(res.path);
         content.push({ ...res });
       }
     }
@@ -223,7 +224,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
   }
   */
 
-  return { content, visited };
+  return content;
 };
 
 /**
@@ -265,7 +266,7 @@ const apiSpider = async () => {
   log.info(`API spider crawl started`);
 
   const seedVersions = await getVersions();
-  const { content, visited } = await crawler(seedVersions);
+  const content = await crawler(seedVersions);
 
   /**
    * Spider shouldn't be doing double duty as the API crawler and full data parser.
@@ -276,7 +277,7 @@ const apiSpider = async () => {
 
   log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
 
-  return { content, visited };
+  return content;
 };
 
 export {
