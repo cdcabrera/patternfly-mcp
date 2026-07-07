@@ -1,10 +1,43 @@
 import { log } from './logger';
 // import {} from './server.task';
-import { processDocsFunction, type ProcessedDoc } from './server.getResources';
+import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
-import { isPlainObject, joinUrl } from './server.helpers';
+import { isPlainObject, joinUrl, parseUrl } from './server.helpers';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
+
+/**
+ * Processed content for API responses.
+ *
+ * @property url - The URL of the content.
+ * @property content - The content itself.
+ * @property semanticContext - Semantic context of the content.
+ * @property semanticContext.version - PatternFly version of the content.
+ * @property semanticContext.section - Section of the content.
+ * @property semanticContext.item - Item of the content.
+ * @property semanticContext.facet - Facet of the content.
+ * @property semanticContext.kind - Kind of the content.
+ * @property semanticContext.metadata - Remaining metadata, if any, of the content.
+ */
+interface ApiContent {
+  url: string;
+  content: string;
+  semanticContext: {
+    version?: string | undefined;
+    section?: string | undefined;
+    item?: string | undefined;
+    facet?: string | undefined;
+    kind?: string | undefined;
+    metadata?: string[] | undefined;
+  }
+}
+
+// type ApiProcessedDoc = NonNullable<ProcessedDoc>;
+interface ApiProcessedDoc {
+  content: string;
+  path: string;
+  resolvedPath: string;
+}
 
 /**
  * Parses the given payload and determines its state and structure.
@@ -75,10 +108,10 @@ isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.d
  * @returns {Promise<ProcessedDoc[]>} A promise that resolves to an array of processed documents,
  *     each containing information about the crawling result, status, and content.
  */
-const crawler = async (urls: string[], options = getOptions()) => {
+const crawler = async (urls: string[], options = getOptions()): Promise<ApiProcessedDoc[]> => {
   const componentPaths = options.patternflyOptions.api.componentPaths;
   const settled = await processDocsFunction(urls);
-  const content: ProcessedDoc[] = [];
+  const content: ApiProcessedDoc[] = [];
 
   for (const res of settled) {
     const { isEmpty, payload } = parsePayload.memo(res.content);
@@ -139,6 +172,41 @@ const getVersions = async (options = getOptions()) => {
 };
 
 /**
+ * Process content metadata.
+ *
+ * @param apiProcessedDocs - The list of processed content.
+ * @param [options=getOptions()] - Configuration options.
+ * @returns The list of processed API content with metadata.
+ */
+const contentMetadata = (apiProcessedDocs: ApiProcessedDoc[], options = getOptions()): ApiContent[] => {
+  const componentPaths = options.patternflyOptions.api.componentPaths;
+
+  return apiProcessedDocs.map(({ content, resolvedPath }) => {
+    const parsed = parseUrl(resolvedPath);
+    const [version, section, item, facet, ...remaining] = parsed?.path?.split('/')?.filter(Boolean) || [];
+    const kind = facet && (componentPaths.includes(facet) || remaining.includes(facet)) ? facet : 'doc';
+
+    return {
+      url: resolvedPath,
+      content,
+      semanticContext: {
+        version,
+        section,
+        item,
+        facet,
+        kind,
+        metadata: (remaining.length && remaining) || undefined
+      }
+    };
+  });
+};
+
+/**
+ * Memoized version of contentMetadata.
+ */
+contentMetadata.memo = memo(contentMetadata);
+
+/**
  * Initiate API crawl.
  *
  * @returns A promise resolving to an array of content entries.
@@ -149,16 +217,15 @@ const apiSpider = async () => {
   const seedVersions = await getVersions();
   const content = await crawler(seedVersions);
 
+  log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
+
   /**
-   * Spider shouldn't be doing double duty as the API crawler and full data parser.
+   * Crawler shouldn't be doing double duty as the API crawler and full data parser.
    *
    * 1. Now we can pull out the version, section, category from the returned content/path after the crawl
    * 2. Need to setup a the managed task so we time the crawl out. Simple interrupt may work so it closes gracefully with the last group of fetches.
    */
-
-  log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
-
-  return content;
+  return contentMetadata.memo(content);
 };
 
 export {
