@@ -162,6 +162,7 @@ const readChunks = async ({
   }
   onProgress(nextBytes, totalSize ? Math.round((nextBytes / totalSize) * 100) : undefined);
 
+  // recreates a shallow array, not efficient, also need to move towards a flat array instead of recursion to prevent Call Stack errors
   return readChunks({ reader, chunks: [...chunks, value], totalBytes: nextBytes, totalSize, maxSizeBytes, onProgress });
 };
 
@@ -280,6 +281,11 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       const mimeType = response.headers.get('content-type') || 'application/octet-stream';
       const { type, data } = await parsePayload({ blob: new Blob(chunks as BlobPart[], { type: mimeType }), mimeType });
+
+      console.warn('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
+      console.warn('>>>', url);
+      console.warn('>>>', mimeType, type, data);
+      console.warn('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
 
       const result: FetchResponse = { type, status: response.status, statusText: response.statusText, data };
 

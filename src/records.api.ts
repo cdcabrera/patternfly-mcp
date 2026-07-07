@@ -115,21 +115,35 @@ const crawler = async (urls: string[], options = getOptions()) => {
   const content: ProcessedDoc[] = [];
 
   for (const res of settled) {
-    if (res.isSuccess && !isEmptyPayload.memo(res.content)) {
-      const { payload } = parsePayload.memo(res.content);
+    const { isEmpty, payload } = parsePayload.memo(res.content);
+
+    if (res.isSuccess && !isEmpty) {
       // visited.add(res.path);
 
+      // Filter out component path arrays, consider it to be content.
+      if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
+        if (Array.isArray(payload)) {
+          if (payload.length) {
+            content.push({ ...res });
+          }
+
+          continue;
+        }
+      }
+
+      // if (Array.isArray(payload) && !componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
+      // Consider remaining arrays to be API lists to be crawled.
       if (Array.isArray(payload)) {
         // Apply the extra componentPaths
-        const updatedPayload = [...payload].map(path => joinUrl(res.path, path));
+        const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
         const crawledContent = await crawler(updatedPayload);
 
         // Filter the extra componentPaths out if they fail
-        const filteredCrawledContent = crawledContent.filter(
-          ({ path, isSuccess }) => !isSuccess && componentPaths.some(componentPath => path?.includes(componentPath))
-        );
+        // const filteredCrawledContent = crawledContent.filter(
+        //  ({ path }) => !componentPaths.some(componentPath => path?.includes(componentPath))
+        // );
 
-        content.push(...filteredCrawledContent);
+        content.push(...crawledContent);
 
         continue;
       }

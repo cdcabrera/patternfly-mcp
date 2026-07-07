@@ -52,11 +52,12 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "nodeVersionPreferred": 22,
   "patternflyOptions": {
     "api": {
+      "base": "https://main.patternfly-org.pages.dev/api",
       "componentPaths": [
         "props",
         "css",
       ],
-      "url": "https://main.patternfly-org.pages.dev/api",
+      "crawlTimeoutMs": 180000,
       "versions": "https://main.patternfly-org.pages.dev/api/versions",
     },
     "availableResourceVersions": [
@@ -113,6 +114,12 @@ exports[`options defaults should return specific properties: defaults 1`] = `
       "cacheErrors": false,
       "cacheLimit": 100,
       "expire": 180000,
+    },
+    "high": {
+      "cacheLimit": 50,
+    },
+    "medium": {
+      "cacheLimit": 25,
     },
     "readFile": {
       "cacheErrors": false,

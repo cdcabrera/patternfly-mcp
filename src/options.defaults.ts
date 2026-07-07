@@ -462,7 +462,7 @@ const STATS_OPTIONS: StatsOptions = {
  * Default XHR and Fetch options.
  */
 const XHR_FETCH_OPTIONS: XhrFetchOptions = {
-  allowBinary: false,
+  allowBinary: true,
   maxSizeBytes: 1024 * 1024 * 5,
   timeoutMs: 15_000
 };
