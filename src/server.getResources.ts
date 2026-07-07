@@ -279,31 +279,32 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
  */
 const promiseQueue = async (queue: string[], { limit = 5, throttleMs = 250 } = {}) => {
   const results = [];
-  const slidingQueue = new Set();
-  let activeCount = 0;
+  const slidingQueue = new Set<Promise<unknown>>();
+  // let activeCount = 0;
 
-  for (const item of queue) {
+  for (const [index, item] of queue.entries()) {
     // Use a sliding window to limit the number of concurrent promises.
     const promise = loadFileFetch(item).finally(() => {
       slidingQueue.delete(promise);
-      activeCount -= 1;
     });
 
     results.push(promise);
     slidingQueue.add(promise);
-    activeCount += 1;
 
-    if (activeCount >= limit) {
+    // Make sure we never have more than `limit` of promises inflight.
+    if (slidingQueue.size >= limit) {
       // Silent fail if one promise fails to load, but keep processing the rest.
       await Promise.race(slidingQueue).catch((reason: unknown) => {
         log.debug(`Failed to load promise from queue: ${formatUnknownError(reason)}`);
       });
+    }
 
-      if (throttleMs > 0) {
-        const randomizedMs = throttleMs * (0.9 + Math.random() * 0.2);
+    // Throttle every `limit` number of intervals
+    if (throttleMs > 0 && (index + 1) % limit === 0) {
+      // Minor variance for throttling, prevent sync, slightly longer or shorter.
+      const randomizedMs = throttleMs * (0.9 + Math.random() * 0.2);
 
-        await delay({ ms: randomizedMs });
-      }
+      await delay({ ms: randomizedMs });
     }
   }
 
