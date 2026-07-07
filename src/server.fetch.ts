@@ -1,5 +1,9 @@
+import { Readable } from 'node:stream';
+import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
+
+// type NodeReadableStream<t> = ReadableStream<t>;
 
 /**
  * Fetch state and response types
@@ -103,12 +107,57 @@ const parsePayload = async (
   { blob, mimeType }: { blob: Blob; mimeType: string },
   options = getOptions()
 ): Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }> => {
-  const updatedMimeType = mimeType.trim().toLowerCase();
+  let updatedMimeType = mimeType.trim().toLowerCase();
 
   if (updatedMimeType.includes('application/json') || updatedMimeType.includes('+json')) {
     const text = await blob.text();
 
     return { type: 'json', data: text ? JSON.parse(text) : null };
+  }
+
+  /*
+  if (updatedMimeType === 'application/octet-stream' || updatedMimeType === '') {
+    // Read the first 4 bytes without loading the whole file
+    const buffer = await blob.slice(0, 4).arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    // Check if every byte in our sample falls within common printable text ranges
+    // Range 32-126: standard ASCII (letters, numbers, punctuation, spaces)
+    // Values 9, 10, 13: Tabs (\t), Line Feeds (\n), and Carriage Returns (\r)
+    const looksLikeText = bytes.length === 0 ||
+      bytes.every(byte => (byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13);
+
+    if (!looksLikeText) {
+      // It contains non-printable binary garbage, flag it as actual binary data
+      updatedMimeType = 'application/x-confirmed-binary';
+    }
+  }
+  */
+  if (updatedMimeType === 'application/octet-stream' || updatedMimeType === '') {
+    // Peek at the first 4 bytes
+    const buffer = await blob.slice(0, 4).arrayBuffer();
+    const b = new Uint8Array(buffer);
+
+    // --- IMAGE SIGNATURES ---
+    const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+    const isJpeg = b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+    const isGif = b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38; // GIF8
+    const isWebp = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46; // RIFF (WebP container)
+    const isBmp = b[0] === 0x42 && b[1] === 0x4d; // BM
+    const isIco = b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00; // ICO icon file
+
+    // --- FONT SIGNATURES ---
+    const isWoff = b[0] === 0x77 && b[1] === 0x4f && b[2] === 0x46 && b[3] === 0x46; // wOFF
+    const isWoff2 = b[0] === 0x77 && b[1] === 0x4f && b[2] === 0x46 && b[3] === 0x32; // wOF2
+    const isOtfOrTtf = (b[0] === 0x4f && b[1] === 0x54 && b[2] === 0x54 && b[3] === 0x4f) || // OTTO (OTF)
+      (b[0] === 0x00 && b[1] === 0x01 && b[2] === 0x00 && b[3] === 0x00); // TrueType (TTF)
+
+    // --- EVALUATE ---
+    const isBinaryAsset = isPng || isJpeg || isGif || isWebp || isBmp || isIco || isWoff || isWoff2 || isOtfOrTtf;
+
+    if (isBinaryAsset) {
+      updatedMimeType = 'application/x-confirmed-binary';
+    }
   }
 
   if (updatedMimeType.startsWith('text/') ||
@@ -117,6 +166,7 @@ const parsePayload = async (
     updatedMimeType.includes('application/x-ndjson') ||
     updatedMimeType.includes('application/ndjson') ||
     updatedMimeType.includes('application/octet-stream') ||
+    updatedMimeType.includes('image/svg+xml') ||
     updatedMimeType === '') {
     return { type: 'text', data: await blob.text() };
   }
@@ -135,9 +185,7 @@ const parsePayload = async (
  * @note Recursive by design. Each `await reader.read()` yields to the microtask queue.
  *
  * @param params - Parameter options.
- * @param params.reader - Stream reader used to read data chunks.
- * @param params.chunks - Array to accumulate the read chunks.
- * @param params.totalBytes - Currently accumulated total byte count.
+ * @param params.stream - Stream used to read data chunks.
  * @param [params.totalSize] - Optional total size of the expected data to compute progress
  *     percentage.
  * @param params.onProgress - Callback invoked with the updated byte count and progress percentage
@@ -149,31 +197,74 @@ const parsePayload = async (
  * @throws {FetchError} If the accumulated size exceeds the specified `maxSizeBytes`.
  */
 const readChunks = async ({
-  reader, chunks, totalBytes, totalSize, maxSizeBytes, onProgress
+  stream, totalSize, maxSizeBytes, onProgress
 }: {
-  reader: ReadableStreamDefaultReader<Uint8Array>;
-  chunks: Uint8Array[];
-  totalBytes: number;
+  // reader: ReadableStreamDefaultReader<Uint8Array>;
+  stream: Readable;
   totalSize?: number | undefined;
   maxSizeBytes: number;
   onProgress: (bytes: number, progress?: number | undefined) => void;
 }): Promise<Uint8Array[]> => {
-  const { done, value } = await reader.read();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
 
-  if (done) {
-    return chunks;
+  // No while(true), no recursion. Just standard async iteration.
+  try {
+    for await (const chunk of stream) {
+      totalBytes += chunk.byteLength;
+
+      if (maxSizeBytes && totalBytes > maxSizeBytes) {
+        stream.destroy();
+        throw new FetchError({ message: 'File download aborted: Size exceeded maximum limit.' });
+      }
+
+      chunks.push(chunk);
+
+      const progress = totalSize ? Math.round((totalBytes / totalSize) * 100) : undefined;
+
+      onProgress(totalBytes, progress);
+    }
+  } catch (err) {
+    if (!stream.destroyed) {
+      stream.destroy();
+    }
+
+    if (err instanceof FetchError) {
+      throw err;
+    }
+
+    throw new FetchError({ message: `File download failed: ${formatUnknownError(err)}` });
   }
 
-  const nextBytes = totalBytes + value.byteLength;
+  return chunks;
 
-  if (maxSizeBytes && nextBytes > maxSizeBytes) {
-    await reader.cancel().catch(() => {});
-    throw new FetchError({ message: 'File download aborted: Size exceeded maximum limit.' });
-  }
-  onProgress(nextBytes, totalSize ? Math.round((nextBytes / totalSize) * 100) : undefined);
+  /*
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
 
-  // recreates a shallow array, not efficient, also need to move towards a flat array instead of recursion to prevent Call Stack errors
-  return readChunks({ reader, chunks: [...chunks, value], totalBytes: nextBytes, totalSize, maxSizeBytes, onProgress });
+  const chunkCycle = async () => {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      return chunks;
+    }
+
+    totalBytes += value.byteLength;
+
+    if (maxSizeBytes && totalBytes > maxSizeBytes) {
+      await reader.cancel().catch(() => {});
+      throw new FetchError({ message: 'File download aborted: Size exceeded maximum limit.' });
+    }
+
+    chunks.push(value);
+
+    onProgress(totalBytes, totalSize ? Math.round((totalBytes / totalSize) * 100) : undefined);
+
+    return chunkCycle();
+  };
+
+  return chunkCycle();
+   */
 };
 
 /**
@@ -193,7 +284,9 @@ const setFetch = (options = getOptions()): SetFetch => {
   const cancelReason = new Error('Request cancelled');
 
   let controller: AbortController | undefined;
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  // let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  // let stream: ReadableStream<Uint8Array> | Readable | undefined;
+  let stream: Readable | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let inflight: { key: string; promise: Promise<FetchResponse> } | undefined;
 
@@ -277,12 +370,10 @@ const setFetch = (options = getOptions()): SetFetch => {
         throw new FetchError({ message: `File blocked: exceeds ${maxSizeBytes} bytes.`, status: response.status, statusText: response.statusText });
       }
 
-      reader = response.body?.getReader();
-      const chunks = reader
+      stream = response.body ? Readable.fromWeb(response.body as ReadableStream<Uint8Array>) : undefined;
+      const chunks = stream
         ? await readChunks({
-          reader,
-          chunks: [],
-          totalBytes: 0,
+          stream,
           totalSize,
           maxSizeBytes,
           onProgress: (bytesReceived, progress) => updateState({ bytesReceived, progress })
@@ -290,7 +381,8 @@ const setFetch = (options = getOptions()): SetFetch => {
         : [];
 
       const mimeType = response.headers.get('content-type') || '';
-      const { type, data } = await parsePayload({ blob: new Blob(chunks as BlobPart[], { type: mimeType }), mimeType });
+      const flattenedBuffer = [Buffer.concat(chunks)];
+      const { type, data } = await parsePayload({ blob: new Blob(flattenedBuffer, { type: mimeType }), mimeType });
       const result: FetchResponse = { type, status: response.status, statusText: response.statusText, data };
 
       updateState({ phase: 'success', progress: 100, type, data });
@@ -314,7 +406,7 @@ const setFetch = (options = getOptions()): SetFetch => {
         clearTimeout(timeoutId);
       }
 
-      reader = undefined;
+      stream = undefined;
       controller = undefined;
     }
   };
@@ -331,7 +423,10 @@ const setFetch = (options = getOptions()): SetFetch => {
       }
 
       controller?.abort(cancelReason);
-      reader?.cancel().catch(() => {});
+      // reader?.cancel().catch(() => {});
+      if (!stream?.destroyed) {
+        stream?.destroy();
+      }
     },
     status: (callback?: (state: FetchState) => void) => {
       if (typeof callback === 'function') {
