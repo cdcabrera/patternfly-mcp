@@ -107,7 +107,7 @@ const parsePayload = async (
   { blob, mimeType }: { blob: Blob; mimeType: string },
   options = getOptions()
 ): Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }> => {
-  let updatedMimeType = mimeType.trim().toLowerCase();
+  const updatedMimeType = mimeType.trim().toLowerCase();
 
   if (updatedMimeType.includes('application/json') || updatedMimeType.includes('+json')) {
     const text = await blob.text();
@@ -133,6 +133,7 @@ const parsePayload = async (
     }
   }
   */
+  /*
   if (updatedMimeType === 'application/octet-stream' || updatedMimeType === '') {
     // Peek at the first 4 bytes
     const buffer = await blob.slice(0, 4).arrayBuffer();
@@ -159,6 +160,7 @@ const parsePayload = async (
       updatedMimeType = 'application/x-confirmed-binary';
     }
   }
+  */
 
   if (updatedMimeType.startsWith('text/') ||
     updatedMimeType.includes('application/javascript') ||
