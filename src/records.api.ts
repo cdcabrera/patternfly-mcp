@@ -109,7 +109,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
   // const queue: string[] = [...urls].map(url => buildUrl([url]));
   const componentPaths = options.patternflyOptions.api.componentPaths;
   const queue: string[] = [...urls];
-  // const visited = new Set<string>();
+  const visited: string[] = [];
 
   const settled = await processDocsFunction(queue);
   const content: ProcessedDoc[] = [];
@@ -117,10 +117,39 @@ const crawler = async (urls: string[], options = getOptions()) => {
   for (const res of settled) {
     const { isEmpty, payload } = parsePayload.memo(res.content);
 
-    if (res.isSuccess && !isEmpty) {
-      // visited.add(res.path);
+    if (res.path) {
+      // 407
+      // visited.push(res.path);
+    }
+
+    if (res.isSuccess) {
+      // 307
+      // visited.push(res.path);
+
+      if (!isEmpty) {
+        // 223
+        // visited.push(res.path);
+      }
+
+      if (Array.isArray(payload)) {
+        if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
+          if (!isEmpty) {
+            content.push({ ...res });
+            visited.push(res.path);
+          }
+          continue;
+        }
+
+        const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
+        const { content: crawledContent, visited: visitedCrawl } = await crawler(updatedPayload);
+
+        visited.push(...visitedCrawl);
+        content.push(...crawledContent);
+        continue;
+      }
 
       // Filter out component path arrays, consider it to be content.
+      /*
       if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
         if (Array.isArray(payload)) {
           if (payload.length) {
@@ -131,6 +160,9 @@ const crawler = async (urls: string[], options = getOptions()) => {
         }
       }
 
+       */
+
+      /*
       // if (Array.isArray(payload) && !componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
       // Consider remaining arrays to be API lists to be crawled.
       if (Array.isArray(payload)) {
@@ -147,9 +179,12 @@ const crawler = async (urls: string[], options = getOptions()) => {
 
         continue;
       }
+      */
+      if (!isEmpty) {
+        visited.push(res.path);
+        content.push({ ...res });
+      }
     }
-
-    content.push({ ...res });
   }
 
   /*
@@ -188,7 +223,7 @@ const crawler = async (urls: string[], options = getOptions()) => {
   }
   */
 
-  return content;
+  return { content, visited };
 };
 
 /**
@@ -230,7 +265,7 @@ const apiSpider = async () => {
   log.info(`API spider crawl started`);
 
   const seedVersions = await getVersions();
-  const content = await crawler(seedVersions);
+  const { content, visited } = await crawler(seedVersions);
 
   /**
    * Spider shouldn't be doing double duty as the API crawler and full data parser.
@@ -241,7 +276,7 @@ const apiSpider = async () => {
 
   log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
 
-  return content;
+  return { content, visited };
 };
 
 export {

@@ -103,11 +103,21 @@ const parsePayload = async (
   { blob, mimeType }: { blob: Blob; mimeType: string },
   options = getOptions()
 ): Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }> => {
-  if (mimeType.includes('application/json')) {
-    return { type: 'json', data: JSON.parse(await blob.text()) };
+  const updatedMimeType = mimeType.trim().toLowerCase();
+
+  if (updatedMimeType.includes('application/json') || updatedMimeType.includes('+json')) {
+    const text = await blob.text();
+
+    return { type: 'json', data: text ? JSON.parse(text) : null };
   }
 
-  if (mimeType.startsWith('text/')) {
+  if (updatedMimeType.startsWith('text/') ||
+    updatedMimeType.includes('application/javascript') ||
+    updatedMimeType.includes('application/xml') ||
+    updatedMimeType.includes('application/x-ndjson') ||
+    updatedMimeType.includes('application/ndjson') ||
+    updatedMimeType.includes('application/octet-stream') ||
+    updatedMimeType === '') {
     return { type: 'text', data: await blob.text() };
   }
 
@@ -115,7 +125,7 @@ const parsePayload = async (
     return { type: 'binary', data: URL.createObjectURL(blob) };
   }
 
-  throw new FetchError({ message: `Binary data is not allowed (${mimeType}).` });
+  throw new FetchError({ message: `Binary data is not allowed (${updatedMimeType}).` });
 };
 
 /**
@@ -279,7 +289,8 @@ const setFetch = (options = getOptions()): SetFetch => {
         })
         : [];
 
-      const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+      // const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+      const mimeType = response.headers.get('content-type') || '';
       const { type, data } = await parsePayload({ blob: new Blob(chunks as BlobPart[], { type: mimeType }), mimeType });
 
       console.warn('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>');
