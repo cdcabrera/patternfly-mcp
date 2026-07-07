@@ -8,6 +8,7 @@ import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl, isPath, createError } from './server.helpers';
 import { FetchError, setFetch } from './server.fetch';
+import { delay } from './server.task';
 import { log, formatUnknownError } from './logger';
 
 /**
@@ -271,10 +272,12 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
  * Promise queue for `loadFileFetch`. Limit the number of concurrent promises.
  *
  * @param queue - List of paths or URLs to load
- * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ * @param settings - Optional settings object.
+ * @param settings.limit - Optional limit on the number of concurrent promises. Defaults to `5`.
+ * @param settings.throttleMs - Optional throttle for requests (ms). Interrupts based on the `limit`. Defaults to `250`.
  * @returns An array of `PromiseSettledResult` objects, one for each input path or URL.
  */
-const promiseQueue = async (queue: string[], limit = 5) => {
+const promiseQueue = async (queue: string[], { limit = 5, throttleMs = 250 } = {}) => {
   const results = [];
   const slidingQueue = new Set();
   let activeCount = 0;
@@ -295,6 +298,12 @@ const promiseQueue = async (queue: string[], limit = 5) => {
       await Promise.race(slidingQueue).catch((reason: unknown) => {
         log.debug(`Failed to load promise from queue: ${formatUnknownError(reason)}`);
       });
+
+      if (throttleMs > 0) {
+        const randomizedMs = throttleMs * (0.9 + Math.random() * 0.2);
+
+        await delay({ ms: randomizedMs });
+      }
     }
   }
 

@@ -357,7 +357,7 @@ describe('promiseQueue', () => {
 
     const pathUrlQueue = ['dolor-sit.md', 'https://example.com/remote.md', 'lorem-ipsum.md'];
 
-    await expect(promiseQueue(pathUrlQueue, 1)).resolves.toMatchSnapshot('allSettled');
+    await expect(promiseQueue(pathUrlQueue, { limit: 1 })).resolves.toMatchSnapshot('allSettled');
   });
 });
 
