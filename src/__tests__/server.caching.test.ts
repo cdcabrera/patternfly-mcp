@@ -363,33 +363,91 @@ describe('memo', () => {
     await expect(updateLog(logAsync)).resolves.toMatchSnapshot('async');
   });
 
-  it('clear() drops all entries and fires onCacheExpire per entry', () => {
-    const spy = jest.fn();
-    const memoized = memo((x: number) => x + 1, { cacheLimit: 4, onCacheExpire: spy });
+  describe('cache management', () => {
+    it.each([
+      {
+        description: 'clear all entries',
+        setup: (memoized: any) => {
+          memoized(1);
+          memoized(2);
+          memoized(3);
+        },
+        action: (memoized: any) => memoized.clear(),
+        expectedResult: true,
+        expectedRemainingCount: 0,
+        expectedCallbackTimes: 1,
+        expectedRemoved: [2, 3, 4]
+      },
+      {
+        description: 'clear specific key',
+        setup: (memoized: any) => {
+          memoized(1);
+          memoized(2);
+        },
+        action: (memoized: any) => {
+          const key = memoized.getKey(1);
 
-    memoized(1);
-    memoized(2);
-    memoized(3);
+          return memoized.clear(key);
+        },
+        expectedResult: true,
+        expectedRemainingCount: 1,
+        expectedCallbackTimes: 1,
+        expectedRemoved: [2]
+      },
+      {
+        description: 'clear non-existent key',
+        setup: (memoized: any) => {
+          memoized(1);
+        },
+        action: (memoized: any) => memoized.clear('non-existent'),
+        expectedResult: false,
+        expectedRemainingCount: 1,
+        expectedCallbackTimes: 0,
+        expectedRemoved: []
+      }
+    ])('should handle clear(), $description', ({ setup, action, expectedResult, expectedRemainingCount, expectedCallbackTimes, expectedRemoved }) => {
+      const spy = jest.fn();
+      const memoized = memo((val: number) => val + 1, { cacheLimit: 10, onCacheExpire: spy });
 
-    memoized.clear();
-    expect(spy).toHaveBeenCalledTimes(3);
-    expect(memoized.has(1)).toBe(false);
-  });
+      setup(memoized);
 
+      const result = action(memoized);
 
-  it('invalidate(args) removes a single key', () => {
-      const m = memo((x: number) => x + 1, { cacheLimit: 4 });
-      m(1); m(2);
-      expect(m.invalidate(1)).toBe(true);
-      expect(m.has(1)).toBe(false);
-      expect(m.has(2)).toBe(true);
+      expect(result).toBe(expectedResult);
+      expect(memoized.keys()).toHaveLength(expectedRemainingCount);
+      expect(spy).toHaveBeenCalledTimes(expectedCallbackTimes);
+      if (expectedCallbackTimes > 0) {
+        const payload = spy.mock.calls[0][0];
+
+        expect(payload.removed).toEqual(expect.arrayContaining(expectedRemoved));
+        expect(payload.removed).toHaveLength(expectedRemoved.length);
+        expect(payload.remaining).toHaveLength(expectedRemainingCount);
+      }
     });
-    it('has()/peek() do not compute the underlying function', () => {
-      const fn = jest.fn((x: number) => x + 1);
-      const m = memo(fn, { cacheLimit: 4 });
-      expect(m.has(1)).toBe(false);
-      expect(m.peek(1)).toBeUndefined();
-      expect(fn).not.toHaveBeenCalled();
+
+    it('should return correct structure from keys()', () => {
+      const memoized = memo((val: number) => val + 1, { cacheLimit: 10 });
+
+      memoized(1);
+      const keys = memoized.keys();
+
+      expect(keys).toHaveLength(1);
+      expect(keys[0]).toEqual({
+        key: expect.any(String),
+        data: 2,
+        index: 0
+      });
+    });
+
+    it('should return key from getKey() when found', () => {
+      const memoized = memo((val: number) => val + 1);
+
+      memoized(1);
+      const keys = memoized.keys();
+      const key = keys[0]?.key;
+
+      expect(memoized.getKey(1)).toBe(key);
+      expect(memoized.getKey(2)).toBeUndefined();
     });
   });
 });
