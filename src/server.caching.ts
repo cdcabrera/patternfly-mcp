@@ -302,7 +302,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       if (typeof key === 'string') {
         keyIndex = cache.indexOf(key);
 
-        if (keyIndex > -1) {
+        if (keyIndex < 0) {
           return false;
         }
       }
