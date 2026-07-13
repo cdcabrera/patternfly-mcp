@@ -331,8 +331,8 @@ describe('loadFileFetch', () => {
     const mockFetchCall = jest.fn().mockResolvedValue('content');
     const mockReadCall = jest.fn().mockResolvedValue('content');
 
-    readLocalFileFunction.memo = mockReadCall;
-    fetchUrlFunction.memo = mockFetchCall;
+    readLocalFileFunction.memo = mockReadCall as any;
+    fetchUrlFunction.memo = mockFetchCall as any;
 
     const result = await runWithOptions({ ...DEFAULT_OPTIONS, docsPaths: ['/app/project/documentation'], contextPath: '/app/project' }, () => loadFileFetch(pathUrl));
 
@@ -352,8 +352,8 @@ describe('promiseQueue', () => {
   });
 
   it('should execute promises in order', async () => {
-    readLocalFileFunction.memo = jest.fn().mockImplementation(path => Promise.resolve(path));
-    fetchUrlFunction.memo = jest.fn().mockImplementation(url => Promise.reject(url));
+    readLocalFileFunction.memo = jest.fn().mockImplementation(path => Promise.resolve(path)) as any;
+    fetchUrlFunction.memo = jest.fn().mockImplementation(url => Promise.reject(url)) as any;
 
     const pathUrlQueue = ['dolor-sit.md', 'https://example.com/remote.md', 'lorem-ipsum.md'];
 
@@ -366,8 +366,8 @@ describe('processDocsFunction', () => {
     jest.clearAllMocks();
 
     // Mock the memo functions
-    readLocalFileFunction.memo = jest.fn().mockResolvedValue('local file content');
-    fetchUrlFunction.memo = jest.fn().mockResolvedValue('fetched content');
+    readLocalFileFunction.memo = jest.fn().mockResolvedValue('local file content') as any;
+    fetchUrlFunction.memo = jest.fn().mockResolvedValue('fetched content') as any;
   });
 
   it.each([
@@ -458,7 +458,7 @@ describe('processDocsFunction', () => {
     // Mock one success and one failure
     readLocalFileFunction.memo = jest.fn()
       .mockResolvedValueOnce('success content')
-      .mockRejectedValueOnce(new Error('File not found'));
+      .mockRejectedValueOnce(new Error('File not found')) as any;
 
     const inputs = [
       'good-file.md',
