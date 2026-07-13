@@ -71,7 +71,7 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
 }
 
 type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...args: TArgs) => TReturn) & {
-  keys: () => { key: string; value: TReturn; index: number }[];
+  keys: () => { key: string; data: TReturn; index: number }[];
   getKey: (...args: TArgs) => string | undefined;
   clear: (key?: string | undefined) => boolean;
 };
