@@ -5,6 +5,7 @@ import { memo } from './server.caching';
 import { isPlainObject, joinUrl } from './server.helpers';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import {deferTask} from "./server.task";
 
 /**
  * Processed content for API responses.
@@ -146,6 +147,8 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
  *
  * @param [options=getOptions()] - Configuration options.
  * @returns A promise that resolves to an array of processed version URLs.
+ *
+ * @throws
  */
 const getVersions = async (options = getOptions()) => {
   const versionUrl = options.patternflyOptions.api.versions;
@@ -165,7 +168,7 @@ const getVersions = async (options = getOptions()) => {
   }
 
   if (versions.length === 0) {
-    log.error(`No API versions available ${versionUrl}.`);
+    throw new Error(`No API versions available ${versionUrl}.`);
   }
 
   return versions;
@@ -213,9 +216,17 @@ contentMetadata.memo = memo(contentMetadata);
  */
 const apiSpider = async () => {
   log.info(`API spider crawl started`);
+  let seedVersions;
 
-  const seedVersions = await getVersions();
-  const content = await crawler(seedVersions);
+  try {
+    seedVersions = await getVersions();
+  }
+
+  if (seedVersions) {
+    const content = await crawler(seedVersions);
+  }
+
+  const updatedContent = contentMetadata.memo(content);
 
   log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
 
@@ -225,8 +236,15 @@ const apiSpider = async () => {
    * 1. Now we can pull out the version, section, category from the returned content/path after the crawl
    * 2. Need to setup a the managed task so we time the crawl out. Simple interrupt may work so it closes gracefully with the last group of fetches.
    */
-  return contentMetadata.memo(content);
+
+
+
+  return
 };
+
+apiSpider.deferTask = deferTask(apiSpider, {
+  cancelMs: DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs
+});
 
 export {
   apiSpider,
