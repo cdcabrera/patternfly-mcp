@@ -362,4 +362,34 @@ describe('memo', () => {
     await expect(updateLog(log)).resolves.toMatchSnapshot('sync');
     await expect(updateLog(logAsync)).resolves.toMatchSnapshot('async');
   });
+
+  it('clear() drops all entries and fires onCacheExpire per entry', () => {
+    const spy = jest.fn();
+    const memoized = memo((x: number) => x + 1, { cacheLimit: 4, onCacheExpire: spy });
+
+    memoized(1);
+    memoized(2);
+    memoized(3);
+
+    memoized.clear();
+    expect(spy).toHaveBeenCalledTimes(3);
+    expect(memoized.has(1)).toBe(false);
+  });
+
+
+  it('invalidate(args) removes a single key', () => {
+      const m = memo((x: number) => x + 1, { cacheLimit: 4 });
+      m(1); m(2);
+      expect(m.invalidate(1)).toBe(true);
+      expect(m.has(1)).toBe(false);
+      expect(m.has(2)).toBe(true);
+    });
+    it('has()/peek() do not compute the underlying function', () => {
+      const fn = jest.fn((x: number) => x + 1);
+      const m = memo(fn, { cacheLimit: 4 });
+      expect(m.has(1)).toBe(false);
+      expect(m.peek(1)).toBeUndefined();
+      expect(fn).not.toHaveBeenCalled();
+    });
+  });
 });

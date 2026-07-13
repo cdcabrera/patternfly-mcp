@@ -70,6 +70,9 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   onCacheRollout?: OnMemoCacheHandler<TReturn>;
 }
 
+type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...args: TArgs) => TReturn) &
+  { keys: () => { key: string; value: TReturn; index: number; }[]; getKey: (...args: TArgs) => string | undefined; clear: (key?: string | undefined) => boolean };
+
 /**
  * Simple argument-based memoize with adjustable cache limit, and extendable cache expire.
  * apidoc-mock: https://github.com/cdcabrera/apidoc-mock.git
@@ -99,7 +102,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     onCacheExpire,
     onCacheRollout
   }: MemoOptions<TArgs, TReturn> = {}
-): (...args: TArgs) => TReturn => {
+): MemoReturn<TArgs, TReturn> => {
   const isCacheErrors = Boolean(cacheErrors);
   const isFuncPromise = isPromise(func);
   const isOnCacheExpirePromise = isPromise(onCacheExpire);
@@ -115,7 +118,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     const cache: MemoCache<TReturn> = [];
     let timeout: NodeJS.Timeout | undefined;
 
-    return (...args: TArgs): TReturn => {
+    const memoized = (...args: TArgs): TReturn => {
       const isMemo = cacheLimit > 0;
 
       if (typeof updatedExpire === 'number') {
@@ -258,6 +261,102 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
       return cachedValue;
     };
+
+    /**
+     * Clear the memoized cache or specific keys
+     *
+     * @param key
+     * @returns A `boolean` indicating if the cache, or cache item, was cleared.
+     */
+    memoized.clear = (key?: string | undefined) => {
+      let keyIndex: number | undefined;
+
+      const updateCallback = (index?: number | undefined) => {
+        const isIndex = typeof index === 'number';
+        const allCacheEntries: Array<TReturn> = [...cache];
+        const removedCacheEntries = isIndex ? allCacheEntries.slice(index, 2) : allCacheEntries.slice(0);
+
+        if (isIndex) {
+          cache.splice(index, 2);
+        } else {
+          cache.splice(0);
+        }
+
+        const remainingCacheEntries = isIndex ? allCacheEntries.slice(0, 2) : allCacheEntries.slice(0);
+        const cacheEntries = { remaining: remainingCacheEntries, removed: removedCacheEntries, all: allCacheEntries };
+
+        if (isOnCacheRolloutPromise) {
+          Promise.resolve(onCacheRollout?.(cacheEntries)).catch(error => log.error('onCacheRollout handler error', error));
+        } else {
+          try {
+            onCacheRollout?.(cacheEntries);
+          } catch (error) {
+            log.error('Memoized function error (rolled out)', error);
+          }
+        }
+      };
+
+      if (key && typeof key === 'string') {
+        keyIndex = cache.indexOf(key);
+
+        if (keyIndex > -1) {
+          return false;
+        }
+      }
+
+      updateCallback(keyIndex);
+
+      return true;
+    };
+
+    /**
+     * Returns the key used to memoize the function. Pass in the same parameters
+     * used to initialize the memoized function and receive the key.
+     *
+     * @note The behavior
+     * - returns `undefined` if the key is not found instead of attempting to
+     *     just return an assumed key.
+     * - passing in an empty, `undefined` or `null` value will attempt to parse.
+     *
+     * @param args
+     * @returns The key used to memoize the function or `undefined` if it doesn't
+     */
+    memoized.getKey = (...args: TArgs) => {
+      const key = setKey(args);
+      const keyIndex = cache.indexOf(key);
+
+      if (keyIndex > -1) {
+        return undefined;
+      }
+
+      return key;
+    };
+
+    /**
+     * Returns cache keys. Used to clear cache items.
+     *
+     * @note In the future we should consider expanding this to return an object
+     * with the key, data, index, and possibly a timestamp.
+     *
+     * @returns An array of cache entries.
+     * - `key`: Cache key.
+     * - `data`: Cache data.
+     * - `index`: Cache index.
+     */
+    memoized.keys = () => cache.map(
+      (entry, index) => {
+        if (index % 2 === 0) {
+          return {
+            key: entry,
+            data: cache[index + 1]
+          };
+        }
+
+        return undefined;
+      }
+    ).filter(Boolean).map((entry, index) => ({ ...entry, index }));
+
+    return memoized;
   };
 
   return ized();
