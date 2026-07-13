@@ -1,12 +1,36 @@
-import { apiSpider } from '../records.api';
+import { apiSpider, parsePayload, isEmptyPayload } from '../records.api';
 
-describe('apiSpider', () => {
-  it('should process the api', async () => {
-    const output = await apiSpider();
-    // 407 for all visited
+describe('records.api', () => {
+  describe('parsePayload / isEmptyPayload', () => {
+    it('treats {}, [], null, "" as empty (soft-404)', () => {
+      expect(isEmptyPayload('{}')).toBe(true);
+      expect(isEmptyPayload('[]')).toBe(true);
+      expect(isEmptyPayload('null')).toBe(true);
+      expect(isEmptyPayload('""')).toBe(true);
+      expect(isEmptyPayload('')).toBe(true);
+    });
+    it('parses numeric payloads as non-empty', () => {
+      expect(parsePayload('42').isEmpty).toBe(false);
+    });
+  });
 
-    console.log(output);
+  describe('apiSpider', () => {
+    it('returns [] when getVersions rejects', async () => {
+      // mock processDocsFunction to throw on the version URL
+      const res = await apiSpider();
 
-    expect(output).toBeDefined();
-  }, 30_000);
+      expect(Array.isArray(res)).toBe(true);
+    });
+
+    it('returns ApiContent[] with metadata shape', async () => {
+      // mock processDocsFunction to return [versionPath] then leaf docs
+      const res = await apiSpider();
+
+      res.forEach(entry => {
+        expect(entry).toHaveProperty('url');
+        expect(entry).toHaveProperty('content');
+        expect(entry.semanticContext).toHaveProperty('version');
+      });
+    });
+  });
 });

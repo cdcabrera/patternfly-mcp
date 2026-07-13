@@ -1,11 +1,10 @@
 import { log } from './logger';
-// import {} from './server.task';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 import { isPlainObject, joinUrl } from './server.helpers';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
-import {deferTask} from "./server.task";
+import { deferTask } from './server.task';
 
 /**
  * Processed content for API responses.
@@ -212,34 +211,42 @@ contentMetadata.memo = memo(contentMetadata);
 /**
  * Initiate API crawl.
  *
- * @returns A promise resolving to an array of content entries.
+ * @returns A promise resolving to an array of processed API content entries.
  */
-const apiSpider = async () => {
+const apiSpider = async (): Promise<ApiContent[]> => {
   log.info(`API spider crawl started`);
-  let seedVersions;
+  let seedVersions: string[] = [];
+  let content: ApiCrawler[] = [];
 
   try {
     seedVersions = await getVersions();
+  } catch (err) {
+    log.warn(`API spider: getVersions failed`, err);
+
+    return [];
   }
 
-  if (seedVersions) {
-    const content = await crawler(seedVersions);
+  if (seedVersions.length) {
+    try {
+      content = await crawler(seedVersions);
+    } catch (err) {
+      log.warn(`API spider: crawler failed`, err);
+
+      return [];
+    }
   }
 
+  // Review the memo here. It may be better served to tie into crawler,
+  // like `crawler.memo` as part of the countdown to refresh
   const updatedContent = contentMetadata.memo(content);
 
-  log.info(`API spider crawl completed. ${content.length} content ${(content.length === 1 && 'entry') || 'entries'} retrieved.`);
+  log.info(
+    `API spider crawl completed. ${updatedContent.length} content ${
+      (updatedContent.length === 1 && 'entry') || 'entries'
+    } retrieved.`
+  );
 
-  /**
-   * Crawler shouldn't be doing double duty as the API crawler and full data parser.
-   *
-   * 1. Now we can pull out the version, section, category from the returned content/path after the crawl
-   * 2. Need to setup a the managed task so we time the crawl out. Simple interrupt may work so it closes gracefully with the last group of fetches.
-   */
-
-
-
-  return
+  return updatedContent;
 };
 
 apiSpider.deferTask = deferTask(apiSpider, {
