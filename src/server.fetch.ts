@@ -231,11 +231,7 @@ const readChunks = async ({
       stream.destroy();
     }
 
-    if (err instanceof FetchError) {
-      throw err;
-    }
-
-    throw new FetchError({ message: `File download failed: ${formatUnknownError(err)}` });
+    throw err;
   }
 
   return chunks;
@@ -427,7 +423,7 @@ const setFetch = (options = getOptions()): SetFetch => {
       controller?.abort(cancelReason);
       // reader?.cancel().catch(() => {});
       if (!stream?.destroyed) {
-        stream?.destroy();
+        stream?.destroy(cancelReason);
       }
     },
     status: (callback?: (state: FetchState) => void) => {

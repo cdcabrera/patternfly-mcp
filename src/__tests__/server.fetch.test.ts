@@ -1,3 +1,4 @@
+import { ReadableStream } from 'node:stream/web';
 import { setFetch, FetchError, type FetchState } from '../server.fetch';
 import { getOptions } from '../options.context';
 
@@ -18,13 +19,6 @@ describe('setFetch', () => {
   });
 
   it('should fetch and parse text correctly', async () => {
-    const mockReader = {
-      read: jest.fn()
-        .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('hello ') })
-        .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('world') })
-        .mockResolvedValueOnce({ done: true, value: undefined })
-    };
-
     const mockResponse = {
       ok: true,
       status: 200,
@@ -42,9 +36,13 @@ describe('setFetch', () => {
           return null;
         }
       },
-      body: {
-        getReader: () => mockReader
-      }
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('hello '));
+          controller.enqueue(new TextEncoder().encode('world'));
+          controller.close();
+        }
+      })
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -69,12 +67,6 @@ describe('setFetch', () => {
   });
 
   it('should fetch and parse JSON correctly', async () => {
-    const mockReader = {
-      read: jest.fn()
-        .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('{"foo": "bar"}') })
-        .mockResolvedValueOnce({ done: true, value: undefined })
-    };
-
     const mockResponse = {
       ok: true,
       status: 200,
@@ -88,9 +80,12 @@ describe('setFetch', () => {
           return null;
         }
       },
-      body: {
-        getReader: () => mockReader
-      }
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"foo": "bar"}'));
+          controller.close();
+        }
+      })
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -156,20 +151,20 @@ describe('setFetch', () => {
   });
 
   it('should handle cancel properly', async () => {
-    let rejectRead: (reason: any) => void = () => {};
-    const mockReader = {
-      read: jest.fn().mockImplementation(() => new Promise((_, reject) => {
-        rejectRead = reject;
-      })),
-      cancel: jest.fn().mockImplementation(() => {
-        const error = new Error('AbortError');
+    let rejectPull: (reason: any) => void = () => {};
+    const mockCancel = jest.fn();
 
-        error.name = 'AbortError';
-        rejectRead(error);
-
-        return Promise.resolve();
-      })
-    };
+    const stream = new ReadableStream({
+      pull() {
+        return new Promise((_, reject) => {
+          rejectPull = reject;
+        });
+      },
+      cancel(reason) {
+        mockCancel(reason);
+        rejectPull(reason);
+      }
+    });
 
     const mockResponse = {
       ok: true,
@@ -178,7 +173,7 @@ describe('setFetch', () => {
       headers: {
         get: () => null
       },
-      body: { getReader: () => mockReader }
+      body: stream
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
@@ -195,6 +190,7 @@ describe('setFetch', () => {
 
     await expect(promise).rejects.toMatchObject({ cancelled: true });
     expect((status() as FetchState).phase).toBe('cancelled');
+    expect(mockCancel).toHaveBeenCalled();
   });
 
   it('should handle timeout', async () => {

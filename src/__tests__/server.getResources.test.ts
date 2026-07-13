@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { ReadableStream } from 'node:stream/web';
 import {
   matchPackageVersion,
   findNearestPackageJson,
@@ -204,13 +205,12 @@ describe('fetchUrlFunction', () => {
           return null;
         }
       },
-      body: {
-        getReader: () => ({
-          read: jest.fn()
-            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode('fetched content') })
-            .mockResolvedValueOnce({ done: true, value: undefined })
-        })
-      }
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('fetched content'));
+          controller.close();
+        }
+      })
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);

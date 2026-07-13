@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { ReadableStream } from 'node:stream/web';
 import { McpError } from '@modelcontextprotocol/sdk/types.js';
 import {
   patternFlyDocsTemplateResource,
@@ -81,13 +82,12 @@ describe('resourceCallback', () => {
       headers: {
         get: (name: string) => (name === 'content-type' ? 'text/plain' : null)
       },
-      body: {
-        getReader: () => ({
-          read: jest.fn()
-            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(mockContent) })
-            .mockResolvedValueOnce({ done: true, value: undefined })
-        })
-      }
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(mockContent));
+          controller.close();
+        }
+      })
     } as any);
 
     const result = await resourceCallback(
@@ -167,13 +167,12 @@ describe('resourceCallback', () => {
       headers: {
         get: (name: string) => (name === 'content-type' ? 'text/plain' : null)
       },
-      body: {
-        getReader: () => ({
-          read: jest.fn()
-            .mockResolvedValueOnce({ done: false, value: new TextEncoder().encode(mockContent) })
-            .mockResolvedValueOnce({ done: true, value: undefined })
-        })
-      }
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(mockContent));
+          controller.close();
+        }
+      })
     } as any);
 
     const uri = new URL('patternfly://docs/test');
