@@ -70,8 +70,11 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   onCacheRollout?: OnMemoCacheHandler<TReturn>;
 }
 
-type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...args: TArgs) => TReturn) &
-  { keys: () => { key: string; value: TReturn; index: number; }[]; getKey: (...args: TArgs) => string | undefined; clear: (key?: string | undefined) => boolean };
+type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...args: TArgs) => TReturn) & {
+  keys: () => { key: string; value: TReturn; index: number }[];
+  getKey: (...args: TArgs) => string | undefined;
+  clear: (key?: string | undefined) => boolean;
+};
 
 /**
  * Simple argument-based memoize with adjustable cache limit, and extendable cache expire.
@@ -296,7 +299,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
         }
       };
 
-      if (key && typeof key === 'string') {
+      if (typeof key === 'string') {
         keyIndex = cache.indexOf(key);
 
         if (keyIndex > -1) {
@@ -322,14 +325,14 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
      * @returns The key used to memoize the function or `undefined` if it doesn't
      */
     memoized.getKey = (...args: TArgs) => {
-      const key = setKey(args);
+      const key = setKey(args) as string;
       const keyIndex = cache.indexOf(key);
 
       if (keyIndex > -1) {
-        return undefined;
+        return key;
       }
 
-      return key;
+      return undefined;
     };
 
     /**
@@ -340,21 +343,24 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
      *
      * @returns An array of cache entries.
      * - `key`: Cache key.
-     * - `data`: Cache data.
+     * - `data`: Cache value.
      * - `index`: Cache index.
      */
-    memoized.keys = () => cache.map(
-      (entry, index) => {
-        if (index % 2 === 0) {
-          return {
-            key: entry,
-            data: cache[index + 1]
-          };
-        }
+    memoized.keys = () => {
+      const result: { key: string; data: TReturn; index: number }[] = [];
 
-        return undefined;
-      }
-    ).filter(Boolean).map((entry, index) => ({ ...entry, index }));
+      cache.forEach((entry, index) => {
+        if (index % 2 === 0) {
+          result.push({
+            key: entry,
+            data: cache[index + 1],
+            index: index / 2
+          });
+        }
+      });
+
+      return result;
+    };
 
     return memoized;
   };
