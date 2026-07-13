@@ -206,6 +206,8 @@ interface PatternFlyOptions {
     versions: string;
     componentPaths: string[];
     crawlTimeoutMs: number;
+    enabled: boolean;
+    concurrency: number;
   },
   availableResourceVersions: ('6.0.0')[];
   availableSearchVersions: ('current' | 'latest' | 'v6')[];
@@ -483,7 +485,9 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
       'props',
       'css'
     ],
-    crawlTimeoutMs: 180_000
+    crawlTimeoutMs: 180_000,
+    enabled: false,
+    concurrency: 4
   },
   availableResourceVersions: ['6.0.0'],
   availableSearchVersions: ['current', 'latest', 'v6'],
