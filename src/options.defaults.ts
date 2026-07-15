@@ -307,10 +307,16 @@ interface WhitelistOptions {
  *
  * @interface XhrFetchOptions
  *
+ * @property allowBinary Allow binary data to be returned.
+ * @property maxSizeBytes Maximum size of a single request (bytes).
  * @property timeoutMs Timeout for XHR and Fetch requests (ms).
+ * @property preflightHead Perform a preflight HEAD request before the actual request.
  */
 interface XhrFetchOptions {
+  allowBinary: boolean;
+  maxSizeBytes: number;
   timeoutMs: number;
+  preflightHead: false;
 }
 
 /**
@@ -466,7 +472,10 @@ const WHITELIST_OPTIONS: WhitelistOptions = {
  * Default XHR and Fetch options.
  */
 const XHR_FETCH_OPTIONS: XhrFetchOptions = {
-  timeoutMs: 15_000
+  allowBinary: false,
+  maxSizeBytes: 1024 * 1024 * 5,
+  timeoutMs: 15_000,
+  preflightHead: false
 };
 
 /**
