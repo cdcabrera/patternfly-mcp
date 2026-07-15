@@ -142,6 +142,8 @@ exports[`options defaults should return specific properties: defaults 1`] = `
   "urlRegex": /\\^\\(https\\?:\\)\\\\/\\\\//i,
   "version": "0.0.0",
   "xhrFetch": {
+    "allowBinary": false,
+    "maxSizeBytes": 5242880,
     "timeoutMs": 15000,
   },
 }

@@ -294,9 +294,13 @@ interface StatsSession extends StatsOptions {
  *
  * @interface XhrFetchOptions
  *
+ * @property allowBinary Allow binary data to be returned.
+ * @property maxSizeBytes Maximum size of a single request (bytes).
  * @property timeoutMs Timeout for XHR and Fetch requests (ms).
  */
 interface XhrFetchOptions {
+  allowBinary: boolean;
+  maxSizeBytes: number;
   timeoutMs: number;
 }
 
@@ -441,6 +445,8 @@ const STATS_OPTIONS: StatsOptions = {
  * Default XHR and Fetch options.
  */
 const XHR_FETCH_OPTIONS: XhrFetchOptions = {
+  allowBinary: false,
+  maxSizeBytes: 1024 * 1024 * 5,
   timeoutMs: 15_000
 };
 
