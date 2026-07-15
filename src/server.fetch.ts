@@ -223,6 +223,10 @@ class FetchError extends Error {
  * Callers are, currently, responsible for the lifecycle of returned binary
  * data. (e.g., create via URL.createObjectURL, release via URL.revokeObjectURL).
  *
+ * @note JSON hardening follow-up: enforce structural limits (jsonMaxDepth, jsonMaxKeys,
+ * jsonMaxStringBytes) that byte-cap `maxSizeBytes` cannot express. Consider a streaming
+ * parser (e.g. `stream-json`) once payload sizes grow.
+ *
  * Review providing an alternate return pattern for binary responses
  * `data: { blob, url: URL.createObjectURL(blob), revoke: () => URL.revokeObjectURL(url) }`
  *
@@ -286,6 +290,12 @@ const parsePayload = async (
  * Applies to ALL text-shaped payloads (JSON, HTML, XML, SVG, NDJSON,
  * JS, plain text) — not just JSON. Binary keeps the chunk-buffer path;
  * `parsePayload` decides whether to hand it back as a `Blob` or reject it.
+ *
+ * @note Binary path buffers chunks in memory (bounded by `maxSizeBytes`).
+ * This is on-par for our use (small assets). If we ever need to
+ * support large binary downloads, switch this branch to hand back either
+ * the raw `Readable` or a `WritableStream` sink (e.g., to a temp file)
+ * instead of accumulating `Uint8Array[]`.
  *
  * @param params - Parameter options.
  * @param params.stream - Stream used to read data chunks.
