@@ -2,8 +2,44 @@ import { Readable } from 'node:stream';
 import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
+import { memo } from './server.caching';
 
-// type NodeReadableStream<t> = ReadableStream<t>;
+/**
+ * Decoded payload. Can either be textual or binary data.
+
+ * @property kind - Specifies the nature of the payload. 'text' indicates
+ *     textual content, and 'bytes' indicates binary data.
+ * @property mimeType - The MIME type of the payload, providing context
+ *     for interpreting the data.
+ * @property [text] - The textual content of the payload, present if
+ *     `kind` is 'text'. This property is optional.
+ * @property [chunks] - The binary data of the payload, split into chunks,
+ *     present if `kind` is 'bytes'. This property is optional.
+ */
+type DecodedPayload = {
+  kind: 'text' | 'bytes';
+  mimeType: string;
+  text?: string | undefined;
+  chunks?: Uint8Array[] | undefined;
+};
+
+/**
+ * Decoded stream result. Can either be textual or binary data.
+ *
+ * @property kind - Determines the type of data in the stream result.
+ *   - `'text'` indicates textual data.
+ *   - `'bytes'` indicates binary chunk data.
+ * @property text - Optional property that holds the decoded text when
+ *     `kind` is `'text'`. `undefined` for binary data.
+ * @property chunks - Optional property that holds an array of Uint8Array
+ *     representing binary chunks when `kind` is `'bytes'`. `undefined`
+ *     for textual data.
+ */
+type DecodedStreamResult = {
+  kind: 'text' | 'bytes';
+  text?: string | undefined;
+  chunks?: Uint8Array[] | undefined;
+};
 
 /**
  * Fetch state and response types
@@ -12,7 +48,10 @@ import { formatUnknownError, log } from './logger';
  *
  * @property phase - The current state of the fetch operation.
  * @property type - The type of data expected from the fetch operation.
- * @property progress - The percentage progress of the fetch operation (0 to 100) or undefined if chunked/unknown length.
+ * @property progress - Percentage progress (0–100) of the fetch operation, or `undefined`
+ *     when the server omits `content-length` (i.e. chunked/unknown length responses). In
+ *     that case, only `bytesReceived` is meaningful until `phase === 'success'`, when
+ *     `progress` is set to `100`.
  * @property bytesReceived - The number of bytes received from the fetch operation.
  * @property message - A message, error or otherwise, associated with the fetch operation.
  * @property error - An error object associated with the fetch operation.
@@ -30,6 +69,12 @@ interface FetchState {
 
 /**
  * Fetch response object.
+ *
+ * @property type - Type of data received from the fetch operation.
+ * @property status - HTTP status code of the fetch response.
+ * @property statusText - HTTP status text of the fetch response.
+ * @property message - Message, error or otherwise, associated with the fetch operation.
+ * @property data - The data received from the fetch operation.
  */
 interface FetchResponse {
   type: 'json' | 'text' | 'binary';
@@ -41,6 +86,10 @@ interface FetchResponse {
 
 /**
  * Set a fetch request.
+ *
+ * @property get - Function to perform a GET request.
+ * @property cancel - Function to cancel the fetch request.
+ * @property status - Function to get the status of the fetch request.
  */
 interface SetFetch {
   get: (url: string) => Promise<FetchResponse>;
@@ -48,6 +97,84 @@ interface SetFetch {
   cancel: () => void;
   status: (callback?: (state: FetchState) => void) => FetchState | (() => void);
 }
+
+/**
+ * MIME-type classification helpers.
+ *
+ * @note Kept standalone so `parsePayload`, `decodeStream`, and `preflight`
+ * all agree on what "text" vs "binary" means. Adding a new text-ish content
+ * type = one edit here, not three.
+ */
+const TEXT_MIME_PREFIXES = ['text/'];
+
+/**
+ * MIME classification for types considered text.
+ */
+const TEXT_MIME_INCLUDES = [
+  'application/json',
+  '+json',
+  'application/javascript',
+  'application/xml',
+  '+xml',
+  'application/x-ndjson',
+  'application/ndjson',
+  'image/svg+xml'
+];
+
+/**
+ * MIME classification for types considered ambiguous.
+ */
+const AMBIGUOUS_MIME = ['application/octet-stream', ''];
+
+/**
+ * Normalize a MIME type string by removing parameters, removing extra space,
+ * and converting to lowercase.
+ *
+ * @param mimeType - MIME type string to normalize.
+ * @returns Normalized MIME type in lowercase without any parameters.
+ */
+const normalizeMime = (mimeType: string): string =>
+  (mimeType.split(';')[0] || '').trim().toLowerCase();
+
+/**
+ * Memoized version of `normalizeMime`.
+ */
+normalizeMime.memo = memo(normalizeMime);
+
+/**
+ * Determine if a MIME type is JSON-like.
+ *
+ * @param mimeType - MIME type string to check.
+ * @returns `true` if the MIME type is JSON-like, `false` otherwise.
+ */
+const isJsonMime = (mimeType: string): boolean => {
+  const mime = normalizeMime.memo(mimeType);
+
+  return mime.includes('application/json') || mime.includes('+json');
+};
+
+/**
+ * Determine if a MIME type is text-like.
+ *
+ * @param mimeType - MIME type string to check.
+ * @returns `true` if the MIME type is text-like, `false` otherwise.
+ */
+const isTextMime = (mimeType: string): boolean => {
+  const mime = normalizeMime.memo(mimeType);
+
+  return TEXT_MIME_PREFIXES.some(prefix => mime.startsWith(prefix)) ||
+    TEXT_MIME_INCLUDES.some(type => mime.includes(type)) ||
+    AMBIGUOUS_MIME.includes(mime);
+};
+
+/**
+ * Determine if a MIME type is binary.
+ *
+ * @param mimeType - MIME type string to check.
+ * @returns `true` if the MIME type is binary, `false` otherwise.
+ */
+const isBinaryMime = (mimeType: string): boolean =>
+  !isTextMime(mimeType);
 
 /**
  * Fetch operation error. Extends the standard `Error`.
@@ -92,9 +219,16 @@ class FetchError extends Error {
 /**
  * Parse a Blob object into the MIME type format.
  *
- * @param params - Parameter options.
- * @param params.blob - The Blob object containing the payload to parse.
- * @param params.mimeType - The MIME type of the data contained in the blob.
+ * @note `allowBinary` must be set to `true` to return binary data.
+ * Callers are, currently, responsible for the lifecycle of returned binary
+ * data. (e.g., create via URL.createObjectURL, release via URL.revokeObjectURL).
+ *
+ * Review providing an alternate return pattern for binary responses
+ * `data: { blob, url: URL.createObjectURL(blob), revoke: () => URL.revokeObjectURL(url) }`
+ *
+ * @param decoded - Parameter options. Accepts two objects
+ *     - text: `{ kind: 'text', text: string }`
+ *     - binary data: `{ kind: 'bytes', chunks: Uint8Array[] }`
  * @param {GlobalOptions} [options=getOptions()] - Configuration options for the fetch operation.
  * @returns {Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }>} A Promise that
  *     resolves to an object containing the type of parsed data (`'json'`, `'text'`, or `'binary'`)
@@ -104,115 +238,89 @@ class FetchError extends Error {
  *     type does not correspond to JSON or text formats.
  */
 const parsePayload = async (
-  { blob, mimeType }: { blob: Blob; mimeType: string },
+  decoded: DecodedPayload,
   options = getOptions()
 ): Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }> => {
-  const updatedMimeType = mimeType.trim().toLowerCase();
+  const { allowBinary } = options.xhrFetch;
+  const mime = normalizeMime(decoded.mimeType);
 
-  if (updatedMimeType.includes('application/json') || updatedMimeType.includes('+json')) {
-    const text = await blob.text();
+  if (decoded.kind === 'text') {
+    if (isJsonMime(mime)) {
+      if (!decoded.text) {
+        return {
+          type: 'json',
+          data: null
+        };
+      }
 
-    return { type: 'json', data: text ? JSON.parse(text) : null };
-  }
-
-  /*
-  if (updatedMimeType === 'application/octet-stream' || updatedMimeType === '') {
-    // Read the first 4 bytes without loading the whole file
-    const buffer = await blob.slice(0, 4).arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-
-    // Check if every byte in our sample falls within common printable text ranges
-    // Range 32-126: standard ASCII (letters, numbers, punctuation, spaces)
-    // Values 9, 10, 13: Tabs (\t), Line Feeds (\n), and Carriage Returns (\r)
-    const looksLikeText = bytes.length === 0 ||
-      bytes.every(byte => (byte >= 32 && byte <= 126) || byte === 9 || byte === 10 || byte === 13);
-
-    if (!looksLikeText) {
-      // It contains non-printable binary garbage, flag it as actual binary data
-      updatedMimeType = 'application/x-confirmed-binary';
+      try {
+        return {
+          type: 'json',
+          data: JSON.parse(decoded.text)
+        };
+      } catch (err) {
+        throw new FetchError({ message: 'Invalid JSON payload.', cause: err });
+      }
     }
-  }
-  */
-  /*
-  if (updatedMimeType === 'application/octet-stream' || updatedMimeType === '') {
-    // Peek at the first 4 bytes
-    const buffer = await blob.slice(0, 4).arrayBuffer();
-    const b = new Uint8Array(buffer);
 
-    // --- IMAGE SIGNATURES ---
-    const isPng = b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
-    const isJpeg = b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
-    const isGif = b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38; // GIF8
-    const isWebp = b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46; // RIFF (WebP container)
-    const isBmp = b[0] === 0x42 && b[1] === 0x4d; // BM
-    const isIco = b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00; // ICO icon file
-
-    // --- FONT SIGNATURES ---
-    const isWoff = b[0] === 0x77 && b[1] === 0x4f && b[2] === 0x46 && b[3] === 0x46; // wOFF
-    const isWoff2 = b[0] === 0x77 && b[1] === 0x4f && b[2] === 0x46 && b[3] === 0x32; // wOF2
-    const isOtfOrTtf = (b[0] === 0x4f && b[1] === 0x54 && b[2] === 0x54 && b[3] === 0x4f) || // OTTO (OTF)
-      (b[0] === 0x00 && b[1] === 0x01 && b[2] === 0x00 && b[3] === 0x00); // TrueType (TTF)
-
-    // --- EVALUATE ---
-    const isBinaryAsset = isPng || isJpeg || isGif || isWebp || isBmp || isIco || isWoff || isWoff2 || isOtfOrTtf;
-
-    if (isBinaryAsset) {
-      updatedMimeType = 'application/x-confirmed-binary';
-    }
-  }
-  */
-
-  if (updatedMimeType.startsWith('text/') ||
-    updatedMimeType.includes('application/javascript') ||
-    updatedMimeType.includes('application/xml') ||
-    updatedMimeType.includes('application/x-ndjson') ||
-    updatedMimeType.includes('application/ndjson') ||
-    updatedMimeType.includes('application/octet-stream') ||
-    updatedMimeType.includes('image/svg+xml') ||
-    updatedMimeType === '') {
-    return { type: 'text', data: await blob.text() };
+    return { type: 'text', data: decoded.text };
   }
 
-  if (options.xhrFetch.allowBinary) {
-    return { type: 'binary', data: URL.createObjectURL(blob) };
+  if (allowBinary) {
+    return {
+      type: 'binary',
+      data: new Blob(decoded.chunks as BlobPart[], { type: mime })
+    };
   }
 
-  throw new FetchError({ message: `Binary data is not allowed (${updatedMimeType}).` });
+  throw new FetchError({ message: `Binary data is not allowed (${mime}).` });
 };
 
 /**
- * Continuously read chunks of data from a given stream reader. Optionally enforces a maximum data
- * size limit.
+ * Decodes a stream into either text or binary data based on the MIME type provided.
  *
- * @note Recursive by design. Each `await reader.read()` yields to the microtask queue.
+ * @note Consume a Node Readable and either:
+ *   - decode UTF-8 as it streams → returns { kind: 'text', text }
+ *   - buffer bytes → returns { kind: 'bytes', chunks }
+ *
+ * Applies to ALL text-shaped payloads (JSON, HTML, XML, SVG, NDJSON,
+ * JS, plain text) — not just JSON. Binary keeps the chunk-buffer path;
+ * `parsePayload` decides whether to hand it back as a `Blob` or reject it.
  *
  * @param params - Parameter options.
  * @param params.stream - Stream used to read data chunks.
- * @param [params.totalSize] - Optional total size of the expected data to compute progress
- *     percentage.
- * @param params.onProgress - Callback invoked with the updated byte count and progress percentage
- *     whenever a new chunk is read.
- * @param params.maxSizeBytes - Optional maximum size in bytes to enforce for the accumulated data.
- * @returns {Promise<Uint8Array[]>} Promise that resolves with the accumulated chunks as an array of
- *     `Uint8Array` objects.
+ * @param params.mimeType - The MIME type of the content being streamed.
+ * @param [params.totalSize] - Optional total size of the expected data to compute progress percentage.
+ * @param params.maxSizeBytes - The maximum allowable size of the stream in bytes. If exceeded, the stream
+ *     will be aborted.
+ * @param params.onProgress - Callback function invoked during the stream processing.
+ *    - `bytes` {number} - The number of bytes processed so far.
+ *    - `progress` {number | undefined} - The percentage progress of the stream (optional, depends on having
+ *    `totalSize`).
+ * @returns A promise resolving to an object containing either:
+ *    - `{ kind: 'text', text: string }` if the stream is decoded as text.
+ *    - `{ kind: 'bytes', chunks: Uint8Array[] }` if the stream is decoded as binary data.
  *
- * @throws {FetchError} If the accumulated size exceeds the specified `maxSizeBytes`.
+ * @throws {FetchError} If accumulated size exceeds `maxSizeBytes`.
  */
-const readChunks = async ({
-  stream, totalSize, maxSizeBytes, onProgress
+const decodeStream = async ({
+  stream, mimeType, totalSize, maxSizeBytes, onProgress
 }: {
-  // reader: ReadableStreamDefaultReader<Uint8Array>;
   stream: Readable;
+  mimeType: string;
   totalSize?: number | undefined;
   maxSizeBytes: number;
   onProgress: (bytes: number, progress?: number | undefined) => void;
-}): Promise<Uint8Array[]> => {
+}): Promise<DecodedStreamResult> => {
+  const asText = isTextMime(mimeType);
+  const decoder = asText ? new TextDecoder('utf-8') : undefined;
+
   const chunks: Uint8Array[] = [];
+  let text = '';
   let totalBytes = 0;
 
-  // No while(true), no recursion. Just standard async iteration.
   try {
-    for await (const chunk of stream) {
+    for await (const chunk of stream as AsyncIterable<Uint8Array>) {
       totalBytes += chunk.byteLength;
 
       if (maxSizeBytes && totalBytes > maxSizeBytes) {
@@ -220,7 +328,12 @@ const readChunks = async ({
         throw new FetchError({ message: 'File download aborted: Size exceeded maximum limit.' });
       }
 
-      chunks.push(chunk);
+      if (decoder) {
+        // stream: true keeps multi-byte code points across chunk boundaries
+        text += decoder.decode(chunk, { stream: true });
+      } else {
+        chunks.push(chunk);
+      }
 
       const progress = totalSize ? Math.round((totalBytes / totalSize) * 100) : undefined;
 
@@ -230,43 +343,82 @@ const readChunks = async ({
     if (!stream.destroyed) {
       stream.destroy();
     }
-
     throw err;
   }
 
-  return chunks;
+  if (decoder) {
+    text += decoder.decode(); // flush any trailing partial
 
-  /*
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
+    return { kind: 'text', text };
+  }
 
-  const chunkCycle = async () => {
-    const { done, value } = await reader.read();
+  return { kind: 'bytes', chunks };
+};
 
-    if (done) {
-      return chunks;
+/**
+ * Opt-in HEAD preflight.
+ *
+ * @param url
+ * @param signal
+ * @note Off by default. When enabled via `options.xhrFetch.preflightHead`,
+ * we HEAD the URL to catch oversized / disallowed-binary responses without
+ * opening a body stream. Returns `null` (and callers fall back to GET-only
+ * header sniffing) whenever HEAD is unreliable:
+ *   - HTTP 405 / 501 (method not supported)
+ *   - network / abort error
+ *   - `content-length` reported as 0 (common lie on dynamic endpoints)
+ *
+ * Header values from HEAD are advisory. Authoritative size enforcement
+ * still lives in `decodeStream`. Authoritative type enforcement still
+ * lives in `parsePayload`. HEAD is a fast-fail hint, not a gate.
+ */
+const preflight = async (
+  url: string,
+  signal: AbortSignal
+): Promise<{ contentLength?: number | undefined; contentType?: string | undefined } | null> => {
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal });
+
+    if (!res.ok || res.status === 405 || res.status === 501) {
+      return null;
     }
 
-    totalBytes += value.byteLength;
+    const contentLength = Number(res.headers.get('content-length')) || undefined;
+    const contentType = res.headers.get('content-type') || undefined;
 
-    if (maxSizeBytes && totalBytes > maxSizeBytes) {
-      await reader.cancel().catch(() => {});
-      throw new FetchError({ message: 'File download aborted: Size exceeded maximum limit.' });
+    // Suspicious HEAD: some servers return CL:0 for dynamic bodies.
+    // Treat as "no info" rather than "empty".
+    if (contentLength === 0) {
+      return {
+        contentType
+      };
     }
 
-    chunks.push(value);
-
-    onProgress(totalBytes, totalSize ? Math.round((totalBytes / totalSize) * 100) : undefined);
-
-    return chunkCycle();
-  };
-
-  return chunkCycle();
-   */
+    return {
+      contentLength,
+      contentType
+    };
+  } catch {
+    return null;
+  }
 };
 
 /**
  * Create a fetch operation.
+ *
+ * @note
+ * **Single-flight by design.** Each `setFetch()` call returns an isolated instance
+ * with its own in-flight tracking (`inflight` is closure state, not module state).
+ * A given instance will service **one active request at a time**:
+ *   - A second `get(sameUrl)` while one is in-flight returns the same promise (de-dup).
+ *   - A second `get(otherUrl)` while one is in-flight rejects with `FetchError`
+ *     ("Fetch already in progress. Create a new setFetch.").
+ * Callers that need parallelism should instantiate a new `setFetch()` per request.
+ *
+ * **IMPORTANT! Do not call `setFetch` directly from feature code.** All outbound fetches
+ * must be routed through `processDocs` (see `server.getResources.ts`) so that URL
+ * whitelisting, e2e test hooks, and caching are consistently applied. Direct use
+ * bypasses those guarantees and subjects us to potential security vulnerabilities.
  *
  * @param {GlobalOptions} [options=getOptions()] - Configuration options for the fetch operation.
  * @returns {SetFetch} Fetch operations:
@@ -275,15 +427,13 @@ const readChunks = async ({
  *   - `status`: Callback for returning state or registering a state listener.
  */
 const setFetch = (options = getOptions()): SetFetch => {
-  const { maxSizeBytes, timeoutMs } = options.xhrFetch;
+  const { allowBinary, maxSizeBytes, timeoutMs, preflightHead } = options.xhrFetch;
 
   const state: FetchState = { phase: 'idle', progress: 0, bytesReceived: 0 };
   const listeners = new Set<(s: FetchState) => void>();
   const cancelReason = new Error('Request cancelled');
 
   let controller: AbortController | undefined;
-  // let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
-  // let stream: ReadableStream<Uint8Array> | Readable | undefined;
   let stream: Readable | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let inflight: { key: string; promise: Promise<FetchResponse> } | undefined;
@@ -352,6 +502,24 @@ const setFetch = (options = getOptions()): SetFetch => {
     updateState({ phase: 'loading', progress: 0, bytesReceived: 0, error: undefined, data: undefined, type: undefined });
 
     try {
+      if (preflightHead) {
+        const hint = await preflight(url, controller.signal);
+
+        if (hint) {
+          if (hint.contentLength && maxSizeBytes && hint.contentLength > maxSizeBytes) {
+            throw new FetchError({
+              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${maxSizeBytes}.`
+            });
+          }
+
+          if (hint.contentType && isBinaryMime(hint.contentType) && !allowBinary) {
+            throw new FetchError({
+              message: `Binary data is not allowed (preflight: ${normalizeMime(hint.contentType)}).`
+            });
+          }
+        }
+      }
+
       const response = await fetch(url, { ...settings, signal: controller.signal });
 
       if (!response.ok) {
@@ -362,25 +530,46 @@ const setFetch = (options = getOptions()): SetFetch => {
         });
       }
 
+      const mimeType = response.headers.get('content-type') || '';
       const totalSize = Number(response.headers.get('content-length')) || undefined;
 
+      // Release instead of buffering bytes
+      const setCancelError = (message: string) => {
+        response.body?.cancel?.().catch(() => {});
+
+        throw new FetchError({
+          message,
+          status: response.status,
+          statusText: response.statusText
+        });
+      };
+
       if (totalSize && maxSizeBytes && totalSize > maxSizeBytes) {
-        throw new FetchError({ message: `File blocked: exceeds ${maxSizeBytes} bytes.`, status: response.status, statusText: response.statusText });
+        setCancelError(`File blocked: exceeds ${maxSizeBytes} bytes.`);
+      }
+
+      if (isBinaryMime(mimeType) && !allowBinary) {
+        setCancelError(`Binary data is not allowed (${normalizeMime(mimeType)}).`);
       }
 
       stream = response.body ? Readable.fromWeb(response.body as ReadableStream<Uint8Array>) : undefined;
-      const chunks = stream
-        ? await readChunks({
+
+      const decoded = stream
+        ? await decodeStream({
           stream,
+          mimeType,
           totalSize,
           maxSizeBytes,
           onProgress: (bytesReceived, progress) => updateState({ bytesReceived, progress })
         })
-        : [];
+        : ({ kind: 'text', text: '' } as const);
 
-      const mimeType = response.headers.get('content-type') || '';
-      const flattenedBuffer = [Buffer.concat(chunks)];
-      const { type, data } = await parsePayload({ blob: new Blob(flattenedBuffer, { type: mimeType }), mimeType });
+      const payload: DecodedPayload = decoded.kind === 'text'
+        ? { kind: 'text', text: decoded.text, mimeType }
+        : { kind: 'bytes', chunks: decoded.chunks, mimeType };
+
+      const { type, data } = await parsePayload(payload);
+
       const result: FetchResponse = { type, status: response.status, statusText: response.statusText, data };
 
       updateState({ phase: 'success', progress: 100, type, data });
@@ -391,11 +580,7 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       const fetchError = error instanceof FetchError
         ? error
-        : new FetchError({
-          message: formatUnknownError(error),
-          cause: error,
-          cancelled
-        });
+        : new FetchError({ message: formatUnknownError(error), cause: error, cancelled });
 
       updateState({ phase: cancelled ? 'cancelled' : 'error', error: fetchError, message: fetchError.message });
       throw fetchError;
@@ -421,7 +606,7 @@ const setFetch = (options = getOptions()): SetFetch => {
       }
 
       controller?.abort(cancelReason);
-      // reader?.cancel().catch(() => {});
+
       if (!stream?.destroyed) {
         stream?.destroy(cancelReason);
       }
@@ -441,4 +626,15 @@ const setFetch = (options = getOptions()): SetFetch => {
   };
 };
 
-export { setFetch, FetchError, type FetchState, type FetchResponse, type SetFetch };
+export {
+  decodeStream,
+  parsePayload,
+  preflight,
+  setFetch,
+  FetchError,
+  type DecodedPayload,
+  type DecodedStreamResult,
+  type FetchState,
+  type FetchResponse,
+  type SetFetch
+};

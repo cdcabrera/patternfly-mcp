@@ -141,10 +141,10 @@ describe('setFetch', () => {
 
     const options = {
       ...getOptions(),
-      xhrFetch: { allowBinary: false, maxSizeBytes: 500, timeoutMs: 1000 }
+      xhrFetch: { allowBinary: false, maxSizeBytes: 500, timeoutMs: 1000, preflightHead: false }
     };
 
-    const { get, status } = setFetch(options);
+    const { get, status } = setFetch(options as any);
 
     await expect(get('https://example.com')).rejects.toThrow('File blocked: exceeds 500 bytes.');
     expect((status() as FetchState).phase).toBe('error');
@@ -206,10 +206,10 @@ describe('setFetch', () => {
 
     const options = {
       ...getOptions(),
-      xhrFetch: { allowBinary: false, maxSizeBytes: 0, timeoutMs: 100 }
+      xhrFetch: { allowBinary: false, maxSizeBytes: 0, timeoutMs: 100, preflightHead: false }
     };
 
-    const { get, status } = setFetch(options);
+    const { get, status } = setFetch(options as any);
     const promise = get('https://example.com');
 
     jest.advanceTimersByTime(150);
