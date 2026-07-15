@@ -362,4 +362,139 @@ describe('memo', () => {
     await expect(updateLog(log)).resolves.toMatchSnapshot('sync');
     await expect(updateLog(logAsync)).resolves.toMatchSnapshot('async');
   });
+
+  it.each([
+    {
+      description: 'clear all entries',
+      setup: (mem: any) => {
+        mem(1);
+        mem(2);
+        mem(3);
+      },
+      action: (mem: any) => mem.clear(),
+      expectedResult: true,
+      expectedRemainingCount: 0
+    },
+    {
+      description: 'clear specific key',
+      setup: (mem: any) => {
+        mem(1);
+        mem(2);
+      },
+      action: (mem: any) => {
+        const key = mem.getKey(1);
+
+        return mem.clear(key);
+      },
+      expectedResult: true,
+      expectedRemainingCount: 1
+    },
+    {
+      description: 'clear non-existent key',
+      setup: (mem: any) => { mem(1); },
+      action: (mem: any) => mem.clear('non-existent'),
+      expectedResult: false,
+      expectedRemainingCount: 1
+    }
+  ])('should handle clear() without callback, $description', ({ setup, action, expectedResult, expectedRemainingCount }) => {
+    const memoized = memo((val: number) => val + 1, { cacheLimit: 10 });
+
+    setup(memoized);
+
+    const result = action(memoized);
+
+    expect(result).toBe(expectedResult);
+    expect(memoized.keys()).toHaveLength(expectedRemainingCount);
+  });
+
+  it.each([
+    {
+      description: 'clear all entries',
+      setup: (mem: any) => {
+        mem(7);
+        mem(2);
+        mem(9);
+      },
+      action: (mem: any) => mem.clear(),
+      expectedResult: true,
+      expectedRemainingCount: 0,
+      expectedRemoved: [8, 3, 10]
+    },
+    {
+      description: 'clear specific key',
+      setup: (mem: any) => {
+        mem(10);
+        mem(2);
+      },
+      action: (mem: any) => {
+        const key = mem.getKey(10);
+
+        return mem.clear(key);
+      },
+      expectedResult: true,
+      expectedRemainingCount: 1,
+      expectedRemoved: [11]
+    }
+  ])('should fire onCacheClear callback, $description', ({ setup, action, expectedResult, expectedRemainingCount, expectedRemoved }) => {
+    const spy = jest.fn();
+    const memoized = memo((val: number) => val + 1, { cacheLimit: 10, onCacheClear: spy });
+
+    setup(memoized);
+    const result = action(memoized);
+
+    expect(result).toBe(expectedResult);
+    expect(memoized.keys()).toHaveLength(expectedRemainingCount);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const payload = spy.mock.calls[0][0];
+
+    expect(payload.removed).toEqual(expect.arrayContaining(expectedRemoved));
+    expect(payload.removed).toHaveLength(expectedRemoved.length);
+    expect(payload.remaining).toHaveLength(expectedRemainingCount);
+  });
+
+  it.each([
+    {
+      description: 'non-existent key',
+      setup: (mem: any) => { mem(1); },
+      action: (mem: any) => mem.clear('non-existent'),
+      expectedResult: false,
+      expectedRemainingCount: 1
+    }
+  ])('should NOT fire onCacheClear callback, $description', ({ setup, action, expectedResult, expectedRemainingCount }) => {
+    const spy = jest.fn();
+    const memoized = memo((val: number) => val + 1, { cacheLimit: 10, onCacheClear: spy });
+
+    setup(memoized);
+    const result = action(memoized);
+
+    expect(result).toBe(expectedResult);
+    expect(memoized.keys()).toHaveLength(expectedRemainingCount);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should return consistent structure from keys()', () => {
+    const memoized = memo((val: number) => val + 1, { cacheLimit: 10 });
+
+    memoized(1);
+    const keys = memoized.keys();
+
+    expect(keys).toHaveLength(1);
+    expect(keys[0]).toEqual({
+      key: expect.any(String),
+      value: 2,
+      index: 0
+    });
+  });
+
+  it('should return key from getKey() when found', () => {
+    const memoized = memo((val: number) => val + 1);
+
+    memoized(1);
+    const keys = memoized.keys();
+    const key = keys[0]?.key;
+
+    expect(memoized.getKey(1)).toBe(key);
+    expect(memoized.getKey(2)).toBeUndefined();
+  });
 });
