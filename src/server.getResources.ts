@@ -7,6 +7,8 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { memo } from './server.caching';
 import { normalizeString } from './server.search';
 import { isUrl, isPath, createError } from './server.helpers';
+import { FetchError, setFetch } from './server.fetch';
+import { delay } from './server.task';
 import { log, formatUnknownError } from './logger';
 
 /**
@@ -133,33 +135,21 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
 /**
  * Fetch content from a URL with timeout and error handling
  *
- * @note Review expanding fetch to handle more file types like JSON.
+ * @note Minor guard against unexpected binary content. Currently, binary content
+ * is unsupported. See {@link XhrFetchOptions}
  *
  * @param url - URL to fetch
- * @param options - Options
  * @returns The fetched content as a string.
  */
-const fetchUrlFunction = async (url: string, options = getOptions()) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), options.xhrFetch.timeoutMs);
+const fetchUrlFunction = async (url: string): Promise<string> => {
+  const { get } = setFetch();
+  const { data, type } = await get(url); // throws FetchError on any failure
 
-  // Allow the process to exit
-  timeout.unref();
-
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: 'text/plain, text/markdown, */*' }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.text();
-  } finally {
-    clearTimeout(timeout);
+  if (type === 'binary') {
+    throw new FetchError({ message: `Cannot return binary content (${url}).` });
   }
+
+  return typeof data === 'string' ? data : JSON.stringify(data);
 };
 
 /**
@@ -282,30 +272,39 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
  * Promise queue for `loadFileFetch`. Limit the number of concurrent promises.
  *
  * @param queue - List of paths or URLs to load
- * @param limit - Optional limit on the number of concurrent promises. Defaults to 5.
+ * @param settings - Optional settings object.
+ * @param settings.limit - Optional limit on the number of concurrent promises. Defaults to `5`.
+ * @param settings.throttleMs - Optional throttle for requests (ms). Interrupts based on the `limit`. Defaults to `250`.
  * @returns An array of `PromiseSettledResult` objects, one for each input path or URL.
  */
-const promiseQueue = async (queue: string[], limit = 5) => {
+const promiseQueue = async (queue: string[], { limit = 5, throttleMs = 250 } = {}) => {
   const results = [];
-  const slidingQueue = new Set();
-  let activeCount = 0;
+  const slidingQueue = new Set<Promise<unknown>>();
+  // let activeCount = 0;
 
-  for (const item of queue) {
+  for (const [index, item] of queue.entries()) {
     // Use a sliding window to limit the number of concurrent promises.
     const promise = loadFileFetch(item).finally(() => {
       slidingQueue.delete(promise);
-      activeCount -= 1;
     });
 
     results.push(promise);
     slidingQueue.add(promise);
-    activeCount += 1;
 
-    if (activeCount >= limit) {
+    // Make sure we never have more than `limit` of promises inflight.
+    if (slidingQueue.size >= limit) {
       // Silent fail if one promise fails to load, but keep processing the rest.
       await Promise.race(slidingQueue).catch((reason: unknown) => {
         log.debug(`Failed to load promise from queue: ${formatUnknownError(reason)}`);
       });
+    }
+
+    // Throttle every `limit` number of intervals
+    if (throttleMs > 0 && (index + 1) % limit === 0) {
+      // Minor variance for throttling, prevent sync, slightly longer or shorter.
+      const randomizedMs = throttleMs * (0.9 + Math.random() * 0.2);
+
+      await delay({ ms: randomizedMs });
     }
   }
 
