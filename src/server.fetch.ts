@@ -246,7 +246,7 @@ const parsePayload = async (
   decoded: DecodedPayload,
   options = getOptions()
 ): Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }> => {
-  const { allowBinary } = options.xhrFetch;
+  const { xhrFetch } = options;
   const mime = normalizeMime(decoded.mimeType);
 
   if (decoded.kind === 'text') {
@@ -271,7 +271,7 @@ const parsePayload = async (
     return { type: 'text', data: decoded.text };
   }
 
-  if (allowBinary) {
+  if (xhrFetch.allowBinary) {
     return {
       type: 'binary',
       data: new Blob(decoded.chunks as BlobPart[], { type: mime })
@@ -415,24 +415,6 @@ const preflight = async (
 };
 
 /**
- * Validates a URL against a whitelist configuration.
- *
- * @param url - URL to be validated against the whitelist.
- * @param [options=getOptions()] - Options configuration.
- *
- * @throws {FetchError} - Throws an instance of FetchError if the URL is not whitelisted.
- */
-const assertWhitelistUrl = (url: string, options = getOptions()) => {
-  const { urls, protocols } = options.whitelist;
-
-  assertInputUrlWhiteListed(url, urls, {
-    allowedProtocols: protocols,
-    inputDisplayName: 'setFetch URL',
-    codeOrError: (message, cause) => new FetchError({ message, cause })
-  });
-};
-
-/**
  * Create a fetch operation.
  *
  * @note
@@ -456,7 +438,7 @@ const assertWhitelistUrl = (url: string, options = getOptions()) => {
  *   - `status`: Callback for returning state or registering a state listener.
  */
 const setFetch = (options = getOptions()): SetFetch => {
-  const { allowBinary, maxSizeBytes, timeoutMs, preflightHead } = options.xhrFetch;
+  const { whitelist, xhrFetch } = options;
 
   const state: FetchState = { phase: 'idle', progress: 0, bytesReceived: 0 };
   const listeners = new Set<(s: FetchState) => void>();
@@ -522,8 +504,8 @@ const setFetch = (options = getOptions()): SetFetch => {
   const executeFetch = async (url: string, settings: RequestInit = {}): Promise<FetchResponse> => {
     controller = new AbortController();
     timeoutId = setTimeout(
-      () => controller?.abort(new Error(`Timeout: exceeded ${timeoutMs}ms.`)),
-      timeoutMs
+      () => controller?.abort(new Error(`Timeout: exceeded ${xhrFetch.timeoutMs}ms.`)),
+      xhrFetch.timeoutMs
     );
 
     timeoutId.unref();
@@ -531,19 +513,23 @@ const setFetch = (options = getOptions()): SetFetch => {
     updateState({ phase: 'loading', progress: 0, bytesReceived: 0, error: undefined, data: undefined, type: undefined });
 
     try {
-      assertWhitelistUrl(url);
+      assertInputUrlWhiteListed(url, whitelist.urls, {
+        allowedProtocols: whitelist.protocols,
+        inputDisplayName: 'setFetch URL',
+        codeOrError: (message, cause) => new FetchError({ message, cause })
+      });
 
-      if (preflightHead) {
+      if (xhrFetch.preflightHead) {
         const hint = await preflight(url, controller.signal);
 
         if (hint) {
-          if (hint.contentLength && maxSizeBytes && hint.contentLength > maxSizeBytes) {
+          if (hint.contentLength && xhrFetch.maxSizeBytes && hint.contentLength > xhrFetch.maxSizeBytes) {
             throw new FetchError({
-              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${maxSizeBytes}.`
+              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${xhrFetch.maxSizeBytes}.`
             });
           }
 
-          if (hint.contentType && isBinaryMime(hint.contentType) && !allowBinary) {
+          if (hint.contentType && isBinaryMime(hint.contentType) && !xhrFetch.allowBinary) {
             throw new FetchError({
               message: `Binary data is not allowed (preflight: ${normalizeMime(hint.contentType)}).`
             });
@@ -555,7 +541,11 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       if (response.url && response.url !== url) {
         // Review using `Promise.try` instead
-        await Promise.resolve().then(() => assertWhitelistUrl(response.url)).catch(() => {
+        await Promise.resolve().then(() => assertInputUrlWhiteListed(url, whitelist.urls, {
+          allowedProtocols: whitelist.protocols,
+          inputDisplayName: 'setFetch URL',
+          codeOrError: (message, cause) => new FetchError({ message, cause })
+        })).catch(() => {
           response.body?.cancel?.().catch(() => {});
         });
       }
@@ -582,11 +572,11 @@ const setFetch = (options = getOptions()): SetFetch => {
         });
       };
 
-      if (totalSize && maxSizeBytes && totalSize > maxSizeBytes) {
-        setCancelError(`File blocked: exceeds ${maxSizeBytes} bytes.`);
+      if (totalSize && xhrFetch.maxSizeBytes && totalSize > xhrFetch.maxSizeBytes) {
+        setCancelError(`File blocked: exceeds ${xhrFetch.maxSizeBytes} bytes.`);
       }
 
-      if (isBinaryMime(mimeType) && !allowBinary) {
+      if (isBinaryMime(mimeType) && !xhrFetch.allowBinary) {
         setCancelError(`Binary data is not allowed (${normalizeMime(mimeType)}).`);
       }
 
@@ -597,7 +587,7 @@ const setFetch = (options = getOptions()): SetFetch => {
           stream,
           mimeType,
           totalSize,
-          maxSizeBytes,
+          maxSizeBytes: xhrFetch.maxSizeBytes,
           onProgress: (bytesReceived, progress) => updateState({ bytesReceived, progress })
         })
         : ({ kind: 'text', text: '' } as const);
@@ -665,7 +655,6 @@ const setFetch = (options = getOptions()): SetFetch => {
 };
 
 export {
-  assertWhitelistUrl,
   decodeStream,
   parsePayload,
   preflight,
