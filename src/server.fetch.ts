@@ -327,7 +327,7 @@ const decodeStream = async ({
   const decoder = asText ? new TextDecoder('utf-8') : undefined;
 
   const chunks: Uint8Array[] = [];
-  let text = '';
+  const textParts: string[] = [];
   let totalBytes = 0;
 
   try {
@@ -341,7 +341,7 @@ const decodeStream = async ({
 
       if (decoder) {
         // stream: true keeps multi-byte code points across chunk boundaries
-        text += decoder.decode(chunk, { stream: true });
+        textParts.push(decoder.decode(chunk, { stream: true }));
       } else {
         chunks.push(chunk);
       }
@@ -358,9 +358,9 @@ const decodeStream = async ({
   }
 
   if (decoder) {
-    text += decoder.decode(); // flush any trailing partial
+    textParts.push(decoder.decode()); // flush any trailing partial
 
-    return { kind: 'text', text };
+    return { kind: 'text', text: textParts.join('') };
   }
 
   return { kind: 'bytes', chunks };
