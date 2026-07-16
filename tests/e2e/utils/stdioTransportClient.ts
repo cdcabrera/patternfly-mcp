@@ -128,6 +128,7 @@ export const startServer = async ({
     transport.stderr.on('data', (data: Buffer) => {
       logBuffer += data.toString();
       const lines = logBuffer.split('\n');
+
       logBuffer = lines.pop() || '';
       for (const line of lines) {
         stderrLogs.push(`${line}\n`);

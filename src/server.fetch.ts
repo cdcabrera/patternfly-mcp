@@ -3,6 +3,7 @@ import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
 import { memo } from './server.caching';
+import { assertInputUrlWhiteListed } from './server.assertions';
 
 /**
  * Decoded payload. Can either be textual or binary data.
@@ -245,7 +246,7 @@ const parsePayload = async (
   decoded: DecodedPayload,
   options = getOptions()
 ): Promise<{ type: 'json' | 'text' | 'binary'; data: unknown }> => {
-  const { allowBinary } = options.xhrFetch;
+  const { xhrFetch } = options;
   const mime = normalizeMime(decoded.mimeType);
 
   if (decoded.kind === 'text') {
@@ -270,7 +271,7 @@ const parsePayload = async (
     return { type: 'text', data: decoded.text };
   }
 
-  if (allowBinary) {
+  if (xhrFetch.allowBinary) {
     return {
       type: 'binary',
       data: new Blob(decoded.chunks as BlobPart[], { type: mime })
@@ -437,7 +438,7 @@ const preflight = async (
  *   - `status`: Callback for returning state or registering a state listener.
  */
 const setFetch = (options = getOptions()): SetFetch => {
-  const { allowBinary, maxSizeBytes, timeoutMs, preflightHead } = options.xhrFetch;
+  const { whitelist, xhrFetch } = options;
 
   const state: FetchState = { phase: 'idle', progress: 0, bytesReceived: 0 };
   const listeners = new Set<(s: FetchState) => void>();
@@ -503,8 +504,8 @@ const setFetch = (options = getOptions()): SetFetch => {
   const executeFetch = async (url: string, settings: RequestInit = {}): Promise<FetchResponse> => {
     controller = new AbortController();
     timeoutId = setTimeout(
-      () => controller?.abort(new Error(`Timeout: exceeded ${timeoutMs}ms.`)),
-      timeoutMs
+      () => controller?.abort(new Error(`Timeout: exceeded ${xhrFetch.timeoutMs}ms.`)),
+      xhrFetch.timeoutMs
     );
 
     timeoutId.unref();
@@ -512,17 +513,23 @@ const setFetch = (options = getOptions()): SetFetch => {
     updateState({ phase: 'loading', progress: 0, bytesReceived: 0, error: undefined, data: undefined, type: undefined });
 
     try {
-      if (preflightHead) {
+      assertInputUrlWhiteListed(url, whitelist.urls, {
+        allowedProtocols: whitelist.protocols,
+        inputDisplayName: 'setFetch URL',
+        codeOrError: (message, cause) => new FetchError({ message, cause })
+      });
+
+      if (xhrFetch.preflightHead) {
         const hint = await preflight(url, controller.signal);
 
         if (hint) {
-          if (hint.contentLength && maxSizeBytes && hint.contentLength > maxSizeBytes) {
+          if (hint.contentLength && xhrFetch.maxSizeBytes && hint.contentLength > xhrFetch.maxSizeBytes) {
             throw new FetchError({
-              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${maxSizeBytes}.`
+              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${xhrFetch.maxSizeBytes}.`
             });
           }
 
-          if (hint.contentType && isBinaryMime(hint.contentType) && !allowBinary) {
+          if (hint.contentType && isBinaryMime(hint.contentType) && !xhrFetch.allowBinary) {
             throw new FetchError({
               message: `Binary data is not allowed (preflight: ${normalizeMime(hint.contentType)}).`
             });
@@ -531,6 +538,17 @@ const setFetch = (options = getOptions()): SetFetch => {
       }
 
       const response = await fetch(url, { ...settings, signal: controller.signal });
+
+      if (response.url && response.url !== url) {
+        // Review using `Promise.try` instead
+        await Promise.resolve().then(() => assertInputUrlWhiteListed(url, whitelist.urls, {
+          allowedProtocols: whitelist.protocols,
+          inputDisplayName: 'setFetch URL',
+          codeOrError: (message, cause) => new FetchError({ message, cause })
+        })).catch(() => {
+          response.body?.cancel?.().catch(() => {});
+        });
+      }
 
       if (!response.ok) {
         throw new FetchError({
@@ -554,11 +572,11 @@ const setFetch = (options = getOptions()): SetFetch => {
         });
       };
 
-      if (totalSize && maxSizeBytes && totalSize > maxSizeBytes) {
-        setCancelError(`File blocked: exceeds ${maxSizeBytes} bytes.`);
+      if (totalSize && xhrFetch.maxSizeBytes && totalSize > xhrFetch.maxSizeBytes) {
+        setCancelError(`File blocked: exceeds ${xhrFetch.maxSizeBytes} bytes.`);
       }
 
-      if (isBinaryMime(mimeType) && !allowBinary) {
+      if (isBinaryMime(mimeType) && !xhrFetch.allowBinary) {
         setCancelError(`Binary data is not allowed (${normalizeMime(mimeType)}).`);
       }
 
@@ -569,7 +587,7 @@ const setFetch = (options = getOptions()): SetFetch => {
           stream,
           mimeType,
           totalSize,
-          maxSizeBytes,
+          maxSizeBytes: xhrFetch.maxSizeBytes,
           onProgress: (bytesReceived, progress) => updateState({ bytesReceived, progress })
         })
         : ({ kind: 'text', text: '' } as const);
