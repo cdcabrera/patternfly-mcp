@@ -3,6 +3,7 @@ import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
 import { memo } from './server.caching';
+import { assertInputUrlWhiteListed } from './server.assertions';
 
 /**
  * Decoded payload. Can either be textual or binary data.
@@ -414,6 +415,24 @@ const preflight = async (
 };
 
 /**
+ * Validates a URL against a whitelist configuration.
+ *
+ * @param url - URL to be validated against the whitelist.
+ * @param [options=getOptions()] - Options configuration.
+ *
+ * @throws {FetchError} - Throws an instance of FetchError if the URL is not whitelisted.
+ */
+const assertWhitelistUrl = (url: string, options = getOptions()) => {
+  const { urls, protocols } = options.whitelist;
+
+  assertInputUrlWhiteListed(url, urls, {
+    allowedProtocols: protocols,
+    inputDisplayName: 'setFetch URL',
+    codeOrError: (message, cause) => new FetchError({ message, cause })
+  });
+};
+
+/**
  * Create a fetch operation.
  *
  * @note
@@ -512,6 +531,8 @@ const setFetch = (options = getOptions()): SetFetch => {
     updateState({ phase: 'loading', progress: 0, bytesReceived: 0, error: undefined, data: undefined, type: undefined });
 
     try {
+      assertWhitelistUrl(url);
+
       if (preflightHead) {
         const hint = await preflight(url, controller.signal);
 
@@ -531,6 +552,13 @@ const setFetch = (options = getOptions()): SetFetch => {
       }
 
       const response = await fetch(url, { ...settings, signal: controller.signal });
+
+      if (response.url && response.url !== url) {
+        // Review using `Promise.try` instead
+        await Promise.resolve().then(() => assertWhitelistUrl(response.url)).catch(() => {
+          response.body?.cancel?.().catch(() => {});
+        });
+      }
 
       if (!response.ok) {
         throw new FetchError({
@@ -637,6 +665,7 @@ const setFetch = (options = getOptions()): SetFetch => {
 };
 
 export {
+  assertWhitelistUrl,
   decodeStream,
   parsePayload,
   preflight,
