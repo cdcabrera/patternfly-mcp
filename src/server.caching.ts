@@ -80,8 +80,8 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
  * @property keys Return all active cache entries. Useful for debugging and passing to `clear`.
  */
 type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...args: TArgs) => TReturn) & {
-  clear: (key?: string | undefined) => boolean;
-  getKey: (...args: TArgs) => string | undefined;
+  clear: (key?: unknown) => boolean;
+  getKey: (...args: TArgs) => unknown | undefined;
   keys: () => { key: string; value: TReturn; index: number }[];
 };
 
@@ -308,13 +308,13 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
      * @param key
      * @returns A `boolean` indicating if the cache, or cache item, was cleared.
      */
-    memoized.clear = (key?: string | undefined) => {
+    memoized.clear = (key?: unknown) => {
       let keyIndex: number | undefined;
 
-      if (typeof key === 'string') {
+      if (key) {
         keyIndex = cache.indexOf(key);
 
-        if (keyIndex < 0) {
+        if (keyIndex < 0 || keyIndex % 2 !== 0) {
           return false;
         }
       }
@@ -327,33 +327,33 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
         cache.length = 0;
       }
 
+      const all: MemoCache<TReturn> = [];
+      const remaining: MemoCache<TReturn> = [];
+      const removed: MemoCache<TReturn> = [];
+
+      allBefore.forEach((entry, index) => {
+        if (index % 2 !== 0 || entry === undefined) {
+          return;
+        }
+
+        const value = allBefore[index + 1];
+
+        all.push(value);
+
+        if (keyIndex === undefined) {
+          removed.push(value);
+        } else if (index === keyIndex) {
+          removed.push(value);
+        } else {
+          remaining.push(value);
+        }
+      });
+
       if (isOnCacheClear) {
-        const all: MemoCache<TReturn> = [];
-        const remaining: MemoCache<TReturn> = [];
-        const removed: MemoCache<TReturn> = [];
-
-        allBefore.forEach((entry, index) => {
-          if (index % 2 !== 0 || entry === undefined) {
-            return;
-          }
-
-          const value = allBefore[index + 1];
-
-          all.push(value);
-
-          if (keyIndex === undefined) {
-            removed.push(value);
-          } else if (index === keyIndex) {
-            removed.push(value);
-          } else {
-            remaining.push(value);
-          }
-        });
-
         notifyCacheChange({ all, remaining, removed, handler: onCacheClear });
       }
 
-      return true;
+      return removed.length > 0;
     };
 
     /**
@@ -369,14 +369,21 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
      * @returns The key used to memoize the function with specific arguments or `undefined`.
      */
     memoized.getKey = (...args: TArgs) => {
-      const key = setKey(args) as string;
-      const keyIndex = cache.indexOf(key);
+      let key: unknown;
+      let keyIndex: number;
 
-      if (keyIndex > -1) {
-        return key;
+      try {
+        key = setKey(args);
+        keyIndex = cache.indexOf(key);
+      } catch {
+        return undefined;
       }
 
-      return undefined;
+      if (keyIndex < 0 || keyIndex % 2 !== 0) {
+        return undefined;
+      }
+
+      return key;
     };
 
     /**
