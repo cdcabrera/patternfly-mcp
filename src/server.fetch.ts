@@ -549,12 +549,14 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       if (response.url && response.url !== url) {
         // Review using `Promise.try` instead
-        await Promise.resolve().then(() => assertInputUrlWhiteListed(url, updatedWhitelist, {
+        // Post-redirect validation: ensure the new URL is still within the sandbox/whitelist
+        await Promise.resolve().then(() => assertInputUrlWhiteListed(response.url, updatedWhitelist, {
           allowedProtocols: whitelist.protocols,
           inputDisplayName: 'setFetch URL',
           codeOrError: (message, cause) => new FetchError({ message, cause })
-        })).catch(() => {
+        })).catch(error => {
           response.body?.cancel?.().catch(() => {});
+          throw error;
         });
       }
 
