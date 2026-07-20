@@ -3,7 +3,6 @@ import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
 import { memo } from './server.caching';
-import { assertInputUrlWhiteListed } from './server.assertions';
 
 /**
  * Decoded payload. Can either be textual or binary data.
@@ -438,7 +437,7 @@ const preflight = async (
  *   - `status`: Callback for returning state or registering a state listener.
  */
 const setFetch = (options = getOptions()): SetFetch => {
-  const { whitelist, xhrFetch } = options;
+  const { xhrFetch } = options;
 
   const state: FetchState = { phase: 'idle', progress: 0, bytesReceived: 0 };
   const listeners = new Set<(s: FetchState) => void>();
@@ -513,12 +512,6 @@ const setFetch = (options = getOptions()): SetFetch => {
     updateState({ phase: 'loading', progress: 0, bytesReceived: 0, error: undefined, data: undefined, type: undefined });
 
     try {
-      assertInputUrlWhiteListed(url, whitelist.urls, {
-        allowedProtocols: whitelist.protocols,
-        inputDisplayName: 'setFetch URL',
-        codeOrError: (message, cause) => new FetchError({ message, cause })
-      });
-
       if (xhrFetch.preflightHead) {
         const hint = await preflight(url, controller.signal);
 
@@ -538,17 +531,6 @@ const setFetch = (options = getOptions()): SetFetch => {
       }
 
       const response = await fetch(url, { ...settings, signal: controller.signal });
-
-      if (response.url && response.url !== url) {
-        // Review using `Promise.try` instead
-        await Promise.resolve().then(() => assertInputUrlWhiteListed(url, whitelist.urls, {
-          allowedProtocols: whitelist.protocols,
-          inputDisplayName: 'setFetch URL',
-          codeOrError: (message, cause) => new FetchError({ message, cause })
-        })).catch(() => {
-          response.body?.cancel?.().catch(() => {});
-        });
-      }
 
       if (!response.ok) {
         throw new FetchError({

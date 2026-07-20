@@ -139,10 +139,11 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * is unsupported. See {@link XhrFetchOptions}
  *
  * @param url - URL to fetch
+ * @param options - Options
  * @returns The fetched content as a string.
  */
-const fetchUrlFunction = async (url: string): Promise<string> => {
-  const { get } = setFetch();
+const fetchUrlFunction = async (url: string, options = getOptions()): Promise<string> => {
+  const { get } = setFetch(options);
   const { data, type } = await get(url); // throws FetchError on any failure
 
   if (type === 'binary') {
@@ -222,16 +223,16 @@ const resolveLocalPathFunction = (path: string, { sep: separator = sep } = {}, o
 const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) => {
   const documentationPrefix = options.docsPathSlug;
   const fixtureUrl = options.modeOptions?.test?.baseUrl;
-  let updatedPathOrUrl = pathOrUrl.startsWith(documentationPrefix) ? pathOrUrl : resolveLocalPathFunction(pathOrUrl);
+  let updatedPathOrUrl = pathOrUrl.startsWith(documentationPrefix) ? pathOrUrl : resolveLocalPathFunction(pathOrUrl, {}, options);
 
-  if (fixtureUrl) {
+  if (fixtureUrl && !updatedPathOrUrl.startsWith(fixtureUrl)) {
     updatedPathOrUrl = `${fixtureUrl}${updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`}`;
   } else if (!isUrl(updatedPathOrUrl)) {
     throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be accessed in ${options.mode} mode`);
   }
 
   // In test mode, everything is treated as a fetchable resource to allow mocking
-  return fetchUrlFunction.memo(updatedPathOrUrl);
+  return fetchUrlFunction.memo(updatedPathOrUrl, options);
 };
 
 /**
@@ -248,16 +249,16 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
 
   try {
     if (options.mode === 'test') {
-      const mockContent = await mockPathOrUrlFunction(pathOrUrl);
+      const mockContent = await mockPathOrUrlFunction(pathOrUrl, options);
 
       return { content: mockContent, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
     }
 
-    updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
+    updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl, {}, options);
     let content;
 
     if (isUrl(updatedPathOrUrl)) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl);
+      content = await fetchUrlFunction.memo(updatedPathOrUrl, options);
     } else {
       content = await readLocalFileFunction.memo(updatedPathOrUrl);
     }
