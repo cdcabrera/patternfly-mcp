@@ -424,24 +424,25 @@ const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?
  * @param {WhitelistUrl[]} whitelist - List of whitelist entries
  * @param options - Options for URL validation
  * @param options.allowedProtocols - List of allowed protocols for URL validation
+ * @param options.ignorePort - Optional flag to ignore port number when validating URL against whitelist.
  *
  * @returns `true` if the URL matches any whitelist entry
  */
-const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProtocols = ['http', 'https'] } = {}) => {
+const isWhitelistedUrl = (url: string, whitelist: WhitelistUrl[], { allowedProtocols = ['http', 'https'], ignorePort = false } = {}) => {
   if (typeof url !== 'string' || !isUrl(url, { allowedProtocols })) {
     return false;
   }
 
   try {
-    const { host, pathname, protocol } = new URL(url);
+    const { host, hostname, pathname, protocol } = new URL(url);
     const updatedProtocol = protocol.toLowerCase();
-    const updatedHost = host.toLowerCase();
+    const updatedHost = ignorePort ? hostname.toLowerCase() : host.toLowerCase();
     const updatedPath = pathname.toLowerCase();
 
     return whitelist.some(entry => {
       const listUrl = new URL(entry);
       const listProtocol = listUrl.protocol.toLowerCase();
-      const listHost = listUrl.host.toLowerCase();
+      const listHost = ignorePort ? listUrl.hostname.toLowerCase() : listUrl.host.toLowerCase();
       const listPath = listUrl.pathname.toLowerCase();
 
       const protocolMatch = updatedProtocol === listProtocol;

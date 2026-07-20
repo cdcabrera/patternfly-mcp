@@ -207,6 +207,7 @@ function assertInputStringNumberEnumLike(
  * @param {WhitelistUrl[]} whitelist - The list of allowed URLs to compare against.
  * @param [options] - Validation options
  * @param [options.allowedProtocols] - Optional list of allowed URL protocols to validate against.
+ * @param [options.ignorePort] - Optional flag to ignore port number when validating URL against whitelist.
  * @param [options.inputDisplayName] - Optional display name for the input parameter, used in error messages.
  * @param [options.message] - Optional custom error message to override the default message.
  * @param [options.urlDisplayMaxLength] - Optional maximum length of an invalid URL to display in error messages
@@ -220,9 +221,9 @@ function assertInputUrlWhiteListed(
   input: unknown,
   whitelist: WhitelistUrl[],
   {
-    allowedProtocols = DEFAULT_OPTIONS.whitelist.protocols, inputDisplayName, message, urlDisplayMaxLength = 50, codeOrError
+    allowedProtocols = DEFAULT_OPTIONS.whitelist.protocols, ignorePort = false, inputDisplayName, message, urlDisplayMaxLength = 50, codeOrError
   }: {
-    allowedProtocols?: string[]; inputDisplayName?: string; message?: string; urlDisplayMaxLength?: number; codeOrError?: AssertCodeOrError
+    allowedProtocols?: string[]; ignorePort?: boolean; inputDisplayName?: string; message?: string; urlDisplayMaxLength?: number; codeOrError?: AssertCodeOrError
   } = {}
 ): asserts input is string | string[] {
   const updatedInput = Array.isArray(input) ? input : [input];
@@ -233,7 +234,7 @@ function assertInputUrlWhiteListed(
 
     if (isRemote) {
       // Dive into condition to avoid flipping else
-      if (!isWhitelistedUrl(url, whitelist, { allowedProtocols })) {
+      if (!isWhitelistedUrl(url, whitelist, { allowedProtocols, ignorePort })) {
         invalidUrls.push(url);
       }
     } else if (isUrl(url, { isStrict: false })) {
