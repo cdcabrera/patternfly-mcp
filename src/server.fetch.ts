@@ -4,6 +4,8 @@ import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
 import { memo } from './server.caching';
 import { assertInputUrlWhiteListed } from './server.assertions';
+import { isUrl } from './server.helpers';
+import { type WhitelistUrl } from './options.defaults';
 
 /**
  * Decoded payload. Can either be textual or binary data.
@@ -438,7 +440,8 @@ const preflight = async (
  *   - `status`: Callback for returning state or registering a state listener.
  */
 const setFetch = (options = getOptions()): SetFetch => {
-  const { whitelist, xhrFetch } = options;
+  const { mode, modeOptions, whitelist, xhrFetch } = options;
+  const fixtureUrl = mode === 'test' ? modeOptions?.test?.baseUrl : undefined;
 
   const state: FetchState = { phase: 'idle', progress: 0, bytesReceived: 0 };
   const listeners = new Set<(s: FetchState) => void>();
@@ -448,6 +451,11 @@ const setFetch = (options = getOptions()): SetFetch => {
   let stream: Readable | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   let inflight: { key: string; promise: Promise<FetchResponse> } | undefined;
+  let updatedWhitelist = whitelist.urls;
+
+  if (mode === 'test' && isUrl(fixtureUrl)) {
+    updatedWhitelist = updatedWhitelist.concat([fixtureUrl as WhitelistUrl]);
+  }
 
   /**
    * Update state with the provided patch object; notify all listeners.
@@ -513,7 +521,7 @@ const setFetch = (options = getOptions()): SetFetch => {
     updateState({ phase: 'loading', progress: 0, bytesReceived: 0, error: undefined, data: undefined, type: undefined });
 
     try {
-      assertInputUrlWhiteListed(url, whitelist.urls, {
+      assertInputUrlWhiteListed(url, updatedWhitelist, {
         allowedProtocols: whitelist.protocols,
         inputDisplayName: 'setFetch URL',
         codeOrError: (message, cause) => new FetchError({ message, cause })
@@ -541,12 +549,14 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       if (response.url && response.url !== url) {
         // Review using `Promise.try` instead
-        await Promise.resolve().then(() => assertInputUrlWhiteListed(url, whitelist.urls, {
+        // Post-redirect validation: ensure the new URL is still within the sandbox/whitelist
+        await Promise.resolve().then(() => assertInputUrlWhiteListed(response.url, updatedWhitelist, {
           allowedProtocols: whitelist.protocols,
           inputDisplayName: 'setFetch URL',
           codeOrError: (message, cause) => new FetchError({ message, cause })
-        })).catch(() => {
+        })).catch(error => {
           response.body?.cancel?.().catch(() => {});
+          throw error;
         });
       }
 

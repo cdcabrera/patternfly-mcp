@@ -224,7 +224,7 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
   const fixtureUrl = options.modeOptions?.test?.baseUrl;
   let updatedPathOrUrl = pathOrUrl.startsWith(documentationPrefix) ? pathOrUrl : resolveLocalPathFunction(pathOrUrl);
 
-  if (fixtureUrl) {
+  if (fixtureUrl && !updatedPathOrUrl.startsWith(fixtureUrl)) {
     updatedPathOrUrl = `${fixtureUrl}${updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`}`;
   } else if (!isUrl(updatedPathOrUrl)) {
     throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be accessed in ${options.mode} mode`);
