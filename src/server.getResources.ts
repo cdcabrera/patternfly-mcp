@@ -220,9 +220,8 @@ const resolveLocalPathFunction = (path: string, { sep: separator = sep } = {}, o
  * @throws {Error} Throws an error if the given path cannot be resolved in the specified mode and is neither a valid URL nor fetchable.
  */
 const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) => {
-  const documentationPrefix = options.docsPathSlug;
   const fixtureUrl = options.modeOptions?.test?.baseUrl;
-  let updatedPathOrUrl = pathOrUrl.startsWith(documentationPrefix) ? pathOrUrl : resolveLocalPathFunction(pathOrUrl);
+  let updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
 
   if (fixtureUrl && !updatedPathOrUrl.startsWith(fixtureUrl)) {
     updatedPathOrUrl = `${fixtureUrl}${updatedPathOrUrl.startsWith('/') ? updatedPathOrUrl : `/${updatedPathOrUrl}`}`;
