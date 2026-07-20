@@ -454,7 +454,7 @@ const setFetch = (options = getOptions()): SetFetch => {
   let updatedWhitelist = whitelist.urls;
 
   if (mode === 'test' && isUrl(fixtureUrl)) {
-    updatedWhitelist = [fixtureUrl as WhitelistUrl];
+    updatedWhitelist = updatedWhitelist.concat([fixtureUrl as WhitelistUrl]);
   }
 
   /**
