@@ -47,6 +47,25 @@ type OnMemoCacheHandler<TReturn = unknown> = (cache: MemoCacheHandlerResponse<TR
 type MemoDebugHandler<TReturn = unknown> = (info: { type: string; value: unknown; cache: MemoCache<TReturn> }) => void;
 
 /**
+ * Represents the parameters passed to a cache change handler within the memoization system.
+ *
+ * @template TReturn Return type of the memoized function.
+ *
+ * @property {MemoCache<TReturn>} all - Full cache reflecting the current state before the change.
+ * @property {MemoCache<TReturn>} remaining - Cache items that remain after the change.
+ * @property {MemoCache<TReturn>} removed - Cache items that were removed as a result of the change.
+ * @property {OnMemoCacheHandler<TReturn> | undefined} handler - Optional handler function to be invoked for the cache change.
+ * @property handlerDescription - Optional descriptive about the handler, typically for logging or debugging purposes.
+ */
+type MemoNotifyCacheChangeParams<TReturn = unknown> = {
+  all: MemoCache<TReturn>;
+  remaining: MemoCache<TReturn>;
+  removed: MemoCache<TReturn>;
+  handler: OnMemoCacheHandler<TReturn> | undefined;
+  handlerDescription: string | undefined;
+};
+
+/**
  * Memo configuration options.
  *
  * @template TReturn Return type of the memoized function.
@@ -75,14 +94,10 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
 /**
  * Return type of `memoize`.
  *
- * @property clear Clear the cache or clear a specific key.
- * @property getKey Generate a cache key from the provided arguments. Useful for passing to `clear`.
- * @property keys Return all active cache entries. Useful for debugging and passing to `clear`.
+ * @property clear Clear all cache entries.
  */
 type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...args: TArgs) => TReturn) & {
-  clear: (key?: unknown) => boolean;
-  getKey: (...args: TArgs) => unknown | undefined;
-  keys: () => { key: string; value: TReturn; index: number }[];
+  clear: () => boolean;
 };
 
 /**
@@ -118,8 +133,6 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 ): MemoReturn<TArgs, TReturn> => {
   const isCacheErrors = Boolean(cacheErrors);
   const isFuncPromise = isPromise(func);
-  const isOnCacheClearPromise = isPromise(onCacheClear);
-  const isOnCacheClear = typeof onCacheClear === 'function' || isOnCacheClearPromise;
   const isOnCacheExpirePromise = isPromise(onCacheExpire);
   const isOnCacheExpire = typeof onCacheExpire === 'function' || isOnCacheExpirePromise;
   const isOnCacheRolloutPromise = isPromise(onCacheRollout);
@@ -138,14 +151,16 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
    * @param {MemoCache<TReturn>} params.remaining - A subset of items that have not been removed from the cache.
    * @param {MemoCache<TReturn>} params.removed - A subset of items that have been removed from the cache.
    * @param {OnMemoCacheHandler<TReturn>|undefined} params.handler - See {@link OnMemoCacheHandler}
+   * @param {string|undefined} params.handlerDescription - A description of the handler.
    */
   const notifyCacheChange = ({
-    all, remaining, removed, handler
-  }: { all: MemoCache<TReturn>; remaining: MemoCache<TReturn>; removed: MemoCache<TReturn>; handler: OnMemoCacheHandler<TReturn> | undefined; }) => {
+    all, remaining, removed, handler, handlerDescription
+  }: MemoNotifyCacheChangeParams<TReturn>) => {
     if (!handler) {
       return;
     }
 
+    const errorDesc = handlerDescription ? `: ${handlerDescription}` : '';
     const payload: MemoCacheHandlerResponse<TReturn> = {
       all,
       remaining,
@@ -153,16 +168,19 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     };
 
     if (isPromise(handler)) {
-      Promise.resolve(handler(payload)).catch(error => log.error('Memoized handler error', error));
-    } else {
+      Promise.resolve(handler(payload)).catch(error => log.error(`Memoized handler error${errorDesc}`, error));
+    } else if (typeof handler === 'function') {
       try {
         handler(payload);
       } catch (error) {
-        log.error('Memoized function error', error);
+        log.error(`Memoized function error${errorDesc}`, error);
       }
     }
   };
 
+  /**
+   * Memoized function.
+   */
   const ized = function () {
     const cache: MemoCache<TReturn> = [];
     let timeout: NodeJS.Timeout | undefined;
@@ -187,7 +205,8 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
               all: allCacheEntries,
               remaining: [],
               removed: allCacheEntries,
-              handler: onCacheExpire
+              handler: onCacheExpire,
+              handlerDescription: 'onCacheExpire callback'
             });
           }
 
@@ -266,7 +285,8 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
                 all: allCacheEntries,
                 remaining: remainingCacheEntries,
                 removed: removedCacheEntries,
-                handler: onCacheRollout
+                handler: onCacheRollout,
+                handlerDescription: 'onCacheRollout callback'
               });
             }
           }
@@ -302,127 +322,43 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       return cachedValue;
     };
 
-    memoized.cache = () => {
-      const output: Record<string, unknown> = {};
-
-      cache.forEach((key, index) => {
-        if (index % 2 === 0) {
-          output[key] = cache[index + 1];
-        }
-      });
-
-      return output;
-    };
-
     /**
-     * Clear the memoized cache or specific keys
+     * Clear all memoized cache entries.
      *
-     * @param key
-     * @returns A `boolean` indicating if the cache, or cache item, was cleared.
+     * @returns A `boolean` indicating if the cache was cleared.
      */
-    memoized.clear = (key?: unknown) => {
-      let keyIndex: number | undefined;
-
-      if (key) {
-        keyIndex = cache.indexOf(key);
-
-        if (keyIndex < 0 || keyIndex % 2 !== 0) {
-          return false;
-        }
-      }
-
+    memoized.clear = () => {
       const allBefore = [...cache];
 
-      if (keyIndex !== undefined) {
-        cache.splice(keyIndex, 2);
-      } else {
-        cache.length = 0;
+      if (allBefore.length === 0) {
+        return false;
       }
 
-      const all: MemoCache<TReturn> = [];
-      const remaining: MemoCache<TReturn> = [];
-      const removed: MemoCache<TReturn> = [];
-
-      allBefore.forEach((entry, index) => {
-        if (index % 2 !== 0 || entry === undefined) {
-          return;
-        }
-
-        const value = allBefore[index + 1];
-
-        all.push(value);
-
-        if (keyIndex === undefined) {
-          removed.push(value);
-        } else if (index === keyIndex) {
-          removed.push(value);
-        } else {
-          remaining.push(value);
-        }
-      });
-
-      if (isOnCacheClear) {
-        notifyCacheChange({ all, remaining, removed, handler: onCacheClear });
-      }
-
-      return removed.length > 0;
-    };
-
-    /**
-     * Returns the key used to memoize the function. Pass in the same parameters
-     * used to initialize the memoized function and receive the key.
-     *
-     * @note The behavior
-     * - returns `undefined` if the key is not found instead of attempting to
-     *     just return an assumed key.
-     * - passing in an empty, `undefined` or `null` value will attempt to parse.
-     *
-     * @param args
-     * @returns The key used to memoize the function with specific arguments or `undefined`.
-     */
-    memoized.getKey = (...args: TArgs) => {
-      let key: unknown;
-      let keyIndex: number;
-
-      try {
-        key = setKey(args);
-        keyIndex = cache.indexOf(key);
-      } catch {
-        return undefined;
-      }
-
-      if (keyIndex < 0 || keyIndex % 2 !== 0) {
-        return undefined;
-      }
-
-      return key;
-    };
-
-    /**
-     * Returns cache keys. Used to clear cache items.
-     *
-     * @note In the future we should consider expanding this to return an object
-     * with the key, value, index, and possibly a timestamp.
-     *
-     * @returns An array of cache entries.
-     * - `key`: Cache key.
-     * - `value`: Cache value.
-     * - `index`: Cache index.
-     */
-    memoized.keys = () => {
-      const result: { key: string; value: TReturn; index: number }[] = [];
+      const allCacheEntries: Array<TReturn> = [];
 
       cache.forEach((entry, index) => {
         if (index % 2 === 0) {
-          result.push({
-            key: entry,
-            value: cache[index + 1],
-            index: index / 2
-          });
+          allCacheEntries.push(cache[index + 1] as TReturn);
         }
       });
 
-      return result;
+      cache.length = 0;
+
+      debug({
+        type: 'memo clear',
+        value: undefined,
+        cache: [...cache]
+      });
+
+      notifyCacheChange({
+        all: allCacheEntries,
+        remaining: [],
+        removed: allCacheEntries,
+        handler: onCacheClear,
+        handlerDescription: 'onCacheClear callback'
+      });
+
+      return allCacheEntries.length > 0;
     };
 
     return memoized;
@@ -430,18 +366,6 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
   return ized();
 };
-
-/*
-const memoFactory = (func, options) => {
-  const hey = memo(func, options);
-
-  hey.clear = () => {
-    return hey.clear();
-  };
-
-  return hey;
-};
-*/
 
 export {
   memo,
