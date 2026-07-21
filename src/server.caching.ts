@@ -302,6 +302,18 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       return cachedValue;
     };
 
+    memoized.cache = () => {
+      const output: Record<string, unknown> = {};
+
+      cache.forEach((key, index) => {
+        if (index % 2 === 0) {
+          output[key] = cache[index + 1];
+        }
+      });
+
+      return output;
+    };
+
     /**
      * Clear the memoized cache or specific keys
      *
@@ -418,6 +430,18 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
   return ized();
 };
+
+/*
+const memoFactory = (func, options) => {
+  const hey = memo(func, options);
+
+  hey.clear = () => {
+    return hey.clear();
+  };
+
+  return hey;
+};
+*/
 
 export {
   memo,
