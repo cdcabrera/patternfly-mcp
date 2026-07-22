@@ -5,21 +5,21 @@ metadata:
   title: PatternFly MCP Server
   description: >
     A production-ready Model Context Protocol (MCP) server that aggregates and
-    serves the public PatternFly design system. It provides dynamic access to
-    React component documentation, design patterns and tokens, accessibility
-    guidelines, and JSON schemas. It utilizes an automated discovery mechanism
-    to consume content from across the PatternFly ecosystem and Red Hat's public
-    data sources.
+    serves the PatternFly design system. It provides comprehensive access to
+    design guidelines, accessibility standards, and UX patterns, alongside
+    React component documentation and design tokens. It utilizes an automated
+    discovery mechanism to consume structured content from across the PatternFly
+    ecosystem and Red Hat's public data sources.
   tags:
     - mcp
-    - patternfly
     - design-system
-    - react
-    - design-tokens
     - accessibility
     - ux
+    - design-guidelines
+    - patternfly
+    - design-tokens
+    - react
     - documentation
-    - open-api
     - data-aggregation
   annotations:
     backstage.io/source-location: url:https://github.com/patternfly/patternfly-mcp
@@ -31,16 +31,16 @@ spec:
   primitives:
     - type: tool
       name: aggregated-data-query
-      description: Search and retrieve PatternFly design guidelines, components, and technical documentation.
+      description: Search and retrieve PatternFly design guidelines, accessibility standards, example patterns, and technical component documentation.
     - type: tool
       name: aggregated-data-access
-      description: Access, transform, and consume structured PatternFly data, including component properties and usage examples.
+      description: Access and consume structured PatternFly data, including design specifications, usage guidelines, and component properties.
     - type: resource
       name: processed-data-records
-      description: Structured markdown records and JSON schemas for PatternFly design guidelines, accessibility, components and usage examples.
+      description: Detailed markdown records and JSON schemas for PatternFly design guidelines, accessibility standards, and components.
     - type: resource
       name: processed-data-collections
-      description: Organized collections of PatternFly resources, categorized by content type.
+      description: Organized collections of PatternFly resources, categorized by design patterns, guidelines, and component types.
   packages:
     - type: npm
       registry_name: registry.npmjs.org
