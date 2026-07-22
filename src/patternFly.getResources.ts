@@ -21,7 +21,7 @@ import {
   INDEX_EXCEPTION_WORDS,
   INDEX_NOISE_WORDS
 } from './docs.filterWords';
-import type { ApiContent } from './records.api';
+// import type { ApiContent } from './records.patternFlyApi';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
