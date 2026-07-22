@@ -1,0 +1,50 @@
+apiVersion: mcp/v1beta1
+kind: MCPServer
+metadata:
+  name: patternfly-mcp
+  title: PatternFly MCP Server
+  description: >
+    This MCP Server provides tools and resources for accessing and aggregating
+    public PatternFly data. It dynamically discovers and consumes content from
+    numerous GitHub links and JSON responses from various open REST APIs based
+    on configured patterns and discovery mechanisms. It is production-ready and
+    freely accessible.
+  tags:
+    - mcp
+    - public-data
+    - github
+    - open-api
+    - data-aggregation
+    - patternfly
+  annotations:
+  # Link to the server's source code repository
+  backstage.io/source-location: url:https://github.com/patternfly/patternfly-mcp
+  # IMPORTANT: Link to documentation explaining the dynamic data source discovery logic
+  data.sources.discovery.docs.redhat.com/url: https://github.com/patternfly/patternfly-mcp/tree/main/docs
+spec:
+  type: remote # Hosted, remote server, source
+  lifecycle: ga # General Availability (production-ready)
+  owner: group:redhat/public-data-team # Team owners
+  # No 'auth' section as it's public and free
+  primitives:
+    - type: tool
+      name: aggregated-data-query
+      description: A tool for querying and retrieving aggregated public data from various sources.
+    - type: tool
+      name: aggregated-data-acces
+      description: A tool for accessing, processing, transforming, and consuming aggregated public data from various sources.
+    - type: resource
+      name: processed-data-records
+      description: Represents the structured records of data from various public repositories and APIs after processing and transformation.
+    - type: resource
+      name: processed-data-collections
+      description: Represents the structured collections of data after processing and transformation.
+  packages:
+    - type: npm
+  registry_name: registry.npmjs.org
+  name: "@patternfly/patternfly-mcp"
+  # The 'version' field has been omitted by design.
+  # Check the NPM registry directly for the current version or install using the `@latest` tag.
+  remotes:
+    - type: streamable-http
+  url: https://main.patternfly-org.pages.dev/api # Public static data endpoint
