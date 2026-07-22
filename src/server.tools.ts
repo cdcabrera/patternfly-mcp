@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { type ChildProcess } from 'node:child_process';
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { type AppSession, type GlobalOptions } from './options';
 import { type McpToolCreator } from './mcpSdk';
 import { log, formatUnknownError } from './logger';
+import { spawnProcess, debugChildStderr } from './server.process';
 import {
   awaitIpc,
   send,
@@ -235,6 +236,7 @@ const spawnToolsHost = async (
   options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
   const { nodeVersion, pluginIsolation, pluginHost } = options || {};
+  const { sessionId } = getSessionOptions();
   const { loadTimeoutMs, invokeTimeoutMs } = pluginHost || {};
   const nodeArgs: string[] = [];
   let updatedEntry: string | undefined = undefined;
@@ -292,11 +294,14 @@ const spawnToolsHost = async (
   // Pre-compute file and package tool modules before spawning to reduce latency
   const filePackageToolModules = getFilePackageToolModules() || [];
 
-  const child: ChildProcess = spawn(process.execPath, [...nodeArgs, updatedEntry], {
-    stdio: ['ignore', 'pipe', 'pipe', 'ipc']
+  const child = spawnProcess({
+    nodeArgs,
+    entryPath: updatedEntry,
+    processName: 'tools-host',
+    sessionId
   });
 
-  const closeStderr = debugChild(child);
+  const closeStderr = debugChildStderr(child, { processName: 'tools-host', sessionId });
 
   // hello
   send(child, { t: 'hello', id: makeId() });

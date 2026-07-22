@@ -471,7 +471,7 @@ describe('awaitIpc', () => {
 
     jest.advanceTimersByTime(1001);
 
-    await expect(promise).rejects.toThrow('Timed out waiting for IPC response');
+    await expect(promise).rejects.toThrow('Timed out waiting for Tools Host IPC response');
     jest.useRealTimers();
   });
 
