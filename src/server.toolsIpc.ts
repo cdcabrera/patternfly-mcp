@@ -1,9 +1,11 @@
 import { type ChildProcess } from 'node:child_process';
 import {
   awaitIpc as baseAwaitIpc,
+  isErrorLike,
   isHelloAck,
   makeId,
   send,
+  serializeError,
   type BaseIpcRequest,
   type BaseIpcResponse,
   type SerializedError
@@ -105,12 +107,14 @@ const isInvokeResult = (expectedId: string) => (message: any): message is
 
 export {
   awaitIpc,
+  isErrorLike,
   isHelloAck,
   isInvokeResult,
   isLoadAck,
   isManifestResult,
   makeId,
   send,
+  serializeError,
   type IpcRequest,
   type IpcResponse,
   type SerializedError,
