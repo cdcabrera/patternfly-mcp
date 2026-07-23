@@ -12,8 +12,8 @@ import { randomUUID } from 'node:crypto';
  */
 type SerializedError = {
   message: string;
-  stack?: string;
-  code?: string;
+  stack?: string | undefined;
+  code?: string | undefined;
   cause?: unknown;
   details?: unknown;
 };
@@ -136,11 +136,69 @@ const awaitIpc = <T extends BaseIpcResponse>(
 const isHelloAck = (message: any): message is { t: 'hello:ack'; id: string } =>
   Boolean(message) && message.t === 'hello:ack' && typeof message.id === 'string';
 
+/**
+ * Serialize an error value into a structured object.
+ *
+ * @param errorValue - Error-like value to serialize.
+ * @returns {SerializedError} - Serialized error object.
+ */
+const serializeError = (errorValue: unknown): SerializedError => {
+  const err = errorValue as SerializedError | undefined;
+
+  return {
+    message: err?.message || String(errorValue),
+    stack: err?.stack,
+    code: err?.code,
+    details: err?.details,
+    cause: err?.cause
+  };
+};
+
+/**
+ * Check if a value is an error or an error-like object.
+ *
+ * Handles cross-realm Error detection via tag checks for `[object Error]`, `[object AggregateError]`,
+ * and `[object DOMException]`.
+ *
+ * @param value
+ * @returns True if the value is an error-like object, false otherwise.
+ */
+const isErrorLike = (value: unknown): boolean => {
+  if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
+    return false;
+  }
+
+  if (value instanceof Error || value instanceof AggregateError) {
+    return true;
+  }
+
+  const tag = Object.prototype.toString.call(value);
+
+  if (tag === '[object Error]' || tag === '[object AggregateError]' || tag === '[object DOMException]') {
+    return true;
+  }
+
+  const val = value as Record<string, unknown>;
+  const has = (key: string) =>
+    Object.hasOwn(val, key) && typeof val[key] === 'string' && val[key].length > 0;
+
+  if (!has('message')) {
+    return false;
+  }
+
+  const isNameLike = has('name') && (val.name as string).toLowerCase().endsWith('error');
+  const isStackLike = has('stack') && (val.stack as string).includes('\n');
+
+  return isNameLike || isStackLike;
+};
+
 export {
   awaitIpc,
+  isErrorLike,
   isHelloAck,
   makeId,
   send,
+  serializeError,
   type BaseIpcRequest,
   type BaseIpcResponse,
   type SerializedError
