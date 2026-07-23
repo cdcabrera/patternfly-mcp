@@ -1,8 +1,11 @@
+import { bootstrapChild } from './server.process';
 import {
   type IpcRequest,
   type ToolDescriptor,
   type SerializedError,
-  makeId
+  isErrorLike,
+  makeId,
+  serializeError
 } from './server.toolsIpc';
 import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
@@ -63,24 +66,6 @@ const createHostState = (invokeTimeoutMs = DEFAULT_OPTIONS.pluginHost.invokeTime
 });
 
 /**
- * Serialize an error value into a structured object.
- *
- * @param errorValue - Error-like value to serialize.
- * @returns {SerializedError} - Serialized error object.
- */
-const serializeError = (errorValue: unknown) => {
-  const err = errorValue as SerializedError | undefined;
-
-  return {
-    message: err?.message || String(errorValue),
-    stack: err?.stack,
-    code: err?.code,
-    details: err?.details,
-    cause: err?.cause
-  };
-};
-
-/**
  * Result of `normalizeCreatorSchema`.
  *
  * @property tool - The realized tool tuple returned by the creator function.
@@ -93,45 +78,6 @@ type NormalizeCreatorSchemaResult = {
   normalizedSchema: unknown;
   manifestSchema: unknown;
   warnings: string[];
-};
-
-/**
- * Check if a value is an error or an error-like object.
- *
- * Handles cross-realm Error detection via tag checks for `[object Error]`, `[object AggregateError]`,
- * and `[object DOMException]`. Does not treat `[object ErrorEvent]` as error-like in the
- * Node context; add if your runtime can emit `ErrorEvent`.
- *
- * @param value
- * @returns True if the value is an error-like object, false otherwise.
- */
-const isErrorLike = (value: unknown) => {
-  if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
-    return false;
-  }
-
-  if (value instanceof Error || value instanceof AggregateError) {
-    return true;
-  }
-
-  const tag = Object.prototype.toString.call(value);
-
-  if (tag === '[object Error]' || tag === '[object AggregateError]' || tag === '[object DOMException]') {
-    return true;
-  }
-
-  const val = value as Record<string, unknown>;
-  const has = (key: string) =>
-    Object.hasOwn(val, key) && typeof val[key] === 'string' && val[key].length > 0;
-
-  if (!has('message')) {
-    return false;
-  }
-
-  const isNameLike = has('name') && (val.name as string).toLowerCase().endsWith('error');
-  const isStackLike = has('stack') && (val.stack as string).includes('\n');
-
-  return isNameLike || isStackLike;
 };
 
 /**
@@ -520,29 +466,8 @@ const setHandlers = () => {
   return handlerMessage;
 };
 
-/**
- * Lazy initialize for IPC (Inter-Process Communication) handlers.
- *
- * This is a one-shot process: the first message received will remove itself then
- * trigger the real handler setup.
- *
- * @param {IpcRequest} first
- */
-const bootstrapMessage = (first: IpcRequest) => {
-  // Detach bootstrap to avoid duplicate delivery
-  process.off('message', bootstrapMessage);
-
-  // Install real handlers and get a reference to the router
-  const route = setHandlers();
-
-  // Route the very first message through the same code path the real handler uses
-  // Use void to fire-and-forget async operations to avoid blocking
-  void route(first);
-};
-
-if (process.send) {
-  process.on('message', bootstrapMessage);
-}
+// Use the centralized bootstrap helper
+bootstrapChild(setHandlers());
 
 export {
   normalizeCreatorSchema,
