@@ -54,16 +54,31 @@ const helloHandler = (request: ProcessRequest, ctx: HostContext) => {
 };
 
 /**
+ * Default `shutdown` handler. Acknowledges then exits the child gracefully.
+ *
+ * Mirrors the cooperative shutdown in `server.toolsHost.ts` so the parent's
+ * `shutdownChildProcess` resolves on a clean exit rather than the kill fallback.
+ *
+ * @param {ProcessRequest} request
+ * @param {HostContext} ctx
+ */
+const shutdownHandler = (request: ProcessRequest, ctx: HostContext) => {
+  ctx.send({ t: 'shutdown:ack', id: request.id });
+  process.exit(0);
+};
+
+/**
  * Install the message router and disconnect handler for a child process.
  *
- * Routes each request to the matching handler in `handlers`. A built-in `hello`
- * handler is provided and can be overridden. Errors are passed to `requestFallback`.
+ * Routes each request to the matching handler in `handlers`. Built-in `hello`
+ * and `shutdown` handlers are provided and can be overridden. Errors are passed
+ * to `requestFallback`.
  *
  * @param {HostHandlers} handlers - Map of message type to handler.
  * @returns The router function (used by the one-shot bootstrap).
  */
 const setHandlers = (handlers: HostHandlers) => {
-  const routes: HostHandlers = { hello: helloHandler, ...handlers };
+  const routes: HostHandlers = { hello: helloHandler, shutdown: shutdownHandler, ...handlers };
   const ctx: HostContext = { send: reply };
 
   /**
@@ -127,7 +142,10 @@ const createProcessHost = (handlers: HostHandlers) => {
     process.on('message', bootstrapMessage);
   }
 
-  return { bootstrapMessage, setHandlers: () => setHandlers(handlers) };
+  // Return only the one-shot bootstrap. `setHandlers` is a standalone export and is
+  // invoked from within `bootstrapMessage`; exposing a second re-attaching wrapper
+  // here would double-register the message/disconnect listeners.
+  return { bootstrapMessage };
 };
 
 export {
@@ -135,6 +153,7 @@ export {
   setHandlers,
   requestFallback,
   helloHandler,
+  shutdownHandler,
   type HostHandlers,
   type HostContext
 };

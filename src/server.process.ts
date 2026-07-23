@@ -35,7 +35,7 @@ type IsolationOptions = {
  * @property enableStderrDebug - Optional stderr reader factory; returns a `closeStderr`.
  */
 type SpawnConfig = {
-  importSpecifier?: string;
+  importSpecifier: string;
   entry?: string;
   isolation?: IsolationOptions;
   label?: string;
@@ -79,14 +79,12 @@ const resolveEntry = ({ importSpecifier, entry, label = 'child process' }: Spawn
   let resolved: string | undefined = undefined;
 
   try {
-    resolved = fileURLToPath(import.meta.resolve(importSpecifier as string));
+    resolved = fileURLToPath(import.meta.resolve(importSpecifier));
   } catch (error) {
     log.debug(`Failed to import.meta.resolve ${label} entry '${importSpecifier}': ${formatUnknownError(error)}`);
 
-    if (process.env.NODE_ENV === 'local' || process.env.NODE_ENV === 'test') {
-      if (importSpecifier !== '#nope') {
-        resolved = '/mock/path/to/host.js';
-      }
+    if (process.env.NODE_ENV === 'local') {
+      resolved = '/mock/path/to/host.js';
     }
   }
 

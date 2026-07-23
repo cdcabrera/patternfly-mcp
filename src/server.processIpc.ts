@@ -29,7 +29,13 @@ type ProcessResponse = { t: string; id: string };
  * @property cause - Error cause.
  * @property details - Additional details.
  */
-type SerializedError = { message: string; stack?: string; code?: string; cause?: unknown; details?: unknown };
+type SerializedError = {
+  message: string;
+  stack?: string | undefined;
+  code?: string | undefined;
+  cause?: unknown;
+  details?: unknown
+};
 
 /**
  * Generate a unique ID for IPC messages.
@@ -58,8 +64,8 @@ const serializeError = (errorValue: unknown): SerializedError => {
 
   return {
     message: err?.message || String(errorValue),
-    ...(err?.stack !== undefined && { stack: err.stack }),
-    ...(err?.code !== undefined && { code: err.code }),
+    stack: err?.stack,
+    code: err?.code,
     details: err?.details,
     cause: err?.cause
   };

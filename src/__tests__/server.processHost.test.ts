@@ -1,4 +1,4 @@
-import { setHandlers, createProcessHost, helloHandler } from '../server.processHost';
+import { setHandlers, createProcessHost, helloHandler, shutdownHandler } from '../server.processHost';
 
 describe('server.processHost', () => {
   let messageHandlers: Array<(m: any) => void>;
@@ -74,6 +74,25 @@ describe('server.processHost', () => {
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 
+  it('should ack and exit on the built-in shutdown handler', async () => {
+    setHandlers({});
+    const handler = messageHandlers[0] as any;
+
+    await handler({ t: 'shutdown', id: 's1' });
+
+    expect(sendSpy).toHaveBeenCalledWith({ t: 'shutdown:ack', id: 's1' });
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it('shutdownHandler should ack via ctx.send then exit', async () => {
+    const send = jest.fn();
+
+    shutdownHandler({ t: 'shutdown', id: 'q' }, { send });
+
+    expect(send).toHaveBeenCalledWith({ t: 'shutdown:ack', id: 'q' });
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
   it('should one-shot bootstrap: detach then route the first message', async () => {
     const load = jest.fn();
     const { bootstrapMessage } = createProcessHost({ load });
@@ -82,6 +101,14 @@ describe('server.processHost', () => {
 
     expect(process.off).toHaveBeenCalledWith('message', bootstrapMessage);
     expect(load).toHaveBeenCalledWith({ t: 'load', id: 'first' }, expect.anything());
+  });
+
+  it('should auto-attach the bootstrap listener once when process.send exists', () => {
+    const { bootstrapMessage } = createProcessHost({});
+    const mockOn = process.on as jest.Mock;
+
+    expect(mockOn).toHaveBeenCalledWith('message', bootstrapMessage);
+    expect(mockOn.mock.calls.filter(([event]) => event === 'message')).toHaveLength(1);
   });
 
   it('helloHandler should ack via ctx.send', () => {

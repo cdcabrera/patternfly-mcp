@@ -55,19 +55,25 @@ describe('matchResponse', () => {
 
 describe('serializeError', () => {
   it('should serialize an Error instance', () => {
-    const err: any = new Error('boom');
+    const err: any = new Error('lorem');
 
-    err.code = 'E_BOOM';
+    err.code = 'E_IPSUM';
 
     const out = serializeError(err);
 
-    expect(out.message).toBe('boom');
-    expect(out.code).toBe('E_BOOM');
+    expect(out.message).toBe('lorem');
+    expect(out.code).toBe('E_IPSUM');
     expect(typeof out.stack).toBe('string');
   });
 
   it('should serialize a non-error value', () => {
-    expect(serializeError('nope').message).toBe('nope');
+    expect(serializeError('dolor').message).toBe('dolor');
+  });
+
+  it('should always emit the optional keys uniformly', () => {
+    const out = serializeError(new Error('lorem'));
+
+    expect(Object.keys(out).sort()).toEqual(expect.arrayContaining(['cause', 'code', 'details', 'message', 'stack']));
   });
 });
 
