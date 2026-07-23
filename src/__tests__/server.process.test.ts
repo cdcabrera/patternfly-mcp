@@ -6,7 +6,7 @@ import {
   spawnChildProcess,
   activeChildrenBySession
 } from '../server.process';
-import {log} from "../logger";
+import { log } from '../logger';
 
 jest.mock('node:child_process', () => ({
   spawn: jest.fn()
