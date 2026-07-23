@@ -114,6 +114,15 @@ const setHandlers = (handlers: HostHandlers) => {
 };
 
 /**
+ * The currently-attached one-shot bootstrap listener, if any.
+ *
+ * Tracked at module scope so repeated `createProcessHost` calls detach the prior
+ * bootstrap before attaching a new one, keeping a single `message` listener and
+ * avoiding `MaxListenersExceeded` accumulation (e.g. under repeated instantiation in tests).
+ */
+let activeBootstrap: ((first: ProcessRequest) => void) | undefined;
+
+/**
  * Create a generic child-process host with a one-shot bootstrap.
  *
  * The first message removes the bootstrap listener, installs the real handlers,
@@ -130,6 +139,7 @@ const createProcessHost = (handlers: HostHandlers) => {
   const bootstrapMessage = (first: ProcessRequest) => {
     // Detach bootstrap to avoid duplicate delivery
     process.off('message', bootstrapMessage);
+    activeBootstrap = undefined;
 
     // Install real handlers and get a reference to the router
     const route = setHandlers(handlers);
@@ -139,6 +149,13 @@ const createProcessHost = (handlers: HostHandlers) => {
   };
 
   if (process.send) {
+    // Detach any previously-attached bootstrap so repeated instantiation
+    // never accumulates duplicate `message` listeners.
+    if (activeBootstrap) {
+      process.off('message', activeBootstrap);
+    }
+
+    activeBootstrap = bootstrapMessage;
     process.on('message', bootstrapMessage);
   }
 

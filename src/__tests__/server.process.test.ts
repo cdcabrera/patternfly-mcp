@@ -202,4 +202,24 @@ describe('spawnChildProcess request', () => {
 
     await expect(pending).resolves.toEqual({ t: 'pong', id: 'unrelated' });
   });
+
+  it('should reject on a correlated <type>:error envelope', async () => {
+    const { child, messageHandlers } = makeIpcChild();
+
+    (spawn as jest.Mock).mockReturnValue(child);
+
+    const { request } = spawnChildProcess({ importSpecifier: '#host', entry: '/abs/host.js' });
+    const pending = request({ t: 'load' }, 'load:ack', 1000);
+    const sentId = child.send.mock.calls[0][0].id;
+
+    await Promise.resolve();
+    messageHandlers.forEach(handler => handler({
+      t: 'load:error',
+      id: sentId,
+      ok: false,
+      error: { message: 'handler boom', code: 'E_BOOM' }
+    }));
+
+    await expect(pending).rejects.toThrow('handler boom');
+  });
 });

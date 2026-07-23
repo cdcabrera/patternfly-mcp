@@ -118,4 +118,16 @@ describe('server.processHost', () => {
 
     expect(send).toHaveBeenCalledWith({ t: 'hello:ack', id: 'z' });
   });
+
+  it('should detach the prior bootstrap when instantiated again', () => {
+    const first = createProcessHost({}).bootstrapMessage;
+    const second = createProcessHost({}).bootstrapMessage;
+
+    // The earlier bootstrap is removed before the new one is attached.
+    expect(process.off).toHaveBeenCalledWith('message', first);
+    // Only the latest bootstrap remains attached.
+    const attached = (process.on as jest.Mock).mock.calls.filter(([event]) => event === 'message');
+
+    expect(attached[attached.length - 1][1]).toBe(second);
+  });
 });

@@ -9,7 +9,8 @@ import {
   makeId,
   matchResponse,
   type ProcessRequest,
-  type ProcessResponse
+  type ProcessResponse,
+  type SerializedError
 } from './server.processIpc';
 
 /**
@@ -161,8 +162,39 @@ const spawnChildProcess = (config: SpawnConfig): ChildHandle => {
     correlate = true
   ): Promise<T> => {
     const id = req.id ?? makeId();
-    const matcher = matchResponse<T>(responseType, correlate ? id : undefined);
-    const pending = awaitIpc<T>(child, matcher, timeoutMs);
+    const errorType = `${req.t}:error`;
+    const matchOk = matchResponse<T>(responseType, correlate ? id : undefined);
+    const matchErr = matchResponse(errorType, correlate ? id : undefined);
+
+    // Resolve on the expected response OR the correlated `<type>:error` envelope
+    // emitted by the generic host's requestFallback, so a thrown handler rejects
+    // promptly rather than waiting for the timeout.
+    const matcher = (message: any): message is T => matchOk(message) || matchErr(message);
+
+    const pending = awaitIpc<T>(child, matcher, timeoutMs).then(message => {
+      if ((message as ProcessResponse)?.t === errorType) {
+        const errorValue = (message as { error?: SerializedError })?.error;
+        const settledError = new Error(errorValue?.message || 'Child process handler error', {
+          cause: errorValue?.cause
+        }) as Error & { code?: string; details?: unknown };
+
+        if (errorValue?.stack) {
+          settledError.stack = errorValue.stack;
+        }
+
+        if (errorValue?.code) {
+          settledError.code = errorValue.code;
+        }
+
+        if (errorValue?.details) {
+          settledError.details = errorValue.details;
+        }
+
+        throw settledError;
+      }
+
+      return message;
+    });
 
     send(child, { ...req, id } as ProcessRequest);
 

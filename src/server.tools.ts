@@ -334,7 +334,9 @@ const makeProxyCreators = (
         invocationError.code = response.error?.code;
       }
 
-      invocationError.details = response.error?.details || (response as any).error?.cause?.details;
+      const errorCause = response.error?.cause as { details?: unknown } | undefined;
+
+      invocationError.details = response.error?.details || errorCause?.details;
       throw invocationError;
     }
 
