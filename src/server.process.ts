@@ -59,4 +59,27 @@ const spawnProcess = (options: ProcessHostOptions): ChildProcess => spawn(proces
   stdio: ['ignore', 'pipe', 'pipe', 'ipc']
 });
 
-export { debugChildStderr, spawnProcess, type ProcessHostOptions };
+/**
+ * Generic bootstrap for child processes.
+ *
+ * This is a one-shot process: the first message received will remove itself then
+ * trigger the real handler setup via the provided router.
+ *
+ * @param {function} router - A function that handles incoming IPC requests.
+ */
+const bootstrapChild = (router: (message: any) => Promise<void> | void) => {
+  const onFirst = (first: any) => {
+    // Detach bootstrap to avoid duplicate delivery
+    process.off('message', onFirst);
+
+    // Route the very first message through the same code path the real handler uses
+    // Use void to fire-and-forget async operations to avoid blocking
+    void router(first);
+  };
+
+  if (process.send) {
+    process.on('message', onFirst);
+  }
+};
+
+export { bootstrapChild, debugChildStderr, spawnProcess, type ProcessHostOptions };
