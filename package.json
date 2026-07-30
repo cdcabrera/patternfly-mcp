@@ -6,8 +6,8 @@
   "type": "module",
   "imports": {
     "~docsCatalog": "./src/docs.json",
-    "#patternFlyApiHost": "./dist/records.patternFlyHost.js",
-    "#toolsHost": "./dist/server.toolsHost.js"
+    "#toolsHost": "./dist/server.toolsHost.js",
+    "#patternFlyHost": "./dist/records.patternFlyHost.js"
   },
   "exports": {
     ".": {
