@@ -48,6 +48,8 @@ interface RecordsSource<Options = unknown, Ctx = unknown> {
   }>;
 }
 
+const makeProxySource();
+
 /**
  * Compose built-in and external PatternFly records sources.
  *
@@ -73,7 +75,7 @@ const composePatternFly = async (
         warnings.push(...result.warnings);
         errors.push(...result.errors);
       } catch (error) {
-        errors.push(`Source [${source.id}] collect crashed: ${error instanceof Error ? error.message : String(error)}`);
+        errors.push(`Source [${source.id}] collect failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   }
