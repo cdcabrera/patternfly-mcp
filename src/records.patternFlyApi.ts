@@ -2,9 +2,17 @@ import { log } from './logger';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 import { isPlainObject, joinUrl } from './server.helpers';
-import { getOptions } from './options.context';
+import {
+  getOptions,
+  getSessionOptions,
+  runWithOptions,
+  runWithSession
+} from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { deferTask } from './server.task';
+import { type CollectionSource } from './records';
+import type { McpResource } from './mcpSdk';
+import { resourceCallback } from './resource.patternFlyDocsTemplate';
 
 /**
  * Processed content for API responses.
@@ -253,7 +261,38 @@ apiSpider.deferTask = deferTask(apiSpider, {
   cancelMs: DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs
 });
 
+/**
+ * Create a PatternFly API collection.
+ *
+ * @param options - Global options.
+ * @param session - Session options.
+ */
+const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): CollectionSource => {
+  const callback: CollectionSource[1] = async () =>
+    runWithSession(session, async () =>
+      runWithOptions(options, async () => {
+        const taskHandle = apiSpider.deferTask();
+
+        return await taskHandle.start();
+      }));
+
+  return [
+    'PatternFly API',
+    callback,
+    {
+      runInChildProcess: true
+    }
+  ];
+};
+
+/**
+ * Set PatternFly API collection.
+ */
+const collection = patternFlyApiCollection;
+
 export {
+  patternFlyApiCollection,
+  collection,
   apiSpider,
   crawler,
   isEmptyPayload,
