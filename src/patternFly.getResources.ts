@@ -11,17 +11,15 @@ import {
 } from './patternFly.helpers';
 import { log, formatUnknownError } from './logger';
 import {
-  EMBEDDED_DOCS,
-  type PatternFlyMcpDocsCatalog,
-  type PatternFlyMcpDocsCatalogEntry,
-  type PatternFlyMcpDocsCatalogDoc
-} from './docs.embedded';
-import {
   INDEX_BLOCKLIST_WORDS,
   INDEX_EXCEPTION_WORDS,
   INDEX_NOISE_WORDS
 } from './docs.filterWords';
-// import type { ApiContent } from './records.patternFlyApi';
+import {
+  type PatternFlyMcpDocsCatalogEntry,
+  type PatternFlyMcpDocsCatalogDoc
+} from './docs.embedded';
+import { type CollectionRecord, type CollectionResult } from './records';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -198,97 +196,9 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
 }
 
 /**
- * In-memory blend registry. Round 1 only: additive, cleared on restart.
- * Keyed by `${version}::${section}::${item}` -> ApiContent[].
+ * Central in-memory registry for all PatternFly collection records
  */
-/*
-const apiRegistry = new Map<string, ApiContent[]>();
-
-const keyOf = (content: ApiContent) => {
-  const { version = '', section = '', item = '' } = content.semanticContext || {};
-
-  return `${version}::${section}::${item}`;
-};
-*/
-
-/**
- * Read-side accessor consumed by patternFly.getResources adapters (narrow contract).
- * Returns a snapshot map so callers cannot mutate the registry.
- */
-// const getBlendedApiContent = (): ReadonlyMap<string, ApiContent[]> => apiRegistry;
-
-/**
- * Blend API content into the in-memory registry and invalidate dependent memos
- * so subsequent reads re-derive with API data included.
- *
- * This function intentionally does NOT reach into patternFly.getResources internals.
- * The adapter side reads via getBlendedApiContent().
- *
- * @param api
- */
-/*
-const blendApiIntoCatalog = (api: ApiContent[]): number => {
-  if (!Array.isArray(api) || api.length === 0) {
-    return 0;
-  }
-
-  for (const entry of api) {
-    const key = keyOf(entry);
-    const bucket = apiRegistry.get(key);
-
-    if (bucket) {
-      bucket.push(entry);
-    } else {
-      apiRegistry.set(key, [entry]);
-    }
-  }
-
-  // Invalidate dependent memos. `.clear()` is additive from Commit 2.
-  try {
-    getPatternFlyDocsCatalog.memo.clear();
-  } catch (error) {
-    log.warn('blend: catalog clear failed', error);
-  }
-
-  try {
-    getPatternFlyMcpResources.memo.clear();
-  } catch (error) {
-    log.warn('blend: resources clear failed', error);
-  }
-
-  log.info(`blend: merged ${api.length} api entries; catalog memo cleared`);
-
-  return api.length;
-};
-*/
-
-/**
- * Lazy load the PatternFly documentation catalog.
- *
- * @returns PatternFly documentation catalog JSON, or fallback catalog if import fails.
- */
-const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }> => {
-  let docsCatalog = EMBEDDED_DOCS;
-  let isFallback = false;
-
-  try {
-    if (process.env.NODE_ENV === 'local') {
-      docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
-    } else {
-      docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
-    }
-  } catch (error) {
-    isFallback = true;
-    log.debug(`Failed to import docs catalog '#docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
-  }
-
-  return { ...docsCatalog, isFallback };
-};
-
-/**
- * Memoized version of getPatternFlyDocsCatalog.
- */
-getPatternFlyDocsCatalog.memo = memo(getPatternFlyDocsCatalog);
+const patternFlyRecordsRegistry = new Map<string, CollectionResult>();
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -329,10 +239,6 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
   return entry?.section?.trim()?.toLowerCase() === 'guidelines' ? 'AI Guidance' : categoryLabel;
 };
 
-const getPatternFlyAPi = async () => {
-
-};
-
 /**
  * A multifaceted list of all PatternFly React component names.
  *
@@ -351,6 +257,9 @@ const getPatternFlyAPi = async () => {
  * - `byVersion`: Map of lowercase PatternFly versions to Map of lowercase component names to { isSchemasAvailable: boolean, displayName: string }
  */
 const getPatternFlyComponentNames = async (contextPathOverride?: string): Promise<PatternFlyMcpComponentNames> => {
+  const componentSchemasCollection = patternFlyRecordsRegistry.get('patternfly-component-schemas');
+  const schemaRecords = componentSchemasCollection?.records?.map(({ data }) => data) || [];
+
   const { latestSchemasVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
 
   const latestNamesIndex = [...Array.from(new Set([...pfComponentNames, 'Table'])).map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
@@ -566,7 +475,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const componentNames = await getPatternFlyComponentNames.memo(contextPathOverride);
   const { componentNamesIndex, byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
 
-  const originalDocs = await getPatternFlyDocsCatalog.memo();
+  const originalDocs = patternFlyRecordsRegistry.get('patternfly-docs');
+  const catalogRecords = originalDocs?.records?.map(({ data }) => data) || [];
+
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
@@ -576,7 +487,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const hashIndexMap = new Map<string, string>();
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
-  const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
+  // const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
+  const catalog = [...catalogRecords, ...Array.from(componentNamesByDocs)];
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
@@ -757,12 +669,49 @@ const getPatternFlyComponentSchema = async (componentName: string) => {
  */
 getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
+/**
+ * Executes a collection callback, blends the returned records, and invalidates cache.
+ *
+ * @param name - Collection name.
+ * @param {CollectionResult} collection - Collection result.
+ */
+const setPatternFlyCollection = async (
+  name: string,
+  collection: CollectionResult
+) => {
+  try {
+    if (collection.records) {
+      // Update the patternFlyRecordsRegistry with the new records
+      patternFlyRecordsRegistry.set(name, collection);
+
+      try {
+        // Invalidate the component schemas breakdown
+        getPatternFlyComponentNames.memo.clear();
+      } catch (error) {
+        log.warn('Failed getPatternFlyComponentNames clear.', error);
+      }
+
+      try {
+        // Invalidate the primary aggregation for everything PatternFly; on next call to getPatternFlyMcpResources records get rebuilt.
+        getPatternFlyMcpResources.memo.clear();
+      } catch (error) {
+        log.warn('Failed getPatternFlyMcpResources clear.', error);
+      }
+
+      log.info(`Merged ${collection.records.length} records from collection [${name}] successfully.`);
+    }
+  } catch (error) {
+    log.error(`Failed to update collection [${name}]:`, error);
+  }
+};
+
 export {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
   getPatternFlyComponentNames,
   mutateKeyWordsMap,
   setCategoryDisplayLabel,
+  setPatternFlyCollection,
   type PatternFlyMcpComponentNames,
   type PatternFlyMcpComponentNamesByVersion,
   type PatternFlyMcpComponentNamesDoc,
