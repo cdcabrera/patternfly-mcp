@@ -8,16 +8,26 @@ import {
   activeChildrenBySession,
   type ChildHandle
 } from './server.process.js';
+import { type CollectionDescriptor, type IpcResponse } from './records.ipc';
+import { normalizeCollections, type NormalizedCollectionEntry } from './records.user.js';
 // import { spawnApiHost, sendApiHostShutdown, type HostHandle } from './records.patternFly.js';
 
+/**
+ * Handle for a spawned Host process.
+ *
+ * @property manifest - Array of collection descriptors.
+ */
 type HostHandle = ChildHandle & {
-  manifest: Array<{ name: string; description?: string }>;
+  manifest: CollectionDescriptor[];
 };
 
 /**
- * Record schema.
+ * A collection record schema.
  *
- * @interface Record
+ * @note Allows custom fields by design. Collections are allowed to not contain the exact same
+ * schema except for the required fields.
+ *
+ * @interface CollectionRecord
  *
  * @property sourceId - Source identifier (e.g., combo of git-hash + file path, or crawler endpoint)
  * @property sourceType - Source type classification
@@ -31,11 +41,11 @@ interface CollectionRecord {
 }
 
 /**
- * Standard callback return structure for records collection.
+ * Standard collection callback return structure for records collection.
  *
- * @interface RecordCollectionResult
+ * @interface CollectionResult
  *
- * @property records - Array of records
+ * @property records - Array of collection records with minimal required fields.
  * @property warnings - Optional array of warnings
  * @property errors - Optional array of errors
  */
@@ -50,15 +60,17 @@ interface CollectionResult {
  *
  * 0. `name` `{string}`: Unique identifier/name
  * 1. `handler` `{Function}`: callback function accepting an optional argument
- * 2. `_config` `{Object}`: Record source configuration.
+ * 2. `_config` `{Object}`: Application level record source configuration. Unavailable to record collection plugins.
  *    - `_config.runInChildProcess`: Optional callback function to dynamically decide
  *        if the record source should run in a child process.
+ *    - `_config.isInternal`: Optional boolean to indicate if the record source is internal.
  */
 type CollectionSource = [
   name: string,
   handler: (arg?: unknown) => CollectionResult | Promise<CollectionResult>,
   _config?: {
     runInChildProcess?: boolean | ((options?: GlobalOptions) => boolean | Promise<boolean>);
+    isInternal?: boolean;
   }
 ];
 
@@ -82,6 +94,26 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
     log.error(`Records load errors (${errors.length})\n${lines.join('\n')}`);
   }
 };
+
+/**
+ * Get normalized "inline" modules. Inline modules can be internal or embedded and are explicitly trusted.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @param options.collectionModules - Array of modules to normalize
+ * @returns - Filtered array of normalized "inline" tool modules
+ */
+const getInlineCollections = ({ collectionModules }: GlobalOptions = getOptions()): NormalizedCollectionEntry[] =>
+  normalizeCollections.memo(collectionModules).filter(module => module.type === 'tuple');
+
+/**
+ * Get normalized "inline" modules.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @param options.collectionModules - Array of modules to normalize
+ * @returns - Filtered array of normalized "inline" tool modules
+ */
+const getInvalidCollections = ({ collectionModules }: GlobalOptions = getOptions()): NormalizedCollectionEntry[] =>
+  normalizeCollections.memo(collectionModules).filter(module => module.type === 'invalid');
 
 /**
  * Debug a child process' stderr output.

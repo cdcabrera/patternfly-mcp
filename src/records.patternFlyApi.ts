@@ -13,6 +13,7 @@ import { deferTask } from './server.task';
 import { type CollectionSource } from './records';
 import type { McpResource } from './mcpSdk';
 import { resourceCallback } from './resource.patternFlyDocsTemplate';
+import type {CollectionCreator} from "./records.user";
 
 /**
  * Processed content for API responses.
