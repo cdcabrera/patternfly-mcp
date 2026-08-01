@@ -23,7 +23,7 @@ type HostHandle = ChildHandle & {
  * @property sourceType - Source type classification
  * @property id - Unique id for the record
  */
-interface Record {
+interface CollectionRecord {
   sourceId: string;
   sourceType: 'git' | 'api' | 'local';
   id: string;
@@ -39,8 +39,8 @@ interface Record {
  * @property warnings - Optional array of warnings
  * @property errors - Optional array of errors
  */
-interface RecordCollectionResult {
-  records: Record[];
+interface CollectionResult {
+  records: CollectionRecord[];
   warnings?: string[];
   errors?: string[];
 }
@@ -54,11 +54,11 @@ interface RecordCollectionResult {
  *    - `_config.runInChildProcess`: Optional callback function to dynamically decide
  *        if the record source should run in a child process.
  */
-type RecordSource = [
+type CollectionSource = [
   name: string,
-  handler: (arg?: unknown) => RecordCollectionResult | Promise<RecordCollectionResult>,
+  handler: (arg?: unknown) => CollectionResult | Promise<CollectionResult>,
   _config?: {
-    runInChildProcess?: (options: GlobalOptions) => boolean | Promise<boolean>;
+    runInChildProcess?: boolean | ((options?: GlobalOptions) => boolean | Promise<boolean>);
   }
 ];
 
@@ -151,7 +151,7 @@ const makeProxyRecordsHandler = (
   sourceName: string,
   handle: HostHandle,
   globalOpts: GlobalOptions
-): (arg?: unknown) => Promise<RecordCollectionResult> => {
+): (arg?: unknown) => Promise<CollectionResult> => {
   const invokeTimeoutMs = Math.max(0, Number(globalOpts.pluginHost?.invokeTimeoutMs) || 0);
 
   return async arg => {
@@ -218,15 +218,15 @@ const sendRecordsHostShutdown = async (
  * @param options
  */
 const composeRecords = async (
-  sources: RecordSource[],
+  sources: CollectionSource[],
   options: GlobalOptions = getOptions()
-): Promise<RecordCollectionResult> => {
-  const records: Record[] = [];
+): Promise<CollectionResult> => {
+  const records: CollectionRecord[] = [];
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  const inProcess: RecordSource[] = [];
-  const outOfProcess: RecordSource[] = [];
+  const inProcess: CollectionSource[] = [];
+  const outOfProcess: CollectionSource[] = [];
 
   // Segment based on dynamic execution boundary check
   for (const source of sources) {
@@ -306,7 +306,7 @@ export {
   debugChild,
   logWarningsErrors,
   makeProxyRecordsHandler,
-  type Record,
-  type RecordCollectionResult,
-  type RecordSource
+  type CollectionRecord,
+  type CollectionResult,
+  type CollectionSource
 };
