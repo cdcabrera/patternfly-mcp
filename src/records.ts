@@ -103,7 +103,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
     const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
     for (const line of lines) {
-      const tagged = `[patternFly-host pid=${childPid} sid=${sessionId}] ${line}`;
+      const tagged = `[records-host pid=${childPid} sid=${sessionId}] ${line}`;
 
       // Default: debug-level passthrough
       log.debug(tagged);
@@ -125,7 +125,7 @@ const spawnRecordsHost = async (
 
   const handle = spawnChildProcess({
     importSpecifier: '#recordsHost',
-    label: 'PatternFly API Host',
+    label: 'Records Host',
     isolation: {
       mode: pluginIsolation === 'strict' ? 'strict' : 'none',
       nodeVersion,
