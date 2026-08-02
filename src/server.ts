@@ -32,6 +32,7 @@ import {
   builtinCollections
 } from './options.registry';
 import { type CollectionCreator } from './records.user';
+import { registerCollection } from './patternFly.getResources';
 
 /**
  * Server options. Equivalent to GlobalOptions.
