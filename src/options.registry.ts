@@ -10,6 +10,8 @@ import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplat
 import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
 import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
 import { patternFlyApiCollection } from './records.patternFlyApi';
+import { patternFlyDocsCollection } from './records.patternFlyDocs';
+import { patternFlySchemasCollection } from './records.patternFlySchemas';
 
 /**
  * Built-in tools.
@@ -42,6 +44,8 @@ const builtinResources: McpResourceCreator[] = [
  * Array of built-in collections
  */
 const builtinCollections: CollectionCreator[] = [
+  patternFlyDocsCollection,
+  patternFlySchemasCollection,
   patternFlyApiCollection
 ];
 

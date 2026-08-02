@@ -1,4 +1,4 @@
-import { type CollectionOptions } from './options.collections';
+import { type CollectionOptions } from './options.records';
 import {
   send,
   awaitIpc,
@@ -22,12 +22,14 @@ import {
  * @property specs - List of tool module specifiers to load.
  * @property invokeTimeoutMs - Timeout for tool invocations.
  * @property {CollectionOptions} options - Options to pass to creators.
+ * @property session - Session object to pass to creators.
+ * @property isInternal - Indicates if the request is internal.
  */
 type IpcRequest =
   | { t: 'hello'; id: string } |
-  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number; options?: CollectionOptions } |
+  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number; options?: CollectionOptions; session?: unknown; isInternal?: boolean } |
   { t: 'manifest:get'; id: string } |
-  { t: 'invoke'; id: string; collectionId: string; args: unknown } |
+  { t: 'invoke'; id: string; collectionId: string; args: unknown; options?: unknown; session?: unknown; isInternal?: boolean } |
   { t: 'shutdown'; id: string };
 
 /**

@@ -3,17 +3,14 @@ import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
 import { isPlainObject, joinUrl } from './server.helpers';
 import {
-  getOptions,
-  getSessionOptions,
-  runWithOptions,
-  runWithSession
+  getOptions
+  // getSessionOptions,
+  // runWithOptions,
+  // runWithSession
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { deferTask } from './server.task';
-import { type CollectionSource } from './records';
-import type { McpResource } from './mcpSdk';
-import { resourceCallback } from './resource.patternFlyDocsTemplate';
-import type {CollectionCreator} from "./records.user";
+import { type CollectionSource, type CollectionRecord } from './records';
 
 /**
  * Processed content for API responses.
@@ -258,6 +255,9 @@ const apiSpider = async (): Promise<ApiContent[]> => {
   return updatedContent;
 };
 
+/**
+ * Deferred task for PatternFly API spider.
+ */
 apiSpider.deferTask = deferTask(apiSpider, {
   cancelMs: DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs
 });
@@ -268,32 +268,74 @@ apiSpider.deferTask = deferTask(apiSpider, {
  * @param options - Global options.
  * @param session - Session options.
  */
-const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): CollectionSource => {
+// const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): CollectionSource => {
+  /*
   const callback: CollectionSource[1] = async () =>
     runWithSession(session, async () =>
       runWithOptions(options, async () => {
         const taskHandle = apiSpider.deferTask();
+        const entries = await taskHandle.start();
 
-        return await taskHandle.start();
+        const records = entries?.map((entry, idx) => ({
+  * id: `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind ||
+  * ''}::${idx}`, sourceId: entry.url,
+          sourceType: 'api' as const,
+          ...entry
+        })) || [];
+
+        return { records };
       }));
+  */
+const patternFlyApiCollection = (): CollectionSource => {
+  const callback = async () => {
+    const taskHandle = apiSpider.deferTask();
+    const entries = await taskHandle.start();
+    const recordsMap: Map<string, CollectionRecord> = new Map();
+
+    /*
+    const records = entries?.map((entry, idx) => ({
+      id:
+        `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${idx}`,
+      sourceId: entry.url,
+      sourceType: 'api' as const,
+      ...entry
+    })) || [];
+    */
+
+    entries?.forEach((entry, index) => {
+      const id = `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${index}`;
+
+      if (recordsMap.has(id)) {
+        return;
+      }
+
+      const record = {
+        id,
+        sourceId: entry.url,
+        sourceType: 'api' as const,
+        data: {
+          [id]: entry
+        }
+      };
+
+      recordsMap.set(record.id, record);
+    });
+
+    return { records: [...recordsMap.values()] };
+  };
 
   return [
     'PatternFly API',
     callback,
     {
-      runInChildProcess: true
+      runInChildProcess: true,
+      isInternal: true
     }
   ];
 };
 
-/**
- * Set PatternFly API collection.
- */
-const collection = patternFlyApiCollection;
-
 export {
   patternFlyApiCollection,
-  collection,
   apiSpider,
   crawler,
   isEmptyPayload,
