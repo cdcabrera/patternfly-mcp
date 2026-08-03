@@ -27,7 +27,7 @@ metadata:
   links:
     - title: PatternFly MCP Server
       url: https://github.com/patternfly/patternfly-mcp
-      icon: github
+      type: documentation
 spec:
   type: local
   lifecycle: ga
