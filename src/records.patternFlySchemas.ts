@@ -30,9 +30,10 @@ const patternFlySchemasCollection = (): CollectionSource => {
           [normalizedName]: [
             {
               displayName: name,
+              description: `PatternFly React component: ${name}`,
+              pathSlug: `schemas-${normalizedName}`,
               category: 'react',
               section: 'components',
-              description: `PatternFly React component: ${name}`,
               version: latestSchemasVersion,
               // TODO: This may need a rethink the original/current schema represents a MB of data for all entries at min
               isSchemasAvailable: true
@@ -80,9 +81,10 @@ const patternFlySchemasCollection = (): CollectionSource => {
         data: {
           table: [{
             displayName: 'Table',
+            description: 'PatternFly React component: table',
+            pathSlug: 'schemas-table',
             category: 'react',
             section: 'components',
-            description: 'PatternFly React component: table',
             version: latestSchemasVersion,
             // schema: null
             isSchemasAvailable: false
@@ -95,13 +97,14 @@ const patternFlySchemasCollection = (): CollectionSource => {
   };
 
   return [
-    'PatternFly Component Schemas',
+    'patternfly-component-schemas',
     callback,
     {
       // TODO: This may need a rethink the original/current setup represents a MB of data at min
       // runInChildProcess: true,
       runInChildProcess: false,
-      isInternal: true
+      isInternal: true,
+      isRequired: true
     }
   ];
 };

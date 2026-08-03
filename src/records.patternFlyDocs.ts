@@ -62,15 +62,16 @@ const patternFlyDocsCollection = (): CollectionSource => {
     }));
      */
 
-    return { records: [...recordsMap.values()] };
+    return { records: [...recordsMap.values()], isFallback: docsCatalog.isFallback };
   };
 
   return [
-    'PatternFly Docs Index',
+    'patternfly-docs',
     callback,
     {
       runInChildProcess: false,
-      isInternal: true
+      isInternal: true,
+      isRequired: true
     }
   ];
 };

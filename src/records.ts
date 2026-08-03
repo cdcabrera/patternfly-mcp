@@ -60,10 +60,13 @@ interface CollectionResult {
  *
  * 0. `name` `{string}`: Unique identifier/name
  * 1. `handler` `{Function}`: callback function accepting an optional argument
- * 2. `_config` `{Object}`: Application level record source configuration. Unavailable to record collection plugins.
+ * 2. `_config` `{Object}`: Application level record source configuration. Unavailable to
+ *     record collection plugins.
  *    - `_config.runInChildProcess`: Optional callback function to dynamically decide
  *        if the record source should run in a child process.
  *    - `_config.isInternal`: Optional boolean to indicate if the record source is internal.
+ *    - `_config.isRequired`: Optional boolean used to gatekeep server startup when
+ *        collections are required for operation.
  */
 type CollectionSource = [
   name: string,
@@ -71,6 +74,7 @@ type CollectionSource = [
   _config?: {
     runInChildProcess?: boolean | ((options?: GlobalOptions) => boolean | Promise<boolean>);
     isInternal?: boolean;
+    isRequired?: boolean;
   }
 ];
 
@@ -249,7 +253,7 @@ const sendRecordsHostShutdown = async (
  * @param sources
  * @param options
  */
-const composeRecords = async (
+const composeCollections = async (
   sources: CollectionSource[],
   options: GlobalOptions = getOptions()
 ): Promise<CollectionResult> => {
@@ -334,7 +338,7 @@ const composeRecords = async (
 };
 
 export {
-  composeRecords,
+  composeCollections,
   debugChild,
   logWarningsErrors,
   makeProxyRecordsHandler,

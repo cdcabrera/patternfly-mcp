@@ -32,8 +32,9 @@ import {
   builtinCollections
 } from './options.registry';
 import { type CollectionCreator } from './records.user';
-import { registerCollections, type RegisterCollectionsResult } from './server.records';
-import {  CollectionSource } from "./records";
+import { registerCollections, type RegisterCollectionItem } from './server.records';
+import { composeCollections, type CollectionSource } from './records';
+import { setPatternFlyCollection } from './patternFly.getResources';
 
 /**
  * Server options. Equivalent to GlobalOptions.
@@ -121,8 +122,13 @@ interface ServerInstance {
  * @param {AppSession} [session]
  */
 const registerServerCollections = async (collections: CollectionCreator[], options = getOptions(), session = getSessionOptions()) => {
+  // const requiredCollections = new Set<string>();
   const updatedCollections = collections.map(collectionCreator => {
     const [name, callback, _config] = collectionCreator(options);
+
+    // if (_config?.isRequired) {
+    //  requiredCollections.add(name);
+    // }
 
     return [
       name,
@@ -143,12 +149,42 @@ const registerServerCollections = async (collections: CollectionCreator[], optio
     ] as CollectionSource;
   });
 
-  const onComplete = ({ fulfilled }: RegisterCollectionsResult) => {
-    log.info(`Completed registration for ${fulfilled.length} collections.`);
+  const onUpdate = ({ name, response }: RegisterCollectionItem) => {
+    if (response) {
+      setPatternFlyCollection(name, response);
+    }
   };
 
-  // Allows an onComplete and onUpdate set of callbacks
-  registerCollections(updatedCollections, { onComplete });
+  return registerCollections(updatedCollections, { onUpdate });
+
+  /*
+  return new Promise((resolve, reject) => {
+    const loadedCollections: string[] = [];
+    const errorCollections: string[] = [];
+
+    const onUpdate = ({ name, response }: RegisterOnUpdateItem) => {
+      if (response) {
+        setPatternFlyCollection(name, response);
+        loadedCollections.push(name);
+
+        if (loadedCollections.length >= requiredCollections.size && [...requiredCollections].every((val, index) => val === loadedCollections[index])) {
+          resolve(true);
+        }
+      } else {
+        errorCollections.push(name);
+
+        if (errorCollections.length && errorCollections.every(val => requiredCollections.has(val))) {
+          reject(new Error('Required collections missing.'));
+        }
+      }
+    };
+
+    // Allows an onComplete and onUpdate set of callbacks
+    registerCollections(updatedCollections, { onUpdate });
+  }).catch(error => {
+    log.error('Failed to load collections', error);
+  });
+  */
 
   /*
   for (const collectionCreator of collections) {

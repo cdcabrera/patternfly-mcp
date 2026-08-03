@@ -325,7 +325,7 @@ const patternFlyApiCollection = (): CollectionSource => {
   };
 
   return [
-    'PatternFly API',
+    'patternfly-api',
     callback,
     {
       runInChildProcess: true,
