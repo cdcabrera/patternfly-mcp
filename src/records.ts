@@ -29,14 +29,14 @@ type HostHandle = ChildHandle & {
  *
  * @interface CollectionRecord
  *
+ * @property id - Unique id for the record
  * @property sourceId - Source identifier (e.g., combo of git-hash + file path, or crawler endpoint)
  * @property sourceType - Source type classification
- * @property id - Unique id for the record
  */
 interface CollectionRecord {
-  sourceId: string;
-  sourceType: 'git' | 'api' | 'local';
   id: string;
+  sourceId: string;
+  sourceType: 'package' | 'git' | 'api' | 'local';
   [customField: string]: unknown;
 }
 

@@ -32,7 +32,8 @@ import {
   builtinCollections
 } from './options.registry';
 import { type CollectionCreator } from './records.user';
-import { registerCollection } from './patternFly.getResources';
+import { registerCollections, type RegisterCollectionsResult } from './server.records';
+import {  CollectionSource } from "./records";
 
 /**
  * Server options. Equivalent to GlobalOptions.
@@ -120,6 +121,36 @@ interface ServerInstance {
  * @param {AppSession} [session]
  */
 const registerServerCollections = async (collections: CollectionCreator[], options = getOptions(), session = getSessionOptions()) => {
+  const updatedCollections = collections.map(collectionCreator => {
+    const [name, callback, _config] = collectionCreator(options);
+
+    return [
+      name,
+      async () => runWithSession(session, async () =>
+        runWithOptions(options, async () => {
+          log.debug(
+            `Running collection "${name}"`
+          );
+
+          const timedReport = stat.traffic();
+          const resourceResult = await callback();
+
+          timedReport({ collection: name });
+
+          return resourceResult;
+        }))
+      // _config
+    ] as CollectionSource;
+  });
+
+  const onComplete = ({ fulfilled }: RegisterCollectionsResult) => {
+    log.info(`Completed registration for ${fulfilled.length} collections.`);
+  };
+
+  // Allows an onComplete and onUpdate set of callbacks
+  registerCollections(updatedCollections, { onComplete });
+
+  /*
   for (const collectionCreator of collections) {
     const [name, callback, _config] = collectionCreator(options);
 
@@ -144,6 +175,7 @@ const registerServerCollections = async (collections: CollectionCreator[], optio
       log.error(`Failed to register collection "${name}":`, error);
     }
   }
+  */
 };
 
 /**
