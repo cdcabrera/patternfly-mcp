@@ -264,43 +264,12 @@ apiSpider.deferTask = deferTask(apiSpider, {
 
 /**
  * Create a PatternFly API collection.
- *
- * @param options - Global options.
- * @param session - Session options.
  */
-// const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): CollectionSource => {
-  /*
-  const callback: CollectionSource[1] = async () =>
-    runWithSession(session, async () =>
-      runWithOptions(options, async () => {
-        const taskHandle = apiSpider.deferTask();
-        const entries = await taskHandle.start();
-
-        const records = entries?.map((entry, idx) => ({
-  * id: `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind ||
-  * ''}::${idx}`, sourceId: entry.url,
-          sourceType: 'api' as const,
-          ...entry
-        })) || [];
-
-        return { records };
-      }));
-  */
 const patternFlyApiCollection = (): CollectionSource => {
   const callback = async () => {
     const taskHandle = apiSpider.deferTask();
     const entries = await taskHandle.start();
     const recordsMap: Map<string, CollectionRecord> = new Map();
-
-    /*
-    const records = entries?.map((entry, idx) => ({
-      id:
-        `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${idx}`,
-      sourceId: entry.url,
-      sourceType: 'api' as const,
-      ...entry
-    })) || [];
-    */
 
     entries?.forEach((entry, index) => {
       const id = `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${index}`;
