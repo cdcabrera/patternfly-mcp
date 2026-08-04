@@ -69,7 +69,6 @@ const patternFlyDocsCollection = (): CollectionSource => {
     callback,
     {
       runInChildProcess: false,
-      isInternal: true,
       isRequired: true
     }
   ];

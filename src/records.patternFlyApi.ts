@@ -272,18 +272,35 @@ const patternFlyApiCollection = (): CollectionSource => {
     const recordsMap: Map<string, CollectionRecord> = new Map();
 
     entries?.forEach((entry, index) => {
-      const id = `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${index}`;
+      const semanticContext = entry.semanticContext || {};
+      const name = (semanticContext.item || 'api-entry').toLowerCase();
+      const version = (semanticContext.version || 'unknown').toLowerCase();
+      const displayName = semanticContext.item || name;
+
+      const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
 
       if (recordsMap.has(id)) {
         return;
       }
+
+      const adaptedEntry = {
+        displayName,
+        description: entry.content || `PatternFly API documentation for ${displayName}`,
+        pathSlug: name,
+        category: 'api',
+        section: semanticContext.section || 'components',
+        source: 'api' as const,
+        version,
+        id,
+        path: entry.url
+      };
 
       const record = {
         id,
         sourceId: entry.url,
         sourceType: 'api' as const,
         data: {
-          [id]: entry
+          [name]: adaptedEntry
         }
       };
 
@@ -298,7 +315,7 @@ const patternFlyApiCollection = (): CollectionSource => {
     callback,
     {
       runInChildProcess: true,
-      isInternal: true
+      isRequired: false
     }
   ];
 };
