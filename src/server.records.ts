@@ -1,4 +1,4 @@
-import {formatUnknownError, log} from './logger';
+import { formatUnknownError, log } from './logger';
 import {
   // type CollectionRecord,
   type CollectionResult,
