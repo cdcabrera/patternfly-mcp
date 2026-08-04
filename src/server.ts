@@ -122,13 +122,8 @@ interface ServerInstance {
  * @param {AppSession} [session]
  */
 const registerServerCollections = async (collections: CollectionCreator[], options = getOptions(), session = getSessionOptions()) => {
-  // const requiredCollections = new Set<string>();
   const updatedCollections = collections.map(collectionCreator => {
     const [name, callback, _config] = collectionCreator(options);
-
-    // if (_config?.isRequired) {
-    //  requiredCollections.add(name);
-    // }
 
     return [
       name,
@@ -144,8 +139,8 @@ const registerServerCollections = async (collections: CollectionCreator[], optio
           timedReport({ collection: name });
 
           return resourceResult;
-        }))
-      // _config
+        })),
+      _config
     ] as CollectionSource;
   });
 
