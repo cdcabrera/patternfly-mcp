@@ -62,6 +62,24 @@ type CreatorEntry = Pick<NormalizedCollectionEntry, 'type' | 'original' | 'value
 type CollectionCreator = (options?: CollectionExternalOptions | CollectionInternalOptions) => CollectionSource;
 
 /**
+ * An array of normalized config values.
+ *
+ * - `string` - file path or package id
+ * - `CollectionCreator` - function creator
+ *
+ * @note Author-facing multi-collection configuration.
+ * @example An array/list of normalized config values
+ * [
+ *   './a/file/path/collection.mjs',
+ *   () => [
+ *     'creatorCollection',
+ *     async (args) => { ... }
+ *   ]
+ * ];
+ */
+type CollectionModule = ReadonlyArray<NormalizedCollectionEntry['value']>;
+
+/**
  * Normalize a tuple config into a collection of records' creator function.
  *
  * @param config - The array configuration to normalize.
@@ -172,5 +190,6 @@ export {
   type CollectionExternalOptions,
   type NormalizedCollectionEntry,
   type CollectionCreator,
-  type CreatorEntry
+  type CreatorEntry,
+  type CollectionModule
 };
