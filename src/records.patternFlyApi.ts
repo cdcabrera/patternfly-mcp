@@ -287,7 +287,7 @@ const patternFlyApiCollection = (): CollectionSource => {
         displayName,
         description: entry.content || `PatternFly API documentation for ${displayName}`,
         pathSlug: name,
-        category: 'api',
+        category: semanticContext.kind,
         section: semanticContext.section || 'components',
         source: 'api' as const,
         version,
