@@ -1,15 +1,21 @@
 import { type ChildProcess } from 'node:child_process';
 import { type AppSession, type GlobalOptions } from './options';
-import { log } from './logger.js';
-import { getOptions, getSessionOptions } from './options.context.js';
+import {formatUnknownError, log} from './logger';
+import { getOptions, getSessionOptions } from './options.context';
 import {
   spawnChildProcess,
   shutdownChildProcess,
   activeChildrenBySession,
   type ChildHandle
-} from './server.process.js';
+} from './server.process';
 import { type CollectionDescriptor, type IpcResponse } from './records.ipc';
-import { normalizeCollections, type NormalizedCollectionEntry } from './records.user.js';
+import {
+  CollectionCreator,
+  normalizeCollections,
+  type NormalizedCollectionEntry
+} from './records.user';
+import type {NormalizedToolEntry} from "./server.toolsUser";
+import {getInlineTools, getInvalidTools} from "./server.tools";
 // import { spawnApiHost, sendApiHostShutdown, type HostHandle } from './records.patternFly.js';
 
 /**
@@ -53,6 +59,7 @@ interface CollectionResult {
   records: CollectionRecord[];
   warnings?: string[];
   errors?: string[];
+  [key: string]: unknown;
 }
 
 /**
@@ -65,7 +72,7 @@ interface CollectionResult {
  *    - `_config.runInChildProcess`: Optional callback function to dynamically decide
  *        if the record source should run in a child process.
  *    - `_config.isInternal`: Optional boolean to indicate if the record source is internal.
- *    - `_config.isRequired`: Optional boolean used to gatekeep server startup when
+ *    - `_config.isRequired`: Optional boolean used to control server startup when
  *        collections are required for operation.
  */
 type CollectionSource = [
@@ -77,6 +84,27 @@ type CollectionSource = [
     isRequired?: boolean;
   }
 ];
+
+/**
+ * A function that creates a collection registered with the MCP server.
+ */
+type McpCollectionCreator = (options?: GlobalOptions) => CollectionSource;
+
+/**
+ * Compute the allowlist for the Tools Host.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @returns Array of absolute directories to allow read access.
+ */
+const computeFsReadAllowlist = ({ contextPath }: GlobalOptions = getOptions()): string[] => {
+  const directories = new Set<string>();
+
+  if (contextPath) {
+    directories.add(contextPath);
+  }
+
+  return [...directories];
+};
 
 /**
  * Log warnings and errors from Tools' load.
@@ -153,7 +181,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
   };
 };
 
-const spawnRecordsHost = async (
+const spawnCollectionHost = async (
   options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
   const { pluginIsolation, pluginHost, nodeVersion } = options || {};
@@ -165,15 +193,31 @@ const spawnRecordsHost = async (
     isolation: {
       mode: pluginIsolation === 'strict' ? 'strict' : 'none',
       nodeVersion,
-      fsReadAllowlist: []
-    }
+      fsReadAllowlist: computeFsReadAllowlist()
+    },
+    enableStderrDebug: child => debugChild(child)
   });
 
+  // hello
   await handle.request({ t: 'hello' }, 'hello:ack', loadTimeoutMs);
-  await handle.request({ t: 'load', specs: [], invokeTimeoutMs: loadTimeoutMs }, 'load:ack', loadTimeoutMs);
-  const manifest = await handle.request<any>({ t: 'manifest:get' }, 'manifest:result', loadTimeoutMs);
 
-  return { ...handle, manifest: manifest.tools ?? [] };
+  // load
+  const loadAck = await handle.request<Extract<IpcResponse, { t: 'load:ack' }>>(
+    { t: 'load', specs: [], invokeTimeoutMs: loadTimeoutMs },
+    'load:ack',
+    loadTimeoutMs
+  );
+
+  logWarningsErrors(loadAck);
+
+  // manifest
+  const manifest = await handle.request<Extract<IpcResponse, { t: 'manifest:result' }>>(
+    { t: 'manifest:get' },
+    'manifest:result',
+    loadTimeoutMs
+  );
+
+  return { ...handle, manifest: manifest.collections as CollectionDescriptor[] };
 };
 
 /**
@@ -183,20 +227,54 @@ const spawnRecordsHost = async (
  * @param handle
  * @param globalOpts
  */
-const makeProxyRecordsHandler = (
-  sourceName: string,
+const makeProxyCreators = (
+  // sourceName: string,
   handle: HostHandle,
-  globalOpts: GlobalOptions
-): (arg?: unknown) => Promise<CollectionResult> => {
-  const invokeTimeoutMs = Math.max(0, Number(globalOpts.pluginHost?.invokeTimeoutMs) || 0);
+  { pluginHost }: GlobalOptions = getOptions()
+): McpCollectionCreator[] => handle.collections.map((collection): McpCollectionCreator => () => {
+  const name = collection.name;
+  const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
+  const handler = async (args: unknown) => {
+    const response = await handle.request<Extract<IpcResponse, { t: 'invoke:result' }>>(
+      { t: 'invoke', id: collection.id, args },
+      'invoke:result',
+      invokeTimeoutMs
+    );
+
+    if ('ok' in response && response.ok === false) {
+      const invocationError = new Error(response.error?.message || 'Collection invocation failed', { cause: response.error?.cause }) as Error & {
+        code?: string;
+        details?: unknown;
+      };
+
+      if (response.error?.stack) {
+        invocationError.stack = response.error.stack;
+      }
+
+      if (response.error?.code) {
+        invocationError.code = response.error?.code;
+      }
+
+      const errorCause = response.error?.cause as { details?: unknown } | undefined;
+
+      invocationError.details = response.error?.details || errorCause?.details;
+      throw invocationError;
+    }
+
+    return response.result;
+  };
+
+  return [name, handler];
+
+  /*
   return async arg => {
     try {
       const response = await handle.request<any>(
         {
           t: 'invoke',
-          toolId: 'crawl',
-          args: { sourceName, arg }
+          collectionId: sourceName,
+          args: arg
         },
         'invoke:result',
         invokeTimeoutMs
@@ -221,7 +299,8 @@ const makeProxyRecordsHandler = (
       };
     }
   };
-};
+  */
+});
 
 /**
  * Best-effort Tools Host shutdown for the current session.
@@ -234,7 +313,7 @@ const makeProxyRecordsHandler = (
  * @param {GlobalOptions} options - Global options.
  * @param {AppSession} sessionOptions - Session options.
  */
-const sendRecordsHostShutdown = async (
+const sendCollectionsHostShutdown = async (
   { pluginHost }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<void> => {
@@ -250,13 +329,149 @@ const sendRecordsHostShutdown = async (
 /**
  * Composes multi-source record collections across process boundaries.
  *
- * @param sources
+ * @param builtinCreators
  * @param options
+ * @param session
  */
 const composeCollections = async (
-  sources: CollectionSource[],
-  options: GlobalOptions = getOptions()
-): Promise<CollectionResult> => {
+  builtinCreators: McpCollectionCreator[],
+  options: GlobalOptions = getOptions(),
+  session: AppSession = getSessionOptions()
+): Promise<McpCollectionCreator[]> => {
+  const { collectionModules, nodeVersion, contextUrl, contextPath } = options;
+  const { sessionId } = session;
+  const existingSession = activeChildrenBySession.get(sessionId);
+
+  if (existingSession) {
+    log.warn(`Existing Collections Host session detected ${sessionId}. Shutting down the existing host before creating a new one.`);
+    await sendCollectionsHostShutdown();
+  }
+
+  /*
+  const allCollectionCreators: CollectionCreator[] = [...builtinCreators];
+  const inProcessCollectionCreators: CollectionCreator[] = allCollectionCreators.filter((creator) => !creator?.runInChildProcess);
+
+  const usedNames = getBuiltInCollectionNames(builtinCreators);
+
+  if (!Array.isArray(collectionModules) || collectionModules.length === 0) {
+    log.info('No external collections loaded.');
+
+    return toolCreators;
+  }
+  */
+  // TODO: Ideally this function should be where we determine and set "isInternal" instead of relying on a config setting.
+  const updatedCollectionModules = Array.isArray(collectionModules) ? collectionModules : [];
+  // const allCollectionCreators: CollectionCreator[] = [...builtinCreators, ...updatedCollectionModules];
+  const usedNames = getBuiltInCollectionNames(builtinCreators);
+
+  if (updatedCollectionModules.length === 0) {
+    log.info('No external collections loaded.');
+  }
+
+  if (updatedCollectionModules.length === 0 && builtinCreators.length === 0) {
+    return [];
+  }
+
+  const filePackageCreators: NormalizedCollectionEntry[] = [];
+  const invalidCreators = getInvalidCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
+  const inlineCreators: NormalizedCollectionEntry[] = getInlineCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
+  // const builtInInProcessCreators: CollectionCreator[] = builtinCreators.filter((creator) => creator.runInChildProcess === false);
+
+  invalidCreators.forEach(({ error }) => {
+    log.warn(error);
+  });
+
+  // collectionCreators.push(...filteredInlineCreators);
+
+  const localCreators: McpCollectionCreator[] = [];
+  const hostedCreators: McpCollectionCreator[] = [];
+
+  for (const creator of builtinCreators) {
+    const [, , config] = creator(options);
+    const runHost = typeof config?.runInChildProcess === 'function'
+      ? await config.runInChildProcess(options)
+      : Boolean(config?.runInChildProcess);
+
+    if (runHost) {
+      hostedCreators.push(creator);
+    } else {
+      localCreators.push(creator);
+    }
+  }
+
+  const filteredInlineCreators = inlineCreators.map(collection =>
+    collection.value as McpCollectionCreator).filter(Boolean);
+
+  hostedCreators.push(...filteredInlineCreators);
+
+  if (filePackageCreators.length && (!nodeVersion || nodeVersion < 22)) {
+    log.warn('External collection plugins require Node >= 22; skipping file-based collections.');
+  }
+
+  if (hostedCreators.length === 0) {
+    return localCreators;
+  }
+
+  let host: HostHandle | undefined;
+
+  // Clean up on exit or disconnect
+  const onChildExitOrDisconnect = () => {
+    if (!host) {
+      return;
+    }
+
+    const current = activeChildrenBySession.get(sessionId);
+
+    if (current && current.child === host.child) {
+      try {
+        host.closeStderr();
+        log.info('Collections Host stderr reader closed.');
+      } catch (error) {
+        log.error(`Failed to close Collections Host stderr reader: ${formatUnknownError(error)}`);
+      }
+
+      activeChildrenBySession.delete(sessionId);
+    }
+
+    host.child.off('exit', onChildExitOrDisconnect);
+    host.child.off('disconnect', onChildExitOrDisconnect);
+  };
+
+  try {
+    const host = await spawnCollectionHost(options);
+
+    // Filter manifest by reserved names BEFORE proxying
+    const filteredCollections = host.collections.filter(collection => {
+      const collectionName = normalizedCollectionName(collection);
+
+      if (collectionName && usedNames.has(collectionName)) {
+        log.warn(`Skipping collection plugin "${collection.name}" – name already used by built-in/inline collection.`);
+
+        return false;
+      }
+
+      if (collectionName) {
+        usedNames.add(collectionName);
+      }
+
+      return true;
+    });
+
+    const filteredHandle = { ...host, collections: filteredCollections } as HostHandle;
+    const proxiedCreators = makeProxyCreators(filteredHandle);
+
+    activeChildrenBySession.set(sessionId, host);
+
+    host.child.once('exit', onChildExitOrDisconnect);
+    host.child.once('disconnect', onChildExitOrDisconnect);
+
+    return [...localCreators, ...proxiedCreators];
+  } catch (error) {
+    log.warn(`Failed to start Collections Host; skipping hosted collections and continuing with built-in/inline collections. ${formatUnknownError(error)}`);
+
+    return localCreators;
+  }
+  /*
   const records: CollectionRecord[] = [];
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -335,13 +550,16 @@ const composeCollections = async (
   }
 
   return { records, warnings, errors };
+   */
 };
 
 export {
   composeCollections,
   debugChild,
   logWarningsErrors,
-  makeProxyRecordsHandler,
+  makeProxyCreators,
+  sendCollectionsHostShutdown,
+  type McpCollectionCreator,
   type CollectionRecord,
   type CollectionResult,
   type CollectionSource
