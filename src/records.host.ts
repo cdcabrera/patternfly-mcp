@@ -9,7 +9,7 @@ import { createProcessHost, type HostContext } from './server.processHost';
 import { DEFAULT_OPTIONS } from './options.defaults';
 // import { type ToolOptions } from './options.tools';
 // import { type McpTool, type McpToolCreator } from './mcpSdk';
-import { type CollectionCreator, type CollectionSource } from './records';
+import { type McpCollectionCreator, type CollectionSource } from './records';
 import { resolveCreators } from './records.hostCreator';
 import { type CollectionOptions } from './options.records';
 
@@ -116,7 +116,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
     }
 
     // Does the module export a creator function? On fail, move to the next module.
-    let creators: CollectionCreator[] = [];
+    let creators: McpCollectionCreator[] = [];
 
     try {
       creators = resolveCreators(module, options, { throwOnEmpty: true });

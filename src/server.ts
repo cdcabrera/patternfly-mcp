@@ -31,9 +31,8 @@ import {
   builtinResources,
   builtinCollections
 } from './options.registry';
-import { type CollectionCreator } from './records.user';
 import { registerCollections, type RegisterCollectionItem } from './server.records';
-import { composeCollections, type CollectionSource } from './records';
+import { composeCollections, type McpCollectionCreator, type CollectionSource } from './records';
 import { setPatternFlyCollection } from './patternFly.getResources';
 
 /**
@@ -48,14 +47,14 @@ type ServerOptions = GlobalOptions;
  *
  * @property {McpToolCreator[]} [tools] - An optional array of tool creators used by the server.
  * @property {McpResourceCreator[]} [resources] - An optional array of resource creators used by the server.
- * @property {CollectionCreator[]} [collections] - An optional array of collection (of records') creators used by the server.
+ * @property {McpCollectionCreator[]} [collections] - An optional array of collection (of records') creators used by the server.
  * @property [enableSigint] - Indicates whether SIGINT signal handling is enabled.
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
  */
 interface ServerSettings {
   tools?: McpToolCreator[];
   resources?: McpResourceCreator[];
-  collections?: CollectionCreator[];
+  collections?: McpCollectionCreator[];
   enableSigint?: boolean;
   allowProcessExit?: boolean;
 }
@@ -121,7 +120,7 @@ interface ServerInstance {
  * @param {GlobalOptions} [options]
  * @param {AppSession} [session]
  */
-const registerServerCollections = async (collections: CollectionCreator[], options = getOptions(), session = getSessionOptions()) => {
+const registerServerCollections = async (collections: McpCollectionCreator[], options = getOptions(), session = getSessionOptions()) => {
   const updatedCollections = collections.map(collectionCreator => {
     const [name, callback, _config] = collectionCreator(options);
 
