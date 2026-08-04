@@ -154,6 +154,17 @@ const normalizeCollections = (config: any): NormalizedCollectionEntry[] => {
   return normalizedConfigs;
 };
 
+/**
+ * Memoized version of normalizeCollections.
+ *
+ * @note Review the memoization used in server.toolsUser.ts for the final
+ * implementation. Currently, this is a low-level temporary solution.
+ */
+normalizeCollections.memo = memo(normalizeCollections, {
+  cacheErrors: false,
+  keyHash: args => args[0]
+});
+
 export {
   normalizeCollections,
   normalizeTuple,
