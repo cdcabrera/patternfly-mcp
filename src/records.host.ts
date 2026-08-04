@@ -9,7 +9,9 @@ import { createProcessHost, type HostContext } from './server.processHost';
 import { DEFAULT_OPTIONS } from './options.defaults';
 // import { type ToolOptions } from './options.tools';
 // import { type McpTool, type McpToolCreator } from './mcpSdk';
-import { type CollectionSource } from './records';
+import { type CollectionCreator, type CollectionSource } from './records';
+import { resolveCreators } from './records.hostCreator';
+import { type CollectionOptions } from './options.records';
 
 /**
  * SubType of IpcRequest for "load" requests.
@@ -98,7 +100,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
   const state = createHostState(nextInvokeTimeout);
   const warnings: string[] = [];
   const errors: string[] = [];
-  // const toolOptions: ToolOptions | undefined = request.toolOptions;
+  const options: CollectionOptions | undefined = request.options;
   let module: unknown;
 
   for (const spec of request.specs || []) {
@@ -113,15 +115,55 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
       continue;
     }
 
-    let collection: CollectionSource;
+    // Does the module export a creator function? On fail, move to the next module.
+    let creators: CollectionCreator[] = [];
 
     try {
-      // creators = resolveExternalCreators(module, request.toolOptions, { throwOnEmpty: true });
-      if (module && typeof module === 'object' && 'collection' in module) {
-        // possibly need to normalize the collection similar to tools?
-        collection = (module as { collection: CollectionSource }).collection;
-      } else {
-        throw new Error('collection missing');
+      creators = resolveCreators(module, options, { throwOnEmpty: true });
+    } catch (error) {
+      warnings.push(`No usable creators in module ${spec}: ${String((error as Error)?.message || error)}`);
+      continue;
+    }
+
+    // Finally, convert to JSON for manifest, store, push descriptor
+    for (const creator of creators) {
+      try {
+        const collection = creator(options);
+
+        const collectionId = makeId();
+
+        state.collectionMap.set(collectionId, collection);
+        state.descriptors.push({
+          id: collectionId,
+          name: collection[0],
+          source: spec
+        });
+      } catch (error) {
+        warnings.push(`Collection creator threw while realizing: ${spec}: ${String((error as Error)?.message || error)}`);
+      }
+    }
+
+    /*
+    try {
+      if (module && typeof module === 'object') {
+        if ('collection' in module && Array.isArray(module.collection)) {
+          collection = (module as { collection: CollectionSource }).collection;
+        } else {
+          // Robust search for any exported CollectionCreators and realize them
+          const exportedFunc = Object.values(module).find(val => typeof val === 'function');
+
+          if (exportedFunc) {
+            const potentialSource = (exportedFunc as () => unknown)();
+
+            if (Array.isArray(potentialSource) && potentialSource.length >= 2) {
+              collection = potentialSource as CollectionSource;
+            }
+          }
+        }
+      }
+
+      if (!collection) {
+        throw new Error('collection missing or invalid');
       }
     } catch (error) {
       warnings.push(`No usable collection in module ${spec}: ${String((error as Error)?.message || error)}`);
@@ -136,6 +178,7 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
       name: collection[0],
       source: spec
     });
+    */
 
     /*
     // Does the module export a creator function? On fail, move to the next module.
@@ -280,7 +323,7 @@ const createRecordsHost = () => {
       ctx.send({ t: 'load:ack', id: request.id, warnings: loaded.warnings, errors: loaded.errors });
     },
     'manifest:get': (request, ctx) => {
-      ctx.send({ t: 'manifest:result', id: request.id, tools: state.descriptors });
+      ctx.send({ t: 'manifest:result', id: request.id, collections: state.descriptors });
     },
     invoke: async (request, ctx) => {
       await requestInvoke(state, request as InvokeRequest, ctx);
