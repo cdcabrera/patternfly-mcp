@@ -1,6 +1,6 @@
 import { type ChildProcess } from 'node:child_process';
 import { type AppSession, type GlobalOptions } from './options';
-import {formatUnknownError, log} from './logger';
+import { formatUnknownError, log } from './logger';
 import { getOptions, getSessionOptions } from './options.context';
 import {
   spawnChildProcess,
@@ -14,8 +14,6 @@ import {
   normalizeCollections,
   type NormalizedCollectionEntry
 } from './records.user';
-import type {NormalizedToolEntry} from "./server.toolsUser";
-import {getInlineTools, getInvalidTools} from "./server.tools";
 // import { spawnApiHost, sendApiHostShutdown, type HostHandle } from './records.patternFly.js';
 
 /**
@@ -24,7 +22,7 @@ import {getInlineTools, getInvalidTools} from "./server.tools";
  * @property manifest - Array of collection descriptors.
  */
 type HostHandle = ChildHandle & {
-  manifest: CollectionDescriptor[];
+  collections: CollectionDescriptor[];
 };
 
 /**
@@ -105,6 +103,23 @@ const computeFsReadAllowlist = ({ contextPath }: GlobalOptions = getOptions()): 
 
   return [...directories];
 };
+
+/**
+ * Extract the names of built-in collections.
+ *
+ * @param builtinCreators - Array of built-in collection creators.
+ * @returns Set of collection names.
+ */
+const getBuiltInCollectionNames = (builtinCreators: McpCollectionCreator[]) =>
+  new Set<string>(builtinCreators.map((creator, index) => {
+    const [name] = creator() || [];
+
+    if (!name) {
+      log.warn(`Built-in collection at index ${index} is missing the name property`);
+    }
+
+    return name;
+  }).filter(Boolean));
 
 /**
  * Log warnings and errors from Tools' load.
@@ -217,7 +232,7 @@ const spawnCollectionHost = async (
     loadTimeoutMs
   );
 
-  return { ...handle, manifest: manifest.collections as CollectionDescriptor[] };
+  return { ...handle, collections: manifest.collections as CollectionDescriptor[] };
 };
 
 /**
@@ -226,9 +241,9 @@ const spawnCollectionHost = async (
  * @param sourceName
  * @param handle
  * @param globalOpts
+ * @param handle.pluginHost
  */
 const makeProxyCreators = (
-  // sourceName: string,
   handle: HostHandle,
   { pluginHost }: GlobalOptions = getOptions()
 ): McpCollectionCreator[] => handle.collections.map((collection): McpCollectionCreator => () => {
@@ -266,40 +281,6 @@ const makeProxyCreators = (
   };
 
   return [name, handler];
-
-  /*
-  return async arg => {
-    try {
-      const response = await handle.request<any>(
-        {
-          t: 'invoke',
-          collectionId: sourceName,
-          args: arg
-        },
-        'invoke:result',
-        invokeTimeoutMs
-      );
-
-      if (response.ok) {
-        return {
-          records: response.result?.records || [],
-          warnings: response.result?.warnings || [],
-          errors: response.result?.errors || []
-        };
-      } else {
-        return {
-          records: [],
-          errors: [response.error?.message || `Proxy call failed for ${sourceName}`]
-        };
-      }
-    } catch (err) {
-      return {
-        records: [],
-        errors: [`Proxy connection failed for ${sourceName}: ${err instanceof Error ? err.message : String(err)}`]
-      };
-    }
-  };
-  */
 });
 
 /**
@@ -347,35 +328,36 @@ const composeCollections = async (
     await sendCollectionsHostShutdown();
   }
 
-  /*
-  const allCollectionCreators: CollectionCreator[] = [...builtinCreators];
-  const inProcessCollectionCreators: CollectionCreator[] = allCollectionCreators.filter((creator) => !creator?.runInChildProcess);
+  // Intercept and wrap built-in creators to enforce trusted isInternal: true status
+  const securedBuiltinCreators = builtinCreators.map((creator): McpCollectionCreator => opt => {
+    const [name, callback, config] = creator(opt);
 
-  const usedNames = getBuiltInCollectionNames(builtinCreators);
+    return [
+      name,
+      callback,
+      {
+        ...config,
+        isInternal: true
+      }
+    ];
+  });
 
-  if (!Array.isArray(collectionModules) || collectionModules.length === 0) {
-    log.info('No external collections loaded.');
-
-    return toolCreators;
-  }
-  */
-  // TODO: Ideally this function should be where we determine and set "isInternal" instead of relying on a config setting.
   const updatedCollectionModules = Array.isArray(collectionModules) ? collectionModules : [];
-  // const allCollectionCreators: CollectionCreator[] = [...builtinCreators, ...updatedCollectionModules];
-  const usedNames = getBuiltInCollectionNames(builtinCreators);
+  const usedNames = getBuiltInCollectionNames(securedBuiltinCreators);
 
   if (updatedCollectionModules.length === 0) {
     log.info('No external collections loaded.');
   }
 
-  if (updatedCollectionModules.length === 0 && builtinCreators.length === 0) {
+  if (updatedCollectionModules.length === 0 && securedBuiltinCreators.length === 0) {
     return [];
   }
 
   const filePackageCreators: NormalizedCollectionEntry[] = [];
   const invalidCreators = getInvalidCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
   const inlineCreators: NormalizedCollectionEntry[] = getInlineCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
-  // const builtInInProcessCreators: CollectionCreator[] = builtinCreators.filter((creator) => creator.runInChildProcess === false);
+
+  const normalizeCollectionName = (collectionName?: string) => collectionName?.trim?.()?.toLowerCase?.();
 
   invalidCreators.forEach(({ error }) => {
     log.warn(error);
@@ -386,7 +368,7 @@ const composeCollections = async (
   const localCreators: McpCollectionCreator[] = [];
   const hostedCreators: McpCollectionCreator[] = [];
 
-  for (const creator of builtinCreators) {
+  for (const creator of securedBuiltinCreators) {
     const [, , config] = creator(options);
     const runHost = typeof config?.runInChildProcess === 'function'
       ? await config.runInChildProcess(options)
@@ -401,6 +383,30 @@ const composeCollections = async (
 
   const filteredInlineCreators = inlineCreators.map(collection =>
     collection.value as McpCollectionCreator).filter(Boolean);
+
+  /*
+  This is already taken care of as part of the getInlineCollections and normalizeCollections chain
+  const filteredInlineCreators = inlineCreators.map(collection => {
+    const creator = collection.value as McpCollectionCreator;
+
+    if (!creator) {
+      return null;
+    }
+
+    return (opts?: GlobalOptions) => {
+      const [name, callback, config] = creator(opts);
+
+      return [
+        name,
+        callback,
+        {
+          ...config,
+          isInternal: false // Override/strip to ensure untrusted collections remain sandboxed
+        }
+      ];
+    };
+  }).filter(Boolean) as McpCollectionCreator[];
+  */
 
   hostedCreators.push(...filteredInlineCreators);
 
@@ -442,7 +448,7 @@ const composeCollections = async (
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredCollections = host.collections.filter(collection => {
-      const collectionName = normalizedCollectionName(collection);
+      const collectionName = normalizeCollectionName(collection.name);
 
       if (collectionName && usedNames.has(collectionName)) {
         log.warn(`Skipping collection plugin "${collection.name}" – name already used by built-in/inline collection.`);
@@ -471,86 +477,6 @@ const composeCollections = async (
 
     return localCreators;
   }
-  /*
-  const records: CollectionRecord[] = [];
-  const warnings: string[] = [];
-  const errors: string[] = [];
-
-  const inProcess: CollectionSource[] = [];
-  const outOfProcess: CollectionSource[] = [];
-
-  // Segment based on dynamic execution boundary check
-  for (const source of sources) {
-    const [, , config] = source;
-    const runRemote = config?.runInChildProcess ? await config.runInChildProcess(options) : false;
-
-    if (runRemote) {
-      outOfProcess.push(source);
-    } else {
-      inProcess.push(source);
-    }
-  }
-
-  // 1. Run local / in-process callbacks directly
-  for (const [name, handler] of inProcess) {
-    try {
-      const result = await handler();
-
-      if (result.records) {
-        records.push(...result.records);
-      }
-
-      if (result.warnings) {
-        warnings.push(...result.warnings);
-      }
-
-      if (result.errors) {
-        errors.push(...result.errors);
-      }
-    } catch (err) {
-      errors.push(`Local source [${name}] failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  // 2. Spawn records host dynamically ONLY if remote runs are required
-  if (outOfProcess.length > 0) {
-    let handle: HostHandle | undefined;
-
-    try {
-      handle = await spawnRecordsHost(options);
-
-      for (const [name] of outOfProcess) {
-        try {
-          const remoteProxy = makeProxyRecordsHandler(name, handle, options);
-          const result = await remoteProxy();
-
-          if (result.records) {
-            records.push(...result.records);
-          }
-
-          if (result.warnings) {
-            warnings.push(...result.warnings);
-          }
-
-          if (result.errors) {
-            errors.push(...result.errors);
-          }
-        } catch (err) {
-          errors.push(`Remote source [${name}] failed: ${err instanceof Error ? err.message : String(err)}`);
-        }
-      }
-    } catch (spawnError) {
-      errors.push(`Failed to spin up process host: ${spawnError instanceof Error ? spawnError.message : String(spawnError)}`);
-    } finally {
-      if (handle) {
-        await sendRecordsHostShutdown(options).catch(err =>
-          log.warn(`shutdown after compose failed: ${err instanceof Error ? err.message : String(err)}`));
-      }
-    }
-  }
-
-  return { records, warnings, errors };
-   */
 };
 
 export {
