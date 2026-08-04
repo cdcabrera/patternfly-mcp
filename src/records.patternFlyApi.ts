@@ -264,57 +264,43 @@ apiSpider.deferTask = deferTask(apiSpider, {
 
 /**
  * Create a PatternFly API collection.
- *
- * @param options - Global options.
- * @param session - Session options.
  */
-// const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): CollectionSource => {
-  /*
-  const callback: CollectionSource[1] = async () =>
-    runWithSession(session, async () =>
-      runWithOptions(options, async () => {
-        const taskHandle = apiSpider.deferTask();
-        const entries = await taskHandle.start();
-
-        const records = entries?.map((entry, idx) => ({
-  * id: `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind ||
-  * ''}::${idx}`, sourceId: entry.url,
-          sourceType: 'api' as const,
-          ...entry
-        })) || [];
-
-        return { records };
-      }));
-  */
 const patternFlyApiCollection = (): CollectionSource => {
   const callback = async () => {
     const taskHandle = apiSpider.deferTask();
     const entries = await taskHandle.start();
     const recordsMap: Map<string, CollectionRecord> = new Map();
 
-    /*
-    const records = entries?.map((entry, idx) => ({
-      id:
-        `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${idx}`,
-      sourceId: entry.url,
-      sourceType: 'api' as const,
-      ...entry
-    })) || [];
-    */
-
     entries?.forEach((entry, index) => {
-      const id = `api::${entry.semanticContext?.version || ''}::${entry.semanticContext?.section || ''}::${entry.semanticContext?.item || ''}::${entry.semanticContext?.kind || ''}::${index}`;
+      const semanticContext = entry.semanticContext || {};
+      const name = (semanticContext.item || 'api-entry').toLowerCase();
+      const version = (semanticContext.version || 'unknown').toLowerCase();
+      const displayName = semanticContext.item || name;
+
+      const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
 
       if (recordsMap.has(id)) {
         return;
       }
+
+      const adaptedEntry = {
+        displayName,
+        description: entry.content || `PatternFly API documentation for ${displayName}`,
+        pathSlug: name,
+        category: semanticContext.kind,
+        section: semanticContext.section || 'components',
+        source: 'api' as const,
+        version,
+        id,
+        path: entry.url
+      };
 
       const record = {
         id,
         sourceId: entry.url,
         sourceType: 'api' as const,
         data: {
-          [id]: entry
+          [name]: adaptedEntry
         }
       };
 
@@ -328,8 +314,7 @@ const patternFlyApiCollection = (): CollectionSource => {
     'patternfly-api',
     callback,
     {
-      runInChildProcess: true,
-      isInternal: true
+      runInChildProcess: true
     }
   ];
 };

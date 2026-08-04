@@ -62,6 +62,24 @@ type CreatorEntry = Pick<NormalizedCollectionEntry, 'type' | 'original' | 'value
 type CollectionCreator = (options?: CollectionExternalOptions | CollectionInternalOptions) => CollectionSource;
 
 /**
+ * An array of normalized config values.
+ *
+ * - `string` - file path or package id
+ * - `CollectionCreator` - function creator
+ *
+ * @note Author-facing multi-collection configuration.
+ * @example An array/list of normalized config values
+ * [
+ *   './a/file/path/collection.mjs',
+ *   () => [
+ *     'creatorCollection',
+ *     async (args) => { ... }
+ *   ]
+ * ];
+ */
+type CollectionModule = ReadonlyArray<NormalizedCollectionEntry['value']>;
+
+/**
  * Normalize a tuple config into a collection of records' creator function.
  *
  * @param config - The array configuration to normalize.
@@ -154,6 +172,17 @@ const normalizeCollections = (config: any): NormalizedCollectionEntry[] => {
   return normalizedConfigs;
 };
 
+/**
+ * Memoized version of normalizeCollections.
+ *
+ * @note Review the memoization used in server.toolsUser.ts for the final
+ * implementation. Currently, this is a low-level temporary solution.
+ */
+normalizeCollections.memo = memo(normalizeCollections, {
+  cacheErrors: false,
+  keyHash: args => args[0]
+});
+
 export {
   normalizeCollections,
   normalizeTuple,
@@ -161,5 +190,6 @@ export {
   type CollectionExternalOptions,
   type NormalizedCollectionEntry,
   type CollectionCreator,
-  type CreatorEntry
+  type CreatorEntry,
+  type CollectionModule
 };

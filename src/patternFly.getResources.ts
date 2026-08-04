@@ -1,7 +1,4 @@
-import {
-  componentNames as pfComponentNames,
-  getComponentSchema
-} from '@patternfly/patternfly-component-schemas/json';
+import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
 import { buildSearchString, generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
@@ -19,7 +16,7 @@ import {
   type PatternFlyMcpDocsCatalogEntry,
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
-import { type CollectionRecord, type CollectionResult } from './records';
+import { type CollectionResult } from './records';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -216,6 +213,9 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
   }
 
   switch (categoryLabel) {
+    // case 'api':
+    //  categoryLabel = 'API Reference';
+    //  break;
     case 'grammar':
       categoryLabel = 'Grammar';
       break;
@@ -258,46 +258,47 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
  */
 const getPatternFlyComponentNames = async (contextPathOverride?: string): Promise<PatternFlyMcpComponentNames> => {
   const componentSchemasCollection = patternFlyRecordsRegistry.get('patternfly-component-schemas');
-  const schemaRecords = componentSchemasCollection?.records?.map(({ data }) => data) || [];
+  const schemaRecords = componentSchemasCollection?.records || [];
 
   const { latestSchemasVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
 
-  const latestNamesIndex = [...Array.from(new Set([...pfComponentNames, 'Table'])).map(name => name.toLowerCase()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))];
-  const latestNamesIndexMap = new Map(Array.from(new Set([...pfComponentNames, 'Table'])).map(name => [name.toLowerCase(), name]));
+  const componentNamesIndex: string[] = [];
+  const componentNamesIndexMap = new Map<string, string>();
   const latestByNameMap = new Map<string, { isSchemasAvailable: boolean, displayName: string }>();
-  const latestByDocsFormat = new Map<string, PatternFlyMcpComponentNamesDoc[]>();
-  const createDocEntry = (name: string, isSchemasAvailable: boolean) => ({
-    displayName: name,
-    description: `PatternFly React component: ${name}`,
-    pathSlug: `schemas-${name}`.toLowerCase(),
-    category: 'react',
-    section: 'components',
-    source: 'schemas',
-    version: latestSchemasVersion,
-    isSchemasAvailable
+  const byDocs = new Map<string, PatternFlyMcpComponentNamesDoc[]>();
+
+  schemaRecords.forEach(({ data }) => {
+    if (!data) {
+      return;
+    }
+
+    Object.entries(data as Record<string, PatternFlyMcpComponentNamesDoc[]>).forEach(([normalizedName, entries]) => {
+      const entry = entries[0];
+
+      if (!entry) {
+        return;
+      }
+
+      componentNamesIndex.push(normalizedName);
+      componentNamesIndexMap.set(normalizedName, entry.displayName);
+      latestByNameMap.set(normalizedName, {
+        isSchemasAvailable: entry.isSchemasAvailable,
+        displayName: entry.displayName
+      });
+      byDocs.set(normalizedName, entries);
+    });
   });
 
-  pfComponentNames.forEach(name => {
-    latestByNameMap.set(name.toLowerCase(), { isSchemasAvailable: true, displayName: name });
-    latestByDocsFormat.set(name.toLowerCase(), [createDocEntry(name, true)]);
-  });
-
+  componentNamesIndex.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   const byVersion: PatternFlyMcpComponentNames['byVersion'] = new Map();
 
-  latestByNameMap.set('table', { isSchemasAvailable: false, displayName: 'Table' });
-  latestByDocsFormat.set('table', [createDocEntry('Table', false)]);
-  const convert = Object.fromEntries(latestByNameMap);
-
-  byVersion.set(
-    latestSchemasVersion,
-    convert
-  );
+  byVersion.set(latestSchemasVersion, Object.fromEntries(latestByNameMap));
 
   return {
-    componentNamesIndex: latestNamesIndex,
-    componentNamesIndexMap: latestNamesIndexMap,
+    componentNamesIndex,
+    componentNamesIndexMap,
     byVersion,
-    byDocs: latestByDocsFormat
+    byDocs
   };
 };
 
@@ -476,7 +477,15 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const { componentNamesIndex, byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
 
   const originalDocs = patternFlyRecordsRegistry.get('patternfly-docs');
-  const catalogRecords = originalDocs?.records?.map(({ data }) => data) || [];
+  // const schemasCollection = patternFlyRecordsRegistry.get('patternfly-component-schemas');
+  const apiCollection = patternFlyRecordsRegistry.get('patternfly-api');
+
+  const catalog = [
+    ...originalDocs?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
+    ...Array.from(componentNamesByDocs),
+    // ...schemasCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
+    ...apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
+  ];
 
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
@@ -488,7 +497,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   // const catalog = [...Object.entries(originalDocs.docs), ...Array.from(componentNamesByDocs)];
-  const catalog = [...catalogRecords, ...Array.from(componentNamesByDocs)];
+  // const catalog = [...catalogRecords, ...Array.from(componentNamesByDocs)];
 
   catalog.forEach(([unifiedName, entries]) => {
     const name = unifiedName.toLowerCase();
@@ -512,7 +521,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
 
-    entries.forEach(entry => {
+    (entries as any[]).forEach(entry => {
       // Technically, we could just dump `entry` into generateHash as the fallback, but it'd be prone to frequent shifting based on updates.
       const version = (entry.version || 'unknown').toLowerCase();
       const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
@@ -618,7 +627,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     // @deprecated componentsIndex - Under review
     componentsIndex: componentNamesIndex,
-    isFallbackDocumentation: originalDocs.isFallback,
+    isFallbackDocumentation: Boolean(originalDocs?.isFallback),
     keywordsIndex: Array.from(new Set([
       ...componentNamesIndex,
       ...Array.from(filteredKeywords.keys())

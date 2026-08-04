@@ -1,7 +1,6 @@
 import { type CollectionSource, type CollectionRecord } from './records';
 import { EMBEDDED_DOCS, type PatternFlyMcpDocsCatalog } from './docs.embedded';
 import { formatUnknownError, log } from './logger';
-import { generateHash } from './server.helpers';
 
 const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }> => {
   let docsCatalog = EMBEDDED_DOCS;
@@ -69,8 +68,6 @@ const patternFlyDocsCollection = (): CollectionSource => {
     'patternfly-docs',
     callback,
     {
-      runInChildProcess: false,
-      isInternal: true,
       isRequired: true
     }
   ];

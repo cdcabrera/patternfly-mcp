@@ -100,10 +100,6 @@ const patternFlySchemasCollection = (): CollectionSource => {
     'patternfly-component-schemas',
     callback,
     {
-      // TODO: This may need a rethink the original/current setup represents a MB of data at min
-      // runInChildProcess: true,
-      runInChildProcess: false,
-      isInternal: true,
       isRequired: true
     }
   ];
