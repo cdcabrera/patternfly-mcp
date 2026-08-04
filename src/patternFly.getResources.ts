@@ -19,7 +19,7 @@ import {
   type PatternFlyMcpDocsCatalogEntry,
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
-import { type CollectionRecord, type CollectionResult } from './records';
+import { type CollectionResult } from './records';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas
@@ -258,7 +258,7 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
  */
 const getPatternFlyComponentNames = async (contextPathOverride?: string): Promise<PatternFlyMcpComponentNames> => {
   const componentSchemasCollection = patternFlyRecordsRegistry.get('patternfly-component-schemas');
-  const schemaRecords = componentSchemasCollection?.records?.map(({ data }) => data) || [];
+  const _schemaRecords = componentSchemasCollection?.records?.map(({ data }) => data) || [];
 
   const { latestSchemasVersion } = await getPatternFlyVersionContext.memo(contextPathOverride);
 
@@ -476,7 +476,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const { componentNamesIndex, byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
 
   const originalDocs = patternFlyRecordsRegistry.get('patternfly-docs');
-  const catalogRecords = originalDocs?.records?.map(({ data }) => data) || [];
+  const catalogRecords = originalDocs?.records?.flatMap(({ data }) => Object.entries(data as Record<string, any>)) || [];
 
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
@@ -512,7 +512,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
     const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
 
-    entries.forEach(entry => {
+    (entries as any[]).forEach(entry => {
       // Technically, we could just dump `entry` into generateHash as the fallback, but it'd be prone to frequent shifting based on updates.
       const version = (entry.version || 'unknown').toLowerCase();
       const id = generateHash(entry.path || `${name}:${version}:${entry.section}:${entry.category}:${entry.pathSlug}`.toLowerCase());
@@ -605,6 +605,97 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     });
   });
 
+  // Blend and integrate crawled API records from patternfly-api collection
+  const apiCollection = patternFlyRecordsRegistry.get('patternfly-api');
+  const apiRecords = apiCollection?.records || [];
+
+  apiRecords.forEach(({ data, sourceId }) => {
+    if (!data) {
+      return;
+    }
+    Object.entries(data).forEach(([id, entry]: [string, any]) => {
+      const semanticContext = entry.semanticContext || {};
+      const name = (semanticContext.item || 'api-entry').toLowerCase();
+      const version = (semanticContext.version || 'unknown').toLowerCase();
+      const groupId = generateHash(name);
+
+      hashIndexMap.set(groupId.toLowerCase(), name);
+
+      if (!resources.has(name)) {
+        resources.set(name, {
+          name,
+          groupId,
+          entries: [],
+          versions: {},
+          isSchemasAvailable: undefined,
+          uri: undefined,
+          uriSchemas: undefined,
+          uriSchemasId: undefined
+        });
+      }
+
+      const resource = resources.get(name) as PatternFlyMcpResourceMetadata;
+      const uri = `patternfly://docs/${encodeURIComponent(name)}${buildSearchString({ version }, { prefix: true })}`;
+      const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
+
+      hashIndexMap.set(id.toLowerCase(), name);
+      uriIndexMap.set(uri.toLowerCase(), name);
+      uriIndexMap.set(uriId.toLowerCase(), name);
+
+      if (sourceId) {
+        pathIndexMap.set(sourceId.toLowerCase(), name);
+      }
+
+      resource.versions[version] ??= {
+        groupId,
+        isSchemasAvailable: false,
+        uri,
+        uriSchemas: undefined,
+        uriSchemasId: undefined,
+        entries: []
+      };
+
+      const displayName = semanticContext.item || name;
+      const displayCategory = 'API Reference';
+
+      const extendedEntry = {
+        displayName,
+        description: entry.content || `PatternFly API documentation for ${displayName}`,
+        pathSlug: name,
+        category: 'react',
+        section: semanticContext.section || 'components',
+        source: 'api' as const,
+        version,
+        id,
+        groupId,
+        name,
+        displayCategory,
+        uri,
+        uriId,
+        path: sourceId
+      } as (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta);
+
+      if (sourceId) {
+        byPath[sourceId] = extendedEntry;
+      }
+
+      byUri[uri] ??= [];
+      byUri[uri]?.push(extendedEntry);
+
+      byVersion[version] ??= [];
+      byVersion[version]?.push(extendedEntry);
+
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
+      mutateKeyWordsMap(rawKeywordsMap, { keyword: displayName, name, version });
+      if (extendedEntry.description) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: extendedEntry.description, name, version });
+      }
+
+      resource.entries.push(extendedEntry);
+      resource.versions[version].entries.push(extendedEntry);
+    });
+  });
+
   Object.entries(byVersion).forEach(([_version, entries]) => {
     entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   });
@@ -618,7 +709,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     // @deprecated componentsIndex - Under review
     componentsIndex: componentNamesIndex,
-    isFallbackDocumentation: originalDocs.isFallback,
+    isFallbackDocumentation: Boolean(originalDocs?.isFallback),
     keywordsIndex: Array.from(new Set([
       ...componentNamesIndex,
       ...Array.from(filteredKeywords.keys())
