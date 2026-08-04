@@ -68,7 +68,6 @@ const patternFlyDocsCollection = (): CollectionSource => {
     'patternfly-docs',
     callback,
     {
-      runInChildProcess: false,
       isRequired: true
     }
   ];

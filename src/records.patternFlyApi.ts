@@ -314,8 +314,7 @@ const patternFlyApiCollection = (): CollectionSource => {
     'patternfly-api',
     callback,
     {
-      runInChildProcess: true,
-      isRequired: false
+      runInChildProcess: true
     }
   ];
 };

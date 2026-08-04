@@ -100,7 +100,6 @@ const patternFlySchemasCollection = (): CollectionSource => {
     'patternfly-component-schemas',
     callback,
     {
-      runInChildProcess: false,
       isRequired: true
     }
   ];
