@@ -260,6 +260,7 @@ export {
   type McpCollectionCreator,
   type McpCollectionRecord,
   type McpCollectionResult,
-  type RegisterCollectionsResult,
-  type RegisterCollectionItem
+  type RegisterCollectionItem,
+  type RegisterCollectionSettledItem,
+  type RegisterCollectionsResult
 };
