@@ -1,4 +1,4 @@
-import { registerCollections} from '../collections';
+import { registerCollections } from '../collections';
 import { getOptions, getSessionOptions } from '../options.context';
 
 jest.mock('../logger', () => ({

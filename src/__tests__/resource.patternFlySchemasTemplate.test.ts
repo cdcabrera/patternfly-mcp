@@ -5,10 +5,132 @@ import {
   resourceCallback
 } from '../resource.patternFlySchemasTemplate';
 import { isPlainObject } from '../server.helpers';
+import {
+  getPatternFlyComponentSchema,
+  getPatternFlyMcpResources
+} from '../patternFly.getResources';
+import { filterPatternFly } from '../patternFly.search';
+import { normalizeEnumeratedPatternFlyVersion } from '../patternFly.helpers';
+import { paramCompletion } from '../resource.helpers';
+
+// Mock dependencies
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyMcpResources: {
+    memo: jest.fn()
+  },
+  getPatternFlyComponentSchema: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../patternFly.search', () => ({
+  filterPatternFly: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../patternFly.helpers', () => ({
+  ...jest.requireActual('../patternFly.helpers'),
+  normalizeEnumeratedPatternFlyVersion: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../resource.helpers', () => ({
+  paramCompletion: jest.fn()
+}));
+
+jest.mock('../server.caching', () => ({
+  memo: jest.fn(fn => {
+    const memoFn = jest.fn(fn);
+
+    (memoFn as any).memo = memoFn;
+
+    return memoFn;
+  })
+}));
+
+const mockGetResources = getPatternFlyMcpResources.memo as unknown as jest.Mock;
+const mockFilter = filterPatternFly.memo as unknown as jest.Mock;
+const mockNormalize = normalizeEnumeratedPatternFlyVersion.memo as unknown as jest.Mock;
+const mockParamCompletion = paramCompletion as unknown as jest.Mock;
+const mockSchema = getPatternFlyComponentSchema.memo as unknown as jest.Mock;
 
 describe('patternFlySchemasTemplateResource', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockParamCompletion.mockImplementation(filters => {
+      const { category, version, name } = filters || {};
+      const names = ['Button', 'Card', 'Modal', 'Alert', 'Table'];
+      const categories = ['accessibility', 'components', 'development'];
+      const versions = ['v6'];
+
+      const result = {
+        names: names,
+        categories: categories.filter(categoryItem => !category || categoryItem.toLowerCase().includes(category.toLowerCase().trim())),
+        sections: [],
+        versions: versions.filter(versionItem => !version || versionItem.toLowerCase() === version.toLowerCase().trim() || (version === 'current' && versionItem === 'v6') || (version === 'latest' && versionItem === 'v6')),
+        schemas: names.filter(nameItem => !name || nameItem.toLowerCase().includes(name.toLowerCase().trim()))
+      };
+
+      return Promise.resolve(result);
+    });
+
+    mockNormalize.mockImplementation((vVal: string) => {
+      if (!vVal || vVal.toLowerCase() === 'v6' || vVal.toLowerCase() === 'current' || vVal.toLowerCase() === 'latest') {
+        return Promise.resolve('v6');
+      }
+
+      return Promise.resolve(undefined);
+    });
+
+    mockGetResources.mockResolvedValue({
+      availableVersions: ['v6'],
+      latestVersion: 'v6',
+      availableSchemasVersions: ['v6'],
+      latestSchemasVersion: 'v6',
+      byVersion: new Map([['v6', []]]),
+      byVersionComponentNames: new Map([
+        ['v6', {
+          button: { isSchemasAvailable: true, displayName: 'Button' },
+          card: { isSchemasAvailable: true, displayName: 'Card' }
+        }]
+      ])
+    });
+
+    const mockEntries = [
+      { name: 'button', displayName: 'Button', category: 'react', version: 'v6', displayCategory: 'React', isSchemasAvailable: true, uriSchemas: 'patternfly://schemas/button', uriSchemasId: 'patternfly://schemas/button-id' },
+      { name: 'card', displayName: 'Card', category: 'react', version: 'v6', displayCategory: 'React', isSchemasAvailable: true, uriSchemas: 'patternfly://schemas/card', uriSchemasId: 'patternfly://schemas/card-id' }
+    ];
+
+    mockFilter.mockImplementation(filters => {
+      const { name, version } = filters || {};
+      let filtered = mockEntries;
+
+      if (name) {
+        filtered = filtered.filter(entryItem =>
+          entryItem.name.toLowerCase() === name.toLowerCase() ||
+          entryItem.displayName.toLowerCase() === name.toLowerCase() ||
+          (name === 'ffcfb1b9b852a17ccb5b2adc12e3edd4a4ee41cb' && entryItem.name === 'button'));
+      }
+
+      if (version) {
+        filtered = filtered.filter(entryItem => entryItem.version.toLowerCase().includes(version.toLowerCase()));
+      }
+
+      return Promise.resolve({
+        byEntry: filtered,
+        byResource: new Map(filtered.map(entryItem => [entryItem.name, { ...entryItem, entries: [entryItem] }]))
+      });
+    });
+
+    mockSchema.mockResolvedValue({
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      title: 'Component',
+      type: 'object'
+    });
   });
 
   it('should have a consistent return structure', () => {
@@ -58,10 +180,6 @@ describe('uriNameComplete', () => {
 });
 
 describe('resourceCallback', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it.each([
     { description: 'no version', variables: { name: 'Button' } },
     {

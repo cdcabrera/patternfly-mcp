@@ -6,6 +6,44 @@ import {
   resourceCallback
 } from '../resource.patternFlyDocsTemplate';
 import { isPlainObject } from '../server.helpers';
+import { getPatternFlyMcpResources } from '../patternFly.getResources';
+import { filterPatternFly } from '../patternFly.search';
+import { normalizeEnumeratedPatternFlyVersion } from '../patternFly.helpers';
+
+// Mock dependencies
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyMcpResources: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../patternFly.search', () => ({
+  filterPatternFly: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../patternFly.helpers', () => ({
+  ...jest.requireActual('../patternFly.helpers'),
+  normalizeEnumeratedPatternFlyVersion: {
+    memo: jest.fn()
+  }
+}));
+
+jest.mock('../server.caching', () => ({
+  memo: jest.fn(fn => {
+    const memoFn = jest.fn(fn);
+
+    (memoFn as any).memo = memoFn;
+
+    return memoFn;
+  })
+}));
+
+const mockGetResources = getPatternFlyMcpResources.memo as unknown as jest.Mock;
+const mockFilter = filterPatternFly.memo as unknown as jest.Mock;
+const mockNormalize = normalizeEnumeratedPatternFlyVersion.memo as unknown as jest.Mock;
 
 jest.mock('node:fs/promises', () => ({
   ...jest.requireActual('node:fs/promises'),
@@ -17,6 +55,43 @@ const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockNormalize.mockImplementation((vVal: string) => {
+      if (!vVal || vVal.toLowerCase() === 'v6' || vVal.toLowerCase() === 'current' || vVal.toLowerCase() === 'latest') {
+        return Promise.resolve('v6');
+      }
+
+      return Promise.resolve(undefined);
+    });
+
+    mockGetResources.mockResolvedValue({
+      availableVersions: ['v6'],
+      latestVersion: 'v6'
+    });
+
+    const mockEntries = [
+      { name: 'button', displayName: 'Button', category: 'react', version: 'v6', displayCategory: 'React', path: 'button.md', uri: 'patternfly://docs/button' },
+      { name: 'card', displayName: 'Card', category: 'react', version: 'v6', displayCategory: 'React', path: 'card.md', uri: 'patternfly://docs/card' },
+      { name: 'chatbot', displayName: 'Chatbot', category: 'react', version: 'v6', displayCategory: 'React', path: 'chatbot.md', uri: 'patternfly://docs/chatbot' }
+    ];
+
+    mockFilter.mockImplementation(filters => {
+      const { name, version } = filters || {};
+      let filtered = mockEntries;
+
+      if (name) {
+        filtered = filtered.filter(entryItem => entryItem.name.toLowerCase() === name.toLowerCase());
+      }
+
+      if (version) {
+        filtered = filtered.filter(entryItem => entryItem.version.toLowerCase().includes(version.toLowerCase()));
+      }
+
+      return Promise.resolve({
+        byEntry: filtered,
+        byResource: new Map(filtered.map(entryItem => [entryItem.name, { ...entryItem, entries: [entryItem] }]))
+      });
+    });
   });
 
   it('should have a consistent return structure', () => {
@@ -35,8 +110,16 @@ describe('resourceCallback', () => {
   let mockFetch: jest.SpyInstance;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockFetch = jest.spyOn(global, 'fetch');
+    mockFetch = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      text: jest.fn().mockResolvedValue('markdown content'),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('markdown content'));
+          controller.close();
+        }
+      })
+    } as any);
   });
 
   afterEach(() => {

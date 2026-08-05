@@ -16,12 +16,6 @@ exports[`runServer should allow server to be stopped, http stop server: diagnost
       "No external tools loaded.",
     ],
     [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
-    ],
-    [
       "Registered resource: patternfly-context",
     ],
     [
@@ -84,12 +78,6 @@ exports[`runServer should allow server to be stopped, stdio stop server: diagnos
       "No external tools loaded.",
     ],
     [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
-    ],
-    [
       "Registered resource: patternfly-context",
     ],
     [
@@ -150,12 +138,6 @@ exports[`runServer should attempt to run server, create transport, connect, and 
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
     ],
     [
       "Registered resource: patternfly-context",
@@ -231,12 +213,6 @@ exports[`runServer should attempt to run server, disable SIGINT handler: diagnos
       "No external tools loaded.",
     ],
     [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
-    ],
-    [
       "Registered resource: patternfly-context",
     ],
     [
@@ -303,12 +279,6 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
     ],
     [
       "Registered resource: patternfly-context",
@@ -382,12 +352,6 @@ exports[`runServer should attempt to run server, log warnings for experimental o
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
     ],
     [
       "Registered resource: patternfly-context",
@@ -478,12 +442,6 @@ exports[`runServer should attempt to run server, register a tool: diagnostics 1`
       "No external tools loaded.",
     ],
     [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
-    ],
-    [
       "Registered resource: patternfly-context",
     ],
     [
@@ -563,12 +521,6 @@ exports[`runServer should attempt to run server, register multiple tools: diagno
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
     ],
     [
       "Registered resource: patternfly-context",
@@ -659,12 +611,6 @@ exports[`runServer should attempt to run server, use custom options: diagnostics
       "No external tools loaded.",
     ],
     [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
-    ],
-    [
       "Registered resource: patternfly-context",
     ],
     [
@@ -736,12 +682,6 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
     ],
     [
       "Registered resource: patternfly-context",
@@ -824,12 +764,6 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
     ],
     [
       "No external tools loaded.",
-    ],
-    [
-      "Register collection: patternfly-docs",
-    ],
-    [
-      "Register collection: patternfly-component-schemas",
     ],
     [
       "Registered resource: patternfly-context",
