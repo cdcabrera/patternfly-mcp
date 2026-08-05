@@ -308,7 +308,7 @@ const requestInvoke = async (state: HostState, request: InvokeRequest, ctx: Host
  * Create the Collections Host: a generic child-process host wired with the record handlers.
  * Built-in `hello`/`shutdown` handlers come from `createProcessHost`.
  */
-const createRecordsHost = () => {
+const createCollectionsHost = () => {
   let state: HostState = createHostState();
 
   return createProcessHost({
@@ -333,11 +333,11 @@ const createRecordsHost = () => {
 };
 
 // createProcessHost internally guards on `process.send`, so this is safe at module load.
-createRecordsHost();
+createCollectionsHost();
 
 export {
   // normalizeCreatorSchema,
   performLoad,
   requestInvoke,
-  createRecordsHost
+  createCollectionsHost
 };
