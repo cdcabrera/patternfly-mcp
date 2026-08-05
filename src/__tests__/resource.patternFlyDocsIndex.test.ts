@@ -9,6 +9,17 @@ import {
   resourceCallback
 } from '../resource.patternFlyDocsIndex';
 import { isPlainObject } from '../server.helpers';
+import { setPatternFlyCollection } from '../patternFly.getResources';
+import { patternFlyDocsCollection } from '../collection.patternFlyDocs';
+import { patternFlySchemasCollection } from '../collection.patternFlySchemas';
+
+beforeAll(async () => {
+  const [, docsCallback] = patternFlyDocsCollection();
+  const [, schemasCallback] = patternFlySchemasCollection();
+
+  await setPatternFlyCollection('patternfly-docs', await docsCallback());
+  await setPatternFlyCollection('patternfly-component-schemas', await schemasCallback());
+});
 
 describe('patternFlyDocsIndexResource', () => {
   it('should have a consistent return structure', () => {

@@ -32,6 +32,14 @@ jest.mock('../server.logger', () => ({
   }
 }));
 jest.mock('../server.http');
+jest.mock('../collections', () => {
+  const actual = jest.requireActual('../collections');
+
+  return {
+    ...actual,
+    registerCollections: jest.fn().mockResolvedValue(undefined)
+  };
+});
 
 const MockMcpServer = McpServer as jest.MockedClass<typeof McpServer>;
 const MockStdioServerTransport = StdioServerTransport as jest.MockedClass<typeof StdioServerTransport>;

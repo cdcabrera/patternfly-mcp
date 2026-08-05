@@ -6,6 +6,9 @@ import {
   resourceCallback
 } from '../resource.patternFlyDocsTemplate';
 import { isPlainObject } from '../server.helpers';
+import { setPatternFlyCollection } from '../patternFly.getResources';
+import { patternFlyDocsCollection } from '../collection.patternFlyDocs';
+import { patternFlySchemasCollection } from '../collection.patternFlySchemas';
 
 jest.mock('node:fs/promises', () => ({
   ...jest.requireActual('node:fs/promises'),
@@ -13,6 +16,14 @@ jest.mock('node:fs/promises', () => ({
 }));
 
 const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
+
+beforeAll(async () => {
+  const [, docsCallback] = patternFlyDocsCollection();
+  const [, schemasCallback] = patternFlySchemasCollection();
+
+  await setPatternFlyCollection('patternfly-docs', await docsCallback());
+  await setPatternFlyCollection('patternfly-component-schemas', await schemasCallback());
+});
 
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {
@@ -36,7 +47,16 @@ describe('resourceCallback', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockFetch = jest.spyOn(global, 'fetch');
+    mockFetch = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      text: jest.fn().mockResolvedValue('markdown content'),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('markdown content'));
+          controller.close();
+        }
+      })
+    } as any);
   });
 
   afterEach(() => {

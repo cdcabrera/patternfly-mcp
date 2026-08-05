@@ -5,12 +5,19 @@ import {
   resourceCallback
 } from '../resource.patternFlySchemasIndex';
 import { isPlainObject } from '../server.helpers';
+import { setPatternFlyCollection } from '../patternFly.getResources';
+import { patternFlyDocsCollection } from '../collection.patternFlyDocs';
+import { patternFlySchemasCollection } from '../collection.patternFlySchemas';
+
+beforeAll(async () => {
+  const [, docsCallback] = patternFlyDocsCollection();
+  const [, schemasCallback] = patternFlySchemasCollection();
+
+  await setPatternFlyCollection('patternfly-docs', await docsCallback());
+  await setPatternFlyCollection('patternfly-component-schemas', await schemasCallback());
+});
 
 describe('patternFlySchemasIndexResource', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should have a consistent return structure', () => {
     const resource = patternFlySchemasIndexResource();
 
@@ -41,10 +48,6 @@ describe('listResources', () => {
 });
 
 describe('resourceCallback', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it.each([
     {
       description: 'default',
