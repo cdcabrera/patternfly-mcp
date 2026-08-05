@@ -6,6 +6,8 @@ import { getPatternFlyVersionContext } from './patternFly.helpers';
 
 /**
  * Component schemas collection from @patternfly/patternfly-component-schemas.
+ *
+ * @returns Component schemas collection from @patternfly/patternfly-component-schemas.
  */
 const patternFlySchemasCollection = (): McpCollection => {
   const callback = async () => {

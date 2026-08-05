@@ -65,16 +65,45 @@ type McpCollection = [
  */
 type McpCollectionCreator = (options?: GlobalOptions) => McpCollection;
 
+/**
+ * A collection registered with the MCP server. Generally returned through the
+ * {@link registerCollections} callback settings.
+ *
+ * @property name - Name of the collection item.
+ * @property {McpCollectionResult|undefined} [response] - Optional response associated with the item.
+ * @property [error] - Optional error object if an error occurred during the collection process.
+ */
 type RegisterCollectionItem = {
   name: string;
   response?: McpCollectionResult | undefined;
   error?: unknown;
 };
 
+/**
+ * Callback invoked when a collection item is loaded/updated.
+ *
+ * @param {RegisterCollectionItem} item - The updated collection item.
+ * @param item.name - The name of the collection item.
+ * @param {McpCollectionResult|undefined} [item.response] - Optional response associated with the item.
+ * @param [item.error] - Optional error object if an error occurred during the collection process.
+ */
 type RegisterOnUpdate = ({ name, response, error }: RegisterCollectionItem) => void;
 
+/**
+ * Callback invoked when required collections are loaded/updated.
+ *
+ * @param {RegisterCollectionItem[]} requiredCollections - Array of required collections.
+ */
 type RegisterOnRequired = (requiredCollections: RegisterCollectionItem[]) => void;
 
+/**
+ * A processed and settled collection.
+ *
+ * @property name - Collection name, or null if unnamed.
+ * @property status - Item status; whether the operation was successful or failed.
+ * @property {McpCollectionResult | unknown} value - Result of the operation if fulfilled, or an unknown value.
+ * @property reason - Reason for the failure if the status is 'rejected', otherwise null.
+ */
 type RegisterCollectionSettledItem = {
   name: string | null;
   status: 'fulfilled' | 'rejected';
@@ -82,10 +111,32 @@ type RegisterCollectionSettledItem = {
   reason: any | null;
 };
 
+/**
+ * Callback invoked when all collections are "settled", similar to `Promise.allSettled`.
+ *
+ * @param {RegisterCollectionsResult} results - Results of the collection process.
+ */
+type RegisterOnSettle = (results: RegisterCollectionsResult) => void;
+
+/**
+ * Batch results from registering multiple collections.
+ *
+ * This type encapsulates the outcome of registering collections, grouping the
+ * results into settled, fulfilled, and rejected categories.
+ *
+ * @typedef {Object} RegisterCollectionsResult
+ *
+ * @property {RegisterCollectionSettledItem[]} settled - Settled registration results, including
+ *     both fulfilled and failed attempts.
+ * @property {McpCollectionResult[]} fulfilled - Successfully registered collections, containing
+ *     details of the fulfilled ops.
+ * @property rejected - List of rejected registration attempts, with each entry containing
+ *     the `name` of the failed collection (if available) and the `reason` for the failure.
+ */
 type RegisterCollectionsResult = {
   settled: RegisterCollectionSettledItem[];
   fulfilled: McpCollectionResult[];
-  rejected: { name: string | null, reason: any }[]; // Changed to capture actual error info
+  rejected: { name: string | null, reason: any }[];
 };
 
 /**
@@ -111,7 +162,7 @@ type RegisterCollectionsResult = {
 const registerCollections = async (
   collections: McpCollection[],
   { onSettle, onUpdate, onRequired }: {
-    onSettle?: (results: RegisterCollectionsResult) => void, onUpdate?: RegisterOnUpdate, onRequired?: RegisterOnRequired
+    onSettle?: RegisterOnSettle, onUpdate?: RegisterOnUpdate, onRequired?: RegisterOnRequired
   } = {}
 ): Promise<void> => {
   log.debug(`Initiating registration for ${collections.length} collections.`);
