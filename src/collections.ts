@@ -108,7 +108,7 @@ type RegisterCollectionSettledItem = {
   name: string | null;
   status: 'fulfilled' | 'rejected';
   value: McpCollectionResult | unknown;
-  reason: any | null;
+  reason: unknown | null;
 };
 
 /**
@@ -136,7 +136,7 @@ type RegisterOnSettle = (results: RegisterCollectionsResult) => void;
 type RegisterCollectionsResult = {
   settled: RegisterCollectionSettledItem[];
   fulfilled: McpCollectionResult[];
-  rejected: { name: string | null, reason: any }[];
+  rejected: { name: string | null, reason: unknown }[];
 };
 
 /**
