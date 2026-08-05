@@ -32,9 +32,6 @@ jest.mock('../server.logger', () => ({
   }
 }));
 jest.mock('../server.http');
-jest.mock('../server.collections', () => ({
-  composeCollections: jest.fn().mockImplementation(creators => Promise.resolve(creators))
-}));
 jest.mock('../collections', () => {
   const actual = jest.requireActual('../collections');
 

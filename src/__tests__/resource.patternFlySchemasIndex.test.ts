@@ -5,120 +5,19 @@ import {
   resourceCallback
 } from '../resource.patternFlySchemasIndex';
 import { isPlainObject } from '../server.helpers';
-import { getPatternFlyMcpResources } from '../patternFly.getResources';
-import { filterPatternFly } from '../patternFly.search';
-import { normalizeEnumeratedPatternFlyVersion } from '../patternFly.helpers';
-import { paramCompletion } from '../resource.helpers';
+import { setPatternFlyCollection } from '../patternFly.getResources';
+import { patternFlyDocsCollection } from '../collection.patternFlyDocs';
+import { patternFlySchemasCollection } from '../collection.patternFlySchemas';
 
-// Mock dependencies
-jest.mock('../patternFly.getResources', () => ({
-  ...jest.requireActual('../patternFly.getResources'),
-  getPatternFlyMcpResources: {
-    memo: jest.fn()
-  }
-}));
+beforeAll(async () => {
+  const [, docsCallback] = patternFlyDocsCollection();
+  const [, schemasCallback] = patternFlySchemasCollection();
 
-jest.mock('../patternFly.search', () => ({
-  filterPatternFly: {
-    memo: jest.fn()
-  }
-}));
-
-jest.mock('../patternFly.helpers', () => ({
-  ...jest.requireActual('../patternFly.helpers'),
-  normalizeEnumeratedPatternFlyVersion: {
-    memo: jest.fn()
-  }
-}));
-
-jest.mock('../resource.helpers', () => ({
-  paramCompletion: jest.fn()
-}));
-
-jest.mock('../server.caching', () => ({
-  memo: jest.fn(fn => {
-    const memoFn = jest.fn(fn);
-
-    (memoFn as any).memo = memoFn;
-
-    return memoFn;
-  })
-}));
-
-const mockGetResources = getPatternFlyMcpResources.memo as unknown as jest.Mock;
-const mockFilter = filterPatternFly.memo as unknown as jest.Mock;
-const mockNormalize = normalizeEnumeratedPatternFlyVersion.memo as unknown as jest.Mock;
-const mockParamCompletion = paramCompletion as unknown as jest.Mock;
+  await setPatternFlyCollection('patternfly-docs', await docsCallback());
+  await setPatternFlyCollection('patternfly-component-schemas', await schemasCallback());
+});
 
 describe('patternFlySchemasIndexResource', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    mockParamCompletion.mockImplementation(filters => {
-      const { category, version } = filters || {};
-      const names = ['Button', 'Card', 'Modal', 'Alert', 'Table'];
-      const categories = ['accessibility', 'components', 'development'];
-      const versions = ['v6'];
-
-      const result = {
-        names: names,
-        categories: categories.filter(categoryItem => !category || categoryItem.toLowerCase().includes(category.toLowerCase().trim())),
-        sections: [],
-        versions: versions.filter(versionItem => !version || versionItem.toLowerCase() === version.toLowerCase().trim() || (version === 'current' && versionItem === 'v6') || (version === 'latest' && versionItem === 'v6')),
-        schemas: names
-      };
-
-      return Promise.resolve(result);
-    });
-
-    mockNormalize.mockImplementation((vVal: string) => {
-      if (!vVal || vVal.toLowerCase() === 'v6' || vVal.toLowerCase() === 'current' || vVal.toLowerCase() === 'latest') {
-        return Promise.resolve('v6');
-      }
-
-      return Promise.resolve(undefined);
-    });
-
-    mockGetResources.mockResolvedValue({
-      availableVersions: ['v6'],
-      latestVersion: 'v6',
-      availableSchemasVersions: ['v6'],
-      latestSchemasVersion: 'v6',
-      byVersion: new Map([['v6', []]]),
-      byVersionComponentNames: new Map([
-        ['v6', {
-          button: { isSchemasAvailable: true, displayName: 'Button' },
-          card: { isSchemasAvailable: true, displayName: 'Card' }
-        }]
-      ])
-    });
-
-    const mockEntries = [
-      { name: 'button', displayName: 'Button', category: 'react', version: 'v6', displayCategory: 'React', uriSchemas: 'patternfly://schemas/button' },
-      { name: 'card', displayName: 'Card', category: 'react', version: 'v6', displayCategory: 'React', uriSchemas: 'patternfly://schemas/card' }
-    ];
-
-    mockFilter.mockImplementation(filters => {
-      const { category, version } = filters || {};
-      let filtered = mockEntries;
-
-      if (category) {
-        filtered = filtered.filter(entryItem =>
-          entryItem.category.toLowerCase().includes(category.toLowerCase()) ||
-          entryItem.displayCategory.toLowerCase().includes(category.toLowerCase()));
-      }
-
-      if (version) {
-        filtered = filtered.filter(entryItem => entryItem.version.toLowerCase().includes(version.toLowerCase()));
-      }
-
-      return Promise.resolve({
-        byEntry: filtered,
-        byResource: new Map(filtered.map(entryItem => [entryItem.name, { ...entryItem, entries: [entryItem] }]))
-      });
-    });
-  });
-
   it('should have a consistent return structure', () => {
     const resource = patternFlySchemasIndexResource();
 
