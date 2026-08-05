@@ -252,7 +252,7 @@ const makeProxyCreators = (
 
   const handler = async (args?: unknown): Promise<CollectionResult> => {
     const response = await handle.request<Extract<IpcResponse, { t: 'invoke:result' }>>(
-      { t: 'invoke', id: collection.id, args },
+      { t: 'invoke', collectionId: collection.id, args },
       'invoke:result',
       invokeTimeoutMs
     );
