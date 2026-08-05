@@ -2,16 +2,16 @@ import {
   type IpcRequest,
   type CollectionDescriptor,
   makeId
-} from './records.ipc';
+} from './collections.ipc';
 import { serializeError, type SerializedError } from './server.processIpc';
 import { createProcessHost, type HostContext } from './server.processHost';
 // import { resolveExternalCreators } from './server.toolsHostCreator';
 import { DEFAULT_OPTIONS } from './options.defaults';
 // import { type ToolOptions } from './options.tools';
 // import { type McpTool, type McpToolCreator } from './mcpSdk';
-import { type McpCollectionCreator, type CollectionSource } from './records';
-import { resolveCreators } from './records.hostCreator';
-import { type CollectionOptions } from './options.records';
+import { type McpCollectionCreator, type CollectionSource } from './collections';
+import { resolveCreators } from './collections.hostCreator';
+import { type CollectionOptions } from './options.collections';
 
 /**
  * SubType of IpcRequest for "load" requests.
@@ -24,7 +24,7 @@ type LoadRequest = Extract<IpcRequest, { t: 'load' }>;
 type InvokeRequest = Extract<IpcRequest, { t: 'invoke' }>;
 
 /**
- * State object for the records host.
+ * State object for the collections host.
  */
 type HostState = {
   collectionMap: Map<string, CollectionSource>;
@@ -305,7 +305,7 @@ const requestInvoke = async (state: HostState, request: InvokeRequest, ctx: Host
 };
 
 /**
- * Create the Records Host: a generic child-process host wired with the record handlers.
+ * Create the Collections Host: a generic child-process host wired with the record handlers.
  * Built-in `hello`/`shutdown` handlers come from `createProcessHost`.
  */
 const createRecordsHost = () => {

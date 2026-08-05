@@ -31,8 +31,8 @@ import {
   builtinResources,
   builtinCollections
 } from './options.registry';
-import { registerCollections, type RegisterCollectionItem } from './server.records';
-import { composeCollections, type McpCollectionCreator, type CollectionSource } from './records';
+import { registerCollections, type RegisterCollectionItem } from './server.collections';
+import { composeCollections, type McpCollectionCreator, type CollectionSource } from './collections';
 import { setPatternFlyCollection } from './patternFly.getResources';
 
 /**

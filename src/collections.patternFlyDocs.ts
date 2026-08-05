@@ -1,4 +1,4 @@
-import { type CollectionSource, type CollectionRecord } from './records';
+import { type CollectionSource, type CollectionRecord } from './collections';
 import { EMBEDDED_DOCS, type PatternFlyMcpDocsCatalog } from './docs.embedded';
 import { formatUnknownError, log } from './logger';
 

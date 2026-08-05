@@ -1,5 +1,5 @@
 import { type McpToolCreator, type McpResourceCreator } from './mcpSdk';
-import { type CollectionCreator } from './records.user';
+import { type CollectionCreator } from './collections.user';
 import { searchPatternFlyTool } from './tool.searchPatternFly';
 import { usePatternFlyDocsTool } from './tool.patternFlyDocs';
 import { searchPatternFlyDocsTool } from './tool.searchPatternFlyDocs';
@@ -9,9 +9,9 @@ import { patternFlyDocsIndexResource } from './resource.patternFlyDocsIndex';
 import { patternFlyDocsTemplateResource } from './resource.patternFlyDocsTemplate';
 import { patternFlySchemasIndexResource } from './resource.patternFlySchemasIndex';
 import { patternFlySchemasTemplateResource } from './resource.patternFlySchemasTemplate';
-import { patternFlyApiCollection } from './records.patternFlyApi';
-import { patternFlyDocsCollection } from './records.patternFlyDocs';
-import { patternFlySchemasCollection } from './records.patternFlySchemas';
+import { patternFlyApiCollection } from './collections.patternFlyApi';
+import { patternFlyDocsCollection } from './collections.patternFlyDocs';
+import { patternFlySchemasCollection } from './collections.patternFlySchemas';
 
 /**
  * Built-in tools.

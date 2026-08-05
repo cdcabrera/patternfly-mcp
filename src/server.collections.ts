@@ -3,7 +3,7 @@ import {
   // type CollectionRecord,
   type CollectionResult,
   type CollectionSource
-} from './records';
+} from './collections';
 
 type RegisterCollectionItem = {
   name: string;

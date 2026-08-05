@@ -2,7 +2,7 @@ import { basename, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import packageJson from '../package.json';
 import { type ToolModule } from './server.toolsUser';
-import { type CollectionModule } from './records.user';
+import { type CollectionModule } from './collections.user';
 import { getNodeMajorVersion } from './options.helpers';
 
 /**

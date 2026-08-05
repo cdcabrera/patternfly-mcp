@@ -16,7 +16,7 @@ import {
   type PatternFlyMcpDocsCatalogEntry,
   type PatternFlyMcpDocsCatalogDoc
 } from './docs.embedded';
-import { type CollectionResult } from './records';
+import { type CollectionResult } from './collections';
 
 /**
  * Derive the component schema type from @patternfly/patternfly-component-schemas

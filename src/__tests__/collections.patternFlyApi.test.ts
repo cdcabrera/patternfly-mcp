@@ -1,11 +1,11 @@
-import { apiSpider, parsePayload, isEmptyPayload, crawler } from '../records.patternFlyApi';
+import { apiSpider, parsePayload, isEmptyPayload, crawler } from '../collections.patternFlyApi';
 import { processDocsFunction } from '../server.getResources';
 
 jest.mock('../server.getResources');
 
 const mockedProcessDocsFunction = processDocsFunction as jest.MockedFunction<typeof processDocsFunction>;
 
-describe('records.api', () => {
+describe('collections.api', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

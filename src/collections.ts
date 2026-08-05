@@ -8,9 +8,9 @@ import {
   type ChildHandle
 } from './server.process';
 import { getOptions, getSessionOptions } from './options.context';
-import { setCollectionOptions } from './options.records';
-import { type CollectionDescriptor, type IpcResponse } from './records.ipc';
-import { normalizeCollections, type NormalizedCollectionEntry } from './records.user';
+import { setCollectionOptions } from './options.collections';
+import { type CollectionDescriptor, type IpcResponse } from './collections.ipc';
+import { normalizeCollections, type NormalizedCollectionEntry } from './collections.user';
 
 /**
  * Handle for a spawned Host process.
@@ -128,13 +128,13 @@ const logWarningsErrors = ({ warnings = [], errors = [] }: { warnings?: string[]
   if (Array.isArray(warnings) && warnings.length > 0) {
     const lines = warnings.map(warning => `  - ${String(warning)}`);
 
-    log.warn(`Records load warnings (${warnings.length})\n${lines.join('\n')}`);
+    log.warn(`Collections load warnings (${warnings.length})\n${lines.join('\n')}`);
   }
 
   if (Array.isArray(errors) && errors.length > 0) {
     const lines = errors.map(error => `  - ${String(error)}`);
 
-    log.error(`Records load errors (${errors.length})\n${lines.join('\n')}`);
+    log.error(`Collections load errors (${errors.length})\n${lines.join('\n')}`);
   }
 };
 
@@ -178,7 +178,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
     const lines = raw.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
     for (const line of lines) {
-      const tagged = `[records-host pid=${childPid} sid=${sessionId}] ${line}`;
+      const tagged = `[collections-host pid=${childPid} sid=${sessionId}] ${line}`;
 
       // Default: debug-level passthrough
       log.debug(tagged);
@@ -203,8 +203,8 @@ const spawnCollectionHost = async (
   const collectionOptions = setCollectionOptions(options);
 
   const handle = spawnChildProcess({
-    importSpecifier: '#recordsHost',
-    label: 'Records Host',
+    importSpecifier: '#collectionsHost',
+    label: 'Collections Host',
     isolation: {
       mode: pluginIsolation === 'strict' ? 'strict' : 'none',
       nodeVersion,
@@ -303,7 +303,7 @@ const sendCollectionsHostShutdown = async (
   await shutdownChildProcess(handle, {
     gracePeriodMs: Math.max(0, Number(pluginHost?.gracePeriodMs) || 0),
     sessionId,
-    label: 'Records Host'
+    label: 'Collections Host'
   });
 };
 

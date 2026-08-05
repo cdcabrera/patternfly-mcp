@@ -1,8 +1,8 @@
 import { memo } from './server.caching';
 import { sanitizeDataProp } from './server.toolsUser';
-import { type CollectionSource } from './records';
+import { type CollectionSource } from './collections';
 import { type GlobalOptions } from './options';
-import { type CollectionOptions } from './options.records';
+import { type CollectionOptions } from './options.collections';
 
 /**
  * Inline tool options.

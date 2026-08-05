@@ -1,4 +1,4 @@
-import { type CollectionOptions } from './options.records';
+import { type CollectionOptions } from './options.collections';
 import {
   send,
   awaitIpc,

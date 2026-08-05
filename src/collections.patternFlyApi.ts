@@ -10,7 +10,7 @@ import {
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { deferTask } from './server.task';
-import { type CollectionSource, type CollectionRecord } from './records';
+import { type CollectionSource, type CollectionRecord } from './collections';
 
 /**
  * Processed content for API responses.

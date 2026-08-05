@@ -1,4 +1,4 @@
-import { type McpCollectionCreator, type CollectionSource } from './records';
+import { type McpCollectionCreator, type CollectionSource } from './collections';
 
 /**
  * Guard for an array of creators. File-scoped helper.

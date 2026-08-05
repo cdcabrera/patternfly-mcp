@@ -2,7 +2,7 @@ import {
   componentNames as pfComponentNames
   // getComponentSchema
 } from '@patternfly/patternfly-component-schemas/json';
-import { type CollectionSource, type CollectionRecord } from './records';
+import { type CollectionSource, type CollectionRecord } from './collections';
 import { getPatternFlyVersionContext } from './patternFly.helpers';
 
 /**
