@@ -669,7 +669,8 @@ const getPatternFlyComponentSchema = async (componentName: string) => {
 getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 /**
- * Executes a collection callback, blends the returned records, and invalidates cache.
+ * Executes a collection callback, invalidates any cache, and then any next-call to the functions
+ * blends the returned records and "re-memos" the results.
  *
  * @param name - Collection name.
  * @param {McpCollectionResult} collection - Collection result.

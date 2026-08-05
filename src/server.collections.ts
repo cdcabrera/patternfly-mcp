@@ -15,7 +15,7 @@ const composeCollections = async (
   _options: GlobalOptions = getOptions(),
   _session: AppSession = getSessionOptions()
 ): Promise<McpCollectionCreator[]> => {
-  // Wrap built-in creators to enforce trusted isInternal. Ties into what options, session values are available.
+  // Wrap built-in creators to enforce trusted _isInternal. Ties into what options, session values are available.
   const securedBuiltinCreators = builtinCreators.map((creator): McpCollectionCreator => opt => {
     const [name, callback, config] = creator(opt);
 
@@ -24,7 +24,7 @@ const composeCollections = async (
       callback,
       {
         ...config,
-        isInternal: true
+        _isInternal: true
       }
     ];
   });

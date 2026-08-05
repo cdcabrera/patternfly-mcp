@@ -148,6 +148,7 @@ const registerServerCollections = async (collections: McpCollectionCreator[], op
     ] as McpCollection;
   });
 
+  // Update PatternFly collections, see {@link setPatternFlyCollection}
   const onUpdate = ({ name, response }: RegisterCollectionItem) => {
     if (response) {
       setPatternFlyCollection(name, response);

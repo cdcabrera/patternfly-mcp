@@ -2,6 +2,11 @@ import { type McpCollection, type McpCollectionRecord } from './collections';
 import { EMBEDDED_DOCS, type PatternFlyMcpDocsCatalog } from './docs.embedded';
 import { formatUnknownError, log } from './logger';
 
+/**
+ * Lazy load the PatternFly documentation catalog.
+ *
+ * @returns PatternFly documentation catalog JSON, or fallback catalog if import fails.
+ */
 const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }> => {
   let docsCatalog = EMBEDDED_DOCS;
   let isFallback = false;

@@ -45,17 +45,18 @@ interface McpCollectionResult {
  *     record collection plugins.
  *    - `_config.runInChildProcess`: Optional callback function to dynamically decide
  *        if the record source should run in a child process.
- *    - `_config.isInternal`: Optional boolean to indicate if the record source is internal.
  *    - `_config.isRequired`: Optional boolean used to control server startup when
  *        collections are required for operation.
+ *   - `_config._isInternal`: Optional boolean. Applied internally. Attempting to manually
+ *       set this will be overridden. See {@link composeCollections}
  */
 type McpCollection = [
   name: string,
   handler: (arg?: unknown) => McpCollectionResult | Promise<McpCollectionResult>,
   _config?: {
     runInChildProcess?: boolean | ((options?: GlobalOptions) => boolean | Promise<boolean>);
-    isInternal?: boolean;
     isRequired?: boolean;
+    _isInternal?: boolean;
   }
 ];
 
