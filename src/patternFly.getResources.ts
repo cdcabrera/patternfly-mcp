@@ -213,6 +213,9 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
   }
 
   switch (categoryLabel) {
+    // case 'api':
+    //  categoryLabel = 'API Reference';
+    //  break;
     case 'grammar':
       categoryLabel = 'Grammar';
       break;
@@ -474,10 +477,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const { componentNamesIndex, byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
 
   const originalDocs = patternFlyRecordsRegistry.get('patternfly-docs');
+  // const apiCollection = patternFlyRecordsRegistry.get('patternfly-api');
 
   const catalog = [
     ...originalDocs?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
     ...Array.from(componentNamesByDocs)
+    // ...apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
   ];
 
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
@@ -698,7 +703,7 @@ const setPatternFlyCollection = async (
         log.warn('Failed getPatternFlyMcpResources clear.', error);
       }
 
-      log.debug(`Merged ${collection.records.length} records from collection [${name}].`);
+      log.debug(`Merging collection ${name} records. (${collection.records.length})`);
     }
   } catch (error) {
     log.error(`Failed to update collection [${name}]:`, error);
