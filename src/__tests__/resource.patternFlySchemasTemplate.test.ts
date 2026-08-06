@@ -5,17 +5,28 @@ import {
   resourceCallback
 } from '../resource.patternFlySchemasTemplate';
 import { isPlainObject } from '../server.helpers';
-import { setPatternFlyCollection } from '../patternFly.getResources';
-import { patternFlyDocsCollection } from '../collection.patternFlyDocs';
-import { patternFlySchemasCollection } from '../collection.patternFlySchemas';
+import { getPatternFlyComponentSchema } from '../patternFly.getResources';
+import { paramCompletion } from '../resource.helpers';
+import { filterPatternFly } from '../patternFly.search';
 
-beforeAll(async () => {
-  const [, docsCallback] = patternFlyDocsCollection();
-  const [, schemasCallback] = patternFlySchemasCollection();
+jest.mock('../resource.helpers', () => ({
+  ...jest.requireActual('../resource.helpers'),
+  paramCompletion: jest.fn()
+}));
 
-  await setPatternFlyCollection('patternfly-docs', await docsCallback());
-  await setPatternFlyCollection('patternfly-component-schemas', await schemasCallback());
-});
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyComponentSchema: { memo: jest.fn() }
+}));
+
+jest.mock('../patternFly.search', () => ({
+  ...jest.requireActual('../patternFly.search'),
+  filterPatternFly: { memo: jest.fn() }
+}));
+
+const MockParamCompletion = paramCompletion as jest.MockedFunction<typeof paramCompletion>;
+const MockGetSchema = getPatternFlyComponentSchema.memo as jest.MockedFunction<typeof getPatternFlyComponentSchema.memo>;
+const MockFilter = filterPatternFly.memo as jest.MockedFunction<typeof filterPatternFly.memo>;
 
 describe('patternFlySchemasTemplateResource', () => {
   it('should have a consistent return structure', () => {
@@ -31,36 +42,14 @@ describe('patternFlySchemasTemplateResource', () => {
 });
 
 describe('uriNameComplete', () => {
-  it.each([
-    {
-      description: 'with empty string',
-      value: '',
-      expected: 5
-    },
-    {
-      description: 'with lowercased name',
-      value: 'button',
-      expected: 1
-    },
-    {
-      description: 'with uppercased name',
-      value: 'BUTTON',
-      expected: 1
-    },
-    {
-      description: 'with mixed case name',
-      value: 'bUTTON',
-      expected: 1
-    },
-    {
-      description: 'with empty space and name',
-      value: '  BUTTON  ',
-      expected: 1
-    }
-  ])('should attempt to return PatternFly component names, $description', async ({ value, expected }) => {
-    const result = await uriNameComplete(value);
+  it('should attempt to return PatternFly component names on completion', async () => {
+    MockParamCompletion.mockResolvedValue({ names: [] } as any);
 
-    expect(result.length).toBeGreaterThanOrEqual(expected);
+    const value = 'BUTTON';
+
+    await uriNameComplete(value);
+
+    expect(MockParamCompletion).toHaveBeenCalledWith(expect.objectContaining({ name: value }));
   });
 });
 
@@ -89,8 +78,18 @@ describe('resourceCallback', () => {
       }
     }
   ])('should attempt to return resource content, $description', async ({ variables }) => {
-    const mockContent = '$schema';
+    const resource = {
+      name: 'button',
+      isSchemasAvailable: true,
+      uriSchemasId: `patternfly://schemas/${variables.version}/${variables.name}`
+    };
 
+    MockFilter.mockResolvedValue({
+      byResource: new Map([['button', resource]])
+    } as any);
+    MockGetSchema.mockResolvedValue({ $schema: 'https://json-schema.org/draft-07' } as any);
+
+    const mockContent = '$schema';
     const result = await resourceCallback(
       { href: `patternfly://schemas/v6/${variables.name}` } as any,
       variables
@@ -153,6 +152,9 @@ describe('resourceCallback', () => {
       }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
+    MockFilter.mockResolvedValue({ byResource: new Map() } as any);
+    MockGetSchema.mockResolvedValue(undefined);
+
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(error);
   });

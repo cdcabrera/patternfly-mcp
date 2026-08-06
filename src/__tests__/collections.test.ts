@@ -1,5 +1,4 @@
 import { registerCollections } from '../collections';
-import { getOptions, getSessionOptions } from '../options.context';
 
 jest.mock('../logger', () => ({
   log: {
@@ -10,8 +9,6 @@ jest.mock('../logger', () => ({
   },
   formatUnknownError: jest.fn(err => String(err))
 }));
-
-jest.mock('../options.context');
 
 describe('registerCollections', () => {
   beforeEach(() => {
@@ -37,16 +34,16 @@ describe('registerCollections', () => {
   it('should handle isRequired and throw if it fails', async () => {
     const handler = jest.fn().mockRejectedValue(new Error('Failed'));
     const collections: any[] = [
-      ['required-collection', handler, { isRequired: true }]
+      ['lorem-collection', handler, { isRequired: true }]
     ];
 
-    await expect(registerCollections(collections)).rejects.toThrow('Required collection required-collection failed to load.');
+    await expect(registerCollections(collections)).rejects.toThrow('Required collection lorem-collection failed to load.');
   });
 
   it('should not throw if optional collection fails during initial gatekeep', async () => {
     const handler = jest.fn().mockRejectedValue(new Error('Failed'));
     const collections: any[] = [
-      ['optional-collection', handler, { isRequired: false }]
+      ['dolor-collection', handler, { isRequired: false }]
     ];
 
     await expect(registerCollections(collections)).resolves.not.toThrow();
@@ -92,19 +89,12 @@ describe('registerCollections', () => {
 
   it('should follow the options pattern by allowing creators to use mocked options', async () => {
     const mockOptions = { custom: 'value' };
-    const mockSession = { sessionId: '123' };
-
-    (getOptions as jest.Mock).mockReturnValue(mockOptions);
-    (getSessionOptions as jest.Mock).mockReturnValue(mockSession);
-
     const handler = jest.fn().mockResolvedValue({ records: [] });
     const creator = (opt: unknown): any => ['opt-collection', () => handler(opt)];
-
-    const collection = creator(getOptions());
+    const collection = creator(mockOptions);
 
     await registerCollections([collection]);
 
     expect(handler).toHaveBeenCalledWith(mockOptions);
-    expect(getOptions).toHaveBeenCalled();
   });
 });

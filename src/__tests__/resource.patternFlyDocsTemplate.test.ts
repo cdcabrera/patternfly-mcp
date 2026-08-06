@@ -6,24 +6,27 @@ import {
   resourceCallback
 } from '../resource.patternFlyDocsTemplate';
 import { isPlainObject } from '../server.helpers';
-import { setPatternFlyCollection } from '../patternFly.getResources';
-import { patternFlyDocsCollection } from '../collection.patternFlyDocs';
-import { patternFlySchemasCollection } from '../collection.patternFlySchemas';
+import { getPatternFlyMcpResources } from '../patternFly.getResources';
+import { filterPatternFly } from '../patternFly.search';
 
 jest.mock('node:fs/promises', () => ({
   ...jest.requireActual('node:fs/promises'),
   readFile: jest.fn()
 }));
 
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyMcpResources: { memo: jest.fn() }
+}));
+
+jest.mock('../patternFly.search', () => ({
+  ...jest.requireActual('../patternFly.search'),
+  filterPatternFly: { memo: jest.fn() }
+}));
+
 const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
-
-beforeAll(async () => {
-  const [, docsCallback] = patternFlyDocsCollection();
-  const [, schemasCallback] = patternFlySchemasCollection();
-
-  await setPatternFlyCollection('patternfly-docs', await docsCallback());
-  await setPatternFlyCollection('patternfly-component-schemas', await schemasCallback());
-});
+const MockMcpResources = getPatternFlyMcpResources.memo as jest.MockedFunction<typeof getPatternFlyMcpResources.memo>;
+const MockFilter = filterPatternFly.memo as jest.MockedFunction<typeof filterPatternFly.memo>;
 
 describe('patternFlyDocsTemplateResource', () => {
   beforeEach(() => {
@@ -92,6 +95,20 @@ describe('resourceCallback', () => {
       }
     }
   ])('should attempt to return resource content, $description', async ({ variables }) => {
+    MockMcpResources.mockResolvedValue({
+      availableVersions: ['v6'],
+      latestVersion: 'v6'
+    } as any);
+
+    MockFilter.mockResolvedValue({
+      byEntry: [{
+        path: `docs/${variables.name}.md`,
+        uriId: `patternfly://docs/v6/${variables.name}`,
+        uriSchemasId: undefined,
+        displayName: variables.name
+      }]
+    } as any);
+
     const mockContent = `Mock content for ${variables.name}`;
 
     mockReadFile.mockResolvedValue(mockContent);
@@ -177,6 +194,9 @@ describe('resourceCallback', () => {
       }
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
+    MockMcpResources.mockResolvedValue({ availableVersions: ['v6'], latestVersion: 'v6' } as any);
+    MockFilter.mockResolvedValue({ byEntry: [] } as any);
+
     const mockContent = `Mock content for ${variables.name}`;
 
     mockReadFile.mockResolvedValue(mockContent);
