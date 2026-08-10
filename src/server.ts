@@ -359,9 +359,9 @@ const runServer = async (options: ServerOptions = getOptions(), {
       await server?.close();
       running = false;
 
-      await Promise.all([
-        sendToolsHostShutdown(options, session),
-        sendCollectionsHostShutdown(options, session)
+      await Promise.allSettled([
+        sendToolsHostShutdown(),
+        sendCollectionsHostShutdown()
       ]);
 
       log.info(`${options.name} closed!\n`);

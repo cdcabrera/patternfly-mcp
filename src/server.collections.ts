@@ -423,8 +423,13 @@ const composeCollections = async (
 
 export {
   composeCollections,
+  computeFsReadAllowlist,
   debugChild,
+  getBuiltInCollectionNames,
+  getInlineCollections,
+  getInvalidCollections,
   logWarningsErrors,
   makeProxyCreators,
-  sendCollectionsHostShutdown
+  sendCollectionsHostShutdown,
+  spawnCollectionHost
 };
