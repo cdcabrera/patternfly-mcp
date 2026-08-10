@@ -1,4 +1,41 @@
-import { normalizeTuple, normalizeCollections } from '../server.collectionsUser';
+import { normalizeTuple, normalizeCollections, sanitizeStaticCollectionName } from '../server.collectionsUser';
+
+describe('sanitizeStaticCollectionName', () => {
+  it('should return the trimmed name when collectionName is set with defineProperty', () => {
+    const func = function testCreator() {};
+
+    Object.defineProperty(func, 'collectionName', { value: '  MyCollection  ', writable: false, enumerable: false, configurable: false });
+
+    expect(sanitizeStaticCollectionName(func)).toBe('MyCollection');
+  });
+
+  it('should return undefined when collectionName is defined through a "getter"', () => {
+    const func = function testCreator() {};
+
+    Object.defineProperty(func, 'collectionName', {
+      get() {
+        throw new Error('should not be called');
+      }
+    });
+
+    expect(sanitizeStaticCollectionName(func)).toBeUndefined();
+  });
+
+  it('should return undefined when a Proxy throws', () => {
+    const target = function testCreator() {};
+    const proxy = new Proxy(target, {
+      getOwnPropertyDescriptor(_target, prop) {
+        if (prop === 'collectionName') {
+          throw new Error('trap');
+        }
+
+        return Reflect.getOwnPropertyDescriptor(_target, prop as PropertyKey);
+      }
+    });
+
+    expect(sanitizeStaticCollectionName(proxy)).toBeUndefined();
+  });
+});
 
 describe('normalizeTuple', () => {
   it.each([

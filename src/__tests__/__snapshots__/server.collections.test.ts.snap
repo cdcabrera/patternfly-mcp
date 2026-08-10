@@ -7,6 +7,17 @@ exports[`composeCollections should attempt to setup creators, default package cr
 }
 `;
 
+exports[`composeCollections should attempt to setup creators, inline and case-variant duplicate creators 1`] = `
+{
+  "collectionsCount": 3,
+  "log": [
+    [
+      "Skipping collection plugin "LOREM" – name already used by built-in/inline collection.",
+    ],
+  ],
+}
+`;
+
 exports[`composeCollections should attempt to setup creators, inline and duplicate creators 1`] = `
 {
   "collectionsCount": 3,
@@ -158,7 +169,7 @@ exports[`debugChild should format and forward lines to log.debug, module not fou
 exports[`getBuiltInCollectionNames should log a warning when a collection name does not exist: warning 1`] = `
 [
   [
-    "Built-in collection at index 0 is missing the name property",
+    "Built-in collection at index 0 is missing the static name property, "collectionName"",
   ],
 ]
 `;
@@ -304,11 +315,11 @@ exports[`makeProxyCreators should attempt to return proxy creators, a function w
   "output": [
     [
       "Lorem Ipsum",
-      "function",
+      [Function],
     ],
     [
       "Dolor Sit",
-      "function",
+      [Function],
     ],
   ],
 }
@@ -327,7 +338,7 @@ exports[`makeProxyCreators should attempt to return proxy creators, a function w
   "output": [
     [
       "Lorem Ipsum",
-      "function",
+      [Function],
     ],
   ],
 }

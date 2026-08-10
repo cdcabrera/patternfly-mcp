@@ -11,7 +11,12 @@ import { getOptions, getSessionOptions } from './options.context';
 import { type McpCollectionCreator, type McpCollectionResult } from './collections';
 import { setCollectionOptions } from './options.collections';
 import { type CollectionDescriptor, type IpcResponse } from './server.collectionsIpc';
-import { normalizeCollections, type NormalizedCollectionEntry } from './server.collectionsUser';
+import {
+  normalizeCollections,
+  sanitizeStaticCollectionName,
+  type NormalizedCollectionEntry
+} from './server.collectionsUser';
+import { applyStaticProperty } from './server.processUser';
 
 /**
  * Handle for a spawned Host process.
@@ -39,21 +44,55 @@ const computeFsReadAllowlist = ({ contextPath }: GlobalOptions = getOptions()): 
 };
 
 /**
- * Extract the names of built-in collections.
+ * Get a set of collection names from the builtin creators.
  *
- * @param builtinCreators - Array of built-in collection creators.
- * @returns Set of collection names.
+ * @param builtinCreators - Array of builtin collection creators
+ * @returns Set of collection names
  */
 const getBuiltInCollectionNames = (builtinCreators: McpCollectionCreator[]) =>
   new Set<string>(builtinCreators.map((creator, index) => {
-    const [name] = creator() || [];
+    const builtInCollectionName = sanitizeStaticCollectionName(creator)?.toLowerCase?.();
 
-    if (!name) {
-      log.warn(`Built-in collection at index ${index} is missing the name property`);
+    if (!builtInCollectionName) {
+      log.warn(`Built-in collection at index ${index} is missing the static name property, "collectionName"`);
     }
 
-    return name;
-  }).filter(Boolean));
+    return builtInCollectionName;
+  }).filter(Boolean) as string[]);
+
+/**
+ * Wrap built-in creators to set a trusted `_isInternal: true` status.
+ *
+ * @param builtinCreators - Array of builtin collection creators
+ * @returns Array of secured builtin collection creators
+ */
+const secureBuiltinCreators = (builtinCreators: McpCollectionCreator[]) =>
+  builtinCreators.map((creator, index): McpCollectionCreator => {
+    const secured: McpCollectionCreator = opt => {
+      const [name, callback, config] = creator(opt);
+
+      return [
+        name,
+        callback,
+        {
+          ...config,
+          _isInternal: true
+        }
+      ];
+    };
+
+    const collectionName = sanitizeStaticCollectionName(creator);
+
+    if (collectionName) {
+      applyStaticProperty('collectionName', collectionName, secured);
+    } else {
+      log.warn(
+        `Built-in collection at index ${index} is missing the static name property, "collectionName"`
+      );
+    }
+
+    return secured;
+  });
 
 /**
  * Log warnings and errors from Tools' load.
@@ -130,6 +169,20 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
   };
 };
 
+/**
+ * Spawn the Collections Host (child process), load external collections, and return a host handle.
+ *
+ * @note The load IPC payload uses a generic `options` field (not `collectionOptions`) so creator
+ * options, and related session context, can share a host-agnostic shape. Tools still pass
+ * domain-specific `toolOptions`. Future iterations should align Tools Host IPC to this generic
+ * `options` contract.
+ *
+ * @param {GlobalOptions} options - Global options.
+ * @returns Host handle used by `makeProxyCreators` and shutdown.
+ *
+ * @throws {Error} If the Collections Host entry `#collectionsHost` cannot be resolved, or if the child
+ *     process fails to spawn or respond during the handshake within the configured timeout.
+ */
 const spawnCollectionHost = async (
   options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
@@ -156,7 +209,7 @@ const spawnCollectionHost = async (
 
   // load
   const loadAck = await handle.request<Extract<IpcResponse, { t: 'load:ack' }>>(
-    { t: 'load', specs: [], invokeTimeoutMs, collectionOptions },
+    { t: 'load', specs: [], invokeTimeoutMs, options: collectionOptions },
     'load:ack',
     loadTimeoutMs
   );
@@ -174,12 +227,11 @@ const spawnCollectionHost = async (
 };
 
 /**
- * Dynamically proxies a remote child-process record callback across the IPC boundary.
+ * Recreate parent-side creators that forward invocations to the Host.
  *
- * @param sourceName
- * @param handle
- * @param globalOpts
- * @param handle.pluginHost
+ * @param {HostHandle} handle - Host handle.
+ * @param {GlobalOptions} options - Global options.
+ * @returns Array of creators
  */
 const makeProxyCreators = (
   handle: HostHandle,
@@ -259,7 +311,6 @@ const composeCollections = async (
   options: GlobalOptions = getOptions(),
   session: AppSession = getSessionOptions()
 ): Promise<McpCollectionCreator[]> => {
-  // Wrap built-in creators to enforce trusted _isInternal. Ties into what options, session values are available.
   const { collectionModules, nodeVersion, contextUrl, contextPath } = options;
   const { sessionId } = session;
   const registryKey = `${sessionId}:collections`;
@@ -271,18 +322,7 @@ const composeCollections = async (
   }
 
   // Intercept and wrap built-in creators to enforce trusted isInternal: true status
-  const securedBuiltinCreators = builtinCreators.map((creator): McpCollectionCreator => opt => {
-    const [name, callback, config] = creator(opt);
-
-    return [
-      name,
-      callback,
-      {
-        ...config,
-        _isInternal: true
-      }
-    ];
-  });
+  const securedBuiltinCreators = secureBuiltinCreators(builtinCreators);
 
   const updatedCollectionModules = Array.isArray(collectionModules) ? collectionModules : [];
   const usedNames = getBuiltInCollectionNames(securedBuiltinCreators);
@@ -295,6 +335,7 @@ const composeCollections = async (
     return [];
   }
 
+  // Temporary placeholder for collections-as-plugins
   const filePackageCreators: NormalizedCollectionEntry[] = [];
   const invalidCreators = getInvalidCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
   const inlineCreators: NormalizedCollectionEntry[] = getInlineCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
@@ -304,8 +345,6 @@ const composeCollections = async (
   invalidCreators.forEach(({ error }) => {
     log.warn(error);
   });
-
-  // collectionCreators.push(...filteredInlineCreators);
 
   const localCreators: McpCollectionCreator[] = [];
   const hostedCreators: McpCollectionCreator[] = [];
@@ -325,30 +364,6 @@ const composeCollections = async (
 
   const filteredInlineCreators = inlineCreators.map(collection =>
     collection.value as McpCollectionCreator).filter(Boolean);
-
-  /*
-  This is already taken care of as part of the getInlineCollections and normalizeCollections chain
-  const filteredInlineCreators = inlineCreators.map(collection => {
-    const creator = collection.value as McpCollectionCreator;
-
-    if (!creator) {
-      return null;
-    }
-
-    return (opts?: GlobalOptions) => {
-      const [name, callback, config] = creator(opts);
-
-      return [
-        name,
-        callback,
-        {
-          ...config,
-          isInternal: false // Override/strip to ensure untrusted collections remain sandboxed
-        }
-      ];
-    };
-  }).filter(Boolean) as McpCollectionCreator[];
-  */
 
   hostedCreators.push(...filteredInlineCreators);
 
@@ -430,6 +445,7 @@ export {
   getInvalidCollections,
   logWarningsErrors,
   makeProxyCreators,
+  secureBuiltinCreators,
   sendCollectionsHostShutdown,
   spawnCollectionHost
 };

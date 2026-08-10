@@ -5,6 +5,7 @@ import {
   getBuiltInCollectionNames,
   logWarningsErrors,
   makeProxyCreators,
+  secureBuiltinCreators,
   sendCollectionsHostShutdown,
   spawnCollectionHost
 } from '../server.collections';
@@ -42,18 +43,38 @@ describe('getBuiltInCollectionNames', () => {
   });
 
   it('should return built-in collection name', () => {
-    const collectionName = 'testCollection';
-    const creator = () => [collectionName];
+    const collectionName = 'loremIpsum';
+    const creator = () => {};
 
-    expect(getBuiltInCollectionNames([creator] as any).has(collectionName)).toBe(true);
+    creator.collectionName = collectionName;
+
+    expect(getBuiltInCollectionNames([creator] as any).has(collectionName.toLowerCase())).toBe(true);
   });
 
   it('should log a warning when a collection name does not exist', () => {
-    const creator = () => [];
+    const creator = () => {};
 
     getBuiltInCollectionNames([creator] as any);
 
     expect(MockLog.warn.mock.calls).toMatchSnapshot('warning');
+  });
+});
+
+describe('secureBuiltinCreators', () => {
+  it('should wrap builtin creators and set _isInternal: true', () => {
+    const mockHandler = jest.fn();
+    const mockCreator: any = jest.fn(() => ['test-collection', mockHandler, { isRequired: true }]);
+
+    mockCreator.collectionName = 'test-collection';
+
+    const [secured]: any[] = secureBuiltinCreators([mockCreator]);
+    const [name, callback, config] = secured({});
+
+    expect(name).toBe('test-collection');
+    expect(config?._isInternal).toBe(true);
+    expect(config?.isRequired).toBe(true);
+    expect(callback).toBe(mockHandler);
+    expect(getBuiltInCollectionNames([secured] as any).has('test-collection')).toBe(true);
   });
 });
 
@@ -74,7 +95,6 @@ describe('computeFsReadAllowlist', () => {
       expected: []
     }
   ])('should return a list of allowed paths, $description', ({ options, expected }) => {
-    jest.mocked(getOptions).mockReturnValue(options as any);
     expect(computeFsReadAllowlist(options as any)).toEqual(expected);
   });
 });
@@ -308,7 +328,10 @@ describe('makeProxyCreators', () => {
     const output = proxies.map(proxy => {
       const [name, handler] = proxy();
 
-      return [name, typeof handler];
+      return [
+        name,
+        handler
+      ];
     });
 
     expect({
@@ -401,6 +424,11 @@ describe('composeCollections', () => {
   // Mock default creators
   const loremIpsum = () => ['loremIpsum', () => {}, { isRequired: true }];
   const dolorSitAmet = () => ['dolorSitAmet', () => {}, { isRequired: false }];
+  const consecteturAdipiscingElit: any = () => ['consecteturAdipiscingElit', () => {}, { runInChildProcess: true }];
+
+  loremIpsum.collectionName = 'loremIpsum';
+  dolorSitAmet.collectionName = 'dolorSitAmet';
+  consecteturAdipiscingElit.collectionName = 'consecteturAdipiscingElit';
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -485,6 +513,15 @@ describe('composeCollections', () => {
         ['lorem', () => {}]
       ],
       expectedModuleCount: 3
+    },
+    {
+      description: 'inline and case-variant duplicate creators',
+      nodeVersion: 22,
+      modules: [
+        ['lorem', () => {}],
+        ['LOREM', () => {}]
+      ],
+      expectedModuleCount: 3
     }
   ])('should attempt to setup creators, $description', async ({ modules, nodeVersion, expectedModuleCount }) => {
     const mockChild = {
@@ -492,8 +529,9 @@ describe('composeCollections', () => {
       once: jest.fn(),
       off: jest.fn()
     };
-    const sessionId = 'test-session-id';
     const mockHostedCollections = modules.map(([name]) => ({ name, id: name }));
+
+    const sessionId = 'test-session-id';
 
     const mockRequest = jest.fn()
       .mockResolvedValueOnce({ t: 'hello:ack', id: 'id-1' })
@@ -506,7 +544,7 @@ describe('composeCollections', () => {
       closeStderr: jest.fn()
     } as any);
 
-    const defaultCreators: any[] = [loremIpsum, dolorSitAmet];
+    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, consecteturAdipiscingElit];
     const globalOptions: any = { collectionModules: modules, nodeVersion, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
 
@@ -543,13 +581,13 @@ describe('composeCollections', () => {
       closeStderr: jest.fn()
     } as any);
 
-    const customCreator: any = () => ['loremIpsum', () => {}, { runInChildProcess: true }];
+    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, consecteturAdipiscingElit];
     const globalOptions: any = { collectionModules: [], nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
 
     MockGetOptions.mockReturnValue(globalOptions);
 
-    await composeCollections([customCreator], globalOptions, sessionOptions);
+    await composeCollections(defaultCreators, globalOptions, sessionOptions);
 
     if (onceHandlers['disconnect']) {
       onceHandlers['disconnect']();
@@ -567,8 +605,7 @@ describe('composeCollections', () => {
       throw new Error('Mock spawn failure');
     });
 
-    const customCreator: any = () => ['consecteturAdipiscingElit', () => {}, { runInChildProcess: true }];
-    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, customCreator];
+    const defaultCreators: any[] = [loremIpsum, dolorSitAmet, consecteturAdipiscingElit];
     const globalOptions: any = { collectionModules: [], nodeVersion: 22, contextUrl: 'file:///test/path', contextPath: '/test/path' };
     const sessionOptions: any = { sessionId };
     const collections = await composeCollections(defaultCreators, globalOptions, sessionOptions);

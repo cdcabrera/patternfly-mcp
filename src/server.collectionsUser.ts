@@ -1,5 +1,6 @@
 import { memo } from './server.caching';
 import { sanitizeDataProp } from './server.toolsUser';
+import { applyStaticProperty } from './server.processUser';
 import { type McpCollection } from './collections';
 import { type GlobalOptions } from './options';
 import { type CollectionOptions } from './options.collections';
@@ -80,6 +81,29 @@ type CollectionCreator = (options?: CollectionExternalOptions | CollectionIntern
 type CollectionModule = ReadonlyArray<NormalizedCollectionEntry['value']>;
 
 /**
+ * Sanitize and return a static collection name.
+ *
+ * @param obj
+ *
+ * @returns - The sanitized static collection name, or `undefined` if the name is invalid.
+ */
+const sanitizeStaticCollectionName = (obj: unknown) => {
+  try {
+    const name = sanitizeDataProp(obj, 'collectionName');
+
+    if (typeof name?.value === 'string') {
+      const trimmed = String.prototype.trim.call(name.value);
+
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  } catch {}
+
+  return undefined;
+};
+
+/**
  * Normalize a tuple config into a collection of records' creator function.
  *
  * @param config - The array configuration to normalize.
@@ -113,6 +137,8 @@ const normalizeTuple = (config: unknown): CreatorEntry | undefined => {
       isInternal: false
     }
   ];
+
+  applyStaticProperty('collectionName', updatedName, creator);
 
   return {
     original: config,
@@ -186,6 +212,7 @@ normalizeCollections.memo = memo(normalizeCollections, {
 export {
   normalizeCollections,
   normalizeTuple,
+  sanitizeStaticCollectionName,
   type CollectionInternalOptions,
   type CollectionExternalOptions,
   type NormalizedCollectionEntry,
