@@ -1,5 +1,12 @@
-import { composeCollections } from '../server.collections';
+import { composeCollections, sendCollectionsHostShutdown } from '../server.collections';
 import { getOptions, getSessionOptions } from '../options.context';
+import { shutdownChildProcess, activeChildrenBySession } from '../server.process';
+
+jest.mock('../server.process', () => ({
+  spawnChildProcess: jest.fn(),
+  shutdownChildProcess: jest.fn().mockResolvedValue(undefined),
+  activeChildrenBySession: new Map()
+}));
 
 jest.mock('../options.context', () => ({
   getOptions: jest.fn(() => ({})),
@@ -63,5 +70,32 @@ describe('composeCollections', () => {
     });
 
     expect(output).toMatchSnapshot();
+  });
+});
+
+describe('sendCollectionsHostShutdown', () => {
+  const MockShutdownChildProcess = jest.mocked(shutdownChildProcess);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    activeChildrenBySession.clear();
+  });
+
+  it('should attempt graceful shutdown of child', async () => {
+    const child = { pid: 123 };
+    const handle = { child, closeStderr: jest.fn() };
+    const sessionId = 'test-session-id';
+    const registryKey = `${sessionId}:collections`;
+
+    activeChildrenBySession.set(registryKey, handle as any);
+
+    await sendCollectionsHostShutdown({ pluginHost: { gracePeriodMs: 10 } } as any, { sessionId } as any);
+
+    expect(MockShutdownChildProcess).toHaveBeenCalledTimes(1);
+    expect(MockShutdownChildProcess).toHaveBeenCalledWith(handle, {
+      gracePeriodMs: 10,
+      sessionId: registryKey,
+      label: 'Collections Host'
+    });
   });
 });
