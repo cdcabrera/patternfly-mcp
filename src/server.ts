@@ -37,7 +37,7 @@ import {
   type McpCollection,
   type RegisterCollectionItem
 } from './collections';
-import { composeCollections } from './server.collections';
+import { composeCollections, sendCollectionsHostShutdown } from './server.collections';
 import { setPatternFlyCollection } from './patternFly.getResources';
 
 /**
@@ -359,7 +359,10 @@ const runServer = async (options: ServerOptions = getOptions(), {
       await server?.close();
       running = false;
 
-      await sendToolsHostShutdown();
+      await Promise.all([
+        sendToolsHostShutdown(options, session),
+        sendCollectionsHostShutdown(options, session)
+      ]);
 
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
