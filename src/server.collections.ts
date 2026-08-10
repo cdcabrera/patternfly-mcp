@@ -236,11 +236,12 @@ const sendCollectionsHostShutdown = async (
   { pluginHost }: GlobalOptions = getOptions(),
   { sessionId }: AppSession = getSessionOptions()
 ): Promise<void> => {
-  const handle = activeChildrenBySession.get(sessionId) as HostHandle | undefined;
+  const registryKey = `${sessionId}:collections`;
+  const handle = activeChildrenBySession.get(registryKey) as HostHandle | undefined;
 
   await shutdownChildProcess(handle, {
     gracePeriodMs: Math.max(0, Number(pluginHost?.gracePeriodMs) || 0),
-    sessionId,
+    sessionId: registryKey,
     label: 'Collections Host'
   });
 };
@@ -261,7 +262,8 @@ const composeCollections = async (
   // Wrap built-in creators to enforce trusted _isInternal. Ties into what options, session values are available.
   const { collectionModules, nodeVersion, contextUrl, contextPath } = options;
   const { sessionId } = session;
-  const existingSession = activeChildrenBySession.get(sessionId);
+  const registryKey = `${sessionId}:collections`;
+  const existingSession = activeChildrenBySession.get(registryKey);
 
   if (existingSession) {
     log.warn(`Existing Collections Host session detected ${sessionId}. Shutting down the existing host before creating a new one.`);
@@ -366,7 +368,7 @@ const composeCollections = async (
       return;
     }
 
-    const current = activeChildrenBySession.get(sessionId);
+    const current = activeChildrenBySession.get(registryKey);
 
     if (current && current.child === host.child) {
       try {
@@ -376,7 +378,7 @@ const composeCollections = async (
         log.error(`Failed to close Collections Host stderr reader: ${formatUnknownError(error)}`);
       }
 
-      activeChildrenBySession.delete(sessionId);
+      activeChildrenBySession.delete(registryKey);
     }
 
     host.child.off('exit', onChildExitOrDisconnect);
@@ -406,7 +408,7 @@ const composeCollections = async (
     const filteredHandle = { ...host, collections: filteredCollections } as HostHandle;
     const proxiedCreators = makeProxyCreators(filteredHandle);
 
-    activeChildrenBySession.set(sessionId, host);
+    activeChildrenBySession.set(registryKey, host);
 
     host.child.once('exit', onChildExitOrDisconnect);
     host.child.once('disconnect', onChildExitOrDisconnect);
