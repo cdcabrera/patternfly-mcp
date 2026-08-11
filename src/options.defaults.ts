@@ -182,7 +182,8 @@ interface ModeOptions {
  * @property api.base URL starting base for crawling the PatternFly API.
  * @property api.versions URL Get the available PatternFly API versions. Versions are required to crawl.
  * @property api.componentPaths List of additional PatternFly API component paths to try.
- * @property api.crawlTimeoutMs Timeout in milliseconds for crawling the PatternFly API.
+ * @property api.crawlCancelMs Timeout in milliseconds for cancelling the PatternFly API crawl.
+ * @property api.crawlIntervalMs Interval in milliseconds, during server run, for crawling the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
  * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
  * @property availableSchemasVersions List of available PatternFly schema versions to the MCP server.
@@ -200,9 +201,9 @@ interface PatternFlyOptions {
     base: string;
     versions: string;
     componentPaths: string[];
-    crawlTimeoutMs: number;
+    crawlCancelMs: number;
+    crawlIntervalMs: number;
     enabled: boolean;
-    // concurrency: number;
   },
   availableResourceVersions: ('6.0.0')[];
   availableSearchVersions: ('current' | 'latest' | 'v6')[];
@@ -516,7 +517,8 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
       'props',
       'css'
     ],
-    crawlTimeoutMs: 180_000,
+    crawlCancelMs: 180_000, // 3 minutes
+    crawlIntervalMs: 43_200_000, // 12 hours
     enabled: false
     // concurrency: 4
   },

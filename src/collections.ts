@@ -48,6 +48,8 @@ interface McpCollectionResult {
  *     record collection plugins.
  *    - `_config.runParallel`: Optional callback function to dynamically decide
  *        if the record source should run in a non-blocking parallel process.
+ *    - `_config.runSchedule`: Optional object to dynamically decide if the record source
+ *        should run in a scheduled interval using {@link DeferTaskOptions}
  *    - `_config.isRequired`: Optional boolean used to control server startup when
  *        collections are required for operation.
  *   - `_config._isInternal`: Optional boolean. Applied internally. Attempting to manually
@@ -58,6 +60,7 @@ type McpCollection = [
   handler: (arg?: unknown) => McpCollectionResult | Promise<McpCollectionResult>,
   _config?: {
     runParallel?: boolean | string | ((options?: GlobalOptions) => boolean | Promise<boolean> | string | Promise<string>);
+    runSchedule?: { cancelMs?: number, intervalMs?: number };
     // priority?: number;
     isRequired?: boolean;
     // group?: string;

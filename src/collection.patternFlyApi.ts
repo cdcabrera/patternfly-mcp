@@ -1,20 +1,19 @@
-import { log } from './logger';
-import { processDocsFunction } from './server.getResources';
-import { memo } from './server.caching';
-import { isPlainObject, joinUrl } from './server.helpers';
-import {
-  getOptions
-  // getSessionOptions,
-  // runWithOptions,
-  // runWithSession
-} from './options.context';
-import { DEFAULT_OPTIONS } from './options.defaults';
-import { deferTask } from './server.task';
 import {
   type McpCollection,
   type McpCollectionRecord,
   type McpCollectionResult
 } from './collections';
+import { log } from './logger';
+import { processDocsFunction } from './server.getResources';
+import { memo } from './server.caching';
+import { isPlainObject, joinUrl } from './server.helpers';
+import {
+  getOptions,
+  getSessionOptions,
+  runWithOptions,
+  runWithSession
+} from './options.context';
+import { DEFAULT_OPTIONS } from './options.defaults';
 
 /**
  * Processed content for API responses.
@@ -260,61 +259,11 @@ const apiSpider = async (): Promise<ApiContent[]> => {
 };
 
 /**
- * Deferred task for PatternFly API spider.
+ * Async collect and process entries for a collection.
+ *
+ * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
-apiSpider.deferTask = deferTask(apiSpider, {
-  cancelMs: DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs
-});
-
-/**
- * Run the PatternFly API collection.
- */
-const runCollectionOg = async (): Promise<McpCollectionResult> => {
-  const taskHandle = apiSpider.deferTask();
-  const entries = await taskHandle.start();
-  const recordsMap: Map<string, McpCollectionRecord> = new Map();
-
-  entries?.forEach((entry, index) => {
-    const semanticContext = entry.semanticContext || {};
-    const name = (semanticContext.item || 'api-entry').toLowerCase();
-    const version = (semanticContext.version || 'unknown').toLowerCase();
-    const displayName = semanticContext.item || name;
-
-    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
-
-    if (recordsMap.has(id)) {
-      return;
-    }
-
-    const adaptedEntry = {
-      displayName,
-      description: entry.content || `PatternFly API documentation for ${displayName}`,
-      pathSlug: name,
-      category: semanticContext.kind,
-      section: semanticContext.section || 'components',
-      source: 'api' as const,
-      version,
-      id,
-      path: entry.url
-    };
-
-    const record = {
-      id,
-      sourceId: entry.url,
-      sourceType: 'api' as const,
-      data: {
-        [name]: adaptedEntry
-      }
-    };
-
-    recordsMap.set(record.id, record);
-  });
-
-  return { records: [...recordsMap.values()] };
-};
-
-// Testing without the task defer work
-const runCollection = async (): Promise<McpCollectionResult> => {
+const collectionCallback = async (): Promise<McpCollectionResult> => {
   const entries = await apiSpider();
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
@@ -359,19 +308,32 @@ const runCollection = async (): Promise<McpCollectionResult> => {
 
 /**
  * Create a PatternFly API collection.
+ *
+ * @param options - Global options
+ * @param session - Session options
+ * @returns {McpCollection} The collection definition tuple
  */
-const patternFlyApiCollection = (): McpCollection => [
-  'patternfly-api',
-  runCollection,
-  {
-    runParallel: '#collectionPatternFlyApi'
-  }
-];
+const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): McpCollection => {
+  const callback: McpCollection[1] = async () =>
+    runWithSession(session, async () =>
+      runWithOptions(options, async () => collectionCallback()));
+
+  return [
+    'patternfly-api',
+    callback,
+    {
+      runParallel: '#collectionPatternFlyApi',
+      runSchedule: {
+        cancelMs: options.patternflyOptions.api.crawlCancelMs,
+        intervalMs: options.patternflyOptions.api.crawlIntervalMs
+      }
+    }
+  ];
+};
 
 export {
-  patternFlyApiCollection as default,
   patternFlyApiCollection,
-  runCollection,
+  collectionCallback,
   apiSpider,
   crawler,
   isEmptyPayload,
