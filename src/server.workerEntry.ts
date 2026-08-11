@@ -1,6 +1,5 @@
 import { pathToFileURL } from 'node:url';
 import { parentPort, workerData } from 'node:worker_threads';
-
 import { runWithOptions, runWithSession } from './options.context';
 
 interface WorkerTaskData {
@@ -74,4 +73,5 @@ const runWorker = async () => {
 };
 
 runWorker();
-export {};
+
+export { runWorker };
