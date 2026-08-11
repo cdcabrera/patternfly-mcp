@@ -14,6 +14,11 @@ jest.mock('child_process', () => ({
 }));
 
 /**
+ * Note: Mock worker_threads to avoid issues with Worker in tests
+ */
+jest.mock('worker_threads');
+
+/**
  * Note: Mock pid-port to avoid ES module import issues in Jest
  * - Returns undefined to simulate port is free (no process found)
  */

@@ -129,6 +129,8 @@ const registerServerCollections = async (collections: McpCollectionCreator[], op
   const updatedCollections = collections.map(collectionCreator => {
     const [name, callback, _config] = collectionCreator(options);
 
+    log.info(`Registered collection: ${name}`);
+
     return [
       name,
       async () => runWithSession(session, async () =>
@@ -149,9 +151,14 @@ const registerServerCollections = async (collections: McpCollectionCreator[], op
   });
 
   // Update PatternFly collections, see {@link setPatternFlyCollection}
-  const onUpdate = ({ name, response }: RegisterCollectionItem) => {
+  const onUpdate = ({ name, response, error }: RegisterCollectionItem) => {
     if (response) {
       setPatternFlyCollection(name, response);
+      log.info(`Update collection: ${name}`);
+    }
+
+    if (error) {
+      log.error(`Update collection error "${name}": ${error}`);
     }
   };
 
@@ -545,6 +552,7 @@ runServer.memo = memo(
 
 export {
   runServer,
+  registerServerCollections,
   registerServerResources,
   registerServerTools,
   type ServerInstance,
