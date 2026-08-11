@@ -1,7 +1,10 @@
-import { type McpCollectionCreator, type McpCollectionResult } from './collections';
+import { type McpCollection, type McpCollectionCreator, type McpCollectionResult } from './collections';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
 import { heavyPool } from './server.workerPool';
+import { deferTask } from './server.task';
+
+type CollectionRunSchedule = NonNullable<McpCollection[2]>['runSchedule'];
 
 /**
  * Recreates a creator function to proxy task execution through the global worker thread pool.
@@ -34,6 +37,37 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
   };
 
   return [name, handler];
+};
+
+/**
+ * Recreates a creator function to wrap task execution in a deferred task, guarding
+ * long-running collection callbacks with per-execution timeout and hard cancel cutoffs.
+ *
+ * @param {McpCollectionCreator} creator - The original creator.
+ * @param {CollectionRunSchedule} runSchedule - Schedule config sourced from the
+ *     collection's `_config.runSchedule`. Provides `cancelMs` and `intervalMs`
+ *     used to build the underlying {@link deferTask}.
+ * @param {GlobalOptions} options - Global options.
+ * @returns {McpCollectionCreator} The proxied creator function.
+ */
+const makeScheduledProxyCreator = ({
+  creator,
+  runSchedule
+}: { creator: McpCollectionCreator, runSchedule: CollectionRunSchedule },
+options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
+  const [name, callback, config] = creator(options);
+  const deferOptions = {
+    ...(typeof runSchedule?.cancelMs === 'number' ? { cancelMs: runSchedule.cancelMs } : {}),
+    ...(typeof runSchedule?.intervalMs === 'number' ? { intervalMs: runSchedule.intervalMs } : {})
+  };
+
+  const handler = async (args?: unknown): Promise<McpCollectionResult> => {
+    const task = deferTask(callback, deferOptions)(args);
+
+    return (await task.start()) ?? { records: [] };
+  };
+
+  return config ? [name, handler, config] : [name, handler];
 };
 
 /**
@@ -72,11 +106,18 @@ const composeCollections = async (
   for (const creator of securedBuiltinCreators) {
     const [, , config] = creator(options);
     const runHostValue = config?.runParallel as unknown;
+    const runScheduleConfig = config?.runSchedule;
     let updatedCreator = creator;
 
     if (typeof runHostValue === 'string' && runHostValue.startsWith('#')) {
       // Use 'collectionCallback' for collection modules that expose a common-named export.
       updatedCreator = makeParallelProxyCreator({ creator, moduleSpecifier: runHostValue, exportName: 'collectionCallback' });
+    }
+
+    // Layer scheduling on top of the (optional) parallel wrap so the defer-task
+    // guardrails apply to the entire execution, including any worker-pool proxy.
+    if (runScheduleConfig && typeof runScheduleConfig === 'object') {
+      updatedCreator = makeScheduledProxyCreator({ creator: updatedCreator, runSchedule: runScheduleConfig });
     }
 
     localCreators.push(updatedCreator);
