@@ -76,7 +76,7 @@ const composeCollections = async (
 
     if (typeof runHostValue === 'string' && runHostValue.startsWith('#')) {
       // Use 'runCollection' for collection modules that expose that named export.
-      updatedCreator = makeParallelProxyCreator({ creator, moduleSpecifier: runHostValue });
+      updatedCreator = makeParallelProxyCreator({ creator, moduleSpecifier: runHostValue, exportName: 'runCollection' });
     }
 
     localCreators.push(updatedCreator);
