@@ -23,28 +23,19 @@ try {
   const runWithSession = ctx.l;
   parentPort?.postMessage({ debug: 'ctx-imported', ro: typeof runWithOptions, rs: typeof runWithSession });
 
-  // Test apiSpider directly.
+  // Test apiSpider directly, NO keepalive.
   const apiSpider = mod.apiSpider;
-  parentPort?.postMessage({ debug: 'spider-invoke', typeofApiSpider: typeof apiSpider });
+  parentPort?.postMessage({ debug: 'spider-invoke' });
   const started = Date.now();
+
+  // Inspect active handles right after firing spider
   const spiderPromise = apiSpider();
   parentPort?.postMessage({ debug: 'spider-fired' });
-  spiderPromise.then(entries => {
-    parentPort?.postMessage({ debug: 'spider-done', ms: Date.now() - started, entries: entries?.length });
-  }).catch(e => {
-    parentPort?.postMessage({ debug: 'spider-err', err: String(e), stack: e?.stack });
-  });
+  await Promise.resolve();
+  parentPort?.postMessage({ debug: 'handles-t0', reqs: process._getActiveRequests?.().length, handles: process._getActiveHandles?.().length });
 
-  // Keep alive with our own timer for 30s so we can observe
-  const keepAlive = setInterval(() => {
-    parentPort?.postMessage({ debug: 'tick', at: Date.now() - started });
-  }, 2000);
-  setTimeout(() => {
-    clearInterval(keepAlive);
-    parentPort?.postMessage({ debug: 'done-wait' });
-  }, 30000);
-
-  const result = { records: [] };
+  const result = await spiderPromise;
+  parentPort?.postMessage({ debug: 'spider-done', ms: Date.now() - started, entries: result?.length });
   parentPort?.postMessage({ success: true, payload: result, debug: 'success' });
 } catch (e) {
   parentPort?.postMessage({ success: false, error: String(e), stack: e?.stack, debug: 'caught' });
