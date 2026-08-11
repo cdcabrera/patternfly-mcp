@@ -269,7 +269,7 @@ apiSpider.deferTask = deferTask(apiSpider, {
 /**
  * Run the PatternFly API collection.
  */
-const runCollection = async (): Promise<McpCollectionResult> => {
+const runCollectionOg = async (): Promise<McpCollectionResult> => {
   const taskHandle = apiSpider.deferTask();
   const entries = await taskHandle.start();
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
@@ -312,6 +312,8 @@ const runCollection = async (): Promise<McpCollectionResult> => {
 
   return { records: [...recordsMap.values()] };
 };
+
+const runCollection = async (): Promise<McpCollectionResult> => ({ records: [] });
 
 /**
  * Create a PatternFly API collection.
