@@ -520,7 +520,7 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
       'props',
       'css'
     ],
-    crawlTimeoutMs: 180_000,
+    crawlTimeoutMs: 10_000,
     enabled: false
     // concurrency: 4
   },

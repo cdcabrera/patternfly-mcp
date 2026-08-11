@@ -67,7 +67,7 @@ const getBuiltInCollectionNames = (builtinCreators: McpCollectionCreator[]) =>
  * @returns Array of secured builtin collection creators
  */
 const secureBuiltinCreators = (builtinCreators: McpCollectionCreator[]) =>
-  builtinCreators.map((creator, index): McpCollectionCreator => {
+  builtinCreators.map((creator): McpCollectionCreator => {
     const secured: McpCollectionCreator = opt => {
       const [name, callback, config] = creator(opt);
 
@@ -85,10 +85,6 @@ const secureBuiltinCreators = (builtinCreators: McpCollectionCreator[]) =>
 
     if (collectionName) {
       applyStaticProperty('collectionName', collectionName, secured);
-    } else {
-      log.warn(
-        `Built-in collection at index ${index} is missing the static name property, "collectionName"`
-      );
     }
 
     return secured;
