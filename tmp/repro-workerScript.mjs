@@ -23,19 +23,26 @@ try {
   const runWithSession = ctx.l;
   parentPort?.postMessage({ debug: 'ctx-imported', ro: typeof runWithOptions, rs: typeof runWithSession });
 
-  // Test apiSpider directly, NO keepalive.
   const apiSpider = mod.apiSpider;
   parentPort?.postMessage({ debug: 'spider-invoke' });
   const started = Date.now();
-
-  // Inspect active handles right after firing spider
   const spiderPromise = apiSpider();
-  parentPort?.postMessage({ debug: 'spider-fired' });
-  await Promise.resolve();
-  parentPort?.postMessage({ debug: 'handles-t0', reqs: process._getActiveRequests?.().length, handles: process._getActiveHandles?.().length });
 
-  const result = await spiderPromise;
-  parentPort?.postMessage({ debug: 'spider-done', ms: Date.now() - started, entries: result?.length });
+  // Poll handles/requests every 20ms via a REFED timer to keep loop alive AND observe
+  const poll = setInterval(() => {
+    const reqs = process._getActiveRequests?.() || [];
+    const handles = process._getActiveHandles?.() || [];
+    const handleTypes = handles.map(h => h?.constructor?.name || typeof h);
+    const reqTypes = reqs.map(r => r?.constructor?.name || typeof r);
+    parentPort?.postMessage({ debug: 'poll', at: Date.now() - started, reqs: reqs.length, handles: handles.length, handleTypes, reqTypes });
+  }, 100);
+
+  const result = await Promise.race([
+    spiderPromise.then(v => ({ tag: 'done', v })),
+    new Promise(r => setTimeout(() => r({ tag: 'timeout' }), 15000))
+  ]);
+  clearInterval(poll);
+  parentPort?.postMessage({ debug: 'result', at: Date.now() - started, result: result.tag, entries: result?.v?.length });
   parentPort?.postMessage({ success: true, payload: result, debug: 'success' });
 } catch (e) {
   parentPort?.postMessage({ success: false, error: String(e), stack: e?.stack, debug: 'caught' });
