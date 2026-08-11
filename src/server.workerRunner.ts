@@ -45,25 +45,32 @@ interface WorkerTaskData {
  * - `session`: Optional session context to be employed during the execution.
  */
 const runWorker = async () => {
+  console.error('[WORKER] runWorker started!');
   const { moduleSpecifier, exportName = 'default', args, options, session } = workerData as WorkerTaskData;
 
+  console.error('[WORKER] moduleSpecifier:', moduleSpecifier);
+
   try {
+    console.error('[WORKER] options value:', JSON.stringify(options));
     if (!moduleSpecifier) {
       throw new Error('No moduleSpecifier specified for worker task.');
     }
 
     let resolvedSpec = moduleSpecifier;
 
+    console.error('[WORKER] before resolve');
     if (resolvedSpec.startsWith('#')) {
       resolvedSpec = import.meta.resolve(resolvedSpec);
     } else if (!resolvedSpec.startsWith('file://') && !resolvedSpec.startsWith('data:')) {
       resolvedSpec = pathToFileURL(resolvedSpec).href;
     }
+    console.error('[WORKER] resolvedSpec:', resolvedSpec);
 
-    // Dynamically import the target ESM module using Function constructor
-    // to bypass bundler static analysis (e.g., Rollup dynamic import restrictions)
+    console.error('[WORKER] before import');
     const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
     const module = await dynamicImport(resolvedSpec);
+
+    console.error('[WORKER] after import, module exists:', Boolean(module));
 
     // Support named or default callback resolutions
     const callback = module[exportName] || (exportName === 'default' ? module.default : undefined);
@@ -73,8 +80,9 @@ const runWorker = async () => {
     }
 
     // Nest inside parent-side options and session contexts
-    const result = await runWithOptions((options as any) || {}, async () => {
-      const sessionRes = await runWithSession((session as any) || {}, async () => {
+    const result = await runWithOptions((options as any) || {}, async () =>
+      await runWithSession((session as any) || {}, async () => {
+        /*
         const instantiated = callback(options);
 
         let actualHandler = callback;
@@ -82,17 +90,18 @@ const runWorker = async () => {
         if (Array.isArray(instantiated) && typeof instantiated[1] === 'function') {
           actualHandler = instantiated[1];
         }
+        */
 
-        return Promise.resolve(actualHandler(args));
-      });
+        return Promise.resolve(callback(args));
+      }));
 
-      return sessionRes;
-    });
+    console.error('[WORKER] runWithOptions finished, result exists:', Boolean(result));
 
     parentPort?.postMessage({
       success: true,
       payload: result
     });
+    console.error('[WORKER] postMessage done');
   } catch (error: any) {
     parentPort?.postMessage({
       success: false,
