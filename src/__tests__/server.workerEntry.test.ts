@@ -1,3 +1,5 @@
+import { runWorker } from '../server.workerRunner';
+
 // 1. Set up mocks for worker_threads before any imports
 let mockWorkerData: any = {
   moduleSpecifier: '' // Starts with safe empty values so the initial import run is caught gracefully
@@ -82,9 +84,6 @@ afterAll(() => {
   process.exit = originalExit;
   global.Function = originalFunction;
 });
-
-// Import runWorker (this will trigger the initial runWorker() call)
-import { runWorker } from '../server.workerEntry';
 
 describe('workerEntry', () => {
   const originalResolve = import.meta.resolve;

@@ -2,6 +2,20 @@ import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { availableParallelism } from 'node:os';
 
+/**
+ * Payload for a task execution, including module details, arguments, and configuration options.
+ *
+ * @interface TaskPayload
+ *
+ * @property moduleSpecifier Identifier for the module to be imported or executed as part of the
+ *     task.
+ * @property [exportName] Optional name of the exported function or variable from the specified
+ *     module to be invoked or used.
+ * @property [args] Optional arguments to be passed to the task or function being executed.
+ * @property [options] Optional additional options or settings for executing the task.
+ * @property [session] Optional session-specific data or context associated with the task
+ *     execution.
+ */
 interface TaskPayload {
   moduleSpecifier: string;
   exportName?: string;
@@ -10,6 +24,15 @@ interface TaskPayload {
   session?: unknown;
 }
 
+/**
+ * Throttled worker thread pool for parallel execution.
+ *
+ * @interface QueuedTask
+ *
+ * @property payload Task payload.
+ * @property resolve Promise resolve function.
+ * @property reject Promise reject function.
+ */
 interface QueuedTask {
   payload: TaskPayload;
   resolve: (value: any) => void;
@@ -18,6 +41,10 @@ interface QueuedTask {
 
 /**
  * Throttled worker thread pool for parallel execution.
+ *
+ * @interface WorkerPoolInstance
+ *
+ * @property runTask Run task method.
  */
 interface WorkerPoolInstance {
   runTask<T>(payload: TaskPayload): Promise<T>;
@@ -120,6 +147,9 @@ const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)):
   };
 };
 
+/**
+ * Create the worker thread pool.
+ */
 const globalWorkerPool = createWorkerPool();
 
 export {
