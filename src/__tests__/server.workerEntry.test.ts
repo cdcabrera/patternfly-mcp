@@ -1,4 +1,4 @@
-import { runWorker } from '../server.workerRunner';
+import { keepWorkerAlive, runWorker } from '../server.workerRunner';
 
 // 1. Set up mocks for worker_threads before any imports
 let mockWorkerData: any = {
@@ -242,5 +242,97 @@ describe('workerEntry', () => {
 
     expect((global as any).lastWithOptions).toEqual(mockOptions);
     expect((global as any).lastWithSession).toEqual(mockSession);
+  });
+});
+
+describe('keepWorkerAlive', () => {
+  // Snapshot the original `ref` so tests that exercise the fallback branch can
+  // temporarily remove it from the mocked `parentPort` and restore afterwards.
+  const originalRef = mockParentPort.ref;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Restore the port's `ref` before every case in case a prior test deleted it.
+    (mockParentPort as any).ref = originalRef;
+  });
+
+  afterAll(() => {
+    (mockParentPort as any).ref = originalRef;
+  });
+
+  it('should pin parentPort via ref() and return an unref() cleanup', () => {
+    const release = keepWorkerAlive();
+
+    expect(mockParentPort.ref).toHaveBeenCalledTimes(1);
+    expect(mockParentPort.unref).not.toHaveBeenCalled();
+
+    release();
+
+    expect(mockParentPort.unref).toHaveBeenCalledTimes(1);
+  });
+
+  it('should throw by default when parentPort.ref is not a function', () => {
+    (mockParentPort as any).ref = undefined;
+
+    expect(() => keepWorkerAlive()).toThrow('parentPort.ref is not a function');
+  });
+
+  describe('fallback branch (throwOnParentPortError: false)', () => {
+    // The production fallback intentionally does NOT `.unref()` its ~24.8-day
+    // timer (that's the whole point — the timer IS the keep-alive anchor). If
+    // a real one were ever scheduled here, it would keep the Jest process
+    // alive practically forever. So we directly replace `global.setTimeout` /
+    // `global.clearTimeout` on the global object (jest.spyOn doesn't reliably
+    // intercept the runner's `setTimeout` binding under this ESM/ts-jest
+    // config) and record only the calls that go through our patched globals.
+    const fakeTimerHandle = Symbol('fakeTimerHandle') as unknown as NodeJS.Timeout;
+    const originalSetTimeout = global.setTimeout;
+    const originalClearTimeout = global.clearTimeout;
+    let scheduledCalls: unknown[][];
+    let clearedHandles: unknown[];
+
+    beforeEach(() => {
+      (mockParentPort as any).ref = undefined;
+      scheduledCalls = [];
+      clearedHandles = [];
+      (global as any).setTimeout = (...args: unknown[]) => {
+        scheduledCalls.push(args);
+
+        return fakeTimerHandle;
+      };
+      (global as any).clearTimeout = (handle: unknown) => {
+        clearedHandles.push(handle);
+      };
+    });
+
+    afterEach(() => {
+      (global as any).setTimeout = originalSetTimeout;
+      (global as any).clearTimeout = originalClearTimeout;
+    });
+
+    it('should fall back to a setTimeout and clear it on release', () => {
+      const release = keepWorkerAlive({ throwOnParentPortError: false });
+
+      expect(scheduledCalls).toHaveLength(1);
+      // Default fallback duration is the max 32-bit signed int (~24.8 days).
+      expect(typeof scheduledCalls[0]?.[0]).toBe('function');
+      expect(scheduledCalls[0]?.[1]).toBe(2_147_483_647);
+      expect(mockParentPort.unref).not.toHaveBeenCalled();
+
+      release();
+
+      expect(clearedHandles).toEqual([fakeTimerHandle]);
+      // Cleanup must NOT touch the port — it was never pinned in this branch.
+      expect(mockParentPort.unref).not.toHaveBeenCalled();
+    });
+
+    it('should honor a custom timeoutMs on the fallback timer', () => {
+      const release = keepWorkerAlive({ throwOnParentPortError: false, timeoutMs: 12_345 });
+
+      expect(scheduledCalls).toHaveLength(1);
+      expect(scheduledCalls[0]?.[1]).toBe(12_345);
+
+      release();
+    });
   });
 });

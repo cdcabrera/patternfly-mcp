@@ -79,24 +79,31 @@ const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
  * @param [options] - Config options.
  * @param [options.throwOnParentPortError] - Whether to throw an error if `parentPort.ref` is
  *     not a function. If `false`, no error is thrown, and the fallback mechanism is used.
- * @param [options.timeoutMs] - Milliseconds for the fallback timeout. Defaults to `2,147,483,647` ms
- *     (≈ 24.8 days); the max signed 32-bit int that `setTimeout` can handle.
+ * @param [options.timeoutMs] - Milliseconds for the fallback timeout. Defaults to `24` hours.
  * @returns Cleanup function that cancels the keep-alive mechanism, either by calling `parentPort.unref`
  *     or clearing the fallback timer.
  * @throws {Error} If `parentPort.ref` is not a function and `throwOnParentPortError` is `true`.
  */
-const keepWorkerAlive = ({ throwOnParentPortError = true, timeoutMs = 2_147_483_647 } = {}): () => void => {
+const keepWorkerAlive = ({ throwOnParentPortError = true, timeoutMs = 86_400_000 } = {}): () => void => {
   if (parentPort && typeof parentPort.ref === 'function') {
     parentPort.ref();
 
-    return () => parentPort?.unref?.();
-  } else if (throwOnParentPortError) {
+    return () => {
+      parentPort?.unref?.();
+    };
+  }
+
+  if (throwOnParentPortError) {
     throw new Error('parentPort.ref is not a function — worker keep-alive failed');
   }
 
-  const timer = setTimeout(() => {}, timeoutMs);
+  const safeTimeout = Math.min(timeoutMs, 2_147_483_646);
+  const timer = setTimeout(() => {}, safeTimeout);
 
-  return () => clearTimeout(timer);
+  // By design, do not return the clearTimeout, ensure the timer gets wiped from memory
+  return () => {
+    clearTimeout(timer);
+  };
 };
 
 /**
