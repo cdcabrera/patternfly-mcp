@@ -58,21 +58,10 @@ interface DeferTaskOptions {
  * @param {number} params.ms - The number of milliseconds to wait before resolving the promise.
  * @param {AbortSignal} [params.signal] - An optional AbortSignal object that allows
  *     the delay to be aborted before completion.
- * @param {boolean} [params.keepAlive] - When `true`, the underlying timer is *not*
- *     `unref()`-ed, meaning the delay will keep the (worker) event loop alive until
- *     it settles. Defaults to `false` for backwards compatibility: the timer is
- *     `unref()`-ed so a lone pending delay does not block process/worker exit.
- *     Set to `true` when the delay is a throttle inside an in-progress async chain
- *     (e.g. between fetch batches) and the caller relies on the delay to keep the
- *     surrounding work alive.
  * @returns {Promise<void>} A promise that resolves after the delay duration or with a
  *     `DOMException` if the delay is aborted via the provided AbortSignal.
  */
-const delay = ({
-  ms,
-  signal,
-  keepAlive = false
-}: { ms: number; signal?: AbortSignal | undefined; keepAlive?: boolean }) =>
+const delay = ({ ms, signal }: { ms: number; signal?: AbortSignal | undefined }) =>
   new Promise<void>((resolve, reject) => {
     if (signal?.aborted) {
       reject(new DOMException('Delay aborted', 'AbortError'));
@@ -85,9 +74,7 @@ const delay = ({
       resolve();
     }, ms);
 
-    if (!keepAlive) {
-      timer.unref?.();
-    }
+    timer.unref?.();
 
     const onAbort = () => {
       clearTimeout(timer);

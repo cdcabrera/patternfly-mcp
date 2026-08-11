@@ -303,13 +303,7 @@ const promiseQueue = async (queue: string[], { limit = 5, throttleMs = 250 } = {
       // Minor variance for throttling, prevent sync, slightly longer or shorter.
       const randomizedMs = throttleMs * (0.9 + Math.random() * 0.2);
 
-      // `keepAlive: true` — the throttle sits between in-flight fetch batches, and
-      // is often the ONLY pending handle at that moment (undici's idle sockets and
-      // fetch abort timers are `unref()`-ed). Without keeping the timer refed, a
-      // transient worker's event loop drains here and the worker exits with code 0
-      // mid-crawl (parent then reports: "Transient worker exited unexpectedly with
-      // code 0"). See `collection.patternFlyApi.ts` running under `heavyPool`.
-      await delay({ ms: randomizedMs, keepAlive: true });
+      await delay({ ms: randomizedMs });
     }
   }
 

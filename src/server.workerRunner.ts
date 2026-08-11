@@ -90,12 +90,30 @@ const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
  *
  * Both routes use async and handle errors gracefully to relate results or errors back to the parent.
  */
-const runWorker = () => {
+const runWorker = (): Promise<void> | void => {
   if (workerData) {
     /**
      * Route A: Transient execution (workerData is loaded immediately)
+     *
+     * `keepAliveGuard` — a refed no-op interval that holds the worker's event
+     * loop open for the entire duration of the task. Without it, if the task's
+     * pending async chain relies solely on `unref()`-ed handles (e.g. throttle
+     * timers in `promiseQueue`, undici's idle keep-alive sockets, per-request
+     * fetch abort timers) the worker's refed-handle count momentarily hits
+     * zero between async steps, Node concludes the loop is idle, and the
+     * worker exits cleanly with code 0 mid-work — surfacing to the parent as
+     * "Transient worker exited unexpectedly with code 0".
+     *
+     * Applied here (in the runner) instead of inside individual helpers like
+     * `delay()`, so that any current or future `unref()` usage inside a task
+     * is transparently covered without needing a caller-side opt-in.
+     *
+     * Cleared in `.finally()` so the worker spins down promptly once the task
+     * settles.
      */
-    executeTask(workerData as WorkerTaskData)
+    const keepAliveGuard = setInterval(() => {}, 1_000_000);
+
+    return executeTask(workerData as WorkerTaskData)
       .then(result => {
         parentPort?.postMessage({ success: true, payload: result });
       })
@@ -104,6 +122,9 @@ const runWorker = () => {
           success: false,
           error: { message: error?.message || String(error), stack: error?.stack }
         });
+      })
+      .finally(() => {
+        clearInterval(keepAliveGuard);
       });
   } else {
     /**
