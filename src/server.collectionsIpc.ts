@@ -27,7 +27,7 @@ import {
  */
 type IpcRequest =
   | { t: 'hello'; id: string } |
-  { t: 'load'; id: string; specs: string[]; invokeTimeoutMs?: number; options?: CollectionOptions; session?: unknown; isInternal?: boolean } |
+  { t: 'load'; id: string; specs: string[]; trustedSpecs?: string[]; invokeTimeoutMs?: number; options?: CollectionOptions; session?: unknown; isInternal?: boolean } |
   { t: 'manifest:get'; id: string } |
   { t: 'invoke'; id: string; collectionId: string; args: unknown; options?: unknown; session?: unknown; isInternal?: boolean } |
   { t: 'shutdown'; id: string };
@@ -38,11 +38,13 @@ type IpcRequest =
  * @property id - Collection identifier.
  * @property name - Collection name.
  * @property source - Collection module specifier.
+ * @property isInternal - Indicates if the collection is internal/trusted.
  */
 type CollectionDescriptor = {
   id: string;
   name: string;
   source?: string;
+  isInternal?: boolean;
 };
 
 /**

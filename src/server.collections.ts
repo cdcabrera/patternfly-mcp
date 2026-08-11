@@ -174,6 +174,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  * `options` contract.
  *
  * @param specs
+ * @param trustedSpecs
  * @param {GlobalOptions} options - Global options.
  * @returns Host handle used by `makeProxyCreators` and shutdown.
  *
@@ -182,6 +183,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  */
 const spawnCollectionHost = async (
   specs: string[] = [],
+  trustedSpecs: string[] = [],
   options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
   const { pluginIsolation, pluginHost, nodeVersion } = options || {};
@@ -204,7 +206,7 @@ const spawnCollectionHost = async (
 
   // load
   const loadAck = await handle.request<Extract<IpcResponse, { t: 'load:ack' }>>(
-    { t: 'load', specs, invokeTimeoutMs, options: collectionOptions },
+    { t: 'load', specs, trustedSpecs, invokeTimeoutMs, options: collectionOptions },
     'load:ack',
     loadTimeoutMs
   );
@@ -236,8 +238,19 @@ const makeProxyCreators = (
   const invokeTimeoutMs = Math.max(0, Number(pluginHost?.invokeTimeoutMs) || 0);
 
   const handler = async (args?: unknown): Promise<McpCollectionResult> => {
+    const currentOptions = getOptions();
+    const currentSession = getSessionOptions();
+    const collectionOptions = setCollectionOptions(currentOptions);
+
     const response = await handle.request<Extract<IpcResponse, { t: 'invoke:result' }>>(
-      { t: 'invoke', collectionId: collection.id, args },
+      {
+        t: 'invoke',
+        collectionId: collection.id,
+        args,
+        options: collectionOptions,
+        session: currentSession,
+        isInternal: collection.isInternal
+      },
       'invoke:result',
       invokeTimeoutMs
     );
@@ -306,7 +319,7 @@ const composeCollections = async (
   options: GlobalOptions = getOptions(),
   session: AppSession = getSessionOptions()
 ): Promise<McpCollectionCreator[]> => {
-  const { collectionModules, nodeVersion, contextUrl, contextPath } = options;
+  const { collectionModules, contextUrl, contextPath } = options;
   const { sessionId } = session;
   const registryKey = `${sessionId}:collections`;
   const existingSession = activeChildrenBySession.get(registryKey);
@@ -330,8 +343,6 @@ const composeCollections = async (
     return [];
   }
 
-  // Temporary placeholder for collections-as-plugins
-  const filePackageCreators: NormalizedCollectionEntry[] = [];
   const invalidCreators = getInvalidCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
   const inlineCreators: NormalizedCollectionEntry[] = getInlineCollections({ collectionModules, contextUrl, contextPath } as GlobalOptions);
 
@@ -343,15 +354,26 @@ const composeCollections = async (
 
   const localCreators: McpCollectionCreator[] = [];
   const hostedCreators: McpCollectionCreator[] = [];
+  const specs: string[] = [];
+  const trustedSpecs: string[] = [];
 
   for (const creator of securedBuiltinCreators) {
     const [, , config] = creator(options);
-    const runHost = typeof config?.runInChildProcess === 'function'
+    const runHostValue = typeof config?.runInChildProcess === 'function'
       ? await config.runInChildProcess(options)
-      : Boolean(config?.runInChildProcess);
+      : config?.runInChildProcess;
 
-    if (runHost) {
-      hostedCreators.push(creator);
+    if (typeof runHostValue === 'string') {
+      try {
+        const resolvedSpec = new URL(runHostValue, import.meta.url).href;
+
+        specs.push(resolvedSpec);
+        trustedSpecs.push(resolvedSpec);
+        hostedCreators.push(creator);
+      } catch (error) {
+        log.warn(`Failed to resolve spec "${runHostValue}" for built-in collection: ${formatUnknownError(error)}`);
+        localCreators.push(creator);
+      }
     } else {
       localCreators.push(creator);
     }
@@ -360,28 +382,20 @@ const composeCollections = async (
   const filteredInlineCreators = inlineCreators.map(collection =>
     collection.value as McpCollectionCreator).filter(Boolean);
 
-  hostedCreators.push(...filteredInlineCreators);
+  for (const creator of filteredInlineCreators) {
+    const [, , config] = creator(options);
+    const runHostValue = typeof config?.runInChildProcess === 'function'
+      ? await config.runInChildProcess(options)
+      : config?.runInChildProcess;
 
-  if (filePackageCreators.length && (!nodeVersion || nodeVersion < 22)) {
-    log.warn('External collection plugins require Node >= 22; skipping file-based collections.');
-  }
-
-  const specs: string[] = [];
-
-  for (const creator of hostedCreators) {
-    const name = sanitizeStaticCollectionName(creator);
-    const isBuiltIn = securedBuiltinCreators.includes(creator);
-
-    if (name && isBuiltIn) {
-      const camelName = name.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
-      const fileName = `collection.${camelName}.js`;
-
+    if (typeof runHostValue === 'string') {
       try {
-        const resolvedSpec = new URL(`./${fileName}`, import.meta.url).href;
+        const resolvedSpec = new URL(runHostValue, import.meta.url).href;
 
         specs.push(resolvedSpec);
+        hostedCreators.push(creator);
       } catch (error) {
-        log.warn(`Failed to resolve spec for collection "${name}": ${formatUnknownError(error)}`);
+        log.warn(`Failed to resolve spec "${runHostValue}" for inline collection: ${formatUnknownError(error)}`);
       }
     }
   }
@@ -416,7 +430,7 @@ const composeCollections = async (
   };
 
   try {
-    host = await spawnCollectionHost(specs, options);
+    host = await spawnCollectionHost(specs, trustedSpecs, options);
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredCollections = host.collections.filter(collection => {

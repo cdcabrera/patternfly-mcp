@@ -424,7 +424,7 @@ describe('composeCollections', () => {
   // Mock default creators
   const loremIpsum = () => ['loremIpsum', () => {}, { isRequired: true }];
   const dolorSitAmet = () => ['dolorSitAmet', () => {}, { isRequired: false }];
-  const consecteturAdipiscingElit: any = () => ['consecteturAdipiscingElit', () => {}, { runInChildProcess: true }];
+  const consecteturAdipiscingElit: any = () => ['consecteturAdipiscingElit', () => {}, { runInChildProcess: './collection.consecteturAdipiscingElit.js' }];
 
   loremIpsum.collectionName = 'loremIpsum';
   dolorSitAmet.collectionName = 'dolorSitAmet';

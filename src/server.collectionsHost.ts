@@ -9,6 +9,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { type McpCollectionCreator, type McpCollection } from './collections';
 import { resolveCreators } from './server.collectionsHostCreator';
 import { type CollectionOptions } from './options.collections';
+import { runWithOptions, runWithSession } from './options.context';
 
 /**
  * SubType of IpcRequest for "load" requests.
@@ -122,10 +123,19 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
     }
 
     // Finally, convert to JSON for manifest, store, push descriptor
+    const isSpecTrusted = request.trustedSpecs?.includes(spec);
+
     for (const creator of creators) {
       try {
         const create = creator as (opts?: unknown) => McpCollection;
-        const collection = create(options);
+        const collection = await runWithOptions((options as any) || {}, async () => create(options));
+
+        if (isSpecTrusted) {
+          if (!collection[2]) {
+            collection[2] = {};
+          }
+          collection[2]._isInternal = true;
+        }
 
         const collectionId = makeId();
 
@@ -133,7 +143,8 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
         state.descriptors.push({
           id: collectionId,
           name: collection[0],
-          source: spec
+          source: spec,
+          isInternal: collection[2]?._isInternal || false
         });
       } catch (error) {
         warnings.push(`Collection creator threw while realizing: ${spec}: ${String((error as Error)?.message || error)}`);
@@ -194,8 +205,14 @@ const requestInvoke = async (state: HostState, request: InvokeRequest, ctx: Host
     // Child-side validation
     const updatedRequestArgs = request.args;
 
-    // Invoke the collection
-    const result = await Promise.resolve(handler(updatedRequestArgs));
+    // Nest execution inside options and session contexts so logging and caching helpers resolve context perfectly
+    const result = await runWithOptions(
+      (request.options as any) || {},
+      async () => runWithSession(
+        (request.session as any) || {},
+        async () => Promise.resolve(handler(updatedRequestArgs))
+      )
+    );
 
     // Some handlers may mistakenly return an Error instance instead of throwing. Normalize it to a failure.
     if (isErrorLike(result)) {

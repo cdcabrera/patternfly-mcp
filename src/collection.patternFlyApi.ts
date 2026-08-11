@@ -314,7 +314,7 @@ const patternFlyApiCollection = (): McpCollection => {
     'patternfly-api',
     callback,
     {
-      runInChildProcess: true
+      runInChildProcess: './collection.patternFlyApi.js'
     }
   ];
 };
