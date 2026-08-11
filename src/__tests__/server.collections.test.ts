@@ -1,9 +1,16 @@
-import { composeCollections } from '../server.collections';
 import { getOptions, getSessionOptions } from '../options.context';
+import { composeCollections } from '../server.collections';
+import { heavyPool } from '../server.workerPool';
 
 jest.mock('../options.context', () => ({
   getOptions: jest.fn(),
   getSessionOptions: jest.fn()
+}));
+
+jest.mock('../server.workerPool', () => ({
+  heavyPool: {
+    runTask: jest.fn()
+  }
 }));
 
 describe('composeCollections', () => {
@@ -28,10 +35,82 @@ describe('composeCollections', () => {
     expect(callback).toBe(mockHandler);
   });
 
+  it('should proxy creators that declare parallel execution via runParallel with hash prefix', async () => {
+    const mockHandler = jest.fn();
+    const mockCreator: any = jest.fn(() => [
+      'parallel-collection',
+      mockHandler,
+      { runParallel: '#collectionLoremIpsum' }
+    ]);
+
+    (getOptions as jest.Mock).mockReturnValue({ serverName: 'mcp' });
+    (getSessionOptions as jest.Mock).mockReturnValue({ sessionId: 'session-id' });
+    (heavyPool.runTask as jest.Mock).mockResolvedValue({ records: [] });
+
+    const result: any = await composeCollections([mockCreator]);
+
+    expect(result.length).toBe(1);
+
+    const [name, handler] = result[0]();
+
+    expect(name).toBe('parallel-collection');
+
+    const executionResult = await handler({ inputArg: 'test' });
+
+    expect(executionResult).toEqual({ records: [] });
+
+    expect(heavyPool.runTask).toHaveBeenCalledWith({
+      moduleSpecifier: '#collectionLoremIpsum',
+      exportName: 'collectionCallback',
+      args: { inputArg: 'test' },
+      options: expect.any(Object),
+      session: { sessionId: 'session-id' }
+    });
+  });
+
   it('should return an empty array when no creators are provided', async () => {
     const result = await composeCollections([]);
 
     expect(result).toEqual([]);
+  });
+
+  it('should wrap creators that declare runSchedule with a deferred task', async () => {
+    const mockHandler = jest.fn().mockResolvedValue({ records: [{ id: 'row-1' }] });
+    const mockCreator: any = jest.fn(() => [
+      'scheduled-collection',
+      mockHandler,
+      { runSchedule: { cancelMs: 100, intervalMs: 50 } }
+    ]);
+
+    const result: any = await composeCollections([mockCreator]);
+
+    expect(result.length).toBe(1);
+
+    const [name, handler, config] = result[0]();
+
+    expect(name).toBe('scheduled-collection');
+    expect(config?._isInternal).toBe(true);
+    expect(handler).not.toBe(mockHandler);
+
+    const executionResult = await handler({ inputArg: 'test' });
+
+    expect(mockHandler).toHaveBeenCalledWith({ inputArg: 'test' });
+    expect(executionResult).toEqual({ records: [{ id: 'row-1' }] });
+  });
+
+  it('should fall back to an empty records result when the deferred task yields undefined', async () => {
+    const mockHandler = jest.fn().mockResolvedValue(undefined);
+    const mockCreator: any = jest.fn(() => [
+      'scheduled-empty-collection',
+      mockHandler,
+      { runSchedule: { cancelMs: 100, intervalMs: 50 } }
+    ]);
+
+    const result: any = await composeCollections([mockCreator]);
+    const [, handler] = result[0]();
+    const executionResult = await handler();
+
+    expect(executionResult).toEqual({ records: [] });
   });
 
   it.each([

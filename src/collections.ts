@@ -46,8 +46,10 @@ interface McpCollectionResult {
  * 1. `handler` `{Function}`: callback function accepting an optional argument
  * 2. `_config` `{Object}`: Application level record source configuration. Unavailable to
  *     record collection plugins.
- *    - `_config.runInChildProcess`: Optional callback function to dynamically decide
- *        if the record source should run in a child process.
+ *    - `_config.runParallel`: Optional callback function to dynamically decide
+ *        if the record source should run in a non-blocking parallel process.
+ *    - `_config.runSchedule`: Optional object to dynamically decide if the record source
+ *        should run in a scheduled interval using {@link DeferTaskOptions}
  *    - `_config.isRequired`: Optional boolean used to control server startup when
  *        collections are required for operation.
  *   - `_config._isInternal`: Optional boolean. Applied internally. Attempting to manually
@@ -57,7 +59,8 @@ type McpCollection = [
   name: string,
   handler: (arg?: unknown) => McpCollectionResult | Promise<McpCollectionResult>,
   _config?: {
-    runInChildProcess?: boolean | ((options?: GlobalOptions) => boolean | Promise<boolean>);
+    runParallel?: boolean | string | ((options?: GlobalOptions) => boolean | Promise<boolean> | string | Promise<string>);
+    runSchedule?: { cancelMs?: number, intervalMs?: number };
     // priority?: number;
     isRequired?: boolean;
     // group?: string;
@@ -170,7 +173,7 @@ const registerCollections = async (
     onSettle?: RegisterOnSettle, onUpdate?: RegisterOnUpdate, onRequired?: RegisterOnRequired
   } = {}
 ): Promise<void> => {
-  log.debug(`Initiating registration for ${collections.length} collections.`);
+  log.debug(`Reviewing registration for ${collections.length} collections.`);
 
   // Wrapper for each loader; handle incremental updates
   const registrationPromises = collections.map(async ([name, callback]) => {
@@ -229,9 +232,9 @@ const registerCollections = async (
       };
 
       if (!res.isSuccess) {
-        log.error(`Failed to register collection ${item.name}: ${item.reason}`);
+        log.error(`Failed to register collection "${item.name}": ${item.reason}`);
       } else {
-        log.info(`Register collection: ${item.name}`);
+        log.debug(`Settled collection: ${item.name}`);
       }
 
       return item;
