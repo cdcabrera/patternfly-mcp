@@ -73,8 +73,8 @@ const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
 };
 
 /**
- * Ensures that a worker thread stays alive by referencing the `parentPort` or setting a long-running
- * timeout as a fallback mechanism. Provides a cleanup mechanism to cancel the keep-alive behavior.
+ * Ensure a worker thread stays alive by ref'ing the `parentPort` or setting a long-running
+ * timeout as a fallback mechanism.
  *
  * @param [options] - Config options.
  * @param [options.throwOnParentPortError] - Whether to throw an error if `parentPort.ref` is
