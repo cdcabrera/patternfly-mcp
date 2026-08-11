@@ -173,6 +173,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  * domain-specific `toolOptions`. Future iterations should align Tools Host IPC to this generic
  * `options` contract.
  *
+ * @param specs
  * @param {GlobalOptions} options - Global options.
  * @returns Host handle used by `makeProxyCreators` and shutdown.
  *
@@ -180,6 +181,7 @@ const debugChild = (child: ChildProcess, { sessionId } = getSessionOptions()) =>
  *     process fails to spawn or respond during the handshake within the configured timeout.
  */
 const spawnCollectionHost = async (
+  specs: string[] = [],
   options: GlobalOptions = getOptions()
 ): Promise<HostHandle> => {
   const { pluginIsolation, pluginHost, nodeVersion } = options || {};
@@ -202,7 +204,7 @@ const spawnCollectionHost = async (
 
   // load
   const loadAck = await handle.request<Extract<IpcResponse, { t: 'load:ack' }>>(
-    { t: 'load', specs: [], invokeTimeoutMs, options: collectionOptions },
+    { t: 'load', specs, invokeTimeoutMs, options: collectionOptions },
     'load:ack',
     loadTimeoutMs
   );
@@ -364,6 +366,26 @@ const composeCollections = async (
     log.warn('External collection plugins require Node >= 22; skipping file-based collections.');
   }
 
+  const specs: string[] = [];
+
+  for (const creator of hostedCreators) {
+    const name = sanitizeStaticCollectionName(creator);
+    const isBuiltIn = securedBuiltinCreators.includes(creator);
+
+    if (name && isBuiltIn) {
+      const camelName = name.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+      const fileName = `collection.${camelName}.js`;
+
+      try {
+        const resolvedSpec = new URL(`./${fileName}`, import.meta.url).href;
+
+        specs.push(resolvedSpec);
+      } catch (error) {
+        log.warn(`Failed to resolve spec for collection "${name}": ${formatUnknownError(error)}`);
+      }
+    }
+  }
+
   if (hostedCreators.length === 0) {
     return localCreators;
   }
@@ -394,7 +416,7 @@ const composeCollections = async (
   };
 
   try {
-    host = await spawnCollectionHost(options);
+    host = await spawnCollectionHost(specs, options);
 
     // Filter manifest by reserved names BEFORE proxying
     const filteredCollections = host.collections.filter(collection => {
