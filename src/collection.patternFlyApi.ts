@@ -259,6 +259,7 @@ const apiSpider = async (): Promise<ApiContent[]> => {
  * Deferred task for PatternFly API spider.
  */
 apiSpider.deferTask = deferTask(apiSpider, {
+  intervalMs: 10_000, // DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs,
   cancelMs: DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs
 });
 
@@ -314,12 +315,13 @@ const patternFlyApiCollection = (): McpCollection => {
     'patternfly-api',
     callback,
     {
-      runInChildProcess: true
+      runParallel: '#collectionPatternFlyApi'
     }
   ];
 };
 
 export {
+  patternFlyApiCollection as default,
   patternFlyApiCollection,
   apiSpider,
   crawler,
