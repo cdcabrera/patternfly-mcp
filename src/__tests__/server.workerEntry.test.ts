@@ -6,7 +6,12 @@ let mockWorkerData: any = {
 };
 
 const mockParentPort = {
-  postMessage: jest.fn()
+  postMessage: jest.fn(),
+  // `runWorker` Route A pins the port via `.ref()` for the task lifetime and
+  // releases it via `.unref()` in `.finally()` (keeps the worker's event loop
+  // alive when only unref'd handles are pending — see server.workerRunner.ts).
+  ref: jest.fn(),
+  unref: jest.fn()
 };
 
 jest.mock('node:worker_threads', () => ({

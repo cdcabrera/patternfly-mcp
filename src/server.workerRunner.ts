@@ -95,23 +95,29 @@ const runWorker = (): Promise<void> | void => {
     /**
      * Route A: Transient execution (workerData is loaded immediately)
      *
-     * `keepAliveGuard` — a refed no-op interval that holds the worker's event
-     * loop open for the entire duration of the task. Without it, if the task's
-     * pending async chain relies solely on `unref()`-ed handles (e.g. throttle
-     * timers in `promiseQueue`, undici's idle keep-alive sockets, per-request
-     * fetch abort timers) the worker's refed-handle count momentarily hits
+     * Pin the parent MessagePort as the worker's keep-alive anchor for the
+     * lifetime of the task. Without an explicit `ref()`, if the task's pending
+     * async chain relies solely on `unref()`-ed handles (throttle timers in
+     * `promiseQueue`, undici's idle keep-alive sockets, per-request fetch
+     * abort timers, etc.) the worker's refed-handle count momentarily hits
      * zero between async steps, Node concludes the loop is idle, and the
      * worker exits cleanly with code 0 mid-work — surfacing to the parent as
      * "Transient worker exited unexpectedly with code 0".
      *
-     * Applied here (in the runner) instead of inside individual helpers like
-     * `delay()`, so that any current or future `unref()` usage inside a task
-     * is transparently covered without needing a caller-side opt-in.
+     * Pinning the port itself (rather than parking a no-op `setInterval`) is
+     * semantically honest: the port is literally the channel we still owe a
+     * reply on, and it costs nothing — no timer heap entry, no periodic wake.
+     * It also transparently covers any current or future `unref()` usage
+     * inside a task without needing a caller-side opt-in.
      *
-     * Cleared in `.finally()` so the worker spins down promptly once the task
-     * settles.
+     * `unref()`-ed in `.finally()` so the worker spins down promptly once the
+     * task settles and the reply has been posted.
+     *
+     * NOTE: `parentPort` is not refed by default for keep-alive purposes on
+     * this Node version — the explicit `ref()` call is required (verified via
+     * `tmp/probe-parentPortRef.mjs`).
      */
-    const keepAliveGuard = setInterval(() => {}, 1_000_000);
+    parentPort?.ref();
 
     return executeTask(workerData as WorkerTaskData)
       .then(result => {
@@ -124,7 +130,7 @@ const runWorker = (): Promise<void> | void => {
         });
       })
       .finally(() => {
-        clearInterval(keepAliveGuard);
+        parentPort?.unref();
       });
   } else {
     /**
