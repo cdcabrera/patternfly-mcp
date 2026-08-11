@@ -178,4 +178,4 @@ const runWorker = (): Promise<void> | void => {
   }
 };
 
-export { runWorker, executeTask, type WorkerTaskData };
+export { executeTask, keepWorkerAlive, runWorker, type WorkerTaskData };
