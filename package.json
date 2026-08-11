@@ -6,7 +6,9 @@
   "type": "module",
   "imports": {
     "~docsCatalog": "./src/docs.json",
-    "#toolsHost": "./dist/server.toolsHost.js"
+    "#toolsHost": "./dist/server.toolsHost.js",
+    "#workerEntry": "./dist/server.workerEntry.js",
+    "#collectionPatternFlyApi": "./dist/collection.patternFlyApi.js"
   },
   "exports": {
     ".": {
