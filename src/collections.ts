@@ -173,7 +173,7 @@ const registerCollections = async (
     onSettle?: RegisterOnSettle, onUpdate?: RegisterOnUpdate, onRequired?: RegisterOnRequired
   } = {}
 ): Promise<void> => {
-  log.debug(`Initiating registration for ${collections.length} collections.`);
+  log.debug(`Reviewing registration for ${collections.length} collections.`);
 
   // Wrapper for each loader; handle incremental updates
   const registrationPromises = collections.map(async ([name, callback]) => {
@@ -232,9 +232,9 @@ const registerCollections = async (
       };
 
       if (!res.isSuccess) {
-        log.error(`Failed to register collection ${item.name}: ${item.reason}`);
+        log.error(`Failed to register collection "${item.name}": ${item.reason}`);
       } else {
-        log.info(`Register collection: ${item.name}`);
+        log.debug(`Settled collection: ${item.name}`);
       }
 
       return item;

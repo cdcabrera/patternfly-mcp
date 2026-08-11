@@ -3,11 +3,10 @@ import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
 import { heavyPool } from './server.workerPool';
 import { deferTask } from './server.task';
-
-type CollectionRunSchedule = NonNullable<McpCollection[2]>['runSchedule'];
+import { formatUnknownError, log } from './logger';
 
 /**
- * Recreates a creator function to proxy task execution through the global worker thread pool.
+ * Proxy a collection creator through the global worker thread pool.
  *
  * @param {McpCollectionCreator} creator - The original creator.
  * @param {string} moduleSpecifier - The ESM import specifier to load in the worker.
@@ -40,20 +39,18 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
 };
 
 /**
- * Recreates a creator function to wrap task execution in a deferred task, guarding
- * long-running collection callbacks with per-execution timeout and hard cancel cutoffs.
+ * Proxy a collection creator with a deferred task wrapper.
  *
- * @param {McpCollectionCreator} creator - The original creator.
- * @param {CollectionRunSchedule} runSchedule - Schedule config sourced from the
- *     collection's `_config.runSchedule`. Provides `cancelMs` and `intervalMs`
- *     used to build the underlying {@link deferTask}.
+ * @param {McpCollectionCreator} creator - Original creator.
+ * @param {CollectionRunSchedule} runSchedule - Schedule config sourced from the collection's
+ *     `_config.runSchedule`. Provides `cancelMs` and `intervalMs` used to build {@link deferTask}.
  * @param {GlobalOptions} options - Global options.
  * @returns {McpCollectionCreator} The proxied creator function.
  */
 const makeScheduledProxyCreator = ({
   creator,
   runSchedule
-}: { creator: McpCollectionCreator, runSchedule: CollectionRunSchedule },
+}: { creator: McpCollectionCreator, runSchedule: NonNullable<McpCollection[2]>['runSchedule'] },
 options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
   const [name, callback, config] = creator(options);
   const deferOptions = {
@@ -63,8 +60,15 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
 
   const handler = async (args?: unknown): Promise<McpCollectionResult> => {
     const task = deferTask(callback, deferOptions)(args);
+    let response;
 
-    return (await task.start()) ?? { records: [] };
+    try {
+      response = await task.start();
+    } catch (error) {
+      log.debug(`Scheduled collection ${name} failed to start: ${formatUnknownError(error)}`);
+    }
+
+    return response || { records: [] };
   };
 
   return config ? [name, handler, config] : [name, handler];
@@ -114,9 +118,8 @@ const composeCollections = async (
       updatedCreator = makeParallelProxyCreator({ creator, moduleSpecifier: runHostValue, exportName: 'collectionCallback' });
     }
 
-    // Layer scheduling on top of the (optional) parallel wrap so the defer-task
-    // guardrails apply to the entire execution, including any worker-pool proxy.
-    if (runScheduleConfig && typeof runScheduleConfig === 'object') {
+    if (typeof runScheduleConfig?.cancelMs === 'number' || typeof runScheduleConfig?.intervalMs === 'number') {
+      // Layer scheduling so the defer-task guardrails apply to the entire execution, including any worker-pool proxy.
       updatedCreator = makeScheduledProxyCreator({ creator: updatedCreator, runSchedule: runScheduleConfig });
     }
 
@@ -127,5 +130,7 @@ const composeCollections = async (
 };
 
 export {
-  composeCollections
+  composeCollections,
+  makeParallelProxyCreator,
+  makeScheduledProxyCreator
 };
