@@ -6,7 +6,7 @@
 import { type McpCollectionCreator, type McpCollectionResult } from './collections';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
-import { globalWorkerPool } from './server.workerPool';
+import { heavyPool } from './server.workerPool';
 
 /**
  * Recreates a creator function to proxy task execution through the global worker thread pool.
@@ -29,7 +29,7 @@ const makeParallelProxyCreator = (
     const currentOptions = getOptions();
     const currentSession = getSessionOptions();
 
-    return globalWorkerPool.runTask<McpCollectionResult>({
+    return heavyPool.runTask<McpCollectionResult>({
       moduleSpecifier,
       exportName,
       args,

@@ -63,10 +63,16 @@ const getWorkerScriptPath = (): string => {
 };
 
 /**
- * FACTORY A: Transient Pool (Spawns a fresh thread per task, kills it instantly on completion)
- * Ideal for: Heavy memory usage, unpredictable processing, long-running scraping cycles.
+ * Create a transient worker pool with the specified maximum number of workers.
+ * Spawns a fresh thread per task, kills it instantly on completion
  *
- * @param maxWorkers
+ * @note Recommended use is for heavy memory usage, unpredictable processing, and
+ * long-running scraping cycles.
+ *
+ * @param [maxWorkers] -Max number of workers that can run concurrently. Defaults to one
+ *     less than the available parallelism of the system, with a minimum value of 1.
+ * @returns {WorkerPoolInstance} - An instance of a worker pool, allowing tasks
+ *     to be queued and executed using dedicated transient workers.
  */
 const createTransientPool = (maxWorkers = Math.max(1, availableParallelism() - 1)): WorkerPoolInstance => {
   let activeWorkers = 0;
@@ -144,10 +150,15 @@ const createTransientPool = (maxWorkers = Math.max(1, availableParallelism() - 1
 };
 
 /**
- * FACTORY B: Persistent Pool (Keeps warm threads alive, routes payloads via IPC messages)
- * Ideal for: Rapid, light, or frequent computations requiring low-latency invocation.
+ * Create a persistent worker pool with pre-spawned worker threads for handling concurrent tasks.
+ * Keeps warm threads active, route payloads via IPC messages.
  *
- * @param maxWorkers
+ * @note Recommended for rapid, light, or frequent computations requiring low-latency invocation.
+ *
+ * @param [maxWorkers] -Max number of workers that can run concurrently. Defaults to one
+ *     less than the available parallelism of the system, with a minimum value of 1.
+ * @returns {WorkerPoolInstance} Object exposing methods to interact with the worker pool,
+ *     including submitting tasks for execution.
  */
 const createPersistentPool = (maxWorkers = Math.max(1, availableParallelism() - 1)): WorkerPoolInstance => {
   const queue: QueuedTask[] = [];
@@ -233,8 +244,14 @@ const createPersistentPool = (maxWorkers = Math.max(1, availableParallelism() - 
   };
 };
 
-// Singleton exports ready for allocation
+/**
+ * Transient pool for managing heavy or costly resources.
+ */
 const heavyPool = createTransientPool(2);
+
+/**
+ * Persistent pool for managing light-related resources.
+ */
 const lightPool = createPersistentPool();
 
 export {
