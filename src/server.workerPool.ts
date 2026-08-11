@@ -1,6 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { availableParallelism } from 'node:os';
+import { formatUnknownError } from './logger';
 
 /**
  * Payload for a task execution, including module details, arguments, and configuration options.
@@ -96,26 +97,21 @@ const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)):
 
       worker.on('message', message => {
         resolved = true;
-        worker.terminate().catch(() => {});
 
         if (message.success) {
           resolve(message.payload);
         } else {
-          const err = new Error(message.error?.message || String(message.error));
-
-          if (message.error?.stack) {
-            err.stack = message.error.stack;
-          }
-
-          reject(err);
+          reject(formatUnknownError(message.error));
         }
+
+        worker.terminate().catch(() => {});
       });
 
       worker.on('error', err => {
         resolved = true;
-        worker.terminate().catch(() => {});
 
         reject(err);
+        worker.terminate().catch(() => {});
       });
 
       worker.on('exit', code => {

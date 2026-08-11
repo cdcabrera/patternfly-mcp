@@ -69,10 +69,11 @@ const runWorker = async () => {
     const callback = module[exportName] || (exportName === 'default' ? module.default : undefined);
 
     if (typeof callback !== 'function') {
-      throw new TypeError(`Exported module '${moduleSpecifier}' (export: '${exportName}') must be a function.`);
+      throw new Error(`Exported module '${moduleSpecifier}' (export: '${exportName}') must be a function.`);
     }
 
     // Nest inside parent-side options and session contexts
+    // runWithOptions and runWithSession being asyncLocalStorage wrappers
     const result = await runWithOptions((options as any) || {}, async () =>
       runWithSession((session as any) || {}, async () =>
         Promise.resolve(callback(args))));
