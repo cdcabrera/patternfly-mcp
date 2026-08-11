@@ -131,11 +131,7 @@ const normalizeTuple = (config: unknown): CreatorEntry | undefined => {
   const creator: CollectionCreator = () => [
     updatedName as string,
     // updatedHandler as (args: unknown) => unknown | Promise<unknown>,
-    updatedHandler,
-    {
-      runInChildProcess: true,
-      isInternal: false
-    }
+    updatedHandler
   ];
 
   applyStaticProperty('collectionName', updatedName, creator);

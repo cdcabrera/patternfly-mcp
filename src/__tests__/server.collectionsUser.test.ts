@@ -70,8 +70,7 @@ describe('normalizeTuple', () => {
 
       expect(result).toEqual([
         updated.collectionName,
-        expect.any(Function),
-        { runInChildProcess: true, isInternal: false }
+        expect.any(Function)
       ]);
 
       // Strip function from snapshots/assertions

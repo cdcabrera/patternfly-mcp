@@ -12,6 +12,12 @@ exports[`composeCollections should attempt to setup creators, inline and case-va
   "collectionsCount": 3,
   "log": [
     [
+      "Skipping inline collection "lorem" because a collection with the same name is already provided (built-in or earlier).",
+    ],
+    [
+      "Skipping collection plugin "lorem" – name already used by built-in/inline collection.",
+    ],
+    [
       "Skipping collection plugin "LOREM" – name already used by built-in/inline collection.",
     ],
   ],
@@ -23,6 +29,12 @@ exports[`composeCollections should attempt to setup creators, inline and duplica
   "collectionsCount": 3,
   "log": [
     [
+      "Skipping inline collection "lorem" because a collection with the same name is already provided (built-in or earlier).",
+    ],
+    [
+      "Skipping collection plugin "lorem" – name already used by built-in/inline collection.",
+    ],
+    [
       "Skipping collection plugin "lorem" – name already used by built-in/inline collection.",
     ],
   ],
@@ -32,7 +44,11 @@ exports[`composeCollections should attempt to setup creators, inline and duplica
 exports[`composeCollections should attempt to setup creators, inline creators 1`] = `
 {
   "collectionsCount": 3,
-  "log": [],
+  "log": [
+    [
+      "Skipping collection plugin "lorem" – name already used by built-in/inline collection.",
+    ],
+  ],
 }
 `;
 

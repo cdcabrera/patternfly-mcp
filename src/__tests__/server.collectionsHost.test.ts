@@ -116,7 +116,7 @@ describe('requestInvoke', () => {
       [
         'CollectionName',
         jest.fn().mockImplementation(async () => handlerResult),
-        { runInChildProcess: true }
+        { runInChildProcess: '#collectionPatternFlyApi' }
       ]
     );
 
@@ -163,7 +163,7 @@ describe('requestInvoke', () => {
       [
         'CollectionName',
         handler,
-        { runInChildProcess: true }
+        { runInChildProcess: '#collectionPatternFlyApi' }
       ]
     );
 

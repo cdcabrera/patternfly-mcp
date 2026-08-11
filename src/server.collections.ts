@@ -1,9 +1,11 @@
 import { type ChildProcess } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { type AppSession, type GlobalOptions } from './options';
 import { formatUnknownError, log } from './logger';
 import {
   spawnChildProcess,
   shutdownChildProcess,
+  resolveEntry,
   activeChildrenBySession,
   type ChildHandle
 } from './server.process';
@@ -359,19 +361,18 @@ const composeCollections = async (
 
   for (const creator of securedBuiltinCreators) {
     const [, , config] = creator(options);
-    const runHostValue = typeof config?.runInChildProcess === 'function'
-      ? await config.runInChildProcess(options)
-      : config?.runInChildProcess;
+    const runInChildProcess = config?.runInChildProcess;
 
-    if (typeof runHostValue === 'string') {
+    if (typeof runInChildProcess === 'string' && runInChildProcess.startsWith('#')) {
       try {
-        const resolvedSpec = new URL(runHostValue, import.meta.url).href;
+        const resolvedPath = resolveEntry({ importSpecifier: runInChildProcess, label: 'Collection' });
+        const resolvedSpec = pathToFileURL(resolvedPath).href;
 
         specs.push(resolvedSpec);
         trustedSpecs.push(resolvedSpec);
         hostedCreators.push(creator);
       } catch (error) {
-        log.warn(`Failed to resolve spec "${runHostValue}" for built-in collection: ${formatUnknownError(error)}`);
+        log.warn(`Failed to resolve spec "${runInChildProcess}" for built-in collection: ${formatUnknownError(error)}`);
         localCreators.push(creator);
       }
     } else {
@@ -379,26 +380,23 @@ const composeCollections = async (
     }
   }
 
-  const filteredInlineCreators = inlineCreators.map(collection =>
-    collection.value as McpCollectionCreator).filter(Boolean);
+  const filteredInlineCreators: McpCollectionCreator[] = inlineCreators.map(collection => {
+    const collectionName = normalizeCollectionName(collection.collectionName);
 
-  for (const creator of filteredInlineCreators) {
-    const [, , config] = creator(options);
-    const runHostValue = typeof config?.runInChildProcess === 'function'
-      ? await config.runInChildProcess(options)
-      : config?.runInChildProcess;
+    if (collectionName && usedNames.has(collectionName)) {
+      log.warn(`Skipping inline collection "${collectionName}" because a collection with the same name is already provided (built-in or earlier).`);
 
-    if (typeof runHostValue === 'string') {
-      try {
-        const resolvedSpec = new URL(runHostValue, import.meta.url).href;
-
-        specs.push(resolvedSpec);
-        hostedCreators.push(creator);
-      } catch (error) {
-        log.warn(`Failed to resolve spec "${runHostValue}" for inline collection: ${formatUnknownError(error)}`);
-      }
+      return undefined;
     }
-  }
+
+    if (collectionName) {
+      usedNames.add(collectionName);
+    }
+
+    return collection.value as McpCollectionCreator;
+  }).filter(Boolean) as McpCollectionCreator[];
+
+  localCreators.push(...filteredInlineCreators);
 
   if (hostedCreators.length === 0) {
     return localCreators;

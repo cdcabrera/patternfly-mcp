@@ -4,7 +4,7 @@ describe('resolveCreators', () => {
   it('should return a normalized module output with expected properties', () => {
     const mockHandler = jest.fn();
     const moduleExport = {
-      default: () => ['Collection1', mockHandler, { runInChildProcess: true }]
+      default: () => ['Collection1', mockHandler, { runInChildProcess: '#collectionPatternFlyApi' }]
     };
 
     const [result] = resolveCreators(moduleExport);
@@ -17,7 +17,7 @@ describe('resolveCreators', () => {
     ]).toEqual([
       'Collection1',
       mockHandler,
-      { runInChildProcess: true }
+      { runInChildProcess: '#collectionPatternFlyApi' }
     ]);
   });
 
@@ -25,7 +25,7 @@ describe('resolveCreators', () => {
     {
       description: 'valid format, default export with function, tuple',
       moduleExports: {
-        default: () => ['Collection1', jest.fn(), { runInChildProcess: true }]
+        default: () => ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
       },
       isValid: true
     },
@@ -33,8 +33,8 @@ describe('resolveCreators', () => {
       description: 'valid format, default export with function, array of functions with tuple return',
       moduleExports: {
         default: () => [
-          () => ['Collection1', jest.fn(), { runInChildProcess: true }],
-          () => ['Collection1', jest.fn(), { runInChildProcess: true }]
+          () => ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }],
+          () => ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
         ]
       },
       isValid: true
@@ -43,8 +43,8 @@ describe('resolveCreators', () => {
       description: 'valid format, default export with array of functions with tuple return',
       moduleExports: {
         default: [
-          () => ['Collection1', jest.fn(), { runInChildProcess: true }],
-          () => ['Collection1', jest.fn(), { runInChildProcess: true }]
+          () => ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }],
+          () => ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
         ]
       },
       isValid: true
@@ -53,8 +53,8 @@ describe('resolveCreators', () => {
       description: 'invalid format, default export with function, array of tuples',
       moduleExports: {
         default: () => [
-          ['Collection1', jest.fn(), { runInChildProcess: true }],
-          ['Collection2', jest.fn(), { runInChildProcess: true }]
+          ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }],
+          ['Collection2', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
         ]
       },
       isValid: false
@@ -62,7 +62,7 @@ describe('resolveCreators', () => {
     {
       description: 'invalid format, default export with tuple',
       moduleExports: {
-        default: ['Collection1', jest.fn(), { runInChildProcess: true }]
+        default: ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
       },
       isValid: false
     },
@@ -70,8 +70,8 @@ describe('resolveCreators', () => {
       description: 'invalid format, default export with array of tuples',
       moduleExports: {
         default: [
-          ['Collection1', jest.fn(), { runInChildProcess: true }],
-          ['Collection2', jest.fn(), { runInChildProcess: true }]
+          ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }],
+          ['Collection2', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
         ]
       },
       isValid: false
@@ -141,8 +141,8 @@ describe('resolveCreators', () => {
     {
       description: 'invalid format, named exports only',
       moduleExports: {
-        named1: () => ['Collection1', jest.fn(), { runInChildProcess: true }],
-        named2: () => ['Collection2', jest.fn(), { runInChildProcess: true }]
+        named1: () => ['Collection1', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }],
+        named2: () => ['Collection2', jest.fn(), { runInChildProcess: '#collectionPatternFlyApi' }]
       },
       isValid: false
     }

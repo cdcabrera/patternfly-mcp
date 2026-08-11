@@ -57,7 +57,7 @@ type McpCollection = [
   name: string,
   handler: (arg?: unknown) => McpCollectionResult | Promise<McpCollectionResult>,
   _config?: {
-    runInChildProcess?: boolean | string | ((options?: GlobalOptions) => boolean | string | Promise<boolean | string>);
+    runInChildProcess?: string;
     // priority?: number;
     isRequired?: boolean;
     // group?: string;

@@ -16,7 +16,21 @@ import { spawnChildProcess, shutdownChildProcess, activeChildrenBySession } from
 jest.mock('../server.process', () => ({
   spawnChildProcess: jest.fn(),
   shutdownChildProcess: jest.fn().mockResolvedValue(undefined),
-  activeChildrenBySession: new Map()
+  activeChildrenBySession: new Map(),
+  resolveEntry: jest.fn(({ importSpecifier }) => {
+    if (importSpecifier.startsWith('#collection')) {
+      const suffix = importSpecifier.substring('#collection'.length);
+      const name = suffix.charAt(0).toLowerCase() + suffix.slice(1);
+
+      return `/mock/path/to/collection.${name}.js`;
+    }
+
+    if (importSpecifier.startsWith('./') || importSpecifier.startsWith('../')) {
+      return `/mock/path/to/${importSpecifier.replace(/^\.\.?\//, '')}`;
+    }
+
+    return `/mock/path/to/${importSpecifier}`;
+  })
 }));
 
 jest.mock('../options.context', () => ({
@@ -424,7 +438,7 @@ describe('composeCollections', () => {
   // Mock default creators
   const loremIpsum = () => ['loremIpsum', () => {}, { isRequired: true }];
   const dolorSitAmet = () => ['dolorSitAmet', () => {}, { isRequired: false }];
-  const consecteturAdipiscingElit: any = () => ['consecteturAdipiscingElit', () => {}, { runInChildProcess: './collection.consecteturAdipiscingElit.js' }];
+  const consecteturAdipiscingElit: any = () => ['consecteturAdipiscingElit', () => {}, { runInChildProcess: '#collectionConsecteturAdipiscingElit' }];
 
   loremIpsum.collectionName = 'loremIpsum';
   dolorSitAmet.collectionName = 'dolorSitAmet';
