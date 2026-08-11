@@ -1,9 +1,16 @@
-import { composeCollections } from '../server.collections';
 import { getOptions, getSessionOptions } from '../options.context';
+import { composeCollections } from '../server.collections';
+import { heavyPool } from '../server.workerPool';
 
 jest.mock('../options.context', () => ({
   getOptions: jest.fn(),
   getSessionOptions: jest.fn()
+}));
+
+jest.mock('../server.workerPool', () => ({
+  heavyPool: {
+    runTask: jest.fn()
+  }
 }));
 
 describe('composeCollections', () => {
@@ -26,6 +33,39 @@ describe('composeCollections', () => {
     expect(config?._isInternal).toBe(true);
     expect(config?.isRequired).toBe(true);
     expect(callback).toBe(mockHandler);
+  });
+
+  it('should proxy creators that declare parallel execution via runParallel with hash prefix', async () => {
+    const mockHandler = jest.fn();
+    const mockCreator: any = jest.fn(() => [
+      'parallel-collection',
+      mockHandler,
+      { runParallel: '#collectionPatternFlyApi' }
+    ]);
+
+    (getOptions as jest.Mock).mockReturnValue({ serverName: 'mcp' });
+    (getSessionOptions as jest.Mock).mockReturnValue({ sessionId: 'session-id' });
+    (heavyPool.runTask as jest.Mock).mockResolvedValue({ records: [] });
+
+    const result: any = await composeCollections([mockCreator]);
+
+    expect(result.length).toBe(1);
+
+    const [name, handler] = result[0]();
+
+    expect(name).toBe('parallel-collection');
+
+    const executionResult = await handler({ inputArg: 'test' });
+
+    expect(executionResult).toEqual({ records: [] });
+
+    expect(heavyPool.runTask).toHaveBeenCalledWith({
+      moduleSpecifier: '#collectionPatternFlyApi',
+      exportName: 'runCollection',
+      args: { inputArg: 'test' },
+      options: expect.any(Object),
+      session: { sessionId: 'session-id' }
+    });
   });
 
   it('should return an empty array when no creators are provided', async () => {

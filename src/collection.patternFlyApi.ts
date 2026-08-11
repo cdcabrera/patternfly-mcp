@@ -10,7 +10,11 @@ import {
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { deferTask } from './server.task';
-import { type McpCollection, type McpCollectionRecord } from './collections';
+import {
+  type McpCollection,
+  type McpCollectionRecord,
+  type McpCollectionResult
+} from './collections';
 
 /**
  * Processed content for API responses.
@@ -263,64 +267,111 @@ apiSpider.deferTask = deferTask(apiSpider, {
 });
 
 /**
- * Create a PatternFly API collection.
+ * Run the PatternFly API collection.
  */
-const patternFlyApiCollection = (): McpCollection => {
-  const callback = async () => {
-    const taskHandle = apiSpider.deferTask();
-    const entries = await taskHandle.start();
-    const recordsMap: Map<string, McpCollectionRecord> = new Map();
+const runCollectionOg = async (): Promise<McpCollectionResult> => {
+  const taskHandle = apiSpider.deferTask();
+  const entries = await taskHandle.start();
+  const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
-    entries?.forEach((entry, index) => {
-      const semanticContext = entry.semanticContext || {};
-      const name = (semanticContext.item || 'api-entry').toLowerCase();
-      const version = (semanticContext.version || 'unknown').toLowerCase();
-      const displayName = semanticContext.item || name;
+  entries?.forEach((entry, index) => {
+    const semanticContext = entry.semanticContext || {};
+    const name = (semanticContext.item || 'api-entry').toLowerCase();
+    const version = (semanticContext.version || 'unknown').toLowerCase();
+    const displayName = semanticContext.item || name;
 
-      const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
+    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
 
-      if (recordsMap.has(id)) {
-        return;
-      }
-
-      const adaptedEntry = {
-        displayName,
-        description: entry.content || `PatternFly API documentation for ${displayName}`,
-        pathSlug: name,
-        category: semanticContext.kind,
-        section: semanticContext.section || 'components',
-        source: 'api' as const,
-        version,
-        id,
-        path: entry.url
-      };
-
-      const record = {
-        id,
-        sourceId: entry.url,
-        sourceType: 'api' as const,
-        data: {
-          [name]: adaptedEntry
-        }
-      };
-
-      recordsMap.set(record.id, record);
-    });
-
-    return { records: [...recordsMap.values()] };
-  };
-
-  return [
-    'patternfly-api',
-    callback,
-    {
-      runInChildProcess: true
+    if (recordsMap.has(id)) {
+      return;
     }
-  ];
+
+    const adaptedEntry = {
+      displayName,
+      description: entry.content || `PatternFly API documentation for ${displayName}`,
+      pathSlug: name,
+      category: semanticContext.kind,
+      section: semanticContext.section || 'components',
+      source: 'api' as const,
+      version,
+      id,
+      path: entry.url
+    };
+
+    const record = {
+      id,
+      sourceId: entry.url,
+      sourceType: 'api' as const,
+      data: {
+        [name]: adaptedEntry
+      }
+    };
+
+    recordsMap.set(record.id, record);
+  });
+
+  return { records: [...recordsMap.values()] };
 };
 
+// Testing without the task defer work
+const runCollection = async (): Promise<McpCollectionResult> => {
+  const entries = await apiSpider();
+  const recordsMap: Map<string, McpCollectionRecord> = new Map();
+
+  entries?.forEach((entry, index) => {
+    const semanticContext = entry.semanticContext || {};
+    const name = (semanticContext.item || 'api-entry').toLowerCase();
+    const version = (semanticContext.version || 'unknown').toLowerCase();
+    const displayName = semanticContext.item || name;
+
+    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
+
+    if (recordsMap.has(id)) {
+      return;
+    }
+
+    const adaptedEntry = {
+      displayName,
+      description: entry.content || `PatternFly API documentation for ${displayName}`,
+      pathSlug: name,
+      category: semanticContext.kind,
+      section: semanticContext.section || 'components',
+      source: 'api' as const,
+      version,
+      id,
+      path: entry.url
+    };
+
+    const record = {
+      id,
+      sourceId: entry.url,
+      sourceType: 'api' as const,
+      data: {
+        [name]: adaptedEntry
+      }
+    };
+
+    recordsMap.set(record.id, record);
+  });
+
+  return { records: [...recordsMap.values()] };
+};
+
+/**
+ * Create a PatternFly API collection.
+ */
+const patternFlyApiCollection = (): McpCollection => [
+  'patternfly-api',
+  runCollection,
+  {
+    runParallel: '#collectionPatternFlyApi'
+  }
+];
+
 export {
+  patternFlyApiCollection as default,
   patternFlyApiCollection,
+  runCollection,
   apiSpider,
   crawler,
   isEmptyPayload,
