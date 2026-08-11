@@ -1,6 +1,6 @@
 import { getOptions, getSessionOptions } from '../options.context';
 import { composeCollections } from '../server.collections';
-import { globalWorkerPool } from '../server.workerPool';
+import { heavyPool } from '../server.workerPool';
 
 jest.mock('../options.context', () => ({
   getOptions: jest.fn(),
@@ -8,7 +8,7 @@ jest.mock('../options.context', () => ({
 }));
 
 jest.mock('../server.workerPool', () => ({
-  globalWorkerPool: {
+  heavyPool: {
     runTask: jest.fn()
   }
 }));
@@ -45,7 +45,7 @@ describe('composeCollections', () => {
 
     (getOptions as jest.Mock).mockReturnValue({ serverName: 'mcp' });
     (getSessionOptions as jest.Mock).mockReturnValue({ sessionId: 'session-id' });
-    (globalWorkerPool.runTask as jest.Mock).mockResolvedValue({ records: [] });
+    (heavyPool.runTask as jest.Mock).mockResolvedValue({ records: [] });
 
     const result: any = await composeCollections([mockCreator]);
 
@@ -59,7 +59,7 @@ describe('composeCollections', () => {
 
     expect(executionResult).toEqual({ records: [] });
 
-    expect(globalWorkerPool.runTask).toHaveBeenCalledWith({
+    expect(heavyPool.runTask).toHaveBeenCalledWith({
       moduleSpecifier: '#collectionPatternFlyApi',
       exportName: 'runCollection',
       args: { inputArg: 'test' },

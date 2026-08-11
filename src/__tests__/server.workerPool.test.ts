@@ -1,4 +1,4 @@
-import { createWorkerPool, type WorkerPoolInstance } from '../server.workerPool';
+import { createTransientPool, type WorkerPoolInstance } from '../server.workerPool';
 
 describe('WorkerPool', () => {
   let pool: WorkerPoolInstance;
@@ -18,7 +18,7 @@ describe('WorkerPool', () => {
   const invalidDataUri = `data:text/javascript;base64,${Buffer.from(invalidCode).toString('base64')}`;
 
   beforeEach(() => {
-    pool = createWorkerPool(2); // Throttled at 2 active threads
+    pool = createTransientPool(2); // Throttled at 2 active threads
   });
 
   it('should successfully run a task in a worker thread and return the result', async () => {
