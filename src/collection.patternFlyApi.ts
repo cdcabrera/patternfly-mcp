@@ -313,7 +313,52 @@ const runCollectionOg = async (): Promise<McpCollectionResult> => {
   return { records: [...recordsMap.values()] };
 };
 
-const runCollection = async (): Promise<McpCollectionResult> => ({ records: [] });
+// Testing without the task defer Doesn't work
+const runCollection = async (): Promise<McpCollectionResult> => {
+  const entries = await apiSpider();
+  const recordsMap: Map<string, McpCollectionRecord> = new Map();
+
+  entries?.forEach((entry, index) => {
+    const semanticContext = entry.semanticContext || {};
+    const name = (semanticContext.item || 'api-entry').toLowerCase();
+    const version = (semanticContext.version || 'unknown').toLowerCase();
+    const displayName = semanticContext.item || name;
+
+    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
+
+    if (recordsMap.has(id)) {
+      return;
+    }
+
+    const adaptedEntry = {
+      displayName,
+      description: entry.content || `PatternFly API documentation for ${displayName}`,
+      pathSlug: name,
+      category: semanticContext.kind,
+      section: semanticContext.section || 'components',
+      source: 'api' as const,
+      version,
+      id,
+      path: entry.url
+    };
+
+    const record = {
+      id,
+      sourceId: entry.url,
+      sourceType: 'api' as const,
+      data: {
+        [name]: adaptedEntry
+      }
+    };
+
+    recordsMap.set(record.id, record);
+  });
+
+  return { records: [...recordsMap.values()] };
+};
+
+// Testing basic, works
+const runCollectionWorks = async (): Promise<McpCollectionResult> => ({ records: [] });
 
 /**
  * Create a PatternFly API collection.
