@@ -52,22 +52,26 @@ interface WorkerPoolInstance {
 }
 
 /**
- * Creates a throttled worker thread pool factory for parallel execution.
- *
- * @param {number} [maxWorkers] - Maximum active threads.
- * @returns {WorkerPoolInstance} Throttled worker pool instance.
+ * Resolves the location of the worker entry script safely across bundling and testing frameworks.
  */
-const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)): WorkerPoolInstance => {
+const getWorkerScriptPath = (): string => {
+  try {
+    return fileURLToPath(import.meta.resolve('#workerEntry'));
+  } catch {
+    return new URL('../dist/server.workerEntry.js', import.meta.url).pathname;
+  }
+};
+
+/**
+ * FACTORY A: Transient Pool (Spawns a fresh thread per task, kills it instantly on completion)
+ * Ideal for: Heavy memory usage, unpredictable processing, long-running scraping cycles.
+ *
+ * @param maxWorkers
+ */
+const createTransientPool = (maxWorkers = Math.max(1, availableParallelism() - 1)): WorkerPoolInstance => {
   let activeWorkers = 0;
   const queue: QueuedTask[] = [];
-  let workerScript: string;
-
-  try {
-    workerScript = fileURLToPath(import.meta.resolve('#workerEntry'));
-  } catch {
-    // Fallback for Jest test environments to point to the compiled dist worker entry
-    workerScript = new URL('../dist/server.workerEntry.js', import.meta.url).pathname;
-  }
+  const workerScript = getWorkerScriptPath();
 
   const next = (): void => {
     if (activeWorkers >= maxWorkers || queue.length === 0) {
@@ -81,78 +85,165 @@ const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)):
     }
 
     activeWorkers += 1;
-
-    spawnWorker(task);
+    spawnTransientWorker(task);
   };
 
-  const spawnWorker = (task: QueuedTask): void => {
+  const spawnTransientWorker = (task: QueuedTask): void => {
     const { payload, resolve, reject } = task;
+    let resolved = false;
 
     try {
-      const worker = new Worker(workerScript, {
-        workerData: payload
-      });
-
-      let resolved = false;
+      // Pass workerData right away to trigger transient execution flow
+      const worker = new Worker(workerScript, { workerData: payload });
 
       worker.on('message', message => {
         resolved = true;
-
-        if (message.success) {
+        if (message && message.success) {
           resolve(message.payload);
         } else {
-          reject(formatUnknownError(message.error));
+          reject(formatUnknownError(message?.error ?? 'Unknown worker error'));
         }
-
-        worker.terminate().catch(() => {});
       });
 
       worker.on('error', err => {
-        resolved = true;
-
-        reject(err);
-        worker.terminate().catch(() => {});
+        if (!resolved) {
+          resolved = true;
+          reject(err);
+        }
       });
 
       worker.on('exit', code => {
         activeWorkers -= 1;
 
         if (!resolved) {
-          reject(new Error(`Worker exited unexpectedly with code ${code}`));
+          resolved = true;
+          reject(new Error(`Transient worker exited unexpectedly with code ${code}`));
         }
 
-        // Trigger the next queued task
         next();
       });
     } catch (error) {
       activeWorkers -= 1;
 
-      reject(error);
+      if (!resolved) {
+        resolved = true;
+        reject(error);
+      }
 
       next();
     }
   };
 
-  const runTask = <T>(payload: TaskPayload): Promise<T> =>
-    new Promise<T>((resolve, reject) => {
-      queue.push({ payload, resolve, reject });
-
-      next();
-    });
-
   return {
-    runTask
+    runTask: <T>(payload: TaskPayload): Promise<T> =>
+      new Promise<T>((resolve, reject) => {
+        queue.push({ payload, resolve, reject });
+        next();
+      })
   };
 };
 
 /**
- * Create the worker thread pool.
+ * FACTORY B: Persistent Pool (Keeps warm threads alive, routes payloads via IPC messages)
+ * Ideal for: Rapid, light, or frequent computations requiring low-latency invocation.
+ *
+ * @param maxWorkers
  */
-const globalWorkerPool = createWorkerPool();
+const createPersistentPool = (maxWorkers = Math.max(1, availableParallelism() - 1)): WorkerPoolInstance => {
+  const queue: QueuedTask[] = [];
+  const workers: { worker: Worker; active: boolean }[] = [];
+  const workerScript = getWorkerScriptPath();
+
+  const handleWorkerCrash = (index: number) => {
+    if (workers?.[index]) {
+      workers[index].worker?.removeAllListeners();
+      workers[index].worker = new Worker(workerScript);
+      workers[index].active = false;
+    }
+
+    next();
+  };
+
+  // Pre-spawn and warm up the permanent thread containers
+  for (let i = 0; i < maxWorkers; i++) {
+    const worker = new Worker(workerScript); // Instantiated WITHOUT initial workerData
+
+    workers.push({ worker, active: false });
+
+    worker.on('error', () => handleWorkerCrash(i));
+    worker.on('exit', () => handleWorkerCrash(i));
+  }
+
+  const next = (): void => {
+    if (queue.length === 0) {
+      return;
+    }
+
+    const idleWorkerSlot = workers.find(w => !w.active);
+
+    if (!idleWorkerSlot) {
+      return;
+    }
+
+    const task = queue.shift();
+
+    if (!task) {
+      return;
+    }
+
+    idleWorkerSlot.active = true;
+    const { worker } = idleWorkerSlot;
+    const { payload, resolve, reject } = task;
+
+    const onMessage = (message: any) => {
+      cleanup();
+      if (message && message.success) {
+        resolve(message.payload);
+      } else {
+        reject(formatUnknownError(message?.error ?? 'Unknown worker error'));
+      }
+    };
+
+    const onError = (err: Error) => {
+      cleanup();
+      reject(err);
+    };
+
+    const cleanup = () => {
+      worker.off('message', onMessage);
+      worker.off('error', onError);
+      idleWorkerSlot.active = false;
+
+      next();
+    };
+
+    worker.on('message', onMessage);
+    worker.on('error', onError);
+
+    // Send the task data via postMessage channel to be captured by persistent listeners
+    worker.postMessage(payload);
+  };
+
+  return {
+    runTask: <T>(payload: TaskPayload): Promise<T> =>
+      new Promise<T>((resolve, reject) => {
+        queue.push({ payload, resolve, reject });
+        next();
+      })
+  };
+};
+
+// Singleton exports ready for allocation
+const heavyPool = createTransientPool(2);
+const lightPool = createPersistentPool();
 
 export {
-  createWorkerPool,
-  globalWorkerPool,
+  getWorkerScriptPath,
+  createPersistentPool,
+  createTransientPool,
+  heavyPool,
+  lightPool,
   type TaskPayload,
+  type QueuedTask,
   type WorkerPoolInstance
 };

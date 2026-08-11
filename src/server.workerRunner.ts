@@ -22,75 +22,106 @@ interface WorkerTaskData {
 }
 
 /**
- * Asynchronous function `runWorker` serves as an execution routine for worker threads.
- * Dynamically imports a specified module and executes its exported function,
- * optionally applying nested options and session contexts.
+ * Execute a task defined by the provided payload.
  *
- * - Resolves and validates the module specifier provided in the worker task data.
- * - Supports dynamic import of the specified module, bypassing static analysis restrictions.
- * - Validates and invokes the desired exported function, supporting both named and default exports.
- * - Handles nested execution with options and session-specific contexts.
- * - Communicates execution results or errors back to the parent thread via `parentPort`.
- * - Ensures proper termination of the worker process after execution completion.
+ * - Dynamically import a module
+ * - Identify the specified export (default or named)
+ * - Invokes the callback with the given arguments.
  *
- * Throws errors in the following cases:
- * - `moduleSpecifier` is not specified in the worker task data.
- * - Exported module does not contain a valid function for the specified `exportName`.
- *
- * Uses the following destructured properties from the worker task data:
- * - `moduleSpecifier`: The location or URI of the module to be imported and executed.
- * - `exportName`: The name of the export to be used (default is `'default'`).
- * - `args`: The arguments to pass to the executed function.
- * - `options`: Optional configuration object to be used within the function execution.
- * - `session`: Optional session context to be employed during the execution.
+ * @param {WorkerTaskData} taskPayload - The task payload containing details about the module to load,
+ *     the export to invoke, and arguments to pass to the export.
+ * @param taskPayload.moduleSpecifier - The path or URL identifying the module to be imported.
+ *     It must be a valid module specifier.
+ * @param [taskPayload.exportName='default'] - The name of the export to invoke. Defaults to
+ *     'default' if not specified.
+ * @param taskPayload.args - Arguments to pass to the exported function when called.
+ * @param [taskPayload.options] - Configuration options that define specific execution settings.
+ * @param [taskPayload.session] - Data describing the session context for task isolation.
+ * @throws {Error} If the `moduleSpecifier` is not provided, or if the specified export is not a function.
+ * @returns A promise that resolves to the result of the invoked export function.
  */
-const runWorker = async () => {
-  const { moduleSpecifier, exportName = 'default', args, options, session } = workerData as WorkerTaskData;
+const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
+  const { moduleSpecifier, exportName = 'default', args, options, session } = taskPayload;
 
-  try {
-    if (!moduleSpecifier) {
-      throw new Error('No moduleSpecifier specified for worker task.');
-    }
+  if (!moduleSpecifier) {
+    throw new Error('No moduleSpecifier specified for worker task.');
+  }
 
-    let resolvedSpec = moduleSpecifier;
+  let resolvedSpec = moduleSpecifier;
 
-    if (resolvedSpec.startsWith('#')) {
-      resolvedSpec = import.meta.resolve(resolvedSpec);
-    } else if (!resolvedSpec.startsWith('file://') && !resolvedSpec.startsWith('data:')) {
-      resolvedSpec = pathToFileURL(resolvedSpec).href;
-    }
+  if (resolvedSpec.startsWith('#')) {
+    resolvedSpec = import.meta.resolve(resolvedSpec);
+  } else if (!resolvedSpec.startsWith('file://') && !resolvedSpec.startsWith('data:')) {
+    resolvedSpec = pathToFileURL(resolvedSpec).href;
+  }
 
-    // Dynamically import the target ESM module using Function constructor
-    // to bypass bundler static analysis (e.g., Rollup dynamic import restrictions)
-    const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
-    const module = await dynamicImport(resolvedSpec);
+  // Bypass static bundler boundaries cleanly via scoped Function constructor
+  const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
+  const module = await dynamicImport(resolvedSpec);
 
-    // Support named or default callback resolutions
-    const callback = module[exportName] || (exportName === 'default' ? module.default : undefined);
+  // Map to default fallback hooks if explicit targets are missing
+  const callback = module[exportName] || (exportName === 'default' ? module.default : undefined);
 
-    if (typeof callback !== 'function') {
-      throw new Error(`Exported module '${moduleSpecifier}' (export: '${exportName}') must be a function.`);
-    }
+  if (typeof callback !== 'function') {
+    throw new Error(`Exported module '${moduleSpecifier}' (export: '${exportName}') must be a function.`);
+  }
 
-    // Nest inside parent-side options and session contexts
-    // runWithOptions and runWithSession being asyncLocalStorage wrappers
-    const result = await runWithOptions((options as any) || {}, async () =>
-      runWithSession((session as any) || {}, async () =>
-        Promise.resolve(callback(args))));
+  // Nest execution within both AsyncLocalStorage isolation layouts
+  return runWithOptions((options as any) || {}, async () =>
+    runWithSession((session as any) || {}, async () =>
+      Promise.resolve(callback(args))));
+};
 
-    parentPort?.postMessage({
-      success: true,
-      payload: result
-    });
-  } catch (error: any) {
-    parentPort?.postMessage({
-      success: false,
-      error: {
-        message: error?.message || String(error),
-        stack: error?.stack
+/**
+ * Route orchestration based on worker thread startup context.
+ *
+ * Two distinct routes:
+ * 1. **Route A: Transient Execution**
+ *    - If `workerData` is provided, the worker immediately processes the task using the
+ *        provided data.
+ *    - Upon task completion, a success or failure message is posted back to the parent thread
+ *        via the `parentPort`.
+ *
+ * 2. **Route B: Persistent Execution**
+ *    - If `workerData` is not available, the worker remains active and listens for incoming
+ *        task payloads via `parentPort`.
+ *    - When a task message is received, it processes the task and sends a success or failure
+ *        message back to the parent thread.
+ *
+ * Both routes use async and handle errors gracefully to relate results or errors back to the parent.
+ */
+const runWorker = () => {
+  if (workerData) {
+    /**
+     * Route A: Transient execution (workerData is loaded immediately)
+     */
+    executeTask(workerData as WorkerTaskData)
+      .then(result => {
+        parentPort?.postMessage({ success: true, payload: result });
+      })
+      .catch((error: any) => {
+        parentPort?.postMessage({
+          success: false,
+          error: { message: error?.message || String(error), stack: error?.stack }
+        });
+      });
+  } else {
+    /**
+     * Route B: Persistent execution (Thread stays open waiting for stream events)
+     */
+    parentPort?.on('message', async (incomingPayload: WorkerTaskData) => {
+      try {
+        const result = await executeTask(incomingPayload);
+
+        parentPort?.postMessage({ success: true, payload: result });
+      } catch (error: any) {
+        parentPort?.postMessage({
+          success: false,
+          error: { message: error?.message || String(error), stack: error?.stack }
+        });
       }
     });
   }
 };
 
-export { runWorker, type WorkerTaskData };
+export { runWorker, executeTask, type WorkerTaskData };
