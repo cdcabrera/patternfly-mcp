@@ -115,27 +115,34 @@ const performLoad = async (request: LoadRequest): Promise<HostState & { warnings
     // Does the module export a creator function? On fail, move to the next module.
     let creators: McpCollectionCreator[] = [];
 
+    // Finally, convert to JSON for manifest, store, push descriptor
+    const isSpecTrusted = request.trustedSpecs?.includes(spec) || false;
+
+    const allowedOptions = isSpecTrusted
+      ? options
+      : {
+        serverName: options?.serverName,
+        serverVersion: options?.serverVersion,
+        nodeMajor: options?.nodeMajor,
+        repoName: options?.repoName
+      };
+
     try {
-      creators = resolveCreators(module, options, { throwOnEmpty: true });
+      creators = resolveCreators(module, allowedOptions as any, { throwOnEmpty: true });
     } catch (error) {
       warnings.push(`No usable creators in module ${spec}: ${String((error as Error)?.message || error)}`);
       continue;
     }
 
-    // Finally, convert to JSON for manifest, store, push descriptor
-    const isSpecTrusted = request.trustedSpecs?.includes(spec);
-
     for (const creator of creators) {
       try {
         const create = creator as (opts?: unknown) => McpCollection;
-        const collection = await runWithOptions((options as any) || {}, async () => create(options));
+        const collection = await runWithOptions((allowedOptions as any) || {}, async () => create(allowedOptions));
 
-        if (isSpecTrusted) {
-          if (!collection[2]) {
-            collection[2] = {};
-          }
-          collection[2]._isInternal = true;
+        if (!collection[2]) {
+          collection[2] = {};
         }
+        collection[2]._isInternal = isSpecTrusted;
 
         const collectionId = makeId();
 
@@ -205,14 +212,27 @@ const requestInvoke = async (state: HostState, request: InvokeRequest, ctx: Host
     // Child-side validation
     const updatedRequestArgs = request.args;
 
+    const isInternal = collection[2]?._isInternal || false;
+    const allowedInvokeOptions = isInternal
+      ? (request.options as any) || {}
+      : {
+        serverName: (request.options as any)?.serverName,
+        serverVersion: (request.options as any)?.serverVersion,
+        nodeMajor: (request.options as any)?.nodeMajor,
+        repoName: (request.options as any)?.repoName
+      };
+
+    const runWithFilteredContexts = async (fn: () => Promise<unknown>) => {
+      if (isInternal) {
+        return runWithOptions(allowedInvokeOptions, async () =>
+          runWithSession((request.session as any) || {}, fn));
+      } else {
+        return runWithOptions(allowedInvokeOptions, fn);
+      }
+    };
+
     // Nest execution inside options and session contexts so logging and caching helpers resolve context perfectly
-    const result = await runWithOptions(
-      (request.options as any) || {},
-      async () => runWithSession(
-        (request.session as any) || {},
-        async () => Promise.resolve(handler(updatedRequestArgs))
-      )
-    );
+    const result = await runWithFilteredContexts(async () => Promise.resolve(handler(updatedRequestArgs)));
 
     // Some handlers may mistakenly return an Error instance instead of throwing. Normalize it to a failure.
     if (isErrorLike(result)) {

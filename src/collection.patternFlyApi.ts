@@ -259,6 +259,7 @@ const apiSpider = async (): Promise<ApiContent[]> => {
  * Deferred task for PatternFly API spider.
  */
 apiSpider.deferTask = deferTask(apiSpider, {
+  intervalMs: 10_000,
   cancelMs: DEFAULT_OPTIONS.patternflyOptions.api.crawlTimeoutMs
 });
 
@@ -325,6 +326,7 @@ const patternFlyApiCollection = (): McpCollection => {
 patternFlyApiCollection.collectionName = 'patternfly-api';
 
 export {
+  patternFlyApiCollection as default,
   patternFlyApiCollection,
   apiSpider,
   crawler,

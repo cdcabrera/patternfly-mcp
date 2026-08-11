@@ -58,7 +58,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
         "props",
         "css",
       ],
-      "crawlTimeoutMs": 10000,
+      "crawlTimeoutMs": 180000,
       "enabled": false,
       "versions": "https://main.patternfly-org.pages.dev/api/versions",
     },

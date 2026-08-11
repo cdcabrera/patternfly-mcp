@@ -402,6 +402,10 @@ const composeCollections = async (
     return localCreators;
   }
 
+  const hostedNames = new Set<string>(
+    hostedCreators.map(creator => normalizeCollectionName(sanitizeStaticCollectionName(creator))).filter(Boolean) as string[]
+  );
+
   let host: HostHandle | undefined;
 
   // Clean up on exit or disconnect
@@ -433,6 +437,10 @@ const composeCollections = async (
     // Filter manifest by reserved names BEFORE proxying
     const filteredCollections = host.collections.filter(collection => {
       const collectionName = normalizeCollectionName(collection.name);
+
+      if (collectionName && hostedNames.has(collectionName)) {
+        return true;
+      }
 
       if (collectionName && usedNames.has(collectionName)) {
         log.warn(`Skipping collection plugin "${collection.name}" – name already used by built-in/inline collection.`);

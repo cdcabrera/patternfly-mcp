@@ -1,4 +1,5 @@
 import { requestInvoke, createCollectionsHost } from '../server.collectionsHost';
+import { getOptions, getSessionOptions } from '../options.context';
 
 describe('requestInvoke', () => {
   let mockSend: jest.Mock;
@@ -189,6 +190,112 @@ describe('requestInvoke', () => {
     expect(ctx.send).toHaveBeenCalledTimes(1);
 
     jest.useRealTimers();
+  });
+
+  it('should restrict options and session for untrusted collections', async () => {
+    const handler = jest.fn().mockImplementation(() => ({
+      options: getOptions(),
+      session: getSessionOptions()
+    }));
+
+    const mockState = {
+      collectionMap: new Map([
+        ['untrusted-id', ['UntrustedCollection', handler, { _isInternal: false }]]
+      ]),
+      invokeTimeoutMs: 1000
+    };
+
+    const ctx = { send: jest.fn() };
+    const request = {
+      t: 'invoke',
+      id: 'r1',
+      collectionId: 'untrusted-id',
+      args: {},
+      options: {
+        serverName: 'patternfly-mcp',
+        serverVersion: '1.0.0',
+        nodeMajor: 20,
+        repoName: 'my-repo',
+        sensitiveConfig: 'do-not-leak-me',
+        docsPaths: ['/secret/path']
+      },
+      session: { user: 'admin', token: 'secret-token' }
+    };
+
+    await requestInvoke(mockState as any, request as any, ctx);
+
+    expect(ctx.send).toHaveBeenCalledTimes(1);
+
+    const result = ctx.send.mock.calls[0][0].result;
+
+    expect(result.options).toEqual(expect.objectContaining({
+      serverName: 'patternfly-mcp',
+      serverVersion: '1.0.0',
+      nodeMajor: 20,
+      repoName: 'my-repo'
+    }));
+
+    expect(result.options).not.toHaveProperty('sensitiveConfig');
+    expect(result.options).not.toHaveProperty('docsPaths');
+
+    expect(result.session).toEqual(expect.objectContaining({
+      sessionId: expect.any(String),
+      channelName: expect.any(String),
+      publicSessionId: expect.any(String)
+    }));
+
+    expect(result.session).not.toEqual(expect.objectContaining({
+      user: 'admin',
+      token: 'secret-token'
+    }));
+  });
+
+  it('should preserve all options and session for trusted collections', async () => {
+    const handler = jest.fn().mockImplementation(() => ({
+      options: getOptions(),
+      session: getSessionOptions()
+    }));
+
+    const mockState = {
+      collectionMap: new Map([
+        ['trusted-id', ['TrustedCollection', handler, { _isInternal: true }]]
+      ]),
+      invokeTimeoutMs: 1000
+    };
+
+    const ctx = { send: jest.fn() };
+    const request = {
+      t: 'invoke',
+      id: 'r2',
+      collectionId: 'trusted-id',
+      args: {},
+      options: {
+        serverName: 'patternfly-mcp',
+        serverVersion: '1.0.0',
+        nodeMajor: 20,
+        repoName: 'my-repo',
+        sensitiveConfig: 'do-not-leak-me',
+        docsPaths: ['/secret/path']
+      },
+      session: { user: 'admin', token: 'secret-token' }
+    };
+
+    await requestInvoke(mockState as any, request as any, ctx);
+
+    expect(ctx.send).toHaveBeenCalledTimes(1);
+
+    const result = ctx.send.mock.calls[0][0].result;
+
+    expect(result.options).toEqual(expect.objectContaining({
+      serverName: 'patternfly-mcp',
+      serverVersion: '1.0.0',
+      nodeMajor: 20,
+      repoName: 'my-repo',
+      sensitiveConfig: 'do-not-leak-me',
+      docsPaths: ['/secret/path']
+    }));
+
+    expect(result.session).toEqual({ user: 'admin', token: 'secret-token' });
   });
 });
 
