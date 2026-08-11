@@ -24,7 +24,9 @@
     "rootDirs": ["./src", "./tests/e2e", "./tests/audit"],
     "paths": {
       "#docsCatalog": ["./src/docs.json"],
-      "#toolsHost": ["./src/server.toolsHost.ts"]
+      "#toolsHost": ["./src/server.toolsHost.ts"],
+      "#collectionsHost": ["./src/server.collectionsHost.ts"],
+      "#collectionPatternFlyApi": ["./src/collection.patternFlyApi.ts"]
     }
   },
   "include": [
