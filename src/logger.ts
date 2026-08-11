@@ -103,6 +103,16 @@ const formatUnknownError = (value: unknown): string => {
     return value;
   }
 
+  // Handle serialized Error objects from worker threads or elsewhere
+  if (typeof value === 'object' && value !== null && 'message' in value) {
+    const val = value as { message: unknown; stack?: unknown };
+    const message = typeof val.stack === 'string' ? val.stack : (typeof val.message === 'string' ? val.message : undefined);
+
+    if (message) {
+      return message;
+    }
+  }
+
   try {
     return `Non-Error thrown: ${truncate(JSON.stringify(value))}`;
   } catch {

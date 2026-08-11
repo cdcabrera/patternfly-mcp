@@ -107,7 +107,7 @@ const createTransientPool = (maxWorkers = Math.max(1, availableParallelism() - 1
         if (message && message.success) {
           resolve(message.payload);
         } else {
-          reject(formatUnknownError(message?.error ?? 'Unknown worker error'));
+          reject(new Error(formatUnknownError(message?.error ?? 'Unknown worker error')));
         }
       });
 

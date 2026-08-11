@@ -90,21 +90,21 @@ const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
  *
  * Both routes use async and handle errors gracefully to relate results or errors back to the parent.
  */
-const runWorker = () => {
+const runWorker = async () => {
   if (workerData) {
     /**
      * Route A: Transient execution (workerData is loaded immediately)
      */
-    executeTask(workerData as WorkerTaskData)
-      .then(result => {
-        parentPort?.postMessage({ success: true, payload: result });
-      })
-      .catch((error: any) => {
-        parentPort?.postMessage({
-          success: false,
-          error: { message: error?.message || String(error), stack: error?.stack }
-        });
+    try {
+      const result = await executeTask(workerData as WorkerTaskData);
+
+      parentPort?.postMessage({ success: true, payload: result });
+    } catch (error: any) {
+      parentPort?.postMessage({
+        success: false,
+        error: { message: error?.message || String(error), stack: error?.stack }
       });
+    }
   } else {
     /**
      * Route B: Persistent execution (Thread stays open waiting for stream events)
