@@ -73,6 +73,33 @@ const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
 };
 
 /**
+ * Ensures that a worker thread stays alive by referencing the `parentPort` or setting a long-running
+ * timeout as a fallback mechanism. Provides a cleanup mechanism to cancel the keep-alive behavior.
+ *
+ * @param [options] - Config options.
+ * @param [options.throwOnParentPortError] - Whether to throw an error if `parentPort.ref` is
+ *     not a function. If `false`, no error is thrown, and the fallback mechanism is used.
+ * @param [options.timeoutMs] - Milliseconds for the fallback timeout. Defaults to `2,147,483,647` ms
+ *     (≈ 24.8 days); the max signed 32-bit int that `setTimeout` can handle.
+ * @returns Cleanup function that cancels the keep-alive mechanism, either by calling `parentPort.unref`
+ *     or clearing the fallback timer.
+ * @throws {Error} If `parentPort.ref` is not a function and `throwOnParentPortError` is `true`.
+ */
+const keepWorkerAlive = ({ throwOnParentPortError = true, timeoutMs = 2_147_483_647 } = {}): () => void => {
+  if (parentPort && typeof parentPort.ref === 'function') {
+    parentPort.ref();
+
+    return () => parentPort?.unref?.();
+  } else if (throwOnParentPortError) {
+    throw new Error('parentPort.ref is not a function — worker keep-alive failed');
+  }
+
+  const timer = setTimeout(() => {}, timeoutMs);
+
+  return () => clearTimeout(timer);
+};
+
+/**
  * Route orchestration based on worker thread startup context.
  *
  * Two distinct routes:
@@ -117,7 +144,7 @@ const runWorker = (): Promise<void> | void => {
      * this Node version — the explicit `ref()` call is required (verified via
      * `tmp/probe-parentPortRef.mjs`).
      */
-    parentPort?.ref();
+    const clearKeepAlive = keepWorkerAlive();
 
     return executeTask(workerData as WorkerTaskData)
       .then(result => {
@@ -130,7 +157,7 @@ const runWorker = (): Promise<void> | void => {
         });
       })
       .finally(() => {
-        parentPort?.unref();
+        clearKeepAlive();
       });
   } else {
     /**
