@@ -10,7 +10,7 @@ import {
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import { deferTask } from './server.task';
-import { type McpCollection, type McpCollectionRecord } from './collections';
+import { type McpCollection, type McpCollectionRecord, type McpCollectionResult } from './collections';
 
 /**
  * Processed content for API responses.
@@ -320,9 +320,19 @@ const patternFlyApiCollection = (): McpCollection => {
   ];
 };
 
+/**
+ * Clean function wrapper around the collection tuple for running in a parallel worker.
+ */
+const runCollection = async (): Promise<McpCollectionResult> => {
+  const [, callback] = patternFlyApiCollection();
+
+  return callback();
+};
+
 export {
   patternFlyApiCollection as default,
   patternFlyApiCollection,
+  runCollection,
   apiSpider,
   crawler,
   isEmptyPayload,

@@ -96,6 +96,7 @@ const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)):
 
       worker.on('message', message => {
         resolved = true;
+        worker.terminate().catch(() => {});
 
         if (message.success) {
           resolve(message.payload);
@@ -112,6 +113,7 @@ const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)):
 
       worker.on('error', err => {
         resolved = true;
+        worker.terminate().catch(() => {});
 
         reject(err);
       });
@@ -119,7 +121,7 @@ const createWorkerPool = (maxWorkers = Math.max(1, availableParallelism() - 1)):
       worker.on('exit', code => {
         activeWorkers -= 1;
 
-        if (!resolved && code !== 0) {
+        if (!resolved) {
           reject(new Error(`Worker exited unexpectedly with code ${code}`));
         }
 

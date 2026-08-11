@@ -152,6 +152,8 @@ const registerServerCollections = async (collections: McpCollectionCreator[], op
   const onUpdate = ({ name, response }: RegisterCollectionItem) => {
     if (response) {
       setPatternFlyCollection(name, response);
+      log.info(`Updated collection "${name}"`);
+      log.info(`Collection data ${JSON.stringify(response).substring(0, 100)}`);
     }
   };
 

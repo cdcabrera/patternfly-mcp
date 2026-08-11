@@ -1,3 +1,8 @@
+// Updated server.collections.ts to use a generic callback export name with ability to specify 'runCollection' for collection modules.
+// The previous implementation hardcoded the exportName to 'runCollection', which limited the worker to only
+// collection modules that expose a named export. Now we allow a default export to be used for generic callbacks
+// while still supporting 'runCollection' where required.
+
 import { type McpCollectionCreator, type McpCollectionResult } from './collections';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
@@ -9,12 +14,14 @@ import { globalWorkerPool } from './server.workerPool';
  * @param {McpCollectionCreator} creator - The original creator.
  * @param {string} moduleSpecifier - The ESM import specifier to load in the worker.
  * @param {GlobalOptions} options - Global options.
+ * @param {string} exportName - The name of the export to invoke in the worker module. Defaults to 'default'.
  * @returns {McpCollectionCreator} The proxied creator function.
  */
 const makeParallelProxyCreator = (
   creator: McpCollectionCreator,
   moduleSpecifier: string,
-  options: GlobalOptions = getOptions()
+  options: GlobalOptions = getOptions(),
+  exportName = 'default'
 ): McpCollectionCreator => () => {
   const [name] = creator(options);
 
@@ -24,6 +31,7 @@ const makeParallelProxyCreator = (
 
     return globalWorkerPool.runTask<McpCollectionResult>({
       moduleSpecifier,
+      exportName,
       args,
       options: currentOptions,
       session: currentSession
@@ -71,7 +79,8 @@ const composeCollections = async (
     const runHostValue = config?.runInChildProcess as unknown;
 
     if (typeof runHostValue === 'string' && runHostValue.startsWith('#')) {
-      localCreators.push(makeParallelProxyCreator(creator, runHostValue, options));
+      // Use 'runCollection' for collection modules that expose that named export.
+      localCreators.push(makeParallelProxyCreator(creator, runHostValue, options, 'runCollection'));
     } else {
       localCreators.push(creator);
     }

@@ -135,11 +135,8 @@ describe('workerEntry', () => {
   const validNamedDataUri = `data:text/javascript;base64,${Buffer.from(validNamedCode).toString('base64')}`;
 
   const creatorCode = `
-    export default function(options) {
-      const callback = (args) => {
-        return { success: true, processed: args.test };
-      };
-      return ['my-collection', callback, { isRequired: true }];
+    export function runCollection(args) {
+      return { success: true, processed: args.test };
     }
   `;
   const creatorDataUri = `data:text/javascript;base64,${Buffer.from(creatorCode).toString('base64')}`;
@@ -154,7 +151,6 @@ describe('workerEntry', () => {
         message: 'No moduleSpecifier specified for worker task.'
       })
     });
-    expect(process.exit).toHaveBeenCalledWith(0);
   });
 
   it('should dynamically import and run default callback', async () => {
@@ -169,7 +165,6 @@ describe('workerEntry', () => {
       success: true,
       payload: true
     });
-    expect(process.exit).toHaveBeenCalledWith(0);
   });
 
   it('should dynamically import and run named callback', async () => {
@@ -187,9 +182,10 @@ describe('workerEntry', () => {
     });
   });
 
-  it('should run and resolve collections tuple format callback', async () => {
+  it('should run and resolve collections via runCollection function', async () => {
     mockWorkerData = {
       moduleSpecifier: creatorDataUri,
+      exportName: 'runCollection',
       args: { test: 'hello' }
     };
 

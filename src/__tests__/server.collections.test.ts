@@ -61,6 +61,7 @@ describe('composeCollections', () => {
 
     expect(globalWorkerPool.runTask).toHaveBeenCalledWith({
       moduleSpecifier: '#collectionPatternFlyApi',
+      exportName: 'runCollection',
       args: { inputArg: 'test' },
       options: expect.any(Object),
       session: { sessionId: 'session-id' }
