@@ -1,7 +1,7 @@
 import { type McpCollection, type McpCollectionCreator, type McpCollectionResult } from './collections';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
-import { heavyPool } from './server.workerPool';
+import { getHeavyPool } from './server.workerPool';
 import { deferTask } from './server.task';
 import { formatUnknownError, log } from './logger';
 
@@ -20,13 +20,13 @@ const makeParallelProxyCreator = ({
   exportName = 'default'
 }: { creator: McpCollectionCreator, moduleSpecifier: string, exportName?: string },
 options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
-  const [name] = creator(options);
+  const [name, _callback, config] = creator(options);
 
   const handler = async (args?: unknown): Promise<McpCollectionResult> => {
     const currentOptions = getOptions();
     const currentSession = getSessionOptions();
 
-    return heavyPool.runTask<McpCollectionResult>({
+    return getHeavyPool().runTask<McpCollectionResult>({
       moduleSpecifier,
       exportName,
       args,
@@ -35,7 +35,7 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
     });
   };
 
-  return [name, handler];
+  return config ? [name, handler, config] : [name, handler];
 };
 
 /**
@@ -109,7 +109,7 @@ const composeCollections = async (
 
   for (const creator of securedBuiltinCreators) {
     const [, , config] = creator(options);
-    const runHostValue = config?.runParallel as unknown;
+    const runHostValue = config?.runParallel;
     const runScheduleConfig = config?.runSchedule;
     let updatedCreator = creator;
 

@@ -13,6 +13,7 @@ import { memo } from './server.caching';
 import { formatUnknownError, log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { composeTools, sendToolsHostShutdown } from './server.tools';
+import { sendWorkerPoolsShutdown } from './server.workerPool';
 import { composeResources } from './server.resources';
 import { type GlobalOptions } from './options';
 import {
@@ -367,6 +368,7 @@ const runServer = async (options: ServerOptions = getOptions(), {
       running = false;
 
       await sendToolsHostShutdown();
+      await sendWorkerPoolsShutdown();
 
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();

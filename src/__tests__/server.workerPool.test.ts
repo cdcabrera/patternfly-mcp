@@ -1,7 +1,73 @@
 import { Worker } from 'node:worker_threads';
-import { getWorkerScriptPath, createPersistentPool, createTransientPool } from '../server.workerPool';
+import {
+  buildPersistentPool,
+  buildTransientPool,
+  createPoolAbort,
+  getHeavyPool,
+  getWorkerScriptPath,
+  resetWorkerPools,
+  sendWorkerPoolsShutdown
+} from '../server.workerPool';
 
 const MockWorker = Worker as jest.MockedClass<typeof Worker>;
+
+describe('createPoolAbort', () => {
+  const payload = { moduleSpecifier: 'spec', args: {} };
+
+  it.each([
+    {
+      description: 'runTask after abort',
+      abortBeforeRun: true,
+      expectedQueueLength: 0
+    },
+    {
+      description: 'queued tasks when abort fires',
+      abortBeforeRun: false,
+      expectedQueueLength: 1
+    },
+    {
+      description: 'in-flight tasks when abort fires',
+      abortBeforeRun: false,
+      expectedQueueLength: 1
+    }
+  ])('should reject $description', async ({ abortBeforeRun, expectedQueueLength }) => {
+    const poolAbort = createPoolAbort();
+    const queue: any[] = [];
+
+    if (abortBeforeRun) {
+      poolAbort.abort();
+    }
+
+    const task = poolAbort.runTask(payload, queued => {
+      queue.push(queued);
+    });
+
+    if (!abortBeforeRun) {
+      poolAbort.abort();
+    }
+
+    expect(queue).toHaveLength(expectedQueueLength);
+    await expect(task).rejects.toThrow('Worker pool shutdown');
+  });
+
+  it('should resolve when the enqueue handler completes the task', async () => {
+    const poolAbort = createPoolAbort();
+
+    const task = poolAbort.runTask(payload, queued => {
+      queued.resolve('ok');
+    });
+
+    await expect(task).resolves.toBe('ok');
+  });
+
+  it('should report aborted state after abort', () => {
+    const poolAbort = createPoolAbort();
+
+    expect(poolAbort.isAborted()).toBe(false);
+    poolAbort.abort();
+    expect(poolAbort.isAborted()).toBe(true);
+  });
+});
 
 describe('getWorkerScriptPath', () => {
   it('should attempt to return the worker script path', () => {
@@ -11,9 +77,10 @@ describe('getWorkerScriptPath', () => {
   });
 });
 
-describe('createPersistentPool', () => {
+describe('buildPersistentPool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetWorkerPools();
   });
 
   it('should resolve payload on message success', async () => {
@@ -37,7 +104,7 @@ describe('createPersistentPool', () => {
       })
     }));
 
-    const pool = createPersistentPool(2);
+    const pool = buildPersistentPool(2);
 
     const taskPromise = pool.runTask({
       moduleSpecifier: 'data:text/javascript;base64,KCkgPT4gbG9yZW1JcHVzbQ==',
@@ -78,7 +145,7 @@ describe('createPersistentPool', () => {
       })
     }));
 
-    const pool = createPersistentPool(2);
+    const pool = buildPersistentPool(2);
 
     const taskPromise = pool.runTask({
       moduleSpecifier: 'data:text/javascript;base64,KCkgPT4gbG9yZW1JcHVzbQ==',
@@ -118,7 +185,7 @@ describe('createPersistentPool', () => {
       return workerInstance as any;
     });
 
-    const pool = createPersistentPool(2);
+    const pool = buildPersistentPool(2);
 
     // Initial warm up immediately spawns 2 workers
     expect(MockWorker).toHaveBeenCalledTimes(2);
@@ -143,9 +210,10 @@ describe('createPersistentPool', () => {
   });
 });
 
-describe('createTransientPool', () => {
+describe('buildTransientPool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetWorkerPools();
   });
 
   it('should resolve payload on message success', async () => {
@@ -164,7 +232,7 @@ describe('createTransientPool', () => {
       terminate: jest.fn().mockResolvedValue(0)
     }));
 
-    const pool = createTransientPool(2);
+    const pool = buildTransientPool(2);
 
     const taskPromise = pool.runTask({
       moduleSpecifier: 'data:text/javascript;base64,KCkgPT4gbG9yZW1JcHVzbQ==',
@@ -206,7 +274,7 @@ describe('createTransientPool', () => {
       terminate: jest.fn().mockResolvedValue(0)
     }));
 
-    const pool = createTransientPool(2);
+    const pool = buildTransientPool(2);
 
     const taskPromise = pool.runTask({
       moduleSpecifier: 'data:text/javascript;base64,KCkgPT4gbG9yZW1JcHVzbQ==',
@@ -243,7 +311,7 @@ describe('createTransientPool', () => {
       return workerInstance as any;
     });
 
-    const pool = createTransientPool(2);
+    const pool = buildTransientPool(2);
 
     // Queue 3 tasks concurrently
     const t1 = pool.runTask({ moduleSpecifier: 'spec-1', args: {} });
@@ -273,5 +341,45 @@ describe('createTransientPool', () => {
     await expect(t1).resolves.toBe('result-1');
     await expect(t2).resolves.toBe('result-2');
     await expect(t3).resolves.toBe('result-3');
+  });
+
+  it('should reject queued and in-flight tasks on shutdown', async () => {
+    MockWorker.mockImplementation((): any => ({
+      on: jest.fn(),
+      postMessage: jest.fn(),
+      terminate: jest.fn().mockResolvedValue(0)
+    }));
+
+    const pool = buildTransientPool(1);
+    const activeTask = pool.runTask({ moduleSpecifier: 'spec-active', args: {} });
+    const queuedTask = pool.runTask({ moduleSpecifier: 'spec-queued', args: {} });
+
+    await pool.shutdown();
+
+    await expect(activeTask).rejects.toThrow('Worker pool shutdown');
+    await expect(queuedTask).rejects.toThrow('Worker pool shutdown');
+  });
+});
+
+describe('worker pool registry', () => {
+  beforeEach(() => {
+    resetWorkerPools();
+  });
+
+  it('should return the same heavy pool instance from getHeavyPool', () => {
+    const first = getHeavyPool();
+    const second = getHeavyPool();
+
+    expect(first).toBe(second);
+  });
+
+  it('should shutdown registered pools and clear the registry', async () => {
+    const pool = getHeavyPool();
+
+    await sendWorkerPoolsShutdown();
+
+    const nextPool = getHeavyPool();
+
+    expect(nextPool).not.toBe(pool);
   });
 });

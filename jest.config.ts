@@ -64,6 +64,12 @@ export default {
       }
     },
     {
+      displayName: 'package',
+      roots: ['<rootDir>/tests/package'],
+      testMatch: ['<rootDir>/tests/package/**/*.test.ts'],
+      ...baseConfig
+    },
+    {
       displayName: 'e2e',
       roots: ['<rootDir>/tests/e2e'],
       testMatch: ['<rootDir>/tests/e2e/**/*.test.ts'],

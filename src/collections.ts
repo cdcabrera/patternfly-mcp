@@ -39,15 +39,19 @@ interface McpCollectionResult {
 /**
  * Standardized Tuple-based Record Source.
  *
- * @note `priority` and `group` are future properties being considered in the related
- * collection work as a way to sort and override collections.
+ * @note **Future**: `priority` and `group` are future properties being considered in the
+ * related collection work as a way to sort and override collections.
+ *
+ * @note **Future**: Review supporting `boolean` variations and async callbacks
+ * `async (options) => boolean | #${string}` for dynamic configs.
  *
  * 0. `name` `{string}`: Unique identifier/name
  * 1. `handler` `{Function}`: callback function accepting an optional argument
  * 2. `_config` `{Object}`: Application level record source configuration. Unavailable to
  *     record collection plugins.
- *    - `_config.runParallel`: Optional callback function to dynamically decide
- *        if the record source should run in a non-blocking parallel process.
+ *    - `_config.runParallel`: Optional internal import specifier (`#specifier`) to run the
+ *        collection handler in a worker thread via the heavy pool. The referenced
+ *        module must export `collectionCallback`. Applied in {@link composeCollections}.
  *    - `_config.runSchedule`: Optional object to dynamically decide if the record source
  *        should run in a scheduled interval using {@link DeferTaskOptions}
  *    - `_config.isRequired`: Optional boolean used to control server startup when
@@ -59,7 +63,7 @@ type McpCollection = [
   name: string,
   handler: (arg?: unknown) => McpCollectionResult | Promise<McpCollectionResult>,
   _config?: {
-    runParallel?: boolean | string | ((options?: GlobalOptions) => boolean | Promise<boolean> | string | Promise<string>);
+    runParallel?: `#${string}`;
     runSchedule?: { cancelMs?: number, intervalMs?: number };
     // priority?: number;
     isRequired?: boolean;
@@ -131,8 +135,6 @@ type RegisterOnSettle = (results: RegisterCollectionsResult) => void;
  *
  * This type encapsulates the outcome of registering collections, grouping the
  * results into settled, fulfilled, and rejected categories.
- *
- * @typedef {Object} RegisterCollectionsResult
  *
  * @property {RegisterCollectionSettledItem[]} settled - Settled registration results, including
  *     both fulfilled and failed attempts.

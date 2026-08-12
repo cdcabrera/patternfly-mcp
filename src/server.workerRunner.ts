@@ -56,7 +56,7 @@ const executeTask = async (
   }
 
   // Bypass static bundler boundaries cleanly via scoped Function constructor
-  const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<any>;
+  const dynamicImport = new Function('spec', 'return import(spec)') as (spec: string) => Promise<Record<string, unknown>>;
   const module = await dynamicImport(resolvedSpec);
 
   // Map to default fallback hooks if explicit targets are missing
@@ -138,10 +138,13 @@ const runWorker = ({ throwOnParentPortError }: { throwOnParentPortError?: boolea
       .then(result => {
         parentPort?.postMessage({ success: true, payload: result });
       })
-      .catch((error: any) => {
+      .catch((error: unknown) => {
         parentPort?.postMessage({
           success: false,
-          error: { message: error?.message || String(error), stack: error?.stack }
+          error: {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          }
         });
       })
       .finally(() => {
@@ -156,13 +159,18 @@ const runWorker = ({ throwOnParentPortError }: { throwOnParentPortError?: boolea
         const result = await executeTask(incomingPayload);
 
         parentPort?.postMessage({ success: true, payload: result });
-      } catch (error: any) {
+      } catch (error: unknown) {
         parentPort?.postMessage({
           success: false,
-          error: { message: error?.message || String(error), stack: error?.stack }
+          error: {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          }
         });
       }
     });
+
+    return undefined;
   }
 };
 

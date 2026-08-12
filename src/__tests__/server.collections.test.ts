@@ -1,6 +1,6 @@
 import { getOptions, getSessionOptions } from '../options.context';
 import { composeCollections } from '../server.collections';
-import { heavyPool } from '../server.workerPool';
+import { getHeavyPool } from '../server.workerPool';
 
 jest.mock('../options.context', () => ({
   getOptions: jest.fn(),
@@ -8,9 +8,7 @@ jest.mock('../options.context', () => ({
 }));
 
 jest.mock('../server.workerPool', () => ({
-  heavyPool: {
-    runTask: jest.fn()
-  }
+  getHeavyPool: jest.fn()
 }));
 
 describe('composeCollections', () => {
@@ -45,15 +43,19 @@ describe('composeCollections', () => {
 
     (getOptions as jest.Mock).mockReturnValue({ serverName: 'mcp' });
     (getSessionOptions as jest.Mock).mockReturnValue({ sessionId: 'session-id' });
-    (heavyPool.runTask as jest.Mock).mockResolvedValue({ records: [] });
+
+    const heavyPool = { runTask: jest.fn().mockResolvedValue({ records: [] }) };
+    (getHeavyPool as jest.Mock).mockReturnValue(heavyPool);
 
     const result: any = await composeCollections([mockCreator]);
 
     expect(result.length).toBe(1);
 
-    const [name, handler] = result[0]();
+    const [name, handler, config] = result[0]();
 
     expect(name).toBe('parallel-collection');
+    expect(config?._isInternal).toBe(true);
+    expect(config?.runParallel).toBe('#collectionLoremIpsum');
 
     const executionResult = await handler({ inputArg: 'test' });
 
