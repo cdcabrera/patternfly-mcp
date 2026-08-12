@@ -40,9 +40,9 @@ interface WorkerTaskData {
  * @throws {Error} If the `moduleSpecifier` is not provided, or if the specified export is not a function.
  * @returns A promise that resolves to the result of the invoked export function.
  */
-const executeTask = async (taskPayload: WorkerTaskData): Promise<unknown> => {
-  const { moduleSpecifier, exportName = 'default', args, options, session } = taskPayload;
-
+const executeTask = async (
+  { moduleSpecifier, exportName = 'default', args, options, session }: WorkerTaskData
+): Promise<unknown> => {
   if (!moduleSpecifier) {
     throw new Error('No moduleSpecifier specified for worker task.');
   }
@@ -123,13 +123,16 @@ const keepWorkerAlive = ({ throwOnParentPortError = true, timeoutMs = 86_400_000
  *        message back to the parent thread.
  *
  * Both routes use async and handle errors gracefully to relate results or errors back to the parent.
+ *
+ * @param options - Function options.
+ * @param options.throwOnParentPortError - If true, errors thrown by the parent port will be re-thrown.
  */
-const runWorker = (): Promise<void> | void => {
+const runWorker = ({ throwOnParentPortError }: { throwOnParentPortError?: boolean | undefined } = {}): Promise<void> | void => {
   if (workerData) {
     /**
      * Route A: Transient execution (workerData is loaded immediately)
      */
-    const clearKeepAlive = keepWorkerAlive();
+    const clearKeepAlive = keepWorkerAlive({ throwOnParentPortError });
 
     return executeTask(workerData as WorkerTaskData)
       .then(result => {

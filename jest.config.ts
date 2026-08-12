@@ -23,7 +23,8 @@ export default {
     'src/**/*.ts',
     '!src/**/.*/**',
     '!src/cli.ts',
-    '!src/declarations*'
+    '!src/declarations*',
+    '!src/server.workerEntry.ts'
   ],
   coverageThreshold: {
     global: {
