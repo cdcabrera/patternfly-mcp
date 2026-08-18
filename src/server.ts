@@ -344,6 +344,11 @@ const runServer = async (options: ServerOptions = getOptions(), {
         httpHandle = null;
       }
 
+      if (sigintHandler) {
+        process.off('SIGINT', sigintHandler);
+        sigintHandler = null;
+      }
+
       log.debug('...closing Server');
       await server?.close();
       running = false;
@@ -440,11 +445,6 @@ const runServer = async (options: ServerOptions = getOptions(), {
 
     if (enableSigint && !sigintHandler) {
       sigintHandler = async () => {
-        if (sigintHandler) {
-          process.off('SIGINT', sigintHandler);
-          sigintHandler = null;
-        }
-
         await stopServer();
 
         if (allowProcessExit) {
