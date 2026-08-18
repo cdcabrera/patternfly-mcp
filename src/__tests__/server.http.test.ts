@@ -42,6 +42,8 @@ describe('startHttpTransport', () => {
     };
     mockHttpServer = {
       on: mockEventHandler,
+      once: mockEventHandler,
+      off: mockFunction,
       listen: mockFunction.mockImplementation((_port: any, _host: any, callback: any) => {
         if (callback) {
           callback();
@@ -81,6 +83,34 @@ describe('startHttpTransport', () => {
       setupHandlers: mockEventHandler.mock.calls,
       serverClose: mockServerClose.mock.calls
     }).toMatchSnapshot('server setup');
+  });
+
+  it('should reject startup on EADDRINUSE error', async () => {
+    mockHttpServer.listen.mockImplementation(() => {
+      const errorHandler = mockHttpServer.on.mock.calls.find((call: any) => call[0] === 'error')?.[1];
+
+      if (errorHandler) {
+        const err: any = new Error('Address in use');
+
+        err.code = 'EADDRINUSE';
+        errorHandler(err);
+      }
+    });
+
+    await expect(
+      startHttpTransport(mockServer, { http: { port: 5000, host: 'localhost' } } as any)
+    ).rejects.toThrow('Port 5000 is already in use');
+  });
+
+  it('should log runtime error emitted after startup without throwing unhandled exception', async () => {
+    const server = await startHttpTransport(mockServer, { http: { port: 3000, host: 'localhost' } } as any);
+
+    const runtimeErrorHandler = mockHttpServer.on.mock.calls.find((call: any) => call[0] === 'error')?.[1];
+
+    expect(runtimeErrorHandler).toBeDefined();
+    expect(() => runtimeErrorHandler(new Error('Connection reset'))).not.toThrow();
+
+    await server.close();
   });
 
   it.each([

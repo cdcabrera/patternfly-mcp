@@ -300,6 +300,10 @@ exports[`startHttpTransport should start HTTP server, with port and host: server
   ],
   "setupHandlers": [
     [
+      "error",
+      [Function],
+    ],
+    [
       "connection",
       [Function],
     ],
@@ -318,6 +322,10 @@ exports[`startHttpTransport should start HTTP server, with port and host: server
     [
       3000,
       "localhost",
+      [Function],
+    ],
+    [
+      "error",
       [Function],
     ],
   ],
