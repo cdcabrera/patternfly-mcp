@@ -344,11 +344,6 @@ const runServer = async (options: ServerOptions = getOptions(), {
         httpHandle = null;
       }
 
-      if (sigintHandler) {
-        process.off('SIGINT', sigintHandler);
-        sigintHandler = null;
-      }
-
       log.debug('...closing Server');
       await server?.close();
       running = false;
@@ -359,10 +354,6 @@ const runServer = async (options: ServerOptions = getOptions(), {
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
       unsubscribeServerStats?.();
-
-      if (allowProcessExit) {
-        process.exit(0);
-      }
     }
   };
 
@@ -448,9 +439,19 @@ const runServer = async (options: ServerOptions = getOptions(), {
     await registerServerTools(updatedTools, server, options, session);
 
     if (enableSigint && !sigintHandler) {
-      sigintHandler = () => {
-        void stopServer();
+      sigintHandler = async () => {
+        if (sigintHandler) {
+          process.off('SIGINT', sigintHandler);
+          sigintHandler = null;
+        }
+
+        await stopServer();
+
+        if (allowProcessExit) {
+          process.exit(0);
+        }
       };
+
       process.on('SIGINT', sigintHandler);
     }
 

@@ -8,7 +8,7 @@ import { resolve } from 'node:path';
 describe('Embedded Server', () => {
   const distIndexPath = resolve(process.cwd(), 'dist/index.js');
 
-  it('should terminate the host application on server.stop() under default programmatic mode', async () => {
+  it('should allow the host application to continue execution after server.stop() under default programmatic mode', async () => {
     // Simulate an external app with an embedded MCP and attempt a post-stop operation
     const hostAppScript = `
       import { start } from '${distIndexPath}';
@@ -41,8 +41,7 @@ describe('Embedded Server', () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.join('').includes('HOST_APP:SERVER_RUNNING')).toBe(true);
-    // Existing behavior: process.exit(0) inside stopServer terminates the host before post-stop logic
-    expect(stdout.join('').includes('HOST_APP:POST_STOP_COMPLETED')).toBe(false);
+    expect(stdout.join('').includes('HOST_APP:POST_STOP_COMPLETED')).toBe(true);
   });
 
   it('should allow the host application to continue execution after server.stop() when allowProcessExit is false', async () => {
