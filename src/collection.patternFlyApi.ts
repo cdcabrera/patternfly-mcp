@@ -34,6 +34,7 @@ interface ApiContent {
   semanticContext: {
     version?: string | undefined;
     section?: string | undefined;
+    pathSlug?: string | undefined;
     item?: string | undefined;
     facet?: string | undefined;
     kind?: string | undefined;
@@ -73,6 +74,31 @@ interface ParsePayload {
   isEmpty: boolean;
   payload: ParsePayloadApi;
 }
+
+/**
+ * Deferred API categories.
+ *
+ * @note Update accordingly. There's still a quality threshold that has to be met
+ * if we prefer not blanket filtering entire categories.
+ *
+ * - `props`: Deferred in favor of utilizing @patternfly/patternfly-component-schemas.
+ * - `react`: Deferred due to the presence of not-hydrated ?raw or <LiveExample /> stubs.
+ * - `react-demos`: React demonstration components that are deferred.
+ * - `html`: Deferred for HTML-related API categories.
+ * - `html-demos`: Deferred for HTML demonstration examples.
+ */
+const DEFERRED_API_CATEGORIES = new Set<string>([
+  'props',
+  // 'react',
+  'react-demos',
+  // 'html',
+  'html-demos'
+]);
+
+/**
+ * Min content quality threshold.
+ */
+const MIN_API_QUALITY_THRESHOLD = 0.5;
 
 /**
  * Parses the given payload and determines its state and structure.
@@ -208,8 +234,14 @@ const getVersions = async (options = getOptions()) => {
   return versions;
 };
 
+const normalizeSlug = (segment: string): string => segment
+  .trim()
+  .toLowerCase()
+  .replace(/_/g, '-')
+  .replace(/-+/g, '-');
+
 /**
- * Process content metadata from response paths.
+ * Light/Immediate process for content metadata from response paths.
  *
  * @param apiResponses - The list of pre-metadata content.
  * @param [options=getOptions()] - Configuration options.
@@ -220,19 +252,33 @@ const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): Ap
   const componentPaths = options.patternflyOptions.api.componentPaths;
 
   return apiResponses.map(({ content, resolvedPath }) => {
-    const [version, section, item, facet, ...remaining] = resolvedPath.replace(base, '').split('/').filter(Boolean) || [];
-    const kind = facet && (componentPaths.includes(facet) || remaining.includes(facet)) ? facet : 'doc';
+    // Relative path after '/api/'
+    const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
+    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', ...remaining] = segments;
+
+    const normalizedSection = normalizeSlug(section);
+    const normalizedItem = normalizeSlug(rawItem);
+    const normalizedFacet = normalizeSlug(rawFacet || 'text');
+
+    // Kind is the specific facet (props, css, html, text, doc)
+    const kind = componentPaths.includes(normalizedFacet) ? normalizedFacet : normalizedFacet || 'doc';
+
+    // Build hierarchical normalized path slug: e.g. "ai/overview/text" or "components/button/props"
+    const pathSlug = [normalizedSection, normalizedItem, normalizedFacet]
+      .filter(Boolean)
+      .join('-');
 
     return {
       url: resolvedPath,
       content,
       semanticContext: {
-        version,
-        section,
-        item,
-        facet,
+        version: version.toLowerCase(),
+        pathSlug,
+        section: normalizedSection,
+        item: normalizedItem,
+        facet: normalizedFacet,
         kind,
-        metadata: (remaining.length && remaining) || undefined
+        metadata: remaining.length ? remaining.map(normalizeSlug) : undefined
       }
     };
   });
@@ -285,7 +331,452 @@ const apiSpider = async (): Promise<ApiContent[]> => {
 };
 
 /**
- * Async collect and process entries for a collection.
+ * Format a compound slug into a clean title.
+ * E.g., 'ai-assisted-development_ai-assisted-code-migration' -> 'AI Assisted Development: AI Assisted Code Migration'
+ *
+ * @param slug
+ * @param section
+ */
+const formatSlugToTitle = (slug: string, section?: string): string => {
+  if (!slug) {
+    return 'PatternFly API';
+  }
+
+  const cleanSection = section
+    ? section
+      .split('-')
+      .map(wordPhrase =>
+        (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(wordPhrase) ? wordPhrase.toUpperCase() : wordPhrase.charAt(0).toUpperCase() + wordPhrase.slice(1))).join(' ')
+    : '';
+
+  // Handle bare generic names like 'overview'
+  if (slug.toLowerCase() === 'overview' && cleanSection) {
+    return `${cleanSection} Overview`;
+  }
+
+  return slug
+    .split('_')
+    .map(segment =>
+      segment
+        .split('-')
+        .map(word => {
+          if (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(word)) {
+            return word.toUpperCase();
+          }
+
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(' '))
+    .join(': ');
+};
+
+/**
+ * Generate a display name from metadata.
+ *
+ * @param [content] - Optional content string.
+ * @param [slug=''] - Optional slug used for fallback or secondary formatting of the display name.
+ * @param [kind='doc'] - Optional kind of content being processed (e.g., 'props', 'css', or 'doc').
+ * @param [section] - Optional section name used for refining the display name.
+ * @returns Extracted or formatted display name for the API item.
+ */
+const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', section?: string): string => {
+  const trimmed = content?.trim() || '';
+
+  // Props JSON signature
+  if (kind === 'props' && trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+
+      if (parsed.name) {
+        return parsed.name;
+      }
+    } catch {}
+  }
+
+  // CSS JSON Array signature
+  if (kind === 'css') {
+    return `${formatSlugToTitle(slug, section)} CSS`;
+  }
+
+  // Markdown H1 signature (# Title)
+  const h1Match = trimmed.match(/^#\s+([^\r\n]+)/m);
+
+  if (h1Match?.[1]?.trim()) {
+    const title = h1Match[1].trim();
+
+    // If the H1 is just "Overview", qualify it with the section
+    if (title.toLowerCase() === 'overview' && section) {
+      return formatSlugToTitle('overview', section);
+    }
+
+    return title;
+  }
+
+  // Fallback to slug
+  return formatSlugToTitle(slug, section);
+};
+
+/**
+ * Provide a fallback description based on kind/category when no prose is available.
+ *
+ * @param displayName - Display name
+ * @param kind - Category / facet kind
+ */
+const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
+  switch (kind) {
+    case 'props':
+      return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
+    case 'css':
+      return `PatternFly CSS variables and styling classes for ${
+        displayName.endsWith('_CSS') ? displayName.replace('_CSS', '') : displayName}.`;
+    case 'html':
+    case 'html-demos':
+      return `PatternFly HTML examples and markup structure for ${displayName}.`;
+    case 'react':
+    case 'react-demos':
+      return `PatternFly React component examples and demos for ${displayName}.`;
+    default:
+      return `PatternFly documentation and guidelines for ${displayName}.`;
+  }
+};
+
+/**
+ * Generate a description from metadata.
+ *
+ * @param [content] - Optional content.
+ * @param [displayName=''] - Optional display name.
+ * @param [kind='doc'] - Optional kind (e.g. 'doc', 'props', or 'css').
+ * @returns A generated description from metadata, or a fallback.
+ */
+const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
+  // Immediate return on "generate something sane"
+  if (kind === 'props' || kind === 'css') {
+    return getApiFallbackDescription(displayName, kind);
+  }
+
+  if (content) {
+    // Replace import statements, multiline code blocks
+    const cleanContent = content
+      .replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/gm, '')
+      .replace(/import\s+['"][^'"]+['"];?/gm, '')
+      .replace(/```[\s\S]*?```/gm, '');
+
+    // Filter headings, tags, and common HTML attributes
+    const lines = cleanContent
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line =>
+        line &&
+        !line.startsWith('import ') &&
+        !line.startsWith('#') &&
+        !line.startsWith('---') &&
+        !line.startsWith('![') &&
+        !line.startsWith('<') &&
+        !line.startsWith('```') &&
+        !line.startsWith('export ') &&
+        !line.startsWith('|') &&
+        !line.startsWith('class=') &&
+        !line.startsWith('className=') &&
+        !line.startsWith('style=') &&
+        !line.startsWith('d="') &&
+        !line.startsWith('viewBox=') &&
+        !/^(ts|tsx|js|jsx|html)\s+/i.test(line) &&
+        !line.includes('file="./') &&
+        !line.startsWith('["') &&
+        !line.endsWith(',') &&
+        !/^[A-Z][A-Za-z0-9]+,$/.test(line) &&
+        line.length > 20);
+
+    // Finally, does the copy exist?
+    if (lines.length > 0 && lines[0]) {
+      let cleanPara = lines[0]
+        // markdown
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // formatting
+        .replace(/[*_`]/g, '')
+        .trim();
+
+      if (cleanPara.endsWith(':')) {
+        cleanPara = `${cleanPara.slice(0, -1)}.`;
+      }
+
+      return cleanPara.length > 200 ? `${cleanPara.slice(0, 197)}...` : cleanPara;
+    }
+  }
+
+  // Fallback
+  return getApiFallbackDescription(displayName, kind);
+};
+
+/**
+ * Extracts and constructs an API entry name based on the provided item and section.
+ *
+ * @param item - Entry base name.
+ * @param section - Entry section.
+ * @returns Extracted entry name
+ */
+const extractApiName = (item: string, section: string): string => {
+  const normalizedItem = item.trim().toLowerCase();
+  const normalizedSection = section.trim().toLowerCase();
+
+  if (normalizedSection === 'components') {
+    return normalizedItem;
+  }
+
+  if (normalizedItem === 'overview') {
+    return `${normalizedSection}-overview`;
+  }
+
+  // Prevent double-prefix
+  if (normalizedItem.startsWith(`${normalizedSection}-`)) {
+    return normalizedItem;
+  }
+
+  return `${normalizedSection}-${normalizedItem}`;
+};
+
+/**
+ * Simple “is‑JSON‑looking” guard – starts & ends with braces/brackets.
+ *
+ * @param str
+ */
+const isJsonLike = (str: string) =>
+  (str.startsWith('{') && str.endsWith('}')) || (str.startsWith('[') && str.endsWith(']'));
+
+/**
+ * Parse JSON safely – returns `true` if parsed & non‑empty, `false` otherwise.
+ *
+ * @param str
+ */
+const isValidJson = (str: string): boolean => {
+  try {
+    const parsed = JSON.parse(str);
+
+    if (Array.isArray(parsed)) {
+      return parsed.length > 0;
+    }
+
+    return typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Detect imports that use the `?raw` query param.
+ *
+ * @param str
+ */
+const isRawImport = (str: string) =>
+  /import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(str);
+
+/**
+ * Detect a `<LiveExample … />` tag.
+ *
+ * @param str
+ */
+const hasLiveExample = (str: string) => /<LiveExample\b[^>]*\/?>/i.test(str);
+
+/**
+ * Count the number of `<LiveExample>` tags in a given string.
+ *
+ * @param str - Input string to search for `<LiveExample>` tags.
+ * @returns `<LiveExample>` count found in the input string.
+ */
+const getLiveExampleCount = (str: string) =>
+  (str.match(/<LiveExample\b[^>]*\/?>/gi) || []).length;
+
+/**
+ * Detect empty code fences with external file references that weren't
+ * inlined. (e.g., ```ts file = "./ButtonBasic.tsx" \n```)
+ *
+ * A code fence is considered empty if:
+ * - A fenced code block with a `file` attribute specified but no content.
+ * - A fenced code block with no content inside the block, regardless of attributes or language.
+ *
+ * @param str - Input string.
+ * @returns Returns `true` if the input string contains an empty code fence.
+ */
+const hasEmptyFileCodeFence = (str: string) =>
+  /```[\w-]*\s+file="[^"]+"\s*\n\s*```/i.test(str) ||
+  /```[\w-]*\s*\n\s*```/.test(str);
+
+const calculateApiQualityScore = (
+  content: unknown,
+  { baseScore = 0.55, qualityReduction = 0.03 }: { baseScore?: number, qualityReduction?: number } = {}
+): number => {
+  if (content === undefined || content === null) {
+    return baseScore;
+  }
+
+  const raw = typeof content === 'number' ? String(content) : content;
+
+  if (typeof raw !== 'string') {
+    return baseScore;
+  }
+
+  const trimmed = raw.trim();
+
+  if (trimmed.length === 0) {
+    return baseScore;
+  }
+
+  let score = baseScore;
+
+  if (isJsonLike(trimmed)) {
+    const jsonValid = isValidJson(trimmed);
+
+    if (!jsonValid) {
+      score -= qualityReduction;
+    }
+  }
+
+  if (isRawImport(trimmed)) {
+    score -= qualityReduction;
+  }
+
+  if (hasLiveExample(trimmed)) {
+    score -= qualityReduction * getLiveExampleCount(trimmed);
+  }
+
+  if (trimmed.length < 150 && !trimmed.includes('```') && !hasEmptyFileCodeFence(trimmed)) {
+    score -= qualityReduction;
+  }
+
+  if (hasEmptyFileCodeFence(trimmed)) {
+    score -= qualityReduction;
+
+    if (trimmed.length < 150) {
+      score -= qualityReduction;
+    }
+  }
+
+  return Number(Math.min(1, Math.max(0, score)).toFixed(3));
+};
+
+/*
+const calculateApiQualityScore = (
+  content: unknown,
+  { baseScore = 0.0, qualityReduction = 0.025 }: { baseScore?: number, qualityReduction?: number } = {}
+): number => {
+  if (content === undefined || content === null || Number.isNaN(content)) {
+    return baseScore;
+  }
+
+  const updatedContent = String(content).trim();
+  let score = baseScore;
+
+  if (updatedContent.length === 0) {
+    return score;
+  }
+
+  // 1. JSON payloads
+  if ((updatedContent.startsWith('{') && updatedContent.endsWith('}')) || (updatedContent.startsWith('[') && updatedContent.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(updatedContent);
+
+      // Valid JSON retains its base score (e.g., 1.0 for CSS, 0.5 for props)
+      if (parsed && (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+        return score;
+      }
+
+      score -= qualityReduction;
+    } catch {
+      score -= qualityReduction;
+    }
+  }
+
+  // 2. Template placeholders, live examples. (e.g. `import Foo from "./Foo.tsx?raw"` or `<LiveExample ... />`)
+  if (/import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(updatedContent)) {
+    score -= qualityReduction;
+  }
+
+  if (/<LiveExample\b[^>]*\/?>/i.test(updatedContent)) {
+    score -= qualityReduction;
+  }
+
+  // 4. Short stub content (e.g., < 120 chars without code fences)
+  if (updatedContent.length < 120 && !updatedContent.includes('```')) {
+    score -= qualityReduction;
+  }
+
+  const finalScore = Number(score.toFixed(3));
+
+  return Math.max(0.0, Math.min(1.0, finalScore));
+};
+*/
+/*
+const calculateApiQualityScore = (
+  content: string | undefined | null,
+  kind: string = 'doc',
+  categoryBaseScores: Record<string, number> = API_CATEGORY_BASE_SCORES
+): QualityScoreResult => {
+  const penalties: QualityScoreResult['penalties'] = {};
+  const baseScore = categoryBaseScores[kind.toLowerCase()] ?? 0.8;
+
+  if (!content || typeof content !== 'string') {
+    return { score: 0.0, penalties: { emptyBody: true } };
+  }
+
+  const trimmed = content.trim();
+
+  if (trimmed.length === 0) {
+    return { score: 0.0, penalties: { emptyBody: true } };
+  }
+
+  // 1. JSON payloads (e.g., props, css)
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(trimmed);
+
+      // Valid JSON retains its base score (e.g., 1.0 for CSS, 0.5 for props)
+      if (parsed && (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+        return { score: baseScore, penalties: {} };
+      }
+
+      return { score: 0.1, penalties: { stubPayload: true } };
+    } catch {
+      // Invalid JSON, continue with string evaluation
+    }
+  }
+
+  let penaltyMultiplier = 1.0;
+
+  // 2. Template placeholders and live examples. (e.g. `import Foo from "./Foo.tsx?raw"` or `<LiveExample ... />`)
+  const hasRawImports = /import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(trimmed);
+  const hasLiveExamples = /<LiveExample\b[^>]*\/?>/i.test(trimmed);
+
+  if (hasRawImports || hasLiveExamples) {
+    penalties.templateImport = true;
+    penaltyMultiplier *= 0.4; // 60% penalty for not-hydrated template wrappers
+  }
+
+  // 3. Detect excessive link/nav density vs. actual copy. (e.g., Markdown links)
+  const markdownLinks = trimmed.match(/\[([^\]]+)\]\(([^)]+)\)/g) || [];
+  const linkTextLength = markdownLinks.reduce((acc, links) => acc + links.length, 0);
+
+  if (trimmed.length > 0 && linkTextLength / trimmed.length > 0.45 && trimmed.length < 500) {
+    penalties.excessiveLinks = true;
+    penaltyMultiplier *= 0.5; // 50% penalty for navigation link lists
+  }
+
+  // 4. Short stub content (e.g., < 120 chars without code fences)
+  if (trimmed.length < 120 && !trimmed.includes('```')) {
+    penalties.stubPayload = true;
+    penaltyMultiplier *= 0.5;
+  }
+
+  const finalScore = Number((baseScore * penaltyMultiplier).toFixed(3));
+
+  return {
+    score: Math.max(0.0, Math.min(1.0, finalScore)),
+    penalties
+  };
+};
+*/
+
+/**
+ * Async collect and process entries for a collection. Add "conditional" metadata.
  *
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
@@ -293,28 +784,45 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
   const entries = await apiSpider();
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
-  entries?.forEach((entry, index) => {
+  entries?.forEach(entry => {
     const semanticContext = entry.semanticContext || {};
-    const name = (semanticContext.item || 'api-entry').toLowerCase();
-    const version = (semanticContext.version || 'unknown').toLowerCase();
-    const displayName = semanticContext.item || name;
+    const version = semanticContext.version || 'unknown';
+    const kind = semanticContext.kind || 'doc';
+    const section = semanticContext.section || 'components';
+    const normalizedItem = semanticContext.item || 'api-entry';
 
-    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
+    // Deferred Category Filter
+    if (DEFERRED_API_CATEGORIES.has(kind.toLowerCase())) {
+      return;
+    }
+
+    // Quality Assessment Threshold
+    const quality = calculateApiQualityScore(entry.content);
+
+    if (quality < MIN_API_QUALITY_THRESHOLD) {
+      return;
+    }
+
+    const name = extractApiName(normalizedItem, section);
+
+    const id = `api::${version}::${section}::${normalizedItem}::${kind}`;
 
     if (recordsMap.has(id)) {
       return;
     }
 
+    const displayName = extractApiDisplayName(entry.content, normalizedItem, kind, section);
     const adaptedEntry = {
       displayName,
-      description: entry.content || `PatternFly API documentation for ${displayName}`,
-      pathSlug: name,
-      category: semanticContext.kind,
-      section: semanticContext.section || 'components',
+      description: extractApiDescription(entry.content, displayName, kind),
+      pathSlug: semanticContext.pathSlug,
+      category: kind,
+      section,
       source: 'api' as const,
       version,
       id,
-      path: entry.url
+      path: entry.url,
+      content: entry.content
     };
 
     const record = {
@@ -322,7 +830,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
       sourceId: entry.url,
       sourceType: 'api' as const,
       data: {
-        [name]: adaptedEntry
+        [name]: [adaptedEntry]
       }
     };
 
@@ -350,8 +858,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     {
       runParallel: '#collectionPatternFlyApi',
       runSchedule: {
-        cancelMs: options.patternflyOptions.api.crawlCancelMs,
-        intervalMs: options.patternflyOptions.api.crawlIntervalMs
+        ...options.patternflyOptions.api.schedule
       }
     }
   ];
