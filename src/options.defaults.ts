@@ -201,9 +201,12 @@ interface PatternFlyOptions {
     base: string;
     versions: string;
     componentPaths: string[];
-    crawlCancelMs: number;
-    crawlIntervalMs: number;
     enabled: boolean;
+    schedule: {
+      continueOnError: boolean;
+      intervalMs: number;
+      repeat: number;
+    }
   },
   availableResourceVersions: ('6.0.0')[];
   availableSearchVersions: ('current' | 'latest' | 'v6')[];
@@ -517,10 +520,12 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
       'props',
       'css'
     ],
-    crawlCancelMs: 180_000, // 3 minutes
-    crawlIntervalMs: 43_200_000, // 12 hours
+    schedule: {
+      continueOnError: true,
+      intervalMs: 86_400_000 * 7, // 7 days
+      repeat: Infinity
+    },
     enabled: false
-    // concurrency: 4
   },
   availableResourceVersions: ['6.0.0'],
   availableSearchVersions: ['current', 'latest', 'v6'],

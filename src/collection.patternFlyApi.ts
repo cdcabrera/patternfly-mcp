@@ -350,8 +350,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     {
       runParallel: '#collectionPatternFlyApi',
       runSchedule: {
-        cancelMs: options.patternflyOptions.api.crawlCancelMs,
-        intervalMs: options.patternflyOptions.api.crawlIntervalMs
+        ...options.patternflyOptions.api.schedule
       }
     }
   ];
