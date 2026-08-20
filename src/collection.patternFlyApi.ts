@@ -289,22 +289,19 @@ const apiSpider = async (): Promise<ApiContent[]> => {
  *
  * @param displayName - Display name
  * @param kind - Broad category pulled from the API response
- * @param version - PatternFly version (e.g. 'v6')
  * @returns Concise description string
  */
-const createMetadataDescription = (displayName: string, kind?: string, version?: string): string => {
-  const versionPrefix = version ? ` (${version})` : '';
-
+const createMetadataDescription = (displayName: string, kind?: string): string => {
   switch (kind) {
     case 'props':
-      return `PatternFly React component props and TypeScript interfaces for ${displayName}${versionPrefix}.`;
+      return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
     case 'css':
-      return `PatternFly CSS classes and styling documentation for ${displayName}${versionPrefix}.`;
+      return `PatternFly CSS classes and styling documentation for ${displayName}.`;
     case 'html':
     case 'html-demos':
-      return `PatternFly HTML examples and markup structure for ${displayName}${versionPrefix}.`;
+      return `PatternFly HTML examples and markup structure for ${displayName}.`;
     default:
-      return `PatternFly API documentation and usage guidelines for ${displayName}${versionPrefix}.`;
+      return `PatternFly API documentation and usage guidelines for ${displayName}.`;
   }
 };
 
@@ -332,7 +329,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
 
     const adaptedEntry = {
       displayName,
-      description: createMetadataDescription(displayName, kind, version),
+      description: createMetadataDescription(displayName, kind),
       pathSlug: name,
       category: kind,
       section,
@@ -340,6 +337,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
       version,
       id,
       path: entry.url
+      // content: entry.content
     };
 
     const record = {
