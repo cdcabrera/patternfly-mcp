@@ -285,12 +285,113 @@ const apiSpider = async (): Promise<ApiContent[]> => {
 };
 
 /**
+ * Format a compound slug into a clean title.
+ * E.g., 'ai-assisted-development_ai-assisted-code-migration' -> 'AI Assisted Development: AI Assisted Code Migration'
+ *
+ * @param slug
+ */
+const formatSlugToTitle = (slug: string): string => {
+  if (!slug) {
+    return 'PatternFly API';
+  }
+
+  return slug
+    .split('_')
+    .map(segment =>
+      segment
+        .split('-')
+        .map(word => {
+          if (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(word)) {
+            return word.toUpperCase();
+          }
+
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        })
+        .join(' '))
+    .join(': ');
+};
+
+/**
+ * Fingerprint content to extract the most accurate displayName.
+ *
+ * @param content
+ * @param slug
+ * @param kind
+ */
+const extractApiDisplayName = (content?: string, slug = '', kind = 'doc'): string => {
+  const trimmed = content?.trim() || '';
+
+  // 1. Props JSON signature
+  if (kind === 'props' && trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+
+      if (parsed.name) {
+        return parsed.name;
+      }
+    } catch {}
+  }
+
+  // 2. CSS JSON Array signature
+  if (kind === 'css') {
+    return `${formatSlugToTitle(slug)} CSS`;
+  }
+
+  // 3. Markdown H1 signature (# Title)
+  const h1Match = trimmed.match(/^#\s+([^\r\n]+)/m);
+
+  if (h1Match?.[1]?.trim()) {
+    return h1Match[1].trim();
+  }
+
+  // 4. Fallback to formatted slug
+  return formatSlugToTitle(slug);
+};
+
+/**
+ * Extract a concise description for catalog metadata.
+ *
+ * @param content
+ * @param displayName
+ * @param kind
+ */
+const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
+  if (kind === 'props') {
+    return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
+  }
+
+  if (kind === 'css') {
+    return `PatternFly CSS variables and styling classes for ${displayName}.`;
+  }
+
+  // For docs: extract first meaningful prose line
+  if (content) {
+    const lines = content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line =>
+        line && !line.startsWith('import ') && !line.startsWith('#') && !line.startsWith('---') && !line.startsWith('![') && !line.startsWith('<'));
+
+    if (lines.length > 0 && lines[0]) {
+      const cleanPara = lines[0]
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
+        .replace(/[*_`]/g, ''); // strip formatting
+
+      return cleanPara.length > 200 ? `${cleanPara.slice(0, 197)}...` : cleanPara;
+    }
+  }
+
+  return `PatternFly documentation and guidelines for ${displayName}.`;
+};
+
+/**
  * Extrapolate a concise record description.
  *
  * @param displayName - Display name
  * @param kind - Broad category pulled from the API response
  * @returns Concise description string
  */
+/*
 const createMetadataDescription = (displayName: string, kind?: string): string => {
   switch (kind) {
     case 'props':
@@ -304,6 +405,7 @@ const createMetadataDescription = (displayName: string, kind?: string): string =
       return `PatternFly API documentation and usage guidelines for ${displayName}.`;
   }
 };
+*/
 
 /**
  * Async collect and process entries for a collection. Add extrapolated metadata.
@@ -328,16 +430,17 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     }
 
     const adaptedEntry = {
-      displayName,
-      description: createMetadataDescription(displayName, kind),
+      displayName: extractApiDisplayName(entry.content, name, kind),
+      description: extractApiDescription(entry.content, displayName, kind),
+      // description: createMetadataDescription(displayName, kind),
       pathSlug: name,
       category: kind,
       section,
       source: 'api' as const,
       version,
       id,
-      path: entry.url
-      // content: entry.content
+      path: entry.url,
+      content: entry.content
     };
 
     const record = {
