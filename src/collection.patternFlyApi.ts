@@ -418,9 +418,11 @@ const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
  * @param content
  * @param displayName
  * @param kind
+ * @param _section
  */
-const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
+const extractApiDescription = (content?: string, displayName = '', kind = 'doc', _section?: string): string => {
   // Pure JSON schemas with no documentation prose
+  // if (kind === 'props' || kind === 'css' || (kind === 'react' && section !== 'extensions')) {
   if (kind === 'props' || kind === 'css') {
     return getApiFallbackDescription(displayName, kind);
   }
@@ -559,7 +561,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     const displayName = extractApiDisplayName(entry.content, name, kind, section);
     const adaptedEntry = {
       displayName,
-      description: extractApiDescription(entry.content, displayName, kind),
+      description: extractApiDescription(entry.content, displayName, kind, section),
       // description: createMetadataDescription(displayName, kind),
       pathSlug: semanticContext.pathSlug,
       category: kind,
