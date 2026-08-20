@@ -34,6 +34,7 @@ interface ApiContent {
   semanticContext: {
     version?: string | undefined;
     section?: string | undefined;
+    pathSlug?: string | undefined;
     item?: string | undefined;
     facet?: string | undefined;
     kind?: string | undefined;
@@ -208,6 +209,13 @@ const getVersions = async (options = getOptions()) => {
   return versions;
 };
 
+const normalizeSlug = (segment: string): string => {
+  return segment
+    .toLowerCase()
+    .replace(/_/g, '-')
+    .replace(/-+/g, '-');
+};
+
 /**
  * Light/Immediate process for content metadata from response paths.
  *
@@ -220,19 +228,33 @@ const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): Ap
   const componentPaths = options.patternflyOptions.api.componentPaths;
 
   return apiResponses.map(({ content, resolvedPath }) => {
-    const [version, section, item, facet, ...remaining] = resolvedPath.replace(base, '').split('/').filter(Boolean) || [];
-    const kind = facet && (componentPaths.includes(facet) || remaining.includes(facet)) ? facet : 'doc';
+    // Relative path after '/api/'
+    const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
+    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', ...remaining] = segments;
+
+    const normalizedSection = normalizeSlug(section);
+    const normalizedItem = normalizeSlug(rawItem);
+    const normalizedFacet = normalizeSlug(rawFacet || 'text');
+
+    // Kind is the specific facet (props, css, html, text, doc)
+    const kind = componentPaths.includes(normalizedFacet) ? normalizedFacet : normalizedFacet || 'doc';
+
+    // Build hierarchical normalized path slug: e.g. "ai/overview/text" or "components/button/props"
+    const pathSlug = [normalizedSection, normalizedItem, normalizedFacet]
+      .filter(Boolean)
+      .join('-');
 
     return {
       url: resolvedPath,
       content,
       semanticContext: {
-        version,
-        section,
-        item,
-        facet,
+        version: version.toLowerCase(),
+        pathSlug,
+        section: normalizedSection,
+        item: normalizedItem,
+        facet: normalizedFacet,
         kind,
-        metadata: (remaining.length && remaining) || undefined
+        metadata: remaining.length ? remaining.map(normalizeSlug) : undefined
       }
     };
   });
@@ -494,10 +516,13 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
 
   entries?.forEach(entry => {
     const semanticContext = entry.semanticContext || {};
-    const name = (semanticContext.item || 'api-entry').toLowerCase();
     const version = (semanticContext.version || 'unknown').toLowerCase();
     const kind = semanticContext.kind || 'doc';
     const section = semanticContext.section || 'components';
+    let name = (semanticContext.item || 'api-entry').toLowerCase();
+
+    name = name === 'overview' ? `${semanticContext.section}-${name}` : `${section}-${name}`;
+
     const id = `api::${version}::${section}::${name}::${kind}`;
 
     if (recordsMap.has(id)) {
@@ -509,7 +534,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
       displayName,
       description: extractApiDescription(entry.content, displayName, kind),
       // description: createMetadataDescription(displayName, kind),
-      pathSlug: name,
+      pathSlug: semanticContext.pathSlug,
       category: kind,
       section,
       source: 'api' as const,
