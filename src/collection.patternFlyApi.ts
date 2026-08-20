@@ -364,6 +364,45 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
     return `PatternFly CSS variables and styling classes for ${displayName}.`;
   }
 
+  if (content) {
+    const lines = content
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line =>
+        line &&
+        !line.startsWith('import ') &&
+        !line.startsWith('#') &&
+        !line.startsWith('---') &&
+        !line.startsWith('![') &&
+        !line.startsWith('<') &&
+        !line.startsWith('```') &&
+        !/^(ts|tsx|js|jsx)\s+/i.test(line) &&
+        !line.includes('file="./') &&
+        !line.startsWith('["') &&
+        line.length > 5);
+
+    if (lines.length > 0 && lines[0]) {
+      const cleanPara = lines[0]
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        .replace(/[*_`]/g, '');
+
+      return cleanPara.length > 200 ? `${cleanPara.slice(0, 197)}...` : cleanPara;
+    }
+  }
+
+  return `PatternFly documentation and guidelines for ${displayName}.`;
+};
+
+/*
+const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
+  if (kind === 'props') {
+    return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
+  }
+
+  if (kind === 'css') {
+    return `PatternFly CSS variables and styling classes for ${displayName}.`;
+  }
+
   // For docs: extract first meaningful prose line
   if (content) {
     const lines = content
@@ -383,6 +422,8 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
 
   return `PatternFly documentation and guidelines for ${displayName}.`;
 };
+
+ */
 
 /**
  * Extrapolate a concise record description.
@@ -420,7 +461,6 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     const semanticContext = entry.semanticContext || {};
     const name = (semanticContext.item || 'api-entry').toLowerCase();
     const version = (semanticContext.version || 'unknown').toLowerCase();
-    const displayName = semanticContext.item || name;
     const kind = semanticContext.kind || 'doc';
     const section = semanticContext.section || 'components';
     const id = `api::${version}::${section}::${name}::${kind}`;
@@ -429,8 +469,9 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
       return;
     }
 
+    const displayName = extractApiDisplayName(entry.content, name, kind);
     const adaptedEntry = {
-      displayName: extractApiDisplayName(entry.content, name, kind),
+      displayName,
       description: extractApiDescription(entry.content, displayName, kind),
       // description: createMetadataDescription(displayName, kind),
       pathSlug: name,
