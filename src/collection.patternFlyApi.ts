@@ -209,12 +209,10 @@ const getVersions = async (options = getOptions()) => {
   return versions;
 };
 
-const normalizeSlug = (segment: string): string => {
-  return segment
-    .toLowerCase()
-    .replace(/_/g, '-')
-    .replace(/-+/g, '-');
-};
+const normalizeSlug = (segment: string): string => segment
+  .toLowerCase()
+  .replace(/_/g, '-')
+  .replace(/-+/g, '-');
 
 /**
  * Light/Immediate process for content metadata from response paths.
@@ -392,6 +390,29 @@ const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', sectio
 };
 
 /**
+ * Provide a fallback description based on kind/category when no prose is available.
+ *
+ * @param displayName - Display name
+ * @param kind - Category / facet kind
+ */
+const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
+  switch (kind) {
+    case 'props':
+      return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
+    case 'css':
+      return `PatternFly CSS variables and styling classes for ${displayName}.`;
+    case 'html':
+    case 'html-demos':
+      return `PatternFly HTML examples and markup structure for ${displayName}.`;
+    case 'react':
+    case 'react-demos':
+      return `PatternFly React component examples and demos for ${displayName}.`;
+    default:
+      return `PatternFly documentation and guidelines for ${displayName}.`;
+  }
+};
+
+/**
  * Extract a concise description for catalog metadata.
  *
  * @param content
@@ -399,20 +420,19 @@ const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', sectio
  * @param kind
  */
 const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
-  if (kind === 'props') {
-    return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
-  }
-
-  if (kind === 'css') {
-    return `PatternFly CSS variables and styling classes for ${displayName}.`;
+  // Pure JSON schemas with no documentation prose
+  if (kind === 'props' || kind === 'css') {
+    return getApiFallbackDescription(displayName, kind);
   }
 
   if (content) {
-    // 1. Strip import statements including multiline import {...} from '...'
+    // 1. Strip import statements and multiline fenced code blocks (```...```)
     const cleanContent = content
-      .replace(/import\s+(?:{[^}]*}|[^{;]+)\s+from\s+['"][^'"]+['"];?/gm, '')
-      .replace(/import\s+['"][^'"]+['"];?/gm, '');
+      .replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/gm, '')
+      .replace(/import\s+['"][^'"]+['"];?/gm, '')
+      .replace(/```[\s\S]*?```/gm, '');
 
+    // 2. Filter out headings, tags, and stray HTML attribute lines
     const lines = cleanContent
       .split('\n')
       .map(line => line.trim())
@@ -425,20 +445,26 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
         !line.startsWith('<') &&
         !line.startsWith('```') &&
         !line.startsWith('export ') &&
-        !/^(ts|tsx|js|jsx)\s+/i.test(line) &&
+        !line.startsWith('|') &&
+        !line.startsWith('class=') &&
+        !line.startsWith('className=') &&
+        !line.startsWith('style=') &&
+        !line.startsWith('d="') &&
+        !line.startsWith('viewBox=') &&
+        !/^(ts|tsx|js|jsx|html)\s+/i.test(line) &&
         !line.includes('file="./') &&
         !line.startsWith('["') &&
         !line.endsWith(',') &&
         !/^[A-Z][A-Za-z0-9]+,$/.test(line) &&
         line.length > 20);
 
+    // 3. If genuine prose lines exist, format and return the lead sentence
     if (lines.length > 0 && lines[0]) {
       let cleanPara = lines[0]
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
         .replace(/[*_`]/g, '') // strip formatting
         .trim();
 
-      // Normalize trailing colon to a period
       if (cleanPara.endsWith(':')) {
         cleanPara = `${cleanPara.slice(0, -1)}.`;
       }
@@ -447,7 +473,8 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
     }
   }
 
-  return `PatternFly documentation and guidelines for ${displayName}.`;
+  // 4. Fallback only when no prose was found
+  return getApiFallbackDescription(displayName, kind);
 };
 
 /*
