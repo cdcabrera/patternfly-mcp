@@ -209,7 +209,7 @@ const getVersions = async (options = getOptions()) => {
 };
 
 /**
- * Process content metadata from response paths.
+ * Light/Immediate process for content metadata from response paths.
  *
  * @param apiResponses - The list of pre-metadata content.
  * @param [options=getOptions()] - Configuration options.
@@ -285,7 +285,31 @@ const apiSpider = async (): Promise<ApiContent[]> => {
 };
 
 /**
- * Async collect and process entries for a collection.
+ * Extrapolate a concise record description.
+ *
+ * @param displayName - Display name
+ * @param kind - Broad category pulled from the API response
+ * @param version - PatternFly version (e.g. 'v6')
+ * @returns Concise description string
+ */
+const createMetadataDescription = (displayName: string, kind?: string, version?: string): string => {
+  const versionPrefix = version ? ` (${version})` : '';
+
+  switch (kind) {
+    case 'props':
+      return `PatternFly React component props and TypeScript interfaces for ${displayName}${versionPrefix}.`;
+    case 'css':
+      return `PatternFly CSS classes and styling documentation for ${displayName}${versionPrefix}.`;
+    case 'html':
+    case 'html-demos':
+      return `PatternFly HTML examples and markup structure for ${displayName}${versionPrefix}.`;
+    default:
+      return `PatternFly API documentation and usage guidelines for ${displayName}${versionPrefix}.`;
+  }
+};
+
+/**
+ * Async collect and process entries for a collection. Add extrapolated metadata.
  *
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
@@ -293,13 +317,14 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
   const entries = await apiSpider();
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
-  entries?.forEach((entry, index) => {
+  entries?.forEach(entry => {
     const semanticContext = entry.semanticContext || {};
     const name = (semanticContext.item || 'api-entry').toLowerCase();
     const version = (semanticContext.version || 'unknown').toLowerCase();
     const displayName = semanticContext.item || name;
-
-    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
+    const kind = semanticContext.kind || 'doc';
+    const section = semanticContext.section || 'components';
+    const id = `api::${version}::${section}::${name}::${kind}`;
 
     if (recordsMap.has(id)) {
       return;
@@ -307,10 +332,10 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
 
     const adaptedEntry = {
       displayName,
-      description: entry.content || `PatternFly API documentation for ${displayName}`,
+      description: createMetadataDescription(displayName, kind, version),
       pathSlug: name,
-      category: semanticContext.kind,
-      section: semanticContext.section || 'components',
+      category: kind,
+      section,
       source: 'api' as const,
       version,
       id,
@@ -322,7 +347,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
       sourceId: entry.url,
       sourceType: 'api' as const,
       data: {
-        [name]: adaptedEntry
+        [name]: [adaptedEntry]
       }
     };
 
