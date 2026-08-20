@@ -76,6 +76,8 @@ describe('collectionCallback', () => {
     expect(keys.length).toBe(1);
     const key: any = keys[0];
 
+    expect(key).toBe('button');
+
     expect(first).toMatchObject({
       sourceId: `${BASE}/v1/components/Button/props`
     });
@@ -84,7 +86,7 @@ describe('collectionCallback', () => {
 
     expect(first.data[key][0]).toMatchObject({
       displayName: 'Button',
-      pathSlug: 'button',
+      pathSlug: 'components-button-props',
       source: 'api',
       version: 'v1',
       section: 'components',
@@ -120,14 +122,14 @@ describe('collectionCallback', () => {
     const rec: any = result.records[0];
 
     // id encodes version, section, item, kind, and index
-    expect(rec?.id).toMatch(/^api::v1::components::card::doc$/);
+    expect(rec?.id).toMatch(/^api::v1::components::card::overview$/);
 
     const key: any = rec?.data ? Object.keys(rec.data)[0] : '';
 
     expect(key).toBe('card');
     expect(rec?.data?.[key]).toContainEqual(expect.objectContaining({
       displayName: 'Card',
-      category: 'doc'
+      category: 'overview'
     }));
   });
 

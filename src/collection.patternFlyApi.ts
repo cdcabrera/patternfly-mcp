@@ -345,17 +345,18 @@ const formatSlugToTitle = (slug: string, section?: string): string => {
 };
 
 /**
- * Fingerprint content to extract the most accurate displayName.
+ * Generate a display name from metadata.
  *
- * @param content
- * @param slug
- * @param kind
- * @param section
+ * @param [content] - Optional content string.
+ * @param [slug=''] - Optional slug used for fallback or secondary formatting of the display name.
+ * @param [kind='doc'] - Optional kind of content being processed (e.g., 'props', 'css', or 'doc').
+ * @param [section] - Optional section name used for refining the display name.
+ * @returns Extracted or formatted display name for the API item.
  */
 const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', section?: string): string => {
   const trimmed = content?.trim() || '';
 
-  // 1. Props JSON signature
+  // Props JSON signature
   if (kind === 'props' && trimmed.startsWith('{')) {
     try {
       const parsed = JSON.parse(trimmed);
@@ -366,12 +367,12 @@ const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', sectio
     } catch {}
   }
 
-  // 2. CSS JSON Array signature
+  // CSS JSON Array signature
   if (kind === 'css') {
     return `${formatSlugToTitle(slug, section)} CSS`;
   }
 
-  // 3. Markdown H1 signature (# Title)
+  // Markdown H1 signature (# Title)
   const h1Match = trimmed.match(/^#\s+([^\r\n]+)/m);
 
   if (h1Match?.[1]?.trim()) {
@@ -385,7 +386,7 @@ const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', sectio
     return title;
   }
 
-  // 4. Fallback to formatted slug
+  // Fallback to slug
   return formatSlugToTitle(slug, section);
 };
 
@@ -413,28 +414,27 @@ const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
 };
 
 /**
- * Extract a concise description for catalog metadata.
+ * Generate a description from metadata.
  *
- * @param content
- * @param displayName
- * @param kind
- * @param _section
+ * @param [content] - Optional content.
+ * @param [displayName=''] - Optional display name.
+ * @param [kind='doc'] - Optional kind (e.g. 'doc', 'props', or 'css').
+ * @returns A generated description from metadata, or a fallback.
  */
-const extractApiDescription = (content?: string, displayName = '', kind = 'doc', _section?: string): string => {
-  // Pure JSON schemas with no documentation prose
-  // if (kind === 'props' || kind === 'css' || (kind === 'react' && section !== 'extensions')) {
+const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
+  // Immediate return on "generate something sane"
   if (kind === 'props' || kind === 'css') {
     return getApiFallbackDescription(displayName, kind);
   }
 
   if (content) {
-    // 1. Strip import statements and multiline fenced code blocks (```...```)
+    // Replace import statements, multiline code blocks
     const cleanContent = content
       .replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/gm, '')
       .replace(/import\s+['"][^'"]+['"];?/gm, '')
       .replace(/```[\s\S]*?```/gm, '');
 
-    // 2. Filter out headings, tags, and stray HTML attribute lines
+    // Filter headings, tags, and common HTML attributes
     const lines = cleanContent
       .split('\n')
       .map(line => line.trim())
@@ -460,11 +460,13 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc',
         !/^[A-Z][A-Za-z0-9]+,$/.test(line) &&
         line.length > 20);
 
-    // 3. If genuine prose lines exist, format and return the lead sentence
+    // Finally, does the copy exist?
     if (lines.length > 0 && lines[0]) {
       let cleanPara = lines[0]
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
-        .replace(/[*_`]/g, '') // strip formatting
+        // markdown
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // formatting
+        .replace(/[*_`]/g, '')
         .trim();
 
       if (cleanPara.endsWith(':')) {
@@ -475,67 +477,12 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc',
     }
   }
 
-  // 4. Fallback only when no prose was found
+  // Fallback
   return getApiFallbackDescription(displayName, kind);
 };
 
-/*
-const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
-  if (kind === 'props') {
-    return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
-  }
-
-  if (kind === 'css') {
-    return `PatternFly CSS variables and styling classes for ${displayName}.`;
-  }
-
-  // For docs: extract first meaningful prose line
-  if (content) {
-    const lines = content
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line =>
-        line && !line.startsWith('import ') && !line.startsWith('#') && !line.startsWith('---') && !line.startsWith('![') && !line.startsWith('<'));
-
-    if (lines.length > 0 && lines[0]) {
-      const cleanPara = lines[0]
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
-        .replace(/[*_`]/g, ''); // strip formatting
-
-      return cleanPara.length > 200 ? `${cleanPara.slice(0, 197)}...` : cleanPara;
-    }
-  }
-
-  return `PatternFly documentation and guidelines for ${displayName}.`;
-};
-
- */
-
 /**
- * Extrapolate a concise record description.
- *
- * @param displayName - Display name
- * @param kind - Broad category pulled from the API response
- * @returns Concise description string
- */
-/*
-const createMetadataDescription = (displayName: string, kind?: string): string => {
-  switch (kind) {
-    case 'props':
-      return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
-    case 'css':
-      return `PatternFly CSS classes and styling documentation for ${displayName}.`;
-    case 'html':
-    case 'html-demos':
-      return `PatternFly HTML examples and markup structure for ${displayName}.`;
-    default:
-      return `PatternFly API documentation and usage guidelines for ${displayName}.`;
-  }
-};
-*/
-
-/**
- * Async collect and process entries for a collection. Add extrapolated metadata.
+ * Async collect and process entries for a collection. Add "conditional" metadata.
  *
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
@@ -548,21 +495,20 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     const version = (semanticContext.version || 'unknown').toLowerCase();
     const kind = semanticContext.kind || 'doc';
     const section = semanticContext.section || 'components';
-    let name = (semanticContext.item || 'api-entry').toLowerCase();
 
-    name = name === 'overview' ? `${semanticContext.section}-${name}` : `${section}-${name}`;
+    const normalizedItem = (semanticContext.item || 'api-entry').toLowerCase();
+    const name = section === 'components' ? normalizedItem : `${section}-${normalizedItem}`;
 
-    const id = `api::${version}::${section}::${name}::${kind}`;
+    const id = `api::${version}::${section}::${normalizedItem}::${kind}`;
 
     if (recordsMap.has(id)) {
       return;
     }
 
-    const displayName = extractApiDisplayName(entry.content, name, kind, section);
+    const displayName = extractApiDisplayName(entry.content, normalizedItem, kind, section);
     const adaptedEntry = {
       displayName,
-      description: extractApiDescription(entry.content, displayName, kind, section),
-      // description: createMetadataDescription(displayName, kind),
+      description: extractApiDescription(entry.content, displayName, kind),
       pathSlug: semanticContext.pathSlug,
       category: kind,
       section,
