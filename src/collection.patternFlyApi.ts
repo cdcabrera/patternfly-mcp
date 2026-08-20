@@ -386,10 +386,10 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
   }
 
   if (content) {
-    // Strip multiline import blocks and HTML/JSX tags
+    // 1. Strip import statements including multiline import {...} from '...'
     const cleanContent = content
-      .replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '')
-      .replace(/import\s+['"][^'"]+['"];?/g, '');
+      .replace(/import\s+(?:{[^}]*}|[^{;]+)\s+from\s+['"][^'"]+['"];?/gm, '')
+      .replace(/import\s+['"][^'"]+['"];?/gm, '');
 
     const lines = cleanContent
       .split('\n')
@@ -406,10 +406,9 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
         !/^(ts|tsx|js|jsx)\s+/i.test(line) &&
         !line.includes('file="./') &&
         !line.startsWith('["') &&
-        // skip import lists or array leftovers
         !line.endsWith(',') &&
-        // skip short tokens/code fragments
-        line.length > 15);
+        !/^[A-Z][A-Za-z0-9]+,$/.test(line) &&
+        line.length > 20);
 
     if (lines.length > 0 && lines[0]) {
       let cleanPara = lines[0]
@@ -417,7 +416,7 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
         .replace(/[*_`]/g, '') // strip formatting
         .trim();
 
-      // Fix ending colons: replace with period so it forms a complete thought
+      // Normalize trailing colon to a period
       if (cleanPara.endsWith(':')) {
         cleanPara = `${cleanPara.slice(0, -1)}.`;
       }
@@ -505,7 +504,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
       return;
     }
 
-    const displayName = extractApiDisplayName(entry.content, name, kind);
+    const displayName = extractApiDisplayName(entry.content, name, kind, section);
     const adaptedEntry = {
       displayName,
       description: extractApiDescription(entry.content, displayName, kind),
