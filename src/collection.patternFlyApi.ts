@@ -289,10 +289,23 @@ const apiSpider = async (): Promise<ApiContent[]> => {
  * E.g., 'ai-assisted-development_ai-assisted-code-migration' -> 'AI Assisted Development: AI Assisted Code Migration'
  *
  * @param slug
+ * @param section
  */
-const formatSlugToTitle = (slug: string): string => {
+const formatSlugToTitle = (slug: string, section?: string): string => {
   if (!slug) {
     return 'PatternFly API';
+  }
+
+  const cleanSection = section
+    ? section
+      .split('-')
+      .map(wordPhrase =>
+        (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(wordPhrase) ? wordPhrase.toUpperCase() : wordPhrase.charAt(0).toUpperCase() + wordPhrase.slice(1))).join(' ')
+    : '';
+
+  // Handle bare generic names like 'overview'
+  if (slug.toLowerCase() === 'overview' && cleanSection) {
+    return `${cleanSection} Overview`;
   }
 
   return slug
@@ -317,8 +330,9 @@ const formatSlugToTitle = (slug: string): string => {
  * @param content
  * @param slug
  * @param kind
+ * @param section
  */
-const extractApiDisplayName = (content?: string, slug = '', kind = 'doc'): string => {
+const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', section?: string): string => {
   const trimmed = content?.trim() || '';
 
   // 1. Props JSON signature
@@ -334,18 +348,25 @@ const extractApiDisplayName = (content?: string, slug = '', kind = 'doc'): strin
 
   // 2. CSS JSON Array signature
   if (kind === 'css') {
-    return `${formatSlugToTitle(slug)} CSS`;
+    return `${formatSlugToTitle(slug, section)} CSS`;
   }
 
   // 3. Markdown H1 signature (# Title)
   const h1Match = trimmed.match(/^#\s+([^\r\n]+)/m);
 
   if (h1Match?.[1]?.trim()) {
-    return h1Match[1].trim();
+    const title = h1Match[1].trim();
+
+    // If the H1 is just "Overview", qualify it with the section
+    if (title.toLowerCase() === 'overview' && section) {
+      return formatSlugToTitle('overview', section);
+    }
+
+    return title;
   }
 
   // 4. Fallback to formatted slug
-  return formatSlugToTitle(slug);
+  return formatSlugToTitle(slug, section);
 };
 
 /**
@@ -365,7 +386,12 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
   }
 
   if (content) {
-    const lines = content
+    // Strip multiline import blocks and HTML/JSX tags
+    const cleanContent = content
+      .replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '')
+      .replace(/import\s+['"][^'"]+['"];?/g, '');
+
+    const lines = cleanContent
       .split('\n')
       .map(line => line.trim())
       .filter(line =>
@@ -376,15 +402,25 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
         !line.startsWith('![') &&
         !line.startsWith('<') &&
         !line.startsWith('```') &&
+        !line.startsWith('export ') &&
         !/^(ts|tsx|js|jsx)\s+/i.test(line) &&
         !line.includes('file="./') &&
         !line.startsWith('["') &&
-        line.length > 5);
+        // skip import lists or array leftovers
+        !line.endsWith(',') &&
+        // skip short tokens/code fragments
+        line.length > 15);
 
     if (lines.length > 0 && lines[0]) {
-      const cleanPara = lines[0]
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        .replace(/[*_`]/g, '');
+      let cleanPara = lines[0]
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links
+        .replace(/[*_`]/g, '') // strip formatting
+        .trim();
+
+      // Fix ending colons: replace with period so it forms a complete thought
+      if (cleanPara.endsWith(':')) {
+        cleanPara = `${cleanPara.slice(0, -1)}.`;
+      }
 
       return cleanPara.length > 200 ? `${cleanPara.slice(0, 197)}...` : cleanPara;
     }
