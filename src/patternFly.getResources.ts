@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
 import { buildSearchString, generateHash } from './server.helpers';
@@ -200,6 +202,71 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  * Central in-memory registry for all PatternFly collection records
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
+
+// --- Quick Dump Helper ---
+const dumpCollectionsToDisk = (
+  originalDocs: unknown,
+  schemasCollection: unknown,
+  apiCollection: unknown,
+  catalog: unknown
+) => {
+  try {
+    const outputDir = path.resolve(process.cwd(), '.dump');
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // 1. Base required collections
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-base-collections.dump.json'),
+      JSON.stringify(
+        {
+          'patternfly-docs': originalDocs ?? null,
+          'patternfly-component-schemas': schemasCollection ?? null
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    // 2. API collection
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-api-collection.dump.json'),
+      JSON.stringify(
+        {
+          'patternfly-api': apiCollection ?? null
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    // 3. Combined / All collections
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-all-collections.dump.json'),
+      JSON.stringify(
+        {
+          collections: {
+            'patternfly-docs': originalDocs ?? null,
+            'patternfly-component-schemas': schemasCollection ?? null,
+            'patternfly-api': apiCollection ?? null
+          },
+          combinedCatalog: catalog
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    log.info(`[DUMP] Wrote collection dumps to ${outputDir}`);
+  } catch (err) {
+    log.error('[DUMP] Failed to write collection dumps:', err);
+  }
+};
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -489,6 +556,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     ...apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
   ];
 
+  // Dump
+  dumpCollectionsToDisk(
+    originalDocs?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
+    Array.from(componentNamesByDocs),
+    apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
+    catalog
+  );
+
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
@@ -707,6 +782,7 @@ const setPatternFlyCollection = async (
         log.warn('Failed getPatternFlyMcpResources clear.', error);
       }
 
+      getPatternFlyMcpResources.memo();
       log.debug(`Merging collection ${name} records. (${collection.records.length})`);
     }
   } catch (error) {
