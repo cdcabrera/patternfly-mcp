@@ -76,6 +76,31 @@ interface ParsePayload {
 }
 
 /**
+ * Deferred API categories.
+ *
+ * @note Update accordingly. There's still a quality threshold that has to be met
+ * if we prefer not blanket filtering entire categories.
+ *
+ * - `props`: Deferred in favor of utilizing @patternfly/patternfly-component-schemas.
+ * - `react`: Deferred due to the presence of not-hydrated ?raw or <LiveExample /> stubs.
+ * - `react-demos`: React demonstration components that are deferred.
+ * - `html`: Deferred for HTML-related API categories.
+ * - `html-demos`: Deferred for HTML demonstration examples.
+ */
+const DEFERRED_API_CATEGORIES = new Set<string>([
+  'props',
+  // 'react',
+  'react-demos',
+  // 'html',
+  'html-demos'
+]);
+
+/**
+ * Min content quality threshold.
+ */
+const MIN_API_QUALITY_THRESHOLD = 0.5;
+
+/**
  * Parses the given payload and determines its state and structure.
  *
  * @param payload - Input payload to be parsed.
@@ -210,6 +235,7 @@ const getVersions = async (options = getOptions()) => {
 };
 
 const normalizeSlug = (segment: string): string => segment
+  .trim()
   .toLowerCase()
   .replace(/_/g, '-')
   .replace(/-+/g, '-');
@@ -482,6 +508,273 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
 };
 
 /**
+ * Extracts and constructs an API entry name based on the provided item and section.
+ *
+ * @param item - Entry base name.
+ * @param section - Entry section.
+ * @returns Extracted entry name
+ */
+const extractApiName = (item: string, section: string): string => {
+  const normalizedItem = item.trim().toLowerCase();
+  const normalizedSection = section.trim().toLowerCase();
+
+  if (normalizedSection === 'components') {
+    return normalizedItem;
+  }
+
+  if (normalizedItem === 'overview') {
+    return `${normalizedSection}-overview`;
+  }
+
+  // Prevent double-prefix
+  if (normalizedItem.startsWith(`${normalizedSection}-`)) {
+    return normalizedItem;
+  }
+
+  return `${normalizedSection}-${normalizedItem}`;
+};
+
+/**
+ * Simple “is‑JSON‑looking” guard – starts & ends with braces/brackets.
+ *
+ * @param str
+ */
+const isJsonLike = (str: string) =>
+  (str.startsWith('{') && str.endsWith('}')) || (str.startsWith('[') && str.endsWith(']'));
+
+/**
+ * Parse JSON safely – returns `true` if parsed & non‑empty, `false` otherwise.
+ *
+ * @param str
+ */
+const isValidJson = (str: string): boolean => {
+  try {
+    const parsed = JSON.parse(str);
+
+    if (Array.isArray(parsed)) {
+      return parsed.length > 0;
+    }
+
+    return typeof parsed === 'object' && parsed !== null && Object.keys(parsed).length > 0;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Detect imports that use the `?raw` query param.
+ *
+ * @param str
+ */
+const isRawImport = (str: string) =>
+  /import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(str);
+
+/**
+ * Detect a `<LiveExample … />` tag.
+ *
+ * @param str
+ */
+const hasLiveExample = (str: string) => /<LiveExample\b[^>]*\/?>/i.test(str);
+
+/**
+ * Count the number of `<LiveExample>` tags in a given string.
+ *
+ * @param str - Input string to search for `<LiveExample>` tags.
+ * @returns `<LiveExample>` count found in the input string.
+ */
+const getLiveExampleCount = (str: string) =>
+  (str.match(/<LiveExample\b[^>]*\/?>/gi) || []).length;
+
+/**
+ * Detect empty code fences with external file references that weren't
+ * inlined. (e.g., ```ts file = "./ButtonBasic.tsx" \n```)
+ *
+ * A code fence is considered empty if:
+ * - A fenced code block with a `file` attribute specified but no content.
+ * - A fenced code block with no content inside the block, regardless of attributes or language.
+ *
+ * @param str - Input string.
+ * @returns Returns `true` if the input string contains an empty code fence.
+ */
+const hasEmptyFileCodeFence = (str: string) =>
+  /```[\w-]*\s+file="[^"]+"\s*\n\s*```/i.test(str) ||
+  /```[\w-]*\s*\n\s*```/.test(str);
+
+const calculateApiQualityScore = (
+  content: unknown,
+  { baseScore = 0.55, qualityReduction = 0.03 }: { baseScore?: number, qualityReduction?: number } = {}
+): number => {
+  if (content === undefined || content === null) {
+    return baseScore;
+  }
+
+  const raw = typeof content === 'number' ? String(content) : content;
+
+  if (typeof raw !== 'string') {
+    return baseScore;
+  }
+
+  const trimmed = raw.trim();
+
+  if (trimmed.length === 0) {
+    return baseScore;
+  }
+
+  let score = baseScore;
+
+  if (isJsonLike(trimmed)) {
+    const jsonValid = isValidJson(trimmed);
+
+    if (!jsonValid) {
+      score -= qualityReduction;
+    }
+  }
+
+  if (isRawImport(trimmed)) {
+    score -= qualityReduction;
+  }
+
+  if (hasLiveExample(trimmed)) {
+    score -= qualityReduction * getLiveExampleCount(trimmed);
+  }
+
+  if (trimmed.length < 150 && !trimmed.includes('```') && !hasEmptyFileCodeFence(trimmed)) {
+    score -= qualityReduction;
+  }
+
+  if (hasEmptyFileCodeFence(trimmed)) {
+    score -= qualityReduction;
+
+    if (trimmed.length < 150) {
+      score -= qualityReduction;
+    }
+  }
+
+  return Number(Math.min(1, Math.max(0, score)).toFixed(3));
+};
+
+/*
+const calculateApiQualityScore = (
+  content: unknown,
+  { baseScore = 0.0, qualityReduction = 0.025 }: { baseScore?: number, qualityReduction?: number } = {}
+): number => {
+  if (content === undefined || content === null || Number.isNaN(content)) {
+    return baseScore;
+  }
+
+  const updatedContent = String(content).trim();
+  let score = baseScore;
+
+  if (updatedContent.length === 0) {
+    return score;
+  }
+
+  // 1. JSON payloads
+  if ((updatedContent.startsWith('{') && updatedContent.endsWith('}')) || (updatedContent.startsWith('[') && updatedContent.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(updatedContent);
+
+      // Valid JSON retains its base score (e.g., 1.0 for CSS, 0.5 for props)
+      if (parsed && (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+        return score;
+      }
+
+      score -= qualityReduction;
+    } catch {
+      score -= qualityReduction;
+    }
+  }
+
+  // 2. Template placeholders, live examples. (e.g. `import Foo from "./Foo.tsx?raw"` or `<LiveExample ... />`)
+  if (/import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(updatedContent)) {
+    score -= qualityReduction;
+  }
+
+  if (/<LiveExample\b[^>]*\/?>/i.test(updatedContent)) {
+    score -= qualityReduction;
+  }
+
+  // 4. Short stub content (e.g., < 120 chars without code fences)
+  if (updatedContent.length < 120 && !updatedContent.includes('```')) {
+    score -= qualityReduction;
+  }
+
+  const finalScore = Number(score.toFixed(3));
+
+  return Math.max(0.0, Math.min(1.0, finalScore));
+};
+*/
+/*
+const calculateApiQualityScore = (
+  content: string | undefined | null,
+  kind: string = 'doc',
+  categoryBaseScores: Record<string, number> = API_CATEGORY_BASE_SCORES
+): QualityScoreResult => {
+  const penalties: QualityScoreResult['penalties'] = {};
+  const baseScore = categoryBaseScores[kind.toLowerCase()] ?? 0.8;
+
+  if (!content || typeof content !== 'string') {
+    return { score: 0.0, penalties: { emptyBody: true } };
+  }
+
+  const trimmed = content.trim();
+
+  if (trimmed.length === 0) {
+    return { score: 0.0, penalties: { emptyBody: true } };
+  }
+
+  // 1. JSON payloads (e.g., props, css)
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(trimmed);
+
+      // Valid JSON retains its base score (e.g., 1.0 for CSS, 0.5 for props)
+      if (parsed && (Array.isArray(parsed) ? parsed.length > 0 : Object.keys(parsed).length > 0)) {
+        return { score: baseScore, penalties: {} };
+      }
+
+      return { score: 0.1, penalties: { stubPayload: true } };
+    } catch {
+      // Invalid JSON, continue with string evaluation
+    }
+  }
+
+  let penaltyMultiplier = 1.0;
+
+  // 2. Template placeholders and live examples. (e.g. `import Foo from "./Foo.tsx?raw"` or `<LiveExample ... />`)
+  const hasRawImports = /import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(trimmed);
+  const hasLiveExamples = /<LiveExample\b[^>]*\/?>/i.test(trimmed);
+
+  if (hasRawImports || hasLiveExamples) {
+    penalties.templateImport = true;
+    penaltyMultiplier *= 0.4; // 60% penalty for not-hydrated template wrappers
+  }
+
+  // 3. Detect excessive link/nav density vs. actual copy. (e.g., Markdown links)
+  const markdownLinks = trimmed.match(/\[([^\]]+)\]\(([^)]+)\)/g) || [];
+  const linkTextLength = markdownLinks.reduce((acc, links) => acc + links.length, 0);
+
+  if (trimmed.length > 0 && linkTextLength / trimmed.length > 0.45 && trimmed.length < 500) {
+    penalties.excessiveLinks = true;
+    penaltyMultiplier *= 0.5; // 50% penalty for navigation link lists
+  }
+
+  // 4. Short stub content (e.g., < 120 chars without code fences)
+  if (trimmed.length < 120 && !trimmed.includes('```')) {
+    penalties.stubPayload = true;
+    penaltyMultiplier *= 0.5;
+  }
+
+  const finalScore = Number((baseScore * penaltyMultiplier).toFixed(3));
+
+  return {
+    score: Math.max(0.0, Math.min(1.0, finalScore)),
+    penalties
+  };
+};
+*/
+
+/**
  * Async collect and process entries for a collection. Add "conditional" metadata.
  *
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
@@ -492,12 +785,24 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
 
   entries?.forEach(entry => {
     const semanticContext = entry.semanticContext || {};
-    const version = (semanticContext.version || 'unknown').toLowerCase();
+    const version = semanticContext.version || 'unknown';
     const kind = semanticContext.kind || 'doc';
     const section = semanticContext.section || 'components';
+    const normalizedItem = semanticContext.item || 'api-entry';
 
-    const normalizedItem = (semanticContext.item || 'api-entry').toLowerCase();
-    const name = section === 'components' ? normalizedItem : `${section}-${normalizedItem}`;
+    // Deferred Category Filter
+    if (DEFERRED_API_CATEGORIES.has(kind.toLowerCase())) {
+      return;
+    }
+
+    // Quality Assessment Threshold
+    const quality = calculateApiQualityScore(entry.content);
+
+    if (quality < MIN_API_QUALITY_THRESHOLD) {
+      return;
+    }
+
+    const name = extractApiName(normalizedItem, section);
 
     const id = `api::${version}::${section}::${normalizedItem}::${kind}`;
 
