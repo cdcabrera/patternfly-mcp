@@ -85,25 +85,29 @@ interface ParsePayload {
 /**
  * Deferred API categories.
  *
- * @note Update accordingly. There's still a quality threshold that has to be met
- * if we prefer not blanket filtering entire categories.
+ * @note Minimal PatternFly API data quality threshold
+ * - Last resort for content that requires additional parsing or should be ignored.
+ * - A quality threshold still has to be met even if these items are removed
+ * - Quality metrics need to be updated periodically as API content is added.
  *
- * - `props`: Deferred in favor of utilizing @patternfly/patternfly-component-schemas.
- * - `react`: Deferred due to the presence of not-hydrated ?raw or <LiveExample /> stubs.
- * - `react-demos`: React demonstration components that are deferred.
- * - `html`: Deferred for HTML-related API categories.
- * - `html-demos`: Deferred for HTML demonstration examples.
+ * - `props`: Deferred in favor of using @patternfly/patternfly-component-schemas.
+ * - `react`: Quality threshold applied. Some examples still contain low-quality data.
+ * - `react-demos`: Deferred React demonstration components.
+ * - `html`: Quality threshold applied. Some examples still contain low-quality data.
+ * - `html-demos`: Deferred HTML demonstration examples.
+ * - `text`: Quality threshold applied. Some examples still contain low-quality data.
  */
 const DEFERRED_API_CATEGORIES = new Set<string>([
-  'props',
+  // 'props',
   // 'react',
   'react-demos',
   // 'html',
   'html-demos'
+  // 'text'
 ]);
 
 /**
- * Min content quality threshold.
+ * Min content quality threshold. See {@link calculateContentQualityScore}
  */
 const MIN_API_QUALITY_THRESHOLD = 0.95;
 
