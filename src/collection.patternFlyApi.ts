@@ -103,7 +103,8 @@ const DEFERRED_API_CATEGORIES = new Set<string>([
   'react-demos',
   // 'html',
   'html-demos'
-  // 'text'
+  // 'text',
+  // 'examples'
 ]);
 
 /**
@@ -197,7 +198,24 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
           continue;
         }
 
-        const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
+        const flattenedPayload: string[] = [];
+
+        payload.forEach(value => {
+          if (typeof value === 'string') {
+            flattenedPayload.push(value);
+          }
+
+          // Compensate for the outlier of the "examples" implementation
+          if (isPlainObject(value)) {
+            Object.values(value).forEach(value => {
+              if (typeof value === 'string') {
+                flattenedPayload.push(value);
+              }
+            });
+          }
+        });
+
+        const updatedPayload = [...flattenedPayload, ...componentPaths].map(path => joinUrl(res.path, path));
         const crawledContent = await crawler(updatedPayload);
 
         content.push(...crawledContent);

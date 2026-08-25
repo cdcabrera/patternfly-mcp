@@ -518,7 +518,8 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     versions: 'https://main.patternfly-org.pages.dev/api/versions',
     componentPaths: [
       'props',
-      'css'
+      'css',
+      'examples'
     ],
     schedule: {
       continueOnError: true,
