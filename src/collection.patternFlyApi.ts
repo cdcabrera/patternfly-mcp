@@ -457,7 +457,9 @@ const formatSlugToTitle = (slug: string, section?: string): string => {
     ? section
       .split('-')
       .map(wordPhrase =>
-        (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(wordPhrase) ? wordPhrase.toUpperCase() : wordPhrase.charAt(0).toUpperCase() + wordPhrase.slice(1))).join(' ')
+        (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(wordPhrase)
+          ? wordPhrase.toUpperCase()
+          : wordPhrase.charAt(0).toUpperCase() + wordPhrase.slice(1))).join(' ')
     : '';
 
   // Handle bare generic names like 'overview'
@@ -591,15 +593,12 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
         !line.startsWith('style=') &&
         !line.startsWith('d="') &&
         !line.startsWith('viewBox=') &&
-        // !line.startsWith('title=') &&
-        // !line.startsWith('description=') &&
         !/^[A-Za-z]+="(.*)"/.test(line) &&
         !/^(ts|tsx|js|jsx|html)\s+/i.test(line) &&
         !line.includes('file="./') &&
         !line.startsWith('["') &&
         !line.endsWith(',') &&
-        !/^[A-Za-z0-9\-*]+\./.test(line) &&
-        // !/^[A-Za-z0-9\-*\s]+[A-Za-z0-9\-*]*\.*\s*]/.test(line) &&
+        !/^[A-Za-z0-9]+\./.test(line) &&
         !/^[A-Z][A-Za-z0-9]+,$/.test(line) &&
         line.length > 20);
 
