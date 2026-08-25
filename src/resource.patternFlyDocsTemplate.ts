@@ -14,6 +14,7 @@ import {
   uriSectionComplete,
   uriVersionComplete
 } from './resource.patternFlyDocsIndex';
+import { formatContentForMarkdown } from './resource.helpers';
 
 /**
  * Name of the resource template.
@@ -178,7 +179,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       text: stringJoin.newline(
         `# Documentation from ${resolvedPath || path}`,
         '',
-        content
+        formatContentForMarkdown(content)
       )
     }))
   };
