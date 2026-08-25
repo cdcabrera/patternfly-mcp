@@ -247,6 +247,7 @@ const dumpCollectionsToDisk = (
       ),
       'utf-8'
     );
+
     /*
     // 3. Combined / All collections
     fs.writeFileSync(

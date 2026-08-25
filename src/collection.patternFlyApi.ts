@@ -98,7 +98,7 @@ interface ParsePayload {
  * - `text`: Quality threshold applied. Some examples still contain low-quality data.
  */
 const DEFERRED_API_CATEGORIES = new Set<string>([
-  // 'props',
+  'props',
   // 'react',
   'react-demos',
   // 'html',

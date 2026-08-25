@@ -81,7 +81,7 @@ const isJsonLike = (content: unknown): boolean => {
  *
  * Markdown patterns:
  * - Headings (e.g., `# Heading`)
- * - Blockquotes (e.g., `> Blockquote`)
+ * - Blockquote (e.g., `> Blockquote`)
  * - Unordered lists (e.g., `- Item`, `+ Item`, `* Item`)
  * - Ordered lists (e.g., `1. Item`, `2. Item`)
  * - Inline links (e.g., `[link](url)`)
@@ -246,7 +246,7 @@ const isScriptLike = (content: unknown): boolean => {
  * @param content - Input value.
  * @returns A type of content string, or empty if the content type can't be determined.
  */
-const contentType = (content: unknown): '' | 'md' | 'json' | 'html' | 'css' => {
+const contentType = (content: unknown): '' | 'markdown' | 'json' | 'html' | 'css' => {
   const updatedLanguage = '';
 
   if (content === null || content === undefined || (typeof content === 'string' && content.trim().length <= 0)) {
@@ -254,7 +254,7 @@ const contentType = (content: unknown): '' | 'md' | 'json' | 'html' | 'css' => {
   }
 
   if (isMarkdown(content as string)) {
-    return 'md';
+    return 'markdown';
   }
 
   if (isJsonLike(content) || isJson(content)) {
@@ -293,7 +293,11 @@ const formatContentForMarkdown = (
   }
 
   if (updatedLanguage === 'json') {
-    updatedContent = JSON.stringify(updatedContent, null, 2);
+    try {
+      const parsed = typeof updatedContent === 'string' ? JSON.parse(updatedContent.trim()) : updatedContent;
+
+      updatedContent = JSON.stringify(parsed, null, 2);
+    } catch {}
   }
 
   return `\`\`\`${updatedLanguage}\n${updatedContent}\n\`\`\``;
