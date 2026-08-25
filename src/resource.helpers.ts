@@ -145,6 +145,96 @@ const isXmlLike = (content: unknown): boolean => {
 };
 
 /**
+ * Is content script-like?
+ *
+ * Script matching:
+ * - Shebangs
+ * - Bash/Shell
+ * - Python
+ * - Java
+ * - JS/TS/JSX/TSX
+ * - Common statements across JS, TS, Java, and Python
+ *
+ * @param content - Input value
+ * @returns Return `true` if content is script-like
+ */
+const isScriptLike = (content: unknown): boolean => {
+  if (!content || typeof content !== 'string') {
+    return false;
+  }
+
+  const trimmed = content.trim();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  // 1. Run your existing firewall layer first
+  if (
+    isXmlLike(trimmed) ||
+    isCssLike(trimmed) ||
+    isMarkdown(trimmed) ||
+    isJson(trimmed) ||
+    isJsonLike(trimmed)
+  ) {
+    return false;
+  }
+
+  // Shebangs (Catches Bash/Shell, Python, Node scripts instantly)
+  if (trimmed.startsWith('#!')) {
+    return /#!\s*.*\b(bash|sh|zsh|python|pypy|node|deno|bun)\b/.test(trimmed);
+  }
+
+  // Bash/Shell
+  if (
+    /^\s*(unset\s+\w+|export\s+\w+=|local\s+\w+=)/m.test(trimmed) || // Env vars
+    /^\s*(if\s+\[\[|case\s+.*?\s+in|for\s+\w+\s+in\s+)/m.test(trimmed) || // Shell control blocks
+    /^\s*[a-zA-Z_]\w*\s*\(\s*\)\s*\{/m.test(trimmed) // Shell functions: name() {
+  ) {
+    return true;
+  }
+
+  // Python
+  if (
+    /^\s*(def|class)\s+[a-zA-Z_]\w*\s*(\(.*?\))?\s*:/m.test(trimmed) || // Function/class definitions
+    /^\s*if\s+__name__\s*==\s*['"]__main__['"]\s*:/m.test(trimmed) || // Main block entry point
+    /^\s*(import\s+[a-zA-Z_]\w*|from\s+[a-zA-Z_]\w*\s+import)/m.test(trimmed) // Native imports
+  ) {
+    return true;
+  }
+
+  // Java
+  if (
+    /^\s*(public|private|protected)\s+(class|interface|enum|record)\s+\w+/m.test(trimmed) || // Class structure
+    /^\s*package\s+[a-z0-9_]+(\.[a-z0-9_]+)*\s*;/m.test(trimmed) || // Package declarations
+    /\b(public\s+static\s+void\s+main|System\.out\.print(ln)?)\b/.test(trimmed) // Standard entry points
+  ) {
+    return true;
+  }
+
+  // JS/TS/JSX/TSX
+  if (
+    // ESM
+    /^\s*(import\s+([\w\s{},*]+|['"].+['"])\s+from\s+['"].+['"]|export\s+(default\s+)?(const|let|function|class|interface|type))/m.test(trimmed) ||
+    // CommonJS
+    /\b(module\.exports\s*=|exports\.\w+\s*=|=\s*require\(['"].+['"]\))/.test(trimmed) ||
+    // TS
+    /^\s*(interface|type)\s+[A-Z]\w*\s*[{=]/m.test(trimmed) ||
+    // React / JSX
+    /\b(useState|useEffect|useContext|useRef|useMemo|useCallback)\(/.test(trimmed) ||
+    /return\s*\(\s*<[A-Za-z0-9_$.]+[^>]*>/.test(trimmed)
+  ) {
+    return true;
+  }
+
+  // Statements common across JS, TS, Java, and Python
+  const hasKeywords = /\b(console\.log|process\.exit|await|return|print)\b/.test(trimmed);
+  const structuralSymbols = (trimmed.match(/[{};=>]/g) || []).length > 2;
+
+  return hasKeywords && structuralSymbols;
+};
+
+/**
  * Determine the "type" of content based on its structure and formatting.
 
  * Content type identifiers:
@@ -262,6 +352,7 @@ export {
   isJsonLike,
   isCssLike,
   isMarkdown,
+  isScriptLike,
   isXmlLike,
   paramCompletion
 };
