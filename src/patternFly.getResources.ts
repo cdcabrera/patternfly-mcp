@@ -359,14 +359,14 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
       return;
     }
 
-    Object.entries(data as Record<string, PatternFlyMcpComponentNamesDoc[]>).forEach(([rawName, entries]) => {
+    Object.entries(data as Record<string, PatternFlyMcpComponentNamesDoc[]>).forEach(([normalizedName, entries]) => {
       const entry = entries[0];
 
       if (!entry) {
         return;
       }
 
-      const normalizedName = normalizeResourceName(rawName);
+      // const normalizedName = normalizeResourceName(rawName);
 
       componentNamesIndex.push(normalizedName);
       componentNamesIndexMap.set(normalizedName, entry.displayName);
@@ -593,14 +593,17 @@ const getDocPriority = (entry: {
  * - 'action_list' -> 'action-list'
  * - 'Button' -> 'button'
  *
- * @param name - Raw catalog or collection identifier
+ * @param key - Raw catalog or collection identifier
  * @returns Normalized slug for current resource grouping strategy.
  */
-const normalizeResourceName = (name: string): string => {
-  if (!name) {
-    return '';
+const normalizeKey = (key: string): string => {
+  if (!key) {
+    return '__unknown__';
   }
 
+  return key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+  /*
   return name
     .trim()
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2') // Convert PascalCase / camelCase to kebab-case
@@ -608,6 +611,7 @@ const normalizeResourceName = (name: string): string => {
     .replace(/\s+/g, '-') // Convert spaces to kebab-case
     .replace(/-+/g, '-') // Collapse multiple hyphens
     .toLowerCase();
+   */
 };
 
 /**
@@ -644,8 +648,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   catalog.forEach(([unifiedName, entries]) => {
-    // const name = unifiedName.toLowerCase();
-    const name = normalizeResourceName(unifiedName);
+    const name = normalizeKey(unifiedName);
     const groupId = generateHash(name);
 
     hashIndexMap.set(groupId.toLowerCase(), name);
