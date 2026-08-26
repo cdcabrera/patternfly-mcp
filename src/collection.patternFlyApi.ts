@@ -32,6 +32,8 @@ import {
  * @property semanticContext.section - Section of the content.
  * @property semanticContext.item - Item of the content.
  * @property semanticContext.facet - Facet of the content.
+ * @property semanticContext.detail - Detail of the content.
+ * @property semanticContext.detailType - Detail type of the content.
  * @property semanticContext.kind - Kind of the content.
  * @property semanticContext.metadata - Remaining metadata, if any, of the content.
  */
@@ -45,6 +47,7 @@ interface ApiContent {
     item?: string | undefined;
     facet?: string | undefined;
     detail?: string | undefined;
+    detailType?: string | undefined;
     kind?: string | undefined;
     metadata?: string[] | undefined;
   }
@@ -294,18 +297,19 @@ const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): Ap
   return apiResponses.map(({ content, resolvedPath }) => {
     // Relative path after '/api/'
     const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
-    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', rawDetail = '', ...remaining] = segments;
+    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', rawDetailType = '', rawDetail = '', ...remaining] = segments;
 
     const normalizedSection = normalizeSlug(section);
     const normalizedItem = normalizeSlug(rawItem);
     const normalizedFacet = normalizeSlug(rawFacet || 'text');
+    const normalizedDetailType = normalizeSlug(rawDetailType);
     const normalizedDetail = normalizeSlug(rawDetail);
 
     // Kind is the specific facet (props, css, html, text, doc)
     const kind = componentPaths.includes(normalizedFacet) ? normalizedFacet : normalizedFacet || 'doc';
 
     // Build hierarchical normalized path slug: e.g. "ai/overview/text" or "components/button/props"
-    const pathSlug = [normalizedSection, normalizedItem, normalizedFacet]
+    const pathSlug = [normalizedSection, normalizedItem, normalizedFacet, normalizedDetailType, normalizedDetail]
       .filter(Boolean)
       .join('-');
 
@@ -318,6 +322,7 @@ const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): Ap
         section: normalizedSection,
         item: normalizedItem,
         facet: normalizedFacet,
+        detailType: normalizedDetailType,
         detail: normalizedDetail,
         kind,
         metadata: remaining.length ? remaining.map(normalizeSlug) : undefined
@@ -387,7 +392,8 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     const kind = semanticContext.kind || 'doc';
     const section = semanticContext.section || 'components';
     const normalizedItem = semanticContext.item || 'api-entry';
-    const normalizedDetail = semanticContext.detail;
+    const normalizedDetailType = semanticContext.detailType;
+    const normalizedDetail = semanticContext.detail || 'detail';
 
     // Deferred Category Filter
     if (DEFERRED_API_CATEGORIES.has(kind.toLowerCase())) {
@@ -395,24 +401,24 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     }
 
     // Quality Assessment Threshold
-    const quality = calculateContentQualityScore(entry.content);
+    const quality = calculateContentQualityScore(entry.content, { kind });
 
     if (quality < MIN_API_QUALITY_THRESHOLD) {
       return;
     }
 
-    const name = extractApiName(normalizedItem, section);
+    const name = extractApiName(normalizedItem, section, normalizedDetailType, normalizedDetail);
 
-    const id = `api::${version}::${section}::${normalizedItem}::${kind}${normalizedDetail ? `::${normalizedDetail}` : ''}`;
+    const id = `api::${version}::${section}::${normalizedItem}::${kind}${normalizedDetailType ? `::${normalizedDetailType}::${normalizedDetail}` : ''}`;
 
     if (recordsMap.has(id)) {
       return;
     }
 
-    const displayName = extractApiDisplayName(entry.content, normalizedItem, kind, section);
+    const displayName = extractApiDisplayName(entry.content, { slug: normalizedItem, kind, section });
     const adaptedEntry = {
       displayName,
-      description: extractApiDescription(entry.content, displayName, kind),
+      description: extractApiDescription(entry.content, { displayName, kind, detailType: normalizedDetailType, slug: semanticContext.pathSlug }),
       pathSlug: semanticContext.pathSlug,
       category: kind,
       section,

@@ -43,17 +43,18 @@ const hasEmptyFileCodeFence = (str: string) =>
  * Calculate a quality score for a PatternFly API response.
  *
  * @param content - Content to score.
- * @param options - Function options
- * @param options.baseScore - Base starting score.
- * @param options.qualityReduction - Amount to reduce the base score for each quality metric.
- * @param options.minCharacters - Minimum number of characters required to avoid quality reduction.
+ * @param [options] - Function options
+ * @param [options.baseScore] - Base starting score.
+ * @param [options.kind] - Used to determine which quality metrics are applied.
+ * @param [options.qualityReduction] - Amount to reduce the base score for each quality metric.
+ * @param [options.minCharacters] - Minimum number of characters required to avoid quality reduction.
  * @returns The calculated quality score.
  */
 const calculateContentQualityScore = (
   content: unknown,
   {
-    baseScore = 1, qualityReduction = 0.03, minCharacters = 150
-  }: { baseScore?: number; qualityReduction?: number; minCharacters?: number } = {}
+    baseScore = 1, kind, qualityReduction = 0.03, minCharacters = 150
+  }: { baseScore?: number; kind?: undefined | string; qualityReduction?: number; minCharacters?: number } = {}
 ): number => {
   if (content === undefined || content === null) {
     return baseScore;
@@ -68,6 +69,10 @@ const calculateContentQualityScore = (
   const trimmed = raw.trim();
 
   if (trimmed.length === 0) {
+    return baseScore;
+  }
+
+  if (kind === 'examples') {
     return baseScore;
   }
 
@@ -110,11 +115,23 @@ const calculateContentQualityScore = (
  * @param segment - Input string to normalize.
  * @returns Normalized slug.
  */
-const normalizeSlug = (segment: string): string => segment
-  .trim()
-  .toLowerCase()
-  .replace(/_/g, '-')
-  .replace(/-+/g, '-');
+const normalizeSlug = (segment: string): string => {
+  let updatedSegment = segment;
+
+  if (/[A-Z]/.test(updatedSegment) && !(/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(updatedSegment))) {
+    const split = updatedSegment.split(/(?=[A-Z])/);
+
+    if (split.every(val => /^[A-Z]/.test(val))) {
+      updatedSegment = split.join('-');
+    }
+  }
+
+  return updatedSegment
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, '-')
+    .replace(/-+/g, '-');
+};
 
 /**
  * Format a compound slug into a clean title.
@@ -162,12 +179,15 @@ const formatSlugToTitle = (slug: string, section?: string): string => {
  * Generate a display name from metadata.
  *
  * @param [content] - Optional content string.
- * @param [slug=''] - Optional slug used for fallback or secondary formatting of the display name.
- * @param [kind='doc'] - Optional kind of content being processed (e.g., 'props', 'css', or 'doc').
- * @param [section] - Optional section name used for refining the display name.
+ * @param [context] - Optional context object for generating a unique name.
+ * @param [context.slug] - Optional slug used for fallback or secondary formatting of the display name.
+ * @param [context.kind] - Optional kind of content being processed (e.g., 'props', 'css', or 'doc').
+ * @param [context.section] - Optional section name used for refining the display name.
  * @returns Extracted or formatted display name for the API item.
  */
-const extractApiDisplayName = (content?: string, slug = '', kind = 'doc', section?: string): string => {
+const extractApiDisplayName = (content?: string, context: { slug?: string; kind?: string; section?: string; } = {}): string => {
+  const { slug = '', kind = 'doc', section } = context || {};
+
   const trimmed = content?.trim() || '';
 
   // Props JSON signature
@@ -223,6 +243,8 @@ const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
     case 'react':
     case 'react-demos':
       return `PatternFly React component examples and demos for ${displayName}.`;
+    case 'examples':
+      return `PatternFly ${displayName} examples and demos.`;
     default:
       return `PatternFly documentation and guidelines for ${displayName}.`;
   }
@@ -232,14 +254,27 @@ const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
  * Generate a description from metadata.
  *
  * @param [content] - Optional content.
- * @param [displayName=''] - Optional display name.
- * @param [kind='doc'] - Optional kind (e.g. 'doc', 'props', or 'css').
+ * @param [context] - Optional context for generating a unique description.
+ * @param [context.displayName] - Display name.
+ * @param [context.kind] - Type of content.
+ * @param [context.slug] - Optional slug, used as a fallback with `context.detailType`.
+ * @param [context.detailType] - Alternate to `context.kind`, like "examples".
  * @returns A generated description from metadata, or a fallback.
  */
-const extractApiDescription = (content?: string, displayName = '', kind = 'doc'): string => {
+const extractApiDescription = (
+  content?: string,
+  context: { displayName?: string; kind?: string; slug?: string | undefined; detailType?: string | undefined } = {}
+): string => {
+  const { displayName = '', kind = 'doc', slug: _slug = '', detailType = '' } = context || {};
+
   // Immediate return on "generate something sane"
   if (kind === 'props' || kind === 'css') {
     return getApiFallbackDescription(displayName, kind);
+  }
+
+  if (detailType === 'examples') {
+    // return getApiFallbackDescription(formatSlugToTitle(slug), detailType);
+    return getApiFallbackDescription(displayName, detailType);
   }
 
   if (content) {
@@ -305,9 +340,13 @@ const extractApiDescription = (content?: string, displayName = '', kind = 'doc')
  * @param section - Entry section.
  * @returns Extracted entry name
  */
-const extractApiName = (item: string, section: string): string => {
+const extractApiName = (item: string, section: string, detailType?: string, detail?: string): string => {
   const normalizedItem = item.trim().toLowerCase();
   const normalizedSection = section.trim().toLowerCase();
+
+  if (detailType === 'examples') {
+
+  }
 
   if (normalizedSection === 'components') {
     return normalizedItem;
