@@ -21,7 +21,7 @@ import {
   extractApiName,
   normalizeSlug
 } from './collection.patternFlyApiHelpers';
-import {contentType} from "./resource.helpers";
+import { contentType } from './resource.helpers';
 
 /**
  * Processed content for API responses.

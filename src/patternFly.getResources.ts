@@ -359,12 +359,14 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
       return;
     }
 
-    Object.entries(data as Record<string, PatternFlyMcpComponentNamesDoc[]>).forEach(([normalizedName, entries]) => {
+    Object.entries(data as Record<string, PatternFlyMcpComponentNamesDoc[]>).forEach(([rawName, entries]) => {
       const entry = entries[0];
 
       if (!entry) {
         return;
       }
+
+      const normalizedName = normalizeResourceName(rawName);
 
       componentNamesIndex.push(normalizedName);
       componentNamesIndexMap.set(normalizedName, entry.displayName);
@@ -581,6 +583,34 @@ const getDocPriority = (entry: {
 };
 
 /**
+ * Normalizes collection resource names into a uniform slug.
+ *
+ * Convert PascalCase, camelCase, snake_case, and spaced strings into kebab-cased slugs.
+ *
+ * Examples:
+ * - 'AboutModal' -> 'about-modal'
+ * - 'aboutmodal' -> 'aboutmodal' (or matched via component index map)
+ * - 'action_list' -> 'action-list'
+ * - 'Button' -> 'button'
+ *
+ * @param name - Raw catalog or collection identifier
+ * @returns Normalized slug for current resource grouping strategy.
+ */
+const normalizeResourceName = (name: string): string => {
+  if (!name) {
+    return '';
+  }
+
+  return name
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2') // Convert PascalCase / camelCase to kebab-case
+    .replace(/_/g, '-') // Convert snake_case to kebab-case
+    .replace(/\s+/g, '-') // Convert spaces to kebab-case
+    .replace(/-+/g, '-') // Collapse multiple hyphens
+    .toLowerCase();
+};
+
+/**
  * Get a multifaceted resources breakdown from PatternFly.
  *
  * @note `resources.set(name...` includes `undefined` PF version contextual metadata by design. These values
@@ -614,7 +644,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   catalog.forEach(([unifiedName, entries]) => {
-    const name = unifiedName.toLowerCase();
+    // const name = unifiedName.toLowerCase();
+    const name = normalizeResourceName(unifiedName);
     const groupId = generateHash(name);
 
     hashIndexMap.set(groupId.toLowerCase(), name);
