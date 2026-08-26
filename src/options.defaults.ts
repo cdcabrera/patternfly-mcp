@@ -181,9 +181,12 @@ interface ModeOptions {
  * @property api PatternFly API.
  * @property api.base URL starting base for crawling the PatternFly API.
  * @property api.versions URL Get the available PatternFly API versions. Versions are required to crawl.
- * @property api.componentPaths List of additional PatternFly API component paths to try.
- * @property api.crawlCancelMs Timeout in milliseconds for cancelling the PatternFly API crawl.
- * @property api.crawlIntervalMs Interval in milliseconds, during server run, for crawling the PatternFly API.
+ * @property api.componentPaths List of additional PatternFly API component paths to try and terminate with expected content.
+ * @property api.traversalPaths List of additional PatternFly API traversal paths to iteratively try.
+ * @property api.schedule Schedule for crawling the PatternFly API. See {@link McpCollection} config for details.
+ * @property api.schedule.continueOnError Continue crawling the PatternFly API on error.
+ * @property api.schedule.intervalMs Interval in milliseconds, during server run, for crawling the PatternFly API.
+ * @property api.schedule.repeat Number of times to repeat crawling the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
  * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
  * @property availableSchemasVersions List of available PatternFly schema versions to the MCP server.
@@ -201,6 +204,7 @@ interface PatternFlyOptions {
     base: string;
     versions: string;
     componentPaths: string[];
+    traversalPaths: string[];
     enabled: boolean;
     schedule: {
       continueOnError: boolean;
@@ -518,7 +522,9 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     versions: 'https://main.patternfly-org.pages.dev/api/versions',
     componentPaths: [
       'props',
-      'css',
+      'css'
+    ],
+    traversalPaths: [
       'examples'
     ],
     schedule: {
