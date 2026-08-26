@@ -147,6 +147,132 @@ const isXmlLike = (content: unknown): boolean => {
 };
 
 /**
+ * Is content Java-like?
+ *
+ * Matching:
+ * - Classes
+ * - Package declarations
+ * - Entry points
+ *
+ * @param content - Input value
+ * @returns Returns `true` if the content is Java-like
+ */
+const isJavaLike = (content: unknown): boolean => {
+  if (typeof content !== 'string') {
+    return false;
+  }
+  const trimmed = content.trim();
+
+  const indicators = [
+    /^\s*(public|private|protected)\s+(class|interface|enum|record)\s+\w+/m, // Class structure
+    /^\s*package\s+[a-z0-9_]+(\.[a-z0-9_]+)*\s*;/m, // Package declarations
+    /\b(public\s+static\s+void\s+main|System\.out\.print(ln)?)\b/ // Standard entry points
+  ];
+
+  const hasKeywords = () => /\b(system\.exit|yield|system\.out\.print)\b/i.test(trimmed);
+  const structuralSymbols = () => (trimmed.match(/[{};=>]/g) || []).length > 2;
+
+  return indicators.some(re => re.test(trimmed)) || (hasKeywords() && structuralSymbols());
+};
+
+/**
+ * Is content JS-like?
+ *
+ * Matching:
+ * - shebangs
+ * - ESM
+ * - CommonJS
+ * - TS
+ * - React
+ * - JSX
+ *
+ * @param content - Input value
+ * @returns Returns `true` if the content is JS-like
+ */
+const isJsLike = (content: unknown): boolean => {
+  if (typeof content !== 'string') {
+    return false;
+  }
+  const trimmed = content.trim();
+
+  const indicators = [
+    /#!\s*.*\b(node|deno|bun)\b/, // shebangs
+    /^\s*(import\s+([\w\s{},*]+|['"].+['"])\s+from\s+['"].+['"]|export\s+(default\s+)?(const|let|function|class|interface|type))/m, // ESM
+    /\b(module\.exports\s*=|exports\.\w+\s*=|=\s*require\(['"].+['"]\))/, // CommonJS
+    /^\s*(interface|type)\s+[A-Z]\w*\s*[{=]/m, // TS
+    /\b(useState|useEffect|useContext|useRef|useMemo|useCallback)\(/, // React
+    /return\s*\(\s*<[A-Za-z0-9_$.]+[^>]*>/ // React/JSX
+  ];
+
+  const hasKeywords = () => /\b(console\.log|process\.exit)\b/.test(trimmed);
+  const structuralSymbols = () => (trimmed.match(/[{};=>]/g) || []).length > 2;
+
+  return indicators.some(re => re.test(trimmed)) || (hasKeywords() && structuralSymbols());
+};
+
+/**
+ * Is content Python-like?
+ *
+ * Matching:
+ * - shebangs
+ * - Function/classes
+ * - Main block entry point
+ * - Native imports
+ *
+ * @param content - Input value
+ * @returns Returns `true` if the content is Python-like
+ */
+const isPythonLike = (content: unknown): boolean => {
+  if (typeof content !== 'string') {
+    return false;
+  }
+  const trimmed = content.trim();
+
+  const indicators = [
+    /#!\s*.*\b(python|pypy)\b/, // shebangs
+    /^\s*(def|class)\s+[a-zA-Z_]\w*\s*(\(.*?\))?\s*:/m, // Function/class definitions
+    /^\s*if\s+__name__\s*==\s*['"]__main__['"]\s*:/m, // Main block entry point
+    /^\s*(import\s+[a-zA-Z_]\w*|from\s+[a-zA-Z_]\w*\s+import)/m // Native imports
+  ];
+
+  const hasKeywords = () => /\b(sys\.exit|print)\b/.test(trimmed);
+  const structuralSymbols = () => (trimmed.match(/[{};=>]/g) || []).length > 2;
+
+  return indicators.some(re => re.test(trimmed)) || (hasKeywords() && structuralSymbols());
+};
+
+/**
+ * Is content Shell-like?
+ *
+ * Matching:
+ * - shebangs
+ * - Function/classes
+ * - Main block entry point
+ * - Native imports
+ *
+ * @param content - Input value
+ * @returns Returns `true` if the content is Shell-like
+ */
+const isShellLike = (content: unknown): boolean => {
+  if (typeof content !== 'string') {
+    return false;
+  }
+  const trimmed = content.trim();
+
+  const indicators = [
+    /#!\s*.*\b(bash|sh|zsh)\b/, // shebangs
+    /^\s*(unset\s+\w+|export\s+\w+=|local\s+\w+=)/m, // Env vars
+    /^\s*(if\s+\[\[|case\s+.*?\s+in|for\s+\w+\s+in\s+)/m, // Shell control blocks
+    /^\s*[a-zA-Z_]\w*\s*\(\s*\)\s*\{/m // Shell functions: name() {
+  ];
+
+  const hasKeywords = () => /\b(echo|printf)\b/.test(trimmed);
+  const structuralSymbols = () => (trimmed.match(/[{};=>]/g) || []).length > 2;
+
+  return indicators.some(re => re.test(trimmed)) || (hasKeywords() && structuralSymbols());
+};
+
+/**
  * Is content script-like?
  *
  * Script matching:
@@ -183,11 +309,14 @@ const isScriptLike = (content: unknown): boolean => {
   }
 
   // Shebangs (Catches Bash/Shell, Python, Node scripts instantly)
+  /*
   if (trimmed.startsWith('#!')) {
     return /#!\s*.*\b(bash|sh|zsh|python|pypy|node|deno|bun)\b/.test(trimmed);
   }
+   */
 
   // Bash/Shell
+  /*
   if (
     /^\s*(unset\s+\w+|export\s+\w+=|local\s+\w+=)/m.test(trimmed) || // Env vars
     /^\s*(if\s+\[\[|case\s+.*?\s+in|for\s+\w+\s+in\s+)/m.test(trimmed) || // Shell control blocks
@@ -195,8 +324,10 @@ const isScriptLike = (content: unknown): boolean => {
   ) {
     return true;
   }
+   */
 
   // Python
+  /*
   if (
     /^\s*(def|class)\s+[a-zA-Z_]\w*\s*(\(.*?\))?\s*:/m.test(trimmed) || // Function/class definitions
     /^\s*if\s+__name__\s*==\s*['"]__main__['"]\s*:/m.test(trimmed) || // Main block entry point
@@ -204,8 +335,10 @@ const isScriptLike = (content: unknown): boolean => {
   ) {
     return true;
   }
+  */
 
-  // Java
+  return isJavaLike(trimmed) || isJsLike(trimmed) || isPythonLike(trimmed) || isShellLike(trimmed);
+  /*
   if (
     /^\s*(public|private|protected)\s+(class|interface|enum|record)\s+\w+/m.test(trimmed) || // Class structure
     /^\s*package\s+[a-z0-9_]+(\.[a-z0-9_]+)*\s*;/m.test(trimmed) || // Package declarations
@@ -213,8 +346,10 @@ const isScriptLike = (content: unknown): boolean => {
   ) {
     return true;
   }
+   */
 
   // JS/TS/JSX/TSX
+  /*
   if (
     // ESM
     /^\s*(import\s+([\w\s{},*]+|['"].+['"])\s+from\s+['"].+['"]|export\s+(default\s+)?(const|let|function|class|interface|type))/m.test(trimmed) ||
@@ -228,12 +363,15 @@ const isScriptLike = (content: unknown): boolean => {
   ) {
     return true;
   }
+  */
 
   // Statements common across JS, TS, Java, and Python
+  /*
   const hasKeywords = /\b(console\.log|process\.exit|await|return|print)\b/.test(trimmed);
   const structuralSymbols = (trimmed.match(/[{};=>]/g) || []).length > 2;
 
   return hasKeywords && structuralSymbols;
+   */
 };
 
 /**
@@ -244,11 +382,15 @@ const isScriptLike = (content: unknown): boolean => {
  * - See {@link isJsonLike} and {@link isJson}
  * - See {@link isCssLike}
  * - See {@link isXmlLike}
+ * - See {@link isPythonLike}
+ * - See {@link isShellLike}
+ * - See {@link isJavaLike}
+ * - See {@link isJsLike}
  *
  * @param content - Input value.
  * @returns A type of content string, or empty if the content type can't be determined.
  */
-const contentType = (content: unknown): '' | 'markdown' | 'json' | 'html' | 'css' => {
+const contentType = (content: unknown): '' | 'sh' | 'python' | 'markdown' | 'java' | 'javascript' | 'json' | 'html' | 'css' => {
   const updatedLanguage = '';
 
   if (content === null || content === undefined || (typeof content === 'string' && content.trim().length <= 0)) {
@@ -265,6 +407,22 @@ const contentType = (content: unknown): '' | 'markdown' | 'json' | 'html' | 'css
 
   if (isXmlLike(content)) {
     return 'html';
+  }
+
+  if (isJsLike(content)) {
+    return 'javascript';
+  }
+
+  if (isShellLike(content)) {
+    return 'sh';
+  }
+
+  if (isPythonLike(content)) {
+    return 'python';
+  }
+
+  if (isJavaLike(content)) {
+    return 'java';
   }
 
   if (isCssLike(content)) {
@@ -354,11 +512,15 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
 export {
   contentType,
   formatContentForMarkdown,
+  isJavaLike,
+  isJsLike,
   isJson,
   isJsonLike,
   isCssLike,
   isMarkdown,
+  isPythonLike,
   isScriptLike,
+  isShellLike,
   isXmlLike,
   paramCompletion
 };

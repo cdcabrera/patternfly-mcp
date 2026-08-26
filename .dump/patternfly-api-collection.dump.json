@@ -391,7 +391,7 @@
           "version": "v6",
           "id": "api::v6::components::about-modal::react::examples::about-modal-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/about-modal/react/examples/AboutModalBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport { AboutModal, Button, Content } from '@patternfly/react-core';\nimport brandImg from '../../assets/PF-IconLogo.svg';\n\nexport const AboutModalBasic: React.FunctionComponent = () => {\n  const [isModalOpen, setIsModalOpen] = useState(false);\n\n  const toggleModal = (_event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => {\n    setIsModalOpen(!isModalOpen);\n  };\n\n  return (\n    <Fragment>\n      <Button variant=\"primary\" onClick={toggleModal}>\n        Show about modal\n      </Button>\n      <AboutModal\n        isOpen={isModalOpen}\n        onClose={(e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => toggleModal(e)}\n        trademark=\"Trademark and copyright information here\"\n        brandImageSrc={brandImg}\n        brandImageAlt=\"Patternfly Logo\"\n        backgroundImageSrc=\"/assets/images/pf-background.svg\"\n        productName=\"name\"\n      >\n        <Content>\n          <dl>\n            <dt>CFME version</dt>\n            <dd>5.5.3.4.20102789036450</dd>\n            <dt>Cloudforms Version</dt>\n            <dd>4.1</dd>\n            <dt>Server name</dt>\n            <dd>40DemoMaster</dd>\n            <dt>User name</dt>\n            <dd>Administrator</dd>\n            <dt>User role</dt>\n            <dd>EvmRole-super_administrator</dd>\n            <dt>Browser version</dt>\n            <dd>601.2</dd>\n            <dt>Browser OS</dt>\n            <dd>Mac</dd>\n          </dl>\n        </Content>\n      </AboutModal>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -409,7 +409,7 @@
           "version": "v6",
           "id": "api::v6::components::about-modal::react::examples::about-modal-without-product-name",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/about-modal/react/examples/AboutModalWithoutProductName",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport { AboutModal, Button, Content } from '@patternfly/react-core';\nimport brandImg from '../../assets/PF-IconLogo.svg';\n\nexport const AboutModalWithoutProductName: React.FunctionComponent = () => {\n  const [isModalOpen, setIsModalOpen] = useState(false);\n\n  const toggleModal = (_event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => {\n    setIsModalOpen(!isModalOpen);\n  };\n\n  return (\n    <Fragment>\n      <Button variant=\"primary\" onClick={toggleModal}>\n        Show about modal\n      </Button>\n      <AboutModal\n        isOpen={isModalOpen}\n        onClose={(e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => toggleModal(e)}\n        trademark=\"Trademark and copyright information here\"\n        brandImageSrc={brandImg}\n        brandImageAlt=\"Patternfly Logo\"\n        backgroundImageSrc=\"/assets/images/pf-background.svg\"\n        aria-label=\"No product name about modal\"\n      >\n        <Content>\n          <dl>\n            <dt>CFME version</dt>\n            <dd>5.5.3.4.20102789036450</dd>\n            <dt>Cloudforms version</dt>\n            <dd>4.1</dd>\n            <dt>Server name</dt>\n            <dd>40DemoMaster</dd>\n            <dt>User name</dt>\n            <dd>Administrator</dd>\n            <dt>User role</dt>\n            <dd>EvmRole-super_administrator</dd>\n            <dt>Browser version</dt>\n            <dd>601.2</dd>\n            <dt>Browser OS</dt>\n            <dd>Mac</dd>\n          </dl>\n        </Content>\n      </AboutModal>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -427,7 +427,7 @@
           "version": "v6",
           "id": "api::v6::components::about-modal::react::examples::about-modal-complex-user-positioned-content",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/about-modal/react/examples/AboutModalComplexUserPositionedContent",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport { AboutModal, Alert, Button, Content } from '@patternfly/react-core';\nimport brandImg from '../../assets/PF-IconLogo.svg';\nimport spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';\n\nexport const AboutModalComplexUserPositionedContent: React.FunctionComponent = () => {\n  const [isModalOpen, setIsModalOpen] = useState(false);\n\n  const toggleModal = (_event: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => {\n    setIsModalOpen(!isModalOpen);\n  };\n\n  return (\n    <Fragment>\n      <Button variant=\"primary\" onClick={toggleModal}>\n        Show about modal\n      </Button>\n      <AboutModal\n        isOpen={isModalOpen}\n        onClose={(e: React.MouseEvent<Element, MouseEvent> | KeyboardEvent | MouseEvent) => toggleModal(e)}\n        trademark=\"Trademark and copyright information here\"\n        brandImageSrc={brandImg}\n        brandImageAlt=\"Patternfly Logo\"\n        backgroundImageSrc=\"/assets/images/pf-background.svg\"\n        hasNoContentContainer={true}\n        productName=\"Product name\"\n      >\n        <Content id=\"test1\" className={spacing.pyXl}>\n          <h4>About</h4>\n          <p>Content here</p>\n        </Content>\n        <Alert variant=\"info\" title=\"Updates available\" />\n        <Content id=\"test2\" className={spacing.pyXl}>\n          <dl>\n            <dt>CFME version</dt>\n            <dd>5.5.3.4.20102789036450</dd>\n            <dt>Cloudforms version</dt>\n            <dd>4.1</dd>\n            <dt>Server name</dt>\n            <dd>40DemoMaster</dd>\n            <dt>User name</dt>\n            <dd>Administrator</dd>\n            <dt>User role</dt>\n            <dd>EvmRole-super_administrator</dd>\n            <dt>Browser version</dt>\n            <dd>601.2</dd>\n            <dt>Browser OS</dt>\n            <dd>Mac</dd>\n          </dl>\n        </Content>\n      </AboutModal>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -499,7 +499,7 @@
           "version": "v6",
           "id": "api::v6::components::accordion::react::examples::accordion-definition-list",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/accordion/react/examples/AccordionDefinitionList",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport { Accordion, AccordionItem, AccordionContent, AccordionToggle } from '@patternfly/react-core';\n\nexport const AccordionDefinitionList: React.FunctionComponent = () => {\n  const [expanded, setExpanded] = useState('def-list-toggle2');\n\n  const onToggle = (id: string) => {\n    if (id === expanded) {\n      setExpanded('');\n    } else {\n      setExpanded(id);\n    }\n  };\n\n  return (\n    <Accordion asDefinitionList>\n      <AccordionItem isExpanded={expanded === 'def-list-toggle1'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('def-list-toggle1');\n          }}\n          id=\"def-list-toggle1\"\n        >\n          Item one\n        </AccordionToggle>\n        <AccordionContent id=\"def-list-expand1\">\n          <p>\n            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et\n            dolore magna aliqua.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'def-list-toggle2'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('def-list-toggle2');\n          }}\n          id=\"def-list-toggle2\"\n        >\n          Item two\n        </AccordionToggle>\n        <AccordionContent id=\"def-list-expand2\">\n          <p>\n            Vivamus et tortor sed arcu congue vehicula eget et diam. Praesent nec dictum lorem. Aliquam id diam\n            ultrices, faucibus erat id, maximus nunc.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'def-list-toggle3'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('def-list-toggle3');\n          }}\n          id=\"def-list-toggle3\"\n        >\n          Item three\n        </AccordionToggle>\n        <AccordionContent id=\"def-list-expand3\">\n          <p>Morbi vitae urna quis nunc convallis hendrerit. Aliquam congue orci quis ultricies tempus.</p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'def-list-toggle4'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('def-list-toggle4');\n          }}\n          id=\"def-list-toggle4\"\n        >\n          Item four\n        </AccordionToggle>\n        <AccordionContent id=\"def-list-expand4\">\n          <p>\n            Donec vel posuere orci. Phasellus quis tortor a ex hendrerit efficitur. Aliquam lacinia ligula pharetra,\n            sagittis ex ut, pellentesque diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere\n            cubilia Curae; Vestibulum ultricies nulla nibh. Etiam vel dui fermentum ligula ullamcorper eleifend non quis\n            tortor. Morbi tempus ornare tempus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur\n            ridiculus mus. Mauris et velit neque. Donec ultricies condimentum mauris, pellentesque imperdiet libero\n            convallis convallis. Aliquam erat volutpat. Donec rutrum semper tempus. Proin dictum imperdiet nibh, quis\n            dapibus nulla. Integer sed tincidunt lectus, sit amet auctor eros.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'def-list-toggle5'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('def-list-toggle5');\n          }}\n          id=\"def-list-toggle5\"\n        >\n          Item five\n        </AccordionToggle>\n        <AccordionContent id=\"def-list-expand5\">\n          <p>Vivamus finibus dictum ex id ultrices. Mauris dictum neque a iaculis blandit.</p>\n        </AccordionContent>\n      </AccordionItem>\n    </Accordion>\n  );\n};\n"
         }
       ]
@@ -517,7 +517,7 @@
           "version": "v6",
           "id": "api::v6::components::accordion::react::examples::accordion-single-expand-behavior",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/accordion/react/examples/AccordionSingleExpandBehavior",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport { Accordion, AccordionItem, AccordionContent, AccordionToggle } from '@patternfly/react-core';\n\nexport const AccordionSingleExpandBehavior: React.FunctionComponent = () => {\n  const [expanded, setExpanded] = useState('ex-toggle2');\n\n  const onToggle = (id: string) => {\n    if (id === expanded) {\n      setExpanded('');\n    } else {\n      setExpanded(id);\n    }\n  };\n\n  return (\n    <Accordion asDefinitionList={false}>\n      <AccordionItem isExpanded={expanded === 'ex-toggle1'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('ex-toggle1');\n          }}\n          id=\"ex-toggle1\"\n        >\n          Item one\n        </AccordionToggle>\n        <AccordionContent id=\"ex-expand1\">\n          <p>\n            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et\n            dolore magna aliqua.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'ex-toggle2'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('ex-toggle2');\n          }}\n          id=\"ex-toggle2\"\n        >\n          Item two\n        </AccordionToggle>\n        <AccordionContent id=\"ex-expand2\">\n          <p>\n            Vivamus et tortor sed arcu congue vehicula eget et diam. Praesent nec dictum lorem. Aliquam id diam\n            ultrices, faucibus erat id, maximus nunc.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'ex-toggle3'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('ex-toggle3');\n          }}\n          id=\"ex-toggle3\"\n        >\n          Item three\n        </AccordionToggle>\n        <AccordionContent id=\"ex-expand3\">\n          <p>Morbi vitae urna quis nunc convallis hendrerit. Aliquam congue orci quis ultricies tempus.</p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'ex-toggle4'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('ex-toggle4');\n          }}\n          id=\"ex-toggle4\"\n        >\n          Item four\n        </AccordionToggle>\n        <AccordionContent id=\"ex-expand4\">\n          <p>\n            Donec vel posuere orci. Phasellus quis tortor a ex hendrerit efficitur. Aliquam lacinia ligula pharetra,\n            sagittis ex ut, pellentesque diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere\n            cubilia Curae; Vestibulum ultricies nulla nibh. Etiam vel dui fermentum ligula ullamcorper eleifend non quis\n            tortor. Morbi tempus ornare tempus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur\n            ridiculus mus. Mauris et velit neque. Donec ultricies condimentum mauris, pellentesque imperdiet libero\n            convallis convallis. Aliquam erat volutpat. Donec rutrum semper tempus. Proin dictum imperdiet nibh, quis\n            dapibus nulla. Integer sed tincidunt lectus, sit amet auctor eros.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'ex-toggle5'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('ex-toggle5');\n          }}\n          id=\"ex-toggle5\"\n        >\n          Item five\n        </AccordionToggle>\n        <AccordionContent id=\"ex-expand5\">\n          <p>Vivamus finibus dictum ex id ultrices. Mauris dictum neque a iaculis blandit.</p>\n        </AccordionContent>\n      </AccordionItem>\n    </Accordion>\n  );\n};\n"
         }
       ]
@@ -535,7 +535,7 @@
           "version": "v6",
           "id": "api::v6::components::accordion::react::examples::accordion-fixed-with-multiple-expand-behavior",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/accordion/react/examples/AccordionFixedWithMultipleExpandBehavior",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport { Accordion, AccordionItem, AccordionContent, AccordionToggle } from '@patternfly/react-core';\n\nexport const AccordionFixedWithMultipleExpandBehavior: React.FunctionComponent = () => {\n  const [expanded, setExpanded] = useState(['ex2-toggle4']);\n\n  const toggle = (id) => {\n    const index = expanded.indexOf(id);\n    const newExpanded: string[] =\n      index >= 0 ? [...expanded.slice(0, index), ...expanded.slice(index + 1, expanded.length)] : [...expanded, id];\n    setExpanded(newExpanded);\n  };\n\n  return (\n    <Accordion asDefinitionList={false}>\n      <AccordionItem isExpanded={expanded.includes('ex2-toggle1')}>\n        <AccordionToggle onClick={() => toggle('ex2-toggle1')} id=\"ex2-toggle1\">\n          Item one\n        </AccordionToggle>\n        <AccordionContent id=\"ex2-expand1\" isFixed>\n          <p>\n            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et\n            dolore magna aliqua.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n      <AccordionItem isExpanded={expanded.includes('ex2-toggle2')}>\n        <AccordionToggle onClick={() => toggle('ex2-toggle2')} id=\"ex2-toggle2\">\n          Item two\n        </AccordionToggle>\n        <AccordionContent id=\"ex2-expand2\" isFixed>\n          <p>\n            Vivamus et tortor sed arcu congue vehicula eget et diam. Praesent nec dictum lorem. Aliquam id diam\n            ultrices, faucibus erat id, maximus nunc.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n      <AccordionItem isExpanded={expanded.includes('ex2-toggle3')}>\n        <AccordionToggle onClick={() => toggle('ex2-toggle3')} id=\"ex2-toggle3\">\n          Item three\n        </AccordionToggle>\n        <AccordionContent id=\"ex2-expand3\" isFixed>\n          <p>Morbi vitae urna quis nunc convallis hendrerit. Aliquam congue orci quis ultricies tempus.</p>\n        </AccordionContent>\n      </AccordionItem>\n      <AccordionItem isExpanded={expanded.includes('ex2-toggle4')}>\n        <AccordionToggle onClick={() => toggle('ex2-toggle4')} id=\"ex2-toggle4\">\n          Item four\n        </AccordionToggle>\n        <AccordionContent aria-labelledby=\"ex2-toggle4\" id=\"ex2-expand4\" isFixed>\n          <p>\n            Donec vel posuere orci. Phasellus quis tortor a ex hendrerit efficitur. Aliquam lacinia ligula pharetra,\n            sagittis ex ut, pellentesque diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere\n            cubilia Curae; Vestibulum ultricies nulla nibh. Etiam vel dui fermentum ligula ullamcorper eleifend non quis\n            tortor. Morbi tempus ornare tempus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur\n            ridiculus mus. Mauris et velit neque. Donec ultricies condimentum mauris, pellentesque imperdiet libero\n            convallis convallis. Aliquam erat volutpat. Donec rutrum semper tempus. Proin dictum imperdiet nibh, quis\n            dapibus nulla. Integer sed tincidunt lectus, sit amet auctor eros.\n          </p>\n          <p>\n            Donec vel posuere orci. Phasellus quis tortor a ex hendrerit efficitur. Aliquam lacinia ligula pharetra,\n            sagittis ex ut, pellentesque diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere\n            cubilia Curae; Vestibulum ultricies nulla nibh. Etiam vel dui fermentum ligula ullamcorper eleifend non quis\n            tortor. Morbi tempus ornare tempus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur\n            ridiculus mus. Mauris et velit neque. Donec ultricies condimentum mauris, pellentesque imperdiet libero\n            convallis convallis. Aliquam erat volutpat. Donec rutrum semper tempus. Proin dictum imperdiet nibh, quis\n            dapibus nulla. Integer sed tincidunt lectus, sit amet auctor eros.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n      <AccordionItem isExpanded={expanded.includes('ex2-toggle5')}>\n        <AccordionToggle onClick={() => toggle('ex2-toggle5')} id=\"ex2-toggle5\">\n          Item five\n        </AccordionToggle>\n        <AccordionContent id=\"ex2-expand5\" isFixed>\n          <p>Vivamus finibus dictum ex id ultrices. Mauris dictum neque a iaculis blandit.</p>\n        </AccordionContent>\n      </AccordionItem>\n    </Accordion>\n  );\n};\n"
         }
       ]
@@ -553,7 +553,7 @@
           "version": "v6",
           "id": "api::v6::components::accordion::react::examples::accordion-bordered",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/accordion/react/examples/AccordionBordered",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport {\n  Accordion,\n  AccordionItem,\n  AccordionContent,\n  AccordionToggle,\n  AccordionExpandableContentBody,\n  Button,\n  Checkbox\n} from '@patternfly/react-core';\nimport RhMicronsCaretRightIcon from '@patternfly/react-icons/dist/esm/icons/rh-microns-caret-right-icon';\n\nexport const AccordionBordered: React.FunctionComponent = () => {\n  const [expanded, setExpanded] = useState('bordered-toggle4');\n  const [isDisplayLarge, setIsDisplayLarge] = useState(false);\n\n  const displaySize = isDisplayLarge ? 'lg' : 'default';\n  const onToggle = (id: string) => {\n    if (id === expanded) {\n      setExpanded('');\n    } else {\n      setExpanded(id);\n    }\n  };\n\n  return (\n    <>\n      <Accordion isBordered displaySize={displaySize}>\n        <AccordionItem isExpanded={expanded === 'bordered-toggle1'}>\n          <AccordionToggle\n            onClick={() => {\n              onToggle('bordered-toggle1');\n            }}\n            id=\"bordered-toggle1\"\n          >\n            Item one\n          </AccordionToggle>\n          <AccordionContent id=\"bordered-expand1\">\n            <p>\n              Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et\n              dolore magna aliqua.\n            </p>\n          </AccordionContent>\n        </AccordionItem>\n\n        <AccordionItem isExpanded={expanded === 'bordered-toggle2'}>\n          <AccordionToggle\n            onClick={() => {\n              onToggle('bordered-toggle2');\n            }}\n            id=\"bordered-toggle2\"\n          >\n            Item two\n          </AccordionToggle>\n          <AccordionContent id=\"bordered-expand2\">\n            <p>\n              Vivamus et tortor sed arcu congue vehicula eget et diam. Praesent nec dictum lorem. Aliquam id diam\n              ultrices, faucibus erat id, maximus nunc.\n            </p>\n          </AccordionContent>\n        </AccordionItem>\n\n        <AccordionItem isExpanded={expanded === 'bordered-toggle3'}>\n          <AccordionToggle\n            onClick={() => {\n              onToggle('bordered-toggle3');\n            }}\n            id=\"bordered-toggle3\"\n          >\n            Item three\n          </AccordionToggle>\n          <AccordionContent id=\"bordered-expand3\">\n            <p>Morbi vitae urna quis nunc convallis hendrerit. Aliquam congue orci quis ultricies tempus.</p>\n          </AccordionContent>\n        </AccordionItem>\n\n        <AccordionItem isExpanded={expanded === 'bordered-toggle4'}>\n          <AccordionToggle\n            onClick={() => {\n              onToggle('bordered-toggle4');\n            }}\n            id=\"bordered-toggle4\"\n          >\n            Item four\n          </AccordionToggle>\n          <AccordionContent id=\"bordered-expand4\" isCustomContent>\n            <AccordionExpandableContentBody>\n              Donec vel posuere orci. Phasellus quis tortor a ex hendrerit efficitur. Aliquam lacinia ligula pharetra,\n              sagittis ex ut, pellentesque diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices\n              posuere cubilia Curae; Vestibulum ultricies nulla nibh. Etiam vel dui fermentum ligula ullamcorper\n              eleifend non quis tortor. Morbi tempus ornare tempus. Orci varius natoque penatibus et magnis dis\n              parturient montes, nascetur ridiculus mus. Mauris et velit neque. Donec ultricies condimentum mauris,\n              pellentesque imperdiet libero convallis convallis. Aliquam erat volutpat. Donec rutrum semper tempus.\n              Proin dictum imperdiet nibh, quis dapibus nulla. Integer sed tincidunt lectus, sit amet auctor eros.\n            </AccordionExpandableContentBody>\n            <AccordionExpandableContentBody>\n              <Button variant=\"link\" size=\"lg\" isInline>\n                Call to action <RhMicronsCaretRightIcon />\n              </Button>\n            </AccordionExpandableContentBody>\n          </AccordionContent>\n        </AccordionItem>\n        <AccordionItem isExpanded={expanded === 'bordered-toggle5'}>\n          <AccordionToggle\n            onClick={() => {\n              onToggle('bordered-toggle5');\n            }}\n            id=\"bordered-toggle5\"\n          >\n            Item five\n          </AccordionToggle>\n          <AccordionContent id=\"bordered-expand5\">\n            <p>Vivamus finibus dictum ex id ultrices. Mauris dictum neque a iaculis blandit.</p>\n          </AccordionContent>\n        </AccordionItem>\n      </Accordion>\n      <div style={{ marginTop: '30px' }}>\n        <Checkbox\n          label=\"Display size large\"\n          isChecked={isDisplayLarge}\n          onChange={(_event, checked) => setIsDisplayLarge(checked)}\n          aria-label=\"show display large variation checkbox\"\n          id=\"toggle-display-lg\"\n          name=\"toggle-display-lg\"\n        />\n      </div>\n    </>\n  );\n};\n"
         }
       ]
@@ -571,7 +571,7 @@
           "version": "v6",
           "id": "api::v6::components::accordion::react::examples::accordion-toggle-icon-at-start",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/accordion/react/examples/AccordionToggleIconAtStart",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport { Accordion, AccordionItem, AccordionContent, AccordionToggle } from '@patternfly/react-core';\n\nexport const AccordionToggleIconAtStart: React.FunctionComponent = () => {\n  const [expanded, setExpanded] = useState('start-toggle-toggle2');\n\n  const onToggle = (id: string) => {\n    if (id === expanded) {\n      setExpanded('');\n    } else {\n      setExpanded(id);\n    }\n  };\n\n  return (\n    <Accordion togglePosition=\"start\">\n      <AccordionItem isExpanded={expanded === 'start-toggle-toggle1'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('start-toggle-toggle1');\n          }}\n          id=\"start-toggle-toggle1\"\n        >\n          Item one\n        </AccordionToggle>\n        <AccordionContent id=\"start-toggle-expand1\">\n          <p>\n            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et\n            dolore magna aliqua.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'start-toggle-toggle2'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('start-toggle-toggle2');\n          }}\n          id=\"start-toggle-toggle2\"\n        >\n          Item two\n        </AccordionToggle>\n        <AccordionContent id=\"start-toggle-expand2\">\n          <p>\n            Vivamus et tortor sed arcu congue vehicula eget et diam. Praesent nec dictum lorem. Aliquam id diam\n            ultrices, faucibus erat id, maximus nunc.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'start-toggle-toggle3'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('start-toggle-toggle3');\n          }}\n          id=\"start-toggle-toggle3\"\n        >\n          Item three\n        </AccordionToggle>\n        <AccordionContent id=\"start-toggle-expand3\">\n          <p>Morbi vitae urna quis nunc convallis hendrerit. Aliquam congue orci quis ultricies tempus.</p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'start-toggle-toggle4'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('start-toggle-toggle4');\n          }}\n          id=\"start-toggle-toggle4\"\n        >\n          Item four\n        </AccordionToggle>\n        <AccordionContent id=\"start-toggle-expand4\">\n          <p>\n            Donec vel posuere orci. Phasellus quis tortor a ex hendrerit efficitur. Aliquam lacinia ligula pharetra,\n            sagittis ex ut, pellentesque diam. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere\n            cubilia Curae; Vestibulum ultricies nulla nibh. Etiam vel dui fermentum ligula ullamcorper eleifend non quis\n            tortor. Morbi tempus ornare tempus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur\n            ridiculus mus. Mauris et velit neque. Donec ultricies condimentum mauris, pellentesque imperdiet libero\n            convallis convallis. Aliquam erat volutpat. Donec rutrum semper tempus. Proin dictum imperdiet nibh, quis\n            dapibus nulla. Integer sed tincidunt lectus, sit amet auctor eros.\n          </p>\n        </AccordionContent>\n      </AccordionItem>\n\n      <AccordionItem isExpanded={expanded === 'start-toggle-toggle5'}>\n        <AccordionToggle\n          onClick={() => {\n            onToggle('start-toggle-toggle5');\n          }}\n          id=\"start-toggle-toggle5\"\n        >\n          Item five\n        </AccordionToggle>\n        <AccordionContent id=\"start-toggle-expand5\">\n          <p>Vivamus finibus dictum ex id ultrices. Mauris dictum neque a iaculis blandit.</p>\n        </AccordionContent>\n      </AccordionItem>\n    </Accordion>\n  );\n};\n"
         }
       ]
@@ -643,7 +643,7 @@
           "version": "v6",
           "id": "api::v6::components::action-list::react::examples::action-list-single-group",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListSingleGroup",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport {\n  ActionList,\n  ActionListGroup,\n  ActionListItem,\n  Button,\n  Dropdown,\n  DropdownList,\n  DropdownItem,\n  MenuToggle,\n  MenuToggleElement,\n  Divider\n} from '@patternfly/react-core';\nimport RhUiEllipsisVerticalFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-ellipsis-vertical-fill-icon';\n\nexport const ActionListSingleGroup: React.FunctionComponent = () => {\n  const [isOpen, setIsOpen] = useState(false);\n\n  const onToggle = () => {\n    setIsOpen(!isOpen);\n  };\n\n  const onSelect = (event: React.MouseEvent<Element, MouseEvent> | undefined) => {\n    event?.stopPropagation();\n    setIsOpen(!isOpen);\n  };\n\n  const dropdownItems = (\n    <>\n      <DropdownItem to=\"#\" key=\"link\">\n        Link\n      </DropdownItem>\n      <DropdownItem key=\"action\">Action</DropdownItem>\n      <DropdownItem to=\"#\" key=\"disabled link\" isDisabled>\n        Disabled Link\n      </DropdownItem>\n      <DropdownItem key=\"disabled action\" isDisabled>\n        Disabled Action\n      </DropdownItem>\n      <Divider component=\"li\" key=\"separator\" />\n      <DropdownItem to=\"#\" key=\"separated link\">\n        Separated Link\n      </DropdownItem>\n      <DropdownItem key=\"separated action\">Separated Action</DropdownItem>\n    </>\n  );\n  return (\n    <Fragment>\n      <ActionList>\n        <ActionListGroup>\n          <ActionListItem>\n            <Button variant=\"primary\" id=\"single-group-next-button\">\n              Next\n            </Button>\n          </ActionListItem>\n          <ActionListItem>\n            <Button variant=\"secondary\" id=\"single-group-back-button\">\n              Back\n            </Button>\n          </ActionListItem>\n        </ActionListGroup>\n      </ActionList>\n      <br />\n      With kebab\n      <ActionList>\n        <ActionListGroup>\n          <ActionListItem>\n            <Button variant=\"primary\" id=\"single-group-next-button2\">\n              Next\n            </Button>\n          </ActionListItem>\n          <ActionListItem>\n            <Button variant=\"secondary\" id=\"single-group-back-button2\">\n              Back\n            </Button>\n          </ActionListItem>\n          <ActionListItem>\n            <Dropdown\n              onSelect={onSelect}\n              toggle={(toggleRef: React.Ref<MenuToggleElement>) => (\n                <MenuToggle\n                  ref={toggleRef}\n                  onClick={onToggle}\n                  variant=\"plain\"\n                  isExpanded={isOpen}\n                  aria-label=\"Action list single group kebab\"\n                  icon={<RhUiEllipsisVerticalFillIcon />}\n                />\n              )}\n              isOpen={isOpen}\n              onOpenChange={(isOpen: boolean) => setIsOpen(isOpen)}\n            >\n              <DropdownList>{dropdownItems}</DropdownList>\n            </Dropdown>\n          </ActionListItem>\n        </ActionListGroup>\n      </ActionList>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -661,7 +661,7 @@
           "version": "v6",
           "id": "api::v6::components::action-list::react::examples::action-list-with-icons",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListWithIcons",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { ActionList, ActionListGroup, ActionListItem, Button } from '@patternfly/react-core';\nimport RhMicronsCloseIcon from '@patternfly/react-icons/dist/esm/icons/rh-microns-close-icon';\nimport CheckIcon from '@patternfly/react-icons/dist/esm/icons/check-icon';\n\nexport const ActionListWithIcons: React.FunctionComponent = () => (\n  <>\n    <h4>With list icons wrapper</h4>\n    <ActionList isIconList>\n      <ActionListItem>\n        <Button\n          variant=\"plain\"\n          id=\"with-icons-times-button\"\n          aria-label=\"times icon button\"\n          icon={<RhMicronsCloseIcon />}\n        />\n      </ActionListItem>\n      <ActionListItem>\n        <Button variant=\"plain\" id=\"with-icons-check-button\" aria-label=\"check icon button\" icon={<CheckIcon />} />\n      </ActionListItem>\n    </ActionList>\n    <br />\n    <h4>With group icons wrapper</h4>\n    <ActionList>\n      <ActionListGroup isIconGroup>\n        <ActionListItem>\n          <Button\n            variant=\"plain\"\n            id=\"with-icons-list-times-button\"\n            aria-label=\"times icon button\"\n            icon={<RhMicronsCloseIcon />}\n          />\n        </ActionListItem>\n        <ActionListItem>\n          <Button\n            variant=\"plain\"\n            id=\"with-icons-list-check-button\"\n            aria-label=\"check icon button\"\n            icon={<CheckIcon />}\n          />\n        </ActionListItem>\n      </ActionListGroup>\n      <ActionListGroup isIconGroup>\n        <ActionListItem>\n          <Button\n            variant=\"plain\"\n            id=\"with-icons-group-times-button\"\n            aria-label=\"times icon button\"\n            icon={<RhMicronsCloseIcon />}\n          />\n        </ActionListItem>\n        <ActionListItem>\n          <Button\n            variant=\"plain\"\n            id=\"with-icons-group-check-button\"\n            aria-label=\"check icon button\"\n            icon={<CheckIcon />}\n          />\n        </ActionListItem>\n      </ActionListGroup>\n    </ActionList>\n  </>\n);\n"
         }
       ]
@@ -679,7 +679,7 @@
           "version": "v6",
           "id": "api::v6::components::action-list::react::examples::action-list-multiple-groups",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListMultipleGroups",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { ActionList, ActionListGroup, ActionListItem, Button } from '@patternfly/react-core';\n\nexport const ActionListMultipleGroups: React.FunctionComponent = () => (\n  <ActionList>\n    <ActionListGroup>\n      <ActionListItem>\n        <Button variant=\"primary\" id=\"multi-group-next-button\">\n          Next\n        </Button>\n      </ActionListItem>\n      <ActionListItem>\n        <Button variant=\"secondary\" id=\"multi-group-back-button\">\n          Back\n        </Button>\n      </ActionListItem>\n    </ActionListGroup>\n    <ActionListGroup>\n      <ActionListItem>\n        <Button variant=\"primary\" id=\"multi-group-submit-button\">\n          Submit\n        </Button>\n      </ActionListItem>\n      <ActionListItem>\n        <Button variant=\"link\" id=\"multi-group-cancel-button\">\n          Cancel\n        </Button>\n      </ActionListItem>\n    </ActionListGroup>\n  </ActionList>\n);\n"
         }
       ]
@@ -697,7 +697,7 @@
           "version": "v6",
           "id": "api::v6::components::action-list::react::examples::action-list-with-cancel-button",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListWithCancelButton",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment } from 'react';\nimport { ActionList, ActionListGroup, ActionListItem, Button } from '@patternfly/react-core';\n\nexport const ActionListWithCancelButton: React.FunctionComponent = () => (\n  <Fragment>\n    In modals, forms, data lists\n    <ActionList>\n      <ActionListGroup>\n        <ActionListItem>\n          <Button variant=\"primary\" id=\"with-cancel-save-button\">\n            Save\n          </Button>\n        </ActionListItem>\n        <ActionListItem>\n          <Button variant=\"link\" id=\"with-cancel-cancel-button\">\n            Cancel\n          </Button>\n        </ActionListItem>\n      </ActionListGroup>\n    </ActionList>\n    <br />\n    In wizards\n    <ActionList>\n      <ActionListGroup>\n        <ActionListItem>\n          <Button variant=\"primary\" id=\"with-cancel-next-button\">\n            Next\n          </Button>\n        </ActionListItem>\n        <ActionListItem>\n          <Button variant=\"secondary\" id=\"with-cancel-back-button\">\n            Back\n          </Button>\n        </ActionListItem>\n      </ActionListGroup>\n      <ActionListGroup>\n        <ActionListItem>\n          <Button variant=\"link\" id=\"with-cancel-cancel-button2\">\n            Cancel\n          </Button>\n        </ActionListItem>\n      </ActionListGroup>\n    </ActionList>\n  </Fragment>\n);\n"
         }
       ]
@@ -769,7 +769,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-dynamic-live-region",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertDynamicLiveRegion",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport { Alert, AlertGroup, AlertVariant, Flex, FlexItem } from '@patternfly/react-core';\nimport buttonStyles from '@patternfly/react-styles/css/components/Button/button';\n\ninterface AlertInfo {\n  title: string;\n  variant: AlertVariant;\n  key: number;\n}\n\nexport const DynamicLiveRegionAlert: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<AlertInfo[]>([]);\n  const getUniqueId: () => number = () => new Date().getTime();\n  const btnClasses = [buttonStyles.button, buttonStyles.modifiers.secondary].join(' ');\n\n  const addAlert = (alertInfo: AlertInfo) => {\n    setAlerts((prevAlertInfo) => [alertInfo, ...prevAlertInfo]);\n  };\n\n  const addSuccessAlert = () => {\n    addAlert({\n      title: 'Single success alert',\n      variant: AlertVariant.success,\n      key: getUniqueId()\n    });\n  };\n  const addInfoAlert = () => {\n    addAlert({\n      title: 'Single info alert',\n      variant: AlertVariant.info,\n      key: getUniqueId()\n    });\n  };\n  const addDangerAlert = () => {\n    addAlert({\n      title: 'Single danger alert',\n      variant: AlertVariant.danger,\n      key: getUniqueId()\n    });\n  };\n\n  return (\n    <Fragment>\n      <Flex gap={{ default: 'gapXs' }} style={{ marginBottom: '16px' }}>\n        <FlexItem>\n          <button onClick={addSuccessAlert} type=\"button\" className={btnClasses}>\n            Add single success alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addInfoAlert} type=\"button\" className={btnClasses}>\n            Add single info alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addDangerAlert} type=\"button\" className={btnClasses}>\n            Add single danger alert\n          </button>\n        </FlexItem>\n      </Flex>\n      <AlertGroup hasAnimations isLiveRegion aria-live=\"polite\" aria-relevant=\"additions text\" aria-atomic=\"false\">\n        {alerts.map(({ title, variant, key }) => (\n          <Alert variant={variant} title={title} key={key} />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -787,7 +787,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-async-live-region",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertAsyncLiveRegion",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useEffect, useState } from 'react';\nimport { Alert, AlertGroup, AlertVariant, ToggleGroup, ToggleGroupItem } from '@patternfly/react-core';\n\ninterface AlertInfo {\n  title: string;\n  variant: AlertVariant;\n  key: number;\n}\n\nexport const AsyncLiveRegionAlert: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<AlertInfo[]>([]);\n  const [isActive, setIsActive] = useState(false);\n  const getUniqueId: () => number = () => new Date().getTime();\n\n  const addAlert = (alertInfo: AlertInfo) => {\n    setAlerts((prevAlertInfo) => [alertInfo, ...prevAlertInfo]);\n  };\n\n  useEffect(() => {\n    let timer = null;\n    if (isActive) {\n      timer = setInterval(() => {\n        addAlert({\n          title: `Async alert number ${alerts.length + 1}`,\n          variant: AlertVariant.info,\n          key: getUniqueId()\n        });\n      }, 4500);\n    } else {\n      clearInterval(timer);\n    }\n\n    return () => {\n      clearInterval(timer);\n    };\n  }, [isActive, alerts]);\n\n  return (\n    <Fragment>\n      <ToggleGroup aria-label=\"Toggle asynchronous alerts\">\n        <ToggleGroupItem\n          text=\"Async alerts on\"\n          buttonId=\"async-alerts-on\"\n          isSelected={isActive}\n          onChange={() => setIsActive(!isActive)}\n        />\n      </ToggleGroup>\n      <AlertGroup hasAnimations isLiveRegion>\n        {alerts.map(({ title, variant, key }) => (\n          <Alert variant={variant} title={title} key={key} />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -805,7 +805,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-group-static",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertGroupStatic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment } from 'react';\nimport { Alert, AlertGroup } from '@patternfly/react-core';\n\nexport const AlertGroupStatic: React.FunctionComponent = () => (\n  <Fragment>\n    <AlertGroup>\n      <Alert title=\"Success alert\" variant=\"success\" isInline />\n      <Alert title=\"Info alert\" variant=\"info\" isInline />\n    </AlertGroup>\n  </Fragment>\n);\n"
         }
       ]
@@ -823,7 +823,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-group-toast",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertGroupToast",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport {\n  Alert,\n  AlertProps,\n  AlertGroup,\n  AlertActionCloseButton,\n  AlertVariant,\n  Flex,\n  FlexItem\n} from '@patternfly/react-core';\nimport buttonStyles from '@patternfly/react-styles/css/components/Button/button';\n\nexport const AlertGroupToast: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<Partial<AlertProps>[]>([]);\n\n  const addAlert = (title: string, variant: AlertProps['variant'], key: React.Key) => {\n    setAlerts((prevAlerts) => [{ title, variant, key }, ...prevAlerts]);\n  };\n\n  const removeAlert = (key: React.Key) => {\n    setAlerts((prevAlerts) => [...prevAlerts.filter((alert) => alert.key !== key)]);\n  };\n\n  const btnClasses = [buttonStyles.button, buttonStyles.modifiers.secondary].join(' ');\n\n  const getUniqueId = () => new Date().getTime();\n\n  const addSuccessAlert = () => {\n    addAlert('Toast success alert', 'success', getUniqueId());\n  };\n\n  const addDangerAlert = () => {\n    addAlert('Toast danger alert', 'danger', getUniqueId());\n  };\n\n  const addInfoAlert = () => {\n    addAlert('Toast info alert', 'info', getUniqueId());\n  };\n\n  return (\n    <Fragment>\n      <Flex gap={{ default: 'gapXs' }}>\n        <FlexItem>\n          <button onClick={addSuccessAlert} type=\"button\" className={btnClasses}>\n            Add toast success alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addDangerAlert} type=\"button\" className={btnClasses}>\n            Add toast danger alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addInfoAlert} type=\"button\" className={btnClasses}>\n            Add toast info alert\n          </button>\n        </FlexItem>\n      </Flex>\n      <AlertGroup hasAnimations isToast isLiveRegion>\n        {alerts.map(({ key, variant, title }) => (\n          <Alert\n            variant={AlertVariant[variant]}\n            title={title}\n            actionClose={\n              <AlertActionCloseButton\n                title={title as string}\n                variantLabel={`${variant} alert`}\n                onClose={() => removeAlert(key)}\n              />\n            }\n            key={key}\n          />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -841,7 +841,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-group-toast-overflow-capture",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertGroupToastOverflowCapture",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport {\n  Alert,\n  AlertProps,\n  AlertGroup,\n  AlertActionCloseButton,\n  AlertVariant,\n  Flex,\n  FlexItem\n} from '@patternfly/react-core';\nimport buttonStyles from '@patternfly/react-styles/css/components/Button/button';\n\nexport const AlertGroupToastOverflowCapture: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<Partial<AlertProps>[]>([]);\n  const [overflowMessage, setOverflowMessage] = useState<string>('');\n\n  const maxDisplayed = 4;\n\n  const getOverflowMessage = (alertsNumber: number) => {\n    const overflow = alertsNumber - maxDisplayed;\n    if (overflow > 0) {\n      return `View ${overflow} more alerts`;\n    }\n    return '';\n  };\n\n  const addAlert = (title: string, variant: AlertProps['variant'], key: React.Key) => {\n    setAlerts((prevAlerts) => [{ title, variant, key }, ...prevAlerts]);\n    setOverflowMessage(getOverflowMessage(alerts.length + 1));\n  };\n\n  const removeAlert = (key: React.Key) => {\n    const newAlerts = alerts.filter((alert) => alert.key !== key);\n    setAlerts(newAlerts);\n    setOverflowMessage(getOverflowMessage(newAlerts.length));\n  };\n\n  const btnClasses = [buttonStyles.button, buttonStyles.modifiers.secondary].join(' ');\n\n  const getUniqueId = () => new Date().getTime();\n\n  const addSuccessAlert = () => {\n    addAlert('Toast success alert', 'success', getUniqueId());\n  };\n\n  const addDangerAlert = () => {\n    addAlert('Toast danger alert', 'danger', getUniqueId());\n  };\n\n  const addInfoAlert = () => {\n    addAlert('Toast info alert', 'info', getUniqueId());\n  };\n\n  const onOverflowClick = () => {\n    // eslint-disable-next-line no-console\n    console.log('Overflow message clicked');\n  };\n\n  return (\n    <Fragment>\n      <Flex gap={{ default: 'gapXs' }} style={{ marginBottom: '16px' }}>\n        <FlexItem>\n          <button onClick={addSuccessAlert} type=\"button\" className={btnClasses}>\n            Add toast success alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addDangerAlert} type=\"button\" className={btnClasses}>\n            Add toast danger alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addInfoAlert} type=\"button\" className={btnClasses}>\n            Add toast info alert\n          </button>\n        </FlexItem>\n      </Flex>\n      <AlertGroup\n        hasAnimations\n        isToast\n        isLiveRegion\n        onOverflowClick={onOverflowClick}\n        overflowMessage={overflowMessage}\n      >\n        {alerts.slice(0, maxDisplayed).map(({ key, variant, title }) => (\n          <Alert\n            variant={AlertVariant[variant]}\n            title={title}\n            actionClose={\n              <AlertActionCloseButton\n                title={title as string}\n                variantLabel={`${variant} alert`}\n                onClose={() => removeAlert(key)}\n              />\n            }\n            key={key}\n          />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -859,7 +859,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-group-async",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertGroupAsync",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport {\n  Alert,\n  AlertProps,\n  AlertGroup,\n  AlertActionCloseButton,\n  AlertVariant,\n  InputGroup,\n  InputGroupItem,\n  useInterval\n} from '@patternfly/react-core';\nimport buttonStyles from '@patternfly/react-styles/css/components/Button/button';\n\nexport const AlertGroupAsync: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<Partial<AlertProps>[]>([]);\n  const [isRunning, setIsRunning] = useState(false);\n\n  const btnClasses = [buttonStyles.button, buttonStyles.modifiers.secondary].join(' ');\n\n  const getUniqueId = () => new Date().getTime();\n\n  const addAlert = () => {\n    setAlerts((prevAlerts) => [\n      {\n        title: `Async notification ${prevAlerts.length + 1} was added to the queue.`,\n        variant: 'danger',\n        key: getUniqueId()\n      },\n      ...prevAlerts\n    ]);\n  };\n\n  const removeAlert = (key: React.Key) => {\n    setAlerts((prevAlerts) => [...prevAlerts.filter((alert) => alert.key !== key)]);\n  };\n\n  const startAsyncAlerts = () => {\n    setIsRunning(true);\n  };\n\n  const stopAsyncAlerts = () => {\n    setIsRunning(false);\n  };\n\n  useInterval(addAlert, isRunning ? 4500 : null);\n\n  return (\n    <Fragment>\n      <InputGroup style={{ marginBottom: '16px' }}>\n        <InputGroupItem>\n          <button onClick={startAsyncAlerts} type=\"button\" className={btnClasses}>\n            Start async alerts\n          </button>\n        </InputGroupItem>\n        <InputGroupItem>\n          <button onClick={stopAsyncAlerts} type=\"button\" className={btnClasses}>\n            Stop async alerts\n          </button>\n        </InputGroupItem>\n      </InputGroup>\n      <AlertGroup hasAnimations isToast isLiveRegion aria-live=\"assertive\">\n        {alerts.map(({ title, variant, key }) => (\n          <Alert\n            variant={AlertVariant[variant]}\n            title={title}\n            key={key}\n            actionClose={\n              <AlertActionCloseButton\n                title={title as string}\n                variantLabel={`${variant} alert`}\n                onClose={() => removeAlert(key)}\n              />\n            }\n          />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -877,7 +877,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-group-singular-dynamic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertGroupSingularDynamic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport {\n  Alert,\n  AlertProps,\n  AlertGroup,\n  AlertActionCloseButton,\n  AlertVariant,\n  Flex,\n  FlexItem\n} from '@patternfly/react-core';\nimport buttonStyles from '@patternfly/react-styles/css/components/Button/button';\n\nexport const AlertGroupSingularDynamic: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<Partial<AlertProps>[]>([]);\n\n  const addAlert = (title: string, variant: AlertProps['variant'], key: React.Key) => {\n    setAlerts((prevAlerts) => [{ title, variant, key }, ...prevAlerts]);\n  };\n\n  const removeAlert = (key: React.Key) => {\n    setAlerts((prevAlerts) => [...prevAlerts.filter((alert) => alert.key !== key)]);\n  };\n\n  const btnClasses = [buttonStyles.button, buttonStyles.modifiers.secondary].join(' ');\n\n  const getUniqueId = () => new Date().getTime();\n\n  const addSuccessAlert = () => {\n    addAlert('Success alert', 'success', getUniqueId());\n  };\n\n  const addDangerAlert = () => {\n    addAlert('Danger alert', 'danger', getUniqueId());\n  };\n\n  const addInfoAlert = () => {\n    addAlert('Info alert', 'info', getUniqueId());\n  };\n\n  return (\n    <Fragment>\n      <Flex gap={{ default: 'gapXs' }} style={{ marginBottom: '16px' }}>\n        <FlexItem>\n          <button onClick={addSuccessAlert} type=\"button\" className={btnClasses}>\n            Add single success alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addDangerAlert} type=\"button\" className={btnClasses}>\n            Add single danger alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addInfoAlert} type=\"button\" className={btnClasses}>\n            Add single info alert\n          </button>\n        </FlexItem>\n      </Flex>\n      <AlertGroup hasAnimations isLiveRegion>\n        {alerts.map(({ title, variant, key }) => (\n          <Alert\n            isInline\n            variant={AlertVariant[variant]}\n            title={title}\n            key={key}\n            actionClose={\n              <AlertActionCloseButton\n                title={title as string}\n                variantLabel={`${variant} alert`}\n                onClose={() => removeAlert(key)}\n              />\n            }\n          />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -895,7 +895,7 @@
           "version": "v6",
           "id": "api::v6::components::alert::react::examples::alert-group-singular-dynamic-overflow",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/alert/react/examples/AlertGroupSingularDynamicOverflow",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport {\n  Alert,\n  AlertProps,\n  AlertGroup,\n  AlertActionCloseButton,\n  AlertVariant,\n  Flex,\n  FlexItem\n} from '@patternfly/react-core';\nimport buttonStyles from '@patternfly/react-styles/css/components/Button/button';\n\nexport const AlertGroupSingularDynamicOverflow: React.FunctionComponent = () => {\n  const [alerts, setAlerts] = useState<Partial<AlertProps>[]>([]);\n  const [overflowMessage, setOverflowMessage] = useState<string>('');\n\n  const maxDisplayed = 4;\n\n  const getOverflowMessage = (alertsNumber: number) => {\n    const overflow = alertsNumber - maxDisplayed;\n    if (overflow > 0) {\n      return `View ${overflow} more alerts`;\n    }\n    return '';\n  };\n\n  const addAlert = (title: string, variant: AlertProps['variant'], key: React.Key) => {\n    setAlerts((prevAlerts) => [{ title, variant, key }, ...prevAlerts]);\n    setOverflowMessage(getOverflowMessage(alerts.length + 1));\n  };\n\n  const removeAlert = (key: React.Key) => {\n    const newAlerts = alerts.filter((alert) => alert.key !== key);\n    setAlerts(newAlerts);\n    setOverflowMessage(getOverflowMessage(newAlerts.length));\n  };\n\n  const btnClasses = [buttonStyles.button, buttonStyles.modifiers.secondary].join(' ');\n\n  const getUniqueId = () => new Date().getTime();\n\n  const addSuccessAlert = () => {\n    addAlert('Success alert', 'success', getUniqueId());\n  };\n\n  const addDangerAlert = () => {\n    addAlert('Danger alert', 'danger', getUniqueId());\n  };\n\n  const addInfoAlert = () => {\n    addAlert('Info alert', 'info', getUniqueId());\n  };\n\n  const onOverflowClick = () => {\n    // eslint-disable-next-line no-console\n    console.log('Overflow message clicked');\n  };\n\n  return (\n    <Fragment>\n      <Flex gap={{ default: 'gapXs' }} style={{ marginBottom: '16px' }}>\n        <FlexItem>\n          <button onClick={addSuccessAlert} type=\"button\" className={btnClasses}>\n            Add single success alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addDangerAlert} type=\"button\" className={btnClasses}>\n            Add single danger alert\n          </button>\n        </FlexItem>\n        <FlexItem>\n          <button onClick={addInfoAlert} type=\"button\" className={btnClasses}>\n            Add single info alert\n          </button>\n        </FlexItem>\n      </Flex>\n      <AlertGroup hasAnimations isLiveRegion onOverflowClick={onOverflowClick} overflowMessage={overflowMessage}>\n        {alerts.slice(0, maxDisplayed).map(({ key, variant, title }) => (\n          <Alert\n            isInline\n            variant={AlertVariant[variant]}\n            title={title}\n            actionClose={\n              <AlertActionCloseButton\n                title={title as string}\n                variantLabel={`${variant} alert`}\n                onClose={() => removeAlert(key)}\n              />\n            }\n            key={key}\n          />\n        ))}\n      </AlertGroup>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -967,7 +967,7 @@
           "version": "v6",
           "id": "api::v6::components::avatar::react::examples::avatar-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/avatar/react/examples/AvatarBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Avatar } from '@patternfly/react-core';\nimport avatarImg from '../../assets/img_avatar-light.svg';\n\nconst rhdsLogo = (\n  <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"48\" height=\"48\" viewBox=\"0 0 48 48\" fill=\"none\">\n    <g>\n      <rect width=\"48\" height=\"48\" fill=\"#147878\"></rect>\n      <rect x=\"36\" y=\"42\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"6\" y=\"42\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"12\" y=\"36\" width=\"24\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"18\" y=\"30\" width=\"12\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect width=\"6\" height=\"24\" transform=\"matrix(-1 0 0 1 48 12)\" fill=\"#004D4D\"></rect>\n      <rect width=\"6\" height=\"6\" transform=\"matrix(-1 0 0 1 42 30)\" fill=\"#004D4D\"></rect>\n      <rect width=\"6\" height=\"6\" transform=\"matrix(-1 0 0 1 36 24)\" fill=\"#004D4D\"></rect>\n      <rect width=\"6\" height=\"6\" transform=\"matrix(-1 0 0 1 42 18)\" fill=\"#004D4D\"></rect>\n      <rect width=\"6\" height=\"6\" transform=\"matrix(-1 0 0 1 36 12)\" fill=\"#004D4D\"></rect>\n      <rect width=\"6\" height=\"6\" transform=\"matrix(-1 0 0 1 42 6)\" fill=\"#004D4D\"></rect>\n      <rect x=\"18\" width=\"12\" height=\"12\" fill=\"#004D4D\"></rect>\n      <rect x=\"6\" y=\"30\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"12\" y=\"24\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"6\" y=\"18\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"12\" y=\"12\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect x=\"6\" y=\"6\" width=\"6\" height=\"6\" fill=\"#004D4D\"></rect>\n      <rect y=\"12\" width=\"6\" height=\"24\" fill=\"#004D4D\"></rect>\n    </g>\n  </svg>\n);\n\nexport const AvatarBasic: React.FunctionComponent = () => (\n  <>\n    <Avatar src={avatarImg} alt=\"Basic avatar with image\" />\n    <Avatar alt=\"Basic avatar with children\">{rhdsLogo}</Avatar>\n  </>\n);\n"
         }
       ]
@@ -985,7 +985,7 @@
           "version": "v6",
           "id": "api::v6::components::avatar::react::examples::avatar-color-modifiers",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/avatar/react/examples/AvatarColorModifiers",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Avatar } from '@patternfly/react-core';\n\nconst profileSvg = (\n  <svg aria-hidden=\"true\" data-name=\"Layer 1\" xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"0 0 36 36\">\n    <path fill=\"currentColor\" d=\"M17.7,20.1c-3.5,0-6.4-2.9-6.4-6.4s2.9-6.4,6.4-6.4,6.4,2.9,6.4,6.4-2.8,6.4-6.4,6.4Z\" />\n    <path\n      fill=\"currentColor\"\n      d=\"M30.6,36c-.4-3.9-1.3-9-2.9-11-1.1-1.4-2.3-2.2-3.5-2.6s-1.8-.6-6.3-.6-6.1.7-6.1.7c-1.2.4-2.4,1.2-3.4,2.6-1.7,1.9-2.6,7.1-3,10.9h25.2Z\"\n    />\n  </svg>\n);\n\nexport const AvatarColorModifiers: React.FunctionComponent = () => (\n  <>\n    <Avatar color=\"red\" alt=\"red avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"orangered\" alt=\"orangered avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"orange\" alt=\"orange avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"yellow\" alt=\"yellow avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"green\" alt=\"green avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"teal\" alt=\"teal avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"blue\" alt=\"blue avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"purple\" alt=\"purple avatar\">\n      {profileSvg}\n    </Avatar>\n    <Avatar color=\"gray\" alt=\"gray avatar\">\n      {profileSvg}\n    </Avatar>\n  </>\n);\n"
         }
       ]
@@ -1003,7 +1003,7 @@
           "version": "v6",
           "id": "api::v6::components::avatar::react::examples::avatar-initials",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/avatar/react/examples/AvatarInitials",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Avatar } from '@patternfly/react-core';\n\nexport const AvatarInitials: React.FunctionComponent = () => (\n  <>\n    <Avatar alt=\"non-color avatar with initial C\" isBordered initials=\"C\" />\n    <Avatar color=\"red\" alt=\"red avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"orangered\" alt=\"orangered avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"orange\" alt=\"orange avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"yellow\" alt=\"yellow avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"green\" alt=\"green avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"teal\" alt=\"teal avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"blue\" alt=\"blue avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"purple\" alt=\"purple avatar with initial C\" initials=\"C\" />\n    <Avatar color=\"gray\" alt=\"gray avatar with initial C\" initials=\"C\" />\n  </>\n);\n"
         }
       ]
@@ -1021,7 +1021,7 @@
           "version": "v6",
           "id": "api::v6::components::avatar::react::examples::avatar-bordered",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/avatar/react/examples/AvatarBordered",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Avatar } from '@patternfly/react-core';\nimport RhUiAiChatbotIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-ai-chatbot-icon';\n\nexport const AvatarBordered: React.FunctionComponent = () => (\n  <Avatar alt=\"Avatar with border\" isBordered>\n    <RhUiAiChatbotIcon />\n  </Avatar>\n);\n"
         }
       ]
@@ -1039,7 +1039,7 @@
           "version": "v6",
           "id": "api::v6::components::avatar::react::examples::avatar-size-variations",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/avatar/react/examples/AvatarSizeVariations",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Avatar } from '@patternfly/react-core';\n\nexport const AvatarSizeVariations: React.FunctionComponent = () => (\n  <>\n    <Avatar alt=\"small red avatar with initial C\" initials=\"C\" color=\"red\" size=\"sm\" />\n    <Avatar alt=\"medium red avatar with initial C\" initials=\"C\" color=\"red\" size=\"md\" />\n    <Avatar alt=\"large red avatar with initial C\" initials=\"C\" color=\"red\" size=\"lg\" />\n    <Avatar alt=\"extra large red avatar with initial C\" initials=\"C\" color=\"red\" size=\"xl\" />\n  </>\n);\n"
         }
       ]
@@ -1111,7 +1111,7 @@
           "version": "v6",
           "id": "api::v6::components::back-to-top::react::examples::back-to-top-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/back-to-top/react/examples/BackToTopBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { BackToTop } from '@patternfly/react-core';\n\nexport const BackToTopBasic: React.FunctionComponent = () => <BackToTop isAlwaysVisible />;\n"
         }
       ]
@@ -1327,7 +1327,7 @@
           "version": "v6",
           "id": "api::v6::components::badge::react::examples::badge-read",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/badge/react/examples/BadgeRead",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment } from 'react';\nimport { Badge } from '@patternfly/react-core';\n\nexport const BadgeRead: React.FunctionComponent = () => (\n  <Fragment>\n    <Badge key={1} isRead>\n      7\n    </Badge>\n    <Badge key={2} isRead>\n      24\n    </Badge>\n    <Badge key={3} isRead>\n      240\n    </Badge>\n    <Badge key={4} isRead>\n      999+\n    </Badge>\n  </Fragment>\n);\n"
         }
       ]
@@ -1345,7 +1345,7 @@
           "version": "v6",
           "id": "api::v6::components::badge::react::examples::badge-unread",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/badge/react/examples/BadgeUnread",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment } from 'react';\nimport { Badge } from '@patternfly/react-core';\n\nexport const BadgeUnread: React.FunctionComponent = () => (\n  <Fragment>\n    <Badge key={1} screenReaderText=\"Unread Messages\">\n      7\n    </Badge>\n    <Badge key={2} screenReaderText=\"Unread Messages\">\n      24\n    </Badge>\n    <Badge key={3} screenReaderText=\"Unread Messages\">\n      240\n    </Badge>\n    <Badge key={4} screenReaderText=\"Unread Messages\">\n      999+\n    </Badge>\n  </Fragment>\n);\n"
         }
       ]
@@ -1363,7 +1363,7 @@
           "version": "v6",
           "id": "api::v6::components::badge::react::examples::badge-disabled",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/badge/react/examples/BadgeDisabled",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment } from 'react';\nimport { Badge } from '@patternfly/react-core';\n\nexport const BadgeRead: React.FunctionComponent = () => (\n  <Fragment>\n    <Badge key={1} isDisabled isRead>\n      7\n    </Badge>\n    <Badge key={2} isDisabled isRead>\n      24\n    </Badge>\n    <Badge key={3} isDisabled>\n      240\n    </Badge>\n    <Badge key={4} isDisabled>\n      999+\n    </Badge>\n  </Fragment>\n);\n"
         }
       ]
@@ -1435,7 +1435,7 @@
           "version": "v6",
           "id": "api::v6::components::banner::react::examples::banner-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/banner/react/examples/BannerBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Banner } from '@patternfly/react-core';\n\nexport const BannerBasic: React.FunctionComponent = () => (\n  <>\n    <Banner>Default banner</Banner>\n    <br />\n    <Banner color=\"red\">Red banner</Banner>\n    <br />\n    <Banner color=\"orangered\">Orangered banner</Banner>\n    <br />\n    <Banner color=\"orange\">Orange banner</Banner>\n    <br />\n    <Banner color=\"yellow\">Yellow banner</Banner>\n    <br />\n    <Banner color=\"green\">Green banner</Banner>\n    <br />\n    <Banner color=\"teal\">Teal banner</Banner>\n    <br />\n    <Banner color=\"blue\">Blue banner</Banner>\n    <br />\n    <Banner color=\"purple\">Purple banner</Banner>\n  </>\n);\n"
         }
       ]
@@ -1453,7 +1453,7 @@
           "version": "v6",
           "id": "api::v6::components::banner::react::examples::banner-status",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/banner/react/examples/BannerStatus",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Banner, Flex, FlexItem } from '@patternfly/react-core';\nimport RhUiCheckCircleFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-check-circle-fill-icon';\nimport RhUiErrorFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-error-fill-icon';\nimport RhUiWarningFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-warning-fill-icon';\nimport RhUiInformationFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-information-fill-icon';\nimport RhUiNotificationFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-notification-fill-icon';\n\nexport const BannerStatus: React.FunctionComponent = () => (\n  <>\n    <Banner screenReaderText=\"Success banner\" status=\"success\">\n      <Flex spaceItems={{ default: 'spaceItemsSm' }}>\n        <FlexItem>\n          <RhUiCheckCircleFillIcon />\n        </FlexItem>\n        <FlexItem>Success banner</FlexItem>\n      </Flex>\n    </Banner>\n    <br />\n    <Banner screenReaderText=\"Warning banner\" status=\"warning\">\n      <Flex spaceItems={{ default: 'spaceItemsSm' }}>\n        <FlexItem>\n          <RhUiWarningFillIcon />\n        </FlexItem>\n        <FlexItem>Warning banner</FlexItem>\n      </Flex>\n    </Banner>\n    <br />\n    <Banner screenReaderText=\"Danger banner\" status=\"danger\">\n      <Flex spaceItems={{ default: 'spaceItemsSm' }}>\n        <FlexItem>\n          <RhUiErrorFillIcon />\n        </FlexItem>\n        <FlexItem>Danger banner</FlexItem>\n      </Flex>\n    </Banner>\n    <br />\n    <Banner screenReaderText=\"Info banner\" status=\"info\">\n      <Flex spaceItems={{ default: 'spaceItemsSm' }}>\n        <FlexItem>\n          <RhUiInformationFillIcon />\n        </FlexItem>\n        <FlexItem>Info banner</FlexItem>\n      </Flex>\n    </Banner>\n    <br />\n    <Banner screenReaderText=\"Custom banner\" status=\"custom\">\n      <Flex spaceItems={{ default: 'spaceItemsSm' }}>\n        <FlexItem>\n          <RhUiNotificationFillIcon />\n        </FlexItem>\n        <FlexItem>Custom banner</FlexItem>\n      </Flex>\n    </Banner>\n  </>\n);\n"
         }
       ]
@@ -1471,7 +1471,7 @@
           "version": "v6",
           "id": "api::v6::components::banner::react::examples::banner-pill",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/banner/react/examples/BannerPill",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Banner, Flex, FlexItem } from '@patternfly/react-core';\nimport RhUiCheckCircleFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-check-circle-fill-icon';\n\nexport const BannerPill: React.FunctionComponent = () => (\n  <>\n    <Banner isPill>Default pill banner</Banner>\n    <br />\n    <Banner color=\"red\" isPill>\n      Red pill banner\n    </Banner>\n    <br />\n    <Banner isPill screenReaderText=\"Success pill banner\" status=\"success\">\n      <Flex spaceItems={{ default: 'spaceItemsSm' }}>\n        <FlexItem>\n          <RhUiCheckCircleFillIcon />\n        </FlexItem>\n        <FlexItem>Success pill banner</FlexItem>\n      </Flex>\n    </Banner>\n  </>\n);\n"
         }
       ]
@@ -1543,7 +1543,7 @@
           "version": "v6",
           "id": "api::v6::components::brand::react::examples::brand-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/brand/react/examples/BrandBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Brand } from '@patternfly/react-core';\nimport pfLogo from '../../assets/PF-HorizontalLogo-Color.svg';\nimport pfLogoDark from '../../assets/PF-HorizontalLogo-Reverse.svg';\n\nexport const BrandBasic: React.FunctionComponent = () => (\n  <>\n    <div className=\"show-light\">\n      <Brand src={pfLogo} alt=\"Patternfly\" widths={{ default: '200px', md: '400px', xl: '600px' }} />\n    </div>\n    <div className=\"show-dark\">\n      <Brand src={pfLogoDark} alt=\"Patternfly\" widths={{ default: '200px', md: '400px', xl: '600px' }} />\n    </div>\n  </>\n);\n"
         }
       ]
@@ -1561,7 +1561,7 @@
           "version": "v6",
           "id": "api::v6::components::brand::react::examples::brand-responsive",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/brand/react/examples/BrandResponsive",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Brand } from '@patternfly/react-core';\n\nimport pfLogo from '../../assets/PF-HorizontalLogo-Color.svg';\nimport pfLogoDark from '../../assets/PF-HorizontalLogo-Reverse.svg';\nimport pfLogoSm from '../../assets/PF-IconLogo-color.svg';\nimport pfLogoSmDark from '../../assets/PF-IconLogo-Reverse.svg';\n\nexport const BrandBasic: React.FunctionComponent = () => (\n  <>\n    <div className=\"show-light\">\n      <Brand src={pfLogo} alt=\"Patternfly\" widths={{ default: '40px', sm: '60px', md: '220px' }}>\n        <source media=\"(min-width: 1200px)\" srcSet={pfLogo} />\n        <source media=\"(min-width: 992px)\" srcSet={pfLogo} />\n        <source media=\"(min-width: 768px)\" srcSet={pfLogo} />\n        <source media=\"(min-width: 576px)\" srcSet={pfLogoSm} />\n        <source media=\"(min-width: 320px)\" srcSet={pfLogoSm} />\n        <source srcSet={pfLogo} />\n      </Brand>\n    </div>\n    <div className=\"show-dark\">\n      <Brand src={pfLogoDark} alt=\"Patternfly\" widths={{ default: '40px', sm: '60px', md: '220px' }}>\n        <source media=\"(min-width: 1200px)\" srcSet={pfLogoDark} />\n        <source media=\"(min-width: 992px)\" srcSet={pfLogoDark} />\n        <source media=\"(min-width: 768px)\" srcSet={pfLogoDark} />\n        <source media=\"(min-width: 576px)\" srcSet={pfLogoSmDark} />\n        <source media=\"(min-width: 320px)\" srcSet={pfLogoSmDark} />\n        <source srcSet={pfLogoDark} />\n      </Brand>\n    </div>\n  </>\n);\n"
         }
       ]
@@ -1651,7 +1651,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-variations",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonVariations",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Button, Flex } from '@patternfly/react-core';\nimport RhMicronsCloseIcon from '@patternfly/react-icons/dist/esm/icons/rh-microns-close-icon';\nimport RhUiExternalLinkFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-external-link-fill-icon';\nimport RhUiAddCircleFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-add-circle-fill-icon';\nimport RhUiCopyFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-copy-fill-icon';\nimport RhUiNotificationFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-notification-fill-icon';\n\nexport const ButtonVariations: React.FunctionComponent = () => (\n  <>\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button variant=\"primary\" ouiaId=\"Primary\">\n        Primary\n      </Button>\n      <Button variant=\"secondary\" ouiaId=\"Secondary\">\n        Secondary\n      </Button>\n      <Button variant=\"secondary\" ouiaId=\"DangerSecondary\" isDanger>\n        Danger Secondary\n      </Button>\n      <Button variant=\"tertiary\" ouiaId=\"Tertiary\">\n        Tertiary\n      </Button>\n      <Button variant=\"danger\" ouiaId=\"Danger\">\n        Danger\n      </Button>\n      <Button variant=\"warning\" ouiaId=\"Warning\">\n        Warning\n      </Button>\n    </Flex>\n    <br />\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button variant=\"link\" icon={<RhUiAddCircleFillIcon />}>\n        Link\n      </Button>\n      <Button variant=\"link\" icon={<RhUiExternalLinkFillIcon />} iconPosition=\"end\">\n        Link\n      </Button>\n      <Button variant=\"link\" isInline>\n        Inline link\n      </Button>\n      <Button variant=\"link\" isDanger>\n        Danger link\n      </Button>\n      <Button variant=\"plain\" aria-label=\"Action\" icon={<RhMicronsCloseIcon />} />\n    </Flex>\n    <br />\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button variant=\"control\">Control</Button>\n      <Button variant=\"control\" aria-label=\"Copy\" icon={<RhUiCopyFillIcon />} />\n    </Flex>\n    <br />\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button variant=\"stateful\" icon={<RhUiNotificationFillIcon />} state=\"read\">\n        Stateful read\n      </Button>\n      <Button variant=\"stateful\" icon={<RhUiNotificationFillIcon />} state=\"unread\">\n        Stateful unread\n      </Button>\n      <Button variant=\"stateful\" icon={<RhUiNotificationFillIcon />} state=\"attention\">\n        Stateful attention\n      </Button>\n    </Flex>\n  </>\n);\n"
         }
       ]
@@ -1669,7 +1669,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-disabled",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonDisabled",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Button, Flex } from '@patternfly/react-core';\nimport RhMicronsCloseIcon from '@patternfly/react-icons/dist/esm/icons/rh-microns-close-icon';\nimport RhUiAddCircleFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-add-circle-fill-icon';\nimport RhUiCopyFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-copy-fill-icon';\n\nexport const ButtonDisabled: React.FunctionComponent = () => (\n  <>\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button isDisabled>Primary</Button>\n      <Button variant=\"secondary\" isDisabled>\n        Secondary\n      </Button>\n      <Button variant=\"secondary\" isDanger isDisabled>\n        Danger secondary\n      </Button>\n      <Button isDisabled variant=\"tertiary\">\n        Tertiary\n      </Button>\n      <Button isDisabled variant=\"danger\">\n        Danger\n      </Button>\n      <Button isDisabled variant=\"warning\">\n        Warning\n      </Button>\n    </Flex>\n    <br />\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button isDisabled variant=\"link\" icon={<RhUiAddCircleFillIcon />}>\n        Link\n      </Button>\n      <Button isDisabled variant=\"link\" isInline>\n        Inline link\n      </Button>\n      <Button variant=\"link\" isDanger isDisabled>\n        Danger link\n      </Button>\n      <Button isDisabled variant=\"plain\" aria-label=\"Action\" icon={<RhMicronsCloseIcon />} />\n    </Flex>\n    <br />\n    <Flex columnGap={{ default: 'columnGapSm' }}>\n      <Button isDisabled variant=\"control\">\n        Control\n      </Button>\n      <Button isDisabled variant=\"control\" aria-label=\"Copy\" icon={<RhUiCopyFillIcon />} />\n    </Flex>\n  </>\n);\n"
         }
       ]
@@ -1687,7 +1687,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-small",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonSmall",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Button, Flex } from '@patternfly/react-core';\n\nexport const ButtonSmall: React.FunctionComponent = () => (\n  <Flex columnGap={{ default: 'columnGapSm' }}>\n    <Button variant=\"primary\" size=\"sm\">\n      Primary\n    </Button>\n    <Button variant=\"secondary\" size=\"sm\">\n      Secondary\n    </Button>\n    <Button variant=\"tertiary\" size=\"sm\">\n      Tertiary\n    </Button>\n    <Button variant=\"danger\" size=\"sm\">\n      Danger\n    </Button>\n    <Button variant=\"warning\" size=\"sm\">\n      Warning\n    </Button>\n  </Flex>\n);\n"
         }
       ]
@@ -1705,7 +1705,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-call-to-action",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonCallToAction",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Button, Flex } from '@patternfly/react-core';\nimport RhMicronsCaretRightIcon from '@patternfly/react-icons/dist/esm/icons/rh-microns-caret-right-icon';\n\nexport const ButtonCallToAction: React.FunctionComponent = () => (\n  <Flex columnGap={{ default: 'columnGapSm' }}>\n    <Button variant=\"primary\" size=\"lg\">\n      Call to action\n    </Button>\n    <Button variant=\"secondary\" size=\"lg\">\n      Call to action\n    </Button>\n    <Button variant=\"tertiary\" size=\"lg\">\n      Call to action\n    </Button>\n    <Button variant=\"link\" size=\"lg\" icon={<RhMicronsCaretRightIcon />} iconPosition=\"end\">\n      Call to action\n    </Button>\n  </Flex>\n);\n"
         }
       ]
@@ -1723,7 +1723,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-block",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonBlock",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Button } from '@patternfly/react-core';\n\nexport const ButtonBlock: React.FunctionComponent = () => <Button isBlock>Block level button</Button>;\n"
         }
       ]
@@ -1741,7 +1741,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-progress",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonProgress",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport { Button, Flex } from '@patternfly/react-core';\nimport UploadIcon from '@patternfly/react-icons/dist/esm/icons/upload-icon';\n\ninterface LoadingPropsType {\n  spinnerAriaValueText: string;\n  spinnerAriaLabelledBy?: string;\n  spinnerAriaLabel?: string;\n  isLoading: boolean;\n}\n\nexport const ButtonProgress: React.FunctionComponent = () => {\n  const [isPrimaryLoading, setIsPrimaryLoading] = useState<boolean>(true);\n  const [isSecondaryLoading, setIsSecondaryLoading] = useState<boolean>(true);\n  const [isInlineLoading, setIsInlineLoading] = useState<boolean>(true);\n  const [isUploading, setIsUploading] = useState<boolean>(false);\n\n  const primaryLoadingProps = {} as LoadingPropsType;\n  primaryLoadingProps.spinnerAriaValueText = 'Loading';\n  primaryLoadingProps.spinnerAriaLabelledBy = 'primary-loading-button';\n  primaryLoadingProps.isLoading = isPrimaryLoading;\n\n  const secondaryLoadingProps = {} as LoadingPropsType;\n  secondaryLoadingProps.spinnerAriaValueText = 'Loading';\n  secondaryLoadingProps.spinnerAriaLabel = 'Content being loaded';\n  secondaryLoadingProps.isLoading = isSecondaryLoading;\n\n  const inlineLoadingProps = {} as LoadingPropsType;\n  inlineLoadingProps.spinnerAriaValueText = 'Loading';\n  inlineLoadingProps.spinnerAriaLabel = 'Content being loaded';\n  inlineLoadingProps.isLoading = isInlineLoading;\n\n  const uploadingProps = {} as LoadingPropsType;\n  uploadingProps.spinnerAriaValueText = 'Loading';\n  uploadingProps.spinnerAriaLabel = 'Uploading data';\n  uploadingProps.isLoading = isUploading;\n\n  return (\n    <>\n      <Flex columnGap={{ default: 'columnGapSm' }}>\n        <Button\n          variant=\"primary\"\n          id=\"primary-loading-button\"\n          onClick={() => setIsPrimaryLoading(!isPrimaryLoading)}\n          {...primaryLoadingProps}\n        >\n          {isPrimaryLoading ? 'Click to stop loading' : 'Click to start loading'}\n        </Button>\n        <Button\n          variant=\"secondary\"\n          onClick={() => setIsSecondaryLoading(!isSecondaryLoading)}\n          {...secondaryLoadingProps}\n        >\n          {isSecondaryLoading ? 'Click to stop loading' : 'Click to start loading'}\n        </Button>\n      </Flex>\n      <br />\n      <Button\n        variant=\"plain\"\n        {...(!isUploading && { 'aria-label': 'Upload' })}\n        onClick={() => setIsUploading(!isUploading)}\n        icon={<UploadIcon />}\n        {...uploadingProps}\n      />\n      <br />\n      <br />\n      <Button variant=\"link\" isInline onClick={() => setIsInlineLoading(!isInlineLoading)} {...inlineLoadingProps}>\n        {isInlineLoading ? 'Pause loading logs' : 'Resume loading logs'}\n      </Button>\n    </>\n  );\n};\n"
         }
       ]
@@ -1759,7 +1759,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-links",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonLinks",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Button, Flex } from '@patternfly/react-core';\n\nexport const ButtonLinks: React.FunctionComponent = () => (\n  <Flex>\n    <Button component=\"a\" href=\"https://www.patternfly.org/\" target=\"_blank\" variant=\"primary\">\n      Link to PatternFly home\n    </Button>\n    <Button component=\"a\" href=\"https://www.patternfly.org/\" target=\"_blank\" variant=\"secondary\">\n      Secondary link to PatternFly home\n    </Button>\n    <Button isDisabled component=\"a\" href=\"https://www.patternfly.org/\" target=\"_blank\" variant=\"tertiary\">\n      Tertiary link to PatternFly home\n    </Button>\n    <Button component=\"a\" href=\"https://www.patternfly.org/\" variant=\"link\">\n      Jump to PatternFly home\n    </Button>\n  </Flex>\n);\n"
         }
       ]
@@ -1777,7 +1777,7 @@
           "version": "v6",
           "id": "api::v6::components::button::react::examples::button-inline-span-link",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonInlineSpanLink",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment } from 'react';\nimport { Button, KeyTypes } from '@patternfly/react-core';\n\nconst handleKeydown = (event: React.KeyboardEvent<HTMLButtonElement>) => {\n  const { key } = event;\n  const isEnterKey: boolean = key === KeyTypes.Enter;\n  const isEnterOrSpaceKey: boolean = isEnterKey || key === KeyTypes.Space;\n\n  if (isEnterOrSpaceKey) {\n    event.preventDefault();\n    alert(`${isEnterKey ? 'Enter' : 'Space'} key default behavior stopped by onKeyDown`);\n  }\n};\n\nexport const ButtonInlineSpanLink: React.FunctionComponent = () => (\n  <Fragment>\n    <p>\n      Lorem ipsum dolor sit amet, consectetur adipiscing elit.\n      <Button variant=\"link\" isInline component=\"span\">\n        This is long button text that needs to be a span so that it will wrap inline with the text around it.\n      </Button>\n      Sed hendrerit nisi in cursus maximus. Ut malesuada nisi turpis, in condimentum velit elementum non.\n    </p>\n\n    <br />\n\n    <p>\n      Note that using a <b>span</b> as a button does not fire the <b>onclick</b> event for Enter or Space keys.\n      <Button variant=\"link\" isInline component=\"span\" onKeyDown={handleKeydown}>\n        An <b>onKeyDown</b> event listener is needed for Enter and Space key presses to prevent their default behavior\n        and trigger your code.\n      </Button>\n      Pressing the Enter or Space keys on the inline link as span above demonstrates this by triggering an alert.\n    </p>\n  </Fragment>\n);\n"
         }
       ]
@@ -1831,7 +1831,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Card, CardTitle, CardBody, CardFooter } from '@patternfly/react-core';\n\nexport const CardBasic: React.FunctionComponent = () => (\n  <Card ouiaId=\"BasicCard\">\n    <CardTitle>Title</CardTitle>\n    <CardBody>Body</CardBody>\n    <CardFooter>Footer</CardFooter>\n  </Card>\n);\n"
         }
       ]
@@ -1849,7 +1849,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-secondary",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardSecondary",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Card, CardTitle, CardBody, CardFooter } from '@patternfly/react-core';\n\nexport const CardSecondary: React.FunctionComponent = () => (\n  <Card ouiaId=\"SecondaryCard\" variant=\"secondary\">\n    <CardTitle>Title</CardTitle>\n    <CardBody>Body</CardBody>\n    <CardFooter>Footer</CardFooter>\n  </Card>\n);\n"
         }
       ]
@@ -1867,7 +1867,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-with-modifiers",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardWithModifiers",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Fragment, useState } from 'react';\nimport { Card, CardTitle, CardBody, CardFooter, Checkbox } from '@patternfly/react-core';\n\nexport const CardWithModifiers: React.FunctionComponent = () => {\n  const mods = ['isCompact', 'isLarge', 'isFullHeight', 'isPlain'];\n  const [modifiers, setModifiers] = useState({});\n\n  return (\n    <Fragment>\n      <div style={{ marginBottom: '12px' }}>\n        {mods.map((mod) => (\n          <Checkbox\n            id={mod}\n            key={mod}\n            label={mod}\n            isChecked={modifiers[mod]}\n            onChange={(_event, checked) => {\n              modifiers[mod] = checked;\n              setModifiers({ ...modifiers });\n            }}\n          />\n        ))}\n      </div>\n      <div style={{ height: '15rem' }}>\n        <Card {...modifiers}>\n          <CardTitle>Title</CardTitle>\n          <CardBody>Body</CardBody>\n          <CardFooter>Footer</CardFooter>\n        </Card>\n      </div>\n    </Fragment>\n  );\n};\n"
         }
       ]
@@ -1885,7 +1885,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-with-image-and-actions",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardWithImageAndActions",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport {\n  Brand,\n  Card,\n  CardHeader,\n  CardTitle,\n  CardBody,\n  CardFooter,\n  Checkbox,\n  Dropdown,\n  DropdownList,\n  DropdownItem,\n  MenuToggle,\n  MenuToggleElement,\n  Divider\n} from '@patternfly/react-core';\nimport RhUiEllipsisVerticalFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-ellipsis-vertical-fill-icon';\nimport pfLogo from '../../assets/PF-HorizontalLogo-Color.svg';\n\nexport const CardWithImageAndActions: React.FunctionComponent = () => {\n  const [isOpen, setIsOpen] = useState<boolean>(false);\n  const [isChecked, setIsChecked] = useState<boolean>(false);\n  const [hasNoOffset, setHasNoOffset] = useState<boolean>(false);\n\n  const onSelect = () => {\n    setIsOpen(!isOpen);\n  };\n  const onClick = (checked: boolean) => {\n    setIsChecked(checked);\n  };\n  const toggleOffset = (checked: boolean) => {\n    setHasNoOffset(checked);\n  };\n\n  const dropdownItems = (\n    <>\n      <DropdownItem key=\"action\">Action</DropdownItem>\n      {/* Prevent default onClick functionality for example purposes */}\n      <DropdownItem key=\"link\" to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Link\n      </DropdownItem>\n      <DropdownItem key=\"disabled action\" isDisabled>\n        Disabled Action\n      </DropdownItem>\n      <DropdownItem key=\"disabled link\" isDisabled to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Disabled Link\n      </DropdownItem>\n      <Divider component=\"li\" key=\"separator\" />\n      <DropdownItem key=\"separated action\">Separated Action</DropdownItem>\n      <DropdownItem key=\"separated link\" to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Separated Link\n      </DropdownItem>\n    </>\n  );\n\n  const headerActions = (\n    <>\n      <Dropdown\n        onSelect={onSelect}\n        toggle={(toggleRef: React.Ref<MenuToggleElement>) => (\n          <MenuToggle\n            ref={toggleRef}\n            isExpanded={isOpen}\n            onClick={() => setIsOpen(!isOpen)}\n            variant=\"plain\"\n            aria-label=\"Card header images and actions example kebab toggle\"\n            icon={<RhUiEllipsisVerticalFillIcon />}\n          />\n        )}\n        isOpen={isOpen}\n        onOpenChange={(isOpen: boolean) => setIsOpen(isOpen)}\n      >\n        <DropdownList>{dropdownItems}</DropdownList>\n      </Dropdown>\n      <Checkbox\n        isChecked={isChecked}\n        onChange={(_event, checked) => onClick(checked)}\n        aria-label=\"card checkbox example\"\n        id=\"check-1\"\n        name=\"check1\"\n      />\n    </>\n  );\n\n  return (\n    <>\n      <Checkbox\n        label=\"actions hasNoOffset\"\n        isChecked={hasNoOffset}\n        onChange={(_event, checked) => toggleOffset(checked)}\n        aria-label=\"remove actions offset\"\n        id=\"toggle-actions-offset\"\n        name=\"toggle-actions-offset\"\n      />\n      <div style={{ marginTop: '15px' }}>\n        <Card>\n          <CardHeader actions={{ actions: headerActions, hasNoOffset }}>\n            <Brand src={pfLogo} alt=\"PatternFly logo\" style={{ width: '300px' }} />\n          </CardHeader>\n          <CardTitle>Title</CardTitle>\n          <CardBody>Body</CardBody>\n          <CardFooter>Footer</CardFooter>\n        </Card>\n      </div>\n    </>\n  );\n};\n"
         }
       ]
@@ -1903,7 +1903,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-header-in-card-head",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardHeaderInCardHead",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport {\n  Card,\n  CardHeader,\n  CardTitle,\n  CardBody,\n  CardFooter,\n  Checkbox,\n  Dropdown,\n  DropdownList,\n  DropdownItem,\n  MenuToggle,\n  MenuToggleElement,\n  Divider\n} from '@patternfly/react-core';\nimport RhUiEllipsisVerticalFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-ellipsis-vertical-fill-icon';\n\nexport const CardTitleInHeader: React.FunctionComponent = () => {\n  const [isOpen, setIsOpen] = useState<boolean>(false);\n  const [isChecked, setIsChecked] = useState<boolean>(false);\n\n  const onSelect = () => {\n    setIsOpen(!isOpen);\n  };\n  const onClick = (checked: boolean) => {\n    setIsChecked(checked);\n  };\n\n  const dropdownItems = (\n    <>\n      <DropdownItem key=\"action\">Action</DropdownItem>\n      {/* Prevent default onClick functionality for example purposes */}\n      <DropdownItem key=\"link\" to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Link\n      </DropdownItem>\n      <DropdownItem key=\"disabled action\" isDisabled>\n        Disabled Action\n      </DropdownItem>\n      <DropdownItem key=\"disabled link\" isDisabled to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Disabled Link\n      </DropdownItem>\n      <Divider component=\"li\" key=\"separator\" />\n      <DropdownItem key=\"separated action\">Separated Action</DropdownItem>\n      <DropdownItem key=\"separated link\" to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Separated Link\n      </DropdownItem>\n    </>\n  );\n\n  const headerActions = (\n    <>\n      <Dropdown\n        onSelect={onSelect}\n        toggle={(toggleRef: React.Ref<MenuToggleElement>) => (\n          <MenuToggle\n            ref={toggleRef}\n            isExpanded={isOpen}\n            onClick={() => setIsOpen(!isOpen)}\n            variant=\"plain\"\n            aria-label=\"Card title inline with images and actions example kebab toggle\"\n            icon={<RhUiEllipsisVerticalFillIcon />}\n          />\n        )}\n        isOpen={isOpen}\n        onOpenChange={(isOpen: boolean) => setIsOpen(isOpen)}\n      >\n        <DropdownList>{dropdownItems}</DropdownList>\n      </Dropdown>\n      <Checkbox\n        isChecked={isChecked}\n        onChange={(_event, checked) => onClick(checked)}\n        aria-label=\"card checkbox example\"\n        id=\"check-2\"\n        name=\"check2\"\n      />\n    </>\n  );\n\n  return (\n    <Card>\n      <CardHeader actions={{ actions: headerActions }}>\n        <CardTitle>\n          This is a really really really really really really really really really really long header\n        </CardTitle>\n      </CardHeader>\n      <CardBody>Body</CardBody>\n      <CardFooter>Footer</CardFooter>\n    </Card>\n  );\n};\n"
         }
       ]
@@ -1921,7 +1921,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-only-actions-in-card-head",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardOnlyActionsInCardHead",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { useState } from 'react';\nimport {\n  Checkbox,\n  Card,\n  CardHeader,\n  CardBody,\n  Dropdown,\n  DropdownList,\n  DropdownItem,\n  MenuToggle,\n  MenuToggleElement,\n  Divider\n} from '@patternfly/react-core';\nimport RhUiEllipsisVerticalFillIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-ellipsis-vertical-fill-icon';\n\nexport const CardOnlyActionsInCardHead: React.FunctionComponent = () => {\n  const [isOpen, setIsOpen] = useState<boolean>(false);\n  const [isChecked, setIsChecked] = useState<boolean>(false);\n\n  const onSelect = () => {\n    setIsOpen(!isOpen);\n  };\n  const onClick = (checked: boolean) => {\n    setIsChecked(checked);\n  };\n\n  const dropdownItems = (\n    <>\n      <DropdownItem key=\"action\">Action</DropdownItem>\n      {/* Prevent default onClick functionality for example purposes */}\n      <DropdownItem key=\"link\" to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Link\n      </DropdownItem>\n      <DropdownItem key=\"disabled action\" isDisabled>\n        Disabled Action\n      </DropdownItem>\n      <DropdownItem key=\"disabled link\" isDisabled to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Disabled Link\n      </DropdownItem>\n      <Divider component=\"li\" key=\"separator\" />\n      <DropdownItem key=\"separated action\">Separated Action</DropdownItem>\n      <DropdownItem key=\"separated link\" to=\"#\" onClick={(event: any) => event.preventDefault()}>\n        Separated Link\n      </DropdownItem>\n    </>\n  );\n\n  const headerActions = (\n    <>\n      <Dropdown\n        onSelect={onSelect}\n        toggle={(toggleRef: React.Ref<MenuToggleElement>) => (\n          <MenuToggle\n            ref={toggleRef}\n            isExpanded={isOpen}\n            onClick={() => setIsOpen(!isOpen)}\n            variant=\"plain\"\n            aria-label=\"Card header without title example kebab toggle\"\n            icon={<RhUiEllipsisVerticalFillIcon />}\n          />\n        )}\n        isOpen={isOpen}\n        onOpenChange={(isOpen: boolean) => setIsOpen(isOpen)}\n      >\n        <DropdownList>{dropdownItems}</DropdownList>\n      </Dropdown>\n      <Checkbox\n        isChecked={isChecked}\n        onChange={(_event, checked) => onClick(checked)}\n        aria-label=\"card checkbox example\"\n        id=\"check-3\"\n        name=\"check3\"\n      />\n    </>\n  );\n\n  return (\n    <Card>\n      <CardHeader actions={{ actions: headerActions }} />\n      <CardBody>This is the card body. There are only actions in the card head.</CardBody>\n    </Card>\n  );\n};\n"
         }
       ]
@@ -1939,7 +1939,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-header-wraps",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardHeaderWraps",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Card, CardBody, CardHeader, Button, CardTitle } from '@patternfly/react-core';\n\nexport const CardBasic: React.FunctionComponent = () => (\n  <Card ouiaId=\"BasicCard\">\n    <CardHeader\n      hasWrap\n      actions={{\n        hasNoOffset: true,\n        actions: [\n          <Button variant=\"primary\" ouiaId=\"Primary\" key=\"primary\">\n            Primary action\n          </Button>,\n          <Button variant=\"secondary\" ouiaId=\"Secondary\" key=\"secondary\">\n            Secondary action\n          </Button>,\n          <Button variant=\"tertiary\" ouiaId=\"Tertiary\" key=\"tertiary\">\n            Tertiary action\n          </Button>\n        ]\n      }}\n    >\n      <CardTitle>This is a longer card title that takes up more space</CardTitle>\n    </CardHeader>\n    <CardBody>This is the card body</CardBody>\n  </Card>\n);\n"
         }
       ]
@@ -1957,7 +1957,7 @@
           "version": "v6",
           "id": "api::v6::components::card::react::examples::card-with-heading-element",
           "path": "https://main.patternfly-org.pages.dev/api/v6/components/card/react/examples/CardWithHeadingElement",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Card, CardTitle, CardBody, CardFooter } from '@patternfly/react-core';\n\nexport const CardWithHeadingElement: React.FunctionComponent = () => (\n  <Card>\n    <CardTitle component=\"h4\">Title within an {'<h4>'} element</CardTitle>\n    <CardBody>Body</CardBody>\n    <CardFooter>Footer</CardFooter>\n  </Card>\n);\n"
         }
       ]
@@ -2317,7 +2317,7 @@
           "version": "v6",
           "id": "api::v6::developer-guides::react-flow::text::examples::compass-react-flow-demo",
           "path": "https://main.patternfly-org.pages.dev/api/v6/developer-guides/react-flow/text/examples/CompassReactFlowDemo",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import React, { memo, useCallback, useRef } from \"react\";\nimport {\n  Background,\n  ReactFlow,\n  useNodesState,\n  useEdgesState,\n  addEdge,\n  useReactFlow,\n  ReactFlowProvider,\n  Handle,\n  Position,\n} from \"@xyflow/react\";\nimport {\n  Card,\n  CardBody,\n  CardFooter,\n  CardTitle,\n  DescriptionList,\n  DescriptionListDescription,\n  DescriptionListGroup,\n  DescriptionListTerm,\n  Divider,\n  Title,\n  Badge,\n  Button,\n} from \"@patternfly/react-core\";\nimport \"@xyflow/react/dist/style.css\";\nimport \"./reactFlowOverrides.css\";\n\nconst PFCardNode = memo(\n  ({\n    data,\n    isConnectable,\n  }: {\n    data: any;\n    isConnectable: boolean;\n  }) => {\n    return (\n      <>\n        <Handle\n          type=\"target\"\n          position={Position.Left}\n          isConnectable={isConnectable}\n          style={{ background: \"#555\" }}\n        />\n        <div style={{ minWidth: \"300px\", maxWidth: \"400px\" }}>\n          <Card isFullHeight>\n            <CardTitle>\n              <div\n                style={{\n                  display: \"flex\",\n                  justifyContent: \"space-between\",\n                  alignItems: \"center\",\n                }}\n              >\n                <Title headingLevel=\"h4\" size=\"lg\">\n                  {data.title}\n                </Title>\n                <Badge isRead>{data.status}</Badge>\n              </div>\n            </CardTitle>\n            <CardBody>\n              <p>\n                {data.description}\n              </p>\n              <DescriptionList aria-label={`${data.title} details`}>\n                {data.details.map((detail, index) => (\n                  <DescriptionListGroup key={index}>\n                    <DescriptionListTerm>{detail.term}</DescriptionListTerm>\n                    <DescriptionListDescription>\n                      {detail.description}\n                    </DescriptionListDescription>\n                  </DescriptionListGroup>\n                ))}\n              </DescriptionList>\n            </CardBody>\n            {data.actionText && (\n              <>\n                <Divider />\n                <CardFooter>\n                  <Button\n                    variant=\"link\"\n                    onClick={() => {\n                      // Call the original action if provided\n                      data.onAction?.();\n                    }}\n                    style={{ padding: 0 }}\n                  >\n                    {data.actionText}\n                  </Button>\n                </CardFooter>\n              </>\n            )}\n          </Card>\n        </div>\n        <Handle\n          type=\"source\"\n          position={Position.Right}\n          isConnectable={isConnectable}\n          style={{ background: \"#555\" }}\n        />\n      </>\n    );\n  }\n);\n\nconst initialNodes = [\n  {\n    id: \"0\",\n    type: \"pfCard\",\n    data: {\n      title: \"Application Service\",\n      status: \"Running\",\n      description:\n        \"A microservice handling user authentication and authorization.\",\n      details: [\n        { term: \"Version\", description: \"v2.1.4\" },\n        { term: \"CPU Usage\", description: \"45%\" },\n        { term: \"Memory\", description: \"2.1 GB\" },\n        { term: \"Last Deployed\", description: \"2 hours ago\" },\n      ],\n      actionText: \"View Details\",\n      onAction: () => console.log(\"View details clicked\"),\n    },\n    position: { x: 300, y: 50 },\n  },\n  {\n    id: \"1\",\n    type: \"pfCard\",\n    data: {\n      title: \"Database Service\",\n      status: \"Healthy\",\n      description: \"PostgreSQL database cluster with high availability.\",\n      details: [\n        { term: \"Cluster Size\", description: \"3 nodes\" },\n        { term: \"Storage\", description: \"500 GB\" },\n        { term: \"Connections\", description: \"127 active\" },\n        { term: \"Uptime\", description: \"99.9%\" },\n      ],\n      actionText: \"Monitor\",\n      onAction: () => console.log(\"Monitor clicked\"),\n    },\n    position: { x: 700, y: 50 },\n  },\n  {\n    id: \"2\",\n    type: \"input\",\n    data: { label: \"Start Node\" },\n    position: { x: 0, y: 50 },\n  },\n  {\n    id: '3',\n    position: { x: 0, y: 150 },\n    data: { label: 'plain node' }\n  },\n];\n\nlet id = 1;\nconst getId = () => `${id++}`;\nconst nodeOrigin: [number, number] = [0.5, 0];\n\nconst nodeTypes = {\n  pfCard: PFCardNode,\n};\n\nconst AddNodeOnEdgeDrop = () => {\n  const reactFlowWrapper = useRef(null);\n\n  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);\n  const [edges, setEdges, onEdgesChange] = useEdgesState([\n    { id: \"e2-0\", source: \"2\", target: \"0\" },\n    { id: \"e0-1\", source: \"0\", target: \"1\" },\n  ] as any);\n  const { screenToFlowPosition } = useReactFlow();\n  const onConnect = useCallback(\n    (params: any) => setEdges((eds) => addEdge(params, eds)),\n    []\n  );\n\n  const onConnectEnd: any = useCallback(\n    (event, connectionState) => {\n      // when a connection is dropped on the pane it's not valid\n      if (!connectionState.isValid) {\n        // we need to remove the wrapper bounds, in order to get the correct position\n        const id = getId();\n        const { clientX, clientY } =\n          \"changedTouches\" in event ? event.changedTouches[0] : event;\n        const newNode = {\n          id,\n          type: \"default\",\n          position: screenToFlowPosition({\n            x: clientX,\n            y: clientY,\n          }),\n          data: { label: `Node ${id}` },\n          origin: [0.5, 0.0] as [number, number],\n        };\n\n        setNodes((nds) => [...nds, newNode]);\n        setEdges((eds) => [\n          ...eds,\n          {\n            id,\n            source: connectionState.fromNode?.id || \"\",\n            target: id,\n          },\n        ]);\n      }\n    },\n    [screenToFlowPosition]\n  );\n\n  return (\n    <div\n      className=\"wrapper\"\n      ref={reactFlowWrapper}\n      style={{ height: \"100%\", width: \"100%\" }}\n    >\n      <ReactFlow\n        nodes={nodes}\n        edges={edges}\n        onNodesChange={onNodesChange}\n        onEdgesChange={onEdgesChange}\n        onConnect={onConnect}\n        onConnectEnd={onConnectEnd}\n        nodeTypes={nodeTypes}\n        fitView\n        fitViewOptions={{ padding: 2 }}\n        nodeOrigin={nodeOrigin}\n        aria-label=\"React flow demo\"\n      >\n        <Background />\n      </ReactFlow>\n    </div>\n  );\n};\n\nexport const CompassReactFlowDemo = () => (\n  <div style={{ height: \"400px\" }}>\n    <ReactFlowProvider>\n      <AddNodeOnEdgeDrop />\n    </ReactFlowProvider>\n  </div>\n);\n"
         }
       ]
@@ -2767,7 +2767,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-bullseye::react::examples::bullseye-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_bullseye/react/examples/BullseyeBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Bullseye } from '@patternfly/react-core';\n\nexport const BullseyeBasic: React.FunctionComponent = () => (\n  <Bullseye>\n    <div>Bullseye ◎ layout</div>\n  </Bullseye>\n);\n"
         }
       ]
@@ -2821,7 +2821,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexBasic: React.FunctionComponent = () => (\n  <Flex>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n  </Flex>\n);\n"
         }
       ]
@@ -2839,7 +2839,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-nesting",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexNesting",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexNesting: React.FunctionComponent = () => (\n  <Flex>\n    <Flex>\n      <FlexItem>Flex item</FlexItem>\n      <FlexItem>Flex item</FlexItem>\n    </Flex>\n    <Flex>\n      <FlexItem>Flex item</FlexItem>\n      <FlexItem>Flex item</FlexItem>\n      <FlexItem>Flex item</FlexItem>\n    </Flex>\n  </Flex>\n);\n"
         }
       ]
@@ -2857,7 +2857,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-nested-items",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexNestedItems",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexNestedItems: React.FunctionComponent = () => (\n  <Flex>\n    <Flex>\n      <FlexItem>Flex item</FlexItem>\n      <FlexItem>Flex item</FlexItem>\n    </Flex>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <Flex>\n      <FlexItem>Flex item</FlexItem>\n    </Flex>\n  </Flex>\n);\n"
         }
       ]
@@ -2875,7 +2875,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-individually-spaced",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexIndividuallySpaced",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexIndividuallySpaced: React.FunctionComponent = () => (\n  <Flex>\n    <FlexItem spacer={{ default: 'spacerNone' }}>Item - none</FlexItem>\n    <FlexItem spacer={{ default: 'spacerXs' }}>Item - xs</FlexItem>\n    <FlexItem spacer={{ default: 'spacerSm' }}>Item -sm</FlexItem>\n    <FlexItem spacer={{ default: 'spacerMd' }}>Item - md</FlexItem>\n    <FlexItem spacer={{ default: 'spacerLg' }}>Item - lg</FlexItem>\n    <FlexItem spacer={{ default: 'spacerXl' }}>Item - xl</FlexItem>\n    <FlexItem spacer={{ default: 'spacer2xl' }}>Item - 2xl</FlexItem>\n    <FlexItem spacer={{ default: 'spacer3xl' }}>Item - 3xl</FlexItem>\n  </Flex>\n);\n"
         }
       ]
@@ -2893,7 +2893,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-spacing-xl",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexSpacingXl",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexSpacingXl: React.FunctionComponent = () => (\n  <Flex spaceItems={{ default: 'spaceItemsXl' }}>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n  </Flex>\n);\n"
         }
       ]
@@ -2911,7 +2911,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-spacing-none",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexSpacingNone",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexSpacingNone: React.FunctionComponent = () => (\n  <Flex spaceItems={{ default: 'spaceItemsNone' }}>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n  </Flex>\n);\n"
         }
       ]
@@ -2929,7 +2929,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-row-gap",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexRowGap",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexRowGap: React.FunctionComponent = () => (\n  <Flex rowGap={{ default: 'rowGap2xl' }}>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n  </Flex>\n);\n"
         }
       ]
@@ -2947,7 +2947,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-flex::react::examples::flex-column-gap",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_flex/react/examples/FlexColumnGap",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Flex, FlexItem } from '@patternfly/react-core';\n\nexport const FlexColumnGap: React.FunctionComponent = () => (\n  <Flex columnGap={{ default: 'columnGap2xl' }}>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n    <FlexItem>Flex item</FlexItem>\n  </Flex>\n);\n"
         }
       ]
@@ -3001,7 +3001,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-gallery::react::examples::gallery-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_gallery/react/examples/GalleryBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Gallery, GalleryItem } from '@patternfly/react-core';\n\nexport const GalleryBasic: React.FunctionComponent = () => (\n  <Gallery>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n  </Gallery>\n);\n"
         }
       ]
@@ -3019,7 +3019,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-gallery::react::examples::gallery-with-gutters",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_gallery/react/examples/GalleryWithGutters",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Gallery, GalleryItem } from '@patternfly/react-core';\n\nexport const GalleryWithGutters: React.FunctionComponent = () => (\n  <Gallery hasGutter>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n  </Gallery>\n);\n"
         }
       ]
@@ -3037,7 +3037,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-gallery::react::examples::gallery-adjusting-min-widths",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_gallery/react/examples/GalleryAdjustingMinWidths",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Gallery, GalleryItem } from '@patternfly/react-core';\n\nexport const GalleryAdjustingMinWidths: React.FunctionComponent = () => (\n  <Gallery\n    hasGutter\n    minWidths={{\n      md: '100px',\n      lg: '150px',\n      xl: '200px',\n      '2xl': '300px'\n    }}\n  >\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n  </Gallery>\n);\n"
         }
       ]
@@ -3055,7 +3055,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-gallery::react::examples::gallery-adjusting-max-widths",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_gallery/react/examples/GalleryAdjustingMaxWidths",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Gallery, GalleryItem } from '@patternfly/react-core';\n\nexport const GalleryAdjustingMaxWidths: React.FunctionComponent = () => (\n  <Gallery\n    hasGutter\n    maxWidths={{\n      md: '280px',\n      lg: '320px',\n      '2xl': '400px'\n    }}\n  >\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n  </Gallery>\n);\n"
         }
       ]
@@ -3073,7 +3073,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-gallery::react::examples::gallery-adjusting-min-max-widths",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_gallery/react/examples/GalleryAdjustingMinMaxWidths",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Gallery, GalleryItem } from '@patternfly/react-core';\n\nexport const GalleryAdjustingMinMaxWidths: React.FunctionComponent = () => (\n  <Gallery\n    hasGutter\n    minWidths={{\n      default: '100%',\n      md: '100px',\n      xl: '300px'\n    }}\n    maxWidths={{\n      md: '200px',\n      xl: '1fr'\n    }}\n  >\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n    <GalleryItem>Gallery Item</GalleryItem>\n  </Gallery>\n);\n"
         }
       ]
@@ -3091,7 +3091,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-gallery::react::examples::gallery-alternative-components",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_gallery/react/examples/GalleryAlternativeComponents",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Gallery, GalleryItem } from '@patternfly/react-core';\n\nexport const GalleryAlternativeComponents: React.FunctionComponent = () => (\n  <Gallery component=\"ul\">\n    <GalleryItem component=\"li\">Gallery Item</GalleryItem>\n    <GalleryItem component=\"li\">Gallery Item</GalleryItem>\n    <GalleryItem component=\"li\">Gallery Item</GalleryItem>\n    <GalleryItem component=\"li\">Gallery Item</GalleryItem>\n    <GalleryItem component=\"li\">Gallery Item</GalleryItem>\n  </Gallery>\n);\n"
         }
       ]
@@ -3145,7 +3145,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridBasic: React.FunctionComponent = () => (\n  <Grid>\n    <GridItem span={8}>span = 8</GridItem>\n    <GridItem span={4} rowSpan={2}>\n      span = 4, rowSpan = 2\n    </GridItem>\n    <GridItem span={2} rowSpan={3}>\n      span = 2, rowSpan = 3\n    </GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n  </Grid>\n);\n"
         }
       ]
@@ -3163,7 +3163,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-with-gutters",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridWithGutters",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridWithGutters: React.FunctionComponent = () => (\n  <Grid hasGutter>\n    <GridItem span={8}>span = 8</GridItem>\n    <GridItem span={4} rowSpan={2}>\n      span = 4, rowSpan = 2\n    </GridItem>\n    <GridItem span={2} rowSpan={3}>\n      span = 2, rowSpan = 3\n    </GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n    <GridItem span={2}>span = 2</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n    <GridItem span={4}>span = 4</GridItem>\n  </Grid>\n);\n"
         }
       ]
@@ -3181,7 +3181,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-with-overrides",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridWithOverrides",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridWithOverrides: React.FunctionComponent = () => (\n  <Grid sm={6} md={4} lg={3} xl2={1}>\n    <GridItem span={3} rowSpan={2}>\n      span = 3 rowSpan= 2\n    </GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n    <GridItem>Grid Item</GridItem>\n  </Grid>\n);\n"
         }
       ]
@@ -3199,7 +3199,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-standard-ordering",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridStandardOrdering",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridStandardOrdering: React.FunctionComponent = () => (\n  <Grid hasGutter span={3}>\n    <GridItem order={{ default: '2' }}>Item A</GridItem>\n    <GridItem>Item B</GridItem>\n    <GridItem order={{ default: '-1' }}>Item C</GridItem>\n  </Grid>\n);\n"
         }
       ]
@@ -3217,7 +3217,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-responsive-ordering",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridResponsiveOrdering",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridResponsiveOrdering: React.FunctionComponent = () => (\n  <Grid hasGutter span={3}>\n    <GridItem order={{ lg: '2' }}>Item A</GridItem>\n    <GridItem>Item B</GridItem>\n    <GridItem order={{ default: '-1', md: '1' }}>Item C</GridItem>\n  </Grid>\n);\n"
         }
       ]
@@ -3235,7 +3235,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-grouping-ordering",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridGroupingOrdering",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridGroupingOrdering: React.FunctionComponent = () => (\n  <Grid hasGutter span={12}>\n    <Grid hasGutter span={6} order={{ default: '2' }}>\n      <GridItem order={{ default: '3' }}>Set 1, Item A</GridItem>\n      <GridItem order={{ default: '1' }}>Set 1, Item B</GridItem>\n      <GridItem>Set 1, Item C</GridItem>\n      <GridItem order={{ default: '2' }}>Set 1, Item D</GridItem>\n    </Grid>\n    <Grid hasGutter span={6}>\n      <GridItem order={{ default: '2' }}>Set 2, Item A</GridItem>\n      <GridItem order={{ default: '1' }}>Set 2, Item B</GridItem>\n      <GridItem>Set 2, Item C</GridItem>\n      <GridItem order={{ default: '2' }}>Set 2, Item D</GridItem>\n    </Grid>\n  </Grid>\n);\n"
         }
       ]
@@ -3253,7 +3253,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-grid::react::examples::grid-alternative-components",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_grid/react/examples/GridAlternativeComponents",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Grid, GridItem } from '@patternfly/react-core';\n\nexport const GridAlternativeComponents: React.FunctionComponent = () => (\n  <Grid component=\"ul\">\n    <GridItem component=\"li\">Grid item</GridItem>\n    <GridItem component=\"li\">Grid item</GridItem>\n    <GridItem component=\"li\">Grid item</GridItem>\n    <GridItem component=\"li\">Grid item</GridItem>\n    <GridItem component=\"li\">Grid item</GridItem>\n  </Grid>\n);\n"
         }
       ]
@@ -3307,7 +3307,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-level::react::examples::level-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_level/react/examples/LevelBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Level, LevelItem } from '@patternfly/react-core';\n\nexport const LevelBasic: React.FunctionComponent = () => (\n  <Level>\n    <LevelItem>Level Item</LevelItem>\n    <LevelItem>Level Item</LevelItem>\n    <LevelItem>Level Item</LevelItem>\n  </Level>\n);\n"
         }
       ]
@@ -3325,7 +3325,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-level::react::examples::level-with-gutters",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_level/react/examples/LevelWithGutters",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Level, LevelItem } from '@patternfly/react-core';\n\nexport const LevelWithGutters: React.FunctionComponent = () => (\n  <Level hasGutter>\n    <LevelItem>Level Item</LevelItem>\n    <LevelItem>Level Item</LevelItem>\n    <LevelItem>Level Item</LevelItem>\n  </Level>\n);\n"
         }
       ]
@@ -3379,7 +3379,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-overview::text",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_overview/text",
-          "contentType": "",
+          "contentType": "javascript",
           "content": "import layoutsData from './layouts-data.json';\n\nPatternFly’s **layouts** are used to place components on a page. They create a fully responsive structure to keep components organized and aligned across screen sizes. \n\nThink of layouts as the scaffolding within which your components will live. When laying out your page, consider the layout pattern that suits your content. Multiple layouts can be used within the same page to create versatile and effective UIs. \n\n<SectionGallery\n  section=\"foundations-and-styles\"\n  subsection=\"layouts\"\n  galleryItemsData={layoutsData}\n  placeholderText=\"Search layouts by name\"\n  includeSubsections={true}\n  hasGridText={true}\n  isFullWidth={false}\n/>"
         }
       ]
@@ -3397,7 +3397,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-split::react::examples::split-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_split/react/examples/SplitBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Split, SplitItem } from '@patternfly/react-core';\n\nexport const SplitBasic: React.FunctionComponent = () => (\n  <Split>\n    <SplitItem>content</SplitItem>\n    <SplitItem isFilled>pf-m-fill</SplitItem>\n    <SplitItem>content</SplitItem>\n  </Split>\n);\n"
         }
       ]
@@ -3415,7 +3415,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-split::react::examples::split-with-gutter",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_split/react/examples/SplitWithGutter",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Split, SplitItem } from '@patternfly/react-core';\n\nexport const SplitWithGutter: React.FunctionComponent = () => (\n  <Split hasGutter>\n    <SplitItem>content</SplitItem>\n    <SplitItem isFilled>pf-m-fill</SplitItem>\n    <SplitItem>content</SplitItem>\n  </Split>\n);\n"
         }
       ]
@@ -3433,7 +3433,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-split::react::examples::split-wrappable",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_split/react/examples/SplitWrappable",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Split, SplitItem } from '@patternfly/react-core';\n\nexport const SplitWrappable: React.FunctionComponent = () => (\n  <Split hasGutter isWrappable>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n    <SplitItem>content</SplitItem>\n  </Split>\n);\n"
         }
       ]
@@ -3469,7 +3469,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-stack::react::examples::stack-basic",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_stack/react/examples/StackBasic",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Stack, StackItem } from '@patternfly/react-core';\n\nexport const StackBasic: React.FunctionComponent = () => (\n  <Stack>\n    <StackItem>content</StackItem>\n    <StackItem isFilled>pf-m-fill</StackItem>\n    <StackItem>content</StackItem>\n  </Stack>\n);\n"
         }
       ]
@@ -3487,7 +3487,7 @@
           "version": "v6",
           "id": "api::v6::foundations-and-styles::layouts-stack::react::examples::stack-with-gutter",
           "path": "https://main.patternfly-org.pages.dev/api/v6/foundations-and-styles/layouts_stack/react/examples/StackWithGutter",
-          "contentType": "css",
+          "contentType": "javascript",
           "content": "import { Stack, StackItem } from '@patternfly/react-core';\n\nexport const StackWithGutter: React.FunctionComponent = () => (\n  <Stack hasGutter>\n    <StackItem>content</StackItem>\n    <StackItem isFilled>pf-m-fill</StackItem>\n    <StackItem>content</StackItem>\n  </Stack>\n);\n"
         }
       ]
