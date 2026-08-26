@@ -103,7 +103,9 @@ const isMarkdown = (content: unknown): boolean => {
     /^\d+\.\s/m, // ordered list
     /\[.*\]\(.*\)/, // inline link
     /!\[.*\]\(.*\)/, // image
-    /^```/m // fenced code block
+    /^```/m, // fenced code block
+    // /\|[\s:]*-+\s*\|/ // table
+    /^\s*\|(?:\s*:-+:-*\s*\|)+\s*$/m // table
   ];
 
   return patterns.some(re => re.test(content));
