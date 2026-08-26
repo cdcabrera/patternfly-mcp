@@ -44,6 +44,7 @@ interface ApiContent {
     pathSlug?: string | undefined;
     item?: string | undefined;
     facet?: string | undefined;
+    detail?: string | undefined;
     kind?: string | undefined;
     metadata?: string[] | undefined;
   }
@@ -182,49 +183,65 @@ isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.d
  *     each containing information about the crawling result, status, and content.
  */
 const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawler[]> => {
-  const componentPaths = options.patternflyOptions.api.componentPaths;
+  const { componentPaths, traversalPaths } = options.patternflyOptions.api;
   const settled = await processDocsFunction(urls);
   const content: ApiCrawler[] = [];
 
   for (const res of settled) {
+    if (!res.isSuccess) {
+      continue;
+    }
+
     const { isEmpty, payload } = parsePayload.memo(res.content);
 
-    if (res.isSuccess) {
-      if (Array.isArray(payload)) {
-        if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
-          if (!isEmpty) {
-            content.push({ ...res });
-          }
-          continue;
+    if (Array.isArray(payload)) {
+      // 1. Terminal Data Arrays (props, css, etc)
+      if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
+        if (!isEmpty) {
+          content.push({ ...res });
         }
-
-        const flattenedPayload: string[] = [];
-
-        payload.forEach(value => {
-          if (typeof value === 'string') {
-            flattenedPayload.push(value);
-          }
-
-          // Compensate for the outlier of the "examples" implementation
-          if (isPlainObject(value)) {
-            Object.values(value).forEach(value => {
-              if (typeof value === 'string') {
-                flattenedPayload.push(value);
-              }
-            });
-          }
-        });
-
-        const updatedPayload = [...flattenedPayload, ...componentPaths].map(path => joinUrl(res.path, path));
-        const crawledContent = await crawler(updatedPayload);
-
-        content.push(...crawledContent);
         continue;
       }
 
-      if (!isEmpty) {
-        content.push({ ...res });
-      }
+      // 2. Traversal & Directory Array Processing
+      const flattenedPayload: string[] = [];
+
+      payload.forEach(value => {
+        if (typeof value === 'string') {
+          flattenedPayload.push(value);
+        // } else if (isPlainObject(value) && !Object.keys(value).includes('error')) {
+        } else if (isPlainObject(value)) {
+          Object.values(value).forEach(value => {
+            if (typeof value === 'string') {
+              flattenedPayload.push(value);
+
+              log.info(`Adding paths >>>`, value);
+            }
+          });
+        }
+      });
+
+      const updatedPayload = [...flattenedPayload, ...traversalPaths, ...componentPaths].map(path => joinUrl(res.path, path));
+
+      log.info(`Crawling ${updatedPayload.length} paths`, JSON.stringify(updatedPayload));
+
+      const crawledContent = await crawler(updatedPayload);
+
+      content.push(...crawledContent);
+      continue;
+    }
+
+    // 3. String Payloads (Markdown, HTML, .tsx source code)
+    if (!isEmpty) {
+      content.push({ ...res });
+    }
+
+    // 4. Probe Traversal Paths on Facet Endpoints (e.g. /react -> /react/examples)
+    if (!traversalPaths.some(traversalPath => res?.path?.includes(traversalPath))) {
+      const traversalUrls = traversalPaths.map(traversalPath => joinUrl(res.path, traversalPath));
+      const traversalCrawledContent = await crawler(traversalUrls);
+
+      content.push(...traversalCrawledContent);
     }
   }
 
@@ -277,11 +294,12 @@ const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): Ap
   return apiResponses.map(({ content, resolvedPath }) => {
     // Relative path after '/api/'
     const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
-    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', ...remaining] = segments;
+    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', rawDetail = '', ...remaining] = segments;
 
     const normalizedSection = normalizeSlug(section);
     const normalizedItem = normalizeSlug(rawItem);
     const normalizedFacet = normalizeSlug(rawFacet || 'text');
+    const normalizedDetail = normalizeSlug(rawDetail);
 
     // Kind is the specific facet (props, css, html, text, doc)
     const kind = componentPaths.includes(normalizedFacet) ? normalizedFacet : normalizedFacet || 'doc';
@@ -300,6 +318,7 @@ const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): Ap
         section: normalizedSection,
         item: normalizedItem,
         facet: normalizedFacet,
+        detail: normalizedDetail,
         kind,
         metadata: remaining.length ? remaining.map(normalizeSlug) : undefined
       }
@@ -368,6 +387,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     const kind = semanticContext.kind || 'doc';
     const section = semanticContext.section || 'components';
     const normalizedItem = semanticContext.item || 'api-entry';
+    const normalizedDetail = semanticContext.detail;
 
     // Deferred Category Filter
     if (DEFERRED_API_CATEGORIES.has(kind.toLowerCase())) {
@@ -383,7 +403,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
 
     const name = extractApiName(normalizedItem, section);
 
-    const id = `api::${version}::${section}::${normalizedItem}::${kind}`;
+    const id = `api::${version}::${section}::${normalizedItem}::${kind}${normalizedDetail ? `::${normalizedDetail}` : ''}`;
 
     if (recordsMap.has(id)) {
       return;
@@ -434,7 +454,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     'patternfly-api',
     callback,
     {
-      runParallel: '#collectionPatternFlyApi',
+      // runParallel: '#collectionPatternFlyApi',
       runSchedule: {
         ...options.patternflyOptions.api.schedule
       }
