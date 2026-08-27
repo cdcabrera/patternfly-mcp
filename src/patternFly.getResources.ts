@@ -77,7 +77,6 @@ interface PatternFlyMcpComponentNames {
  * @property groupId - The unique identifier for the document's parent.
  * @property name - The name of document entry.
  * @property displayCategory - The display category of document entry.
- * @property priority - The priority of document entry.
  * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
  * @property uriId - The resource's exact URI for the document entry.
  * @property uriSchemas - The parent resource's general URI for the related component schemas, if they exist.
@@ -89,7 +88,6 @@ type PatternFlyMcpDocsMeta = {
   groupId: string;
   name: string;
   displayCategory: string;
-  priority: number;
   uri: string;
   uriId: string;
   uriSchemas?: string | undefined;
@@ -205,13 +203,11 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
 
+// TODO: remove this when complete with clean-up
 // --- Quick Dump Helper ---
 const dumpCollectionsToDisk = (
   merged: unknown,
-  // originalDocs: unknown,
-  // schemasCollection: unknown,
   apiCollection: unknown
-  // catalog: unknown
 ) => {
   try {
     const outputDir = path.resolve(process.cwd(), '.dump');
@@ -219,21 +215,6 @@ const dumpCollectionsToDisk = (
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
-
-    /*
-    // 1. Base required collections
-    fs.writeFileSync(
-      path.join(outputDir, 'patternfly-base-collections.dump.json'),
-      JSON.stringify(
-        {
-          'patternfly-docs': originalDocs ?? null,
-          'patternfly-component-schemas': schemasCollection ?? null
-        },
-        null,
-        2
-      ),
-      'utf-8'
-    );*/
 
     // 2. API collection
     fs.writeFileSync(
@@ -247,26 +228,6 @@ const dumpCollectionsToDisk = (
       ),
       'utf-8'
     );
-
-    /*
-    // 3. Combined / All collections
-    fs.writeFileSync(
-      path.join(outputDir, 'patternfly-all-collections.dump.json'),
-      JSON.stringify(
-        {
-          collections: {
-            'patternfly-docs': originalDocs ?? null,
-            'patternfly-component-schemas': schemasCollection ?? null,
-            'patternfly-api': apiCollection ?? null
-          },
-          combinedCatalog: catalog
-        },
-        null,
-        2
-      ),
-      'utf-8'
-    );
-    */
 
     fs.writeFileSync(
       path.join(outputDir, 'patternfly-merged.dump.json'),
@@ -300,9 +261,6 @@ const setCategoryDisplayLabel = (entry?: PatternFlyMcpDocsCatalogDoc) => {
   }
 
   switch (categoryLabel) {
-    // case 'api':
-    //  categoryLabel = 'API Reference';
-    //  break;
     case 'grammar':
       categoryLabel = 'Grammar';
       break;
@@ -365,8 +323,6 @@ const getPatternFlyComponentNames = async (contextPathOverride?: string): Promis
       if (!entry) {
         return;
       }
-
-      // const normalizedName = normalizeResourceName(rawName);
 
       componentNamesIndex.push(normalizedName);
       componentNamesIndexMap.set(normalizedName, entry.displayName);
@@ -550,48 +506,8 @@ const mutateKeyWordsMap = (
   mutateMap(normalizedKeyword);
 };
 
-const getDocPriority = (entry: {
-  source?: string;
-  category?: string;
-  path?: string;
-}): number => {
-  const { source, category = '', path = '' } = entry;
-
-  if (source === 'api') {
-    if (['props', 'react-demos', 'html-demos'].includes(category)) {
-      return 1.0;
-    }
-
-    return 0.9;
-  }
-
-  if (source === 'docs') {
-    // Human prose guidelines remain authoritative
-    if (category === 'guidelines' || category === 'accessibility' || path.includes('/content/components/')) {
-      return 0.85;
-    }
-
-    // Raw component example templates have not-hydrated stubs
-    return 0.45;
-  }
-
-  if (source === 'schemas') {
-    return 0.6;
-  }
-
-  return 0.7;
-};
-
 /**
  * Normalizes collection resource names into a uniform slug.
- *
- * Convert PascalCase, camelCase, snake_case, and spaced strings into kebab-cased slugs.
- *
- * Examples:
- * - 'AboutModal' -> 'about-modal'
- * - 'aboutmodal' -> 'aboutmodal' (or matched via component index map)
- * - 'action_list' -> 'action-list'
- * - 'Button' -> 'button'
  *
  * @param key - Raw catalog or collection identifier
  * @returns Normalized slug for current resource grouping strategy.
@@ -602,16 +518,6 @@ const normalizeKey = (key: string): string => {
   }
 
   return key.replace(/[^a-z0-9]/gi, '').toLowerCase();
-
-  /*
-  return name
-    .trim()
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2') // Convert PascalCase / camelCase to kebab-case
-    .replace(/_/g, '-') // Convert snake_case to kebab-case
-    .replace(/\s+/g, '-') // Convert spaces to kebab-case
-    .replace(/-+/g, '-') // Collapse multiple hyphens
-    .toLowerCase();
-   */
 };
 
 /**
@@ -711,8 +617,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         uriIndexMap.set(uriSchemasId.toLowerCase(), name);
       }
 
-      const priority = getDocPriority(entry);
-
       const extendedEntry = {
         ...entry,
         id,
@@ -720,7 +624,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
         name,
         displayName,
         displayCategory,
-        priority,
         uri,
         uriId,
         uriSchemas,
@@ -765,8 +668,6 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     });
   });
 
-  // resource.entries.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-
   Object.entries(byVersion).forEach(([_version, entries]) => {
     entries.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
   });
@@ -796,6 +697,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     byVersionComponentNames: componentNamesByVersion
   };
 
+  // TODO: remove this when complete with clean-up
   dumpCollectionsToDisk(
     { byPath, uriIndex: Object.fromEntries(uriIndexMap) },
     apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
@@ -868,6 +770,7 @@ const setPatternFlyCollection = async (
         log.warn('Failed getPatternFlyMcpResources clear.', error);
       }
 
+      // TODO: remove this when dump helper is removed. Intended to force initialize the collection records instead of relying on consuming functionality to rebuild.
       getPatternFlyMcpResources.memo();
       log.debug(`Merging collection ${name} records. (${collection.records.length})`);
     }
@@ -894,7 +797,6 @@ onUpdateServerRecordsRegistry(({ name, response, error }: RegisterCollectionItem
 });
 
 export {
-  getDocPriority,
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
   getPatternFlyComponentNames,
