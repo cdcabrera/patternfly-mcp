@@ -360,7 +360,7 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
     ...remaining.map(normalizeSlug)
   ].filter(Boolean).join('-');
 
-  const name = extractApiName(normalizedItem, normalizedSection, normalizedDetailType, normalizedDetail);
+  const name = extractApiName(normalizedItem, normalizedSection);
 
   const id = `api::${normalizedVersion}::${normalizedSection}::${normalizedItem}::${normalizedCategory}${normalizedDetailType ? `::${normalizedDetailType}::${normalizedDetail}` : ''}`;
 
