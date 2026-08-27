@@ -363,7 +363,7 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
   const id = `api::${normalizedVersion}::${normalizedSection}::${normalizedItem}::${normalizedCategory}${normalizedDetailType ? `::${normalizedDetailType}::${normalizedDetail}` : ''}`;
 
   const displayName = extractApiDisplayName(content, { slug: normalizedItem, kind: normalizedCategory, section: normalizedSection });
-  const description = extractApiDescription(content, { displayName, kind: normalizedCategory, detailType: normalizedDetailType, slug: pathSlug });
+  const description = extractApiDescription(content, { displayName, kind: normalizedCategory, detailType: normalizedDetailType });
 
   const hasQuality = calculateContentQualityScore(content, { kind: normalizedCategory }) < MIN_API_QUALITY_THRESHOLD;
   const isDeferred = DEFERRED_API_CATEGORIES.has(normalizedCategory);

@@ -145,11 +145,14 @@ const formatSlugToTitle = (slug: string, section?: string): string => {
     return 'PatternFly API';
   }
 
+  const acronyms = ['ai', 'css', 'html', 'mcp', 'cli', 'uxd', 'ui', 'api', 'faq', 'faqs', 'aria', 'rtl'];
+  const acronymRegex = new RegExp(`^(${acronyms.join('|')})$`, 'i');
+
   const cleanSection = section
     ? section
       .split('-')
       .map(wordPhrase =>
-        (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(wordPhrase)
+        (acronymRegex.test(wordPhrase)
           ? wordPhrase.toUpperCase()
           : wordPhrase.charAt(0).toUpperCase() + wordPhrase.slice(1))).join(' ')
     : '';
@@ -165,7 +168,7 @@ const formatSlugToTitle = (slug: string, section?: string): string => {
       segment
         .split('-')
         .map(word => {
-          if (/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(word)) {
+          if (acronymRegex.test(word)) {
             return word.toUpperCase();
           }
 
@@ -236,7 +239,7 @@ const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
       return `PatternFly React component props and TypeScript interfaces for ${displayName}.`;
     case 'css':
       return `PatternFly ${
-        displayName.toLowerCase().includes('css') ? '' : 'CSS '}variables and styling classes for ${displayName}.`;
+        displayName.toLowerCase().includes('css') ? '' : 'CSS '}variables and tokens for ${displayName}.`;
     case 'html':
     case 'html-demos':
       return `PatternFly HTML examples and markup structure for ${displayName}.`;
@@ -257,23 +260,20 @@ const getApiFallbackDescription = (displayName = '', kind = 'doc'): string => {
  * @param [context] - Optional context for generating a unique description.
  * @param [context.displayName] - Display name.
  * @param [context.kind] - Type of content.
- * @param [context.slug] - Optional slug, used as a fallback with `context.detailType`.
  * @param [context.detailType] - Alternate to `context.kind`, like "examples".
  * @returns A generated description from metadata, or a fallback.
  */
 const extractApiDescription = (
   content?: string,
-  context: { displayName?: string; kind?: string; slug?: string | undefined; detailType?: string | undefined } = {}
+  context: { displayName?: string; kind?: string; detailType?: string | undefined } = {}
 ): string => {
-  const { displayName = '', kind = 'doc', slug: _slug = '', detailType = '' } = context || {};
+  const { displayName = '', kind = 'doc', detailType = '' } = context || {};
 
-  // Immediate return on "generate something sane"
   if (kind === 'props' || kind === 'css') {
     return getApiFallbackDescription(displayName, kind);
   }
 
   if (detailType === 'examples') {
-    // return getApiFallbackDescription(formatSlugToTitle(slug), detailType);
     return getApiFallbackDescription(displayName, detailType);
   }
 
@@ -323,13 +323,11 @@ const extractApiDescription = (
         .replace(/<([A-Za-z0-9_\s-]+)>/g, '$1')
         // Remove remaining complex HTML tags with attributes
         .replace(/<[A-Za-z0-9_-]+\b[^>]*\/?>/g, '')
-        // Strip HTML tags (e.g., <a href="...">text</a> -> text, <br/>, <span>, etc.)
-        // .replace(/<[^>]+>/g, '')
-        // Replace Markdown inline images: ![alt](url) -> alt
+        // Replace Markdown inline images: `![alt](url) -> alt`
         .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
-        // Replace Markdown links: [text](url) -> text
+        // Replace Markdown links: `[text](url) -> text`
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        // Replace Markdown reference links: [text][ref] -> text
+        // Replace Markdown reference links: `[text][ref] -> text`
         .replace(/\[([^\]]+)\]\[[^\]]*\]/g, '$1')
         // Remove Markdown formatting characters (bold, italics, inline code, strikethrough)
         .replace(/[*_`~]/g, '')
