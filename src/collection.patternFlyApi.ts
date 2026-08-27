@@ -215,12 +215,14 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
       payload.forEach(value => {
         if (typeof value === 'string') {
           flattenedPayload.push(value);
+
+          log.debug(`Collection PatternFly API adding path`, value);
         } else if (isPlainObject(value)) {
           Object.values(value).forEach(value => {
             if (typeof value === 'string') {
               flattenedPayload.push(value);
 
-              log.info(`Adding paths >>>`, value);
+              log.debug(`Collection PatternFly API adding path`, value);
             }
           });
         }
@@ -228,7 +230,7 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
 
       const updatedPayload = [...flattenedPayload, ...traversalPaths, ...componentPaths].map(path => joinUrl(res.path, path));
 
-      log.info(`Crawling ${updatedPayload.length} paths`, JSON.stringify(updatedPayload));
+      log.debug(`Collection PatternFly API Crawling ${updatedPayload.length} path(s)`);
 
       const crawledContent = await crawler(updatedPayload);
 
@@ -291,7 +293,7 @@ const getVersions = async (options = getOptions()) => {
  * @returns A promise resolving to an array of processed API content entries.
  */
 const apiSpider = async (): Promise<ApiCrawler[]> => {
-  log.info(`API spider crawl started`);
+  log.info(`Collection PatternFly API spider crawl started`);
   let seedVersions: string[] = [];
   let content: ApiCrawler[] = [];
 
@@ -307,14 +309,14 @@ const apiSpider = async (): Promise<ApiCrawler[]> => {
     try {
       content = await crawler(seedVersions);
     } catch (err) {
-      log.warn(`API spider: crawler failed`, err);
+      log.warn(`Collection PatternFly API spider: crawler failed`, err);
 
       return [];
     }
   }
 
   log.info(
-    `API spider crawl completed. ${content.length} content ${
+    `Collection PatternFly API spider crawl completed. ${content.length} content ${
       (content.length === 1 && 'entry') || 'entries'
     } retrieved.`
   );
