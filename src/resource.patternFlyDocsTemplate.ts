@@ -14,6 +14,7 @@ import {
   uriSectionComplete,
   uriVersionComplete
 } from './resource.patternFlyDocsIndex';
+import { formatContentForMarkdown } from './resource.helpers';
 
 /**
  * Name of the resource template.
@@ -118,7 +119,8 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   try {
     const docPaths = byEntry
       .filter(({ path }) => path)
-      .map(({ path, uriId }) => ({ doc: path, uri: uriId }));
+      .map(({ path, uriId, id, groupId, displayName, displayCategory, version: entryVersion }) =>
+        ({ doc: path, uri: uriId, id, groupId, displayName, displayCategory, entryVersion }));
 
     if (docPaths.length > 0) {
       // `processDocsFunction` has de-dup docs baked in
@@ -172,13 +174,14 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   }
 
   return {
-    contents: docs.map(({ uri, path, resolvedPath, content }) => ({
+    contents: docs.map(({ uri, content, id, groupId, displayName, displayCategory, entryVersion }) => ({
       uri,
       mimeType: 'text/markdown',
       text: stringJoin.newline(
-        `# Documentation from ${resolvedPath || path}`,
+        `<!-- mcp:provenance id="${id}" groupId="${groupId}" -->`,
+        `# Documentation for ${displayName} - ${displayCategory} (${entryVersion})`,
         '',
-        content
+        formatContentForMarkdown(content)
       )
     }))
   };
