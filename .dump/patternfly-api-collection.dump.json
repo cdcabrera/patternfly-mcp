@@ -473,7 +473,7 @@
       [
         {
           "displayName": "About Modal CSS",
-          "description": "PatternFly variables and styling classes for About Modal CSS.",
+          "description": "PatternFly variables and tokens for About Modal CSS.",
           "pathSlug": "components-about-modal-css",
           "category": "css",
           "section": "components",
@@ -617,7 +617,7 @@
       [
         {
           "displayName": "Accordion CSS",
-          "description": "PatternFly variables and styling classes for Accordion CSS.",
+          "description": "PatternFly variables and tokens for Accordion CSS.",
           "pathSlug": "components-accordion-css",
           "category": "css",
           "section": "components",
@@ -743,7 +743,7 @@
       [
         {
           "displayName": "Action List CSS",
-          "description": "PatternFly variables and styling classes for Action List CSS.",
+          "description": "PatternFly variables and tokens for Action List CSS.",
           "pathSlug": "components-action-list-css",
           "category": "css",
           "section": "components",
@@ -941,7 +941,7 @@
       [
         {
           "displayName": "Alert CSS",
-          "description": "PatternFly variables and styling classes for Alert CSS.",
+          "description": "PatternFly variables and tokens for Alert CSS.",
           "pathSlug": "components-alert-css",
           "category": "css",
           "section": "components",
@@ -1085,7 +1085,7 @@
       [
         {
           "displayName": "Avatar CSS",
-          "description": "PatternFly variables and styling classes for Avatar CSS.",
+          "description": "PatternFly variables and tokens for Avatar CSS.",
           "pathSlug": "components-avatar-css",
           "category": "css",
           "section": "components",
@@ -1157,7 +1157,7 @@
       [
         {
           "displayName": "Back To Top CSS",
-          "description": "PatternFly variables and styling classes for Back To Top CSS.",
+          "description": "PatternFly variables and tokens for Back To Top CSS.",
           "pathSlug": "components-back-to-top-css",
           "category": "css",
           "section": "components",
@@ -1229,7 +1229,7 @@
       [
         {
           "displayName": "Backdrop CSS",
-          "description": "PatternFly variables and styling classes for Backdrop CSS.",
+          "description": "PatternFly variables and tokens for Backdrop CSS.",
           "pathSlug": "components-backdrop-css",
           "category": "css",
           "section": "components",
@@ -1301,7 +1301,7 @@
       [
         {
           "displayName": "Background Image CSS",
-          "description": "PatternFly variables and styling classes for Background Image CSS.",
+          "description": "PatternFly variables and tokens for Background Image CSS.",
           "pathSlug": "components-background-image-css",
           "category": "css",
           "section": "components",
@@ -1409,7 +1409,7 @@
       [
         {
           "displayName": "Badge CSS",
-          "description": "PatternFly variables and styling classes for Badge CSS.",
+          "description": "PatternFly variables and tokens for Badge CSS.",
           "pathSlug": "components-badge-css",
           "category": "css",
           "section": "components",
@@ -1517,7 +1517,7 @@
       [
         {
           "displayName": "Banner CSS",
-          "description": "PatternFly variables and styling classes for Banner CSS.",
+          "description": "PatternFly variables and tokens for Banner CSS.",
           "pathSlug": "components-banner-css",
           "category": "css",
           "section": "components",
@@ -1625,7 +1625,7 @@
       [
         {
           "displayName": "Breadcrumb CSS",
-          "description": "PatternFly variables and styling classes for Breadcrumb CSS.",
+          "description": "PatternFly variables and tokens for Breadcrumb CSS.",
           "pathSlug": "components-breadcrumb-css",
           "category": "css",
           "section": "components",
@@ -1805,7 +1805,7 @@
       [
         {
           "displayName": "Button CSS",
-          "description": "PatternFly variables and styling classes for Button CSS.",
+          "description": "PatternFly variables and tokens for Button CSS.",
           "pathSlug": "components-button-css",
           "category": "css",
           "section": "components",
@@ -1985,7 +1985,7 @@
       [
         {
           "displayName": "Card CSS",
-          "description": "PatternFly variables and styling classes for Card CSS.",
+          "description": "PatternFly variables and tokens for Card CSS.",
           "pathSlug": "components-card-css",
           "category": "css",
           "section": "components",
@@ -2795,7 +2795,7 @@
       [
         {
           "displayName": "Layouts Bullseye CSS",
-          "description": "PatternFly variables and styling classes for Layouts Bullseye CSS.",
+          "description": "PatternFly variables and tokens for Layouts Bullseye CSS.",
           "pathSlug": "foundations-and-styles-layouts-bullseye-css",
           "category": "css",
           "section": "foundations-and-styles",
@@ -2975,7 +2975,7 @@
       [
         {
           "displayName": "Layouts Flex CSS",
-          "description": "PatternFly variables and styling classes for Layouts Flex CSS.",
+          "description": "PatternFly variables and tokens for Layouts Flex CSS.",
           "pathSlug": "foundations-and-styles-layouts-flex-css",
           "category": "css",
           "section": "foundations-and-styles",
@@ -3119,7 +3119,7 @@
       [
         {
           "displayName": "Layouts Gallery CSS",
-          "description": "PatternFly variables and styling classes for Layouts Gallery CSS.",
+          "description": "PatternFly variables and tokens for Layouts Gallery CSS.",
           "pathSlug": "foundations-and-styles-layouts-gallery-css",
           "category": "css",
           "section": "foundations-and-styles",
@@ -3281,7 +3281,7 @@
       [
         {
           "displayName": "Layouts Grid CSS",
-          "description": "PatternFly variables and styling classes for Layouts Grid CSS.",
+          "description": "PatternFly variables and tokens for Layouts Grid CSS.",
           "pathSlug": "foundations-and-styles-layouts-grid-css",
           "category": "css",
           "section": "foundations-and-styles",
@@ -3353,7 +3353,7 @@
       [
         {
           "displayName": "Layouts Level CSS",
-          "description": "PatternFly variables and styling classes for Layouts Level CSS.",
+          "description": "PatternFly variables and tokens for Layouts Level CSS.",
           "pathSlug": "foundations-and-styles-layouts-level-css",
           "category": "css",
           "section": "foundations-and-styles",
@@ -3515,7 +3515,7 @@
       [
         {
           "displayName": "Layouts Stack CSS",
-          "description": "PatternFly variables and styling classes for Layouts Stack CSS.",
+          "description": "PatternFly variables and tokens for Layouts Stack CSS.",
           "pathSlug": "foundations-and-styles-layouts-stack-css",
           "category": "css",
           "section": "foundations-and-styles",
