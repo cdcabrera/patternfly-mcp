@@ -354,13 +354,9 @@ const extractApiDescription = (
  * @param section - Entry section.
  * @returns Extracted entry name
  */
-const extractApiName = (item: string, section: string, _detailType?: string, _detail?: string): string => {
+const extractApiName = (item: string, section: string): string => {
   const normalizedItem = item.trim().toLowerCase();
   const normalizedSection = section.trim().toLowerCase();
-  // const normalizedDetail = detailType ? `${detailType}${detail ? `-${detail?.trim().toLowerCase()}` : ''}` : '';
-
-  // if (detailType === 'examples') {
-  // }
 
   if (normalizedSection === 'components') {
     return normalizedItem;
