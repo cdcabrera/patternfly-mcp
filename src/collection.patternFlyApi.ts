@@ -54,35 +54,6 @@ interface ApiContent {
   section: string;
   source: string;
   version: string;
-  // description: extractApiDescription(content, { displayName, kind, detailType: normalizedDetailType, slug: pathSlug }),
-  //     displayName,
-  //     category: kind,
-  //     content: content,
-  //     contentType: contentType(content),
-  //     hasQuality: calculateContentQualityScore(content, { kind }) < MIN_API_QUALITY_THRESHOLD,
-  //     id,
-  //     isDeferred: DEFERRED_API_CATEGORIES.has(kind),
-  //     name,
-  //     path: resolvedPath,
-  //     pathSlug,
-  //     section: normalizedSection,
-  //     source: 'api' as const,
-  //     version: version.toLowerCase()
-
-  /*
-  semanticContext: {
-    version?: string | undefined;
-    section?: string | undefined;
-    pathSlug?: string | undefined;
-    item?: string | undefined;
-    facet?: string | undefined;
-    detail?: string | undefined;
-    detailType?: string | undefined;
-    kind?: string | undefined;
-    contentType?: string | undefined;
-    metadata?: string[] | undefined;
-  }
-  */
 }
 
 /**
@@ -230,8 +201,7 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
     const { isEmpty, payload } = parsePayload.memo(res.content);
 
     if (Array.isArray(payload)) {
-      // 1. Terminal Data Arrays (props, css, etc)
-      // if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
+      // Terminal Data Arrays (props, css, etc)
       if (componentPaths.some(componentPath => res?.path?.endsWith(`/${componentPath}`))) {
         if (!isEmpty) {
           content.push({ ...res });
@@ -239,13 +209,12 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
         continue;
       }
 
-      // 2. Traversal & Directory Array Processing
+      // Traversal & Directory Array Processing
       const flattenedPayload: string[] = [];
 
       payload.forEach(value => {
         if (typeof value === 'string') {
           flattenedPayload.push(value);
-        // } else if (isPlainObject(value) && !Object.keys(value).includes('error')) {
         } else if (isPlainObject(value)) {
           Object.values(value).forEach(value => {
             if (typeof value === 'string') {
@@ -267,14 +236,13 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
       continue;
     }
 
-    // 3. String Payloads (Markdown, HTML, .tsx source code)
+    // String Payloads (Markdown, HTML, .tsx source code)
     if (!isEmpty) {
       content.push({ ...res });
     }
 
-    // 4. Probe Traversal Paths on Facet Endpoints (e.g. /react -> /react/examples)
-    // if (!traversalPaths.some(traversalPath => res?.path?.includes(traversalPath))) {
-    if (!traversalPaths.some(traversalPath => res?.path?.endsWith(`/${traversalPath}`))) { // res?.path?.endsWith(`/${componentPath}`)
+    // Probe Traversal Paths on Facet Endpoints (e.g. /react -> /react/examples)
+    if (!traversalPaths.some(traversalPath => res?.path?.endsWith(`/${traversalPath}`))) {
       const traversalUrls = traversalPaths.map(traversalPath => joinUrl(res.path, traversalPath));
       const traversalCrawledContent = await crawler(traversalUrls);
 
@@ -318,62 +286,6 @@ const getVersions = async (options = getOptions()) => {
 };
 
 /**
- * Light/Immediate process for content metadata from response paths.
- *
- * @param apiResponses - The list of pre-metadata content.
- * @param [options=getOptions()] - Configuration options.
- * @returns The list of processed API content with metadata.
- *//*
-const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): ApiContent[] => {
-  const base = options.patternflyOptions.api.base;
-  const componentPaths = options.patternflyOptions.api.componentPaths;
-
-  return apiResponses.map(({ content, resolvedPath }) => {
-    // Relative path after '/api/'
-    const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
-    const [version = 'unknown', section = 'unknown', rawItem = '', rawFacet = '', rawDetailType = '', rawDetail = '', ...remaining] = segments;
-
-    const normalizedSection = normalizeSlug(section);
-    const normalizedItem = normalizeSlug(rawItem);
-    const normalizedFacet = normalizeSlug(rawFacet || 'text');
-    const normalizedDetailType = normalizeSlug(rawDetailType);
-    const normalizedDetail = normalizeSlug(rawDetail);
-
-    // Kind is the specific facet (props, css, html, text, doc)
-    const kind = componentPaths.includes(normalizedFacet) ? normalizedFacet : normalizedFacet || 'doc';
-
-    // Build hierarchical normalized path slug: e.g. "ai/overview/text" or "components/button/props"
-    const isDetailSameName = normalizedDetail && normalizedDetail.includes(normalizedItem);
-    const pathSlug = [
-      normalizedSection, isDetailSameName ? undefined : normalizedItem, normalizedFacet, normalizedDetailType, normalizedDetail
-    ].filter(Boolean).join('-');
-
-    return {
-      url: resolvedPath,
-      content,
-      semanticContext: {
-        version: version.toLowerCase(),
-        pathSlug,
-        section: normalizedSection,
-        item: normalizedItem,
-        facet: normalizedFacet,
-        detailType: normalizedDetailType,
-        detail: normalizedDetail,
-        kind,
-        contentType: contentType(content),
-        metadata: remaining.length ? remaining.map(normalizeSlug) : undefined
-      }
-    };
-  });
-};
-*/
-
-/**
- * Memoized version of contentMetadata.
- */
-// contentMetadata.memo = memo(contentMetadata);
-
-/**
  * Initiate API crawl.
  *
  * @returns A promise resolving to an array of processed API content entries.
@@ -401,10 +313,6 @@ const apiSpider = async (): Promise<ApiCrawler[]> => {
     }
   }
 
-  // Review the memo here. It may be better served to tie into crawler,
-  // like `crawler.memo` as part of the countdown to refresh
-  // const updatedContent = contentMetadata.memo(content);
-
   log.info(
     `API spider crawl completed. ${content.length} content ${
       (content.length === 1 && 'entry') || 'entries'
@@ -414,6 +322,13 @@ const apiSpider = async (): Promise<ApiCrawler[]> => {
   return content;
 };
 
+/**
+ * Light/Immediate process for content metadata from response paths.
+ *
+ * @param crawlerResponse - An entry with pre-metadata content.
+ * @param [options] - Configuration options.
+ * @returns The process metadata entry.
+ */
 const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): ApiContent => {
   const { content, resolvedPath } = crawlerResponse;
   const { base, componentPaths, traversalPaths } = options.patternflyOptions.api;
@@ -454,28 +369,10 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
   const isDeferred = DEFERRED_API_CATEGORIES.has(normalizedCategory);
 
   return {
-    displayName,
-    description,
-    pathSlug,
-    category: normalizedCategory,
-    section: normalizedSection,
-    source: 'api' as const,
-    version: normalizedVersion,
-    id,
-    path: resolvedPath,
-    contentType: contentType(content),
-    content: content,
-    name,
-    hasQuality,
-    isDeferred
-  };
-
-  /*
-  return {
     description,
     displayName,
     category: normalizedCategory,
-    content: content,
+    content,
     contentType: contentType(content),
     hasQuality,
     id,
@@ -487,7 +384,6 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
     source: 'api' as const,
     version: normalizedVersion
   };
-  */
 };
 
 /**
@@ -523,65 +419,6 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
 
     recordsMap.set(record.id, record);
   }
-
-  /*
-  entries?.forEach(entry => {
-    const semanticContext = entry.semanticContext || {};
-    const version = semanticContext.version || 'unknown';
-    const kind = semanticContext.kind || 'doc';
-    const section = semanticContext.section || 'components';
-    const normalizedItem = semanticContext.item || 'api-entry';
-    const normalizedDetailType = semanticContext.detailType;
-    const normalizedDetail = semanticContext.detail || 'detail';
-
-    // Deferred Category Filter
-    if (DEFERRED_API_CATEGORIES.has(kind.toLowerCase())) {
-      return;
-    }
-
-    // Quality Assessment Threshold
-    const quality = calculateContentQualityScore(entry.content, { kind });
-
-    if (quality < MIN_API_QUALITY_THRESHOLD) {
-      return;
-    }
-
-    const name = extractApiName(normalizedItem, section, normalizedDetailType, normalizedDetail);
-
-    const id = `api::${version}::${section}::${normalizedItem}::${kind}${normalizedDetailType ? `::${normalizedDetailType}::${normalizedDetail}` : ''}`;
-
-    if (recordsMap.has(id)) {
-      return;
-    }
-
-    const displayName = extractApiDisplayName(entry.content, { slug: normalizedItem, kind, section });
-    // const displayName = extractApiDisplayName(entry.content, { slug: semanticContext.pathSlug || normalizedItem, kind, section });
-    const adaptedEntry = {
-      displayName,
-      description: extractApiDescription(entry.content, { displayName, kind, detailType: normalizedDetailType, slug: semanticContext.pathSlug }),
-      pathSlug: semanticContext.pathSlug,
-      category: kind,
-      section,
-      source: 'api' as const,
-      version,
-      id,
-      path: entry.url,
-      contentType: entry.semanticContext.contentType,
-      content: entry.content
-    };
-
-    const record = {
-      id,
-      sourceId: entry.url,
-      sourceType: 'api' as const,
-      data: {
-        [name]: [adaptedEntry]
-      }
-    };
-
-    recordsMap.set(record.id, record);
-  });
-  */
 
   return { records: [...recordsMap.values()] };
 };
