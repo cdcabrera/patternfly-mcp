@@ -14,6 +14,14 @@ import {
   runWithSession
 } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import {
+  calculateContentQualityScore,
+  extractApiDescription,
+  extractApiDisplayName,
+  extractApiName,
+  normalizeSlug
+} from './collection.patternFlyApiHelpers';
+import { contentType } from './resource.helpers';
 
 /**
  * Processed content for API responses.
@@ -25,20 +33,27 @@ import { DEFAULT_OPTIONS } from './options.defaults';
  * @property semanticContext.section - Section of the content.
  * @property semanticContext.item - Item of the content.
  * @property semanticContext.facet - Facet of the content.
+ * @property semanticContext.detail - Detail of the content.
+ * @property semanticContext.detailType - Detail type of the content.
  * @property semanticContext.kind - Kind of the content.
+ * @property semanticContext.contentType - Content type of the content.
  * @property semanticContext.metadata - Remaining metadata, if any, of the content.
  */
 interface ApiContent {
-  url: string;
+  description: string;
+  displayName: string;
+  category: string;
   content: string;
-  semanticContext: {
-    version?: string | undefined;
-    section?: string | undefined;
-    item?: string | undefined;
-    facet?: string | undefined;
-    kind?: string | undefined;
-    metadata?: string[] | undefined;
-  }
+  contentType: string;
+  hasQuality: boolean;
+  id: string;
+  isDeferred: boolean;
+  name: string;
+  path: string;
+  pathSlug: string;
+  section: string;
+  source: string;
+  version: string;
 }
 
 /**
@@ -73,6 +88,36 @@ interface ParsePayload {
   isEmpty: boolean;
   payload: ParsePayloadApi;
 }
+
+/**
+ * Deferred API categories.
+ *
+ * @note Minimal PatternFly API data quality threshold
+ * - Last resort for content that requires additional parsing or should be ignored.
+ * - A quality threshold still has to be met even if these items are removed
+ * - Quality metrics need to be updated periodically as API content is added.
+ *
+ * - `props`: Deferred in favor of using @patternfly/patternfly-component-schemas.
+ * - `react`: Quality threshold applied. Some examples still contain low-quality data.
+ * - `react-demos`: Deferred React demonstration components.
+ * - `html`: Quality threshold applied. Some examples still contain low-quality data.
+ * - `html-demos`: Deferred HTML demonstration examples.
+ * - `text`: Quality threshold applied. Some examples still contain low-quality data.
+ */
+const DEFERRED_API_CATEGORIES = new Set<string>([
+  'props',
+  // 'react',
+  'react-demos',
+  // 'html',
+  'html-demos'
+  // 'text',
+  // 'examples'
+]);
+
+/**
+ * Min content quality threshold. See {@link calculateContentQualityScore}
+ */
+const MIN_API_QUALITY_THRESHOLD = 0.95;
 
 /**
  * Parses the given payload and determines its state and structure.
@@ -144,32 +189,66 @@ isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.d
  *     each containing information about the crawling result, status, and content.
  */
 const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawler[]> => {
-  const componentPaths = options.patternflyOptions.api.componentPaths;
+  const { componentPaths, traversalPaths } = options.patternflyOptions.api;
   const settled = await processDocsFunction(urls);
   const content: ApiCrawler[] = [];
 
   for (const res of settled) {
+    if (!res.isSuccess) {
+      continue;
+    }
+
     const { isEmpty, payload } = parsePayload.memo(res.content);
 
-    if (res.isSuccess) {
-      if (Array.isArray(payload)) {
-        if (componentPaths.some(componentPath => res?.path?.includes(componentPath))) {
-          if (!isEmpty) {
-            content.push({ ...res });
-          }
-          continue;
+    if (Array.isArray(payload)) {
+      // Terminal Data Arrays (props, css, etc)
+      if (componentPaths.some(componentPath => res?.path?.endsWith(`/${componentPath}`))) {
+        if (!isEmpty) {
+          content.push({ ...res });
         }
-
-        const updatedPayload = [...payload, ...componentPaths].map(path => joinUrl(res.path, path));
-        const crawledContent = await crawler(updatedPayload);
-
-        content.push(...crawledContent);
         continue;
       }
 
-      if (!isEmpty) {
-        content.push({ ...res });
-      }
+      // Traversal & Directory Array Processing
+      const flattenedPayload: string[] = [];
+
+      payload.forEach(value => {
+        if (typeof value === 'string') {
+          flattenedPayload.push(value);
+
+          log.debug(`Collection PatternFly API adding path`, value);
+        } else if (isPlainObject(value)) {
+          Object.values(value).forEach(value => {
+            if (typeof value === 'string') {
+              flattenedPayload.push(value);
+
+              log.debug(`Collection PatternFly API adding path`, value);
+            }
+          });
+        }
+      });
+
+      const updatedPayload = [...flattenedPayload, ...traversalPaths, ...componentPaths].map(path => joinUrl(res.path, path));
+
+      log.debug(`Collection PatternFly API Crawling ${updatedPayload.length} path(s)`);
+
+      const crawledContent = await crawler(updatedPayload);
+
+      content.push(...crawledContent);
+      continue;
+    }
+
+    // String Payloads (Markdown, HTML, .tsx source code)
+    if (!isEmpty) {
+      content.push({ ...res });
+    }
+
+    // Probe Traversal Paths on Facet Endpoints (e.g. /react -> /react/examples)
+    if (!traversalPaths.some(traversalPath => res?.path?.endsWith(`/${traversalPath}`))) {
+      const traversalUrls = traversalPaths.map(traversalPath => joinUrl(res.path, traversalPath));
+      const traversalCrawledContent = await crawler(traversalUrls);
+
+      content.push(...traversalCrawledContent);
     }
   }
 
@@ -209,47 +288,12 @@ const getVersions = async (options = getOptions()) => {
 };
 
 /**
- * Process content metadata from response paths.
- *
- * @param apiResponses - The list of pre-metadata content.
- * @param [options=getOptions()] - Configuration options.
- * @returns The list of processed API content with metadata.
- */
-const contentMetadata = (apiResponses: ApiCrawler[], options = getOptions()): ApiContent[] => {
-  const base = options.patternflyOptions.api.base;
-  const componentPaths = options.patternflyOptions.api.componentPaths;
-
-  return apiResponses.map(({ content, resolvedPath }) => {
-    const [version, section, item, facet, ...remaining] = resolvedPath.replace(base, '').split('/').filter(Boolean) || [];
-    const kind = facet && (componentPaths.includes(facet) || remaining.includes(facet)) ? facet : 'doc';
-
-    return {
-      url: resolvedPath,
-      content,
-      semanticContext: {
-        version,
-        section,
-        item,
-        facet,
-        kind,
-        metadata: (remaining.length && remaining) || undefined
-      }
-    };
-  });
-};
-
-/**
- * Memoized version of contentMetadata.
- */
-contentMetadata.memo = memo(contentMetadata);
-
-/**
  * Initiate API crawl.
  *
  * @returns A promise resolving to an array of processed API content entries.
  */
-const apiSpider = async (): Promise<ApiContent[]> => {
-  log.info(`API spider crawl started`);
+const apiSpider = async (): Promise<ApiCrawler[]> => {
+  log.info(`Collection PatternFly API spider crawl started`);
   let seedVersions: string[] = [];
   let content: ApiCrawler[] = [];
 
@@ -265,27 +309,87 @@ const apiSpider = async (): Promise<ApiContent[]> => {
     try {
       content = await crawler(seedVersions);
     } catch (err) {
-      log.warn(`API spider: crawler failed`, err);
+      log.warn(`Collection PatternFly API spider: crawler failed`, err);
 
       return [];
     }
   }
 
-  // Review the memo here. It may be better served to tie into crawler,
-  // like `crawler.memo` as part of the countdown to refresh
-  const updatedContent = contentMetadata.memo(content);
-
   log.info(
-    `API spider crawl completed. ${updatedContent.length} content ${
-      (updatedContent.length === 1 && 'entry') || 'entries'
+    `Collection PatternFly API spider crawl completed. ${content.length} content ${
+      (content.length === 1 && 'entry') || 'entries'
     } retrieved.`
   );
 
-  return updatedContent;
+  return content;
 };
 
 /**
- * Async collect and process entries for a collection.
+ * Light/Immediate process for content metadata from response paths.
+ *
+ * @param crawlerResponse - An entry with pre-metadata content.
+ * @param [options] - Configuration options.
+ * @returns The process metadata entry.
+ */
+const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): ApiContent => {
+  const { content, resolvedPath } = crawlerResponse;
+  const { base, componentPaths, traversalPaths } = options.patternflyOptions.api;
+
+  // Relative path after '/api/'
+  const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
+  const [version = 'unknown', section = 'components', rawItem = 'api-entry', rawFacet = 'doc', rawDetailType = '', rawDetail = '', ...remaining] = segments;
+
+  const normalizedVersion = version.toLowerCase();
+  const normalizedSection = normalizeSlug(section);
+  const normalizedItem = normalizeSlug(rawItem);
+  const normalizedFacet = normalizeSlug(rawFacet);
+  const normalizedDetailType = normalizeSlug(rawDetailType);
+  const normalizedDetail = normalizeSlug(rawDetail);
+
+  // Build a category from the normalized facet
+  const normalizedCategory = [...componentPaths, ...traversalPaths].includes(normalizedFacet) ? normalizedFacet : normalizedFacet;
+
+  // Build hierarchical normalized path slug: e.g. "ai/overview/text" or "components/button/props"
+  const isDetailSameName = normalizedDetail && normalizedDetail.includes(normalizedItem);
+  const pathSlug = [
+    normalizedSection,
+    isDetailSameName ? undefined : normalizedItem,
+    normalizedFacet,
+    normalizedDetailType,
+    normalizedDetail,
+    ...remaining.map(normalizeSlug)
+  ].filter(Boolean).join('-');
+
+  const name = extractApiName(normalizedItem, normalizedSection);
+
+  const id = `api::${normalizedVersion}::${normalizedSection}::${normalizedItem}::${normalizedCategory}${normalizedDetailType ? `::${normalizedDetailType}::${normalizedDetail}` : ''}`;
+
+  const displayName = extractApiDisplayName(content, { slug: normalizedItem, kind: normalizedCategory, section: normalizedSection });
+  const description = extractApiDescription(content, { displayName, kind: normalizedCategory, detailType: normalizedDetailType });
+
+  const hasQuality = calculateContentQualityScore(content, { kind: normalizedCategory }) < MIN_API_QUALITY_THRESHOLD;
+  const isDeferred = DEFERRED_API_CATEGORIES.has(normalizedCategory);
+
+  return {
+    description,
+    displayName,
+    category: normalizedCategory,
+    content,
+    contentType: contentType(content),
+    hasQuality,
+    id,
+    isDeferred,
+    name,
+    path: resolvedPath,
+    pathSlug,
+    section: normalizedSection,
+    source: 'api' as const,
+    version: normalizedVersion
+  };
+};
+
+/**
+ * Async collect and process entries for a collection. Add "conditional" metadata.
  *
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
@@ -293,41 +397,30 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
   const entries = await apiSpider();
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
-  entries?.forEach((entry, index) => {
-    const semanticContext = entry.semanticContext || {};
-    const name = (semanticContext.item || 'api-entry').toLowerCase();
-    const version = (semanticContext.version || 'unknown').toLowerCase();
-    const displayName = semanticContext.item || name;
+  for (const entry of entries) {
+    const { name, isDeferred, hasQuality, ...metadata } = contentMetadata(entry);
 
-    const id = `api::${version}::${semanticContext.section || ''}::${name}::${semanticContext.kind || ''}::${index}`;
-
-    if (recordsMap.has(id)) {
-      return;
+    if (isDeferred || hasQuality) {
+      continue;
     }
 
-    const adaptedEntry = {
-      displayName,
-      description: entry.content || `PatternFly API documentation for ${displayName}`,
-      pathSlug: name,
-      category: semanticContext.kind,
-      section: semanticContext.section || 'components',
-      source: 'api' as const,
-      version,
-      id,
-      path: entry.url
-    };
+    if (recordsMap.has(metadata.id)) {
+      continue;
+    }
 
     const record = {
-      id,
-      sourceId: entry.url,
+      id: metadata.id,
+      sourceId: metadata.path,
       sourceType: 'api' as const,
       data: {
-        [name]: adaptedEntry
+        [name]: [{
+          ...metadata
+        }]
       }
     };
 
     recordsMap.set(record.id, record);
-  });
+  }
 
   return { records: [...recordsMap.values()] };
 };
@@ -350,8 +443,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     {
       runParallel: '#collectionPatternFlyApi',
       runSchedule: {
-        cancelMs: options.patternflyOptions.api.crawlCancelMs,
-        intervalMs: options.patternflyOptions.api.crawlIntervalMs
+        ...options.patternflyOptions.api.schedule
       }
     }
   ];
