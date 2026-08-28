@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
 import { buildSearchString, generateHash } from './server.helpers';
@@ -200,6 +202,48 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  * Central in-memory registry for all PatternFly collection records
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
+
+// TODO: remove this when complete with clean-up
+// --- Quick Dump Helper ---
+const dumpCollectionsToDisk = (
+  merged: unknown,
+  apiCollection: unknown
+) => {
+  try {
+    const outputDir = path.resolve(process.cwd(), '.dump');
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // 2. API collection
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-api-collection.dump.json'),
+      JSON.stringify(
+        {
+          'patternfly-api': apiCollection ?? null
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-merged.dump.json'),
+      JSON.stringify(
+        merged,
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    log.info(`[DUMP] Wrote collection dumps to ${outputDir}`);
+  } catch (err) {
+    log.error('[DUMP] Failed to write collection dumps:', err);
+  }
+};
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -463,6 +507,20 @@ const mutateKeyWordsMap = (
 };
 
 /**
+ * Normalizes collection resource names into a uniform slug.
+ *
+ * @param key - Raw catalog or collection identifier
+ * @returns Normalized slug for current resource grouping strategy.
+ */
+const normalizeKey = (key: string): string => {
+  if (!key) {
+    return '__unknown__';
+  }
+
+  return key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+};
+
+/**
  * Get a multifaceted resources breakdown from PatternFly.
  *
  * @note `resources.set(name...` includes `undefined` PF version contextual metadata by design. These values
@@ -478,10 +536,12 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const { componentNamesIndex, byVersion: componentNamesByVersion, byDocs: componentNamesByDocs } = componentNames;
 
   const originalDocs = patternFlyRecordsRegistry.get('patternfly-docs');
+  const apiCollection = patternFlyRecordsRegistry.get('patternfly-api');
 
   const catalog = [
     ...originalDocs?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
-    ...Array.from(componentNamesByDocs)
+    ...Array.from(componentNamesByDocs),
+    ...apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
   ];
 
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
@@ -494,7 +554,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const rawKeywordsMap: PatternFlyMcpKeywordsMap = new Map();
 
   catalog.forEach(([unifiedName, entries]) => {
-    const name = unifiedName.toLowerCase();
+    const name = normalizeKey(unifiedName);
     const groupId = generateHash(name);
 
     hashIndexMap.set(groupId.toLowerCase(), name);
@@ -614,7 +674,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   const filteredKeywords = filterKeywords(rawKeywordsMap);
 
-  return {
+  const output = {
     ...versionContext,
     resources,
     // @deprecated docsIndex - Under review
@@ -636,6 +696,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     byVersion,
     byVersionComponentNames: componentNamesByVersion
   };
+
+  // TODO: remove this when complete with clean-up
+  dumpCollectionsToDisk(
+    { byPath, uriIndex: Object.fromEntries(uriIndexMap) },
+    apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
+  );
+
+  return output;
 };
 
 /**
@@ -702,6 +770,8 @@ const setPatternFlyCollection = async (
         log.warn('Failed getPatternFlyMcpResources clear.', error);
       }
 
+      // TODO: remove this when dump helper is removed. Intended to force initialize the collection records instead of relying on consuming functionality to rebuild.
+      getPatternFlyMcpResources.memo();
       log.debug(`Merging collection ${name} records. (${collection.records.length})`);
     }
   } catch (error) {
