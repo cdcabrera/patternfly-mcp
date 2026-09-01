@@ -26,18 +26,20 @@ import { contentType } from './resource.helpers';
 /**
  * Processed content for API responses.
  *
- * @property url - The URL of the content.
- * @property content - The content itself.
- * @property semanticContext - Semantic context of the content.
- * @property semanticContext.version - PatternFly version of the content.
- * @property semanticContext.section - Section of the content.
- * @property semanticContext.item - Item of the content.
- * @property semanticContext.facet - Facet of the content.
- * @property semanticContext.detail - Detail of the content.
- * @property semanticContext.detailType - Detail type of the content.
- * @property semanticContext.kind - Kind of the content.
- * @property semanticContext.contentType - Content type of the content.
- * @property semanticContext.metadata - Remaining metadata, if any, of the content.
+ * @interface ApiContent
+ *
+ * @property description - Description of the content.
+ * @property displayName - Display name of the content.
+ * @property category - Category of the content.
+ * @property isLowQuality - Whether the content is low quality.
+ * @property id - ID of the content.
+ * @property isDeferred - Whether the content is deferred.
+ * @property name - Name of the content.
+ * @property path - Path of the content.
+ * @property pathSlug - Slugified path of the content.
+ * @property section - Section of the content.
+ * @property source - Source of the content.
+ * @property version - Version of the content.
  */
 interface ApiContent {
   description: string;
@@ -45,7 +47,7 @@ interface ApiContent {
   category: string;
   content: string;
   contentType: string;
-  hasQuality: boolean;
+  isLowQuality: boolean;
   id: string;
   isDeferred: boolean;
   name: string;
@@ -333,7 +335,7 @@ const apiSpider = async (): Promise<ApiCrawler[]> => {
  */
 const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): ApiContent => {
   const { content, resolvedPath } = crawlerResponse;
-  const { base, componentPaths, traversalPaths } = options.patternflyOptions.api;
+  const { base } = options.patternflyOptions.api;
 
   // Relative path after '/api/'
   const segments = resolvedPath.replace(base, '').split('/').filter(Boolean);
@@ -346,10 +348,10 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
   const normalizedDetailType = normalizeSlug(rawDetailType);
   const normalizedDetail = normalizeSlug(rawDetail);
 
-  // Build a category from the normalized facet
-  const normalizedCategory = [...componentPaths, ...traversalPaths].includes(normalizedFacet) ? normalizedFacet : normalizedFacet;
+  // Make a category from the normalized facet
+  const normalizedCategory = normalizedFacet;
 
-  // Build hierarchical normalized path slug: e.g. "ai/overview/text" or "components/button/props"
+  // Build hierarchical normalized path slug: e.g. "AI/overview/text" or "components/button/props"
   const isDetailSameName = normalizedDetail && normalizedDetail.includes(normalizedItem);
   const pathSlug = [
     normalizedSection,
@@ -367,7 +369,7 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
   const displayName = extractApiDisplayName(content, { slug: normalizedItem, kind: normalizedCategory, section: normalizedSection });
   const description = extractApiDescription(content, { displayName, kind: normalizedCategory, detailType: normalizedDetailType });
 
-  const hasQuality = calculateContentQualityScore(content, { kind: normalizedCategory }) < MIN_API_QUALITY_THRESHOLD;
+  const isLowQuality = calculateContentQualityScore(content, { kind: normalizedCategory }) < MIN_API_QUALITY_THRESHOLD;
   const isDeferred = DEFERRED_API_CATEGORIES.has(normalizedCategory);
 
   return {
@@ -376,7 +378,7 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
     category: normalizedCategory,
     content,
     contentType: contentType(content),
-    hasQuality,
+    isLowQuality,
     id,
     isDeferred,
     name,
@@ -398,9 +400,9 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
   for (const entry of entries) {
-    const { name, isDeferred, hasQuality, ...metadata } = contentMetadata(entry);
+    const { name, isDeferred, isLowQuality, ...metadata } = contentMetadata(entry);
 
-    if (isDeferred || hasQuality) {
+    if (isDeferred || isLowQuality) {
       continue;
     }
 

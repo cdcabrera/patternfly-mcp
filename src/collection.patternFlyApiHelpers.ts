@@ -118,7 +118,7 @@ const calculateContentQualityScore = (
 const normalizeSlug = (segment: string): string => {
   let updatedSegment = segment;
 
-  if (/[A-Z]/.test(updatedSegment) && !(/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(updatedSegment))) {
+  if (/[A-Z]/.test(updatedSegment) && !/^(ai|css|html|mcp|cli|uxd|ui|api|faq|faqs|aria|rtl)$/i.test(updatedSegment)) {
     const split = updatedSegment.split(/(?=[A-Z])/);
 
     if (split.every(val => /^[A-Z]/.test(val))) {
