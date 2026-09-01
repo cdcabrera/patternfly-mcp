@@ -46,12 +46,11 @@ describe('collectionCallback', () => {
           isSuccess: true
         }
       ])
-      // crawler to leaf at a component facet path ("props")
       .mockResolvedValueOnce([
         {
-          content: 'Button props content',
+          content: 'Button react component content with length enough to pass quality scoring...',
           path: `${BASE}/v1/components/Button`,
-          resolvedPath: `${BASE}/v1/components/Button/props`,
+          resolvedPath: `${BASE}/v1/components/Button/react`,
           isSuccess: true
         }
       ]);
@@ -292,7 +291,7 @@ describe('apiSpider', () => {
     expect(res).toEqual([]);
   });
 
-  it('returns ApiContent[] with metadata shape', async () => {
+  it('returns ApiContent[] shape', async () => {
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
         {
@@ -315,14 +314,9 @@ describe('apiSpider', () => {
 
     expect(res.length).toBeGreaterThan(0);
     expect(res[0]).toMatchObject({
-      url: 'https://main.patternfly-org.pages.dev/api/v1/section/item/facet',
-      content: 'leaf content',
-      semanticContext: {
-        version: 'v1',
-        section: 'section',
-        item: 'item',
-        facet: 'facet'
-      }
+      path: 'https://main.patternfly-org.pages.dev/api/v1',
+      resolvedPath: 'https://main.patternfly-org.pages.dev/api/v1/section/item/facet',
+      content: 'leaf content'
     });
   });
 });

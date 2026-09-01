@@ -181,18 +181,44 @@ const isEmptyPayload = (payload: unknown) => {
 isEmptyPayload.memo = memo(isEmptyPayload, DEFAULT_OPTIONS.resourceMemoOptions.default);
 
 /**
+ * Filters and returns a list of unique URLs from the input array, ensuring no duplicates.
+ *
+ * @param urls - Array of URLs to be filtered for uniqueness.
+ * @param [visited] - Set object for visited URLs. Defaults to an empty Set.
+ * @returns An array containing only unique URLs from the input array.
+ */
+const getUniqueUrls = (urls: string[], visited = new Set<string>()) => urls.filter(url => {
+  if (visited.has(url)) {
+    return false;
+  }
+
+  visited.add(url);
+
+  return true;
+});
+
+/**
  * Recursively crawls a list of URLs.
  *
  * Resolves paths and fetches content; built specifically around the PatternFly API response structure.
  *
  * @param urls - The list of URLs to crawl.
+ * @param [visited] - Used to track visited paths.
  * @param [options] - An optional configuration object.
  * @returns {Promise<ProcessedDoc[]>} A promise that resolves to an array of processed documents,
  *     each containing information about the crawling result, status, and content.
  */
-const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawler[]> => {
+const crawler = async (
+  urls: string[], visited = new Set<string>(), options = getOptions()
+): Promise<ApiCrawler[]> => {
   const { componentPaths, traversalPaths } = options.patternflyOptions.api;
-  const settled = await processDocsFunction(urls);
+  const uniqueUrls = getUniqueUrls(urls, visited);
+
+  if (uniqueUrls.length === 0) {
+    return [];
+  }
+
+  const settled = await processDocsFunction(uniqueUrls);
   const content: ApiCrawler[] = [];
 
   for (const res of settled) {
@@ -234,7 +260,7 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
 
       log.debug(`Collection PatternFly API Crawling ${updatedPayload.length} path(s)`);
 
-      const crawledContent = await crawler(updatedPayload);
+      const crawledContent = await crawler(updatedPayload, visited);
 
       content.push(...crawledContent);
       continue;
@@ -248,7 +274,7 @@ const crawler = async (urls: string[], options = getOptions()): Promise<ApiCrawl
     // Probe Traversal Paths on Facet Endpoints (e.g. /react -> /react/examples)
     if (!traversalPaths.some(traversalPath => res?.path?.endsWith(`/${traversalPath}`))) {
       const traversalUrls = traversalPaths.map(traversalPath => joinUrl(res.path, traversalPath));
-      const traversalCrawledContent = await crawler(traversalUrls);
+      const traversalCrawledContent = await crawler(traversalUrls, visited);
 
       content.push(...traversalCrawledContent);
     }
@@ -456,6 +482,7 @@ export {
   collectionCallback,
   apiSpider,
   crawler,
+  getUniqueUrls,
   isEmptyPayload,
   parsePayload,
   type ApiContent,
