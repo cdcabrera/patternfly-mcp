@@ -78,19 +78,19 @@ describe('collectionCallback', () => {
     expect(key).toBe('button');
 
     expect(first).toMatchObject({
-      sourceId: `${BASE}/v1/components/Button/props`
+      sourceId: `${BASE}/v1/components/Button/react`
     });
 
     expect(Array.isArray(first.data[key])).toBe(true);
 
     expect(first.data[key][0]).toMatchObject({
       displayName: 'Button',
-      pathSlug: 'components-button-props',
+      pathSlug: 'components-button-react',
       source: 'api',
       version: 'v1',
       section: 'components',
-      category: 'props',
-      path: `${BASE}/v1/components/Button/props`
+      category: 'react',
+      path: `${BASE}/v1/components/Button/react`
     });
   });
 

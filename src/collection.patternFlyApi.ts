@@ -218,7 +218,7 @@ const crawler = async (
     return [];
   }
 
-  const settled = await processDocsFunction(uniqueUrls);
+  const settled = await processDocsFunction(uniqueUrls) || [];
   const content: ApiCrawler[] = [];
 
   for (const res of settled) {
