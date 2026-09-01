@@ -208,7 +208,7 @@ describe('crawler', () => {
 
     expect(res).toHaveLength(1);
     expect(res[0]?.content).toBe('some content');
-    expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(2);
+    expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(3);
   });
 
   it('handles component paths and terminates recursion', async () => {
