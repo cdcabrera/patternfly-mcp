@@ -189,7 +189,7 @@ const calculateRelevance = (
   result: SearchPatternFlyResult,
   query: string
 ): number => {
-  const normalizedName = normalizeString(result.name);
+  const normalizedName = normalizeString.memo(result.name);
   const normalizedQuery = normalizeString(query);
 
   if (normalizedName === normalizedQuery) {
@@ -197,7 +197,7 @@ const calculateRelevance = (
   }
 
   const displayNames = (result.entries || [])
-    .map(entry => (entry.displayName ? normalizeString(entry.displayName) : ''))
+    .map(entry => (entry.displayName ? normalizeString.memo(entry.displayName) : ''))
     .filter(Boolean);
 
   if (displayNames.some(name => name === normalizedQuery)) {
@@ -208,16 +208,6 @@ const calculateRelevance = (
     displayNames.some(name => name.includes(normalizedQuery))) {
     return 1;
   }
-
-  /*
-  if (normalizedName.startsWith(normalizedQuery) ||
-    normalizedName.endsWith(normalizedQuery) ||
-    normalizedName.includes(normalizedQuery) ||
-    displayNames.some(name => name.startsWith(normalizedQuery) ||
-      name.endsWith(normalizedQuery) || name.includes(normalizedQuery))) {
-    return 1;
-  }
-  */
 
   return 2;
 };
