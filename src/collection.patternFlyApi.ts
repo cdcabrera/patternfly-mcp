@@ -36,7 +36,7 @@ import { contentType } from './resource.helpers';
  * @property isDeferred - Whether the content is deferred.
  * @property name - Name of the content.
  * @property path - Path of the content.
- * @property pathSlug - Slugified path of the content.
+ * @property pathSlug - Slug path of the content.
  * @property section - Section of the content.
  * @property source - Source of the content.
  * @property version - Version of the content.
