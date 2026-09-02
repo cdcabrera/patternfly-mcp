@@ -3,8 +3,9 @@ import {
   type McpCollectionRecord,
   type McpCollectionResult
 } from './collections';
-import { log } from './logger';
+import { formatUnknownError, log } from './logger';
 import { processDocsFunction } from './server.getResources';
+import { setFetch } from './server.fetch';
 import { memo } from './server.caching';
 import { isPlainObject, joinUrl, timeoutFunction } from './server.helpers';
 import {
@@ -120,6 +121,27 @@ const DEFERRED_API_CATEGORIES = new Set<string>([
  * Min content quality threshold. See {@link calculateContentQualityScore}
  */
 const MIN_API_QUALITY_THRESHOLD = 0.95;
+
+/**
+ * Confirm if the API is live and healthy.
+ *
+ * @param options - Global options.
+ * @returns `true` if the API is live and healthy, otherwise `false`.
+ */
+const probeHealth = async (options = getOptions()) => {
+  const { base } = options.patternflyOptions.api;
+  const { get } = setFetch();
+
+  try {
+    const response = await get(base, { method: 'HEAD' });
+
+    return response.status < 400;
+  } catch (error) {
+    log.error(`Collection PatternFly API failed to load: ${formatUnknownError(error)}`);
+
+    return false;
+  }
+};
 
 /**
  * Parses the given payload and determines its state and structure.
@@ -451,6 +473,12 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
 const collectionCallback = async (): Promise<McpCollectionResult> => {
+  const isHealthy = await probeHealth();
+
+  if (!isHealthy) {
+    return { records: [] };
+  }
+
   const entries = await apiSpider();
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
@@ -514,6 +542,7 @@ export {
   getUniqueUrls,
   isEmptyPayload,
   parsePayload,
+  probeHealth,
   type ApiContent,
   type ApiCrawler,
   type ParsePayload,
