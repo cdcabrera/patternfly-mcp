@@ -107,7 +107,7 @@ exports[`Builtin tools, HTTP transport should initialize MCP session over HTTP 1
 `;
 
 exports[`Builtin tools, HTTP transport should return expected markdown structure for search results: markdown 1`] = `
-"# Search results for PatternFly version "v6" and "button". Showing 3 exact matches.
+"# Search results for PatternFly version "v6" and "button". Showing 4 exact matches.
 1. **button**:
   "usePatternFlyDocs" resource parameter "name" and "URLs"
     - **Name**: button
@@ -117,20 +117,38 @@ exports[`Builtin tools, HTTP transport should return expected markdown structure
       - [Button - (v6) - Examples for the button component.](https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Button/examples/Button.md)
       - [Button CSS - (v6) - PatternFly variables and tokens for Button CSS.](https://main.patternfly-org.pages.dev/api/v6/components/button/css)
       - [Button - (v6) - A favorite button should use a plain button with the star icon. Applying .pf-m-favorited to the button initiates a microanimation and indicates that the item is favorited.](https://main.patternfly-org.pages.dev/api/v6/components/button/html)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonBlock)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonCallToAction)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonDisabled)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonInlineSpanLink)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonLinks)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonProgress)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonSmall)
-      - [Button - (v6) - PatternFly examples and demos for Button.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonVariations)
+      - [Button Block - (v6) - PatternFly examples and demos for Button Block.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonBlock)
+      - [Button Call To Action - (v6) - PatternFly examples and demos for Button Call To Action.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonCallToAction)
+      - [Button Disabled - (v6) - PatternFly examples and demos for Button Disabled.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonDisabled)
+      - [Button Inline Span Link - (v6) - PatternFly examples and demos for Button Inline Span Link.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonInlineSpanLink)
+      - [Button Links - (v6) - PatternFly examples and demos for Button Links.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonLinks)
+      - [Button Progress - (v6) - PatternFly examples and demos for Button Progress.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonProgress)
+      - [Button Small - (v6) - PatternFly examples and demos for Button Small.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonSmall)
+      - [Button Variations - (v6) - PatternFly examples and demos for Button Variations.](https://main.patternfly-org.pages.dev/api/v6/components/button/react/examples/ButtonVariations)
       - [Button - (v6) - There are certain cases where specific buttons must be used within your UI.](https://main.patternfly-org.pages.dev/api/v6/components/button/text)
     - **Resources**:
       - **URI**: patternfly://docs/button?version=v6
       - **JSON Schemas**: patternfly://schemas/button?version=v6
 
-2. **extensionscomponentgroupsclosebutton**:
+2. **actionlist**:
+  "usePatternFlyDocs" resource parameter "name" and "URLs"
+    - **Name**: actionlist
+    - **URLs**:
+      - [Action List - (v6) - Design Guidelines for the action list component.](https://raw.githubusercontent.com/patternfly/patternfly-org/957756128e8ddfc4be5db49e72312a2c43b9d220/packages/documentation-site/patternfly-docs/content/components/action-list/action-list.md)
+      - [Action List - (v6) - Accessibility for the action list component.](https://raw.githubusercontent.com/patternfly/patternfly-org/957756128e8ddfc4be5db49e72312a2c43b9d220/packages/documentation-site/patternfly-docs/content/components/accessibility/action-list/action-list.md)
+      - [Action List - (v6) - Examples for the action list component.](https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/ActionList/examples/ActionList.md)
+      - [Action List CSS - (v6) - PatternFly variables and tokens for Action List CSS.](https://main.patternfly-org.pages.dev/api/v6/components/action-list/css)
+      - [Action List - (v6) - PatternFly HTML examples and markup structure for Action List.](https://main.patternfly-org.pages.dev/api/v6/components/action-list/html)
+      - [Action List Multiple Groups - (v6) - PatternFly examples and demos for Action List Multiple Groups.](https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListMultipleGroups)
+      - [Action List Single Group - (v6) - PatternFly examples and demos for Action List Single Group.](https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListSingleGroup)
+      - [Action List With Cancel Button - (v6) - PatternFly examples and demos for Action List With Cancel Button.](https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListWithCancelButton)
+      - [Action List With Icons - (v6) - PatternFly examples and demos for Action List With Icons.](https://main.patternfly-org.pages.dev/api/v6/components/action-list/react/examples/ActionListWithIcons)
+      - [Action List - (v6) - Use an action list to determine which spacing guidelines to use for a group of actions in toolbars, modals, forms, data lists, wizards, and more. Using an action list allows you to know what spacin...](https://main.patternfly-org.pages.dev/api/v6/components/action-list/text)
+    - **Resources**:
+      - **URI**: patternfly://docs/actionlist?version=v6
+      - **JSON Schemas**: patternfly://schemas/actionlist?version=v6
+
+3. **extensionscomponentgroupsclosebutton**:
   "usePatternFlyDocs" resource parameter "name" and "URLs"
     - **Name**: extensionscomponentgroupsclosebutton
     - **URLs**:
@@ -138,7 +156,7 @@ exports[`Builtin tools, HTTP transport should return expected markdown structure
     - **Resources**:
       - **URI**: patternfly://docs/extensionscomponentgroupsclosebutton?version=v6
 
-3. **patterns**:
+4. **patterns**:
   "usePatternFlyDocs" resource parameter "name" and "URLs"
     - **Name**: patterns
     - **URLs**:

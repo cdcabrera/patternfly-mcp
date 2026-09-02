@@ -87,7 +87,7 @@ describe('calculateRelevance', () => {
         name: 'inline-alert-box',
         entries: []
       },
-      expected: 1
+      expected: 2
     },
     {
       description: 'no match on name or displayNames',
@@ -98,7 +98,7 @@ describe('calculateRelevance', () => {
           { displayName: 'Primary Button' }
         ]
       },
-      expected: 2
+      expected: 3
     },
     {
       description: 'undefined entries',
@@ -107,7 +107,7 @@ describe('calculateRelevance', () => {
         name: 'card',
         entries: undefined
       },
-      expected: 2
+      expected: 3
     },
     {
       description: 'missing or empty displayName entries',
@@ -119,7 +119,7 @@ describe('calculateRelevance', () => {
           { displayName: undefined }
         ]
       },
-      expected: 2
+      expected: 3
     }
   ])('should create a relevance score, $description', ({ query, result, expected }) => {
     const relevance = calculateRelevance(result as any, query);

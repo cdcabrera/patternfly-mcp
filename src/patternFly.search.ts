@@ -1,6 +1,5 @@
 import {
   fuzzySearch,
-  normalizeString,
   type FuzzySearch,
   type FuzzySearchOptions,
   type FuzzySearchResult
@@ -172,7 +171,13 @@ type FilterPatternFlyMemoArgs = [
 ];
 
 /**
- * Rate how closely a search result matches a search query.
+ * Re-rank how closely a search result matches a search query.
+ *
+ * @note: This entire function needs to be refactored or removed since it's
+ * re-running distance checks just to resolved tied results. Future refactor
+ * should include expanding the `server.search` functions to use `Levenshtein`,
+ * `Jaccard`, and `cosine similarity`. We're temporarily leaving it in place
+ * as a patch to help move the PF API work forward.
  *
  * @note We prioritize **exact name matches** because users/agents respond best when
  * the returned item’s `name` (or any of its display names) exactly equals their typed
@@ -180,36 +185,28 @@ type FilterPatternFlyMemoArgs = [
  *
  * @param {SearchPatternFlyResult} result - Result object containing name and display name props.
  * @param query - Query string for comparison.
- * @returns `result` relevance to a `normalizedQuery`:
- *  - `0`: Exact match
- *  - `1`: Contains match
- *  - `2`: Everything else
+ * @param options - Option settings
+ * @param options.maxDistance - Max distance allowed for results.
+ * @returns Re-rank tied distance.
  */
 const calculateRelevance = (
   result: SearchPatternFlyResult,
-  query: string
+  query: string,
+  { maxDistance = 3 }: { maxDistance?: number } = {}
 ): number => {
-  const normalizedName = normalizeString.memo(result.name);
-  const normalizedQuery = normalizeString.memo(query);
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.name || ''),
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
 
-  if (normalizedName === normalizedQuery) {
-    return 0;
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
   }
 
-  const displayNames = (result.entries || [])
-    .map(entry => (entry.displayName ? normalizeString.memo(entry.displayName) : ''))
-    .filter(Boolean);
-
-  if (displayNames.some(name => name === normalizedQuery)) {
-    return 0;
-  }
-
-  if (normalizedName.includes(normalizedQuery) ||
-    displayNames.some(name => name.includes(normalizedQuery))) {
-    return 1;
-  }
-
-  return 2;
+  return maxDistance;
 };
 
 /**
@@ -658,8 +655,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       return a.distance - b.distance;
     }
 
-    const relevantA = calculateRelevance(a, coercedSearchQuery);
-    const relevantB = calculateRelevance(b, coercedSearchQuery);
+    const relevantA = calculateRelevance(a, coercedSearchQuery, { maxDistance });
+    const relevantB = calculateRelevance(b, coercedSearchQuery, { maxDistance });
 
     if (relevantA !== relevantB) {
       return relevantA - relevantB;
