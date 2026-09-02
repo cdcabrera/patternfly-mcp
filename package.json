@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "imports": {
+    "~apiCatalog": "./src/collection.patternFlyApi.json",
     "~docsCatalog": "./src/docs.json",
     "#toolsHost": "./dist/server.toolsHost.js",
     "#workerEntry": "./dist/server.workerEntry.js",

@@ -123,6 +123,40 @@ const DEFERRED_API_CATEGORIES = new Set<string>([
 const MIN_API_QUALITY_THRESHOLD = 0.95;
 
 /**
+ * Asynchronously retrieves the PatternFly API catalog.
+ *
+ * This function attempts to load the catalog from different sources based on the environment.
+ * If the `NODE_ENV` is set to 'local', it fetches the catalog from a local JSON file.
+ * Otherwise, it loads the catalog dynamically from the specified API catalog module.
+ *
+ * On failure to load the catalog, the function defaults to an empty object and sets the
+ * `isFallback` flag to true.
+ *
+ * @returns {Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }>}
+ * A promise that resolves to the API catalog object, containing the documentation data and
+ * a boolean `isFallback` flag indicating whether the catalog was successfully loaded or not.
+ */
+const getPatternFlyApiRecords = async (): Promise<McpCollectionRecord[]> => {
+  const apiCatalog: McpCollectionRecord[] = [];
+
+  try {
+    let loaded;
+
+    if (process.env.NODE_ENV === 'local') {
+      loaded = (await import('./collection.patternFlyApi.json', { with: { type: 'json' } })).default;
+    } else {
+      loaded = (await import('#apiCatalog', { with: { type: 'json' } })).default;
+    }
+
+    apiCatalog.push(...(loaded.records as McpCollectionRecord[]));
+  } catch (error) {
+    log.debug(`Failed to import API catalog '#apiCatalog': ${formatUnknownError(error)}`);
+  }
+
+  return apiCatalog;
+};
+
+/**
  * Confirm if the API is live and healthy.
  *
  * @param options - Global options.
@@ -474,9 +508,10 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
  */
 const collectionCallback = async (): Promise<McpCollectionResult> => {
   const isHealthy = await probeHealth();
+  const embeddedRecords = await getPatternFlyApiRecords();
 
   if (!isHealthy) {
-    return { records: [] };
+    return { records: embeddedRecords };
   }
 
   const entries = await apiSpider();
