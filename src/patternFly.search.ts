@@ -1,4 +1,5 @@
 import {
+  // findDistance,
   fuzzySearch,
   normalizeString,
   type FuzzySearch,
@@ -189,10 +190,184 @@ const calculateRelevance = (
   result: SearchPatternFlyResult,
   query: string
 ): number => {
-  const normalizedName = normalizeString.memo(result.name);
-  const normalizedQuery = normalizeString.memo(query);
+  // const normalizedName = normalizeString.memo(result.name);
+  // const normalizedQuery = normalizeString.memo(query);
+
+  // const nameDistance = Math.min(...fuzzySearch(normalizedName, normalizedQuery.split(/\s/g)).results.map(result => result.distance));
+
+  // return Number.isFinite(nameDistance) ? nameDistance : 5;
+
+  // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
+
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.name || ''),
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
+
+  // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance: 3 }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  return 5;
+
+  /* DOES NOT WORK? bulk select doesn't bring up API candidates?
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.name || '')
+  ].filter(Boolean);
+
+  // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance: 3 }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  const candidateDisplayNames = [
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
+
+  if (candidateDisplayNames.length) {
+    const nameMatch = fuzzySearch(query, candidateDisplayNames, { maxDistance: 3 }).results;
+
+    if (nameMatch.length) {
+      return Math.min(...nameMatch.map(result => result.distance));
+    }
+  }
+
+  return 5;
+  */
+
+  /* PARTIALLY WORKS - bulk select is expected "bulk selection" does not sort
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.name || '')
+  ].filter(Boolean);
+
+  // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance: 3 }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  return 5;
+   */
+
+  /* WORKS - noticed that patterns still shows up for "bulk selection" AND we're not filtering collection entries, should we?
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.name || '')
+  ].filter(Boolean);
+
+  // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance: 3 }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  const candidateDisplayNames = [
+    ...(result.entries || []).map(entry => entry.name || '')
+  ].filter(Boolean);
+
+  if (candidateDisplayNames.length) {
+    const nameMatch = fuzzySearch(query, candidateDisplayNames, { maxDistance: 2 }).results;
+
+    if (nameMatch.length) {
+      return Math.min(...nameMatch.map(result => result.distance));
+    }
+  }
+
+  return 5;
+  */
+
+  /*
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
+
+  // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
+  const nameMatch = fuzzySearch(query, candidateNames).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  return 5;
+
+  */
+
+  /*
+  const multiWordQuery = normalizedQuery.split(/\s+/g);
+
+  if (multiWordQuery.length > 1) {
+    const multiWordDistances = multiWordQuery.flatMap(word =>
+      fuzzySearch(word, candidateNames).results.map(result => result.distance + 1));
+    // const multiWordMatch = fuzzySearch(result.name, multiWordQuery).results;
+
+    if (multiWordDistances.length) {
+      return Math.max(...multiWordDistances);
+    }
+  }
+  */
+
+  /*
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
+
+  const nameMatch = fuzzySearch(query, candidateNames).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  const multiWordQuery = normalizedQuery.split(/\s+/g);
+
+  if (multiWordQuery.length > 1) {
+    const multiWordDistances = multiWordQuery.flatMap(word =>
+      fuzzySearch(word, candidateNames).results.map(result => result.distance + 1));
+    // const multiWordMatch = fuzzySearch(result.name, multiWordQuery).results;
+
+    if (multiWordDistances.length) {
+      return Math.max(...multiWordDistances);
+    }
+  }
+
+  return 5;
+  */
+
+  /*
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
+
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance: 2 }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  const multiWordQuery = normalizedQuery.split(/\s+/g);
+  const multiWordMatch = fuzzySearch(query, multiWordQuery, { maxDistance: 3 }).results;
+
+  if (multiWordMatch.length) {
+    return Math.min(...multiWordMatch.map(result => result.distance + 1));
+  }
+
+  return 5;
+  */
 
   // Exact match
+  /*
   if (normalizedName === normalizedQuery) {
     return 0;
   }
@@ -204,9 +379,12 @@ const calculateRelevance = (
   // Exact match
   if (displayNames.some(name => name === normalizedQuery)) {
     return 0;
-  }
+  }*/
+
+  // return findDistance(normalizedName, normalizedQuery) ?? 1;
 
   // Substring match
+  /*
   if (
     normalizedName.includes(normalizedQuery) ||
     normalizedQuery.includes(normalizedName) ||
@@ -225,8 +403,17 @@ const calculateRelevance = (
     return 2;
   }
 
+  const hasTokenIncludeMatch = queryTokens.some(token =>
+    normalizedName.includes(token) ||
+    displayNames.some(name => name.includes(token)));
+
+  if (hasTokenIncludeMatch) {
+    return 3;
+  }
+
   // Everything else
-  return 3;
+  return 4;
+  */
 };
 
 /**

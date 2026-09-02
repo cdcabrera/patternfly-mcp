@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
 import { buildSearchString, generateHash } from './server.helpers';
@@ -200,6 +202,48 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  * Central in-memory registry for all PatternFly collection records
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
+
+// TODO: remove this when complete with clean-up
+// --- Quick Dump Helper ---
+const dumpCollectionsToDisk = (
+  merged: unknown,
+  apiCollection: unknown
+) => {
+  try {
+    const outputDir = path.resolve(process.cwd(), '.dump');
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    // 2. API collection
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-api-collection.dump.json'),
+      JSON.stringify(
+        {
+          'patternfly-api': apiCollection ?? null
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    fs.writeFileSync(
+      path.join(outputDir, 'patternfly-merged.dump.json'),
+      JSON.stringify(
+        merged,
+        null,
+        2
+      ),
+      'utf-8'
+    );
+
+    log.info(`[DUMP] Wrote collection dumps to ${outputDir}`);
+  } catch (err) {
+    log.error('[DUMP] Failed to write collection dumps:', err);
+  }
+};
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -630,7 +674,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   const filteredKeywords = filterKeywords(rawKeywordsMap);
 
-  return {
+  const output = {
     ...versionContext,
     resources,
     // @deprecated docsIndex - Under review
@@ -652,6 +696,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     byVersion,
     byVersionComponentNames: componentNamesByVersion
   };
+
+  // TODO: remove this when complete with clean-up
+  dumpCollectionsToDisk(
+    { byPath, uriIndex: Object.fromEntries(uriIndexMap) },
+    apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
+  );
+
+  return output;
 };
 
 /**
@@ -718,6 +770,8 @@ const setPatternFlyCollection = async (
         log.warn('Failed getPatternFlyMcpResources clear.', error);
       }
 
+      // TODO: remove this when dump helper is removed. Intended to force initialize the collection records instead of relying on consuming functionality to rebuild.
+      getPatternFlyMcpResources.memo();
       log.debug(`Merging collection ${name} records. (${collection.records.length})`);
     }
   } catch (error) {
