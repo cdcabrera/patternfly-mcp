@@ -175,8 +175,8 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
   const validRepeat = typeof repeat === 'number' && repeat > 0 ? repeat : 1;
   const updatedRepeat = Number.isFinite(validRepeat) ? validRepeat : undefined;
-  const updatedIntervalMs = intervalMs ?? 1000;
-  const updatedDelayStartMs = delayStartMs ?? 0;
+  const updatedIntervalMs = typeof intervalMs === 'number' && Number.isFinite(intervalMs) ? intervalMs : 1000;
+  const updatedDelayStartMs = typeof delayStartMs === 'number' && Number.isFinite(delayStartMs) ? delayStartMs : 0;
   const runTimeoutMs = updatedIntervalMs * 1.5;
   let updatedCancelMs = cancelMs;
 
@@ -208,6 +208,11 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
       // Initial startup delay
       if (state.count === 0 && updatedDelayStartMs > 0) {
+        debug({
+          type: 'run:delay',
+          value: () => ({ ...state })
+        });
+
         const randomizedStartMs = updatedDelayStartMs * (0.9 + Math.random() * 0.2);
 
         try {
@@ -220,7 +225,9 @@ const deferTask = <TArgs extends unknown[], TReturn>(
           return Promise.reject(error);
         }
 
-        return task();
+        if (!state.isRunning) {
+          return undefined;
+        }
       }
 
       const startFunc = timeoutFunction(() => {
