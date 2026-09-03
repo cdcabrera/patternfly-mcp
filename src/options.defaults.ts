@@ -464,8 +464,8 @@ const TOOL_MEMO_OPTIONS = {
   },
   searchPatternFlyDocs: {
     cacheLimit: 10,
-    // expire: 10 * 60 * 1000, // 10 minute sliding cache
-    expire: 1 * 60 * 1000, // 1 minute sliding cache
+    expire: 10 * 60 * 1000, // 10 minute sliding cache
+    // expire: 1 * 60 * 1000, // 1 minute sliding cache
     cacheErrors: false
   }
 };
