@@ -1,0 +1,1375 @@
+{
+  "removal": [
+    {
+      "key": "BackgroundImage",
+      "displayName": "Background Image",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/BackgroundImage/examples/BackgroundImage.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "./BackgroundImageBasic.tsx"
+      ]
+    },
+    {
+      "key": "ActionList",
+      "displayName": "Action List",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/ActionList/examples/ActionList.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "ActionListSingleGroup.tsx",
+        "./ActionListWithIcons.tsx",
+        "./ActionListMultipleGroups.tsx"
+      ]
+    },
+    {
+      "key": "Backdrop",
+      "displayName": "Backdrop",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Backdrop/examples/Backdrop.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "./BackdropBasic.tsx"
+      ]
+    },
+    {
+      "key": "AreaChart",
+      "displayName": "Area Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartArea/examples/ChartArea.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "ChartAreaRightAlignedLegend.tsx",
+        "ChartAreaBottomLegend.tsx",
+        "ChartAreaMultiColorResponsive.tsx"
+      ]
+    },
+    {
+      "key": "BackToTop",
+      "displayName": "Back To Top",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/BackToTop/examples/BackToTop.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "./BackToTopBasic.tsx"
+      ]
+    },
+    {
+      "key": "Avatar",
+      "displayName": "Avatar",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Avatar/examples/Avatar.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./AvatarBasic.tsx",
+        "./AvatarColorModifiers.tsx",
+        "./AvatarInitials.tsx"
+      ]
+    },
+    {
+      "key": "Accordion",
+      "displayName": "Accordion",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Accordion/examples/Accordion.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./AccordionDefinitionList.tsx",
+        "./AccordionSingleExpandBehavior.tsx",
+        "./AccordionFixedWithMultipleExpandBehavior.tsx"
+      ]
+    },
+    {
+      "key": "Alert",
+      "displayName": "Alert",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Alert/examples/Alert.md",
+      "templateFileCount": 20,
+      "sampleReferences": [
+        "AlertVariants.tsx",
+        "AlertVariations.tsx",
+        "AlertTimeout.tsx"
+      ]
+    },
+    {
+      "key": "AboutModal",
+      "displayName": "About Modal",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/AboutModal/examples/AboutModal.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "./AboutModalBasic.tsx",
+        "./AboutModalWithoutProductName.tsx",
+        "./AboutModalComplexUserPositionedContent.tsx"
+      ]
+    },
+    {
+      "key": "Badge",
+      "displayName": "Badge",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Badge/examples/Badge.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "./BadgeRead.tsx",
+        "./BadgeUnread.tsx",
+        "./BadgeDisabled.tsx"
+      ]
+    },
+    {
+      "key": "Breadcrumb",
+      "displayName": "Breadcrumb",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Breadcrumb/examples/Breadcrumb.md",
+      "templateFileCount": 4,
+      "sampleReferences": [
+        "./BreadcrumbBasic.tsx",
+        "./BreadcrumbWithoutHomeLink.tsx",
+        "./BreadcrumbWithHeading.tsx"
+      ]
+    },
+    {
+      "key": "Brand",
+      "displayName": "Brand",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Brand/examples/Brand.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "./BrandBasic.tsx",
+        "./BrandResponsive.tsx"
+      ]
+    },
+    {
+      "key": "Banner",
+      "displayName": "Banner",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Banner/examples/Banner.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "./BannerBasic.tsx",
+        "./BannerStatus.tsx",
+        "./BannerPill.tsx"
+      ]
+    },
+    {
+      "key": "Card",
+      "displayName": "Card",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Card/examples/Card.md",
+      "templateFileCount": 21,
+      "sampleReferences": [
+        "./CardBasic.tsx",
+        "./CardSubtitle.tsx",
+        "./CardSubtitleActions.tsx"
+      ]
+    },
+    {
+      "key": "BarChart",
+      "displayName": "Bar Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartBar/examples/ChartBar.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "ChartBarRightAlignedLegend.tsx",
+        "ChartBarBottomLegend.tsx",
+        "ChartBarMultiColorOrdered.tsx"
+      ]
+    },
+    {
+      "key": "CalendarMonth",
+      "displayName": "Calendar Month",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/CalendarMonth/examples/CalendarMonth.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "./CalendarMonthSelectableDate.tsx",
+        "./CalendarMonthDateRange.tsx"
+      ]
+    },
+    {
+      "key": "Button",
+      "displayName": "Button",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Button/examples/Button.md",
+      "templateFileCount": 17,
+      "sampleReferences": [
+        "./ButtonVariations.tsx",
+        "./ButtonDisabled.tsx",
+        "./ButtonSmall.tsx"
+      ]
+    },
+    {
+      "key": "Bullseye",
+      "displayName": "Bullseye",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Bullseye/examples/Bullseye.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "BullseyeBasic.tsx"
+      ]
+    },
+    {
+      "key": "BoxPlotChart",
+      "displayName": "Box Plot Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartBoxPlot/examples/ChartBoxPlot.md",
+      "templateFileCount": 4,
+      "sampleReferences": [
+        "ChartBoxPlotRightAlignedLegend.tsx",
+        "ChartBoxPlotLabelsLegend.tsx",
+        "ChartBoxPlotEmbeddedLegend.tsx"
+      ]
+    },
+    {
+      "key": "BulletChart",
+      "displayName": "Bullet Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartBullet/examples/ChartBullet.md",
+      "templateFileCount": 17,
+      "sampleReferences": [
+        "ChartBulletBasic.tsx",
+        "ChartBulletSegmentedMeasure.tsx",
+        "ChartBulletResponsiveLegend.tsx"
+      ]
+    },
+    {
+      "key": "Content",
+      "displayName": "Content",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Content/examples/Content.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "./ContentWrapper.tsx",
+        "./ContentHeadings.tsx",
+        "./ContentBody.tsx"
+      ]
+    },
+    {
+      "key": "ChartTheme",
+      "displayName": "Colors for Charts",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartTheme/examples/ChartTheme.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "ChartThemeGreen.tsx",
+        "ChartThemeMultiColorOrdered.tsx",
+        "ChartThemeMultiColorUnordered.tsx"
+      ]
+    },
+    {
+      "key": "DescriptionList",
+      "displayName": "Description List",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/DescriptionList/examples/DescriptionList.md",
+      "templateFileCount": 27,
+      "sampleReferences": [
+        "./DescriptionListBasic.tsx",
+        "./DescriptionListWithTermHelpText.tsx",
+        "./DescriptionListDefaultTwoCol.tsx"
+      ]
+    },
+    {
+      "key": "Checkbox",
+      "displayName": "Checkbox",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Checkbox/examples/Checkbox.md",
+      "templateFileCount": 10,
+      "sampleReferences": [
+        "./CheckboxControlled.tsx",
+        "./CheckboxUncontrolled.tsx",
+        "./CheckboxReversed.tsx"
+      ]
+    },
+    {
+      "key": "DataList",
+      "displayName": "Data List",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/DataList/examples/DataList.md",
+      "templateFileCount": 13,
+      "sampleReferences": [
+        "./DataListBasic.tsx",
+        "./DataListCompact.tsx",
+        "./DataListPlain.tsx"
+      ]
+    },
+    {
+      "key": "CodeBlock",
+      "displayName": "Code Block",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/CodeBlock/examples/CodeBlock.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "./CodeBlockBasic.tsx",
+        "./CodeBlockExpandable.tsx"
+      ]
+    },
+    {
+      "key": "ClipboardCopy",
+      "displayName": "Clipboard Copy",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/ClipboardCopy/examples/ClipboardCopy.md",
+      "templateFileCount": 12,
+      "sampleReferences": [
+        "./ClipboardCopyBasic.tsx",
+        "./ClipboardCopyReadOnly.tsx",
+        "./ClipboardCopyExpanded.tsx"
+      ]
+    },
+    {
+      "key": "DatePicker",
+      "displayName": "Date Picker",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/DatePicker/examples/DatePicker.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "./DatePickerBasic.tsx",
+        "./DatePickerRequired.tsx",
+        "./DatePickerAmerican.tsx"
+      ]
+    },
+    {
+      "key": "DonutUtilizationChart",
+      "displayName": "Donut Utilization Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartDonutUtilization/examples/ChartDonutUtilization.md",
+      "templateFileCount": 18,
+      "sampleReferences": [
+        "ChartUtilBasic.tsx",
+        "ChartUtilRightAlignedLegend.tsx",
+        "ChartUtilInvertedRightLegend.tsx"
+      ]
+    },
+    {
+      "key": "Divider",
+      "displayName": "Divider",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Divider/examples/Divider.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "./DividerUsingHr.tsx",
+        "./DividerUsingLi.tsx",
+        "./DividerUsingDiv.tsx"
+      ]
+    },
+    {
+      "key": "Dropdown",
+      "displayName": "Dropdown",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Dropdown/examples/Dropdown.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./DropdownBasic.tsx",
+        "./DropdownWithKebabToggle.tsx",
+        "./DropdownWithGroups.tsx"
+      ]
+    },
+    {
+      "key": "EmptyState",
+      "displayName": "Empty State",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/EmptyState/examples/EmptyState.md",
+      "templateFileCount": 8,
+      "sampleReferences": [
+        "EmptyStateBasic.tsx",
+        "EmptyStateExtraSmall.tsx",
+        "EmptyStateSmall.tsx"
+      ]
+    },
+    {
+      "key": "Drawer",
+      "displayName": "Drawer",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Drawer/examples/Drawer.md",
+      "templateFileCount": 21,
+      "sampleReferences": [
+        "./DrawerBasic.tsx",
+        "./DrawerPanelEnd.tsx",
+        "./DrawerPanelStart.tsx"
+      ]
+    },
+    {
+      "key": "DualListSelector",
+      "displayName": "Dual List Selector",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/DualListSelector/examples/DualListSelector.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "./DualListSelectorBasic.tsx",
+        "./DualListSelectorBasicTooltips.tsx",
+        "./DualListSelectorBasicSearch.tsx"
+      ]
+    },
+    {
+      "key": "DonutChart",
+      "displayName": "Donut Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartDonut/examples/ChartDonut.md",
+      "templateFileCount": 8,
+      "sampleReferences": [
+        "ChartDonutBasic.tsx",
+        "ChartDonutRightAlignedLegend.tsx",
+        "ChartDonutMultiColor.tsx"
+      ]
+    },
+    {
+      "key": "ExpandableSection",
+      "displayName": "Expandable Section",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/ExpandableSection/examples/ExpandableSection.md",
+      "templateFileCount": 10,
+      "sampleReferences": [
+        "ExpandableSectionBasic.tsx",
+        "ExpandableSectionUncontrolled.tsx",
+        "ExpandableSectionUncontrolledDynamicToggleText.tsx"
+      ]
+    },
+    {
+      "key": "FileUpload",
+      "displayName": "File Upload",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/FileUpload/examples/FileUpload.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "./FileUploadSimpleText.tsx",
+        "./FileUploadWithHelperText.tsx",
+        "./FileUploadTextWithEdits.tsx"
+      ]
+    },
+    {
+      "key": "Form",
+      "displayName": "Form",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Form/examples/Form.md",
+      "templateFileCount": 13,
+      "sampleReferences": [
+        "./FormBasic.tsx",
+        "./FormHorizontal.tsx",
+        "./FormLimitWidth.tsx"
+      ]
+    },
+    {
+      "key": "Grid",
+      "displayName": "Grid",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Grid/examples/Grid.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "GridBasic.tsx",
+        "GridWithGutters.tsx",
+        "GridWithOverrides.tsx"
+      ]
+    },
+    {
+      "key": "HelperText",
+      "displayName": "Helper Text",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/HelperText/examples/HelperText.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "HelperTextBasic.tsx",
+        "HelperTextWithCustomIcon.tsx",
+        "HelperTextMultipleItems.tsx"
+      ]
+    },
+    {
+      "key": "FormSelect",
+      "displayName": "Form Select",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/FormSelect/examples/FormSelect.md",
+      "templateFileCount": 4,
+      "sampleReferences": [
+        "./FormSelectBasic.tsx",
+        "./FormSelectValidated.tsx",
+        "./FormSelectDisabled.tsx"
+      ]
+    },
+    {
+      "key": "Flex",
+      "displayName": "Flex",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Flex/examples/Flex.md",
+      "templateFileCount": 35,
+      "sampleReferences": [
+        "FlexBasic.tsx",
+        "FlexNesting.tsx",
+        "FlexNestedItems.tsx"
+      ]
+    },
+    {
+      "key": "Hint",
+      "displayName": "Hint",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Hint/examples/Hint.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "HintBasicWithTitle.tsx",
+        "HintBasicWithoutTitle.tsx",
+        "HintActionsWithNoOffset.tsx"
+      ]
+    },
+    {
+      "key": "Icon",
+      "displayName": "Icon",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Icon/examples/Icon.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "IconBasic.tsx",
+        "StandaloneIconSizes.tsx",
+        "BodyIconSizes.tsx"
+      ]
+    },
+    {
+      "key": "JumpLinks",
+      "displayName": "Jump Links",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/JumpLinks/examples/JumpLinks.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./JumpLinksBasic.tsx",
+        "./JumpLinksWithCenteredList.tsx",
+        "./JumpLinksWithLabel.tsx"
+      ]
+    },
+    {
+      "key": "Gallery",
+      "displayName": "Gallery",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Gallery/examples/Gallery.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "GalleryBasic.tsx",
+        "GalleryWithGutters.tsx",
+        "GalleryAdjustingMinWidths.tsx"
+      ]
+    },
+    {
+      "key": "InputGroup",
+      "displayName": "Input Group",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/InputGroup/examples/InputGroup.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./InputGroupBasic.tsx",
+        "./InputGroupWithTextarea.tsx",
+        "./InputGroupWithDropdown.tsx"
+      ]
+    },
+    {
+      "key": "LineChart",
+      "displayName": "Line Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartLine/examples/ChartLine.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "ChartLineBasicRightLegend.tsx",
+        "ChartLineGreenBottomLegend.tsx",
+        "ChartLineMultiColor.tsx"
+      ]
+    },
+    {
+      "key": "Level",
+      "displayName": "Level",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Level/examples/Level.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "LevelBasic.tsx",
+        "LevelWithGutters.tsx"
+      ]
+    },
+    {
+      "key": "MenuToggle",
+      "displayName": "Menu Toggle",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/MenuToggle/examples/MenuToggle.md",
+      "templateFileCount": 22,
+      "sampleReferences": [
+        "MenuToggleCollapsed.tsx",
+        "MenuToggleExpanded.tsx",
+        "MenuToggleSmall.tsx"
+      ]
+    },
+    {
+      "key": "LegendChart",
+      "displayName": "Legend",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartLegend/examples/ChartLegend.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "ChartLegendBasicRightLegend.tsx",
+        "ChartLegendBottomAlignedLegend.tsx",
+        "ChartLegendResponsiveBottomLeft.tsx"
+      ]
+    },
+    {
+      "key": "Menu",
+      "displayName": "Menu",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Menu/examples/Menu.md",
+      "templateFileCount": 22,
+      "sampleReferences": [
+        "MenuBasic.tsx",
+        "MenuDangerMenuItem.tsx",
+        "MenuWithIcons.tsx"
+      ]
+    },
+    {
+      "key": "LoginPage",
+      "displayName": "Login Page",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/LoginPage/examples/LoginPage.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "./LoginPageBasic.tsx",
+        "./LoginPageShowHidePassword.tsx",
+        "./LoginPageLanguageSelect.tsx"
+      ]
+    },
+    {
+      "key": "Masthead",
+      "displayName": "Masthead",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Masthead/examples/Masthead.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "./MastheadBasic.tsx",
+        "./MastheadBasicMixedContent.tsx",
+        "./MastheadDisplayInline.tsx"
+      ]
+    },
+    {
+      "key": "Label",
+      "displayName": "Label",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Label/examples/Label.md",
+      "templateFileCount": 12,
+      "sampleReferences": [
+        "LabelFilled.tsx",
+        "LabelOutline.tsx",
+        "LabelCompact.tsx"
+      ]
+    },
+    {
+      "key": "Modal",
+      "displayName": "Modal",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Modal/examples/Modal.md",
+      "templateFileCount": 15,
+      "sampleReferences": [
+        "./ModalBasic.tsx",
+        "ModalWithOverflowingContent.tsx",
+        "./ModalWithDescription.tsx"
+      ]
+    },
+    {
+      "key": "List",
+      "displayName": "List",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/List/examples/List.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "./ListBasic.tsx",
+        "./ListInline.tsx",
+        "./ListOrdered.tsx"
+      ]
+    },
+    {
+      "key": "Pagination",
+      "displayName": "Pagination",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Pagination/examples/Pagination.md",
+      "templateFileCount": 12,
+      "sampleReferences": [
+        "./PaginationTop.tsx",
+        "./PaginationBottom.tsx",
+        "./PaginationIndeterminate.tsx"
+      ]
+    },
+    {
+      "key": "Panel",
+      "displayName": "Panel",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Panel/examples/Panel.md",
+      "templateFileCount": 12,
+      "sampleReferences": [
+        "PanelBasic.tsx",
+        "PanelHeaderExample.tsx",
+        "PanelFooterExample.tsx"
+      ]
+    },
+    {
+      "key": "OpenUIAutomation",
+      "displayName": "Open UI Automation",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/helpers/OUIA/OUIA.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "examples/OuiaExample.tsx"
+      ]
+    },
+    {
+      "key": "PieChart",
+      "displayName": "Pie Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartPie/examples/ChartPie.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "ChartPieBasicRightLegend.tsx",
+        "ChartPieMultiColorBottomLegend.tsx",
+        "ChartPieCustomColorScale.tsx"
+      ]
+    },
+    {
+      "key": "Page",
+      "displayName": "Page",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Page/examples/Page.md",
+      "templateFileCount": 11,
+      "sampleReferences": [
+        "./PageVerticalNav.tsx",
+        "./PageMultipleSidebarBody.tsx",
+        "./PageHorizontalNav.tsx"
+      ]
+    },
+    {
+      "key": "NotificationDrawer",
+      "displayName": "Notification Drawer",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/NotificationDrawer/examples/NotificationDrawer.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "NotificationDrawerBasic.tsx",
+        "NotificationDrawerGroups.tsx",
+        "NotificationDrawerLightweight.tsx"
+      ]
+    },
+    {
+      "key": "OverflowMenu",
+      "displayName": "Overflow Menu",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/OverflowMenu/examples/OverflowMenu.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "./OverflowMenuSimple.tsx",
+        "./OverflowMenuSimpleVertical.tsx",
+        "./OverflowMenuGroupTypes.tsx"
+      ]
+    },
+    {
+      "key": "NumberInput",
+      "displayName": "Number Input",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/NumberInput/examples/NumberInput.md",
+      "templateFileCount": 8,
+      "sampleReferences": [
+        "./NumberInputDefault.tsx",
+        "./NumberInputUnit.tsx",
+        "./NumberInputUnitThreshold.tsx"
+      ]
+    },
+    {
+      "key": "Popover",
+      "displayName": "Popover",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Popover/examples/Popover.md",
+      "templateFileCount": 12,
+      "sampleReferences": [
+        "./PopoverBasic.tsx",
+        "./PopoverHover.tsx",
+        "./PopoverCloseControlled.tsx"
+      ]
+    },
+    {
+      "key": "NotificationBadge",
+      "displayName": "Notification Badge",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/NotificationBadge/examples/NotificationBadge.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "./NotificationBadgeBasic.tsx",
+        "./NotificationBadgeWithCount.tsx",
+        "./NotificationBadgeWithAnimation.tsx"
+      ]
+    },
+    {
+      "key": "Progress",
+      "displayName": "Progress",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Progress/examples/Progress.md",
+      "templateFileCount": 16,
+      "sampleReferences": [
+        "./ProgressBasic.tsx",
+        "./ProgressSmall.tsx",
+        "./ProgressLarge.tsx"
+      ]
+    },
+    {
+      "key": "ProgressStepper",
+      "displayName": "Progress Stepper",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/ProgressStepper/examples/ProgressStepper.md",
+      "templateFileCount": 8,
+      "sampleReferences": [
+        "ProgressStepperBasic.tsx",
+        "ProgressStepperBasicWithDescription.tsx",
+        "ProgressStepperBasicWithAlignment.tsx"
+      ]
+    },
+    {
+      "key": "Radio",
+      "displayName": "Radio",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Radio/examples/Radio.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "./RadioControlled.tsx",
+        "./RadioUncontrolled.tsx",
+        "./RadioReversed.tsx"
+      ]
+    },
+    {
+      "key": "SearchInput",
+      "displayName": "Search Input",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/SearchInput/examples/SearchInput.md",
+      "templateFileCount": 7,
+      "sampleReferences": [
+        "./SearchInputBasic.tsx",
+        "./SearchInputWithResultCount.tsx",
+        "./SearchInputWithNavigableOptions.tsx"
+      ]
+    },
+    {
+      "key": "Sidebar",
+      "displayName": "Sidebar",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Sidebar/examples/Sidebar.md",
+      "templateFileCount": 9,
+      "sampleReferences": [
+        "./SidebarBasic.tsx",
+        "./SidebarStack.tsx",
+        "./SidebarPanelRightGutter.tsx"
+      ]
+    },
+    {
+      "key": "ScatterChart",
+      "displayName": "Scatter Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartScatter/examples/ChartScatter.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "ChartScatterBasic.tsx",
+        "ChartScatterLineChart.tsx",
+        "ChartScatterAreaChart.tsx"
+      ]
+    },
+    {
+      "key": "Select",
+      "displayName": "Select",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Select/examples/Select.md",
+      "templateFileCount": 12,
+      "sampleReferences": [
+        "./SelectBasic.tsx",
+        "./SelectOptionVariations.tsx",
+        "./SelectGrouped.tsx"
+      ]
+    },
+    {
+      "key": "Switch",
+      "displayName": "Switch",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Switch/examples/Switch.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./SwitchBasic.tsx",
+        "./SwitchReversed.tsx",
+        "./SwitchWithoutLabel.tsx"
+      ]
+    },
+    {
+      "key": "SparklineChart",
+      "displayName": "Sparkline Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/Sparkline/examples/sparkline.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "SparklineBasic.tsx",
+        "SparklineGreen.tsx"
+      ]
+    },
+    {
+      "key": "Stack",
+      "displayName": "Stack",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Stack/examples/Stack.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "StackBasic.tsx",
+        "StackWithGutter.tsx"
+      ]
+    },
+    {
+      "key": "Slider",
+      "displayName": "Slider",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Slider/examples/Slider.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./SliderDiscrete.tsx",
+        "./SliderContinuous.tsx",
+        "./SliderValueInput.tsx"
+      ]
+    },
+    {
+      "key": "Split",
+      "displayName": "Split",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/layouts/Split/examples/Split.md",
+      "templateFileCount": 3,
+      "sampleReferences": [
+        "SplitBasic.tsx",
+        "SplitWithGutter.tsx",
+        "SplitWrappable.tsx"
+      ]
+    },
+    {
+      "key": "SimpleList",
+      "displayName": "Simple List",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/SimpleList/examples/SimpleList.md",
+      "templateFileCount": 4,
+      "sampleReferences": [
+        "SimpleListBasic.tsx",
+        "SimpleListLinks.tsx",
+        "SimpleListGrouped.tsx"
+      ]
+    },
+    {
+      "key": "SkipToContent",
+      "displayName": "Skip To Content",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/SkipToContent/examples/SkipToContent.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "./SkipToContentBasic.tsx"
+      ]
+    },
+    {
+      "key": "Skeleton",
+      "displayName": "Skeleton",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Skeleton/examples/Skeleton.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./SkeletonDefault.tsx",
+        "./SkeletonPercentageWidth.tsx",
+        "./SkeletonPercentageHeight.tsx"
+      ]
+    },
+    {
+      "key": "Spinner",
+      "displayName": "Spinner",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Spinner/examples/Spinner.md",
+      "templateFileCount": 4,
+      "sampleReferences": [
+        "./SpinnerBasic.tsx",
+        "./SpinnerSizeVariations.tsx",
+        "./SpinnerCustomSize.tsx"
+      ]
+    },
+    {
+      "key": "StackChart",
+      "displayName": "Stack Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartStack/examples/ChartStack.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "ChartStackBasicRightLegend.tsx",
+        "ChartStackBottomLegend.tsx",
+        "ChartStackMultiColorOrdered.tsx"
+      ]
+    },
+    {
+      "key": "TextInput",
+      "displayName": "Text Input",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/TextInput/examples/TextInput.md",
+      "templateFileCount": 8,
+      "sampleReferences": [
+        "./TextInputBasic.tsx",
+        "./TextInputDisabled.tsx",
+        "./TextInputStartTruncated.tsx"
+      ]
+    },
+    {
+      "key": "TextInputGroup",
+      "displayName": "Text Input Group",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/TextInputGroup/examples/TextInputGroup.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./TextInputGroupBasic.tsx",
+        "./TextInputGroupDisabled.tsx",
+        "./TextInputGroupUtilitiesAndIcon.tsx"
+      ]
+    },
+    {
+      "key": "Table",
+      "displayName": "Table",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-table/src/components/Table/examples/Table.md",
+      "templateFileCount": 35,
+      "sampleReferences": [
+        "TableBasic.tsx",
+        "TablePlain.tsx",
+        "TableMisc.tsx"
+      ]
+    },
+    {
+      "key": "Tabs",
+      "displayName": "Tabs",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Tabs/examples/Tabs.md",
+      "templateFileCount": 25,
+      "sampleReferences": [
+        "./TabsDefault.tsx",
+        "./TabsBoxSecondary.tsx",
+        "./TabsVertical.tsx"
+      ]
+    },
+    {
+      "key": "Timestamp",
+      "displayName": "Timestamp",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Timestamp/examples/Timestamp.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./TimestampDefault.tsx",
+        "./TimestampBasicFormats.tsx",
+        "./TimestampCustomFormat.tsx"
+      ]
+    },
+    {
+      "key": "TextArea",
+      "displayName": "Text Area",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/TextArea/examples/TextArea.md",
+      "templateFileCount": 10,
+      "sampleReferences": [
+        "./TextAreaBasic.tsx",
+        "./TextAreaInvalid.tsx",
+        "./TextAreaValidated.tsx"
+      ]
+    },
+    {
+      "key": "Title",
+      "displayName": "Title",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Title/examples/Title.md",
+      "templateFileCount": 2,
+      "sampleReferences": [
+        "./TitleDefaultSizes.tsx",
+        "./TitleCustomSizes.tsx"
+      ]
+    },
+    {
+      "key": "ThresholdChart",
+      "displayName": "Threshold Chart",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartThreshold/examples/ChartThreshold.md",
+      "templateFileCount": 1,
+      "sampleReferences": [
+        "ChartThresholdMultiColorOrdered.tsx"
+      ]
+    },
+    {
+      "key": "TimePicker",
+      "displayName": "Time Picker",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/TimePicker/examples/TimePicker.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./TimePickerBasic12Hour.tsx",
+        "./TimePickerBasic24Hour.tsx",
+        "./TimePickerCustomDelimiter.tsx"
+      ]
+    },
+    {
+      "key": "Tooltip",
+      "displayName": "Tooltip",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-charts/src/victory/components/ChartTooltip/examples/ChartTooltip.md",
+      "templateFileCount": 11,
+      "sampleReferences": [
+        "ChartTooltipVoronoi.tsx",
+        "ChartTooltipCombinedCursorVoronoi.tsx",
+        "ChartTooltipEmbeddedLegend.tsx"
+      ]
+    },
+    {
+      "key": "TreeView",
+      "displayName": "Tree View",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/TreeView/examples/TreeView.md",
+      "templateFileCount": 14,
+      "sampleReferences": [
+        "./TreeViewSingleSelectable.tsx",
+        "./TreeViewMultiselectable.tsx",
+        "./TreeViewSelectionExpansion.tsx"
+      ]
+    },
+    {
+      "key": "Truncate",
+      "displayName": "Truncate",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Truncate/examples/Truncate.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./TruncateDefault.tsx",
+        "./TruncateMiddle.tsx",
+        "./TruncateStart.tsx"
+      ]
+    },
+    {
+      "key": "ToggleGroup",
+      "displayName": "Toggle Group",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/ToggleGroup/examples/ToggleGroup.md",
+      "templateFileCount": 6,
+      "sampleReferences": [
+        "./ToggleGroupDefaultSingle.tsx",
+        "./ToggleGroupDefaultMultiple.tsx",
+        "./ToggleGroupIcon.tsx"
+      ]
+    },
+    {
+      "key": "Toolbar",
+      "displayName": "Toolbar",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Toolbar/examples/Toolbar.md",
+      "templateFileCount": 15,
+      "sampleReferences": [
+        "./ToolbarItems.tsx",
+        "./ToolbarInsets.tsx",
+        "./ToolbarVertical.tsx"
+      ]
+    },
+    {
+      "key": "Tooltip",
+      "displayName": "Tooltip",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Tooltip/examples/Tooltip.md",
+      "templateFileCount": 5,
+      "sampleReferences": [
+        "./TooltipBasic.tsx",
+        "./TooltipReactRef.tsx",
+        "./TooltipSelectorRef.tsx"
+      ]
+    },
+    {
+      "key": "Wizard",
+      "displayName": "Wizard",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-react/6f2385bbcc03de22a7ae8be506481e1b4d653200/packages/react-core/src/components/Wizard/examples/Wizard.md",
+      "templateFileCount": 20,
+      "sampleReferences": [
+        "./WizardBasic.tsx",
+        "./WizardPlain.tsx",
+        "./WizardFocusOnNextBack.tsx"
+      ]
+    }
+  ],
+  "keep": [
+    {
+      "key": "Charts",
+      "displayName": "React Charts",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/charts/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 17,
+      "summary": "# Charts Rules  Essential rules for PatternFly Charts implementation using Victory.js and ECharts.  ## Installation Rule"
+    },
+    {
+      "key": "Chatbot",
+      "displayName": "React Chatbot",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/chatbot/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 8,
+      "summary": "# Chatbot Rules  Essential rules for PatternFly Chatbot implementation and integration patterns.  ## Related Files  - [*"
+    },
+    {
+      "key": "DesignTokens",
+      "displayName": "Design tokens for development",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/957756128e8ddfc4be5db49e72312a2c43b9d220/packages/documentation-site/patternfly-docs/content/foundations-and-styles/design-tokens/develop.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 1,
+      "summary": "--- id: Develop section: foundations-and-styles subsection: design-tokens sortvalue: 10 ---  ## Using tokens in code  Pa"
+    },
+    {
+      "key": "React",
+      "displayName": "React Guidelines",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/guidelines/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 2,
+      "summary": "# PatternFly Guidelines  Core development rules for AI coders building PatternFly React applications.  ## Related Files"
+    },
+    {
+      "key": "React",
+      "displayName": "AI Prompt Guidance",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/guidelines/ai-prompt-guidance.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 11,
+      "summary": "# AI Prompt Guidance for PatternFly Development  Guidelines for creating effective prompts when using AI coding assistan"
+    },
+    {
+      "key": "React",
+      "displayName": "Development Environment",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/setup/development-environment.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 8,
+      "summary": "# Development Environment  This guide covers the configuration of development tools and environment settings for optimal"
+    },
+    {
+      "key": "React",
+      "displayName": "Quick Start",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/setup/quick-start.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 4,
+      "summary": "# Quick Start Guide  This guide provides step-by-step instructions to get a PatternFly React application running quickly"
+    },
+    {
+      "key": "React",
+      "displayName": "React Setup",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/setup/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 0,
+      "summary": "# Setup Guide  This section covers the initial setup and configuration for PatternFly React development projects.  ## In"
+    },
+    {
+      "key": "React",
+      "displayName": "External Links",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/resources/external-links.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 1,
+      "summary": "# External References  This document provides links to official PatternFly documentation, repositories, and helpful exte"
+    },
+    {
+      "key": "React",
+      "displayName": "Styling Standards",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/guidelines/styling-standards.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 27,
+      "summary": "# Styling Standards  Essential CSS and styling rules for PatternFly React applications.  ## Related Files - [**PatternFl"
+    },
+    {
+      "key": "React",
+      "displayName": "Component Architecture",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/guidelines/component-architecture.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 2,
+      "summary": "# Component Architecture  This document outlines the essential rules for structuring PatternFly components, managing sta"
+    },
+    {
+      "key": "React",
+      "displayName": "Component Groups",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/component-groups/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 4,
+      "summary": "# PatternFly Component Groups Rules  Essential rules for using and contributing to PatternFly React Component Groups.  #"
+    },
+    {
+      "key": "React",
+      "displayName": "React Troubleshooting",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/troubleshooting/common-issues.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 90,
+      "summary": "# Common Issues  This document covers frequently encountered problems and their solutions when working with PatternFly R"
+    },
+    {
+      "key": "React",
+      "displayName": "Quick Deployment Guide for Prototypes",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/guidelines/deployment-guide.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 22,
+      "summary": "# Quick Deployment Guide for Prototypes  This guide provides simple, fast methods for building and deploying your React"
+    },
+    {
+      "key": "React",
+      "displayName": "Data Display",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/components/data-display/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 9,
+      "summary": "# Data Display Rules  Essential rules for PatternFly data display components including lists, data presentation, and dat"
+    },
+    {
+      "key": "React",
+      "displayName": "Layout Components",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/components/layout/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 1,
+      "summary": "# Layout Components  This section covers PatternFly layout components and page structure patterns for building consisten"
+    },
+    {
+      "key": "Table",
+      "displayName": "Table Rules",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/components/data-display/table.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 7,
+      "summary": "# Table Component Rules  Essential rules for PatternFly table components, including usage, sorting, selection, performan"
+    },
+    {
+      "key": "UpgradeGuide",
+      "displayName": "PatternFly 6 upgrade guide",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/957756128e8ddfc4be5db49e72312a2c43b9d220/packages/documentation-site/patternfly-docs/content/releases/upgrade-guide.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 0,
+      "summary": "--- id: Upgrade guide source: upgrade-guide title: Upgrade to PatternFly 6 section: releases --- import { Alert, Button,"
+    },
+    {
+      "key": "UpgradeGuide",
+      "displayName": "Codemods PatternFly 5 to PatternFly 6",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/pf-codemods/63df51df5cc6af2f3d83de4c0991c9e65625675f/packages/pf-codemods/README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 168,
+      "summary": "# pf-codemods  Hey PatternFly-React devs! `pf-codemods` is an eslint wrapper to update @patternfly/react-core@5.x.x code"
+    },
+    {
+      "key": "UpgradeGuide",
+      "displayName": "Codemods PatternFly 3 to PatternFly 4",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/pf-codemods/63df51df5cc6af2f3d83de4c0991c9e65625675f/packages/pf-codemods/v4-README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 105,
+      "summary": "# pf-codemods  Hey PatternFly-React devs! `pf-codemods` is an eslint wrapper to update @patternfly/react-core@3.x.x code"
+    },
+    {
+      "key": "UpgradeGuide",
+      "displayName": "Codemods PatternFly 4 to PatternFly 5",
+      "category": "react",
+      "path": "https://raw.githubusercontent.com/patternfly/pf-codemods/63df51df5cc6af2f3d83de4c0991c9e65625675f/packages/pf-codemods/v5-README.md",
+      "isGuideOrDoc": true,
+      "codeBlocksCount": 221,
+      "summary": "# pf-codemods  Hey PatternFly-React devs! `pf-codemods` is an eslint wrapper to update @patternfly/react-core@4.x.x code"
+    }
+  ],
+  "questionable": []
+}

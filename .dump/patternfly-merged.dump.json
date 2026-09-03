@@ -1,0 +1,28 @@
+{
+  "byPath": {
+    "https://www.patternfly.org/v6/components/button": {
+      "displayName": "Button",
+      "description": "Button description",
+      "pathSlug": "button",
+      "section": "components",
+      "category": "react",
+      "path": "https://www.patternfly.org/v6/components/button",
+      "version": "v6",
+      "id": "845b9a802a96e44949566aeef6857d034eb59053",
+      "groupId": "ffcfb1b9b852a17ccb5b2adc12e3edd4a4ee41cb",
+      "name": "button",
+      "displayCategory": "Examples",
+      "uri": "patternfly://docs/button?version=v6",
+      "uriId": "patternfly://docs/845b9a802a96e44949566aeef6857d034eb59053",
+      "uriSchemas": "patternfly://schemas/button?version=v6",
+      "uriSchemasId": "patternfly://schemas/ffcfb1b9b852a17ccb5b2adc12e3edd4a4ee41cb"
+    }
+  },
+  "uriIndex": {
+    "patternfly://docs/button?version=v6": "button",
+    "patternfly://docs/845b9a802a96e44949566aeef6857d034eb59053": "button",
+    "patternfly://schemas/button?version=v6": "button",
+    "patternfly://schemas/ffcfb1b9b852a17ccb5b2adc12e3edd4a4ee41cb": "button",
+    "patternfly://docs/9f8eb3717103daaa93e44da7bd66432ddaabdc9e": "button"
+  }
+}
