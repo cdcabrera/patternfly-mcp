@@ -49,6 +49,9 @@ interface McpCollectionResult {
  * 1. `handler` `{Function}`: callback function accepting an optional argument
  * 2. `_config` `{Object}`: Application level record source configuration. Unavailable to
  *     record collection plugins.
+ *    - `_config.initial`: Optional initial collection records or loader function executed
+ *        immediately at server startup prior to background scheduled runs or worker execution.
+ *        Hydrates the server records registry at $t=0$.
  *    - `_config.runParallel`: Optional internal import specifier (`#specifier`) to run the
  *        collection handler in a worker thread via the heavy pool. The referenced
  *        module must export `collectionCallback`. Applied in {@link composeCollections}.
@@ -63,6 +66,7 @@ type McpCollection = [
   name: string,
   handler: (arg?: unknown) => McpCollectionResult | Promise<McpCollectionResult>,
   _config?: {
+    initial?: McpCollectionResult | (() => McpCollectionResult | Promise<McpCollectionResult>);
     runParallel?: `#${string}`;
     runSchedule?: {
       continueOnError?: boolean;
@@ -310,6 +314,24 @@ const registerCollections = async (
 ): Promise<void> => {
   log.debug(`Reviewing registration for ${collections.length} collections.`);
 
+  // Step 1: Immediate hydration for collections with `_config.initial`
+  for (const [name, , config] of collections) {
+    if (config?.initial) {
+      try {
+        const initialResult = typeof config.initial === 'function'
+          ? await config.initial()
+          : config.initial;
+
+        if (initialResult) {
+          await setServerRecordsRegistry({ name, response: initialResult, error: undefined });
+        }
+      } catch (err) {
+        log.warn(`Failed to hydrate initial data for collection "${name}": ${formatUnknownError(err)}`);
+      }
+    }
+  }
+
+  // Step 2: Main collection execution (handles scheduled/worker/background callbacks)
   // Wrapper for each loader; handle incremental updates
   const registrationPromises = collections.map(async ([name, callback]) => {
     let error: unknown | undefined;

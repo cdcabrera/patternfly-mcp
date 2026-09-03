@@ -216,6 +216,27 @@ describe('registerCollections', () => {
     await expect(registerCollections(collections)).resolves.not.toThrow();
   });
 
+  it('should immediately hydrate serverRecordsRegistry when config.initial is provided', async () => {
+    const initialRecords = [{ id: 'init-1', sourceId: 'local', sourceType: 'api' }] as any;
+    let resolveHandler: (res: any) => void;
+    const asyncPromise = new Promise(resolve => {
+      resolveHandler = resolve as (res: any) => void;
+    });
+    const handler = jest.fn().mockImplementation(() => asyncPromise);
+
+    const collections: any[] = [
+      ['dual-phase-coll', handler, { initial: { records: initialRecords } }]
+    ];
+
+    const registrationPromise = registerCollections(collections);
+
+    // Immediate check: serverRecordsRegistry has initial records before handler finishes
+    expect(getServerRecordsRegistry({ collectionName: 'dual-phase-coll' })).toEqual({ records: initialRecords });
+
+    resolveHandler!({ records: [{ id: 'live-1', sourceId: 'live', sourceType: 'api' }] });
+    await registrationPromise;
+  });
+
   it('should call onRequired when all required collections are settled', async () => {
     const onRequired = jest.fn();
     const handler = jest.fn().mockResolvedValue({ records: [{ id: '1' }] });

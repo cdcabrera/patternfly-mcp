@@ -35,7 +35,7 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
     });
   };
 
-  return config ? [name, handler, config] : [name, handler];
+  return config ? [name, handler, { ...config }] : [name, handler];
 };
 
 /**
@@ -74,7 +74,7 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
     return response || { records: [] };
   };
 
-  return config ? [name, handler, config] : [name, handler];
+  return config ? [name, handler, { ...config }] : [name, handler];
 };
 
 /**

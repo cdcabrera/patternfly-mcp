@@ -508,10 +508,11 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
  */
 const collectionCallback = async (): Promise<McpCollectionResult> => {
   const isHealthy = await probeHealth();
-  const embeddedRecords = await getPatternFlyApiRecords();
 
   if (!isHealthy) {
-    return { records: embeddedRecords };
+    log.debug('PatternFly API health probe failed or rate-limited; skipping background spidering.');
+
+    return { records: [] };
   }
 
   const entries = await apiSpider();
@@ -561,6 +562,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     'patternfly-api',
     callback,
     {
+      initial: async () => ({ records: await getPatternFlyApiRecords() }),
       runParallel: '#collectionPatternFlyApi',
       runSchedule: {
         ...options.patternflyOptions.api.schedule
@@ -572,6 +574,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
 export {
   patternFlyApiCollection,
   collectionCallback,
+  getPatternFlyApiRecords,
   apiSpider,
   crawler,
   getUniqueUrls,
