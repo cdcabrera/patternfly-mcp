@@ -67,6 +67,7 @@ type McpCollection = [
     runSchedule?: {
       continueOnError?: boolean;
       cancelMs?: number;
+      delayStartMs?: number;
       intervalMs?: number;
       repeat?: number
     };

@@ -187,6 +187,7 @@ interface ModeOptions {
  * @property api.schedule Schedule for crawling the PatternFly API. See {@link McpCollection} config for details.
  * @property api.schedule.continueOnError Continue crawling the PatternFly API on error.
  * @property api.schedule.intervalMs Interval in milliseconds, during server run, for crawling the PatternFly API.
+ * @property api.schedule.delayStartMs Delay in milliseconds, during server run, before starting crawling the PatternFly API.
  * @property api.schedule.repeat Number of times to repeat crawling the PatternFly API.
  * @property availableResourceVersions List of available PatternFly resource versions to the MCP server.
  * @property availableSearchVersions List of available PatternFly search versions to the MCP server.
@@ -211,6 +212,7 @@ interface PatternFlyOptions {
     schedule: {
       continueOnError: boolean;
       intervalMs: number;
+      delayStartMs: number;
       repeat: number;
     }
   },
@@ -530,13 +532,14 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     traversalPaths: [
       'examples'
     ],
-    timeoutMs: 120_000,
+    timeoutMs: 120_000, // 2 minutes
     schedule: {
       continueOnError: true,
-      intervalMs: 86_400_000 * 7, // 7 days
+      intervalMs: 24 * 60 * 60 * 1000 * 7, // 7 days
+      delayStartMs: 60 * 60 * 1000, // 1 hour
       repeat: Infinity
     },
-    enabled: false
+    enabled: false // ToDo: confirm this is still used
   },
   availableResourceVersions: ['6.0.0'],
   availableSearchVersions: ['current', 'latest', 'v6'],
