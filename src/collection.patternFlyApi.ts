@@ -510,7 +510,7 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
   const isHealthy = await probeHealth();
 
   if (!isHealthy) {
-    log.debug('PatternFly API health probe failed or rate-limited; skipping background spidering.');
+    log.debug('PatternFly API health probe failed or rate-limited; skipping background spider.');
 
     return { records: [] };
   }
@@ -564,6 +564,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     {
       initial: async () => ({ records: await getPatternFlyApiRecords() }),
       runParallel: '#collectionPatternFlyApi',
+      retainLastViable: true,
       runSchedule: {
         ...options.patternflyOptions.api.schedule
       }

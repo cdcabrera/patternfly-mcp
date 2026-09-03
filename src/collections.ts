@@ -57,6 +57,9 @@ interface McpCollectionResult {
  *        module must export `collectionCallback`. Applied in {@link composeCollections}.
  *    - `_config.runSchedule`: Optional object to dynamically decide if the record source
  *        should run in a scheduled interval using {@link DeferTaskOptions}
+ *    - `_config.retainLastViable`: Optional boolean or predicate function to retain previously
+ *        viable collection records in the registry if an update fails, drops to zero records,
+ *        or triggers custom retention conditions.
  *    - `_config.isRequired`: Optional boolean used to control server startup when
  *        collections are required for operation.
  *   - `_config._isInternal`: Optional boolean. Applied internally. Attempting to manually
@@ -75,12 +78,41 @@ type McpCollection = [
       intervalMs?: number;
       repeat?: number
     };
+    retainLastViable?: RetainLastViableOption;
     // priority?: number;
     isRequired?: boolean;
     // group?: string;
     _isInternal?: boolean;
   }
 ];
+
+/**
+ * Context provided to a {@link RetainLastViablePredicate} evaluation.
+ *
+ * @property name - The collection name being evaluated.
+ * @property {McpCollectionResult|undefined} [previous] - The previous viable collection response stored in the registry.
+ * @property {McpCollectionResult|undefined} [current] - The new collection response produced by the latest run.
+ * @property [error] - Any error or exception thrown during collection execution.
+ * @property isSuccess - Whether the collection callback resolved without throwing an error.
+ */
+type RetainLastViableContext = {
+  name: string;
+  previous?: McpCollectionResult | undefined;
+  current?: McpCollectionResult | undefined;
+  error?: unknown | undefined;
+  isSuccess: boolean;
+};
+
+/**
+ * Predicate function to determine whether to retain previous collection records.
+ * Returning `true` preserves previous records; returning `false` accepts the new update.
+ */
+type RetainLastViablePredicate = (context: RetainLastViableContext) => boolean | Promise<boolean>;
+
+/**
+ * Configuration option for `retainLastViable`. Supports `boolean` shorthand or custom predicate.
+ */
+type RetainLastViableOption = boolean | RetainLastViablePredicate;
 
 /**
  * A function that creates a collection registered with the MCP server.
@@ -287,6 +319,22 @@ const onUpdateServerRecordsRegistry = (
 };
 
 /**
+ * Default retention heuristic for boolean `retainLastViable: true`.
+ * Retains previous response if:
+ *  1. A viable previous dataset existed (`previous.records.length > 0`), AND
+ *  2. The update threw an error (`!isSuccess`) OR returned empty records (`current.records.length === 0`).
+ *
+ * @param context - Retention evaluation context.
+ */
+const defaultRetainPredicate: RetainLastViablePredicate = context => {
+  const { previous, current, isSuccess } = context || {} as RetainLastViableContext;
+  const prevCount = Array.isArray(previous?.records) ? previous.records.length : 0;
+  const newCount = Array.isArray(current?.records) ? current.records.length : 0;
+
+  return prevCount > 0 && (!isSuccess || newCount === 0);
+};
+
+/**
  * Registers a set of collections asynchronously.
  *
  * - Required collections gatekeep `registerCollections` resolve.
@@ -333,7 +381,7 @@ const registerCollections = async (
 
   // Step 2: Main collection execution (handles scheduled/worker/background callbacks)
   // Wrapper for each loader; handle incremental updates
-  const registrationPromises = collections.map(async ([name, callback]) => {
+  const registrationPromises = collections.map(async ([name, callback, config]) => {
     let error: unknown | undefined;
     let response: McpCollectionResult | undefined;
     let isSuccess = false;
@@ -346,8 +394,34 @@ const registerCollections = async (
       log.error(`Error loading collection ${name}: ${formatUnknownError(err)}`);
     }
 
+    const previous = getServerRecordsRegistry({ collectionName: name }) as McpCollectionResult | undefined;
+    let shouldRetain = false;
+
+    if (config?.retainLastViable) {
+      try {
+        const context: RetainLastViableContext = {
+          name,
+          previous,
+          current: response,
+          error,
+          isSuccess
+        };
+
+        shouldRetain = await Promise.resolve(
+          typeof config.retainLastViable === 'function'
+            ? (config.retainLastViable as RetainLastViablePredicate)(context)
+            : defaultRetainPredicate(context)
+        );
+      } catch (err) {
+        log.warn(`Error evaluating "retainLastViable" predicate for collection "${name}": ${formatUnknownError(err)}`);
+      }
+    }
+
     try {
-      if (response) {
+      if (shouldRetain) {
+        log.warn(`Collection "${name}" update triggered retention policy; keeping previous viable response (${previous?.records?.length ?? 0} records).`);
+        response = previous;
+      } else if (response) {
         await setServerRecordsRegistry({ name, response, error });
       }
     } catch (err) {
@@ -428,6 +502,9 @@ export {
   registerCollections,
   setServerRecordsRegistry,
   type OnUpdateServerRecordsRegistryOptions,
+  type RetainLastViableContext,
+  type RetainLastViableOption,
+  type RetainLastViablePredicate,
   type McpCollection,
   type McpCollectionCreator,
   type McpCollectionRecord,

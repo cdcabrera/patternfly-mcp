@@ -237,6 +237,63 @@ describe('registerCollections', () => {
     await registrationPromise;
   });
 
+  it('should retain previous viable records when retainLastViable is true and update returns empty records', async () => {
+    const initialRecords = [{ id: 'init-1', sourceId: 'local', sourceType: 'api' }] as any;
+    const handler = jest.fn().mockResolvedValue({ records: [] });
+
+    const collections: any[] = [
+      ['retained-coll', handler, { initial: { records: initialRecords }, retainLastViable: true }]
+    ];
+
+    await registerCollections(collections);
+
+    // Retains initialRecords because update returned empty records
+    expect(getServerRecordsRegistry({ collectionName: 'retained-coll' })).toEqual({ records: initialRecords });
+  });
+
+  it('should retain previous viable records when retainLastViable is true and update throws an error', async () => {
+    const initialRecords = [{ id: 'init-1', sourceId: 'local', sourceType: 'api' }] as any;
+    const handler = jest.fn().mockRejectedValue(new Error('Network failure'));
+
+    const collections: any[] = [
+      ['error-retained-coll', handler, { initial: { records: initialRecords }, retainLastViable: true }]
+    ];
+
+    await registerCollections(collections);
+
+    // Retains initialRecords because update threw an error
+    expect(getServerRecordsRegistry({ collectionName: 'error-retained-coll' })).toEqual({ records: initialRecords });
+  });
+
+  it('should support custom predicate function for retainLastViable', async () => {
+    const initialRecords = [{ id: 'init-1' }, { id: 'init-2' }, { id: 'init-3' }] as any;
+    // Crawl returned only 1 record (loss of > 50% data)
+    const handler = jest.fn().mockResolvedValue({ records: [{ id: 'init-1' }] });
+    const customPredicate = jest.fn().mockImplementation(({ previous, current }) => {
+      const prevCount = previous?.records?.length || 0;
+      const newCount = current?.records?.length || 0;
+
+      return newCount < prevCount * 0.5;
+    });
+
+    const collections: any[] = [
+      ['custom-predicate-coll', handler, {
+        initial: { records: initialRecords },
+        retainLastViable: customPredicate
+      }]
+    ];
+
+    await registerCollections(collections);
+
+    expect(customPredicate).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'custom-predicate-coll',
+      previous: { records: initialRecords },
+      current: { records: [{ id: 'init-1' }] },
+      isSuccess: true
+    }));
+    expect(getServerRecordsRegistry({ collectionName: 'custom-predicate-coll' })).toEqual({ records: initialRecords });
+  });
+
   it('should call onRequired when all required collections are settled', async () => {
     const onRequired = jest.fn();
     const handler = jest.fn().mockResolvedValue({ records: [{ id: '1' }] });
@@ -271,6 +328,7 @@ describe('registerCollections', () => {
     const results: any = await settlePromise;
 
     expect(results).toMatchSnapshot();
+
     expect(results.fulfilled).toContainEqual({ records: [{ id: '1' }] });
     expect(results.rejected).toContainEqual(expect.objectContaining({ name: 'c2' }));
   });
