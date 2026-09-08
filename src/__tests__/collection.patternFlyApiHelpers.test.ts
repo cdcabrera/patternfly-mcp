@@ -335,6 +335,57 @@ describe('calculateContentQualityScore', () => {
   ])('should calculate quality score, $description', ({ content, options, expected }: any) => {
     expect(calculateContentQualityScore(content, options)).toBe(expected);
   });
+
+  it.each([
+    {
+      description: 'multi paragraph',
+      content: [
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+        '\n',
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+        '\n',
+        '<LiveExample src="./first.tsx" />',
+        '<LiveExample src="./second.tsx" />'
+      ].join('\n'),
+      expected: 0.97
+    },
+    {
+      description: 'single paragraph',
+      content: [
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+        '\n',
+        '<LiveExample src="./first.tsx" />',
+        '<LiveExample src="./second.tsx" />'
+      ].join('\n'),
+      expected: 0.94
+    },
+    {
+      description: 'no paragraphs',
+      content: [
+        'Lorem ipsum dolor sit amet.',
+        '<LiveExample src="./first.tsx" />',
+        '<LiveExample src="./second.tsx" />'
+      ].join('\n'),
+      expected: 0.91
+    },
+    {
+      description: 'no paragraphs single example',
+      content: [
+        'Lorem ipsum dolor sit amet.',
+        '<LiveExample src="./first.tsx" />'
+      ].join('\n'),
+      expected: 0.94
+    },
+    {
+      description: 'single example',
+      content: [
+        '<LiveExample src="./first.tsx" />'
+      ].join('\n'),
+      expected: 0.94
+    }
+  ])('should cap "LiveExample" penalities for wordy documents, $description', ({ content, expected }) => {
+    expect(calculateContentQualityScore(content)).toBe(expected);
+  });
 });
 
 describe('normalizeSlug', () => {

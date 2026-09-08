@@ -1,4 +1,9 @@
-import { isJson, isJsonLike } from './resource.helpers';
+import {
+  breakdownProse,
+  contentType,
+  isJson,
+  isJsonLike
+} from './resource.helpers';
 
 /**
  * Detect imports that use the `?raw` query param.
@@ -9,11 +14,53 @@ const isRawImport = (str: string) =>
   /import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/i.test(str);
 
 /**
+ * Count the number of raw imports in a given string.
+ *
+ * @param str - Input string.
+ * @returns Number of raw imports found in the input string.
+ */
+const getRawImportCount = (str: string): number =>
+  (str.match(/import\s+[\w*\s{},]+\s+from\s+['"][^'"]+\?raw['"]/gi) || []).length;
+
+/**
+ * Detect if an inlined code block is present.
+ *
+ * @param str - Input string.
+ * @returns `true` if the string contains a code block.
+ */
+const hasInlinedCodeBlock = (str: string) => {
+  const codeBlocks = str.match(/```[a-zA-Z0-9_-]*\n([\s\S]*?)```/g) || [];
+
+  return codeBlocks.some(block => {
+    const inner = block.replace(/^```[^\n]*\n/, '').replace(/```$/, '').trim();
+
+    return inner.length > 20 && !inner.startsWith('file=');
+  });
+};
+
+/**
  * Detect a `<LiveExample … />` tag.
  *
  * @param str
  */
 const hasLiveExample = (str: string) => /<LiveExample\b[^>]*\/?>/i.test(str);
+
+/**
+ * Count the number of inlined code blocks in a given string.
+ *
+ * @param str - Input string.
+ * @param minBlockLength - Minimum length of code block content to consider it valid.
+ * @returns Number of inlined code blocks found in the input string.
+ */
+const getInlinedCodeBlockCount = (str: string, minBlockLength = 20): number => {
+  const codeBlocks = str.match(/```[a-zA-Z0-9_-]*\n([\s\S]*?)```/g) || [];
+
+  return codeBlocks.filter(block => {
+    const inner = block.replace(/^```[^\n]*\n/, '').replace(/```$/, '').trim();
+
+    return inner.length >= minBlockLength && !inner.startsWith('file=');
+  }).length;
+};
 
 /**
  * Count the number of `<LiveExample>` tags in a given string.
@@ -40,6 +87,61 @@ const hasEmptyFileCodeFence = (str: string) =>
   /```[\w-]*\s*\n\s*```/.test(str);
 
 /**
+ * Calculate template example counts.
+ *
+ * - When `?raw` import and `<LiveExample>` are paired (1:1), count as 1 unit.
+ * - When `?raw` import and `<LiveExample>` appear without the other (orphaned/unpaired), each adds 1 independently to the count.
+ *
+ * @param content - Input content.ß
+ * @returns Total effective template reference count.
+ */
+const getTemplateCount = (content: string): { pairedCount: number; orphanCount: number; totalUnits: number } => {
+  const liveCount = getLiveExampleCount(content);
+  const rawCount = getRawImportCount(content);
+
+  const pairedCount = Math.min(liveCount, rawCount);
+  const orphanCount = Math.abs(liveCount - rawCount);
+  const totalUnits = pairedCount + orphanCount; // Equivalent to Math.max(liveCount, rawCount)
+
+  return { pairedCount, orphanCount, totalUnits };
+};
+
+/**
+ * Is the content a content aggregator?
+ *
+ * @param content - Content to eval.
+ * @returns Returns `true` if the content aggregates other content.
+ */
+const isContentAggregator = (content: string): boolean => {
+  const type = contentType(content);
+
+  if (type !== '' && type !== 'markdown' && type !== 'html') {
+    return false;
+  }
+
+  const { totalUnits } = getTemplateCount(content);
+  // const liveExampleCount = getLiveExampleCount(content);
+  // const rawImportCount = getRawImportCount(content);
+  const inlinedCodeCount = getInlinedCodeBlockCount(content);
+  // const totalTemplateReferences = liveExampleCount + rawImportCount;
+
+  // Check: Multiple external example tags without inlined blocks
+  if (totalUnits >= 2 && inlinedCodeCount === 0) {
+    return true;
+  }
+
+  // Check: High template density
+  if (totalUnits > inlinedCodeCount * 2 && totalUnits >= 3) {
+    return true;
+  }
+
+  // Check: Template tags present without paragraphs
+  const { paragraphs } = breakdownProse(content);
+
+  return totalUnits >= 1 && paragraphs < 2 && inlinedCodeCount === 0;
+};
+
+/**
  * Calculate a quality score for a PatternFly API response.
  *
  * @param content - Content to score.
@@ -53,7 +155,7 @@ const hasEmptyFileCodeFence = (str: string) =>
 const calculateContentQualityScore = (
   content: unknown,
   {
-    baseScore = 1, category, qualityReduction = 0.03, minCharacters = 150
+    baseScore = 1, category, qualityReduction = 0.03, minCharacters = 100
   }: { baseScore?: number; category?: undefined | string; qualityReduction?: number; minCharacters?: number } = {}
 ): number => {
   if (content === undefined || content === null) {
@@ -78,20 +180,34 @@ const calculateContentQualityScore = (
 
   let score = baseScore;
 
-  if (isJsonLike(trimmed)) {
-    const jsonValid = isJson(trimmed);
-
-    if (!jsonValid) {
-      score -= qualityReduction;
-    }
-  }
-
-  if (isRawImport(trimmed)) {
+  if (isJsonLike(trimmed) && !isJson(trimmed)) {
     score -= qualityReduction;
   }
 
-  if (hasLiveExample(trimmed)) {
-    score -= qualityReduction * getLiveExampleCount(trimmed);
+  // if (isRawImport(trimmed)) {
+  //  score -= qualityReduction;
+  // }
+
+  // const liveCount = getLiveExampleCount(trimmed);
+  // const rawCount = getRawImportCount(trimmed);
+  const { totalUnits } = getTemplateCount(trimmed);
+  const inlinedCount = getInlinedCodeBlockCount(trimmed);
+  const { type, paragraphs, wordCount } = breakdownProse(trimmed);
+  const isSubstantialGuide = (type === '' || type === 'markdown') && (paragraphs >= 2 || wordCount >= 50 || inlinedCount >= 1);
+
+  if (isContentAggregator(trimmed)) {
+    // Aggregator overview pages take linear deductions, falling below 0.95
+    score -= qualityReduction * Math.max(2, totalUnits);
+  } else if (isSubstantialGuide) {
+    // Genuine developer guide: cap isolated demo tag/raw import to at most 1 deduction
+    if (totalUnits > 0) {
+      score -= qualityReduction;
+    }
+  } else {
+    // Non-guide stubs
+    if (totalUnits > 0) {
+      score -= qualityReduction * totalUnits;
+    }
   }
 
   if (trimmed.length < minCharacters && !trimmed.includes('```') && !hasEmptyFileCodeFence(trimmed)) {

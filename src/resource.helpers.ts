@@ -407,6 +407,46 @@ const contentType = (content: unknown): '' | 'sh' | 'python' | 'markdown' | 'jav
 };
 
 /**
+ * Break down prose content for quality evaluation.
+ *
+ * @note This function is intended to only evaluate prose content, not code.
+ * The internal content guard will return empty counts if the content is not
+ * prose.
+ *
+ * @param content - The content to be broken down.
+ * @returns An object containing the content type, original content, paragraphs, and word count of the content.
+ */
+const breakdownProse = (content: string): { type: string; content: string; paragraphs: number; wordCount: number } => {
+  const type = contentType(content);
+
+  if (type !== '' && type !== 'markdown') {
+    return {
+      type,
+      content,
+      paragraphs: 0,
+      wordCount: 0
+    };
+  }
+
+  const cleaned = content
+    .replace(/```[\s\S]*?```/g, '') // Remove fenced blocks (```...```)
+    .replace(/<[^>]+>/g, '') // Remove inline HTML/JSX
+    .replace(/^\s*(import|export)\s+.*?;?\s*$/gm, '') // Remove import / export statements
+    .trim();
+
+  // Split paragraphs, use min-length
+  const paragraphs = cleaned.split(/\n\s*\n/).filter(paragraph => paragraph.trim().length > 30);
+  const words = cleaned.split(/\s+/).filter(Boolean);
+
+  return {
+    type,
+    content,
+    paragraphs: paragraphs.length,
+    wordCount: words.length
+  };
+};
+
+/**
  * Format content as a code block for Markdown rendering.
  *
  * @note We purposefully allow passing in `null`, `undefined`, and empty strings since
@@ -487,6 +527,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
 };
 
 export {
+  breakdownProse,
   contentType,
   formatContentForMarkdown,
   isJavaLike,
