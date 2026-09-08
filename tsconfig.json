@@ -23,6 +23,7 @@
     "stripInternal": true,
     "rootDirs": ["./src", "./tests/e2e", "./tests/audit"],
     "paths": {
+      "#apiCatalog": ["./src/collection.patternFlyApi.json"],
       "#docsCatalog": ["./src/docs.json"],
       "#toolsHost": ["./src/server.toolsHost.ts"],
       "#workerEntry": ["./src/server.workerEntry.ts"],
