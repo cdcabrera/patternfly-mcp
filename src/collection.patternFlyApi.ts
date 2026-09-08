@@ -1,10 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {
   type McpCollection,
   type McpCollectionRecord,
   type McpCollectionResult
 } from './collections';
-import { log } from './logger';
+import { formatUnknownError, log } from './logger';
 import { processDocsFunction } from './server.getResources';
+import { setFetch } from './server.fetch';
 import { memo } from './server.caching';
 import { isPlainObject, joinUrl, timeoutFunction } from './server.helpers';
 import {
@@ -66,11 +69,13 @@ interface ApiContent {
  * @property content - Content retrieved from the API.
  * @property path - Initial or relative path used to fetch the content.
  * @property resolvedPath - Absolute or resolved path after processing the initial path.
+ * @property qualityScore - Content quality score.
  */
 interface ApiCrawler {
   content: string;
   path: string;
   resolvedPath: string;
+  qualityScore: number;
 }
 
 /**
@@ -85,10 +90,12 @@ type ParsePayloadApi = string | number | boolean | null | string[] | Record<stri
  *
  * @property isEmpty - Whether the parsed payload is considered empty.
  * @property {ParsePayloadApi} payload - Parsed version of the input payload.
+ * @property qualityScore - Content quality score.
  */
 interface ParsePayload {
   isEmpty: boolean;
   payload: ParsePayloadApi;
+  qualityScore: number;
 }
 
 /**
@@ -121,6 +128,69 @@ const DEFERRED_API_CATEGORIES = new Set<string>([
  */
 const MIN_API_QUALITY_THRESHOLD = 0.95;
 
+const generateDump = async (data: any) => {
+  await fs.writeFile(
+    path.resolve('.dump/patternfly-api-collection-initial.dump.json'),
+    JSON.stringify(data, null, 2) + '\n',
+    'utf-8'
+  );
+};
+
+/**
+ * Asynchronously retrieves the PatternFly API catalog.
+ *
+ * This function attempts to load the catalog from different sources based on the environment.
+ * If the `NODE_ENV` is set to 'local', it fetches the catalog from a local JSON file.
+ * Otherwise, it loads the catalog dynamically from the specified API catalog module.
+ *
+ * On failure to load the catalog, the function defaults to an empty object and sets the
+ * `isFallback` flag to true.
+ *
+ * @returns {Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }>}
+ * A promise that resolves to the API catalog object, containing the documentation data and
+ * a boolean `isFallback` flag indicating whether the catalog was successfully loaded or not.
+ */
+const getPatternFlyApiRecords = async (): Promise<McpCollectionRecord[]> => {
+  const apiCatalog: McpCollectionRecord[] = [];
+
+  try {
+    let loaded;
+
+    if (process.env.NODE_ENV === 'local') {
+      loaded = (await import('./collection.patternFlyApi.json', { with: { type: 'json' } })).default;
+    } else {
+      loaded = (await import('#apiCatalog', { with: { type: 'json' } })).default;
+    }
+
+    apiCatalog.push(...(loaded.records as McpCollectionRecord[]));
+  } catch (error) {
+    log.debug(`Failed to import API catalog '#apiCatalog': ${formatUnknownError(error)}`);
+  }
+
+  return apiCatalog;
+};
+
+/**
+ * Confirm if the API is live and healthy.
+ *
+ * @param options - Global options.
+ * @returns `true` if the API is live and healthy, otherwise `false`.
+ */
+const probeHealth = async (options = getOptions()) => {
+  const { base } = options.patternflyOptions.api;
+  const { get } = setFetch();
+
+  try {
+    const response = await get(base, { method: 'HEAD' });
+
+    return response.status < 400;
+  } catch (error) {
+    log.error(`Collection PatternFly API failed to load: ${formatUnknownError(error)}`);
+
+    return false;
+  }
+};
+
 /**
  * Parses the given payload and determines its state and structure.
  *
@@ -140,6 +210,7 @@ const parsePayload = (payload: unknown): ParsePayload => {
     updatedPayload = payload;
   }
 
+  const qualityScore = calculateContentQualityScore(updatedPayload);
   let isEmpty: boolean;
   let parsedPayload: ParsePayloadApi;
 
@@ -158,7 +229,7 @@ const parsePayload = (payload: unknown): ParsePayload => {
     isEmpty = updatedPayload.length === 0;
   }
 
-  return { isEmpty, payload: parsedPayload };
+  return { isEmpty, payload: parsedPayload, qualityScore };
 };
 
 /**
@@ -243,13 +314,13 @@ const crawler = async (
       continue;
     }
 
-    const { isEmpty, payload } = parsePayload.memo(res.content);
+    const { isEmpty, payload, qualityScore } = parsePayload.memo(res.content);
 
     if (Array.isArray(payload)) {
       // Terminal Data Arrays (props, css, etc)
       if (componentPaths.some(componentPath => res?.path?.endsWith(`/${componentPath}`))) {
         if (!isEmpty) {
-          content.push({ ...res });
+          content.push({ ...res, qualityScore });
         }
         continue;
       }
@@ -285,7 +356,7 @@ const crawler = async (
 
     // String Payloads (Markdown, HTML, .tsx source code)
     if (!isEmpty) {
-      content.push({ ...res });
+      content.push({ ...res, qualityScore });
     }
 
     // Probe Traversal Paths on Facet Endpoints (e.g. /react -> /react/examples)
@@ -389,7 +460,7 @@ const apiSpider = async (options = getOptions()): Promise<ApiCrawler[]> => {
  * @returns The process metadata entry.
  */
 const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): ApiContent => {
-  const { content, resolvedPath } = crawlerResponse;
+  const { content, resolvedPath, qualityScore } = crawlerResponse;
   const { base } = options.patternflyOptions.api;
 
   // Relative path after '/api/'
@@ -424,7 +495,7 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
   const displayName = extractApiDisplayName(content, { slug: normalizedItem, category: normalizedCategory, section: normalizedSection });
   const description = extractApiDescription(content, { displayName, category: normalizedCategory, detailType: normalizedDetailType });
 
-  const isLowQuality = calculateContentQualityScore(content, { category: normalizedCategory }) < MIN_API_QUALITY_THRESHOLD;
+  const isLowQuality = qualityScore < MIN_API_QUALITY_THRESHOLD;
   const isDeferred = DEFERRED_API_CATEGORIES.has(normalizedCategory);
 
   return {
@@ -451,7 +522,20 @@ const contentMetadata = (crawlerResponse: ApiCrawler, options = getOptions()): A
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
 const collectionCallback = async (): Promise<McpCollectionResult> => {
+  // ToDo: eval adding the probe to the initial data config callback. otherwise the data makes it to the search but it'd throw errors on load
+  // ToDo: probe may need to do a repeated stagger, few tries. Depending on a single "hey" request could just be a false positive.
+  const isHealthy = await probeHealth();
+
+  if (!isHealthy) {
+    log.debug('PatternFly API health probe failed or rate-limited; skipping background spider.');
+
+    return { records: [] };
+  }
+
   const entries = await apiSpider();
+
+  await generateDump(entries);
+
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
   for (const entry of entries) {
@@ -498,10 +582,12 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     'patternfly-api',
     callback,
     {
-      runParallel: '#collectionPatternFlyApi',
-      runSchedule: {
-        ...options.patternflyOptions.api.schedule
-      }
+      // initial: async () => ({ records: await getPatternFlyApiRecords() }),
+      // runParallel: '#collectionPatternFlyApi',
+      // retainLastViable: true,
+      // runSchedule: {
+      //  ...options.patternflyOptions.api.schedule
+      // }
     }
   ];
 };
@@ -509,11 +595,13 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
 export {
   patternFlyApiCollection,
   collectionCallback,
+  getPatternFlyApiRecords,
   apiSpider,
   crawler,
   getUniqueUrls,
   isEmptyPayload,
   parsePayload,
+  probeHealth,
   type ApiContent,
   type ApiCrawler,
   type ParsePayload,
