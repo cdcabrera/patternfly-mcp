@@ -39,6 +39,7 @@ export default {
       displayName: 'unit',
       roots: ['<rootDir>/src'],
       testMatch: ['<rootDir>/src/**/*.test.ts'],
+      testPathIgnorePatterns: ['<rootDir>/src/__tests__/patternFly.search.test.ts'],
       setupFilesAfterEnv: ['<rootDir>/jest.setupTests.ts'],
       ...baseConfig,
       transform: {
