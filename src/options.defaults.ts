@@ -458,8 +458,8 @@ const RESOURCE_MEMO_OPTIONS = {
  */
 const TOOL_MEMO_OPTIONS = {
   usePatternFlyDocs: {
-    cacheLimit: 10,
-    expire: 1 * 60 * 1000, // 1 minute sliding cache
+    cacheLimit: 25,
+    expire: 10 * 60 * 1000, // 10 minute sliding cache
     cacheErrors: false
   },
   searchPatternFlyDocs: {
