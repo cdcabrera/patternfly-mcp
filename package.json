@@ -35,6 +35,7 @@
     "build": "npm run build:clean; npm run test:types; pkgroll",
     "build:clean": "rm -rf dist",
     "build:watch": "npm run build -- --watch",
+    "build:collections": "tsx ./scripts/update.collection.patternFlyApi.ts",
     "container:build": "bash ./scripts/container.build.sh",
     "container:start": "bash ./scripts/container.run.sh",
     "release": "changelog --non-cc --link-url https://github.com/patternfly/patternfly-mcp.git",

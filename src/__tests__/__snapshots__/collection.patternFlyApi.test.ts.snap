@@ -8,7 +8,6 @@ exports[`collectionCallback should match snapshot for collection result 1`] = `
         "card": [
           {
             "category": "css",
-            "content": "Card css content",
             "contentType": "",
             "description": "PatternFly variables and tokens for Card CSS.",
             "displayName": "Card CSS",
