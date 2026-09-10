@@ -6,9 +6,9 @@ import {
   contentMetadata,
   type ApiCrawler,
   type ApiEmbedded,
-  type ApiEmbeddedCollection
+  type ApiEmbeddedCollection, collectionInitialCallback
 } from '../src/collection.patternFlyApi';
-import { getOptions } from '../src/options.context';
+import {getOptions, runWithOptions} from '../src/options.context';
 
 /**
  * Run apiSpider directly and transform crawler entries into compressed embedded JSON.
@@ -19,55 +19,64 @@ const run = async () => {
   const options = getOptions();
   const { base } = options.patternflyOptions.api;
 
-  const entries: ApiCrawler[] = await apiSpider();
 
-  if (!entries.length) {
-    console.error('❌ Crawl failed or returned 0 entries. Aborting update.');
-    process.exit(1);
-  }
 
-  const recordsMap = new Map<string, ApiEmbedded>();
+  const keepAlive = setTimeout(() => {}, 86_400_000);
 
-  for (const entry of entries) {
-    // Generate full metadata using the shared contentMetadata function
-    const metadata = contentMetadata(entry, options);
+  try {
+    // const entries = await apiSpider(options);
+    const entries: ApiCrawler[] = await runWithOptions(options, async () => apiSpider(options));
 
-    const relativePath = metadata.path.replace(base, '').replace(/^\//, '');
-
-    if (recordsMap.has(relativePath)) {
-      continue;
+    if (!entries.length) {
+      console.error('❌ Crawl failed or returned 0 entries. Aborting update.');
+      process.exit(1);
     }
 
-    recordsMap.set(relativePath, {
-      p: relativePath,
-      n: metadata.displayName,
-      d: metadata.description,
-      c: metadata.contentType,
-      q: entry.qualityScore
-    });
+    const recordsMap = new Map<string, ApiEmbedded>();
+
+    for (const entry of entries) {
+      // Generate full metadata using the shared contentMetadata function
+      const metadata = contentMetadata(entry, options);
+
+      const relativePath = metadata.path.replace(base, '').replace(/^\//, '');
+
+      if (recordsMap.has(relativePath)) {
+        continue;
+      }
+
+      recordsMap.set(relativePath, {
+        p: relativePath,
+        n: metadata.displayName,
+        d: metadata.description,
+        c: metadata.contentType,
+        q: entry.qualityScore
+      });
+    }
+
+    const records = [...recordsMap.values()].sort((a, b) => a.p.localeCompare(b.p));
+
+    const payload: ApiEmbeddedCollection = {
+      version: '1',
+      generated: new Date().toISOString(),
+      base,
+      records
+    };
+
+    const outputPath = resolve(fileURLToPath(new URL('../src/collection.patternFlyApi.json', import.meta.url)));
+    const jsonContent = JSON.stringify(payload, null, 2);
+    await writeFile(outputPath, jsonContent, 'utf-8');
+
+    const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
+    const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
+
+    console.log(`✅ Updated src/collection.patternFlyApi.json:`);
+    console.log(`   - Total Crawled: ${entries.length} endpoints`);
+    console.log(`   - Admitted Records: ${records.length}`);
+    console.log(`   - File Size: ${sizeKb} KB`);
+    console.log(`   - Time Elapsed: ${durationSec}s`);
+  } finally {
+    clearTimeout(keepAlive);
   }
-
-  const records = [...recordsMap.values()].sort((a, b) => a.p.localeCompare(b.p));
-
-  const payload: ApiEmbeddedCollection = {
-    version: '1',
-    generated: new Date().toISOString(),
-    base,
-    records
-  };
-
-  const outputPath = resolve(fileURLToPath(new URL('../src/collection.patternFlyApi.json', import.meta.url)));
-  const jsonContent = JSON.stringify(payload, null, 2);
-  await writeFile(outputPath, jsonContent, 'utf-8');
-
-  const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
-  const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
-
-  console.log(`✅ Updated src/collection.patternFlyApi.json:`);
-  console.log(`   - Total Crawled: ${entries.length} endpoints`);
-  console.log(`   - Admitted Records: ${records.length}`);
-  console.log(`   - File Size: ${sizeKb} KB`);
-  console.log(`   - Time Elapsed: ${durationSec}s`);
 };
 
 run().catch(error => {
