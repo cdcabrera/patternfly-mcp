@@ -696,6 +696,7 @@ export {
   collectionCallback,
   collectionInitialCallback,
   apiSpider,
+  contentMetadata,
   crawler,
   expandApiEmbeddedCollection,
   getPatternFlyApiRecords,

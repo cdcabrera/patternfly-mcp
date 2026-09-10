@@ -1,37 +1,53 @@
 import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { collectionCallback, type ApiEmbeddedCollection } from '../src/collection.patternFlyApi';
+import {
+  apiSpider,
+  contentMetadata,
+  type ApiCrawler,
+  type ApiEmbedded,
+  type ApiEmbeddedCollection
+} from '../src/collection.patternFlyApi';
 import { getOptions } from '../src/options.context';
 
 /**
- * Run collection.patternFlyApi to update the related embedded JSON.
+ * Run apiSpider directly and transform crawler entries into compressed embedded JSON.
  */
 const run = async () => {
-  console.log('🚀 Running PatternFly API collection crawl via collectionCallback()...');
+  console.log('🚀 Running PatternFly API spider directly...');
   const startTime = Date.now();
   const options = getOptions();
   const { base } = options.patternflyOptions.api;
 
-  const result = await collectionCallback();
+  const entries: ApiCrawler[] = await apiSpider();
 
-  if (!result.records.length) {
-    console.error('❌ Crawl failed or health probe rejected. Aborting update.');
+  if (!entries.length) {
+    console.error('❌ Crawl failed or returned 0 entries. Aborting update.');
     process.exit(1);
   }
 
-  // Transform already-parsed collection records into compact { p, n, d, c, q } in 5 lines
-  const records = result.records.map(record => {
-    const [data = {}] = record.data ? Object.values(record.data)[0] : [];
+  const recordsMap = new Map<string, ApiEmbedded>();
 
-    return {
-      p: data.path?.replace(base, '')?.replace(/^\//, ''),
-      n: data.displayName,
-      d: data.description,
-      c: data.contentType,
-      q: 1.0
-    };
-  }).sort((a, b) => a.p.localeCompare(b.p));
+  for (const entry of entries) {
+    // Generate full metadata using the shared contentMetadata function
+    const metadata = contentMetadata(entry, options);
+
+    const relativePath = metadata.path.replace(base, '').replace(/^\//, '');
+
+    if (recordsMap.has(relativePath)) {
+      continue;
+    }
+
+    recordsMap.set(relativePath, {
+      p: relativePath,
+      n: metadata.displayName,
+      d: metadata.description,
+      c: metadata.contentType,
+      q: entry.qualityScore
+    });
+  }
+
+  const records = [...recordsMap.values()].sort((a, b) => a.p.localeCompare(b.p));
 
   const payload: ApiEmbeddedCollection = {
     version: '1',
@@ -44,7 +60,17 @@ const run = async () => {
   const jsonContent = JSON.stringify(payload, null, 2);
   await writeFile(outputPath, jsonContent, 'utf-8');
 
-  console.log(`✅ Updated src/collection.patternFlyApi.json with ${records.length} records in ${((Date.now() - startTime) / 1000).toFixed(1)}s`);
+  const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
+  const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
+
+  console.log(`✅ Updated src/collection.patternFlyApi.json:`);
+  console.log(`   - Total Crawled: ${entries.length} endpoints`);
+  console.log(`   - Admitted Records: ${records.length}`);
+  console.log(`   - File Size: ${sizeKb} KB`);
+  console.log(`   - Time Elapsed: ${durationSec}s`);
 };
 
-run().catch(console.error);
+run().catch(error => {
+  console.error('❌ Failed to update API collection:', error);
+  process.exit(1);
+});
