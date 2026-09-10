@@ -80,6 +80,12 @@ export default {
       ...baseConfig
     },
     {
+      displayName: 'collections',
+      roots: ['<rootDir>/tests/scripts'],
+      testMatch: ['<rootDir>/tests/scripts/**/*collection*.test.ts'],
+      ...baseConfig
+    },
+    {
       displayName: 'audit',
       roots: ['<rootDir>/tests/audit'],
       testMatch: ['<rootDir>/tests/audit/**/*.test.ts'],
