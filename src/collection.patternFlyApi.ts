@@ -650,6 +650,14 @@ const collectionInitialCallback = async (): Promise<McpCollectionResult> => {
  * @returns {Promise<McpCollectionResult>} The pocessed collection of API records.
  */
 const collectionCallback = async (): Promise<McpCollectionResult> => {
+  const isHealthy = await probeHealth();
+
+  if (!isHealthy) {
+    log.debug('PatternFly API health probe failed, skipping background updates.');
+
+    return { records: [] };
+  }
+
   const entries = await apiSpider();
 
   return getPatternFlyApiRecords(entries);
