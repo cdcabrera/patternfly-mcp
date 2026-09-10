@@ -23,6 +23,7 @@ import {
 } from './collection.patternFlyApiHelpers';
 import { contentType as extractContentType } from './resource.helpers';
 import { setFetch } from './server.fetch';
+import {deferTask} from "./server.task";
 
 /**
  * Processed content for API responses.
@@ -180,24 +181,45 @@ const DEFERRED_API_CATEGORIES = new Set<string>([
 const MIN_API_QUALITY_THRESHOLD = 0.95;
 
 /**
- * Confirm if the API is live and healthy.
+ * Majority confirmation, is the API live and healthy?
  *
  * @param options - Global options.
- * @returns `true` if the API is live and healthy, otherwise `false`.
+ * @returns `true` if 2 of 3 probes INCLUDING the last attempt confirms the API is live and healthy, otherwise `false`.
  */
-const probeHealth = async (options = getOptions()) => {
+const probeHealth = async (options = getOptions()): Promise<boolean> => {
   const { base } = options.patternflyOptions.api;
   const { get } = setFetch();
+  let successCount = 0;
+  let isLastSuccess = false;
+
+  const check = async () => {
+    isLastSuccess = false;
+
+    try {
+      const response = await get(base, { method: 'HEAD' });
+
+      if (response.status < 400) {
+        successCount += 1;
+        isLastSuccess = true;
+      }
+    } catch {
+      isLastSuccess = false;
+    }
+  };
+
+  const task = deferTask(check, {
+    repeat: 3,
+    intervalMs: 200,
+    continueOnError: true
+  })();
 
   try {
-    const response = await get(base, { method: 'HEAD' });
-
-    return response.status < 300;
-  } catch (error) {
-    log.error(`Collection PatternFly API failed to load: ${formatUnknownError(error)}`);
-
-    return false;
+    await task.start();
+  } catch {
+    // Handled by continueOnError
   }
+
+  return successCount >= 2 && isLastSuccess;
 };
 
 /**
@@ -629,8 +651,6 @@ const collectionInitialCallback = async (): Promise<McpCollectionResult> => {
  */
 const collectionCallback = async (): Promise<McpCollectionResult> => {
   const entries = await apiSpider();
-
-  await generateDump(entries);
 
   return getPatternFlyApiRecords(entries);
 };
