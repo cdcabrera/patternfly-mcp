@@ -519,6 +519,15 @@ const CHANNEL_BASENAME = 'pf-mcp';
 
 /**
  * Default PatternFly-specific options.
+ *
+ * @note Current settings for time
+ * - `timeoutMs` is set to `5` minutes to accommodate the current average crawl time
+ *     of `75` seconds and potential network issues. This value should be adjusted as
+ *     the API grows.
+ * - `schedule.intervalMs` is set to `7` days. Most users, without persistence, will
+ *     never achieve this.
+ * - `schedule.delayStartMs` is set to `6` hours to accommodate an intense working
+ *     session. This may need to be extended until persistence is implemented.
  */
 const PATTERNFLY_OPTIONS: PatternFlyOptions = {
   api: {
@@ -531,7 +540,7 @@ const PATTERNFLY_OPTIONS: PatternFlyOptions = {
     traversalPaths: [
       'examples'
     ],
-    timeoutMs: 120_000, // 2 minutes
+    timeoutMs: 300_000, // 5 minutes
     schedule: {
       continueOnError: true,
       intervalMs: 24 * 60 * 60 * 1000 * 7, // 7 days
