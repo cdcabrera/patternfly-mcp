@@ -6,6 +6,8 @@ import {
 import { formatUnknownError, log } from './logger';
 import { processDocsFunction } from './server.getResources';
 import { memo } from './server.caching';
+import { setFetch } from './server.fetch';
+import { deferTask } from './server.task';
 import { isPlainObject, joinUrl, timeoutFunction } from './server.helpers';
 import {
   getOptions,
@@ -22,8 +24,6 @@ import {
   normalizeSlug
 } from './collection.patternFlyApiHelpers';
 import { contentType as extractContentType } from './resource.helpers';
-import { setFetch } from './server.fetch';
-import {deferTask} from "./server.task";
 
 /**
  * Processed content for API responses.
@@ -47,7 +47,6 @@ interface ApiContent {
   description: string;
   displayName: string;
   category: string;
-  content: string;
   contentType: string;
   isLowQuality: boolean;
   id: string;
@@ -567,7 +566,6 @@ const contentMetadata = (record: ApiCrawler | ApiEmbeddedExpanded, options = get
     description,
     displayName,
     category: normalizedCategory,
-    content,
     contentType,
     isLowQuality,
     id,
