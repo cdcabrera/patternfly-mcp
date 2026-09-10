@@ -20,7 +20,7 @@ import { getOptions, runWithOptions } from '../src/options.context';
 const run = async (
   { isPrettyPrint = true, filterLowQualityRecords = false }: { isPrettyPrint?: boolean; filterLowQualityRecords?: boolean } = {}
 ) => {
-  console.log('🚀 Running PatternFly API spider directly...');
+  console.log('🚀 Generating PatternFly API embedded collection...');
   const keepAlive = setTimeout(() => {}, 86_400_000);
 
   const startTime = Date.now();
