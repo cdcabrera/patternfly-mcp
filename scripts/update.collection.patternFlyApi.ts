@@ -13,15 +13,15 @@ import {getOptions, runWithOptions} from '../src/options.context';
 /**
  * Run apiSpider directly and transform crawler entries into compressed embedded JSON.
  */
-const run = async () => {
+const run = async (
+  { isPrettyPrint = false, filterLowQualityRecords = false }: { isPrettyPrint?: boolean; filterLowQualityRecords?: boolean } = {}
+) => {
   console.log('🚀 Running PatternFly API spider directly...');
+  const keepAlive = setTimeout(() => {}, 86_400_000);
+
   const startTime = Date.now();
   const options = getOptions();
   const { base } = options.patternflyOptions.api;
-
-
-
-  const keepAlive = setTimeout(() => {}, 86_400_000);
 
   try {
     // const entries = await apiSpider(options);
@@ -63,8 +63,8 @@ const run = async () => {
     };
 
     const outputPath = resolve(fileURLToPath(new URL('../src/collection.patternFlyApi.json', import.meta.url)));
-    const jsonContent = JSON.stringify(payload, null, 2);
-    await writeFile(outputPath, jsonContent, 'utf-8');
+    const jsonContent = isPrettyPrint ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
+    await writeFile(outputPath, jsonContent + '\n', 'utf-8');
 
     const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
     const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
