@@ -42,7 +42,7 @@
     "start": "node dist/cli.js --log-stderr",
     "start:dev": "tsx watch src/cli.ts --verbose --log-stderr",
     "test": "npm run test:spell && npm run test:spell-docs && npm run test:lint && npm run test:types && jest --selectProjects unit",
-    "test:audit": "jest --selectProjects audit",
+    "test:audit": "NODE_OPTIONS='--experimental-vm-modules' jest --selectProjects audit",
     "test:audit-container": "npm run container:build && jest --selectProjects audit:container",
     "test:ci": "npm test -- --coverage",
     "test:dev": "npm test -- --watchAll",
