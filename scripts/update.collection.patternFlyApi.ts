@@ -6,15 +6,19 @@ import {
   contentMetadata,
   type ApiCrawler,
   type ApiEmbedded,
-  type ApiEmbeddedCollection, collectionInitialCallback
+  type ApiEmbeddedCollection
 } from '../src/collection.patternFlyApi';
-import {getOptions, runWithOptions} from '../src/options.context';
+import { getOptions, runWithOptions } from '../src/options.context';
 
 /**
  * Run apiSpider directly and transform crawler entries into compressed embedded JSON.
+ *
+ * @param [options] - Optional configuration options.
+ * @param [options.isPrettyPrint=true] - Whether to pretty-print the JSON output.
+ * @param [options.filterLowQualityRecords=false] - Whether to filter low-quality records based on the collection's criteria.
  */
 const run = async (
-  { isPrettyPrint = false, filterLowQualityRecords = false }: { isPrettyPrint?: boolean; filterLowQualityRecords?: boolean } = {}
+  { isPrettyPrint = true, filterLowQualityRecords = false }: { isPrettyPrint?: boolean; filterLowQualityRecords?: boolean } = {}
 ) => {
   console.log('🚀 Running PatternFly API spider directly...');
   const keepAlive = setTimeout(() => {}, 86_400_000);
@@ -24,7 +28,6 @@ const run = async (
   const { base } = options.patternflyOptions.api;
 
   try {
-    // const entries = await apiSpider(options);
     const entries: ApiCrawler[] = await runWithOptions(options, async () => apiSpider(options));
 
     if (!entries.length) {
@@ -37,6 +40,10 @@ const run = async (
     for (const entry of entries) {
       // Generate full metadata using the shared contentMetadata function
       const metadata = contentMetadata(entry, options);
+
+      if (filterLowQualityRecords && (metadata.isDeferred || metadata.isLowQuality)) {
+        continue;
+      }
 
       const relativePath = metadata.path.replace(base, '').replace(/^\//, '');
 
@@ -79,7 +86,10 @@ const run = async (
   }
 };
 
-run().catch(error => {
+/**
+ * Configurable options for maintainers.
+ */
+run({ isPrettyPrint: false, filterLowQualityRecords: true }).catch(error => {
   console.error('❌ Failed to update API collection:', error);
   process.exit(1);
 });
