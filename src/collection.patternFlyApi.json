@@ -1,9 +1,6 @@
 {
   "version": "1",
   "generated": "2026-09-08T20:22:22.301Z",
-  "meta": {
-    "totalRecords": 0,
-    "source": "patternfly-api"
-  },
+  "base": "",
   "records": []
 }
