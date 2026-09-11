@@ -544,7 +544,7 @@ const contentMetadata = (record: ApiCrawler | ApiEmbeddedExpanded, options = get
     normalizedFacet,
     normalizedDetailType,
     normalizedDetail,
-    ...remaining.map(normalizeSlug)
+    ...remaining.map(remainder => normalizeSlug(remainder))
   ].filter(Boolean).join('-');
 
   const name = extractApiName(normalizedItem, normalizedSection);
