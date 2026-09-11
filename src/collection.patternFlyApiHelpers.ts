@@ -223,45 +223,26 @@ const normalizeSlug = (segment: string, { acronyms = DEFAULT_ACRONYMS }: { acron
  * Format a compound slug into a clean title.
  * E.g., 'ai-assisted-development_ai-assisted-code-migration' -> 'AI Assisted Development: AI Assisted Code Migration'
  *
+ * @note The content in the API response slugs varies from snake to hyphens
+ * making it unique to parse.
+ *
  * @param slug
  * @param section
- * @param [settings] - Optional settings
- * @param [settings.acronyms] - Acronyms to avoid
  */
-const formatSlugToTitle = (slug: string, section?: string, { acronyms = DEFAULT_ACRONYMS } = {}): string => {
+const formatSlugToTitle = (slug: string, section?: string): string => {
   if (!slug) {
     return 'PatternFly API';
   }
 
-  const acronymRegex = new RegExp(`^(${acronyms.join('|')})$`, 'i');
+  const cleanSection = section ? stringToCase(section, { type: 'title' }) : '';
 
-  const cleanSection = section
-    ? section
-      .split('-')
-      .map(wordPhrase =>
-        (acronymRegex.test(wordPhrase)
-          ? wordPhrase.toUpperCase()
-          : wordPhrase.charAt(0).toUpperCase() + wordPhrase.slice(1))).join(' ')
-    : '';
-
-  // Handle bare generic names like 'overview'
   if (slug.toLowerCase() === 'overview' && cleanSection) {
     return `${cleanSection} Overview`;
   }
 
   return slug
     .split('_')
-    .map(segment =>
-      segment
-        .split('-')
-        .map(word => {
-          if (acronymRegex.test(word)) {
-            return word.toUpperCase();
-          }
-
-          return word.charAt(0).toUpperCase() + word.slice(1);
-        })
-        .join(' '))
+    .map(segment => stringToCase(segment, { type: 'title' }))
     .join(': ');
 };
 

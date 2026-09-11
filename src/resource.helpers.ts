@@ -28,7 +28,7 @@ const stringToCase = (
     type = 'camel',
     splitRegex = DEFAULT_STRING_SPLIT_REGEX,
     acronyms = DEFAULT_ACRONYMS
-  }: { type?: 'snake' | 'pascal' | 'camel'; splitRegex?: RegExp | string; acronyms?: string[] } = {}
+  }: { type?: 'snake' | 'pascal' | 'title' | 'camel'; splitRegex?: RegExp | string; acronyms?: string[] } = {}
 ) => {
   const words = typeof str === 'string' && str.trim().length
     ? str
@@ -58,6 +58,17 @@ const stringToCase = (
           return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
         })
         .join('');
+
+    case 'title':
+      return words
+        .map(word => {
+          if (acronymRegex?.test(word)) {
+            return word.toUpperCase();
+          }
+
+          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
+        .join(' ');
 
     case 'camel':
     default:

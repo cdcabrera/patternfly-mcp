@@ -174,6 +174,12 @@ type FilterPatternFlyMemoArgs = [
 /**
  * Rate how closely a search result matches a search query.
  *
+ * @note: This entire function needs to be refactored or removed since it's
+ * recreating aspects of distance checks. Future refactor should include
+ * expanding the `server.search` functions to use `Levenshtein`, `Jaccard`,
+ * and `cosine similarity`. We're temporarily leaving it in place as a patch
+ * to help move the PF API work forward.
+ *
  * @note We prioritize **exact name matches** because users/agents respond best when
  * the returned item’s `name` (or any of its display names) exactly equals their typed
  * search, even if other metadata might be a better match.
