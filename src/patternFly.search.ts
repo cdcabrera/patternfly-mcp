@@ -187,15 +187,30 @@ type FilterPatternFlyMemoArgs = [
  *
  * @param {SearchPatternFlyResult} result - Result object containing name and display name props.
  * @param query - Query string for comparison.
- * @returns `result` relevance to a `normalizedQuery`:
- *  - `0`: Exact match
- *  - `1`: Contains match
- *  - `2`: Everything else
+ * @param options - Option settings
+ * @param options.maxDistance - Max distance allowed for results.
+ * @returns Re-rank tied distance.
  */
 const calculateRelevance = (
   result: SearchPatternFlyResult,
-  query: string
+  query: string,
+  { maxDistance = 3 }: { maxDistance?: number } = {}
 ): number => {
+  const candidateNames = [
+    result.name,
+    ...(result.entries || []).map(entry => entry.name || ''),
+    ...(result.entries || []).map(entry => entry.displayName || '')
+  ].filter(Boolean);
+
+  const nameMatch = fuzzySearch(query, candidateNames, { maxDistance }).results;
+
+  if (nameMatch.length) {
+    return Math.min(...nameMatch.map(result => result.distance));
+  }
+
+  return maxDistance;
+
+  /* OG version
   const normalizedName = normalizeString.memo(result.name);
   const normalizedQuery = normalizeString.memo(query);
 
@@ -217,6 +232,7 @@ const calculateRelevance = (
   }
 
   return 2;
+   */
 
   // const normalizedName = normalizeString.memo(result.name);
   // const normalizedQuery = normalizeString.memo(query);
@@ -226,8 +242,7 @@ const calculateRelevance = (
   // return Number.isFinite(nameDistance) ? nameDistance : 5;
 
   // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
-
-  /* eh?
+  /* appears to work'ish
   const candidateNames = [
     result.name,
     ...(result.entries || []).map(entry => entry.name || ''),
@@ -242,7 +257,7 @@ const calculateRelevance = (
   }
 
   return 5;
-   */
+  */
 
   /* DOES NOT WORK? bulk select doesn't bring up API candidates?
   const candidateNames = [
@@ -891,8 +906,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       return a.distance - b.distance;
     }
 
-    const relevantA = calculateRelevance(a, coercedSearchQuery);
-    const relevantB = calculateRelevance(b, coercedSearchQuery);
+    const relevantA = calculateRelevance(a, coercedSearchQuery, { maxDistance });
+    const relevantB = calculateRelevance(b, coercedSearchQuery, { maxDistance });
 
     if (relevantA !== relevantB) {
       return relevantA - relevantB;
