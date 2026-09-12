@@ -438,9 +438,11 @@ const dynamicFilterPatternFly = async (
     useExistingFilters = true
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number | undefined; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
+  let isDynamicLimit = false;
   let updatedMaxResultsLimit = maxResultsLimit ?? 1;
 
   if (maxResultsLimit === undefined && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
+    isDynamicLimit = true;
     updatedMaxResultsLimit = searchFilters.length;
   }
 
@@ -458,7 +460,7 @@ const dynamicFilterPatternFly = async (
 
   // Matching conditions based on options
   const isCloseMatch = (output: FilterPatternFlyResults) =>
-    output.byEntry.length === updatedMaxResultsLimit;
+    (isDynamicLimit ? output.byEntry.length > 0 : output.byEntry.length === updatedMaxResultsLimit);
 
   const abortController = new AbortController();
   const { signal } = abortController;

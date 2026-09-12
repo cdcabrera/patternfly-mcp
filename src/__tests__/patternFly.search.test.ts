@@ -361,11 +361,18 @@ describe('dynamicFilterPatternFly', () => {
       expectedNames: ['button', 'button', 'modal', 'card']
     },
     {
-      description: 'fallback to original when using a broad category',
+      description: 'fallback to original when using a broad category and defined maxResultsLimit',
+      searchQuery: 'view',
+      filters: {},
+      options: { maxResultsLimit: 1 },
+      expectedNames: ['button', 'button', 'modal', 'card']
+    },
+    {
+      description: 'do not fallback to original when using a broad category with dynamic maxResultsLimit',
       searchQuery: 'view',
       filters: {},
       options: {},
-      expectedNames: ['button', 'button', 'modal', 'card']
+      expectedNames: ['modal', 'card']
     },
     {
       description: 'skip iterative filter if useExistingFilters is true and filter is already set',
@@ -397,14 +404,28 @@ describe('dynamicFilterPatternFly', () => {
       description: 'name filter wins and aborts sibling section scans',
       searchQuery: 'modal',
       filters: {},
-      options: { searchFilters: ['name', 'section'] as const },
+      options: { searchFilters: ['name', 'section'], maxResultsLimit: 1 },
+      expectedNames: ['modal']
+    },
+    {
+      description: 'name filter wins and aborts sibling section scans, dynamic maxResultsLimit',
+      searchQuery: 'modal',
+      filters: {},
+      options: { searchFilters: ['name', 'section'] },
       expectedNames: ['modal']
     },
     {
       description: 'section filter wins and aborts sibling name scans',
       searchQuery: 'layouts',
       filters: {},
-      options: { searchFilters: ['section', 'name'] as const },
+      options: { searchFilters: ['section', 'name'], maxResultsLimit: 1 },
+      expectedNames: ['card']
+    },
+    {
+      description: 'section filter wins and aborts sibling name scans, dynamic maxResultsLimit',
+      searchQuery: 'layouts',
+      filters: {},
+      options: { searchFilters: ['section', 'name'] },
       expectedNames: ['card']
     }
   ])('should wire parallel filter passes with shared signal when $description', async ({
@@ -468,7 +489,7 @@ describe('dynamicFilterPatternFly', () => {
       'modal',
       {},
       mockResources as any,
-      { searchFilters: oversizedFilters as (keyof FilterPatternFlyFilters)[] }
+      { searchFilters: oversizedFilters as (keyof FilterPatternFlyFilters)[], maxResultsLimit: 1 }
     );
 
     expect(result.byEntry.map(entry => entry.name)).toEqual(['modal']);
