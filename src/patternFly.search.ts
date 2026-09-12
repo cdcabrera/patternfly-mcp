@@ -433,10 +433,12 @@ const dynamicFilterPatternFly = async (
   {
     searchFilters = SEARCH_FILTERS,
     maxFilterPasses = MAX_DYNAMIC_FILTER_PASSES,
-    maxResultsLimit = 1,
+    maxResultsLimit,
     useExistingFilters = true
   }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
+  const updatedMaxResultsLimit = maxResultsLimit ?? ;
+
   // Error name
   const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
 
