@@ -196,6 +196,28 @@ const calculateRelevance = (
   result: SearchPatternFlyResult,
   query: string
 ): number => {
+  const normalizedName = normalizeString.memo(result.name);
+  const normalizedQuery = normalizeString.memo(query);
+
+  if (normalizedName === normalizedQuery) {
+    return 0;
+  }
+
+  const displayNames = (result.entries || [])
+    .map(entry => (entry.displayName ? normalizeString.memo(entry.displayName) : ''))
+    .filter(Boolean);
+
+  if (displayNames.some(name => name === normalizedQuery)) {
+    return 0;
+  }
+
+  if (normalizedName.includes(normalizedQuery) ||
+    displayNames.some(name => name.includes(normalizedQuery))) {
+    return 1;
+  }
+
+  return 2;
+
   // const normalizedName = normalizeString.memo(result.name);
   // const normalizedQuery = normalizeString.memo(query);
 
@@ -205,6 +227,7 @@ const calculateRelevance = (
 
   // const nameMatch = fuzzySearch(query, candidateNames, { isFuzzyMatch: false }).results;
 
+  /* eh?
   const candidateNames = [
     result.name,
     ...(result.entries || []).map(entry => entry.name || ''),
@@ -219,6 +242,7 @@ const calculateRelevance = (
   }
 
   return 5;
+   */
 
   /* DOES NOT WORK? bulk select doesn't bring up API candidates?
   const candidateNames = [
@@ -290,7 +314,6 @@ const calculateRelevance = (
   }
 
   return 5;
-  */
 
   /*
   const candidateNames = [
