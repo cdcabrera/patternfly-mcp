@@ -581,6 +581,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
         item: pathMatchName || uriMatchName || hashMatchName
       } as FuzzySearchResult
     ];
+  } else if (coercedSearchQuery.toLowerCase().startsWith('patternfly://') || isPatternFlyUri(coercedSearchQuery)) {
+    searchResults = [];
   } else {
     const fuzzySearchSettings: FuzzySearchOptions = {
       maxDistance,
