@@ -441,7 +441,7 @@ const dynamicFilterPatternFly = async (
   let isDynamicLimit = false;
   let updatedMaxResultsLimit = maxResultsLimit ?? 1;
 
-  if (maxResultsLimit === undefined && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
+  if (maxResultsLimit === undefined && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery, { minLength: 40 })) {
     isDynamicLimit = true;
     updatedMaxResultsLimit = searchFilters.length;
   }
