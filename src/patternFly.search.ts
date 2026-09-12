@@ -5,7 +5,7 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
-import { generateHash } from './server.helpers';
+import { generateHash, isShaHexLike } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -14,6 +14,7 @@ import {
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
+import { isPatternFlyUri } from './patternFly.support';
 
 /**
  * A filtered MCP resource.
@@ -435,9 +436,13 @@ const dynamicFilterPatternFly = async (
     maxFilterPasses = MAX_DYNAMIC_FILTER_PASSES,
     maxResultsLimit,
     useExistingFilters = true
-  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
+  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number | undefined; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
-  const updatedMaxResultsLimit = maxResultsLimit ?? ;
+  let updatedMaxResultsLimit = maxResultsLimit ?? 1;
+
+  if (maxResultsLimit === undefined && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
+    updatedMaxResultsLimit = searchFilters.length;
+  }
 
   // Error name
   const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
@@ -453,7 +458,7 @@ const dynamicFilterPatternFly = async (
 
   // Matching conditions based on options
   const isCloseMatch = (output: FilterPatternFlyResults) =>
-    output.byEntry.length === maxResultsLimit;
+    output.byEntry.length === updatedMaxResultsLimit;
 
   const abortController = new AbortController();
   const { signal } = abortController;
