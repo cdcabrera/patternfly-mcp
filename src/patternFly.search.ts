@@ -564,8 +564,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const updatedFilters = filters || {};
   const isUri = isPatternFlyUri(coercedSearchQuery);
   const isSha = isShaHexLike(coercedSearchQuery);
-  const updatedMaxDistance = isUri || isSha ? 2 : maxDistance;
-  const updatedMaxResults = isUri || isSha ? 2 : maxResults;
+  // const updatedMaxResults = isUri || isSha ? 2 : maxResults;
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
@@ -591,8 +590,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     ];
   } else if (!isUri && !isSha) {
     const fuzzySearchSettings: FuzzySearchOptions = {
-      maxDistance: updatedMaxDistance,
-      maxResults: updatedMaxResults,
+      maxDistance,
+      maxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true
     };
@@ -676,8 +675,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       return a.distance - b.distance;
     }
 
-    const relevantA = calculateRelevance(a, coercedSearchQuery, { maxDistance: updatedMaxDistance });
-    const relevantB = calculateRelevance(b, coercedSearchQuery, { maxDistance: updatedMaxDistance });
+    const relevantA = calculateRelevance(a, coercedSearchQuery, { maxDistance });
+    const relevantB = calculateRelevance(b, coercedSearchQuery, { maxDistance });
 
     if (relevantA !== relevantB) {
       return relevantA - relevantB;
@@ -694,9 +693,9 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     isSearchWildCardAll,
     // @deprecated firstExactMatch - Use exactMatches[0] or searchResults
     firstExactMatch: sortedExactMatches[0],
-    exactMatches: sortedExactMatches.slice(0, updatedMaxResults),
-    remainingMatches: (updatedMaxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, updatedMaxResults - exactMatches.length),
-    searchResults: sortedSearchResults.slice(0, updatedMaxResults),
+    exactMatches: sortedExactMatches.slice(0, maxResults),
+    remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
+    searchResults: sortedSearchResults.slice(0, maxResults),
     totalResults: sortedSearchResults.length,
     totalPotentialMatches: search?.totalResults ?? updatedResources.keywordsIndex.length
   };
