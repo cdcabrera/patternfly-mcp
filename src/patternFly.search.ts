@@ -581,8 +581,34 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
         item: pathMatchName || uriMatchName || hashMatchName
       } as FuzzySearchResult
     ];
+  } else if (isShaHexLike(coercedSearchQuery, { minLength: 8 })) {
+    const fuzzySearchSettings: FuzzySearchOptions = {
+      // maxDistance: coercedSearchQuery.length < 40 ? 2 : 0,
+      maxDistance: coercedSearchQuery.length < 40 ? 1 : 0,
+      maxResults,
+      isFuzzyMatch: false,
+      deduplicateByNormalized: true
+    };
+
+    search = fuzzySearch(searchQuery, [...updatedResources.hashIndex.keys()], fuzzySearchSettings);
+    searchResults = search.results;
   } else if (coercedSearchQuery.toLowerCase().startsWith('patternfly://') || isPatternFlyUri(coercedSearchQuery)) {
-    searchResults = [];
+    // searchResults = [];
+
+    /*
+    const fuzzySearchSettings: FuzzySearchOptions = {
+      maxDistance: 1,
+      maxResults,
+      isFuzzyMatch: false,
+      deduplicateByNormalized: true
+    };
+
+    search = fuzzySearch(searchQuery, [...updatedResources.uriIndex.keys(), ...updatedResources.pathIndex.keys()], fuzzySearchSettings);
+    searchResults = search.results;
+    */
+
+  // } else if (coercedSearchQuery.toLowerCase().startsWith('patternfly://') || isPatternFlyUri(coercedSearchQuery)) {
+  //   searchResults = [];
   } else {
     const fuzzySearchSettings: FuzzySearchOptions = {
       maxDistance,
