@@ -5,7 +5,7 @@ import {
   type FuzzySearchResult
 } from './server.search';
 import { memo } from './server.caching';
-import { generateHash } from './server.helpers';
+import { generateHash, isShaHexLike } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyMcpResources,
@@ -14,6 +14,7 @@ import {
   type PatternFlyMcpResourceMetadata
 } from './patternFly.getResources';
 import { type PatternFlyMcpDocsCatalogDoc } from './docs.embedded';
+import { isPatternFlyUri } from './patternFly.support';
 
 /**
  * A filtered MCP resource.
@@ -433,10 +434,18 @@ const dynamicFilterPatternFly = async (
   {
     searchFilters = SEARCH_FILTERS,
     maxFilterPasses = MAX_DYNAMIC_FILTER_PASSES,
-    maxResultsLimit = 1,
+    maxResultsLimit,
     useExistingFilters = true
-  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number; useExistingFilters?: boolean } = {}
+  }: { searchFilters?: (keyof FilterPatternFlyFilters)[]; maxFilterPasses?: number; maxResultsLimit?: number | undefined; useExistingFilters?: boolean } = {}
 ): Promise<FilterPatternFlyResults> => {
+  let isDynamicLimit = false;
+  let updatedMaxResultsLimit = maxResultsLimit ?? 1;
+
+  if (maxResultsLimit === undefined && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
+    isDynamicLimit = true;
+    updatedMaxResultsLimit = searchFilters.length;
+  }
+
   // Error name
   const dynamicFilterPassNotMatched = 'DynamicFilterPassNotMatchedError';
 
@@ -451,7 +460,7 @@ const dynamicFilterPatternFly = async (
 
   // Matching conditions based on options
   const isCloseMatch = (output: FilterPatternFlyResults) =>
-    output.byEntry.length === maxResultsLimit;
+    (isDynamicLimit ? output.byEntry.length > 0 : output.byEntry.length === updatedMaxResultsLimit);
 
   const abortController = new AbortController();
   const { signal } = abortController;
@@ -553,6 +562,10 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const coercedSearchQuery = String(searchQuery).trim();
   const updatedResources = await (mcpResources || getPatternFlyMcpResources.memo());
   const updatedFilters = filters || {};
+  const isUri = isPatternFlyUri(coercedSearchQuery);
+  const isSha = isShaHexLike(coercedSearchQuery);
+  const updatedMaxDistance = isUri || isSha ? 2 : maxDistance;
+  const updatedMaxResults = isUri || isSha ? 2 : maxResults;
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
@@ -563,7 +576,11 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
   // Perform wildcard all search or fuzzy search
   if (isSearchWildCardAll) {
-    searchResults = updatedResources.keywordsIndex.map(name => ({ matchType: 'all', distance: 0, item: name } as FuzzySearchResult));
+    searchResults = updatedResources.keywordsIndex.map(name => ({
+      matchType: 'all',
+      distance: 0,
+      item: name
+    } as FuzzySearchResult));
   } else if (pathMatchName || uriMatchName || hashMatchName) {
     searchResults = [
       {
@@ -572,10 +589,10 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
         item: pathMatchName || uriMatchName || hashMatchName
       } as FuzzySearchResult
     ];
-  } else {
+  } else if (!isUri && !isSha) {
     const fuzzySearchSettings: FuzzySearchOptions = {
-      maxDistance,
-      maxResults,
+      maxDistance: updatedMaxDistance,
+      maxResults: updatedMaxResults,
       isFuzzyMatch: true,
       deduplicateByNormalized: true
     };
@@ -622,7 +639,11 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   let filtered: FilterPatternFlyResults;
 
   // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
-  if (dynamicFilter && !isSearchWildCardAll) {
+  if (isUri) {
+    filtered = await filterPatternFly.memo({ ...updatedFilters, path: coercedSearchQuery }, searchResultsFilterMap);
+  } else if (isSha) {
+    filtered = await filterPatternFly.memo({ ...updatedFilters, name: coercedSearchQuery }, searchResultsFilterMap);
+  } else if (dynamicFilter && !isSearchWildCardAll) {
     filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
   } else {
     filtered = await filterPatternFly.memo(updatedFilters, searchResultsFilterMap);
@@ -655,8 +676,8 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
       return a.distance - b.distance;
     }
 
-    const relevantA = calculateRelevance(a, coercedSearchQuery, { maxDistance });
-    const relevantB = calculateRelevance(b, coercedSearchQuery, { maxDistance });
+    const relevantA = calculateRelevance(a, coercedSearchQuery, { maxDistance: updatedMaxDistance });
+    const relevantB = calculateRelevance(b, coercedSearchQuery, { maxDistance: updatedMaxDistance });
 
     if (relevantA !== relevantB) {
       return relevantA - relevantB;
@@ -673,9 +694,9 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
     isSearchWildCardAll,
     // @deprecated firstExactMatch - Use exactMatches[0] or searchResults
     firstExactMatch: sortedExactMatches[0],
-    exactMatches: sortedExactMatches.slice(0, maxResults),
-    remainingMatches: (maxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, maxResults - exactMatches.length),
-    searchResults: sortedSearchResults.slice(0, maxResults),
+    exactMatches: sortedExactMatches.slice(0, updatedMaxResults),
+    remainingMatches: (updatedMaxResults - exactMatches.length) < 0 ? [] : sortedRemainingMatches.slice(0, updatedMaxResults - exactMatches.length),
+    searchResults: sortedSearchResults.slice(0, updatedMaxResults),
     totalResults: sortedSearchResults.length,
     totalPotentialMatches: search?.totalResults ?? updatedResources.keywordsIndex.length
   };
