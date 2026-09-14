@@ -429,7 +429,7 @@ const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?
 const isShaHexLike = (
   value: unknown,
   {
-    minLength = 40,
+    minLength = 8,
     maxLength = 40
   }: { minLength?: number; maxLength?: number } = {}
 ): boolean => {
