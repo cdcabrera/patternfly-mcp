@@ -444,10 +444,17 @@ const dynamicFilterPatternFly = async (
 ): Promise<FilterPatternFlyResults> => {
   let isDynamicLimit = false;
   let updatedMaxResultsLimit = maxResultsLimit ?? 1;
+  let updatedSearchFilters = searchFilters;
 
-  if (maxResultsLimit === undefined && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
+  if (isPatternFlyUri(searchQuery)) {
+    updatedSearchFilters = ['path'];
+  } else if (isShaHexLike(searchQuery)) {
+    updatedSearchFilters = ['name'];
+  }
+
+  if (maxResultsLimit === undefined) { //} && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
     isDynamicLimit = true;
-    updatedMaxResultsLimit = searchFilters.length;
+    updatedMaxResultsLimit = updatedSearchFilters.length;
   }
 
   // Error name
@@ -488,7 +495,7 @@ const dynamicFilterPatternFly = async (
     });
 
   // Limit the filters to ones not already set; cap parallel passes to avoid runaway fan-out.
-  const filtersToTry = searchFilters
+  const filtersToTry = updatedSearchFilters
     .filter(filter => !(useExistingFilters && filters && filters[filter]))
     .slice(0, maxFilterPasses);
 
@@ -642,11 +649,11 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   let filtered: FilterPatternFlyResults;
 
   // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
-  if (isUri) {
-    filtered = await filterPatternFly.memo({ ...updatedFilters, path: coercedSearchQuery }, searchResultsFilterMap);
-  } else if (isSha) {
-    filtered = await filterPatternFly.memo({ ...updatedFilters, name: coercedSearchQuery }, searchResultsFilterMap);
-  } else if (dynamicFilter && !isSearchWildCardAll) {
+  // if (isUri) {
+  //  filtered = await filterPatternFly.memo({ ...updatedFilters, path: coercedSearchQuery }, searchResultsFilterMap);
+  // } else if (isSha) {
+  //  filtered = await filterPatternFly.memo({ ...updatedFilters, name: coercedSearchQuery }, searchResultsFilterMap);
+  if (dynamicFilter && !isSearchWildCardAll) {
     filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
   } else {
     filtered = await filterPatternFly.memo(updatedFilters, searchResultsFilterMap);
