@@ -452,7 +452,7 @@ const dynamicFilterPatternFly = async (
     updatedSearchFilters = ['name'];
   }
 
-  if (maxResultsLimit === undefined) { //} && !isPatternFlyUri(searchQuery) && !isShaHexLike(searchQuery)) {
+  if (maxResultsLimit === undefined) {
     isDynamicLimit = true;
     updatedMaxResultsLimit = updatedSearchFilters.length;
   }
@@ -575,7 +575,6 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
   const updatedFilters = filters || {};
   const isUri = isPatternFlyUri(coercedSearchQuery);
   const isSha = isShaHexLike(coercedSearchQuery);
-  // const updatedMaxResults = isUri || isSha ? 2 : maxResults;
   const isWildCardAll = coercedSearchQuery === '*' || coercedSearchQuery.toLowerCase() === 'all' || coercedSearchQuery === '';
   const isSearchWildCardAll = allowWildCardAll && isWildCardAll;
   const pathMatchName = updatedResources.pathIndex?.get(coercedSearchQuery.toLowerCase());
@@ -648,11 +647,7 @@ const searchPatternFly = async (searchQuery: unknown, filters?: FilterPatternFly
 
   let filtered: FilterPatternFlyResults;
 
-  // Filter resources. Dynamic filtering applies the search query to each filter as a fallback.
-  // if (isUri) {
-  //  filtered = await filterPatternFly.memo({ ...updatedFilters, path: coercedSearchQuery }, searchResultsFilterMap);
-  // } else if (isSha) {
-  //  filtered = await filterPatternFly.memo({ ...updatedFilters, name: coercedSearchQuery }, searchResultsFilterMap);
+  // Filter resources. Dynamic filtering applies the search query to each filter as a fallback to help focus broad result sets.
   if (dynamicFilter && !isSearchWildCardAll) {
     filtered = await dynamicFilterPatternFly.memo(coercedSearchQuery, updatedFilters, searchResultsFilterMap);
   } else {
