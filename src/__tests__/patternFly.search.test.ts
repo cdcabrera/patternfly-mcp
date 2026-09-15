@@ -619,6 +619,30 @@ describe('searchPatternFly', () => {
       ['patternfly://docs/button', new Map([['v6', ['button']], ['v5', ['button']]])],
       ['patternfly://docs/modal', new Map([['v6', ['modal']]])]
     ]),
+    uriIndex: new Map([
+      ['patternfly://docs/button', 'button'],
+      ['patternfly://docs/button?version=v6', 'button'],
+      ['patternfly://docs/button?version=v5', 'button'],
+      ['patternfly://docs/modal', 'modal'],
+      ['patternfly://docs/modal?version=v6', 'modal'],
+      ['patternfly://docs/btn-group', 'button'],
+      ['patternfly://docs/mdl-group', 'modal'],
+      ['patternfly://docs/btn-v6-hash', 'button'],
+      ['patternfly://docs/btn-v5-hash', 'button'],
+      ['patternfly://docs/mdl-v6-hash', 'modal'],
+      ['patternfly://schemas/button', 'button'],
+      ['patternfly://schemas/button?version=v6', 'button'],
+      ['patternfly://schemas/btn-group', 'button'],
+      ['patternfly://schemas/mdl-group', 'modal']
+    ]),
+    hashIndex: new Map([
+      ['btn-group', 'button'],
+      ['mdl-group', 'modal'],
+      ['btn-v6-hash', 'button'],
+      ['btn-v5-hash', 'button'],
+      ['mdl-v6-hash', 'modal']
+    ]),
+    pathIndex: new Map(),
     latestVersion: 'v6'
   };
 
@@ -669,6 +693,45 @@ describe('searchPatternFly', () => {
       expectedType: 'exact'
     },
     {
+      description: 'patternfly://docs/{groupId} with filter',
+      search: 'patternfly://docs/btn-group',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'patternfly://schemas/{groupId} with filter',
+      search: 'patternfly://schemas/btn-group',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'unparameterized doc URI patternfly://docs/button',
+      search: 'patternfly://docs/button',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'unparameterized schema URI patternfly://schemas/button',
+      search: 'patternfly://schemas/button',
+      options: { dynamicFilter: true },
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
+      description: 'groupId bare hash without filter',
+      search: 'btn-group',
+      expectedLength: 1,
+      expectedName: 'button',
+      expectedType: 'exact'
+    },
+    {
       description: 'hash entry id with filter',
       search: 'btn-v6-hash',
       options: { dynamicFilter: true },
@@ -680,7 +743,7 @@ describe('searchPatternFly', () => {
       description: 'hash entry id without filter',
       search: 'btn-v6-hash',
       options: { dynamicFilter: false },
-      expectedLength: 2,
+      expectedLength: 1,
       expectedName: 'button',
       expectedType: 'exact'
     },
