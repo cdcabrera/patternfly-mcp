@@ -312,9 +312,13 @@ const filterPatternFly = async (
       const matchesVersion = !updatedFilters.version || String(entry.version).toLowerCase() === updatedFilters.version;
       const matchesCategory = !updatedFilters.category || filterMatch(entry.category, updatedFilters.category);
       const matchesSection = !updatedFilters.section || filterMatch(entry.section, updatedFilters.section);
-      const matchesPath = !updatedFilters.path || filterMatch(entry.path, updatedFilters.path) ||
-        filterMatch(entry.uriId, updatedFilters.path) || filterMatch(entry.uriSchemas, updatedFilters.path) ||
-        filterMatch(entry.uriSchemasId, updatedFilters.path) || filterMatch(entry.uri, updatedFilters.path);
+      const matchesPath = !updatedFilters.path ||
+        filterMatch(entry.path, updatedFilters.path) ||
+        filterMatch(entry.uriId, updatedFilters.path) ||
+        filterMatch(entry.uriGroupId, updatedFilters.path) ||
+        filterMatch(entry.uriSchemas, updatedFilters.path) ||
+        filterMatch(entry.uriSchemasId, updatedFilters.path) ||
+        filterMatch(entry.uri, updatedFilters.path);
 
       // Filter order matters specific id -> group id -> group name
       const matchesName = !updatedFilters.name || filterMatch(entry.id, updatedFilters.name) ||
