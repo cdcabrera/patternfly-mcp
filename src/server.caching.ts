@@ -298,11 +298,8 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       // Return memoized value
       const updatedKeyIndex = cache.indexOf(key);
       const cachedValue = cache[updatedKeyIndex + 1];
-      const cachedError = typeof cachedValue === 'function'
-        ? cachedValue as { (): never; isError: boolean }
-        : undefined;
 
-      if (cachedError?.isError === true) {
+      if (cachedValue?.isError === true) {
         if (isCacheErrors === false) {
           cache.splice(updatedKeyIndex, 2);
         }
@@ -313,7 +310,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
           cache: [...cache]
         });
 
-        return cachedError();
+        return typeof cachedValue === 'function' ? cachedValue() : cachedValue;
       }
 
       debug({

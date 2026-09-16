@@ -363,18 +363,30 @@ describe('memo', () => {
     await expect(updateLog(logAsync)).resolves.toMatchSnapshot('async');
   });
 
-  it('should not treat returned sync objects with isError: true as cached thrown errors', () => {
-    const memoized = memo((value: string) => ({ isError: true, value }), { cacheLimit: 1 });
+  it('should return cached sync objects with isError: true without calling them', () => {
+    let callCount = 0;
+    const memoized = memo((value: string) => {
+      callCount += 1;
 
-    expect(memoized('a')).toEqual({ isError: true, value: 'a' });
-    expect(memoized('a')).toEqual({ isError: true, value: 'a' });
+      return { isError: true, value, callCount };
+    }, { cacheLimit: 1, cacheErrors: true });
+
+    expect(memoized('a')).toEqual({ isError: true, value: 'a', callCount: 1 });
+    expect(memoized('a')).toEqual({ isError: true, value: 'a', callCount: 1 });
+    expect(callCount).toBe(1);
   });
 
-  it('should not treat resolved async objects with isError: true as cached thrown errors', async () => {
-    const memoized = memo(async (value: string) => ({ isError: true, value }), { cacheLimit: 1 });
+  it('should return sync objects with isError: true when cacheErrors is false', () => {
+    let callCount = 0;
+    const memoized = memo((value: string) => {
+      callCount += 1;
 
-    await expect(memoized('a')).resolves.toEqual({ isError: true, value: 'a' });
-    await expect(memoized('a')).resolves.toEqual({ isError: true, value: 'a' });
+      return { isError: true, value, callCount };
+    }, { cacheLimit: 1, cacheErrors: false });
+
+    expect(memoized('a')).toEqual({ isError: true, value: 'a', callCount: 1 });
+    expect(memoized('a')).toEqual({ isError: true, value: 'a', callCount: 2 });
+    expect(callCount).toBe(2);
   });
 
   it('should handle clear() without callback', () => {
