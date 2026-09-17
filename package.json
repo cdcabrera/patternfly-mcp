@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "imports": {
+    "~aiHandbookCatalog": "./src/collection.aiHandbook.json",
     "~apiCatalog": "./src/collection.patternFlyApi.json",
     "~docsCatalog": "./src/docs.json",
     "#toolsHost": "./dist/server.toolsHost.js",
