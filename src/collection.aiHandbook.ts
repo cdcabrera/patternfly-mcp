@@ -1,35 +1,27 @@
 import { type McpCollection, type McpCollectionRecord } from './collections';
-import { EMBEDDED_DOCS, type PatternFlyMcpDocsCatalog } from './docs.embedded';
+import { getOptions, getSessionOptions, runWithOptions, runWithSession } from './options.context';
 import { formatUnknownError, log } from './logger';
-import {
-  getOptions,
-  getSessionOptions,
-  runWithOptions,
-  runWithSession
-} from './options.context';
 import {isPlainObject} from "./server.helpers";
 
 /**
- * Lazy load the PatternFly documentation catalog.
+ * Lazy load the documentation catalog.
  *
- * @returns PatternFly documentation catalog JSON, or fallback catalog if import fails.
+ * @returns Documentation catalog JSON.
  */
-const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { isFallback: boolean }> => {
-  let docsCatalog = EMBEDDED_DOCS;
-  let isFallback = false;
+const getCatalog = async (): Promise<Record<string, any>> => {
+  let docsCatalog = { docs: {} };
 
   try {
     if (process.env.NODE_ENV === 'local') {
-      docsCatalog = (await import('./docs.json', { with: { type: 'json' } })).default;
+      docsCatalog = (await import('./collection.aiHandbook.json', { with: { type: 'json' } })).default;
     } else {
-      docsCatalog = (await import('#docsCatalog', { with: { type: 'json' } })).default;
+      docsCatalog = (await import('#aiHandbookCatalog', { with: { type: 'json' } })).default;
     }
   } catch (error) {
-    isFallback = true;
-    log.debug(`Failed to import docs catalog '#docsCatalog': ${formatUnknownError(error)}`, 'Using fallback docs catalog.');
+    log.debug(`Failed to import AI Handbook catalog '#aiHandbookCatalog': ${formatUnknownError(error)}`);
   }
 
-  return { ...docsCatalog, isFallback };
+  return { ...docsCatalog };
 };
 
 /**
@@ -38,13 +30,13 @@ const getPatternFlyDocsCatalog = async (): Promise<PatternFlyMcpDocsCatalog & { 
  * @returns {Promise<McpCollectionResult>} Object containing a list of processed records.
  */
 const collectionCallback = async () => {
-  const docsCatalog = await getPatternFlyDocsCatalog();
+  const docsCatalog = await getCatalog();
   const catalog = [...Object.entries(docsCatalog.docs)];
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
 
   catalog.forEach(([name, entries]) => {
     const normalizedName = name.toLowerCase();
-    const id = `docs::${normalizedName}`;
+    const id = `docs::ai-handbook::${normalizedName}`;
 
     if (recordsMap.has(id) || !Array.isArray(entries)) {
       return;
@@ -57,7 +49,7 @@ const collectionCallback = async () => {
       data: {
         [normalizedName]: entries.filter(entry => isPlainObject(entry)).map(data => ({
           ...data,
-          collection: 'patternfly-docs' as const
+          collection: 'ai-handbook' as const
         }))
       }
     };
@@ -65,28 +57,26 @@ const collectionCallback = async () => {
     recordsMap.set(record.id, record);
   });
 
-  return { records: [...recordsMap.values()], isFallback: docsCatalog.isFallback };
+  return { records: [...recordsMap.values()] };
 };
 
 /**
- * Create a PatternFly local embedded docs collection from `docs.json`.
+ * Create an AI Handbook local embedded collection.
  *
  * @param options - Global options
  * @param session - Session options
  * @returns {McpCollection} The collection definition tuple
  */
-const patternFlyDocsCollection = (options = getOptions(), session = getSessionOptions()): McpCollection => {
+const aiHandbookCollection = (options = getOptions(), session = getSessionOptions()): McpCollection => {
   const callback: McpCollection[1] = async () =>
     runWithSession(session, async () =>
       runWithOptions(options, async () => collectionCallback()));
 
   return [
-    'patternfly-docs',
+    'ai-handbook',
     callback,
-    {
-      isRequired: true
-    }
+    { isRequired: false }
   ];
 };
 
-export { patternFlyDocsCollection, collectionCallback };
+export { aiHandbookCollection, collectionCallback };

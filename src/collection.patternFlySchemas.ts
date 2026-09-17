@@ -41,7 +41,8 @@ const collectionCallback = async () => {
             section: 'components',
             source: 'schemas',
             version: latestSchemasVersion,
-            isSchemasAvailable: true
+            isSchemasAvailable: true,
+            collection: 'patternfly-component-schemas' as const
           }
         ]
       }
@@ -64,7 +65,8 @@ const collectionCallback = async () => {
           section: 'components',
           source: 'schemas',
           version: latestSchemasVersion,
-          isSchemasAvailable: false
+          isSchemasAvailable: false,
+          collection: 'patternfly-component-schemas' as const
         }]
       }
     });
