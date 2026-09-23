@@ -11,6 +11,7 @@ import {
   patternFlyRecordsRegistry
 } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { log } from './logger';
 
 /**
  * searchPatternFly tool function
@@ -285,6 +286,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         .describe(`Filter results by a primary collection of records (e.g. ${collections.map(value => `"${value}"`).join(', ')})`)
     }
     : {};
+
+  log.debug(`MCP Search tool: hasNonPfCollections: ${hasNonPfCollections}`, collections.join(','));
 
   return [
     'searchPatternFly',

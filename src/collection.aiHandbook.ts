@@ -1,14 +1,49 @@
+import { processDocsFunction } from './server.getResources';
 import { type McpCollection, type McpCollectionRecord } from './collections';
 import { getOptions, getSessionOptions, runWithOptions, runWithSession } from './options.context';
 import { formatUnknownError, log } from './logger';
-import {isPlainObject} from "./server.helpers";
+import { isPlainObject } from './server.helpers';
+import {collectionInitialCallback} from "#collectionPatternFlyApi";
+// import {ApiCrawler} from "#collectionPatternFlyApi";
+
+const COLLECTION_DOCS = 'https://raw.githubusercontent.com/rh-uxd/ai-handbook/refs/heads/main/docs.json';
 
 /**
  * Lazy load the documentation catalog.
  *
+ * @param [collectionDocs] - URL to the documentation catalog JSON.
  * @returns Documentation catalog JSON.
  */
-const getCatalog = async (): Promise<Record<string, any>> => {
+const getCatalog = async (collectionDocs = COLLECTION_DOCS): Promise<Record<string, any>> => {
+  let docsCatalog = { docs: {} };
+
+  const settled = await processDocsFunction([collectionDocs]) || [];
+
+  for (const res of settled) {
+    if (!res.isSuccess) {
+      continue;
+    }
+
+    // log.debug(`AI Handbook catalog '${collectionDocs}' loaded`);
+
+    try {
+      const docsJson = typeof res.content === 'string' ? JSON.parse(res.content) : res.content;
+
+      if (isPlainObject(docsJson.docs)) {
+        docsCatalog = docsJson;
+      }
+
+      log.debug(`docsCatalog.docs ${Object.keys(docsCatalog.docs).join('\n')}`);
+    } catch (error) {
+      log.debug(`Failed to parse AI Handbook '${collectionDocs}': ${formatUnknownError(error)}`);
+    }
+
+    // docsCatalog.docs = isPlainObject(res.content) || Array.isArray(res.content) ? res.content : {};
+  }
+
+  return { ...docsCatalog };
+
+  /*
   let docsCatalog = { docs: {} };
 
   try {
@@ -22,6 +57,7 @@ const getCatalog = async (): Promise<Record<string, any>> => {
   }
 
   return { ...docsCatalog };
+  */
 };
 
 /**
@@ -75,7 +111,14 @@ const aiHandbookCollection = (options = getOptions(), session = getSessionOption
   return [
     'ai-handbook',
     callback,
-    { isRequired: false }
+    {
+      isRequired: false,
+      // ToDo: looks like we may need a default for "initial" and assume it will just be empty until it can load
+      //  in order to get the registration to fire if we want dynamic filters in the MCP tools, like the
+      //  "collections" filter
+      initial: () => ({ records: [] }),
+      retainLastViable: true
+    }
   ];
 };
 
