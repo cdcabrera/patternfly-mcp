@@ -1,9 +1,15 @@
 import {
   registerCollections,
+  getServerCollectionConfigRegistry,
   getServerRecordsRegistry,
   onUpdateServerRecordsRegistry,
   setServerRecordsRegistry
 } from '../collections';
+
+const clearCollectionRegistries = () => {
+  (getServerRecordsRegistry() as Map<string, unknown>).clear();
+  (getServerCollectionConfigRegistry() as Map<string, unknown>).clear();
+};
 
 jest.mock('../logger', () => ({
   log: {
@@ -17,10 +23,7 @@ jest.mock('../logger', () => ({
 
 describe('getServerRecordsRegistry', () => {
   beforeEach(() => {
-    const registry = getServerRecordsRegistry() as Map<string, any>;
-
-    registry.clear();
-
+    clearCollectionRegistries();
     jest.clearAllMocks();
   });
 
@@ -35,10 +38,7 @@ describe('getServerRecordsRegistry', () => {
 describe('onUpdateServerRecordsRegistry', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    const registry = getServerRecordsRegistry() as Map<string, any>;
-
-    registry.clear();
-
+    clearCollectionRegistries();
     jest.clearAllMocks();
   });
 
@@ -80,12 +80,37 @@ describe('onUpdateServerRecordsRegistry', () => {
     expect(handler).toHaveBeenCalledTimes(2);
     expect(handler).toHaveBeenCalledWith({
       name: 'patternfly-docs',
+      config: undefined,
       response: docs,
       error: undefined
     });
     expect(handler).toHaveBeenCalledWith({
       name: 'patternfly-component-schemas',
+      config: undefined,
       response: schemas,
+      error: undefined
+    });
+  });
+
+  it('replays plugin-visible config when replay is enabled', async () => {
+    const docs = { records: [{ id: 'docs' }] } as any;
+
+    await setServerRecordsRegistry({
+      name: 'patternfly-docs',
+      config: { title: 'PatternFly Docs' },
+      response: docs
+    });
+
+    const handler = jest.fn();
+
+    onUpdateServerRecordsRegistry(handler, { replay: true });
+
+    await jest.runAllTimersAsync();
+
+    expect(handler).toHaveBeenCalledWith({
+      name: 'patternfly-docs',
+      config: { title: 'PatternFly Docs' },
+      response: docs,
       error: undefined
     });
   });
@@ -111,10 +136,7 @@ describe('onUpdateServerRecordsRegistry', () => {
 
 describe('get, set, update the server records registry', () => {
   beforeEach(() => {
-    const registry = getServerRecordsRegistry() as Map<string, any>;
-
-    registry.clear();
-
+    clearCollectionRegistries();
     jest.clearAllMocks();
   });
 
@@ -161,6 +183,17 @@ describe('get, set, update the server records registry', () => {
     expect(stored).toEqual({ records: [{ id: 'x' }] });
   });
 
+  it('should store plugin-visible config when provided with records', async () => {
+    await setServerRecordsRegistry({
+      name: 'meta-collection',
+      config: { title: 'My Collection' },
+      response: { records: [] } as any
+    });
+
+    expect(getServerCollectionConfigRegistry({ collectionName: 'meta-collection' }))
+      .toEqual({ title: 'My Collection' });
+  });
+
   it('should not store or notify when response is missing', async () => {
     const listener = jest.fn();
 
@@ -175,6 +208,7 @@ describe('get, set, update the server records registry', () => {
 
 describe('registerCollections', () => {
   beforeEach(() => {
+    clearCollectionRegistries();
     jest.clearAllMocks();
   });
 
@@ -192,6 +226,7 @@ describe('registerCollections', () => {
     expect(handler).toHaveBeenCalled();
     expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
       name: 'test-collection',
+      config: undefined,
       response: { records: [] }
     }));
 
@@ -316,8 +351,32 @@ describe('registerCollections', () => {
     await registerCollections(collections, { onRequired });
 
     expect(onRequired).toHaveBeenCalledWith([
-      expect.objectContaining({ name: 'req', response: { records: [{ id: '1', sourceId: 'mock', sourceType: 'mock' }] } })
+      expect.objectContaining({
+        name: 'req',
+        config: {},
+        response: { records: [{ id: '1', sourceId: 'mock', sourceType: 'mock' }] }
+      })
     ]);
+  });
+
+  it('should pass plugin-visible config to registry listeners and onUpdate', async () => {
+    jest.useFakeTimers();
+    const onUpdate = jest.fn();
+    const handler = jest.fn().mockResolvedValue({ records: [] });
+
+    await registerCollections([
+      ['meta-collection', { title: 'My Collection' }, handler]
+    ], { onUpdate });
+    await jest.runAllTimersAsync();
+
+    expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      name: 'meta-collection',
+      config: { title: 'My Collection' }
+    }));
+    expect(getServerCollectionConfigRegistry({ collectionName: 'meta-collection' }))
+      .toEqual({ title: 'My Collection' });
+
+    jest.useRealTimers();
   });
 
   it('should call onSettle with all results, fulfilled and rejected', async () => {
