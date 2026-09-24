@@ -48,6 +48,13 @@ type McpCollectionConfig = {
  * Stored registration for a collection (name is the map key).
  *
  * `response` is set when records are available; `config` comes from tuple index 1.
+ *
+ * @note {@link registerCollections} registers every tuple by `name` (and optional `config`) before
+ * handlers or `_config.initial` run. A map entry may therefore exist with no `response`; use
+ * {@link getServerCollectionsRegistry} for presence and metadata, and {@link getServerRecordsRegistry}
+ * for records only (undefined until a viable `response` is stored). Tuple `config` of `undefined`
+ * omits the `config` property on the entry; `{}` stores `config: {}`. Registry listeners run only
+ * when an update includes `response`.
  */
 type ServerCollectionRegistryEntry = {
   response?: McpCollectionResult;

@@ -361,6 +361,26 @@ describe('registerCollections', () => {
     expect(getServerCollectionsRegistry({ collectionName: 'invalid-collection' })).toEqual({ config: {} });
   });
 
+  it('should register optional collections by name when tuple config is undefined', async () => {
+    let resolveHandler: (value: { records: [] }) => void;
+    const asyncPromise = new Promise<{ records: [] }>(resolve => {
+      resolveHandler = resolve;
+    });
+    const handler = jest.fn().mockImplementation(() => asyncPromise);
+
+    const registrationPromise = registerCollections([
+      ['undefined-config-collection', undefined, handler]
+    ]);
+
+    expect(getServerRecordsRegistry({ collectionName: 'undefined-config-collection' })).toBeUndefined();
+    expect(getServerCollectionsRegistry({ collectionName: 'undefined-config-collection' })).toEqual({});
+
+    resolveHandler!({ records: [] });
+    await registrationPromise;
+
+    expect(getServerRecordsRegistry({ collectionName: 'undefined-config-collection' })).toEqual({ records: [] });
+  });
+
   it('should register optional collections by name before the handler resolves', async () => {
     let resolveHandler: (value: { records: [] }) => void;
     const asyncPromise = new Promise<{ records: [] }>(resolve => {
