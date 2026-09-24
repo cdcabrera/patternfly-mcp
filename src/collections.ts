@@ -481,6 +481,17 @@ const isMcpCollectionResult = (value: unknown): value is McpCollectionResult =>
  * - When the required collections resolve, `onRequired` is called.
  * - When all collections are settled `onSettle` is called.
  *
+ * @note **Existing behavior:** Collections with `_config.runSchedule` (e.g. long `delayStartMs` or
+ * `repeat: Infinity`) still participate in the same per-tuple handler `await` and settlement path as
+ * one-shot loaders. `onSettle` may therefore not run until those handlers return; revisit when a
+ * concrete use case needs earlier settlement.
+ * @note **Existing behavior:** Tuple name/config shells registered before records exist do not invoke
+ * {@link onUpdateServerRecordsRegistry} listeners or `replay` for metadata-only entries; subscribers
+ * still depend on a later update that includes `response`. Revisit if late listeners need shell replay.
+ * @note **Existing behavior:** `onRequired` and the returned promise gate on required collections
+ * completing with a viable `response` from the registration pipeline, not on tuple shell registration
+ * alone. Revisit if required semantics should diverge from that outcome.
+ *
  * @param {McpCollection[]} collections - An array of collection sources to be registered. Each source is represented as a tuple.
  * @param [options] - Options callback functions to handle registration events.
  * @param [options.onSettle] - A non-blocking consumer-facing callback executed after all collection registrations are
