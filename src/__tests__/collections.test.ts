@@ -210,14 +210,17 @@ describe('get, set, update the server records registry', () => {
       .toEqual({ records: [] });
   });
 
-  it('should not store or notify when response is missing', async () => {
+  it('should register metadata by name without notifying when response is not yet available', async () => {
     const listener = jest.fn();
 
     onUpdateServerRecordsRegistry(listener);
 
-    await setServerRecordsRegistry({ name: 'dolor' });
+    await setServerRecordsRegistry({ name: 'dolor', config: { title: 'Dolor' } });
 
     expect(getServerRecordsRegistry({ collectionName: 'dolor' })).toBeUndefined();
+    expect(getServerCollectionsRegistry({ collectionName: 'dolor' })).toEqual({
+      config: { title: 'Dolor' }
+    });
     expect(listener).not.toHaveBeenCalled();
   });
 });
@@ -355,6 +358,29 @@ describe('registerCollections', () => {
     await registerCollections([['invalid-collection', {}, handler]]);
 
     expect(getServerRecordsRegistry({ collectionName: 'invalid-collection' })).toBeUndefined();
+    expect(getServerCollectionsRegistry({ collectionName: 'invalid-collection' })).toEqual({ config: {} });
+  });
+
+  it('should register optional collections by name before the handler resolves', async () => {
+    let resolveHandler: (value: { records: [] }) => void;
+    const asyncPromise = new Promise<{ records: [] }>(resolve => {
+      resolveHandler = resolve;
+    });
+    const handler = jest.fn().mockImplementation(() => asyncPromise);
+
+    const registrationPromise = registerCollections([
+      ['delayed-collection', { title: 'Delayed' }, handler]
+    ]);
+
+    expect(getServerRecordsRegistry({ collectionName: 'delayed-collection' })).toBeUndefined();
+    expect(getServerCollectionsRegistry({ collectionName: 'delayed-collection' })).toEqual({
+      config: { title: 'Delayed' }
+    });
+
+    resolveHandler!({ records: [] });
+    await registrationPromise;
+
+    expect(getServerRecordsRegistry({ collectionName: 'delayed-collection' })).toEqual({ records: [] });
   });
 
   it('should call onRequired when all required collections are settled', async () => {

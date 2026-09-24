@@ -45,10 +45,12 @@ type McpCollectionConfig = {
 } | undefined;
 
 /**
- * Stored registration for a collection (records + plugin-visible metadata).
+ * Stored registration for a collection (name is the map key).
+ *
+ * `response` is set when records are available; `config` comes from tuple index 1.
  */
 type ServerCollectionRegistryEntry = {
-  response: McpCollectionResult;
+  response?: McpCollectionResult;
   config?: McpCollectionConfig;
 };
 
@@ -302,35 +304,73 @@ const getServerCollectionConfigRegistry = ({ collectionName }: { collectionName:
   serverCollectionsRegistry.get(collectionName)?.config;
 
 /**
- * Executes a collection callback, invalidates any cache, and then any next-call to the functions
- * blends the returned records and "re-memos" the results.
+ * Register tuple `name` and optional `config` before records are available (sync).
  *
- * @param {McpCollectionResult} collection - Collection.
+ * @param name - Collection name (tuple index 0).
+ * @param [config] - Plugin-visible metadata (tuple index 1).
+ */
+const registerCollectionShell = (name: string, config?: McpCollectionConfig) => {
+  const previous = serverCollectionsRegistry.get(name);
+
+  serverCollectionsRegistry.set(name, {
+    ...(previous?.response !== undefined ? { response: previous.response } : {}),
+    ...(config !== undefined
+      ? { config }
+      : previous?.config !== undefined
+        ? { config: previous.config }
+        : {})
+  });
+};
+
+/**
+ * Register or update a collection in the server registry.
+ *
+ * A collection may be registered with only a `name` (and optional `config`) before records exist.
+ *
+ * @param collection - Collection registration item.
  */
 const setServerRecordsRegistry = async (collection: RegisterCollectionItem) => {
-  const { name, response, config } = collection || {};
+  const { name, response, config, error } = collection || {};
 
   try {
-    if (name && response) {
-      const previous = serverCollectionsRegistry.get(name);
+    if (!name) {
+      return;
+    }
 
-      serverCollectionsRegistry.set(name, {
-        response,
-        ...(config !== undefined
-          ? { config }
-          : previous?.config !== undefined
-            ? { config: previous.config }
-            : {})
-      });
+    const previous = serverCollectionsRegistry.get(name);
+
+    const entry: ServerCollectionRegistryEntry = {
+      ...(previous?.response !== undefined ? { response: previous.response } : {}),
+      ...(response !== undefined ? { response } : {}),
+      ...(config !== undefined
+        ? { config }
+        : previous?.config !== undefined
+          ? { config: previous.config }
+          : {})
+    };
+
+    serverCollectionsRegistry.set(name, entry);
+
+    if (entry.response !== undefined) {
+      const item: RegisterCollectionItem = {
+        name,
+        config: entry.config,
+        response: entry.response,
+        error
+      };
 
       for (const listener of serverCollectionsRegistryListeners) {
-        await invokeServerCollectionsRegistryListener(listener, collection);
+        await invokeServerCollectionsRegistryListener(listener, item);
       }
-
-      log.debug(`Storing server collection ${name} records. (${response?.records?.length})`);
     }
-  } catch (error) {
-    log.error(`Failed to store server collection ${name}:`, error);
+
+    if (entry.response) {
+      log.debug(`Storing server collection ${name} records. (${entry.response.records?.length})`);
+    } else {
+      log.debug(`Registering server collection ${name} (metadata).`);
+    }
+  } catch (err) {
+    log.error(`Failed to store server collection ${name}:`, err);
   }
 };
 
@@ -452,6 +492,11 @@ const registerCollections = async (
   } = {}
 ): Promise<void> => {
   log.debug(`Reviewing registration for ${collections.length} collections.`);
+
+  // Step 0: Register each tuple (name + optional plugin config) before records load.
+  for (const [name, config] of collections) {
+    registerCollectionShell(name, config);
+  }
 
   // Step 1: Immediate hydration for collections with `_config.initial`
   for (const [name, config, , _config] of collections) {
