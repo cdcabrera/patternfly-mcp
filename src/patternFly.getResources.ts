@@ -75,6 +75,7 @@ interface PatternFlyMcpComponentNames {
  * @property groupId - The unique identifier for the document's parent.
  * @property name - The name of document entry.
  * @property displayCategory - The display category of document entry.
+ * @property displayCollection - The display collection of a document entry.
  * @property uri - The parent resource's general URI that can reflect a grouping of document entries.
  * @property uriId - The resource's exact URI for the document entry.
  * @property uriGroupId - The resource's exact URI for the document entry's parent.
@@ -87,6 +88,7 @@ type PatternFlyMcpDocsMeta = {
   groupId: string;
   name: string;
   displayCategory: string;
+  displayCollection: string;
   uri: string;
   uriId: string;
   uriGroupId: string;
@@ -202,6 +204,10 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  * Central in-memory registry for all PatternFly collection records
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
+
+const getCollectionDisplayName = (collection: string) => {
+  patternFlyCollectionDisplayRegistry
+};
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -544,6 +550,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const uriBase = `patternfly://docs/${encodeURIComponent(name)}`;
       const uri = `${uriBase}${buildSearchString({ version }, { prefix: true })}`;
       const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
+      const entryCollection = (entry.collection || 'unknown').toLowerCase();
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uriBase.toLowerCase(), name);
@@ -585,6 +592,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const extendedEntry = {
         ...entry,
         id,
+        displayCollection: getCollectionDisplayName(entryCollection),
         groupId,
         name,
         displayName,

@@ -131,11 +131,13 @@ type McpCollectionCreator = (options?: GlobalOptions) => McpCollection;
  * {@link registerCollections} callback settings.
  *
  * @property name - Name of the collection item.
+ * @property {McpCollection[1]|undefined} [config] - Optional collection metadata config.
  * @property {McpCollectionResult|undefined} [response] - Optional response associated with the item.
  * @property [error] - Optional error object if an error occurred during the collection process.
  */
 type RegisterCollectionItem = {
   name: string;
+  config?: McpCollection[1] | undefined;
   response?: McpCollectionResult | undefined;
   error?: unknown;
 };
@@ -145,10 +147,11 @@ type RegisterCollectionItem = {
  *
  * @param {RegisterCollectionItem} item - The updated collection item.
  * @param item.name - The name of the collection item.
+ * @param {McpCollection[1]|undefined} [item.config] - Optional collection metadata config.
  * @param {McpCollectionResult|undefined} [item.response] - Optional response associated with the item.
  * @param [item.error] - Optional error object if an error occurred during the collection process.
  */
-type RegisterOnUpdate = ({ name, response, error }: RegisterCollectionItem) => void | Promise<void>;
+type RegisterOnUpdate = ({ name, config, response, error }: RegisterCollectionItem) => void | Promise<void>;
 
 /**
  * Options for {@link onUpdateServerRecordsRegistry}.
@@ -309,7 +312,9 @@ const onUpdateServerRecordsRegistry = (
           break;
         }
 
-        await invokeServerRecordsRegistryListener(callback, { name, response, error: undefined });
+        const collection = getServerCollections();
+
+        await invokeServerRecordsRegistryListener(callback, { name, config, response, error: undefined });
       }
     })();
   }
@@ -411,7 +416,7 @@ const registerCollections = async (
 
   // Step 2: Main collection execution (handles scheduled/worker/background callbacks)
   // Wrapper for each loader; handle incremental updates
-  const registrationPromises = collections.map(async ([name, , callback, _config]) => {
+  const registrationPromises = collections.map(async ([name, config, callback, _config]) => {
     let error: unknown | undefined;
     let response: McpCollectionResult | undefined;
     let isSuccess = false;
