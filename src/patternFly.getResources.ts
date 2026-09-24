@@ -72,6 +72,8 @@ interface PatternFlyMcpComponentNames {
  * PatternFly JSON extended documentation metadata
  *
  * @property id - The unique identifier of document entry.
+ * @property collection - The collection source of a document entry.
+ * @property displayCollection - The display collection of a document entry.
  * @property groupId - The unique identifier for the document's parent.
  * @property name - The name of document entry.
  * @property displayCategory - The display category of document entry.
@@ -84,6 +86,8 @@ interface PatternFlyMcpComponentNames {
  */
 type PatternFlyMcpDocsMeta = {
   id: string;
+  collection: string;
+  displayCollection: string;
   groupId: string;
   name: string;
   displayCategory: string;
@@ -167,6 +171,7 @@ type PatternFlyMcpResourceMetadata = {
  * @interface PatternFlyMcpAvailableDocs
  * @extends PatternFlyVersionContext
  *
+ * @property collections - Collections used to populate available resources.
  * @property resources - Patternfly available documentation and metadata by resource name.
  * @property docsIndex - `@deprecated Under review. Use Array.from(resources.keys()) instead`. Patternfly available documentation index.
  * @property componentsIndex - `@deprecated Under review. Use keywordsIndex for search or byVersionComponentNames for lookups`.
@@ -183,6 +188,7 @@ type PatternFlyMcpResourceMetadata = {
  * @property byVersionComponentNames - Patternfly documentation by version with component names
  */
 interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
+  collections: string[];
   resources: Map<string, PatternFlyMcpResourceMetadata>;
   docsIndex: string[];
   componentsIndex: string[];
@@ -202,6 +208,35 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  * Central in-memory registry for all PatternFly collection records
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
+
+/**
+ * Set a collection display name.
+ *
+ * @param source
+ */
+const setCollectionDisplayName = (source: string) => {
+  let updatedName = source || 'Unknown';
+
+  switch (source) {
+    case 'patternfly-docs':
+      updatedName = 'PatternFly Docs';
+      break;
+    case 'patternfly-api':
+      updatedName = 'PatternFly API';
+      break;
+    case 'ai-handbook':
+      updatedName = 'AI Handbook';
+      break;
+    case 'patternfly-component-schemas':
+      updatedName = 'Component Schemas';
+      break;
+    default:
+      updatedName = source.charAt(0).toUpperCase() + source.slice(1);
+      break;
+  }
+
+  return updatedName;
+};
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -495,13 +530,17 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   const originalDocs = patternFlyRecordsRegistry.get('patternfly-docs');
   const apiCollection = patternFlyRecordsRegistry.get('patternfly-api');
+  const aiHandbookCollection = patternFlyRecordsRegistry.get('ai-handbook');
 
   const catalog = [
     ...originalDocs?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
     ...Array.from(componentNamesByDocs),
+    ...aiHandbookCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || [],
     ...apiCollection?.records?.flatMap(({ data }) => Object.entries(data as Record<string, unknown[]>)) || []
   ];
 
+  const collectionsAvailableVersions = new Map<string, Set<string>>();
+  const collections: Set<string> = new Set();
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
@@ -544,6 +583,9 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const uriBase = `patternfly://docs/${encodeURIComponent(name)}`;
       const uri = `${uriBase}${buildSearchString({ version }, { prefix: true })}`;
       const uriId = `patternfly://docs/${encodeURIComponent(id)}`;
+      const entryCollection = (entry.collection || 'unknown').toLowerCase();
+
+      collections.add(entryCollection);
 
       hashIndexMap.set(id.toLowerCase(), name);
       uriIndexMap.set(uriBase.toLowerCase(), name);
@@ -585,6 +627,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       const extendedEntry = {
         ...entry,
         id,
+        collection: entryCollection,
+        displayCollection: setCollectionDisplayName(entryCollection),
         groupId,
         name,
         displayName,
@@ -612,6 +656,10 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
       byVersion[version]?.push(extendedEntry);
 
       mutateKeyWordsMap(rawKeywordsMap, { keyword: name, name, version });
+
+      if (entry.source) {
+        mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.source, name, version });
+      }
 
       if (entry.displayName) {
         mutateKeyWordsMap(rawKeywordsMap, { keyword: entry.displayName, name, version });
@@ -642,6 +690,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   return {
     ...versionContext,
+    collections: Array.from(collections),
     resources,
     // @deprecated docsIndex - Under review
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
@@ -757,7 +806,9 @@ export {
   getPatternFlyMcpResources,
   getPatternFlyComponentNames,
   mutateKeyWordsMap,
+  patternFlyRecordsRegistry,
   setCategoryDisplayLabel,
+  setCollectionDisplayName,
   setPatternFlyCollection,
   type PatternFlyMcpComponentNames,
   type PatternFlyMcpComponentNamesByVersion,

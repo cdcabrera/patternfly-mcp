@@ -7,6 +7,7 @@ import {
   runWithOptions,
   runWithSession
 } from './options.context';
+import {isPlainObject} from "./server.helpers";
 
 /**
  * Lazy load the PatternFly documentation catalog.
@@ -45,7 +46,7 @@ const collectionCallback = async () => {
     const normalizedName = name.toLowerCase();
     const id = `docs::${normalizedName}`;
 
-    if (recordsMap.has(id)) {
+    if (recordsMap.has(id) || !Array.isArray(entries)) {
       return;
     }
 
@@ -54,7 +55,10 @@ const collectionCallback = async () => {
       sourceId: normalizedName,
       sourceType: 'local' as const,
       data: {
-        [normalizedName]: entries
+        [normalizedName]: entries.filter(entry => isPlainObject(entry)).map(data => ({
+          ...data,
+          collection: 'patternfly-docs' as const
+        }))
       }
     };
 

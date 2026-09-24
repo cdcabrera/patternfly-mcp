@@ -605,7 +605,8 @@ const getPatternFlyApiRecords = (entries: ApiCrawler[] | ApiEmbeddedExpanded[]):
       sourceType: 'api' as const,
       data: {
         [name]: [{
-          ...metadata
+          ...metadata,
+          collection: 'patternfly-api' as const
         }]
       }
     };

@@ -77,15 +77,17 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
+  const { latestVersion } = await getPatternFlyMcpResources.memo();
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
 
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
+  const updatedVersion = version ? normalizedVersion || latestVersion : undefined;
 
-  const updatedVersion = normalizedVersion || latestVersion;
+  // assertInput(
+  //  !version || Boolean(normalizedVersion),
+  //  `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+  // );
+
+  // const updatedVersion = normalizedVersion || latestVersion;
   const updatedName = name.trim();
 
   const { byEntry } = await filterPatternFly.memo({

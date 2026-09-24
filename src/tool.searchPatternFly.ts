@@ -6,8 +6,12 @@ import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike }
 import { findClosest } from './server.search';
 import { getOptions } from './options.context';
 import { searchPatternFly } from './patternFly.search';
-import { getPatternFlyMcpResources } from './patternFly.getResources';
+import {
+  getPatternFlyMcpResources,
+  patternFlyRecordsRegistry
+} from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
+import { log } from './logger';
 
 /**
  * searchPatternFly tool function
@@ -25,8 +29,9 @@ import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
  */
 const searchPatternFlyTool = (options = getOptions()): McpTool => {
   const callback = async (args: any = {}) => {
-    const { query: searchQuery, version } = args;
+    const { query: searchQuery, version, collection } = args;
     const isVersion = typeof version === 'string' && version.length > 0;
+    const isCollection = typeof collection === 'string' && collection.length > 0;
 
     assertInputStringLength(searchQuery, {
       ...options.minMax.inputStrings,
@@ -45,13 +50,23 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
       });
     }
 
+    const { collections } = await getPatternFlyMcpResources.memo();
+
+    if (isCollection) {
+      assertInputStringNumberEnumLike(collection, collections, {
+        inputDisplayName: 'collection'
+      });
+    }
+
     const { keywordsIndex, latestVersion } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
-    const updatedVersion = normalizedVersion || latestVersion;
+    const updatedVersion = isVersion ? normalizedVersion || latestVersion : undefined;
+    const updatedCollection = isCollection ? collection : undefined;
 
     const { isSearchWildCardAll, exactMatches, remainingMatches, searchResults, totalPotentialMatches } = await searchPatternFly.memo(
       searchQuery,
-      { version: updatedVersion },
+      { version: updatedVersion, collection: updatedCollection },
+      // {},
       { allowWildCardAll: true, dynamicFilter: true, maxResults: options.minMax.toolSearches.max }
     );
 
@@ -117,7 +132,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
             description: record.description,
             mimeType: 'text/markdown',
-            groupId: result.groupId
+            groupId: result.groupId,
+            primaryCollection: record.collection
           });
         }
 
@@ -131,7 +147,8 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             name: `${record.displayName} - JSON Schema (${record.version})`,
             description: `Component JSON schema with property definitions for ${record.displayName}.`,
             mimeType: 'text/markdown',
-            groupId: result.groupId
+            groupId: result.groupId,
+            primaryCollection: record.collection
           });
         }
       });
@@ -144,7 +161,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
        * "records" we would review dropping this part of the check and allow a "collection" grouping to appear
        * if all it had were JSON schemas.
        */
-      if (!result.entries.length || !result.entries.some(entry => Boolean(entry.path))) {
+      if (!result.entries.length || !result.entries.some(entry => Boolean(entry.path)) || recordNames.size <= 1) {
         return;
       }
 
@@ -260,6 +277,18 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     };
   };
 
+  const collections = [...patternFlyRecordsRegistry.keys()];
+  const hasNonPfCollections = collections.filter(name => name.toLowerCase().includes('patternfly')).length < collections.length;
+  const optionalSchema = hasNonPfCollections
+    ? {
+      collection: z.enum([...collections, ''])
+        .optional()
+        .describe(`Filter results by a primary collection of records (e.g. ${collections.map(value => `"${value}"`).join(', ')})`)
+    }
+    : {};
+
+  log.debug(`MCP Search tool: hasNonPfCollections: ${hasNonPfCollections}`, collections.join(','));
+
   return [
     'searchPatternFly',
     {
@@ -269,9 +298,10 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           .min(options.minMax.inputStrings.min)
           .max(options.minMax.inputStrings.max)
           .describe('Case-insensitive, full or partial keyword query (e.g., "button", "react", "*")'),
-        version: z.enum(options.patternflyOptions.availableSearchVersions)
+        version: z.enum([...options.patternflyOptions.availableSearchVersions, ''])
           .optional()
-          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
+          .describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`),
+        ...optionalSchema
       }
     },
     callback,
