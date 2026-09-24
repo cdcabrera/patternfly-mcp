@@ -45,6 +45,14 @@ type McpCollectionConfig = {
 } | undefined;
 
 /**
+ * Stored registration for a collection (records + plugin-visible metadata).
+ */
+type ServerCollectionRegistryEntry = {
+  response: McpCollectionResult;
+  config?: McpCollectionConfig;
+};
+
+/**
  * Standardized Tuple-based Record Source.
  *
  * @note **Future**: `priority` and `group` are future properties being considered in the
@@ -218,19 +226,14 @@ type RegisterCollectionsResult = {
 };
 
 /**
- * Central in-memory registry for all PatternFly collection records
+ * Central in-memory registry for registered collections.
  */
-const serverRecordsRegistry = new Map<string, McpCollectionResult>();
+const serverCollectionsRegistry = new Map<string, ServerCollectionRegistryEntry>();
 
 /**
- * Plugin-visible metadata per collection name (tuple index 1).
+ * Listeners for server collection registry updates
  */
-const serverCollectionConfigRegistry = new Map<string, McpCollectionConfig>();
-
-/**
- * Listeners for server records registry updates
- */
-const serverRecordsRegistryListeners = new Set<RegisterOnUpdate>();
+const serverCollectionsRegistryListeners = new Set<RegisterOnUpdate>();
 
 /**
  * Invokes a server records registry listener and logs errors without rethrowing.
@@ -238,47 +241,65 @@ const serverRecordsRegistryListeners = new Set<RegisterOnUpdate>();
  * @param callback - Listener to invoke/fire.
  * @param item - Collection item passed to the listener.
  */
-const invokeServerRecordsRegistryListener = async (
+const invokeServerCollectionsRegistryListener = async (
   callback: RegisterOnUpdate,
   item: RegisterCollectionItem
 ) => {
   try {
     await callback(item);
   } catch (error) {
-    log.error(`Error in server records registry listener:`, error);
+    log.error(`Error in server collection registry listener:`, error);
   }
 };
 
 /**
- * Retrieves the server collections/records registry, all or for a given collection name.
+ * Retrieves the server collection registry, or one entry by name.
  *
  * @param params - Optional parameters.
- * @param params.collectionName - Name of the collection to retrieve.
- * @returns The entire server collections/records registry, or the registry for the specified collection name
- *     if provided and available, otherwise returns `undefined`.
+ * @param params.collectionName - When set, returns that entry or `undefined`.
+ * @returns Full registry map when `collectionName` is omitted.
  */
-const getServerRecordsRegistry = ({ collectionName }: { collectionName?: string } = {}) => {
+function getServerCollectionsRegistry(): Map<string, ServerCollectionRegistryEntry>;
+function getServerCollectionsRegistry(
+  params: { collectionName: string }
+): ServerCollectionRegistryEntry | undefined;
+
+function getServerCollectionsRegistry({ collectionName }: { collectionName?: string } = {}) {
   if (collectionName) {
-    return serverRecordsRegistry.get(collectionName);
+    return serverCollectionsRegistry.get(collectionName);
   }
 
-  return serverRecordsRegistry;
-};
+  return serverCollectionsRegistry;
+}
 
 /**
- * Retrieves plugin-visible collection metadata, all or for a given collection name.
+ * Records-only view of {@link getServerCollectionsRegistry} (backward-compatible for loaders/retention).
  *
  * @param params - Optional parameters.
- * @param params.collectionName - Name of the collection to retrieve.
- * @returns The metadata registry, or metadata for the specified collection if provided and available.
+ * @param params.collectionName - When set, returns collection records or `undefined`.
+ * @returns Full {@link ServerCollectionRegistryEntry} registry map when `collectionName` is omitted.
  */
-const getServerCollectionConfigRegistry = ({ collectionName }: { collectionName?: string } = {}) => {
+function getServerRecordsRegistry(): Map<string, ServerCollectionRegistryEntry>;
+function getServerRecordsRegistry(
+  params: { collectionName: string }
+): McpCollectionResult | undefined;
+
+function getServerRecordsRegistry({ collectionName }: { collectionName?: string } = {}) {
   if (collectionName) {
-    return serverCollectionConfigRegistry.get(collectionName);
+    return serverCollectionsRegistry.get(collectionName)?.response;
   }
 
-  return serverCollectionConfigRegistry;
-};
+  return serverCollectionsRegistry;
+}
+
+/**
+ * Plugin-visible metadata from the unified registry.
+ *
+ * @param params - Parameters.
+ * @param params.collectionName - Collection name.
+ */
+const getServerCollectionConfigRegistry = ({ collectionName }: { collectionName: string }) =>
+  serverCollectionsRegistry.get(collectionName)?.config;
 
 /**
  * Executes a collection callback, invalidates any cache, and then any next-call to the functions
@@ -291,14 +312,19 @@ const setServerRecordsRegistry = async (collection: RegisterCollectionItem) => {
 
   try {
     if (name && response) {
-      serverRecordsRegistry.set(name, response);
+      const previous = serverCollectionsRegistry.get(name);
 
-      if (config !== undefined) {
-        serverCollectionConfigRegistry.set(name, config);
-      }
+      serverCollectionsRegistry.set(name, {
+        response,
+        ...(config !== undefined
+          ? { config }
+          : previous?.config !== undefined
+            ? { config: previous.config }
+            : {})
+      });
 
-      for (const listener of serverRecordsRegistryListeners) {
-        await invokeServerRecordsRegistryListener(listener, collection);
+      for (const listener of serverCollectionsRegistryListeners) {
+        await invokeServerCollectionsRegistryListener(listener, collection);
       }
 
       log.debug(`Storing server collection ${name} records. (${response?.records?.length})`);
@@ -332,19 +358,19 @@ const onUpdateServerRecordsRegistry = (
     return () => false;
   }
 
-  serverRecordsRegistryListeners.add(callback);
+  serverCollectionsRegistryListeners.add(callback);
 
   if (replay) {
     void (async () => {
-      for (const [name, response] of serverRecordsRegistry) {
-        if (!serverRecordsRegistryListeners.has(callback)) {
+      for (const [name, entry] of serverCollectionsRegistry) {
+        if (!serverCollectionsRegistryListeners.has(callback)) {
           break;
         }
 
-        await invokeServerRecordsRegistryListener(callback, {
+        await invokeServerCollectionsRegistryListener(callback, {
           name,
-          config: serverCollectionConfigRegistry.get(name),
-          response,
+          config: entry.config,
+          response: entry.response,
           error: undefined
         });
       }
@@ -352,8 +378,8 @@ const onUpdateServerRecordsRegistry = (
   }
 
   return () => {
-    if (serverRecordsRegistryListeners.has(callback)) {
-      serverRecordsRegistryListeners.delete(callback);
+    if (serverCollectionsRegistryListeners.has(callback)) {
+      serverCollectionsRegistryListeners.delete(callback);
 
       return true;
     }
@@ -467,7 +493,7 @@ const registerCollections = async (
       log.error(`Error loading collection ${name}: ${formatUnknownError(err)}`);
     }
 
-    const previous = getServerRecordsRegistry({ collectionName: name }) as McpCollectionResult | undefined;
+    const previous = getServerRecordsRegistry({ collectionName: name });
     let shouldRetain = false;
 
     if (_config?.retainLastViable) {
@@ -571,6 +597,7 @@ const registerCollections = async (
 
 export {
   defaultRetainCollection,
+  getServerCollectionsRegistry,
   getServerCollectionConfigRegistry,
   getServerRecordsRegistry,
   isMcpCollectionRecord,
@@ -585,6 +612,7 @@ export {
   type McpCollection,
   type McpCollectionConfig,
   type McpCollectionCreator,
+  type ServerCollectionRegistryEntry,
   type McpCollectionRecord,
   type McpCollectionResult,
   type RegisterCollectionItem,

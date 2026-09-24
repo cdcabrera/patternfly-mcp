@@ -1,14 +1,14 @@
 import {
   registerCollections,
   getServerCollectionConfigRegistry,
+  getServerCollectionsRegistry,
   getServerRecordsRegistry,
   onUpdateServerRecordsRegistry,
   setServerRecordsRegistry
 } from '../collections';
 
 const clearCollectionRegistries = () => {
-  (getServerRecordsRegistry() as Map<string, unknown>).clear();
-  (getServerCollectionConfigRegistry() as Map<string, unknown>).clear();
+  (getServerCollectionsRegistry() as Map<string, unknown>).clear();
 };
 
 jest.mock('../logger', () => ({
@@ -27,11 +27,25 @@ describe('getServerRecordsRegistry', () => {
     jest.clearAllMocks();
   });
 
-  it('returns the full registry Map when called without params', () => {
+  it('returns the full unified registry Map when called without params', () => {
     const registry = getServerRecordsRegistry();
 
     expect(registry).toBeInstanceOf(Map);
     expect((registry as Map<string, unknown>).size).toBe(0);
+  });
+
+  it('returns only records when called with collectionName', async () => {
+    await setServerRecordsRegistry({
+      name: 'hello',
+      config: { title: 'Hello' },
+      response: { records: [] } as any
+    });
+
+    expect(getServerRecordsRegistry({ collectionName: 'hello' })).toEqual({ records: [] });
+    expect(getServerCollectionsRegistry({ collectionName: 'hello' })).toEqual({
+      response: { records: [] },
+      config: { title: 'Hello' }
+    });
   });
 });
 
@@ -192,6 +206,8 @@ describe('get, set, update the server records registry', () => {
 
     expect(getServerCollectionConfigRegistry({ collectionName: 'meta-collection' }))
       .toEqual({ title: 'My Collection' });
+    expect(getServerCollectionsRegistry({ collectionName: 'meta-collection' })?.response)
+      .toEqual({ records: [] });
   });
 
   it('should not store or notify when response is missing', async () => {

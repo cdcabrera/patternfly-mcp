@@ -18,6 +18,7 @@ import {
 } from './docs.embedded';
 import {
   onUpdateServerRecordsRegistry,
+  type McpCollectionConfig,
   type McpCollectionResult,
   type RegisterCollectionItem
 } from './collections';
@@ -202,6 +203,9 @@ interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
  * Central in-memory registry for all PatternFly collection records
  */
 const patternFlyRecordsRegistry = new Map<string, McpCollectionResult>();
+
+/** Plugin-visible collection metadata mirrored from {@link RegisterCollectionItem.config}. */
+const patternFlyCollectionConfigRegistry = new Map<string, McpCollectionConfig>();
 
 /**
  * Set the category display label based on the entry's section and category.
@@ -704,15 +708,21 @@ getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_O
  *
  * @param name - Collection name.
  * @param {McpCollectionResult} collection - Collection result.
+ * @param [config] - Plugin-visible collection metadata from the server registry listener.
  */
 const setPatternFlyCollection = async (
   name: string,
-  collection: McpCollectionResult
+  collection: McpCollectionResult,
+  config?: McpCollectionConfig
 ) => {
   try {
     if (collection.records) {
       // Update the patternFlyRecordsRegistry with the new records
       patternFlyRecordsRegistry.set(name, collection);
+
+      if (config !== undefined) {
+        patternFlyCollectionConfigRegistry.set(name, config);
+      }
 
       try {
         // Invalidate the component schemas breakdown
@@ -741,9 +751,9 @@ const setPatternFlyCollection = async (
  * @note We don't need to use the `replay` option here, all of PF collections we need are `required`
  * currently, any future updates to this logic may consider adding the `replay` option.
  */
-onUpdateServerRecordsRegistry(({ name, response, error }: RegisterCollectionItem) => {
+onUpdateServerRecordsRegistry(({ name, config, response, error }: RegisterCollectionItem) => {
   if (name && response) {
-    setPatternFlyCollection(name, response);
+    setPatternFlyCollection(name, response, config);
     log.info(`Update collection: ${name}`);
   }
 
