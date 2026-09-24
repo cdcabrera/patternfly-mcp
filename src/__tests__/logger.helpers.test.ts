@@ -104,6 +104,16 @@ describe('sanitizeTokenContent', () => {
       description: 'non-string input',
       input: { token: 'abc' },
       expected: undefined
+    },
+    {
+      description: 'does not redact natural language, "adipiscing" false positive',
+      input: 'consectetur adipiscing elit',
+      expected: 'consectetur adipiscing elit'
+    },
+    {
+      description: 'does not redact natural language in a serialized object',
+      input: '{"lorem":"ipsum dolor sit amet","dolor":"sit amet","amet":"consectetur adipiscing elit"}',
+      expected: '{"lorem":"ipsum dolor sit amet","dolor":"sit amet","amet":"consectetur adipiscing elit"}'
     }
   ])('should sanitize token content, $description', ({ input, options, expected }) => {
     expect(sanitizeTokenContent(input as any, options as any)).toBe(expected);

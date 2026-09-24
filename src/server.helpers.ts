@@ -422,24 +422,42 @@ const generateHash = (anyValue: unknown, { isLowercase = false }: { isLowercase?
  *
  * @param value - Value to check.
  * @param [options] - Options.
+ * @param [options.isStrict] - Enforce strict Base64 validation. Defaults to `true`.
  * @param [options.minLength] - Minimum length of the Base64 string.
+ * @param [options.requireSignalChars] - Require characters potentially unique to Base64. Defaults to `false`.
  * @returns `true` if the value is a Base64-like string
  */
-const isBase64Like = (value: unknown, { minLength = 8 }: { minLength?: number } = {}): boolean => {
+const isBase64Like = (value: unknown, {
+  isStrict = true,
+  minLength = 8,
+  requireSignalChars = false
+}: { isStrict?: boolean; minLength?: number, requireSignalChars?: boolean } = {}) => {
   const updatedValue = typeof value === 'string' ? value.trim() : '';
-  const base64Regex = /^[A-Za-z0-9+/]+={0,2}$/;
 
-  if (!updatedValue || updatedValue.length < minLength || !base64Regex.test(updatedValue) || updatedValue.length % 4 !== 0) {
+  if (!updatedValue || updatedValue.length < minLength || (isStrict && updatedValue.length % 4 !== 0)) {
     return false;
   }
 
-  try {
-    Buffer.from(updatedValue, 'base64');
-  } catch {
+  const looseBase64Regex = /^[A-Za-z0-9+/]+={0,2}$/;
+  const strictBase64Regex = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+  const base64Regex = isStrict ? strictBase64Regex : looseBase64Regex;
+
+  if (!base64Regex.test(updatedValue)) {
     return false;
   }
 
-  return true;
+  if (requireSignalChars && /^[A-Za-z]+$/.test(updatedValue)) {
+    return false;
+  }
+
+  const buff = Buffer.from(updatedValue, 'base64');
+  const recoded = buff.toString('base64');
+
+  if (isStrict) {
+    return updatedValue === recoded;
+  }
+
+  return updatedValue === recoded || updatedValue === recoded.replace(/=+$/, '');
 };
 
 /**

@@ -100,7 +100,10 @@ const sanitizeUrlContent = (
  * @param [options.minLength] - Min length of token-like substrings to redact.
  * @param [options.redacted] - Redact default value.
  */
-const sanitizeTokenContent = (input: unknown, { minLength = 8, redacted = REDACTED }: { minLength?: number; redacted?: string } = {}) => {
+const sanitizeTokenContent = (
+  input: unknown,
+  { minLength = 8, redacted = REDACTED }: { minLength?: number; redacted?: string } = {}
+) => {
   if (typeof input !== 'string') {
     return undefined;
   }
@@ -116,7 +119,7 @@ const sanitizeTokenContent = (input: unknown, { minLength = 8, redacted = REDACT
       continue;
     }
 
-    if (isShaHexLike(segment, { minLength }) || isBase64Like(segment, { minLength })) {
+    if (isShaHexLike(segment, { minLength }) || isBase64Like(segment, { minLength, requireSignalChars: true })) {
       parts[index] = redacted;
     }
   }
