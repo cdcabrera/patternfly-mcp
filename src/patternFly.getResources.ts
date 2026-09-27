@@ -1,6 +1,6 @@
 import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
-import { buildSearchString, generateHash } from './server.helpers';
+import {buildSearchString, freezeObject, generateHash} from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext,
@@ -722,6 +722,20 @@ const getPatternFlyComponentSchema = async (componentName: string) => {
 getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 /**
+ * Return a registerd collection by name or all registered collections.
+ *
+ * @param [name] - Collection name.
+ * @returns - Either a registered collection or undefined if not found, or all registered collections as an object.
+ */
+const getPatternFlyCollection = (name?: string) => {
+  if (name) {
+    return freezeObject(patternFlyRecordsRegistry.get(name)) as Readonly<PatternFlyMcpCollectionRegistryEntry> | undefined;
+  }
+
+  return freezeObject(Object.fromEntries(patternFlyRecordsRegistry)) as Readonly<Record<string, PatternFlyMcpCollectionRegistryEntry>>;
+};
+
+/**
  * Executes a collection callback, invalidates any cache, and then any next-call to the functions
  * blends the returned records and "re-memos" the results.
  *
@@ -795,6 +809,7 @@ onUpdateServerRecordsRegistry(({ name, config, response, error }: RegisterCollec
 export {
   getPatternFlyComponentSchema,
   getPatternFlyMcpResources,
+  getPatternFlyCollection,
   getPatternFlyComponentNames,
   mutateKeyWordsMap,
   setCategoryDisplayLabel,
