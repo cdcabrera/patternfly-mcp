@@ -116,8 +116,20 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         .filter(entry => entry.path)
         .map(entry => `      - [${entry.displayName} - (${entry.version}) - ${entry.description}](${entry.path})`);
 
-      const uri = result.uri;
-      const uriSchemas = result.uriSchemas;
+      // Unique URIs
+      const uris = Array.from(
+        new Set([result.uri, ...result.entries.map(entry => entry.uri)].filter(Boolean))
+      );
+
+      // Unique URI Schemas
+      const uriSchemas = Array.from(
+        new Set([result.uriSchemas, ...result.entries.map(entry => entry.uriSchemas)].filter(Boolean))
+      );
+
+      const uriList = [
+        ...uris.map(uri => `      - **URI**: ${uri}`),
+        ...uriSchemas.map(schema => `      - **JSON Schemas**: ${schema}`)
+      ];
 
       return stringJoin.newlineFiltered(
         `${index + 1}. **${result.name}**:`,
@@ -125,9 +137,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
         `    - **Name**: ${result.name}`,
         urlList.length ? `    - **URLs**:` : undefined,
         urlList.length ? urlList.join('\n') : undefined,
-        uri || uriSchemas ? `    - **Resources**:` : undefined,
-        uri ? `      - **URI**: ${uri}` : undefined,
-        uriSchemas ? `      - **JSON Schemas**: ${uriSchemas}` : undefined
+        uriList.length ? `    - **Resources**:` : undefined,
+        uriList.length ? uriList.join('\n') : undefined
       ) + '\n';
     });
 
