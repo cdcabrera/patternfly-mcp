@@ -62,6 +62,8 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       }
     }
 
+    const { latestVersion, latestSchemasVersion, byPath, versions } = await getPatternFlyMcpResources.memo();
+
     if (isVersion) {
       assertInputStringLength(version, {
         max: options.minMax.inputStrings.max,
@@ -69,15 +71,16 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         inputDisplayName: 'version'
       });
 
-      assertInputStringNumberEnumLike(version, options.patternflyOptions.availableSearchVersions, {
+      const allowedVersions = versions?.length ? versions : options.patternflyOptions.availableSearchVersions;
+
+      assertInputStringNumberEnumLike(version, allowedVersions, {
         inputDisplayName: 'version'
       });
     }
 
     const updatedUrlList: string[] = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
-    const { latestVersion, latestSchemasVersion, byPath } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
-    const updatedVersion = normalizedVersion || latestVersion;
+    const updatedVersion = normalizedVersion || (isVersion ? version : latestVersion);
     const updatedName = name?.trim();
 
     const pfUris: string[] = [];
@@ -269,7 +272,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
           .optional().describe(`The list of patternfly:// URIs or URLs to fetch the documentation from (max ${options.minMax.docsToLoad.max} at a time)`),
         name: z.string().max(options.minMax.inputStrings.max)
           .optional().describe('The name of a PatternFly component or patternfly:// URI resource to fetch documentation for (e.g., "Button", "patternfly://docs/Button")'),
-        version: z.enum(options.patternflyOptions.availableSearchVersions)
+        version: z.string()
           .optional().describe(`Filter results by a specific PatternFly version (e.g. ${options.patternflyOptions.availableSearchVersions.map(value => `"${value}"`).join(', ')})`)
       }
     },

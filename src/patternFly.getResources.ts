@@ -185,6 +185,8 @@ type PatternFlyMcpResourceMetadata = {
  */
 interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   collections: string[];
+  versions: string[];
+  versionsByCollection: Record<string, string[]>;
   resources: Map<string, PatternFlyMcpResourceMetadata>;
   docsIndex: string[];
   componentsIndex: string[];
@@ -511,6 +513,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     ...setCollectionName('patternfly-api', apiCollection)
   ];
 
+  const availableVersionsSet = new Set<string>();
+  const versionsByCollection: Record<string, string[]> = {};
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
   const byUri: PatternFlyMcpResourcesByUri = {};
@@ -547,6 +551,17 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     (entries as any[]).forEach(entry => {
       const collection = entry.collection || collectionName;
       const displayCollection = availableCollections.get(collection);
+      const rawVersion = entry.version;
+
+      if (rawVersion) {
+        const normalizedVer = rawVersion.toLowerCase();
+
+        availableVersionsSet.add(normalizedVer);
+        versionsByCollection[collection] ??= [];
+        if (!versionsByCollection[collection].includes(normalizedVer)) {
+          versionsByCollection[collection].push(normalizedVer);
+        }
+      }
 
       // Technically, we could just dump `entry` into generateHash as the fallback, but it'd be prone to frequent shifting based on updates.
       const version = (entry.version || 'unknown').toLowerCase();
@@ -662,9 +677,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
 
   const filteredKeywords = filterKeywords(rawKeywordsMap);
 
+  Object.values(versionsByCollection).forEach(list =>
+    list.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
+
   return {
     ...versionContext,
     collections: Array.from(availableCollections.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    versions: Array.from(availableVersionsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    versionsByCollection,
     resources,
     // @deprecated docsIndex - Under review
     docsIndex: Array.from(resources.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
