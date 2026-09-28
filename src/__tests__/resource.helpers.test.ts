@@ -18,20 +18,20 @@ import {
   paramCompletion
 } from '../resource.helpers';
 import { filterPatternFly } from '../patternFly.search';
-import { normalizeEnumeratedPatternFlyVersion } from '../patternFly.helpers';
+import { getPatternFlyMcpResources } from '../patternFly.getResources';
 
 jest.mock('../patternFly.search', () => ({
   ...jest.requireActual('../patternFly.search'),
   filterPatternFly: { memo: jest.fn() }
 }));
 
-jest.mock('../patternFly.helpers', () => ({
-  ...jest.requireActual('../patternFly.helpers'),
-  normalizeEnumeratedPatternFlyVersion: { memo: jest.fn() }
+jest.mock('../patternFly.getResources', () => ({
+  ...jest.requireActual('../patternFly.getResources'),
+  getPatternFlyMcpResources: { memo: jest.fn() }
 }));
 
 const MockFilter = filterPatternFly.memo as jest.MockedFunction<typeof filterPatternFly.memo>;
-const MockNormalizeVersion = normalizeEnumeratedPatternFlyVersion.memo as jest.MockedFunction<typeof normalizeEnumeratedPatternFlyVersion.memo>;
+const MockMcpResources = getPatternFlyMcpResources.memo as jest.MockedFunction<typeof getPatternFlyMcpResources.memo>;
 
 describe('getInlinedCodeBlockCount', () => {
   it.each([
@@ -846,6 +846,10 @@ describe('normalizeEnumeratedCollectionVersion', () => {
 describe('paramCompletion', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    MockMcpResources.mockResolvedValue({
+      collectionVersions: ['v6'],
+      versionsByCollection: { 'patternfly-docs': ['v6'] }
+    } as any);
   });
 
   it.each([
@@ -885,17 +889,18 @@ describe('paramCompletion', () => {
 
     const result = await paramCompletion({ version, category: '', section: 'components' });
 
-    expect(MockNormalizeVersion).toHaveBeenCalledWith(version);
     expect(result).toEqual(expected);
   });
 
   it('should normalize the version and forward filters to filterPatternFly', async () => {
-    MockNormalizeVersion.mockResolvedValue('v6' as any);
+    MockMcpResources.mockResolvedValue({
+      collectionVersions: ['v6'],
+      versionsByCollection: { 'patternfly-docs': ['v6'] }
+    } as any);
     MockFilter.mockResolvedValue({ byEntry: [], byResource: new Map() } as any);
 
-    await paramCompletion({ version: 'latest', category: 'button', section: 'components' });
+    await paramCompletion({ version: 'latest', collection: 'patternfly-docs', category: 'button', section: 'components' });
 
-    expect(MockNormalizeVersion).toHaveBeenCalledWith('latest');
     expect(MockFilter).toHaveBeenCalledWith(
       expect.objectContaining({ category: 'button', section: 'components', version: 'v6' })
     );

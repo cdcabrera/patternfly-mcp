@@ -7,7 +7,7 @@ import {
 } from './mcpSdk';
 import { memo } from './server.caching';
 import { buildSearchString, stringJoin } from './server.helpers';
-import { assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
+import { assertInput, assertInputStringLength } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
@@ -134,16 +134,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
 
   if (version) {
     assertInputStringLength(version, {
-      max: options.minMax.inputStrings.max,
-      min: 2,
-      inputDisplayName: 'version'
-    });
-  }
-
-  const { collectionVersions, latestVersion } = await getPatternFlyMcpResources.memo();
-
-  if (version) {
-    assertInputStringNumberEnumLike(version, collectionVersions, {
+      ...options.minMax.inputStrings,
       inputDisplayName: 'version'
     });
   }
@@ -155,8 +146,15 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
+  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-  const updatedVersion = normalizedVersion || (version && String(version).trim()) || latestVersion;
+
+  assertInput(
+    !version || Boolean(normalizedVersion),
+    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
+  );
+
+  const updatedVersion = normalizedVersion || latestVersion;
   const { byResource } = await filterPatternFly.memo({ version: updatedVersion, section, category });
 
   const docsIndex = Array.from(byResource.values())

@@ -6,7 +6,6 @@ import { stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
 import {
   uriCollectionComplete,
@@ -15,7 +14,10 @@ import {
   uriSectionComplete,
   uriVersionComplete
 } from './resource.patternFlyDocsIndex';
-import { formatContentForMarkdown } from './resource.helpers';
+import {
+  formatContentForMarkdown,
+  normalizeEnumeratedCollectionVersion
+} from './resource.helpers';
 
 /**
  * Name of the resource template.
@@ -94,7 +96,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const normalizedVersion = await normalizeEnumeratedCollectionVersion.memo(version, collection);
   const updatedVersion = normalizedVersion || (version && String(version).trim()) || undefined;
   const updatedName = name.trim();
 
