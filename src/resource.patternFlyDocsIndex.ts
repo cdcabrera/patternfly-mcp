@@ -46,18 +46,19 @@ const CONFIG = {
  * @returns The list of available resources.
  */
 const listResources = async () => {
-  const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
+  const { byCollection } = await getPatternFlyMcpResources.memo();
   const resources: McpResourceListResult[] = [];
 
-  Object.entries(byVersion)
-    .filter(([version]) => availableVersions.includes(version))
+  Object.entries(byCollection)
     .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version]) => {
+    .forEach(([collection, entry]) => {
+      const displayCollection = entry[0]?.displayCollection || collection;
+
       resources.push({
-        uri: `patternfly://docs/index?version=${encodeURIComponent(version)}`,
+        uri: `patternfly://docs/index?collection=${encodeURIComponent(collection)}`,
         mimeType: 'text/markdown',
-        name: `Docs Index (${version})`,
-        description: `Documentation entry point for resource version ${version}. ${URI_DESCRIPTION}`
+        name: `Docs Index for ${displayCollection}`,
+        description: `Documentation entry point for collection ${collection}. ${URI_DESCRIPTION}`
       });
     });
 
@@ -66,8 +67,8 @@ const listResources = async () => {
       {
         uri: 'patternfly://docs/index',
         mimeType: 'text/markdown',
-        name: 'Docs Index (Latest)',
-        description: `Documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
+        name: 'Docs Index',
+        description: `Documentation entry point for collections. This is the recommended starting point. ${URI_DESCRIPTION}`
       },
       ...resources.sort((a, b) => a.name.localeCompare(b.name))
     ]

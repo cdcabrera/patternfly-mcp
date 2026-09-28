@@ -48,7 +48,7 @@ describe('patternFlyDocsIndexResource', () => {
 
 describe('listResources', () => {
   it('should return a list of resources', async () => {
-    MockMcpResources.mockResolvedValue({ availableVersions: ['v6'], byVersion: { v6: [] } } as any);
+    MockMcpResources.mockResolvedValue({ byCollection: { 'patternfly-docs': [] } } as any);
 
     const resources = await listResources();
 
