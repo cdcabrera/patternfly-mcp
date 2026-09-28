@@ -13,6 +13,7 @@ import {
   isScriptLike,
   isShellLike,
   isXmlLike,
+  normalizeEnumeratedCollectionVersion,
   stringToCase,
   paramCompletion
 } from '../resource.helpers';
@@ -681,6 +682,165 @@ describe('stringToCase', () => {
     }
   ])('should convert string case, $description', ({ input, options, expected }) => {
     expect(stringToCase(input, options as any)).toBe(expected);
+  });
+});
+
+describe('normalizeEnumeratedCollectionVersion', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    MockMcpResources.mockResolvedValue({
+      collectionVersions: ['v4', 'v5', 'v6', '1.0.0', '2.0.0'],
+      versionsByCollection: {
+        'patternfly-docs': ['v4', 'v5', 'v6'],
+        'patternfly-api': ['1.0.0', '2.0.0'],
+        'ai-handbook': []
+      }
+    } as any);
+  });
+
+  it.each([
+    {
+      description: 'exact semver match in collectionVersions',
+      version: '6.0.0',
+      collection: undefined,
+      expected: 'v6'
+    },
+    {
+      description: 'semver fallback matching major tag',
+      version: '6.4.10',
+      collection: undefined,
+      expected: 'v6'
+    },
+    {
+      description: 'semver matching non-v prefixed version in target collection',
+      version: '2.0.0',
+      collection: 'patternfly-api',
+      expected: '2.0.0'
+    },
+    {
+      description: 'semver with minor/patch resolving to major number string',
+      version: '1.2.3',
+      collection: 'patternfly-api',
+      expected: undefined
+    },
+    {
+      description: 'exact version tag match',
+      version: 'v6',
+      collection: undefined,
+      expected: 'v6'
+    },
+    {
+      description: 'case insensitive version matching',
+      version: 'V6',
+      collection: undefined,
+      expected: 'v6'
+    },
+    {
+      description: 'version string with whitespace',
+      version: '  v5  ',
+      collection: undefined,
+      expected: 'v5'
+    },
+    {
+      description: 'adding "v" prefix if present in collection versions',
+      version: '6',
+      collection: 'patternfly-docs',
+      expected: 'v6'
+    },
+    {
+      description: 'stripping "v" prefix if non-v tag is in collection versions',
+      version: 'v1.0.0',
+      collection: 'patternfly-api',
+      expected: '1.0.0'
+    },
+    {
+      description: 'resolving "latest" when collection is specified',
+      version: 'latest',
+      collection: 'patternfly-docs',
+      expected: 'v6'
+    },
+    {
+      description: 'resolving "current" when collection is specified',
+      version: 'current',
+      collection: 'patternfly-docs',
+      expected: 'v6'
+    },
+    {
+      description: 'resolving "latest" for non-v prefixed collection',
+      version: 'latest',
+      collection: 'patternfly-api',
+      expected: '2.0.0'
+    },
+    {
+      description: 'resolving "latest" for collection with no versions returns undefined',
+      version: 'latest',
+      collection: 'ai-handbook',
+      expected: undefined
+    },
+    {
+      description: 'resolving "latest" without a collection returns undefined',
+      version: 'latest',
+      collection: undefined,
+      expected: undefined
+    },
+    {
+      description: 'resolving "current" without a collection returns undefined',
+      version: 'current',
+      collection: undefined,
+      expected: undefined
+    },
+    {
+      description: 'version not present in specified collection',
+      version: '1.0.0',
+      collection: 'patternfly-docs',
+      expected: undefined
+    },
+    {
+      description: 'version present across collectionVersions when collection is omitted',
+      version: '1.0.0',
+      collection: undefined,
+      expected: '1.0.0'
+    },
+    {
+      description: 'unknown version string',
+      version: 'unknown',
+      collection: undefined,
+      expected: undefined
+    },
+    {
+      description: 'empty string version',
+      version: '',
+      collection: undefined,
+      expected: undefined
+    },
+    {
+      description: 'null version',
+      version: null,
+      collection: undefined,
+      expected: undefined
+    },
+    {
+      description: 'undefined version',
+      version: undefined,
+      collection: undefined,
+      expected: undefined
+    },
+    {
+      description: 'non-string version type',
+      version: 12345,
+      collection: undefined,
+      expected: undefined
+    }
+  ])('should normalize a version string across collections, $description',
+    async ({ version, collection, expected }) => {
+      const result = await normalizeEnumeratedCollectionVersion(version as any, collection);
+
+      expect(result).toBe(expected);
+    }
+  );
+
+  it('should have a memoized property', () => {
+    expect(normalizeEnumeratedCollectionVersion).toHaveProperty('memo');
   });
 });
 
