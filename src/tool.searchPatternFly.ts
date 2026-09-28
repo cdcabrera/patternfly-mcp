@@ -253,7 +253,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
     };
   };
 
-  const availableCollections: string[] = (getPatternFlyCollection() as any)?.keys();
+  const availableCollections: string[] = (getPatternFlyCollection() as any)?.keys?.() || [];
   const optionalSchema = availableCollections.length > 1
     ? {
       collection: z.enum([...availableCollections, ''])
