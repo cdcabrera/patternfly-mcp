@@ -1,6 +1,5 @@
 import semver from 'semver';
 import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { isPlainObject } from './server.helpers';
 import { memo } from './server.caching';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
@@ -609,7 +608,10 @@ const normalizeEnumeratedCollectionVersion = async (version?: string, collection
 
   if (trimmedVersion === 'latest' || trimmedVersion === 'current') {
     if (collection && versionsByCollection[collection]?.length) {
-      return versionsByCollection[collection][0];
+      const versions = [...(versionsByCollection[collection] || [])].sort((a, b) =>
+        b.localeCompare(a, undefined, { sensitivity: 'base' }));
+
+      return versions.length ? versions[0] : undefined;
     }
 
     return undefined;

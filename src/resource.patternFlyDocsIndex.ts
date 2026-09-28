@@ -10,9 +10,8 @@ import { buildSearchString, stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
-import { paramCompletion } from './resource.helpers';
+import { paramCompletion, normalizeEnumeratedCollectionVersion } from './resource.helpers';
 
 /**
  * Name of the resource.
@@ -231,7 +230,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const normalizedVersion = await normalizeEnumeratedCollectionVersion.memo(version, collection);
   const updatedVersion = normalizedVersion || (version && String(version).trim()) || undefined;
 
   const { byResource } = await filterPatternFly.memo({
