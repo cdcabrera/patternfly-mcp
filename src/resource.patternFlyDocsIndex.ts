@@ -10,9 +10,8 @@ import { buildSearchString, stringJoin } from './server.helpers';
 import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
-import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { filterPatternFly } from './patternFly.search';
-import { paramCompletion } from './resource.helpers';
+import { paramCompletion, normalizeEnumeratedCollectionVersion } from './resource.helpers';
 
 /**
  * Name of the resource.
@@ -27,14 +26,14 @@ const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section,collecti
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly version, category, section, and collection. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by resource version, category, section, and collection. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Documentation Index',
-  description: `A list of PatternFly documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
+  description: `A list of documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown'
 };
 
@@ -46,18 +45,19 @@ const CONFIG = {
  * @returns The list of available resources.
  */
 const listResources = async () => {
-  const { availableVersions, byVersion } = await getPatternFlyMcpResources.memo();
+  const { byCollection } = await getPatternFlyMcpResources.memo();
   const resources: McpResourceListResult[] = [];
 
-  Object.entries(byVersion)
-    .filter(([version]) => availableVersions.includes(version))
+  Object.entries(byCollection)
     .sort(([a], [b]) => b.localeCompare(a))
-    .forEach(([version]) => {
+    .forEach(([collection, entry]) => {
+      const displayCollection = entry[0]?.displayCollection || collection;
+
       resources.push({
-        uri: `patternfly://docs/index?version=${encodeURIComponent(version)}`,
+        uri: `patternfly://docs/index?collection=${encodeURIComponent(collection)}`,
         mimeType: 'text/markdown',
-        name: `Docs Index (${version})`,
-        description: `Documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
+        name: `Docs Index for ${displayCollection}`,
+        description: `Documentation entry point for collection ${collection}. ${URI_DESCRIPTION}`
       });
     });
 
@@ -66,8 +66,8 @@ const listResources = async () => {
       {
         uri: 'patternfly://docs/index',
         mimeType: 'text/markdown',
-        name: 'Docs Index (Latest)',
-        description: `Documentation entry point for the latest PatternFly version. This is the recommended starting point. ${URI_DESCRIPTION}`
+        name: 'Docs Index',
+        description: `Documentation entry point for collections. This is the recommended starting point. ${URI_DESCRIPTION}`
       },
       ...resources.sort((a, b) => a.name.localeCompare(b.name))
     ]
@@ -172,6 +172,9 @@ const uriCollectionComplete: McpResourceMetadataCompleteMemo = async (collection
   return collections;
 };
 
+/**
+ * Memoized version of uriCollectionComplete.
+ */
 uriCollectionComplete.memo = memo(uriCollectionComplete);
 
 /**
@@ -227,7 +230,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
+  const normalizedVersion = await normalizeEnumeratedCollectionVersion.memo(version, collection);
   const updatedVersion = normalizedVersion || (version && String(version).trim()) || undefined;
 
   const { byResource } = await filterPatternFly.memo({
@@ -322,7 +325,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
       metaConfig: {
         uri: 'patternfly://docs/meta{?version}',
         title: `${CONFIG.title} Metadata`,
-        description: 'Use these parameters to filter the PatternFly documentation index.'
+        description: 'Use these parameters to filter the documentation index.'
       }
     }
   ];
