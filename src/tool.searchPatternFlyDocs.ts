@@ -157,14 +157,8 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     };
   };
 
-  const availableCollections: string[] = (getPatternFlyCollection() as any)?.keys?.() || [];
-  const optionalSchema = availableCollections.length > 1
-    ? {
-      collection: z.enum([...availableCollections, ''])
-        .optional()
-        .describe(`Filter results by a primary collection of records (e.g. ${availableCollections.map(value => `"${value}"`).join(', ')})`)
-    }
-    : {};
+  const getCollections: string[] = Object.keys(getPatternFlyCollection() || {});
+  const availableCollections = getCollections.length ? getCollections : ['patternfly-docs', 'patternfly-component-schemas', 'patternfly-api'];
 
   return [
     'searchPatternFlyDocs',
@@ -185,7 +179,9 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           .min(options.minMax.inputStrings.min)
           .max(options.minMax.inputStrings.max)
           .describe('Case-insensitive query for full or partial keywords, resource names, versions and more (e.g., "button", "card v6", "react", "*")'),
-        ...optionalSchema
+        collection: z.string()
+          .optional()
+          .describe(`Filter results by a primary collection of records (e.g. ${availableCollections.map(value => `"${value}"`).join(', ')})`)
       }
     },
     callback,
