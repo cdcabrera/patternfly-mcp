@@ -1,6 +1,9 @@
+import semver from 'semver';
 import { filterPatternFly, type FilterPatternFlyFilters } from './patternFly.search';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
 import { isPlainObject } from './server.helpers';
+import { memo } from './server.caching';
+import { getPatternFlyMcpResources } from './patternFly.getResources';
 
 /**
  * Common default regex to tokenize mixed string formats (kebab, snake, camel, spaces, punctuation).
@@ -583,12 +586,82 @@ const formatContentForMarkdown = (
 };
 
 /**
+ * Normalize a version string across collections or for a specific collection.
+ *
+ * @note Parallels behavior found in {@link normalizeEnumeratedPatternFlyVersion} but for
+ * all collections. Also requires collection scope returned from
+ * {@link getPatternFlyMcpResources}. Not providing a collection removes the ability to
+ * resolve for a "latest" version.
+ *
+ * @param version - Version string or alias ('latest', 'current') to normalize.
+ * @param [collection] - Optional collection name to scope "latest" version resolution.
+ * @returns A resolved version string, or `undefined` if no match is found.
+ */
+const normalizeEnumeratedCollectionVersion = async (version?: string, collection?: string): Promise<string | undefined> => {
+  if (!version || typeof version !== 'string') {
+    return undefined;
+  }
+
+  const { collectionVersions, versionsByCollection } = await getPatternFlyMcpResources.memo();
+  const trimmedVersion = version.toLowerCase().trim();
+
+  const targetVersions = (collection && versionsByCollection[collection]) || collectionVersions;
+
+  if (trimmedVersion === 'latest' || trimmedVersion === 'current') {
+    if (collection && versionsByCollection[collection]?.length) {
+      return versionsByCollection[collection][0];
+    }
+
+    return undefined;
+  }
+
+  // Exact match in target versions
+  if (targetVersions.includes(trimmedVersion)) {
+    return trimmedVersion;
+  }
+
+  // Check 'v' prefix variations (e.g. '6' -> 'v6' or 'v1.0' -> '1.0')
+  const withV = `v${trimmedVersion}`;
+
+  if (targetVersions.includes(withV)) {
+    return withV;
+  }
+
+  const withoutV = trimmedVersion.startsWith('v') ? trimmedVersion.slice(1) : undefined;
+
+  if (withoutV && targetVersions.includes(withoutV)) {
+    return withoutV;
+  }
+
+  // Semver major match fallback (e.g. '6.1.0' -> 'v6')
+  if (trimmedVersion.includes('.')) {
+    const major = semver.coerce(trimmedVersion)?.major;
+
+    if (major !== undefined) {
+      if (targetVersions.includes(`v${major}`)) {
+        return `v${major}`;
+      }
+      if (targetVersions.includes(String(major))) {
+        return String(major);
+      }
+    }
+  }
+
+  return undefined;
+};
+
+/**
+ * Memoized version of normalizeCollectionVersion.
+ */
+normalizeEnumeratedCollectionVersion.memo = memo(normalizeEnumeratedCollectionVersion);
+
+/**
  * Centralized completion logic for PatternFly resources.
  *
  * @param {FilterPatternFlyFilters} filters
  */
 const paramCompletion = async (filters: FilterPatternFlyFilters) => {
-  const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(filters.version);
+  const normalizedVersion = await normalizeEnumeratedCollectionVersion.memo(filters.version, filters.collection);
   const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion || filters.version });
 
   const collections = new Set<string>();
@@ -649,6 +722,7 @@ export {
   isScriptLike,
   isShellLike,
   isXmlLike,
+  normalizeEnumeratedCollectionVersion,
   paramCompletion,
   stringToCase,
   DEFAULT_STRING_SPLIT_REGEX,
