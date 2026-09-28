@@ -1,6 +1,6 @@
 import { getComponentSchema } from '@patternfly/patternfly-component-schemas/json';
 import { memo } from './server.caching';
-import {buildSearchString, freezeObject, generateHash} from './server.helpers';
+import { buildSearchString, freezeObject, generateHash } from './server.helpers';
 import { DEFAULT_OPTIONS } from './options.defaults';
 import {
   getPatternFlyVersionContext,
@@ -722,7 +722,7 @@ const getPatternFlyComponentSchema = async (componentName: string) => {
 getPatternFlyComponentSchema.memo = memo(getPatternFlyComponentSchema, DEFAULT_OPTIONS.toolMemoOptions.usePatternFlyDocs);
 
 /**
- * Return a registerd collection by name or all registered collections.
+ * Return a registered collection by name or all registered collections.
  *
  * @param [name] - Collection name.
  * @returns - Either a registered collection or undefined if not found, or all registered collections as an object.
