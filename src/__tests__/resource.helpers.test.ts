@@ -694,23 +694,24 @@ describe('paramCompletion', () => {
       description: 'aggregates, sorts, and de-duplicates fields',
       version: 'v6',
       byEntry: [
-        { name: 'Table', category: 'data', section: 'components', version: 'v6', uriSchemas: 'patternfly://schemas/v6/table' },
-        { name: 'Button', category: 'actions', section: 'components', version: 'v6', uriSchemas: undefined },
-        { name: 'Button', category: 'actions', section: 'components', version: 'v6', uriSchemas: undefined }
+        { name: 'Table', category: 'data', section: 'components', version: 'v6', collection: 'patternfly-docs', uriSchemas: 'patternfly://schemas/v6/table' },
+        { name: 'Button', category: 'actions', section: 'components', version: 'v6', collection: 'patternfly-docs', uriSchemas: undefined },
+        { name: 'Button', category: 'actions', section: 'components', version: 'v6', collection: 'patternfly-docs', uriSchemas: undefined }
       ],
       expected: {
-        names: ['Button', 'Table'],
         categories: ['actions', 'data'],
+        collections: ['patternfly-docs'],
+        names: ['Button', 'Table'],
+        schemas: ['Table'],
         sections: ['components'],
-        versions: ['v6'],
-        schemas: ['Table']
+        versions: ['v6']
       }
     },
     {
       description: 'returns empty arrays when there are no entries',
       version: undefined,
       byEntry: [],
-      expected: { names: [], categories: [], sections: [], versions: [], schemas: [] }
+      expected: { categories: [], collections: [], names: [], schemas: [], sections: [], versions: [] }
     },
     {
       description: 'skips non-string fields',
@@ -718,7 +719,7 @@ describe('paramCompletion', () => {
       byEntry: [
         { name: 123, category: null, section: undefined, version: 'v6', uriSchemas: 'x' }
       ],
-      expected: { names: [], categories: [], sections: [], versions: ['v6'], schemas: [] }
+      expected: { categories: [], collections: [], names: [], schemas: [], sections: [], versions: ['v6'] }
     }
   ])('should return completion sets, $description', async ({ version, byEntry, expected }) => {
     MockFilter.mockResolvedValue({ byEntry, byResource: new Map() } as any);

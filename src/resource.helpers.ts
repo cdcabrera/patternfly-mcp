@@ -591,6 +591,7 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(filters.version);
   const { byEntry } = await filterPatternFly.memo({ ...filters, version: normalizedVersion || filters.version });
 
+  const collections = new Set<string>();
   const names = new Set<string>();
   const categories = new Set<string>();
   const sections = new Set<string>();
@@ -598,6 +599,10 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   const schemas = new Set<string>();
 
   for (const entry of byEntry) {
+    if (typeof entry.collection === 'string') {
+      collections.add(entry.collection);
+    }
+
     if (typeof entry.name === 'string') {
       names.add(entry.name);
     }
@@ -620,8 +625,9 @@ const paramCompletion = async (filters: FilterPatternFlyFilters) => {
   }
 
   return {
-    names: Array.from(names).sort(),
     categories: Array.from(categories).sort(),
+    collections: Array.from(collections).sort(),
+    names: Array.from(names).sort(),
     schemas: Array.from(schemas).sort(),
     sections: Array.from(sections).sort(),
     versions: Array.from(versions).sort()

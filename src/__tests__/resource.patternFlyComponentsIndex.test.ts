@@ -78,7 +78,7 @@ describe('resourceCallback', () => {
       expected: 'category=accessibility'
     }
   ])('should return context content, $description', async ({ variables, expected }) => {
-    MockMcpResources.mockResolvedValue({ availableVersions: ['v6'], latestVersion: 'v6' } as any);
+    MockMcpResources.mockResolvedValue({ availableVersions: ['v6'], collectionVersions: ['v6'], latestVersion: 'v6' } as any);
     MockFilter.mockResolvedValue({
       byResource: new Map([
         ['button', { name: 'Button', uri: 'patternfly://components/button' }]
@@ -98,10 +98,10 @@ describe('resourceCallback', () => {
       variables: {
         version: 'v5'
       },
-      error: 'Invalid PatternFly version'
+      error: '"version" must be one of the following values'
     }
   ])('should handle variable errors, $description', async ({ error, variables }) => {
-    MockMcpResources.mockResolvedValue({ availableVersions: ['v6'], latestVersion: 'v6' } as any);
+    MockMcpResources.mockResolvedValue({ availableVersions: ['v6'], collectionVersions: ['v6'], latestVersion: 'v6' } as any);
     MockFilter.mockResolvedValue({ byResource: new Map() } as any);
 
     await expect(resourceCallback(undefined as any, variables as any)).rejects.toThrow(McpError);

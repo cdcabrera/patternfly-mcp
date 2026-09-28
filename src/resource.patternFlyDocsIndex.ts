@@ -7,7 +7,7 @@ import {
 } from './mcpSdk';
 import { memo } from './server.caching';
 import { buildSearchString, stringJoin } from './server.helpers';
-import { assertInput, assertInputStringLength } from './server.assertions';
+import { assertInput, assertInputStringLength, assertInputStringNumberEnumLike } from './server.assertions';
 import { getOptions, runWithOptions } from './options.context';
 import { getPatternFlyMcpResources } from './patternFly.getResources';
 import { normalizeEnumeratedPatternFlyVersion } from './patternFly.helpers';
@@ -22,12 +22,12 @@ const NAME = 'patternfly-docs-index';
 /**
  * URI template for the resource.
  */
-const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section}';
+const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section,collection}';
 
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly version, category, and section. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by PatternFly version, category, section, and collection. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
@@ -90,8 +90,8 @@ listResources.memo = memo(listResources);
  * @returns The list of available names.
  */
 const uriNameComplete: McpResourceMetadataCompleteMemo = async (name: string, context) => {
-  const { version, category, section } = context?.arguments || {};
-  const { names } = await paramCompletion({ category, name, section, version });
+  const { collection, version, category, section } = context?.arguments || {};
+  const { names } = await paramCompletion({ category, collection, name, section, version });
 
   return names;
 };
@@ -109,8 +109,8 @@ uriNameComplete.memo = memo(uriNameComplete);
  * @returns The list of available categories, or an empty list.
  */
 const uriCategoryComplete: McpResourceMetadataCompleteMemo = async (category: string, context) => {
-  const { version, section, name } = context?.arguments || {};
-  const { categories } = await paramCompletion({ category, name, section, version });
+  const { collection, version, section, name } = context?.arguments || {};
+  const { categories } = await paramCompletion({ category, collection, name, section, version });
 
   return categories;
 };
@@ -128,8 +128,8 @@ uriCategoryComplete.memo = memo(uriCategoryComplete);
  * @returns The list of available sections, or an empty list.
  */
 const uriSectionComplete: McpResourceMetadataCompleteMemo = async (section: string, context) => {
-  const { version, category, name } = context?.arguments || {};
-  const { sections } = await paramCompletion({ category, name, section, version });
+  const { collection, version, category, name } = context?.arguments || {};
+  const { sections } = await paramCompletion({ category, collection, name, section, version });
 
   return sections;
 };
@@ -147,8 +147,8 @@ uriSectionComplete.memo = memo(uriSectionComplete);
  * @returns The list of available versions, or an empty list.
  */
 const uriVersionComplete: McpResourceMetadataCompleteMemo = async (version: string, context) => {
-  const { section, category, name } = context?.arguments || {};
-  const { versions } = await paramCompletion({ category, name, section, version });
+  const { collection, section, category, name } = context?.arguments || {};
+  const { versions } = await paramCompletion({ category, collection, name, section, version });
 
   return versions;
 };
@@ -157,6 +157,22 @@ const uriVersionComplete: McpResourceMetadataCompleteMemo = async (version: stri
  * Memoized version of uriVersionComplete.
  */
 uriVersionComplete.memo = memo(uriVersionComplete);
+
+/**
+ * Collection completion callback for the URI template.
+ *
+ * @param collection - The value to filter-by/complete.
+ * @param context - The completion context containing arguments for the URI template.
+ * @returns The list of available collections, or an empty list.
+ */
+const uriCollectionComplete: McpResourceMetadataCompleteMemo = async (collection: string, context) => {
+  const { category, name, section, version } = context?.arguments || {};
+  const { collections } = await paramCompletion({ category, collection, name, section, version });
+
+  return collections;
+};
+
+uriCollectionComplete.memo = memo(uriCollectionComplete);
 
 /**
  * Resource callback for the documentation index.
@@ -172,11 +188,27 @@ uriVersionComplete.memo = memo(uriVersionComplete);
  * @returns The resource contents.
  */
 const resourceCallback = async (passedUri: URL, variables: Record<string, string | string[]>, options = getOptions()) => {
-  const { category, version, section } = variables || {};
+  const { category, collection, version, section } = variables || {};
+
+  if (collection) {
+    assertInputStringLength(collection, {
+      ...options.minMax.inputStrings,
+      inputDisplayName: 'collection'
+    });
+  }
 
   if (version) {
     assertInputStringLength(version, {
-      ...options.minMax.inputStrings,
+      max: options.minMax.inputStrings.max,
+      min: 2,
+      inputDisplayName: 'version'
+    });
+  }
+
+  const { collectionVersions } = await getPatternFlyMcpResources.memo();
+
+  if (version) {
+    assertInputStringNumberEnumLike(version, collectionVersions, {
       inputDisplayName: 'version'
     });
   }
@@ -195,17 +227,11 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
     });
   }
 
-  const { availableVersions, latestVersion } = await getPatternFlyMcpResources.memo();
   const normalizedVersion = await normalizeEnumeratedPatternFlyVersion.memo(version);
-
-  assertInput(
-    !version || Boolean(normalizedVersion),
-    `Invalid PatternFly version "${version?.trim()}". Available versions are: ${availableVersions.join(', ')}`
-  );
-
-  const updatedVersion = normalizedVersion || latestVersion;
+  const updatedVersion = normalizedVersion || (version && String(version).trim()) || undefined;
 
   const { byResource } = await filterPatternFly.memo({
+    collection,
     version: updatedVersion,
     category,
     section
@@ -219,7 +245,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
       const version = firstEntry?.version || updatedVersion;
       const categories = new Set(resource.entries.map(entry => entry.displayCategory));
       const categoryList = Array.from(categories).sort().join(', ');
-      const searchString = buildSearchString({ section, category }, { prefix: true, base: resource.uri });
+      const searchString = buildSearchString({ category, collection, section }, { prefix: true, base: resource.uri });
 
       return `${index + 1}. [${resource.name} - ${categoryList} (${version})](${resource.uri}${searchString || ''})`;
     });
@@ -243,7 +269,7 @@ const resourceCallback = async (passedUri: URL, variables: Record<string, string
   );
 
   const allDocs = stringJoin.newline(
-    `# PatternFly Documentation Index for "${updatedVersion}"`,
+    (updatedVersion && `# Documentation Index for "${updatedVersion}"`) || `# Documentation Index`,
     '',
     '',
     ...(docsIndex || [])
@@ -274,6 +300,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
 
   const complete: { [callback: string]: McpResourceMetadataComplete } = {
     category: async (...args) => runWithOptions(options, async () => uriCategoryComplete.memo(...args)),
+    collection: async (...args) => runWithOptions(options, async () => uriCollectionComplete.memo(...args)),
     section: async (...args) => runWithOptions(options, async () => uriSectionComplete.memo(...args)),
     version: async (...args) => runWithOptions(options, async () => uriVersionComplete.memo(...args))
   };
@@ -305,6 +332,7 @@ export {
   patternFlyDocsIndexResource,
   listResources,
   resourceCallback,
+  uriCollectionComplete,
   uriCategoryComplete,
   uriNameComplete,
   uriSectionComplete,
