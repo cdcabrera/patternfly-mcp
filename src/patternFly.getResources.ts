@@ -151,7 +151,6 @@ type PatternFlyMcpResourceMetadata = {
   entries: (PatternFlyMcpDocsCatalogDoc & PatternFlyMcpDocsMeta)[];
   versions: Record<string, Omit<PatternFlyMcpResourceMetadata, 'name' | 'versions'>>;
   groupId: string;
-
   isSchemasAvailable: boolean | undefined;
   uri: string | undefined;
   uriSchemas: string | undefined;
@@ -167,7 +166,10 @@ type PatternFlyMcpResourceMetadata = {
  * @interface PatternFlyMcpAvailableDocs
  * @extends PatternFlyVersionContext
  *
- * @property collections = List of available collection names.
+ * @property collections - List of available collection names.
+ * @property collectionVersions - List of all available documentation/resource versions across all collections. There can be
+ *     overlapping versions across collections.
+ * @property versionsByCollection - List of all available documentation/resource versions by collection.
  * @property resources - Patternfly available documentation and metadata by resource name.
  * @property docsIndex - `@deprecated Under review. Use Array.from(resources.keys()) instead`. Patternfly available documentation index.
  * @property componentsIndex - `@deprecated Under review. Use keywordsIndex for search or byVersionComponentNames for lookups`.
@@ -185,7 +187,7 @@ type PatternFlyMcpResourceMetadata = {
  */
 interface PatternFlyMcpAvailableResources extends PatternFlyVersionContext {
   collections: string[];
-  versions: string[];
+  collectionVersions: string[];
   versionsByCollection: Record<string, string[]>;
   resources: Map<string, PatternFlyMcpResourceMetadata>;
   docsIndex: string[];
@@ -513,7 +515,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     ...setCollectionName('patternfly-api', apiCollection)
   ];
 
-  const availableVersionsSet = new Set<string>();
+  const availableCollectionVersionsSet = new Set<string>();
   const versionsByCollection: Record<string, string[]> = {};
   const resources = new Map<string, PatternFlyMcpResourceMetadata>();
   const byPath: PatternFlyMcpResourcesByPath = {};
@@ -551,13 +553,14 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     (entries as any[]).forEach(entry => {
       const collection = entry.collection || collectionName;
       const displayCollection = availableCollections.get(collection);
-      const rawVersion = entry.version;
+      const baseVersion = entry.version;
 
-      if (rawVersion) {
-        const normalizedVer = rawVersion.toLowerCase();
+      if (baseVersion) {
+        const normalizedVer = baseVersion.toLowerCase();
 
-        availableVersionsSet.add(normalizedVer);
+        availableCollectionVersionsSet.add(normalizedVer);
         versionsByCollection[collection] ??= [];
+
         if (!versionsByCollection[collection].includes(normalizedVer)) {
           versionsByCollection[collection].push(normalizedVer);
         }
@@ -683,7 +686,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   return {
     ...versionContext,
     collections: Array.from(availableCollections.keys()).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
-    versions: Array.from(availableVersionsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+    collectionVersions: Array.from(availableCollectionVersionsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
     versionsByCollection,
     resources,
     // @deprecated docsIndex - Under review

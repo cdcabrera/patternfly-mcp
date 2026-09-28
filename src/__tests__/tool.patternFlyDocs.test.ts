@@ -45,7 +45,7 @@ describe('usePatternFlyDocsTool, callback', () => {
       latestVersion: 'v6',
       latestSchemasVersion: 'v6',
       collections: ['patternfly-docs', 'patternfly-component-schemas', 'patternfly-api'],
-      versions: ['v4', 'v5', 'v6'],
+      collectionVersions: ['v4', 'v5', 'v6'],
       versionsByCollection: { 'patternfly-docs': ['v4', 'v5', 'v6'] },
       byPath: {
         'components/loremButton.md': { name: 'button', version: 'v6', displayName: 'Button' }

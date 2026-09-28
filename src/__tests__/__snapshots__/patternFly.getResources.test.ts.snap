@@ -20,7 +20,7 @@ exports[`getPatternFlyMcpResources should return multiple organized facets: prop
   "isEnvTheLatestVersion",
   "isEnvTheLatestSchemasVersion",
   "collections",
-  "versions",
+  "collectionVersions",
   "versionsByCollection",
   "resources",
   "docsIndex",

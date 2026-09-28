@@ -62,7 +62,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
       }
     }
 
-    const { latestVersion, latestSchemasVersion, byPath, versions } = await getPatternFlyMcpResources.memo();
+    const { collectionVersions } = await getPatternFlyMcpResources.memo();
 
     if (isVersion) {
       assertInputStringLength(version, {
@@ -71,16 +71,15 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
         inputDisplayName: 'version'
       });
 
-      const allowedVersions = versions?.length ? versions : options.patternflyOptions.availableSearchVersions;
-
-      assertInputStringNumberEnumLike(version, allowedVersions, {
+      assertInputStringNumberEnumLike(version, collectionVersions, {
         inputDisplayName: 'version'
       });
     }
 
     const updatedUrlList: string[] = isUrlList ? urlList.slice(0, options.minMax.docsToLoad.max) : [];
+    const { latestSchemasVersion, byPath } = await getPatternFlyMcpResources.memo();
     const normalizedVersion = await normalizeEnumeratedPatternFlyVersion(version);
-    const updatedVersion = normalizedVersion || (isVersion ? version : latestVersion);
+    const updatedVersion = normalizedVersion || (isVersion && version) || undefined;
     const updatedName = name?.trim();
 
     const pfUris: string[] = [];
@@ -129,7 +128,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
     const docResults: string[] = [];
 
     const addSchemaResult = async (
-      { name: componentName, displayName, version }: { name: string; displayName: string; version: string }
+      { name: componentName, displayName, version }: { name: string; displayName: string; version?: string | undefined }
     ) => {
       if (schemasSeen.has(componentName)) {
         return;
@@ -140,7 +139,7 @@ const usePatternFlyDocsTool = (options = getOptions()): McpTool => {
 
       if (schema) {
         schemaResults.push(stringJoin.newline(
-          `# Component Schema for ${displayName} (${version})`,
+          `# Component Schema for ${displayName}${version ? ` (${version})` : ''}`,
           `This machine-readable JSON schema defines the component's props, types, and validation rules.`,
           '```json',
           JSON.stringify(schema, null, 2),
