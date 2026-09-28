@@ -27,14 +27,14 @@ const URI_TEMPLATE = 'patternfly://docs/index{?version,category,section,collecti
 /**
  * URI description for the resource.
  */
-const URI_DESCRIPTION = `Filter by PatternFly version, category, section, and collection. ${URI_TEMPLATE}`;
+const URI_DESCRIPTION = `Filter by resource version, category, section, and collection. ${URI_TEMPLATE}`;
 
 /**
  * Resource configuration.
  */
 const CONFIG = {
   title: 'PatternFly Documentation Index',
-  description: `A list of PatternFly documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
+  description: `A list of documentation links including accessibility, components, charts, development, writing, and AI guidance files. ${URI_DESCRIPTION}`,
   mimeType: 'text/markdown'
 };
 
@@ -57,7 +57,7 @@ const listResources = async () => {
         uri: `patternfly://docs/index?version=${encodeURIComponent(version)}`,
         mimeType: 'text/markdown',
         name: `Docs Index (${version})`,
-        description: `Documentation entry point for PatternFly version ${version}. ${URI_DESCRIPTION}`
+        description: `Documentation entry point for resource version ${version}. ${URI_DESCRIPTION}`
       });
     });
 
@@ -172,6 +172,9 @@ const uriCollectionComplete: McpResourceMetadataCompleteMemo = async (collection
   return collections;
 };
 
+/**
+ * Memoized version of uriCollectionComplete.
+ */
 uriCollectionComplete.memo = memo(uriCollectionComplete);
 
 /**
@@ -322,7 +325,7 @@ const patternFlyDocsIndexResource = (options = getOptions()): McpResource => {
       metaConfig: {
         uri: 'patternfly://docs/meta{?version}',
         title: `${CONFIG.title} Metadata`,
-        description: 'Use these parameters to filter the PatternFly documentation index.'
+        description: 'Use these parameters to filter the documentation index.'
       }
     }
   ];
