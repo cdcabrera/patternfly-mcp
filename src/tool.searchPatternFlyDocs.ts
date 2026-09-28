@@ -174,7 +174,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
           .min(options.minMax.inputStrings.min)
           .max(options.minMax.inputStrings.max)
           .describe('Case-insensitive query for full or partial keywords, resource names, versions and more (e.g., "button", "card v6", "react", "*")'),
-        optionalSchema
+        ...optionalSchema
       }
     },
     callback,
