@@ -108,7 +108,7 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
           results.set(record.uriId, {
             type: 'resource_link',
             uri: record.uriId,
-            name: `${record.displayName} - ${record.displayCategory} (${record.displayCollection} ${record.version})`,
+            name: `${record.displayName} - ${record.displayCategory} (${record.version})`,
             description: record.description,
             mimeType: 'text/markdown',
             groupId: result.groupId,
