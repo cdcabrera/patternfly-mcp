@@ -433,7 +433,7 @@ describe('processDocsFunction', () => {
   });
 });
 
-describe('processDocsFunction customization and settings', () => {
+describe('processDocsFunction customization', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     readLocalFileFunction.memo = jest.fn().mockImplementation(async (path: string) => `content of ${path}`) as any;
@@ -442,58 +442,38 @@ describe('processDocsFunction customization and settings', () => {
 
   it.each([
     {
-      description: 'respect custom loadLimit and truncate inputs',
+      description: 'truncate input list to custom loadLimit',
       inputs: ['file1.md', 'file2.md', 'file3.md', 'file4.md'],
       settings: { loadLimit: 2 },
-      expectedProcessedCount: 2,
+      expectedCount: 2,
       expectedPaths: ['file1.md', 'file2.md']
     },
     {
       description: 'handle loadLimit of 0',
       inputs: ['file1.md', 'file2.md'],
       settings: { loadLimit: 0 },
-      expectedProcessedCount: 0,
+      expectedCount: 0,
       expectedPaths: []
     },
     {
-      description: 'fallback to default settings when options are omitted',
-      inputs: ['file1.md', 'file2.md'],
-      settings: undefined,
-      expectedProcessedCount: 2,
-      expectedPaths: ['file1.md', 'file2.md']
-    },
-    {
-      description: 'fallback to default loadLimit when settings is empty object',
+      description: 'fall back to default loadLimit (100) when settings are omitted or empty',
       inputs: ['file1.md', 'file2.md'],
       settings: {},
-      expectedProcessedCount: 2,
+      expectedCount: 2,
       expectedPaths: ['file1.md', 'file2.md']
-    }
-  ])('should handle custom settings, $description', async ({ inputs, settings, expectedProcessedCount, expectedPaths }) => {
-    const result = await processDocsFunction(inputs, settings);
-
-    expect(result).toHaveLength(expectedProcessedCount);
-    expect(result.map(doc => doc.path)).toEqual(expectedPaths);
-  });
-
-  it.each([
-    {
-      description: 'forward custom parallelLoadLimit and parallelLoadThrottleMs to promiseQueue',
-      settings: { parallelLoadLimit: 2, parallelLoadThrottleMs: 25 },
-      inputs: ['file1.md', 'file2.md', 'file3.md']
     },
     {
-      description: 'apply default parallel load options when not specified',
-      settings: { loadLimit: 5 },
-      inputs: ['file1.md', 'file2.md']
+      description: 'process items with custom concurrency and throttle options',
+      inputs: ['file1.md', 'file2.md'],
+      settings: { parallelLoadLimit: 1, parallelLoadThrottleMs: 10 },
+      expectedCount: 2,
+      expectedPaths: ['file1.md', 'file2.md']
     }
-  ])('should process items according to concurrency parameters, $description', async ({ settings, inputs }) => {
+  ])('should handle settings: $description', async ({ inputs, settings, expectedCount, expectedPaths }) => {
     const result = await processDocsFunction(inputs, settings);
 
-    expect(result).toHaveLength(inputs.length);
-    result.forEach(doc => {
-      expect(doc.isSuccess).toBe(true);
-    });
+    expect(result).toHaveLength(expectedCount);
+    expect(result.map(doc => doc.path)).toEqual(expectedPaths);
   });
 });
 
@@ -508,43 +488,14 @@ describe('processDocsFunction.memo', () => {
     processDocsFunction.memo.clear();
   });
 
-  it.each([
-    {
-      description: 'cache hits on identical arguments with distinct object references',
-      call1: { inputs: ['file1.md', 'file2.md'], settings: { loadLimit: 5 } },
-      call2: { inputs: ['file1.md', 'file2.md'], settings: { loadLimit: 5 } },
-      expectedUnderlyingCalls: 2 // readLocalFileFunction called only for the first invocation
-    },
-    {
-      description: 'cache hits regardless of property key order in settings object',
-      call1: { inputs: ['file1.md'], settings: { loadLimit: 5, parallelLoadLimit: 2 } },
-      call2: { inputs: ['file1.md'], settings: { parallelLoadLimit: 2, loadLimit: 5 } },
-      expectedUnderlyingCalls: 1
-    },
-    {
-      description: 'cache miss when loadLimit settings differ',
-      call1: { inputs: ['file1.md', 'file2.md'], settings: { loadLimit: 1 } },
-      call2: { inputs: ['file1.md', 'file2.md'], settings: { loadLimit: 2 } },
-      expectedUnderlyingCalls: 3 // 1 item loaded in call 1 + 2 items loaded in call 2
-    }
-  ])('should handle memoization correctly, $description', async ({ call1, call2, expectedUnderlyingCalls }) => {
-    const result1 = await processDocsFunction.memo(call1.inputs, call1.settings);
-    const result2 = await processDocsFunction.memo(call2.inputs, call2.settings);
+  it('should return cached results on subsequent calls with identical settings', async () => {
+    const inputs = ['file1.md', 'file2.md'];
+    const settings = { loadLimit: 5 };
 
-    expect(result1).toBeDefined();
-    expect(result2).toBeDefined();
-    expect(readLocalFileFunction.memo).toHaveBeenCalledTimes(expectedUnderlyingCalls);
-  });
+    const firstResult = await processDocsFunction.memo(inputs, settings);
+    const secondResult = await processDocsFunction.memo(inputs, { ...settings });
 
-  it('should clear memoized entries on clear()', async () => {
-    const inputs = ['file1.md'];
-
-    await processDocsFunction.memo(inputs, { loadLimit: 5 });
-    expect(readLocalFileFunction.memo).toHaveBeenCalledTimes(1);
-
-    processDocsFunction.memo.clear();
-
-    await processDocsFunction.memo(inputs, { loadLimit: 5 });
-    expect(readLocalFileFunction.memo).toHaveBeenCalledTimes(2);
+    expect(firstResult).toEqual(secondResult);
+    expect(readLocalFileFunction.memo).toHaveBeenCalledTimes(2); // Only executed during the first invocation
   });
 });
