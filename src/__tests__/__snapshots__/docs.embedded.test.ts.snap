@@ -14,16 +14,6 @@ exports[`EMBEDDED_DOCS should export the expected embedded docs structure: docs 
         "source": "github",
         "version": "v6",
       },
-      {
-        "category": "react",
-        "description": "AI skills for PatternFly React development workflows.",
-        "displayName": "PatternFly React AI Skills",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/34913b0c96df0eaf10597717827bb62272726571/plugins/patternfly/pf-react/README.md",
-        "pathSlug": "react-development",
-        "section": "guidelines",
-        "source": "github",
-        "version": "v6",
-      },
     ],
     "patternfly": [
       {
@@ -60,7 +50,7 @@ exports[`EMBEDDED_DOCS should export the expected embedded docs structure: docs 
   },
   "meta": {
     "source": "patternfly-mcp-fallback",
-    "totalDocs": 5,
+    "totalDocs": 4,
     "totalEntries": 2,
   },
 }

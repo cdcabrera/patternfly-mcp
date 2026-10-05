@@ -85,8 +85,6 @@ Fetch full documentation and component JSON schemas for specific PatternFly URLs
 
 The server exposes a resource-centric architecture via the `patternfly://` URI scheme. MCP clients can use these resources directly. [Review the roadmap for future resource updates](./architecture.md#roadmap).
 
-> **Note on AI content**: PatternFly agent skills and plugin guidance are sourced from the [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers) integration. These resources help AI coding tools follow PatternFly workflows. [See Data sources and integrations in architecture](./architecture.md#data-sources-and-integrations).
-
 ### Discovery resources
 
 Use these indexes to discover what is available in the library:

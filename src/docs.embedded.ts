@@ -46,7 +46,7 @@ interface PatternFlyMcpDocsCatalog {
 const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
   meta: {
     totalEntries: 2,
-    totalDocs: 5,
+    totalDocs: 4,
     source: 'patternfly-mcp-fallback'
   },
   docs: {
@@ -91,16 +91,6 @@ const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
         category: 'react',
         source: 'github',
         path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/refs/heads/main/README.md',
-        version: 'v6'
-      },
-      {
-        displayName: 'PatternFly React AI Skills',
-        description: 'AI skills for PatternFly React development workflows.',
-        pathSlug: 'react-development',
-        section: 'guidelines',
-        category: 'react',
-        source: 'github',
-        path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/34913b0c96df0eaf10597717827bb62272726571/plugins/patternfly/pf-react/README.md',
         version: 'v6'
       }
     ]
