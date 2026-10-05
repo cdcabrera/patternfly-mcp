@@ -42,13 +42,13 @@ The server utilizes a centralized **Option Registry** to handle programmatic and
 
 The PatternFly MCP server aggregates content from multiple official sources to provide a comprehensive development resource.
 
-#### PatternFly ai-helpers
-The server integrates the [patternfly/ai-helpers](https://github.com/patternfly/ai-helpers) repository to provide specialized, LLM-optimized guidance. This integration powers several key resource categories:
-- **AI Guidance**: Specialized patterns for React Charts, Chatbot, and general React development.
-- **Styling Standards**: CSS and styling requirements tailored for AI code generation.
-- **Prompt Engineering**: Includes `ai-prompt-guidance.md` to help users write more effective prompts for PatternFly.
+#### UXD AI Helpers
+The server integrates the active [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers) repository, which supersedes the archived `patternfly/ai-helpers` repository. This integration provides:
+- **Agent skills and plugins**: PatternFly development, design, accessibility, and migration workflows for supported AI coding tools.
+- **Marketplace guidance**: Installation and discovery documentation for the available PatternFly and UXD plugins.
+- **Contribution guidance**: Conventions and workflows for creating and maintaining skills.
 
-These helpers are a core part of our [Library synchronization](#library-synchronization-in-progress), acting as the bridge between stable design patterns and dynamic implementation details.
+These helpers complement the documentation library with task-oriented AI workflows.
 
 ### Tools, resources, and prompts as customizable plugins
 
