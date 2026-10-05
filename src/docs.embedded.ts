@@ -94,13 +94,13 @@ const EMBEDDED_DOCS: PatternFlyMcpDocsCatalog = {
         version: 'v6'
       },
       {
-        displayName: 'React Development Rules',
-        description: 'AI guidance for PatternFly React development rules.',
+        displayName: 'PatternFly React AI Skills',
+        description: 'AI skills for PatternFly React development workflows.',
         pathSlug: 'react-development',
         section: 'guidelines',
         category: 'react',
         source: 'github',
-        path: 'https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/README.md',
+        path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/34913b0c96df0eaf10597717827bb62272726571/plugins/patternfly/pf-react/README.md',
         version: 'v6'
       }
     ]

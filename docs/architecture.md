@@ -42,13 +42,13 @@ The server utilizes a centralized **Option Registry** to handle programmatic and
 
 The PatternFly MCP server aggregates content from multiple official sources to provide a comprehensive development resource.
 
-#### PatternFly ai-helpers
-The server integrates the [patternfly/ai-helpers](https://github.com/patternfly/ai-helpers) repository to provide specialized, LLM-optimized guidance. This integration powers several key resource categories:
-- **AI Guidance**: Specialized patterns for React Charts, Chatbot, and general React development.
-- **Styling Standards**: CSS and styling requirements tailored for AI code generation.
-- **Prompt Engineering**: Includes `ai-prompt-guidance.md` to help users write more effective prompts for PatternFly.
+#### UXD AI Helpers
+The server integrates the active [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers) repository, which supersedes the archived `patternfly/ai-helpers` repository. This integration provides:
+- **Agent skills and plugins**: PatternFly development, design, accessibility, and migration workflows for supported AI coding tools.
+- **Marketplace guidance**: Installation and discovery documentation for the available PatternFly and UXD plugins.
+- **Contribution guidance**: Conventions and workflows for creating and maintaining skills.
 
-These helpers are a core part of our [Library synchronization](#library-synchronization-in-progress), acting as the bridge between stable design patterns and dynamic implementation details.
+These helpers complement the documentation library with task-oriented AI workflows.
 
 ### Tools, resources, and prompts as customizable plugins
 
@@ -101,14 +101,14 @@ Our roadmap focuses on expanding the server's reach and providing a more integra
    - **Record Seed Integration**: A "fallback" set of resource records applied to every PatternFly MCP server instance that ensures users who do not opt into SQLite persistence still receive up-to-date documentation within an average MCP server use session.
 
 #### In-planning and under review
-- **Skills-as-Tools (On Track)**: Expand MCP functionality with agent skills using common Markdown. This provides consumers with significant customization without modifying the PatternFly MCP server core. You can start contributing to the MCP now by adding skills through our [AI Plugin Marketplace](https://github.com/patternfly/ai-helpers).
+- **Skills-as-Tools (On Track)**: Expand MCP functionality with agent skills using common Markdown. This provides consumers with significant customization without modifying the PatternFly MCP server core. You can start contributing to the MCP now by adding skills through our [AI Plugin Marketplace](https://github.com/rh-uxd/ai-helpers).
 - **Resource-Tool Integration**: Directly integrate MCP resources into tool responses to reduce token counts and allow tools to accept URI links as inputs.
 - **Environment & Analysis Tooling**: A built-in tool falling under "use PatternFly", focused on environment snapshots, code analysis, and whitelisted resource access for local project analysis.
 - **Agentless MCP Client**: An MCP client for use without an LLM, allowing PatternFly tooling to integrate into CLI tools and CI/CD pipelines.
 - **Resource/Helper Sharing**: Mechanisms to share resources and helper functions across external tool plugins.
 
 #### Deprioritized concepts and planning
-- ~~**YAML Configuration**: Remote tool, resource, and prompt plugins configured via YAML.~~ Currently, superseded by Skills-as-Tools and [AI Plugin Marketplace](https://github.com/patternfly/ai-helpers).
+- ~~**YAML Configuration**: Remote tool, resource, and prompt plugins configured via YAML.~~ Currently, superseded by Skills-as-Tools and [AI Plugin Marketplace](https://github.com/rh-uxd/ai-helpers).
 
 > **Contribution alignment**
 > 

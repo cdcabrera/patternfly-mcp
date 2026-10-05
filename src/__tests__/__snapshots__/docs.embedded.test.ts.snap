@@ -16,9 +16,9 @@ exports[`EMBEDDED_DOCS should export the expected embedded docs structure: docs 
       },
       {
         "category": "react",
-        "description": "AI guidance for PatternFly React development rules.",
-        "displayName": "React Development Rules",
-        "path": "https://raw.githubusercontent.com/patternfly/ai-helpers/refs/heads/main/docs/README.md",
+        "description": "AI skills for PatternFly React development workflows.",
+        "displayName": "PatternFly React AI Skills",
+        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/34913b0c96df0eaf10597717827bb62272726571/plugins/patternfly/pf-react/README.md",
         "pathSlug": "react-development",
         "section": "guidelines",
         "source": "github",
