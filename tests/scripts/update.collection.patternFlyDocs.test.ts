@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import {
+  AI_GUIDELINE_ALIASES,
   DEFAULT_TRACKED_REPOS,
+  PINNED_HISTORICAL_REFS,
   diffDocsManifests,
   escapeCsvField,
   extractCommitHash,
@@ -11,6 +13,7 @@ import {
   formatCsv,
   generateDocsReportCsv,
   recalculateManifestMetadata,
+  resolveApiEndpointForAiDoc,
   run
 } from '../../scripts/update.collection.patternFlyDocs';
 
@@ -420,5 +423,96 @@ describe('Helper Utilities & Manifest Recalculation', () => {
     expect(DEFAULT_TRACKED_REPOS.length).toBeGreaterThan(0);
     expect(DEFAULT_TRACKED_REPOS.some(repo => repo.repo === 'patternfly-org')).toBe(true);
     expect(DEFAULT_TRACKED_REPOS.some(repo => repo.repo === 'patternfly-react')).toBe(true);
+  });
+
+  it('should correctly parse repository info and commit hashes from raw GitHub URLs', () => {
+    const rawUrl =
+      'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31359c381c8152331575ca2481e3fe1ff/packages/v4/src/content/components/button.md';
+
+    const info = extractRepoInfo(rawUrl);
+
+    expect(info).toEqual({
+      owner: 'patternfly',
+      repo: 'patternfly-org',
+      ref: '540bb0d31359c381c8152331575ca2481e3fe1ff',
+      filePath: 'packages/v4/src/content/components/button.md'
+    });
+
+    const hash = extractCommitHash(rawUrl);
+
+    expect(hash).toBe('540bb0d31359c381c8152331575ca2481e3fe1ff');
+
+    expect(extractRepoInfo('invalid-url')).toBeNull();
+    expect(extractCommitHash('invalid-url')).toBeNull();
+  });
+
+  it('should maintain declarative pinned historical hashes and guideline aliases', () => {
+    expect(PINNED_HISTORICAL_REFS instanceof Set).toBe(true);
+    expect(PINNED_HISTORICAL_REFS.has('ec02b437ec72b6e4cc4e28524516288f4acf9fdf')).toBe(true);
+    expect(PINNED_HISTORICAL_REFS.has('e8cca17430a8ccb062ed1878073165417a081b34')).toBe(true);
+
+    expect(AI_GUIDELINE_ALIASES['table-rules']).toBe('table');
+    expect(AI_GUIDELINE_ALIASES['layout-components']).toBe('layout');
+    expect(AI_GUIDELINE_ALIASES['development-rules']).toBe('overview');
+  });
+
+  it('should resolve AI helper documentation endpoints using aliases and token matching', () => {
+    const highQualityApi = [
+      { p: 'v6/AI/ai-assisted-development_marketplace/text', q: 1 },
+      { p: 'v6/AI/development-guidelines_overview/text', q: 1 },
+      { p: 'v6/AI/development-guidelines_table/text', q: 1 },
+      { p: 'v6/AI/development-guidelines_charts/text', q: 1 }
+    ];
+
+    // 1. Root marketplace docs
+    expect(
+      resolveApiEndpointForAiDoc(
+        {
+          displayName: 'AI Helpers README',
+          pathSlug: 'ai-helpers-readme',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/README.md',
+          version: 'v6',
+          category: 'AI',
+          description: '',
+          section: '',
+          source: 'github'
+        },
+        highQualityApi
+      )
+    ).toBe('v6/AI/ai-assisted-development_marketplace/text');
+
+    // 2. Guideline aliases (e.g. table-rules -> table)
+    expect(
+      resolveApiEndpointForAiDoc(
+        {
+          displayName: 'Table Rules',
+          pathSlug: 'table-rules',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md',
+          version: 'v6',
+          category: 'React',
+          description: '',
+          section: '',
+          source: 'github'
+        },
+        highQualityApi
+      )
+    ).toBe('v6/AI/development-guidelines_table/text');
+
+    // 3. Direct match
+    expect(
+      resolveApiEndpointForAiDoc(
+        {
+          displayName: 'Charts Rules',
+          pathSlug: 'charts',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/charts/README.md',
+          version: 'v6',
+          category: 'Charts',
+          description: '',
+          section: '',
+          source: 'github'
+        },
+        highQualityApi
+      )
+    ).toBe('v6/AI/development-guidelines_charts/text');
   });
 });
