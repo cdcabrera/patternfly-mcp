@@ -3,16 +3,17 @@ import {
   type PatternFlyMcpDocsCatalogDoc,
   type PatternFlyMcpDocsCatalogEntry
 } from '../src/docs.embedded';
-
-/**
- * Information extracted from a raw GitHub documentation URL.
- */
-interface GitHubUrlInfo {
-  owner: string;
-  repo: string;
-  ref: string;
-  filePath: string;
-}
+import {
+  DEFAULT_TRACKED_REPOS,
+  escapeCsvField,
+  extractCommitHash,
+  extractRepoInfo,
+  fetchLatestRepoHashes,
+  formatCsv,
+  verifyUrlReachability,
+  type GitHubUrlInfo,
+  type TrackedRepository
+} from './collection.common';
 
 /**
  * Report entry for an added document in the manifest.
@@ -83,146 +84,66 @@ interface RecalculateOptions {
 }
 
 /**
- * Default list of repositories tracked for PatternFly documentation updates.
+ * Concise mapping of non-standard slugs to their corresponding API endpoint paths.
  */
-const DEFAULT_TRACKED_REPOS = [
-  { owner: 'patternfly', repo: 'patternfly-org', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-react', branch: 'main' },
-  { owner: 'rh-uxd', repo: 'ai-helpers', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-cli', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-elements', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-mcp', branch: 'main' },
-  { owner: 'patternfly', repo: 'pf-codemods', branch: 'main' }
-];
+const AI_GUIDELINE_ALIASES: Readonly<Record<string, string>> = Object.freeze({
+  'development-rules': 'overview',
+  guidelines: 'overview',
+  'table-rules': 'table',
+  'layout-components': 'layout',
+  troubleshooting: 'common-issues'
+});
 
 /**
- * Safely escape and format a field for standard RFC 4180 CSV output.
- *
- * @note **CSV / Formula Injection:** By default (`sanitizeFormulas = true`), leading formula
- * trigger characters are prefixed with a single quote to prevent spreadsheet execution. Pass
- * `false` to preserve strict raw string fidelity for automated downstream parsers.
- *
- * @param field - Value to format for CSV
- * @param [sanitizeFormulas=true] - Whether to prefix formula trigger characters with a single quote
- * @returns RFC 4180 compliant CSV cell string
+ * Pinned historical commit SHAs preserved for legacy or static references.
  */
-const escapeCsvField = (field: unknown, sanitizeFormulas = true): string => {
-  if (field === null || field === undefined) {
-    return '';
-  }
-
-  let str = String(field);
-
-  if (sanitizeFormulas && /^[=+\-@\t\r]/.test(str)) {
-    str = `'${str}`;
-  }
-
-  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-    return `"${str.replace(/"/g, '""')}"`;
-  }
-
-  return str;
-};
+const PINNED_HISTORICAL_REFS = new Set<string>([
+  'ec02b437ec72b6e4cc4e28524516288f4acf9fdf', // Legacy design guidelines
+  'ce032cd16ddb90c540cb4f18c6830e190cd9e3e9', // Tooling reference
+  '402b3b0e7ed73cb2aa21531e0eab4216c2211212', // Elements reference
+  'e8cca17430a8ccb062ed1878073165417a081b34' // AIHelpers pinned baseline
+]);
 
 /**
- * Format rows and headers into standard CSV string.
+ * Resolve the matching API endpoint for an upstream AI helper document.
  *
- * @param headers - Column headers
- * @param rows - Table rows
- * @returns Formatted CSV string
+ * @param doc - Document record to evaluate
+ * @param highQualityApi - List of API collection records meeting the quality threshold
+ * @returns Matched API endpoint path or null if not superseded
  */
-const formatCsv = (headers: string[], rows: (string | number | undefined | null)[][]): string => {
-  const headerLine = headers.map(field => escapeCsvField(field)).join(',');
-  const rowLines = rows.map(row => row.map(cell => escapeCsvField(cell)).join(','));
+const resolveApiEndpointForAiDoc = (
+  doc: PatternFlyMcpDocsCatalogDoc,
+  highQualityApi: ApiCollectionRecordRef[]
+): string | null => {
+  const slug = doc.pathSlug || '';
 
-  return [headerLine, ...rowLines].join('\n') + '\n';
-};
-
-/**
- * Extract commit hash or ref from a raw GitHub documentation URL.
- *
- * @param url - Raw GitHub URL
- * @returns Hash/ref string or null if not a recognized GitHub raw URL
- */
-const extractCommitHash = (url: string): string | null => {
-  if (!url || typeof url !== 'string') {
-    return null;
+  // 1. Root ai-helpers links superseded by the marketplace endpoint
+  if (/^ai-helpers-(readme|contributing|contributing-skills)$/.test(slug)) {
+    return 'v6/AI/ai-assisted-development_marketplace/text';
   }
 
-  const match = url.match(/^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/([^/]+)\//);
+  // 2. Component and development guidelines in ai-helpers
+  if (doc.path && doc.path.includes('/docs/')) {
+    const targetSlug = AI_GUIDELINE_ALIASES[slug] || slug;
+    const candidate = `v6/AI/development-guidelines_${targetSlug}/text`;
+    const exactMatch = highQualityApi.find(apiRecord => apiRecord.p === candidate);
 
-  return match && match[1] ? match[1] : null;
-};
-
-/**
- * Extract structured repository and path information from a raw GitHub URL.
- *
- * @param url - Raw GitHub URL
- * @returns GitHubUrlInfo or null if not a recognized raw URL
- */
-const extractRepoInfo = (url: string): GitHubUrlInfo | null => {
-  if (!url || typeof url !== 'string') {
-    return null;
-  }
-
-  const match = url.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
-
-  if (!match || !match[1] || !match[2] || !match[3] || !match[4]) {
-    return null;
-  }
-
-  return {
-    owner: match[1],
-    repo: match[2],
-    ref: match[3],
-    filePath: match[4]
-  };
-};
-
-/**
- * Probe URL reachability using HTTP HEAD / GET request.
- *
- * @param url - Target URL to probe
- * @param [timeoutMs=5000] - Timeout in milliseconds
- * @returns Promise resolving to true if status is 2xx, false otherwise
- */
-const verifyUrlReachability = async (url: string, timeoutMs = 5000): Promise<boolean> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-    const response = await fetch(url, {
-      method: 'HEAD',
-      headers: { 'User-Agent': 'patternfly-mcp-audit' },
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      return true;
+    if (exactMatch) {
+      return exactMatch.p;
     }
 
-    // Fallback to GET for hosts that reject HEAD requests
-    if (response.status === 405 || response.status === 403) {
-      const getController = new AbortController();
-      const getTimeoutId = setTimeout(() => getController.abort(), timeoutMs);
+    // Dynamic token fallback against indexed API endpoints
+    const token = targetSlug.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const fuzzyMatch = highQualityApi.find(
+      apiRecord =>
+        apiRecord.p.startsWith('v6/AI/development-guidelines') &&
+        apiRecord.p.toLowerCase().replace(/[^a-z0-9]/g, '').includes(token)
+    );
 
-      const getResponse = await fetch(url, {
-        method: 'GET',
-        headers: { 'User-Agent': 'patternfly-mcp-audit' },
-        signal: getController.signal
-      });
-
-      clearTimeout(getTimeoutId);
-
-      return getResponse.ok;
-    }
-
-    return false;
-  } catch {
-    return false;
+    return fuzzyMatch ? fuzzyMatch.p : candidate;
   }
+
+  return null;
 };
 
 /**
@@ -262,67 +183,9 @@ const findApiRedundantDocs = (
         (doc.path.includes('/ai-helpers/') || doc.path.includes('/uxd-ai-helpers/'));
 
       if (isAiHelperRepo) {
-        // A. Standalone root ai-helpers links superseded by the marketplace endpoint
-        if (
-          doc.pathSlug === 'ai-helpers-readme' ||
-          doc.pathSlug === 'ai-helpers-contributing' ||
-          doc.pathSlug === 'ai-helpers-contributing-skills'
-        ) {
-          redundant.push({
-            category,
-            record: doc,
-            reason: 'superseded by API collection',
-            details: 'v6/AI/ai-assisted-development_marketplace/text'
-          });
-          continue;
-        }
+        const details = resolveApiEndpointForAiDoc(doc, highQualityApi);
 
-        // B. Component / development guideline markdown files in ai-helpers
-        if (doc.path.includes('/docs/')) {
-          let details = 'v6/AI/development-guidelines';
-
-          if (doc.pathSlug === 'development-rules' || doc.path.endsWith('/docs/README.md')) {
-            details = 'v6/AI/development-guidelines_overview/text';
-          } else if (doc.pathSlug === 'guidelines' || doc.path.includes('/docs/guidelines/README.md')) {
-            details = 'v6/AI/development-guidelines_overview/text';
-          } else if (doc.pathSlug === 'table-rules' || doc.path.includes('table.md')) {
-            details = 'v6/AI/development-guidelines_table/text';
-          } else if (doc.pathSlug === 'charts' || doc.path.includes('/docs/charts/')) {
-            details = 'v6/AI/development-guidelines_charts/text';
-          } else if (doc.pathSlug === 'chatbot' || doc.path.includes('/docs/chatbot/')) {
-            details = 'v6/AI/development-guidelines_chatbot/text';
-          } else if (doc.pathSlug === 'ai-prompt-guidance' || doc.path.includes('ai-prompt-guidance.md')) {
-            details = 'v6/AI/development-guidelines_ai-prompt-guidance/text';
-          } else if (doc.pathSlug === 'styling-standards' || doc.path.includes('styling-standards.md')) {
-            details = 'v6/AI/development-guidelines_styling-standards/text';
-          } else if (doc.pathSlug === 'setup' || doc.path.includes('/docs/setup/README.md')) {
-            details = 'v6/AI/development-guidelines_setup/text';
-          } else if (doc.pathSlug === 'development-environment' || doc.path.includes('development-environment.md')) {
-            details = 'v6/AI/development-guidelines_development-environment/text';
-          } else if (doc.pathSlug === 'quick-start' || doc.path.includes('quick-start.md')) {
-            details = 'v6/AI/development-guidelines_quick-start/text';
-          } else if (doc.pathSlug === 'troubleshooting' || doc.path.includes('common-issues.md')) {
-            details = 'v6/AI/development-guidelines_common-issues/text';
-          } else if (doc.pathSlug === 'component-architecture' || doc.path.includes('component-architecture.md')) {
-            details = 'v6/AI/development-guidelines_component-architecture/text';
-          } else if (doc.pathSlug === 'deployment-guide' || doc.path.includes('deployment-guide.md')) {
-            details = 'v6/AI/development-guidelines_deployment-guide/text';
-          } else if (doc.pathSlug === 'component-groups' || doc.path.includes('component-groups')) {
-            details = 'v6/AI/development-guidelines_component-groups/text';
-          } else if (doc.pathSlug === 'data-display' || doc.path.includes('data-display/README.md')) {
-            details = 'v6/AI/development-guidelines_data-display/text';
-          } else if (doc.pathSlug === 'layout-components' || doc.path.includes('layout/README.md')) {
-            details = 'v6/AI/development-guidelines_layout/text';
-          } else if (doc.pathSlug === 'external-links' || doc.path.includes('external-links.md')) {
-            details = 'v6/AI/development-guidelines_external-links/text';
-          } else {
-            const matchedApi = highQualityApi.find(candidateApi => candidateApi.p.toLowerCase().includes(doc.pathSlug.toLowerCase().replace(/[^a-z0-9]/g, '')));
-
-            if (matchedApi) {
-              details = matchedApi.p;
-            }
-          }
-
+        if (details) {
           redundant.push({
             category,
             record: doc,
@@ -335,46 +198,6 @@ const findApiRedundantDocs = (
   }
 
   return redundant;
-};
-
-/**
- * Fetch latest commit hashes for tracked repositories from GitHub API.
- *
- * @param [repos=DEFAULT_TRACKED_REPOS] - Repositories to query
- * @returns Map of "owner/repo" to commit SHA
- */
-const fetchLatestRepoHashes = async (
-  repos = DEFAULT_TRACKED_REPOS
-): Promise<Map<string, string>> => {
-  const hashes = new Map<string, string>();
-
-  for (const { owner, repo, branch = 'main' } of repos) {
-    const key = `${owner}/${repo}`;
-
-    try {
-      const url = `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`;
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'patternfly-mcp',
-          Accept: 'application/vnd.github.v3+json'
-        }
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as { sha?: string };
-
-        if (data.sha) {
-          hashes.set(key, data.sha);
-          // Also alias by repo name alone if unique
-          hashes.set(repo, data.sha);
-        }
-      }
-    } catch {
-      // Fallback: network unavailable or rate limited
-    }
-  }
-
-  return hashes;
 };
 
 /**
@@ -412,7 +235,9 @@ const diffDocsManifests = (
   }
 
   const removedKeys = new Set(
-    redundantReports.map(report => `${report.category}::${report.record.pathSlug}::${report.record.displayName}`)
+    redundantReports.map(
+      report => `${report.category}::${report.record.pathSlug}::${report.record.displayName}`
+    )
   );
 
   // Check for any additional old records missing in new catalog
@@ -442,34 +267,33 @@ const diffDocsManifests = (
       continue;
     }
 
-    const prevDoc = oldEntry.doc;
     const reasons: string[] = [];
-    const prevHash = extractCommitHash(prevDoc.path);
-    const newHash = extractCommitHash(doc.path);
+    const previousDoc = oldEntry.doc;
+    const oldHash = extractCommitHash(previousDoc.path || '');
+    const newHash = extractCommitHash(doc.path || '');
 
-    if (prevDoc.path !== doc.path) {
-      if (prevHash && newHash && prevHash !== newHash) {
-        reasons.push(`hash update (${prevHash.slice(0, 7)} -> ${newHash.slice(0, 7)})`);
+    if (previousDoc.path !== doc.path) {
+      if (oldHash !== newHash && oldHash && newHash) {
+        const shortOld = oldHash.slice(0, 7);
+        const shortNew = newHash.slice(0, 7);
+
+        reasons.push(`hash update (${shortOld} -> ${shortNew})`);
       } else {
         reasons.push('path updated');
       }
     }
 
-    if (prevDoc.description !== doc.description) {
-      reasons.push('description updated');
-    }
-
-    if (prevDoc.version !== doc.version) {
-      reasons.push(`version (${prevDoc.version} -> ${doc.version})`);
+    if (previousDoc.version !== doc.version) {
+      reasons.push(`version changed (${previousDoc.version} -> ${doc.version})`);
     }
 
     if (reasons.length > 0) {
       modified.push({
         category,
         record: doc,
-        previousRecord: prevDoc,
+        previousRecord: previousDoc,
         reasons,
-        previousHash: prevHash || undefined,
+        previousHash: oldHash || undefined,
         newHash: newHash || undefined
       });
     } else {
@@ -484,10 +308,10 @@ const diffDocsManifests = (
 };
 
 /**
- * Generate a complete, non-truncated CSV report for documentation manifest changes.
+ * Generate a complete RFC 4180 CSV report for the documentation manifest diff.
  *
- * @param diff - Diff calculation between old and new manifests
- * @returns RFC 4180 CSV string
+ * @param diff - Documentation diff result
+ * @returns Formatted CSV content string
  */
 const generateDocsReportCsv = (diff: DocsDiffResult): string => {
   const headers = [
@@ -501,8 +325,10 @@ const generateDocsReportCsv = (diff: DocsDiffResult): string => {
     'reason',
     'details'
   ];
+
   const rows: (string | number | undefined | null)[][] = [];
 
+  // 1. ADDED
   for (const item of diff.added) {
     const hash = extractCommitHash(item.record.path) || '';
 
@@ -514,11 +340,12 @@ const generateDocsReportCsv = (diff: DocsDiffResult): string => {
       item.record.path,
       '',
       hash,
-      item.reason || '',
+      item.reason || 'new document',
       item.details || ''
     ]);
   }
 
+  // 2. REMOVED
   for (const item of diff.removed) {
     const hash = extractCommitHash(item.record.path) || '';
 
@@ -535,6 +362,7 @@ const generateDocsReportCsv = (diff: DocsDiffResult): string => {
     ]);
   }
 
+  // 3. MODIFIED
   for (const item of diff.modified) {
     rows.push([
       'MODIFIED',
@@ -544,11 +372,12 @@ const generateDocsReportCsv = (diff: DocsDiffResult): string => {
       item.record.path,
       item.previousHash || '',
       item.newHash || '',
-      'property changes',
-      item.reasons.join('; ')
+      item.reasons.join('; '),
+      item.previousRecord?.path || ''
     ]);
   }
 
+  // 4. UNCHANGED
   for (const item of diff.unchanged) {
     const hash = extractCommitHash(item.record.path) || '';
 
@@ -607,18 +436,9 @@ const recalculateManifestMetadata = (
           const repoKey = `${repoInfo.owner}/${repoInfo.repo}`;
           const newSha = options.latestHashes.get(repoKey) || options.latestHashes.get(repoInfo.repo);
 
-          // Update if repo is recognized
-          if (newSha) {
-            // Keep specific known one-offs pinned if needed
-            const isKnownOneOff =
-              repoInfo.ref === 'ec02b437ec72b6e4cc4e28524516288f4acf9fdf' ||
-              repoInfo.ref === 'ce032cd16ddb90c540cb4f18c6830e190cd9e3e9' ||
-              repoInfo.ref === '402b3b0e7ed73cb2aa21531e0eab4216c2211212' ||
-              repoInfo.ref === 'e8cca17430a8ccb062ed1878073165417a081b34';
-
-            if (!isKnownOneOff) {
-              updatedPath = `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/${newSha}/${repoInfo.filePath}`;
-            }
+          // Update if repo is recognized and not a pinned historical reference
+          if (newSha && !PINNED_HISTORICAL_REFS.has(repoInfo.ref)) {
+            updatedPath = `https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/${newSha}/${repoInfo.filePath}`;
           }
         }
       }
@@ -650,7 +470,9 @@ const recalculateManifestMetadata = (
 };
 
 export {
+  AI_GUIDELINE_ALIASES,
   DEFAULT_TRACKED_REPOS,
+  PINNED_HISTORICAL_REFS,
   diffDocsManifests,
   escapeCsvField,
   extractCommitHash,
@@ -660,6 +482,7 @@ export {
   formatCsv,
   generateDocsReportCsv,
   recalculateManifestMetadata,
+  resolveApiEndpointForAiDoc,
   verifyUrlReachability,
   type ApiCollectionRecordRef,
   type DocsAddedRecordReport,
@@ -668,5 +491,6 @@ export {
   type DocsRemovedRecordReport,
   type DocsUnchangedRecordReport,
   type GitHubUrlInfo,
-  type RecalculateOptions
+  type RecalculateOptions,
+  type TrackedRepository
 };

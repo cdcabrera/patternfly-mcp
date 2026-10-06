@@ -5,23 +5,29 @@ import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
-  diffDocsManifests,
   escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
   fetchLatestRepoHashes,
-  findApiRedundantDocs,
   formatCsv,
+  verifyUrlReachability,
+  type GitHubUrlInfo,
+  type TrackedRepository
+} from './collection.common';
+import {
+  AI_GUIDELINE_ALIASES,
+  PINNED_HISTORICAL_REFS,
+  diffDocsManifests,
+  findApiRedundantDocs,
   generateDocsReportCsv,
   recalculateManifestMetadata,
-  verifyUrlReachability,
+  resolveApiEndpointForAiDoc,
   type ApiCollectionRecordRef,
   type DocsAddedRecordReport,
   type DocsDiffResult,
   type DocsModifiedRecordReport,
   type DocsRemovedRecordReport,
   type DocsUnchangedRecordReport,
-  type GitHubUrlInfo,
   type RecalculateOptions
 } from './update.collection.patternFlyDocs.helpers';
 
@@ -201,7 +207,9 @@ if (process.env.UPDATE_COLLECTIONS === 'true') {
 }
 
 export {
+  AI_GUIDELINE_ALIASES,
   DEFAULT_TRACKED_REPOS,
+  PINNED_HISTORICAL_REFS,
   diffDocsManifests,
   escapeCsvField,
   extractCommitHash,
@@ -211,6 +219,7 @@ export {
   formatCsv,
   generateDocsReportCsv,
   recalculateManifestMetadata,
+  resolveApiEndpointForAiDoc,
   run,
   verifyUrlReachability,
   type ApiCollectionRecordRef,
@@ -221,5 +230,6 @@ export {
   type DocsUnchangedRecordReport,
   type GitHubUrlInfo,
   type RecalculateOptions,
+  type TrackedRepository,
   type UpdateDocsOptions
 };
