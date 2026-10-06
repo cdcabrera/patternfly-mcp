@@ -74,8 +74,7 @@ describe('docs.json', () => {
      *
      * | Repository | Hash / Branch | Count | Type |
      * |---|---|---|---|
-     * | ai-helpers | f7f8160c3f28b0bc7f64181d9466a425ac8329fc | 20 | **Primary** |
-     * | uxd-ai-helpers | e8cca17430a8ccb062ed1878073165417a081b34 | 6 | One-off |
+     * | ai-helpers | e8cca17430a8ccb062ed1878073165417a081b34 | 6 | One-off |
      * | patternfly-cli | ce032cd16ddb90c540cb4f18c6830e190cd9e3e9 | 1 | One-off |
      * | patternfly-elements | 402b3b0e7ed73cb2aa21531e0eab4216c2211212 | 1 | One-off |
      * | patternfly-mcp | 63041b33f31724427125d08a7d1af16397927cd0 | 5 | One-off |
@@ -84,9 +83,9 @@ describe('docs.json', () => {
      * | patternfly-org | v5 | 1 | One-off |
      * | patternfly-react | 831257aa7c49c3238e0f7afbb7cf219c62cd9e23 | 100 | **Primary** |
      * | pf-codemods | e5e80a440bb033f9535befbade035d265684456b | 3 | One-off |
-     * | **Total** | **10 unique refs** | **341** | |
+     * | **Total** | **9 unique refs** | **321** | |
      */
-    expect(baseHashes.size).toBe(10);
+    expect(baseHashes.size).toBe(9);
 
     /**
      * Confirm total docs count matches metadata

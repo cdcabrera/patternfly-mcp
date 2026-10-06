@@ -607,8 +607,8 @@ const recalculateManifestMetadata = (
           const repoKey = `${repoInfo.owner}/${repoInfo.repo}`;
           const newSha = options.latestHashes.get(repoKey) || options.latestHashes.get(repoInfo.repo);
 
-          // Update if repo is recognized and ref is a 40-char SHA (primary ref)
-          if (newSha && /^[a-f0-9]{40}$/.test(repoInfo.ref)) {
+          // Update if repo is recognized
+          if (newSha) {
             // Keep specific known one-offs pinned if needed
             const isKnownOneOff =
               repoInfo.ref === 'ec02b437ec72b6e4cc4e28524516288f4acf9fdf' ||
