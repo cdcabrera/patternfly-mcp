@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "generated": "2026-09-30T21:56:29.488Z",
+  "generated": "2026-10-06T15:14:33.599Z",
   "base": "https://main.patternfly-org.pages.dev/api",
   "records": [
     {
@@ -84,6 +84,118 @@
       "p": "v6/AI/ai-assisted-development_rapid-prototyping/new-prototypes",
       "n": "Starting new prototypes",
       "d": "This guide provides instructions for setting up new PatternFly prototypes using AI-assisted development tools.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_ai-prompt-guidance/text",
+      "n": "AI Prompt Guidance",
+      "d": "How to write effective AI prompts for PatternFly development.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_charts/text",
+      "n": "Charts Rules",
+      "d": "Essential rules for PatternFly Charts implementation using Victory.js and ECharts.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_chatbot/text",
+      "n": "Chatbot Rules",
+      "d": "Essential rules for PatternFly Chatbot implementation and integration patterns.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_common-issues/text",
+      "n": "Common Issues",
+      "d": "This document covers frequently encountered problems and their solutions when working with PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_component-architecture/text",
+      "n": "Component Architecture",
+      "d": "This document outlines the essential rules for structuring PatternFly components, managing state, and ensuring performance. It is a high-level guide that links to more detailed documentation for sp...",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_component-groups/text",
+      "n": "PatternFly Component Groups Rules",
+      "d": "Essential rules for using and contributing to PatternFly React Component Groups.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_data-display/text",
+      "n": "Data Display Rules",
+      "d": "Essential rules for PatternFly data display components including lists, data presentation, and data view patterns.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_deployment-guide/text",
+      "n": "Quick Deployment Guide for Prototypes",
+      "d": "This guide provides simple, fast methods for building and deploying your React application so you can share a live prototype with others.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_development-environment/text",
+      "n": "Development Environment Rules",
+      "d": "Configuration rules for development tools and environment settings for PatternFly React development.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_external-links/text",
+      "n": "External References",
+      "d": "This document provides links to official PatternFly documentation, repositories, and helpful external resources for AI coders working with PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_layout/text",
+      "n": "Layout Components",
+      "d": "This section covers PatternFly layout components and page structure patterns for building consistent application layouts.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_overview/text",
+      "n": "PatternFly React Development Rules",
+      "d": "> Starting a new project?",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_quick-start/text",
+      "n": "Quick Start Guide",
+      "d": "This guide provides step-by-step instructions to get a PatternFly React application running quickly using the PatternFly React Seed.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_setup/text",
+      "n": "Setup Rules",
+      "d": "Project initialization requirements for PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_styling-standards/text",
+      "n": "Styling Standards",
+      "d": "Essential CSS and styling rules for PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_table/text",
+      "n": "Table Component Rules",
+      "d": "Essential rules for using the PatternFly React Table component.",
       "c": "markdown",
       "q": 1
     },
@@ -396,13 +508,6 @@
       "q": 1
     },
     {
-      "p": "v6/components/avatar/html",
-      "n": "Avatar",
-      "d": "Avatars can be created using either an img element with an image source, or a div element with custom content.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/avatar/react/examples/AvatarBasic",
       "n": "Avatar Basic",
       "d": "PatternFly examples and demos for Avatar Basic.",
@@ -543,6 +648,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/badge/html",
+      "n": "Badge",
+      "d": "Always add a modifier class. Never use the class .pf-v6-c-badge on its own.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/badge/react/examples/BadgeDisabled",
       "n": "Badge Disabled",
       "d": "PatternFly examples and demos for Badge Disabled.",
@@ -575,13 +687,6 @@
       "n": "Banner CSS",
       "d": "PatternFly variables and tokens for Banner CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/banner/html",
-      "n": "Banner",
-      "d": "Banners can be styled with one of 9 different nonstatus colors. A nonstatus banner should only be used when the banner color does not represent status or severity.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -638,13 +743,6 @@
       "n": "Breadcrumb CSS",
       "d": "PatternFly variables and tokens for Breadcrumb CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/breadcrumb/html",
-      "n": "Breadcrumb",
-      "d": "A breadcrumb is a list of links to display a user's navigational hierarchy. The last item of the breadcrumb list indicates the current page's location.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -813,13 +911,6 @@
       "n": "Card CSS",
       "d": "PatternFly variables and tokens for Card CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/card/html",
-      "n": "Card",
-      "d": "A card is a generic rectangular container that can be used to build other components. Use a default card for regular page content and the compact variation for dashboard or small cards.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -1243,6 +1334,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/code-editor/html",
+      "n": "Code Editor",
+      "d": "This is an extra container used in React to prevent event propagation if upload is enabled or there is a provided empty state.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/code-editor/text",
       "n": "Code Editor",
       "d": "By default, the bulk of the code editor is the text editor itself. The component is extremely flexible, so many of the features are optional. Much of the functionality of the Monaco Editor has been...",
@@ -1390,6 +1488,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/data-list/html",
+      "n": "Data List",
+      "d": "When a list item includes more than one block of content, it can be difficult for some screen reader users to discern where one list item ends and the next one begins. A simple way to provide bette...",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/data-list/react/examples/DataListActions",
       "n": "Data List Actions",
       "d": "PatternFly examples and demos for Data List Actions.",
@@ -1481,18 +1586,11 @@
       "q": 1
     },
     {
-      "p": "v6/components/date-and-time_calendar-month/react/examples/CalendarMonthDateRange",
-      "n": "Calendar Month Date Range",
-      "d": "PatternFly examples and demos for Calendar Month Date Range.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/date-and-time_calendar-month/react/examples/CalendarMonthSelectableDate",
-      "n": "Calendar Month Selectable Date",
-      "d": "PatternFly examples and demos for Calendar Month Selectable Date.",
-      "c": "javascript",
-      "q": 1
+      "p": "v6/components/date-and-time_calendar-month/react",
+      "n": "Date And Time Calendar Month",
+      "d": "In this example, there are 2 dates selected: a range start date (via the rangeStart prop) and a range end date (via the date prop). Additionally, any dates prior to the range start date are disable...",
+      "c": "markdown",
+      "q": 0.97
     },
     {
       "p": "v6/components/date-and-time_calendar-month/text",
@@ -2083,18 +2181,39 @@
       "q": 1
     },
     {
-      "p": "v6/components/dual-list-selector/html",
-      "n": "Dual List Selector",
-      "d": "PatternFly HTML examples and markup structure for Dual List Selector.",
-      "c": "markdown",
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorBasic",
+      "n": "Dual List Selector Basic",
+      "d": "PatternFly examples and demos for Dual List Selector Basic.",
+      "c": "javascript",
       "q": 1
     },
     {
-      "p": "v6/components/dual-list-selector/react",
-      "n": "Dual List Selector",
-      "d": "The dual list selector is built in a composable manner to make customization easier. The standard sub-component relationships are arranged as follows.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorBasicSearch",
+      "n": "Dual List Selector Basic Search",
+      "d": "PatternFly examples and demos for Dual List Selector Basic Search.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorBasicTooltips",
+      "n": "Dual List Selector Basic Tooltips",
+      "d": "PatternFly examples and demos for Dual List Selector Basic Tooltips.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorComplexOptionsActions",
+      "n": "Dual List Selector Complex Options Actions",
+      "d": "PatternFly examples and demos for Dual List Selector Complex Options Actions.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorTree",
+      "n": "Dual List Selector Tree",
+      "d": "PatternFly examples and demos for Dual List Selector Tree.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/components/dual-list-selector/text",
@@ -2111,11 +2230,60 @@
       "q": 1
     },
     {
-      "p": "v6/components/empty-state/react",
-      "n": "Empty State",
-      "d": "PatternFly React component examples and demos for Empty State.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/components/empty-state/react/examples/EmptyStateBasic",
+      "n": "Empty State Basic",
+      "d": "PatternFly examples and demos for Empty State Basic.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateExtraLarge",
+      "n": "Empty State Extra Large",
+      "d": "PatternFly examples and demos for Empty State Extra Large.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateExtraSmall",
+      "n": "Empty State Extra Small",
+      "d": "PatternFly examples and demos for Empty State Extra Small.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateLarge",
+      "n": "Empty State Large",
+      "d": "PatternFly examples and demos for Empty State Large.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateNoMatchFound",
+      "n": "Empty State No Match Found",
+      "d": "PatternFly examples and demos for Empty State No Match Found.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateSmall",
+      "n": "Empty State Small",
+      "d": "PatternFly examples and demos for Empty State Small.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateSpinner",
+      "n": "Empty State Spinner",
+      "d": "PatternFly examples and demos for Empty State Spinner.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateWithStatus",
+      "n": "Empty State With Status",
+      "d": "PatternFly examples and demos for Empty State With Status.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/components/empty-state/text",
@@ -2213,13 +2381,6 @@
       "n": "File Upload Multiple File Upload CSS",
       "d": "PatternFly variables and tokens for File Upload Multiple File Upload CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/file-upload_multiple-file-upload/html",
-      "n": "File Upload Multiple File Upload",
-      "d": "PatternFly HTML examples and markup structure for File Upload Multiple File Upload.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -2902,18 +3063,67 @@
       "q": 1
     },
     {
-      "p": "v6/components/icon/html",
-      "n": "Icon",
-      "d": "Use a size modifier on the icon container to maintain a consistent size, even if the contents change in size.",
-      "c": "markdown",
+      "p": "v6/components/icon/react/examples/BodyIconSizes",
+      "n": "Body Icon Sizes",
+      "d": "PatternFly examples and demos for Body Icon Sizes.",
+      "c": "javascript",
       "q": 1
     },
     {
-      "p": "v6/components/icon/react",
-      "n": "Icon",
-      "d": "These are the standard options for sizing icons.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/components/icon/react/examples/HeadingIconSizes",
+      "n": "Heading Icon Sizes",
+      "d": "PatternFly examples and demos for Heading Icon Sizes.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/IconBasic",
+      "n": "Icon Basic",
+      "d": "PatternFly examples and demos for Icon Basic.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/IconContentSizes",
+      "n": "Icon Content Sizes",
+      "d": "PatternFly examples and demos for Icon Content Sizes.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/IconCustomProgress",
+      "n": "Icon Custom Progress",
+      "d": "PatternFly examples and demos for Icon Custom Progress.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/IconInline",
+      "n": "Icon Inline",
+      "d": "PatternFly examples and demos for Icon Inline.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/IconProgress",
+      "n": "Icon Progress",
+      "d": "PatternFly examples and demos for Icon Progress.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/IconStatus",
+      "n": "Icon Status",
+      "d": "PatternFly examples and demos for Icon Status.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/icon/react/examples/StandaloneIconSizes",
+      "n": "Standalone Icon Sizes",
+      "d": "PatternFly examples and demos for Standalone Icon Sizes.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/components/inline-edit/css",
@@ -2983,13 +3193,6 @@
       "n": "Jump Links CSS",
       "d": "PatternFly variables and tokens for Jump Links CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/jump-links/html",
-      "n": "Jump Links",
-      "d": "PatternFly HTML examples and markup structure for Jump Links.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -3154,6 +3357,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/list/html",
+      "n": "List",
+      "d": "Non-inline lists can be nested up to any level.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/list/react/examples/ListBasic",
       "n": "List Basic",
       "d": "PatternFly examples and demos for List Basic.",
@@ -3245,53 +3455,11 @@
       "q": 1
     },
     {
-      "p": "v6/components/masthead/react/examples/MastheadBasic",
-      "n": "Masthead Basic",
-      "d": "PatternFly examples and demos for Masthead Basic.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/masthead/react/examples/MastheadBasicMixedContent",
-      "n": "Masthead Basic Mixed Content",
-      "d": "PatternFly examples and demos for Masthead Basic Mixed Content.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/masthead/react/examples/MastheadDisplayInline",
-      "n": "Masthead Display Inline",
-      "d": "PatternFly examples and demos for Masthead Display Inline.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/masthead/react/examples/MastheadDisplayStack",
-      "n": "Masthead Display Stack",
-      "d": "PatternFly examples and demos for Masthead Display Stack.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/masthead/react/examples/MastheadDisplayStackInlineResponsive",
-      "n": "Masthead Display Stack Inline Responsive",
-      "d": "PatternFly examples and demos for Masthead Display Stack Inline Responsive.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/masthead/react/examples/MastheadInsets",
-      "n": "Masthead Insets",
-      "d": "PatternFly examples and demos for Masthead Insets.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/masthead/react/examples/MastheadLogoCustomComponent",
-      "n": "Masthead Logo Custom Component",
-      "d": "PatternFly examples and demos for Masthead Logo Custom Component.",
-      "c": "javascript",
-      "q": 1
+      "p": "v6/components/masthead/react",
+      "n": "Masthead",
+      "d": "To maintain proper layout and formatting, a Masthead should contain both a MastheadMain and MastheadContent component.",
+      "c": "markdown",
+      "q": 0.97
     },
     {
       "p": "v6/components/masthead/text",
@@ -3536,6 +3704,13 @@
       "n": "Menus Menu CSS",
       "d": "PatternFly variables and tokens for Menus Menu CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/menus_menu/html",
+      "n": "Menus Menu",
+      "d": "PatternFly HTML examples and markup structure for Menus Menu.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -3977,6 +4152,13 @@
       "n": "Number Input CSS",
       "d": "PatternFly variables and tokens for Number Input CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/number-input/html",
+      "n": "Number Input",
+      "d": "PatternFly HTML examples and markup structure for Number Input.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -4484,60 +4666,18 @@
       "q": 1
     },
     {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperBasic",
-      "n": "Progress Stepper Basic",
-      "d": "PatternFly examples and demos for Progress Stepper Basic.",
-      "c": "javascript",
+      "p": "v6/components/progress-stepper/html",
+      "n": "Progress Stepper",
+      "d": "The progress stepper is intended to show progress through a finite number of discrete steps.",
+      "c": "markdown",
       "q": 1
     },
     {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperBasicFailure",
-      "n": "Progress Stepper Basic Failure",
-      "d": "PatternFly examples and demos for Progress Stepper Basic Failure.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperBasicIssue",
-      "n": "Progress Stepper Basic Issue",
-      "d": "PatternFly examples and demos for Progress Stepper Basic Issue.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperBasicWithAlignment",
-      "n": "Progress Stepper Basic With Alignment",
-      "d": "PatternFly examples and demos for Progress Stepper Basic With Alignment.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperBasicWithDescription",
-      "n": "Progress Stepper Basic With Description",
-      "d": "PatternFly examples and demos for Progress Stepper Basic With Description.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperCompact",
-      "n": "Progress Stepper Compact",
-      "d": "PatternFly examples and demos for Progress Stepper Compact.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperCustomIcons",
-      "n": "Progress Stepper Custom Icons",
-      "d": "PatternFly examples and demos for Progress Stepper Custom Icons.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/components/progress-stepper/react/examples/ProgressStepperHelpPopover",
-      "n": "Progress Stepper Help Popover",
-      "d": "PatternFly examples and demos for Progress Stepper Help Popover.",
-      "c": "javascript",
-      "q": 1
+      "p": "v6/components/progress-stepper/react",
+      "n": "Progress Stepper",
+      "d": "Progress steppers have default icons associated with the variant property, and may be overriden and customized using the icon property.",
+      "c": "markdown",
+      "q": 0.97
     },
     {
       "p": "v6/components/progress-stepper/text",
@@ -4736,13 +4876,6 @@
       "q": 1
     },
     {
-      "p": "v6/components/sidebar/html",
-      "n": "Sidebar",
-      "d": "PatternFly HTML examples and markup structure for Sidebar.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/sidebar/react/examples/SidebarBasic",
       "n": "Sidebar Basic",
       "d": "PatternFly examples and demos for Sidebar Basic.",
@@ -4859,13 +4992,6 @@
       "n": "Skeleton CSS",
       "d": "PatternFly variables and tokens for Skeleton CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/skeleton/html",
-      "n": "Skeleton",
-      "d": "PatternFly HTML examples and markup structure for Skeleton.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -5135,6 +5261,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/tabs/html",
+      "n": "Examples",
+      "d": "To animate the current tab accent, you must set the following variables on the .pf-v6-c-tabs wrapper. As tabs are added, removed, and resized, these values may need to be updated dynamically. The f...",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/tabs/react/examples/TabsBoxSecondary",
       "n": "Tabs Box Secondary",
       "d": "PatternFly examples and demos for Tabs Box Secondary.",
@@ -5370,6 +5503,13 @@
       "n": "Tile CSS",
       "d": "PatternFly variables and tokens for Tile CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/tile/html-deprecated",
+      "n": "Tile",
+      "d": "PatternFly documentation and guidelines for Tile.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -6227,214 +6367,11 @@
       "q": 0.97
     },
     {
-      "p": "v6/extensions/chat-bot_messages/react/examples/AttachmentEdit",
-      "n": "Attachment Edit",
-      "d": "PatternFly examples and demos for Attachment Edit.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/AttachmentError",
-      "n": "Attachment Error",
-      "d": "PatternFly examples and demos for Attachment Error.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/BotMessage",
-      "n": "Bot Message",
-      "d": "PatternFly examples and demos for Bot Message.",
+      "p": "v6/extensions/chat-bot_messages/react",
+      "n": "Chat Bot Messages",
+      "d": "The content prop of the Message component is passed to a Markdown component (from react-markdown), which is configured to translate plain text strings into PatternFly Content components and code bl...",
       "c": "markdown",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/FileDetailsLabel",
-      "n": "File Details Label",
-      "d": "PatternFly examples and demos for File Details Label.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/FileDropZone",
-      "n": "File Drop Zone",
-      "d": "PatternFly examples and demos for File Drop Zone.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/FilePreview",
-      "n": "File Preview",
-      "d": "PatternFly examples and demos for File Preview.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/ImagePreview",
-      "n": "Image Preview",
-      "d": "PatternFly examples and demos for Image Preview.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithAttachment",
-      "n": "Message With Attachment",
-      "d": "PatternFly examples and demos for Message With Attachment.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithClickedResponseActions",
-      "n": "Message With Clicked Response Actions",
-      "d": "PatternFly examples and demos for Message With Clicked Response Actions.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithCustomResponseActions",
-      "n": "Message With Custom Response Actions",
-      "d": "PatternFly examples and demos for Message With Custom Response Actions.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithCustomStructure",
-      "n": "Message With Custom Structure",
-      "d": "PatternFly examples and demos for Message With Custom Structure.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithDeepThinking",
-      "n": "Message With Deep Thinking",
-      "d": "PatternFly examples and demos for Message With Deep Thinking.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithDividers",
-      "n": "Message With Dividers",
-      "d": "PatternFly examples and demos for Message With Dividers.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithFeedback",
-      "n": "Message With Feedback",
-      "d": "PatternFly examples and demos for Message With Feedback.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithFeedbackTimeout",
-      "n": "Message With Feedback Timeout",
-      "d": "PatternFly examples and demos for Message With Feedback Timeout.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithIconSwapping",
-      "n": "Message With Icon Swapping",
-      "d": "PatternFly examples and demos for Message With Icon Swapping.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithMarkdownDeepThinking",
-      "n": "Message With Markdown Deep Thinking",
-      "d": "PatternFly examples and demos for Message With Markdown Deep Thinking.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithMarkdownToolCall",
-      "n": "Message With Markdown Tool Call",
-      "d": "PatternFly examples and demos for Message With Markdown Tool Call.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithMarkdownToolResponse",
-      "n": "Message With Markdown Tool Response",
-      "d": "PatternFly examples and demos for Message With Markdown Tool Response.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithMultipleActionGroups",
-      "n": "Message With Multiple Action Groups",
-      "d": "PatternFly examples and demos for Message With Multiple Action Groups.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithPersistedActions",
-      "n": "Message With Persisted Actions",
-      "d": "PatternFly examples and demos for Message With Persisted Actions.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithQuickResponses",
-      "n": "Message With Quick Responses",
-      "d": "PatternFly examples and demos for Message With Quick Responses.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithQuickStart",
-      "n": "Message With Quick Start",
-      "d": "PatternFly examples and demos for Message With Quick Start.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithResponseActions",
-      "n": "Message With Response Actions",
-      "d": "PatternFly examples and demos for Message With Response Actions.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithSources",
-      "n": "Message With Sources",
-      "d": "PatternFly examples and demos for Message With Sources.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithToolCall",
-      "n": "Message With Tool Call",
-      "d": "PatternFly examples and demos for Message With Tool Call.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/MessageWithToolResponse",
-      "n": "Message With Tool Response",
-      "d": "PatternFly examples and demos for Message With Tool Response.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/PreviewAttachment",
-      "n": "Preview Attachment",
-      "d": "PatternFly examples and demos for Preview Attachment.",
-      "c": "javascript",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/UserMessage",
-      "n": "User Message",
-      "d": "PatternFly examples and demos for User Message.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
-      "p": "v6/extensions/chat-bot_messages/react/examples/UserMessageWithExtraContent",
-      "n": "User Message With Extra Content",
-      "d": "PatternFly examples and demos for User Message With Extra Content.",
-      "c": "javascript",
-      "q": 1
+      "q": 0.97
     },
     {
       "p": "v6/extensions/chat-bot_overview/ChatBot",
@@ -6925,13 +6862,6 @@
       "d": "An unavailable content component displays a screen to users when they attempt to view a page that is currently unavailable to view.",
       "c": "markdown",
       "q": 0.97
-    },
-    {
-      "p": "v6/extensions/component-groups_unavailable-content/react/examples/UnavailableContentExample",
-      "n": "Unavailable Content Example",
-      "d": "PatternFly examples and demos for Unavailable Content Example.",
-      "c": "javascript",
-      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_warning-modal/react/examples/WarningModalCheckboxExample",
