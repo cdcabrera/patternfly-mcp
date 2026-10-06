@@ -304,7 +304,7 @@ describe('Helper Utilities & Manifest Recalculation', () => {
             section: 'components',
             category: 'react',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/oldhash11111111111111111111111111111111/Button.md',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/1111111111111111111111111111111111111111/Button.md',
             version: 'v6'
           },
           {
@@ -314,7 +314,7 @@ describe('Helper Utilities & Manifest Recalculation', () => {
             section: 'components',
             category: 'react',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/oldhash11111111111111111111111111111111/Button2.md',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/1111111111111111111111111111111111111111/Button2.md',
             version: 'v6'
           }
         ],
@@ -326,7 +326,7 @@ describe('Helper Utilities & Manifest Recalculation', () => {
             section: 'components',
             category: 'react',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/oldhash22222222222222222222222222222222/Alert.md',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/2222222222222222222222222222222222222222/Alert.md',
             version: 'v6'
           }
         ]
@@ -334,15 +334,15 @@ describe('Helper Utilities & Manifest Recalculation', () => {
     };
 
     const latestHashes = new Map([
-      ['patternfly/patternfly-react', 'newhash11111111111111111111111111111111']
+      ['patternfly/patternfly-react', '3333333333333333333333333333333333333333']
     ]);
 
     const updated = recalculateManifestMetadata(sampleCatalog, { latestHashes });
 
     expect(updated.meta.totalEntries).toBe(2);
     expect(updated.meta.totalDocs).toBe(3);
-    expect(updated.docs.Button?.[0]?.path).toContain('newhash11111111111111111111111111111111');
-    expect(updated.docs.Alert?.[0]?.path).toContain('oldhash22222222222222222222222222222222');
+    expect(updated.docs.Button?.[0]?.path).toContain('3333333333333333333333333333333333333333');
+    expect(updated.docs.Alert?.[0]?.path).toContain('2222222222222222222222222222222222222222');
   });
 
   it('should diff manifests and categorize added, removed, modified, and unchanged entries', () => {
