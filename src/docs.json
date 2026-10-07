@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "generated": "2026-10-06T20:29:43.653Z",
+  "generated": "2026-10-07T14:36:12.503Z",
   "meta": {
     "totalEntries": 135,
     "totalDocs": 321,
@@ -1955,7 +1955,7 @@
         "section": "get-started",
         "category": "development-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/63041b33f31724427125d08a7d1af16397927cd0/README.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/8b88bd4ae69c033807819547a0639153c9be99b7/README.md",
         "version": "v6"
       },
       {
@@ -1965,7 +1965,7 @@
         "section": "get-started",
         "category": "development-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/63041b33f31724427125d08a7d1af16397927cd0/docs/usage.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/8b88bd4ae69c033807819547a0639153c9be99b7/docs/usage.md",
         "version": "v6"
       },
       {
@@ -1975,7 +1975,7 @@
         "section": "get-started",
         "category": "development-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/63041b33f31724427125d08a7d1af16397927cd0/docs/development.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/8b88bd4ae69c033807819547a0639153c9be99b7/docs/development.md",
         "version": "v6"
       },
       {
@@ -1985,7 +1985,7 @@
         "section": "get-started",
         "category": "development-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/63041b33f31724427125d08a7d1af16397927cd0/docs/experimental.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/8b88bd4ae69c033807819547a0639153c9be99b7/docs/experimental.md",
         "version": "v6"
       },
       {
@@ -1995,7 +1995,7 @@
         "section": "get-started",
         "category": "development-guidelines",
         "source": "github",
-        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/63041b33f31724427125d08a7d1af16397927cd0/docs/architecture.md",
+        "path": "https://raw.githubusercontent.com/patternfly/patternfly-mcp/8b88bd4ae69c033807819547a0639153c9be99b7/docs/architecture.md",
         "version": "v6"
       },
       {

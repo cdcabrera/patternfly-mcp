@@ -2,7 +2,7 @@ import {
   type PatternFlyMcpDocsCatalog,
   type PatternFlyMcpDocsCatalogDoc,
   type PatternFlyMcpDocsCatalogEntry
-} from '../src/docs.embedded';
+} from '../../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
   escapeCsvField,
@@ -13,7 +13,7 @@ import {
   verifyUrlReachability,
   type GitHubUrlInfo,
   type TrackedRepository
-} from './collection.common';
+} from './collections.helpers';
 
 /**
  * Report entry for an added document in the manifest.

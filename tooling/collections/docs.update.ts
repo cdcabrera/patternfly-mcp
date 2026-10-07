@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { type PatternFlyMcpDocsCatalog } from '../src/docs.embedded';
+import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
   escapeCsvField,
@@ -13,7 +13,7 @@ import {
   verifyUrlReachability,
   type GitHubUrlInfo,
   type TrackedRepository
-} from './collection.common';
+} from './collections.helpers';
 import {
   AI_GUIDELINE_ALIASES,
   PINNED_HISTORICAL_REFS,
@@ -29,7 +29,7 @@ import {
   type DocsRemovedRecordReport,
   type DocsUnchangedRecordReport,
   type RecalculateOptions
-} from './update.collection.patternFlyDocs.helpers';
+} from './docs.helpers';
 
 /**
  * Options for running the documentation manifest collection update.
@@ -108,17 +108,17 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
   const docsPath =
     options.docsPath ||
     process.env.DOCS_COLLECTION_PATH ||
-    resolve(fileURLToPath(new URL('../src/docs.json', import.meta.url)));
+    resolve(fileURLToPath(new URL('../../src/docs.json', import.meta.url)));
 
   const apiPath =
     options.apiPath ||
     process.env.API_COLLECTION_PATH ||
-    resolve(fileURLToPath(new URL('../src/collection.patternFlyApi.json', import.meta.url)));
+    resolve(fileURLToPath(new URL('../../src/collection.patternFlyApi.json', import.meta.url)));
 
   const csvOutputPath =
     options.csvOutputPath ||
     process.env.CSV_DOCS_REPORT_PATH ||
-    resolve(fileURLToPath(new URL('../reports/collection.patternFlyDocs.report.csv', import.meta.url)));
+    resolve(fileURLToPath(new URL('../../reports/collection.patternFlyDocs.report.csv', import.meta.url)));
 
   const pruneApiOverlap = options.pruneApiOverlap !== false;
   const updateHashes = options.updateHashes !== false;

@@ -9,11 +9,11 @@ import {
   type ApiEmbedded,
   type ApiEmbeddedCollection,
   MIN_API_QUALITY_THRESHOLD
-} from '../src/collection.patternFlyApi';
-import { getSessionOptions, getOptions, runWithOptions } from '../src/options.context';
-import { createLogger } from '../src/logger';
-import { type LoggingSession } from '../src/options.defaults';
-import { escapeCsvField, formatCsv } from './collection.common';
+} from '../../src/collection.patternFlyApi';
+import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
+import { createLogger } from '../../src/logger';
+import { type LoggingSession } from '../../src/options.defaults';
+import { escapeCsvField, formatCsv } from './collections.helpers';
 
 /**
  * Reason classification for omitted or removed API records.
@@ -320,7 +320,7 @@ const run = async (
       records
     };
 
-    const outputPath = resolve(fileURLToPath(new URL('../src/collection.patternFlyApi.json', import.meta.url)));
+    const outputPath = resolve(fileURLToPath(new URL('../../src/collection.patternFlyApi.json', import.meta.url)));
     const jsonContent = isPrettyPrint ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
     let oldRecords: ApiEmbedded[] = [];
 
@@ -351,7 +351,7 @@ const run = async (
     if (outputCsv) {
       const targetCsvPath = csvOutputPath ||
         process.env.CSV_REPORT_PATH ||
-        resolve(fileURLToPath(new URL('../reports/collection.patternFlyApi.report.csv', import.meta.url)));
+        resolve(fileURLToPath(new URL('../../reports/collection.patternFlyApi.report.csv', import.meta.url)));
 
       await mkdir(dirname(targetCsvPath), { recursive: true });
       const csvContent = generateReportCsv({ diff, oldRecords, newRecords: records, crawledMap });

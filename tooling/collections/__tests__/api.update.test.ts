@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { expandApiEmbeddedCollection, type ApiEmbeddedCollection } from '../../src/collection.patternFlyApi';
-import { escapeCsvField, formatCsv, generateReportCsv, diffCollections, run } from '../../scripts/update.collection.patternFlyApi';
+import { expandApiEmbeddedCollection, type ApiEmbeddedCollection } from '../../../src/collection.patternFlyApi';
+import { escapeCsvField, formatCsv, generateReportCsv, diffCollections, run } from '../api.update';
 
 const COLLECTION_PATH = resolve(process.cwd(), 'src/collection.patternFlyApi.json');
 

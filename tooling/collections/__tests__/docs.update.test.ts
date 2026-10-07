@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
+import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
 import {
   AI_GUIDELINE_ALIASES,
   DEFAULT_TRACKED_REPOS,
@@ -15,7 +15,7 @@ import {
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc,
   run
-} from '../../scripts/update.collection.patternFlyDocs';
+} from '../docs.update';
 
 const DOCS_PATH = resolve(process.cwd(), 'src/docs.json');
 const API_PATH = resolve(process.cwd(), 'src/collection.patternFlyApi.json');
