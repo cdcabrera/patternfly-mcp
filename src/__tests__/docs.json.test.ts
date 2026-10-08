@@ -81,7 +81,7 @@ describe('docs.json', () => {
      * | patternfly-org | 540bb0d31cb18670dd02857f80aa8b444fed9be9 | 203 | **Primary** |
      * | patternfly-org | ec02b437ec72b6e4cc4e28524516288f4acf9fdf | 1 | One-off |
      * | patternfly-org | v5 | 1 | One-off |
-     * | patternfly-react | 831257aa7c49c3238e0f7afbb7cf219c62cd9e23 | 100 | **Primary** |
+     * | patternfly-react | e72793ab80c54a8b183b50e8eb43c198b0a633c1 | 100 | **Primary** |
      * | pf-codemods | e5e80a440bb033f9535befbade035d265684456b | 3 | One-off |
      * | **Total** | **9 unique refs** | **321** | |
      */
