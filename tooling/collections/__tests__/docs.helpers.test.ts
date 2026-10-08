@@ -2,11 +2,6 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
 import {
-  DEFAULT_TRACKED_REPOS,
-  extractCommitHash,
-  extractRepoInfo
-} from '../collections.helpers';
-import {
   AI_GUIDELINE_ALIASES,
   PINNED_HISTORICAL_REFS,
   diffDocsManifests,
@@ -174,24 +169,6 @@ describe('API Deduplication Litmus Test (Regression Guard)', () => {
 });
 
 describe('docs.helpers Manifest Recalculation & Diffing', () => {
-  it('should extract commit hashes and repository info correctly', () => {
-    const url =
-      'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/packages/documentation-site/patternfly-docs/content/AI/ai.md';
-    const hash = extractCommitHash(url);
-    const repoInfo = extractRepoInfo(url);
-
-    expect(hash).toBe('540bb0d31cb18670dd02857f80aa8b444fed9be9');
-    expect(repoInfo).toEqual({
-      owner: 'patternfly',
-      repo: 'patternfly-org',
-      ref: '540bb0d31cb18670dd02857f80aa8b444fed9be9',
-      filePath: 'packages/documentation-site/patternfly-docs/content/AI/ai.md'
-    });
-
-    expect(extractCommitHash('https://example.com/invalid')).toBeNull();
-    expect(extractRepoInfo('https://example.com/invalid')).toBeNull();
-  });
-
   it('should recalculate manifest metadata totalEntries and totalDocs accurately', () => {
     const sampleCatalog: PatternFlyMcpDocsCatalog = {
       version: '1',
@@ -320,33 +297,6 @@ describe('docs.helpers Manifest Recalculation & Diffing', () => {
     expect(diff.removed[0]?.record.displayName).toBe('Doc B');
     expect(diff.added.length).toBe(1);
     expect(diff.added[0]?.record.displayName).toBe('Doc C');
-  });
-
-  it('should define tracked default repositories', () => {
-    expect(DEFAULT_TRACKED_REPOS.length).toBeGreaterThan(0);
-    expect(DEFAULT_TRACKED_REPOS.some(repo => repo.repo === 'patternfly-org')).toBe(true);
-    expect(DEFAULT_TRACKED_REPOS.some(repo => repo.repo === 'patternfly-react')).toBe(true);
-  });
-
-  it('should correctly parse repository info and commit hashes from raw GitHub URLs', () => {
-    const rawUrl =
-      'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31359c381c8152331575ca2481e3fe1ff/packages/v4/src/content/components/button.md';
-
-    const info = extractRepoInfo(rawUrl);
-
-    expect(info).toEqual({
-      owner: 'patternfly',
-      repo: 'patternfly-org',
-      ref: '540bb0d31359c381c8152331575ca2481e3fe1ff',
-      filePath: 'packages/v4/src/content/components/button.md'
-    });
-
-    const hash = extractCommitHash(rawUrl);
-
-    expect(hash).toBe('540bb0d31359c381c8152331575ca2481e3fe1ff');
-
-    expect(extractRepoInfo('invalid-url')).toBeNull();
-    expect(extractCommitHash('invalid-url')).toBeNull();
   });
 
   it('should maintain declarative pinned historical hashes and guideline aliases', () => {
