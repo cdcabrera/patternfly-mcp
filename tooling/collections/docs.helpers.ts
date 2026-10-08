@@ -3,7 +3,7 @@ import {
   type PatternFlyMcpDocsCatalogDoc,
   type PatternFlyMcpDocsCatalogEntry
 } from '../../src/docs.embedded';
-import { extractCommitHash, extractRepoInfo } from './collections.helpers';
+import { extractCommitHash, extractRepoInfo } from './helpers';
 import { formatCsv } from './csv.helpers';
 
 /**

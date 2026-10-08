@@ -5,7 +5,7 @@ import {
   extractRepoInfo,
   fetchLatestRepoHashes,
   verifyUrlReachability
-} from '../collections.helpers';
+} from '../helpers';
 
 describe('DEFAULT_TRACKED_REPOS', () => {
   it('should define expected tracked repositories with default main branch', () => {
