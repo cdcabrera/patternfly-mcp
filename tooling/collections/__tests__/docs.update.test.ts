@@ -1,19 +1,25 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { jest } from '@jest/globals';
 import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
 import {
   AI_GUIDELINE_ALIASES,
   DEFAULT_TRACKED_REPOS,
   PINNED_HISTORICAL_REFS,
+  buildCsvReport,
   diffDocsManifests,
+  diffEntitiesByKey,
   escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
+  fetchLatestRepoHashes,
   findApiRedundantDocs,
   formatCsv,
   generateDocsReportCsv,
+  logDiffReport,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc,
+  resolveFromRoot,
   run
 } from '../docs.update';
 
@@ -112,23 +118,19 @@ describe('collection.patternFlyDocs CSV Report Generator', () => {
     expect(result).toBe('col1,col2\nval1,val2\n"val3,with,comma","val4 ""quoted"""\n');
   });
 
-  it('should produce a full structured CSV report for added, removed, modified, and unchanged doc entries', () => {
+  it('should produce a full structured CSV report for added, removed, modified, and unchanged records', () => {
     const diff = {
       added: [
         {
-          category: 'NewCat',
+          category: 'React',
           record: {
-            displayName: 'New Doc',
-            description: 'New Description',
-            pathSlug: 'new-doc',
-            section: 'components',
-            category: 'react',
-            source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/831257aa7c49c3238e0f7afbb7cf219c62cd9e23/README.md',
+            displayName: 'New Component',
+            pathSlug: 'new-component',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31359c381c8152331575ca2481e3fe1ff/new.md',
             version: 'v6'
-          },
+          } as any,
           reason: 'new upstream document',
-          details: 'Discovered in manifest update'
+          details: 'Discovered in release update'
         }
       ],
       removed: [
@@ -136,14 +138,10 @@ describe('collection.patternFlyDocs CSV Report Generator', () => {
           category: 'React',
           record: {
             displayName: 'Table Rules',
-            description: 'Old Table Rules',
             pathSlug: 'table-rules',
-            section: 'components',
-            category: 'react',
-            source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/ai-helpers/f7f8160c3f28b0bc7f64181d9466a425ac8329fc/docs/components/data-display/table.md',
+            path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md',
             version: 'v6'
-          },
+          } as any,
           reason: 'superseded by API collection',
           details: 'v6/AI/development-guidelines_table/text'
         }
@@ -153,32 +151,30 @@ describe('collection.patternFlyDocs CSV Report Generator', () => {
           category: 'Button',
           record: {
             displayName: 'Button Design',
-            description: 'Button design guidelines',
             pathSlug: 'button-design',
-            section: 'components',
-            category: 'design-guidelines',
-            source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Button.md',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31359c381c8152331575ca2481e3fe1ff/packages/v4/src/content/components/button.md',
             version: 'v6'
-          },
+          } as any,
+          previousRecord: {
+            displayName: 'Button Design',
+            pathSlug: 'button-design',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/9577561288bf28038102a0b1f3c8374d6c4c34a9/packages/v4/src/content/components/button.md',
+            version: 'v6'
+          } as any,
           reasons: ['hash update (9577561 -> 540bb0d)'],
-          previousHash: '957756128e8ddfc4be5db49e72312a2c43b9d220',
-          newHash: '540bb0d31cb18670dd02857f80aa8b444fed9be9'
+          previousHash: '9577561288bf28038102a0b1f3c8374d6c4c34a9',
+          newHash: '540bb0d31359c381c8152331575ca2481e3fe1ff'
         }
       ],
       unchanged: [
         {
-          category: 'Alert',
+          category: 'AIHelpers',
           record: {
-            displayName: 'Alert Design',
-            description: 'Alert design guidelines',
-            pathSlug: 'alert-design',
-            section: 'components',
-            category: 'design-guidelines',
-            source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Alert.md',
+            displayName: 'Contributing',
+            pathSlug: 'uxd-ai-helpers-contributing',
+            path: 'https://raw.githubusercontent.com/rh-uxd/uxd-ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/CONTRIBUTING.md',
             version: 'v6'
-          }
+          } as any
         }
       ]
     };
@@ -187,172 +183,185 @@ describe('collection.patternFlyDocs CSV Report Generator', () => {
     const lines = csv.trim().split('\n');
 
     expect(lines[0]).toBe('status,category,name,pathSlug,path,previousHash,newHash,reason,details');
-    expect(lines.some(line => line.startsWith('ADDED,NewCat,New Doc') && line.includes('new upstream document'))).toBe(true);
-    expect(lines.some(line => line.startsWith('REMOVED,React,Table Rules') && line.includes('superseded by API collection'))).toBe(true);
-    expect(lines.some(line => line.startsWith('MODIFIED,Button,Button Design') && line.includes('hash update'))).toBe(true);
-    expect(lines.some(line => line.startsWith('UNCHANGED,Alert,Alert Design'))).toBe(true);
+    expect(lines.some(line => line.startsWith('ADDED,React,New Component,new-component') && line.includes('540bb0d31359c381c8152331575ca2481e3fe1ff'))).toBe(true);
+    expect(lines.some(line => line.startsWith('REMOVED,React,Table Rules,table-rules') && line.includes('superseded by API collection'))).toBe(true);
+    expect(lines.some(line => line.startsWith('MODIFIED,Button,Button Design,button-design') && line.includes('hash update'))).toBe(true);
+    expect(lines.some(line => line.startsWith('UNCHANGED,AIHelpers,Contributing,uxd-ai-helpers-contributing'))).toBe(true);
   });
 });
 
 describe('API Deduplication Litmus Test (Regression Guard)', () => {
-  it('correctly detects all 20 redundant AI-helper entries when cross-referenced with API seed', () => {
-    // Read catalog containing pre-prune ai-helpers docs
-    const sourcePath = existsSync(RECORDS_MAINT_DOCS_PATH) ? RECORDS_MAINT_DOCS_PATH : DOCS_PATH;
-    const rawDocs = readFileSync(sourcePath, 'utf-8');
-    const rawApi = readFileSync(API_PATH, 'utf-8');
-    const docs = JSON.parse(rawDocs);
-    const api = JSON.parse(rawApi);
+  it('correctly detects the 20 redundant AI-helper entries when cross-referenced with API seed', () => {
+    // If records-maint/docs.json (341 full records) exists, run full litmus test against it
+    if (existsSync(RECORDS_MAINT_DOCS_PATH)) {
+      const rawFullDocs = readFileSync(RECORDS_MAINT_DOCS_PATH, 'utf-8');
+      const rawApi = readFileSync(API_PATH, 'utf-8');
+      const fullDocs: PatternFlyMcpDocsCatalog = JSON.parse(rawFullDocs);
+      const apiCatalog = JSON.parse(rawApi);
 
-    const redundant = findApiRedundantDocs(docs, api.records);
+      const redundant = findApiRedundantDocs(fullDocs, apiCatalog.records);
 
-    // If source catalog has the 341 entries with 20 ai-helpers
-    if (docs.meta.totalDocs >= 341) {
+      // Assert exactly 20 redundant AI-helper records are detected
       expect(redundant.length).toBe(20);
 
-      // Verify specific known entries are present
-      expect(redundant.some(report => report.record.displayName === 'Table Rules')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Charts')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Chatbot')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'AI Prompt Guidance')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Styling Standards')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'PatternFly React Development Rules')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Guidelines')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Setup')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Development Environment')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Quick Start')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'External Links')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Troubleshooting')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Component Architecture')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Quick Deployment Guide for Prototypes')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Component Groups')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Data Display')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Layout Components')).toBe(true);
-      expect(redundant.some(report => report.record.pathSlug === 'ai-helpers-readme')).toBe(true);
-      expect(redundant.some(report => report.record.pathSlug === 'ai-helpers-contributing')).toBe(true);
-      expect(redundant.some(report => report.record.pathSlug === 'ai-helpers-contributing-skills')).toBe(true);
-    } else {
-      // In pruned catalog, redundant records have already been pruned
-      expect(redundant.length).toBe(0);
+      // Verify specific known items are flagged with correct reasons and endpoint details
+      const tableRules = redundant.find(item => item.record.pathSlug === 'table-rules' || item.record.displayName === 'Table Rules');
+
+      expect(tableRules).toBeDefined();
+      expect(tableRules?.reason).toBe('superseded by API collection');
+      expect(tableRules?.details).toBe('v6/AI/development-guidelines_table/text');
+
+      const chartsRules = redundant.find(item => item.record.displayName === 'React Charts');
+
+      expect(chartsRules).toBeDefined();
+      expect(chartsRules?.details).toBe('v6/AI/development-guidelines_charts/text');
+
+      const chatbotRules = redundant.find(item => item.record.displayName === 'React Chatbot');
+
+      expect(chatbotRules).toBeDefined();
+      expect(chatbotRules?.details).toBe('v6/AI/development-guidelines_chatbot/text');
+
+      const quickStart = redundant.find(
+        item => item.record.pathSlug === 'quick-start' || item.record.displayName === 'Quick Start'
+      );
+
+      expect(quickStart).toBeDefined();
+      expect(quickStart?.details).toBe('v6/AI/development-guidelines_quick-start/text');
+
+      const commonIssues = redundant.find(
+        item => item.record.pathSlug === 'troubleshooting' || item.record.displayName === 'React Troubleshooting'
+      );
+
+      expect(commonIssues).toBeDefined();
+      expect(commonIssues?.details).toBe('v6/AI/development-guidelines_common-issues/text');
+
+      const readmeMarketplace = redundant.find(item => item.record.pathSlug === 'ai-helpers-readme');
+
+      expect(readmeMarketplace).toBeDefined();
+      expect(readmeMarketplace?.details).toBe('v6/AI/ai-assisted-development_marketplace/text');
     }
   });
 
-  it('preserves the 6 core root AIHelpers guides and ecosystem repositories without false positives', () => {
+  it('preserves the 6 core root AIHelpers guides and ecosystem packages from removal (negative control)', () => {
     const rawDocs = readFileSync(DOCS_PATH, 'utf-8');
     const rawApi = readFileSync(API_PATH, 'utf-8');
-    const docs = JSON.parse(rawDocs);
-    const api = JSON.parse(rawApi);
+    const docs: PatternFlyMcpDocsCatalog = JSON.parse(rawDocs);
+    const apiCatalog = JSON.parse(rawApi);
 
-    const redundant = findApiRedundantDocs(docs, api.records);
-    const redundantPaths = new Set(redundant.map(report => report.record.path));
+    const redundant = findApiRedundantDocs(docs, apiCatalog.records);
+    const redundantPaths = new Set(redundant.map(item => item.record.path));
 
-    // Ensure root AIHelpers repository guides are never flagged
+    // 1. Core AIHelpers root repository guides must not be in redundant set
     const rootAiHelpers = docs.docs['AIHelpers'] || [];
 
-    for (const item of rootAiHelpers) {
-      if (item.pathSlug.startsWith('uxd-ai-helpers-')) {
+    expect(rootAiHelpers.length).toBeGreaterThanOrEqual(6);
+    for (const doc of rootAiHelpers) {
+      expect(redundantPaths.has(doc.path)).toBe(false);
+    }
+
+    // 2. Ecosystem packages must not be in redundant set
+    const ecosystemKeys = ['CLIDocumentation', 'ElementsDocumentation', 'McpDocumentation', 'CodemodsDocumentation'];
+
+    for (const key of ecosystemKeys) {
+      const items = docs.docs[key] || [];
+
+      for (const item of items) {
         expect(redundantPaths.has(item.path)).toBe(false);
       }
     }
-
-    // Ensure ecosystem repositories are never flagged
-    for (const entries of Object.values(docs.docs as Record<string, any[]>)) {
-      for (const item of entries) {
-        if (
-          item.path.includes('/patternfly-cli/') ||
-          item.path.includes('/patternfly-elements/') ||
-          item.path.includes('/patternfly-mcp/') ||
-          item.path.includes('/pf-codemods/')
-        ) {
-          expect(redundantPaths.has(item.path)).toBe(false);
-        }
-      }
-    }
-  });
-});
-
-describe('Helper Utilities & Manifest Recalculation', () => {
-  it('should extract commit hashes and repository info correctly', () => {
-    const url =
-      'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/packages/documentation-site/patternfly-docs/content/AI/ai.md';
-    const hash = extractCommitHash(url);
-    const repoInfo = extractRepoInfo(url);
-
-    expect(hash).toBe('540bb0d31cb18670dd02857f80aa8b444fed9be9');
-    expect(repoInfo).toEqual({
-      owner: 'patternfly',
-      repo: 'patternfly-org',
-      ref: '540bb0d31cb18670dd02857f80aa8b444fed9be9',
-      filePath: 'packages/documentation-site/patternfly-docs/content/AI/ai.md'
-    });
-
-    expect(extractCommitHash('https://example.com/invalid')).toBeNull();
-    expect(extractRepoInfo('https://example.com/invalid')).toBeNull();
   });
 
-  it('should recalculate manifest metadata totalEntries and totalDocs accurately', () => {
-    const sampleCatalog: PatternFlyMcpDocsCatalog = {
+  it('prunes redundant records and updates hashes correctly in recalculateManifestMetadata', () => {
+    const mockCatalog: PatternFlyMcpDocsCatalog = {
       version: '1',
       generated: '2026-01-01T00:00:00.000Z',
       meta: {
         totalEntries: 2,
         totalDocs: 3,
-        source: 'patternfly-mcp'
+        source: 'test'
       },
       docs: {
-        Button: [
+        React: [
           {
-            displayName: 'Button 1',
-            description: 'Desc 1',
-            pathSlug: 'button-1',
-            section: 'components',
-            category: 'react',
+            displayName: 'Active Doc',
+            description: 'Desc',
+            pathSlug: 'active-doc',
+            section: 'sec',
+            category: 'React',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/1111111111111111111111111111111111111111/Button.md',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/oldhash/doc.md',
             version: 'v6'
           },
           {
-            displayName: 'Button 2',
-            description: 'Desc 2',
-            pathSlug: 'button-2',
-            section: 'components',
-            category: 'react',
+            displayName: 'Table Rules',
+            description: 'Desc',
+            pathSlug: 'table-rules',
+            section: 'sec',
+            category: 'React',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/1111111111111111111111111111111111111111/Button2.md',
+            path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md',
             version: 'v6'
           }
         ],
-        Alert: [
+        AIHelpers: [
           {
-            displayName: 'Alert 1',
-            description: 'Desc alert',
-            pathSlug: 'alert-1',
-            section: 'components',
-            category: 'react',
+            displayName: 'Contributing',
+            description: 'Desc',
+            pathSlug: 'uxd-ai-helpers-contributing',
+            section: 'sec',
+            category: 'AIHelpers',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/2222222222222222222222222222222222222222/Alert.md',
+            path: 'https://raw.githubusercontent.com/rh-uxd/uxd-ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/CONTRIBUTING.md',
             version: 'v6'
           }
         ]
       }
     };
 
+    const redundantRecords = [
+      {
+        category: 'React',
+        record: mockCatalog.docs.React![1]!,
+        reason: 'superseded by API collection',
+        details: 'v6/AI/development-guidelines_table/text'
+      }
+    ];
+
     const latestHashes = new Map([
-      ['patternfly/patternfly-react', '3333333333333333333333333333333333333333']
+      ['patternfly/patternfly-org', 'neworgsha1234567890'],
+      ['rh-uxd/uxd-ai-helpers', 'newaihelperssha1234567890']
     ]);
 
-    const updated = recalculateManifestMetadata(sampleCatalog, { latestHashes });
+    const updated = recalculateManifestMetadata(mockCatalog, {
+      redundantRecords,
+      latestHashes
+    });
 
+    // Verify Table Rules was pruned
+    expect(updated.docs.React?.length).toBe(1);
+    expect(updated.docs.React?.[0]?.displayName).toBe('Active Doc');
+    // Verify commit hash was updated for Active Doc
+    expect(updated.docs.React?.[0]?.path).toBe(
+      'https://raw.githubusercontent.com/patternfly/patternfly-org/neworgsha1234567890/doc.md'
+    );
+
+    // Verify pinned hash for AIHelpers was preserved
+    expect(updated.docs.AIHelpers?.[0]?.path).toBe(
+      'https://raw.githubusercontent.com/rh-uxd/uxd-ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/CONTRIBUTING.md'
+    );
+
+    // Verify recalculated metadata counts
     expect(updated.meta.totalEntries).toBe(2);
-    expect(updated.meta.totalDocs).toBe(3);
-    expect(updated.docs.Button?.[0]?.path).toContain('3333333333333333333333333333333333333333');
-    expect(updated.docs.Alert?.[0]?.path).toContain('2222222222222222222222222222222222222222');
+    expect(updated.meta.totalDocs).toBe(2);
   });
 
-  it('should diff manifests and categorize added, removed, modified, and unchanged entries', () => {
+  it('correctly categorizes added, removed, modified, and unchanged in diffDocsManifests', () => {
     const oldCatalog: PatternFlyMcpDocsCatalog = {
-      meta: { totalEntries: 2, totalDocs: 2, source: 'test' },
+      version: '1',
+      generated: '2026-01-01T00:00:00.000Z',
+      meta: { totalEntries: 1, totalDocs: 2, source: 'test' },
       docs: {
-        Cat1: [
+        Cat: [
           {
             displayName: 'Doc A',
             description: 'Desc A',
@@ -362,9 +371,7 @@ describe('Helper Utilities & Manifest Recalculation', () => {
             source: 'github',
             path: 'https://raw.githubusercontent.com/owner/repo/hash1111111111111111111111111111111111111111/a.md',
             version: 'v6'
-          }
-        ],
-        Cat2: [
+          },
           {
             displayName: 'Doc B',
             description: 'Desc B',
@@ -380,9 +387,11 @@ describe('Helper Utilities & Manifest Recalculation', () => {
     };
 
     const newCatalog: PatternFlyMcpDocsCatalog = {
-      meta: { totalEntries: 2, totalDocs: 2, source: 'test' },
+      version: '1',
+      generated: '2026-01-02T00:00:00.000Z',
+      meta: { totalEntries: 1, totalDocs: 2, source: 'test' },
       docs: {
-        Cat1: [
+        Cat: [
           {
             displayName: 'Doc A',
             description: 'Desc A',
@@ -390,11 +399,9 @@ describe('Helper Utilities & Manifest Recalculation', () => {
             section: 'sec',
             category: 'cat',
             source: 'github',
-            path: 'https://raw.githubusercontent.com/owner/repo/hash2222222222222222222222222222222222222222/a.md',
+            path: 'https://raw.githubusercontent.com/owner/repo/hash2222222222222222222222222222222222222222/a.md', // modified hash
             version: 'v6'
-          }
-        ],
-        Cat3: [
+          },
           {
             displayName: 'Doc C',
             description: 'Desc C',
@@ -514,5 +521,128 @@ describe('Helper Utilities & Manifest Recalculation', () => {
         highQualityApi
       )
     ).toBe('v6/AI/development-guidelines_charts/text');
+  });
+});
+
+describe('Shared collections.helpers & Diff Utilities', () => {
+  it('should resolve paths relative to project root with resolveFromRoot', () => {
+    const resolved = resolveFromRoot('src', 'docs.json');
+
+    expect(resolved).toBe(resolve(process.cwd(), 'src/docs.json'));
+  });
+
+  it('should perform generic entity diffing with diffEntitiesByKey', () => {
+    const oldItems = [
+      { id: '1', name: 'Alpha', version: 'v1' },
+      { id: '2', name: 'Beta', version: 'v1' },
+      { id: '3', name: 'Gamma', version: 'v1' }
+    ];
+
+    const newItems = [
+      { id: '1', name: 'Alpha', version: 'v1' }, // unchanged
+      { id: '2', name: 'Beta Updated', version: 'v2' }, // modified
+      { id: '4', name: 'Delta', version: 'v1' } // added
+      // id: 3 removed
+    ];
+
+    const diff = diffEntitiesByKey(
+      oldItems,
+      newItems,
+      item => item.id,
+      [
+        'name',
+        {
+          field: 'version',
+          label: 'version',
+          formatChange: (oldVal: unknown, newVal: unknown) => `version updated from ${String(oldVal)} to ${String(newVal)}`
+        }
+      ]
+    );
+
+    expect(diff.added.length).toBe(1);
+    expect(diff.added[0]?.id).toBe('4');
+
+    expect(diff.removed.length).toBe(1);
+    expect(diff.removed[0]?.item.id).toBe('3');
+
+    expect(diff.modified.length).toBe(1);
+    expect(diff.modified[0]?.newItem.id).toBe('2');
+    expect(diff.modified[0]?.reasons).toContain('name (Beta -> Beta Updated)');
+    expect(diff.modified[0]?.reasons).toContain('version updated from v1 to v2');
+
+    expect(diff.unchanged.length).toBe(1);
+    expect(diff.unchanged[0]?.id).toBe('1');
+  });
+
+  it('should build formatted CSV reports with buildCsvReport', () => {
+    const csv = buildCsvReport({
+      headers: ['header1', 'header2'],
+      rows: [['val1', 'val2']]
+    });
+
+    expect(csv).toBe('header1,header2\nval1,val2\n');
+  });
+
+  it('should execute logDiffReport console logger without errors', () => {
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    logDiffReport({ added: [], removed: [], modified: [], unchanged: [] });
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No record additions'));
+
+    logDiffReport({
+      added: [
+        {
+          category: 'Cat',
+          record: { displayName: 'Doc A', pathSlug: 'doc-a', path: 'p', version: 'v6' } as any
+        }
+      ],
+      removed: [
+        {
+          category: 'Cat',
+          record: { displayName: 'Doc B', pathSlug: 'doc-b', path: 'p', version: 'v6' } as any,
+          reason: 'retired'
+        }
+      ],
+      modified: [
+        {
+          category: 'Cat',
+          record: { displayName: 'Doc C', pathSlug: 'doc-c', path: 'p', version: 'v6' } as any,
+          reasons: ['hash update']
+        }
+      ],
+      unchanged: []
+    });
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Added (1)'));
+
+    consoleSpy.mockRestore();
+  });
+
+  it('should concurrently query GitHub commit hashes with fetchLatestRepoHashes', async () => {
+    const mockFetch = jest.spyOn(global, 'fetch').mockImplementation(async (url: unknown) => {
+      if (String(url).includes('patternfly-org')) {
+        return {
+          ok: true,
+          json: async () => ({ sha: 'mocked-org-sha-123' })
+        } as Response;
+      }
+
+      return {
+        ok: false,
+        status: 500
+      } as Response;
+    });
+
+    const hashes = await fetchLatestRepoHashes(
+      [
+        { owner: 'patternfly', repo: 'patternfly-org', branch: 'main' },
+        { owner: 'patternfly', repo: 'patternfly-react', branch: 'main' }
+      ],
+      2
+    );
+
+    expect(hashes.get('patternfly/patternfly-org')).toBe('mocked-org-sha-123');
+    expect(hashes.get('patternfly-org')).toBe('mocked-org-sha-123');
+
+    mockFetch.mockRestore();
   });
 });

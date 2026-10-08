@@ -5,11 +5,13 @@ import {
 } from '../../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
+  buildCsvReport,
   escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
   fetchLatestRepoHashes,
   formatCsv,
+  resolveFromRoot,
   verifyUrlReachability,
   type GitHubUrlInfo,
   type TrackedRepository
@@ -394,7 +396,7 @@ const generateDocsReportCsv = (diff: DocsDiffResult): string => {
     ]);
   }
 
-  return formatCsv(headers, rows);
+  return buildCsvReport({ headers, rows });
 };
 
 /**
@@ -483,6 +485,7 @@ export {
   generateDocsReportCsv,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc,
+  resolveFromRoot,
   verifyUrlReachability,
   type ApiCollectionRecordRef,
   type DocsAddedRecordReport,

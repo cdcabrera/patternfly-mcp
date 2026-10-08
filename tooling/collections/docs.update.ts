@@ -1,16 +1,21 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
+  buildCsvReport,
+  diffEntitiesByKey,
   escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
   fetchLatestRepoHashes,
   formatCsv,
+  resolveFromRoot,
   verifyUrlReachability,
+  type CsvReportOptions,
+  type GenericDiffFieldComparison,
+  type GenericDiffResult,
   type GitHubUrlInfo,
   type TrackedRepository
 } from './collections.helpers';
@@ -108,17 +113,17 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
   const docsPath =
     options.docsPath ||
     process.env.DOCS_COLLECTION_PATH ||
-    resolve(fileURLToPath(new URL('../../src/docs.json', import.meta.url)));
+    resolveFromRoot('src/docs.json');
 
   const apiPath =
     options.apiPath ||
     process.env.API_COLLECTION_PATH ||
-    resolve(fileURLToPath(new URL('../../src/collection.patternFlyApi.json', import.meta.url)));
+    resolveFromRoot('src/collection.patternFlyApi.json');
 
   const csvOutputPath =
     options.csvOutputPath ||
     process.env.CSV_DOCS_REPORT_PATH ||
-    resolve(fileURLToPath(new URL('../../reports/collection.patternFlyDocs.report.csv', import.meta.url)));
+    resolveFromRoot('reports/collection.patternFlyDocs.report.csv');
 
   const pruneApiOverlap = options.pruneApiOverlap !== false;
   const updateHashes = options.updateHashes !== false;
@@ -210,7 +215,9 @@ export {
   AI_GUIDELINE_ALIASES,
   DEFAULT_TRACKED_REPOS,
   PINNED_HISTORICAL_REFS,
+  buildCsvReport,
   diffDocsManifests,
+  diffEntitiesByKey,
   escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
@@ -218,16 +225,21 @@ export {
   findApiRedundantDocs,
   formatCsv,
   generateDocsReportCsv,
+  logDiffReport,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc,
+  resolveFromRoot,
   run,
   verifyUrlReachability,
   type ApiCollectionRecordRef,
+  type CsvReportOptions,
   type DocsAddedRecordReport,
   type DocsDiffResult,
   type DocsModifiedRecordReport,
   type DocsRemovedRecordReport,
   type DocsUnchangedRecordReport,
+  type GenericDiffFieldComparison,
+  type GenericDiffResult,
   type GitHubUrlInfo,
   type RecalculateOptions,
   type TrackedRepository,

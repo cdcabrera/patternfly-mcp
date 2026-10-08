@@ -1,267 +1,56 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 import {
   apiSpider,
   contentMetadata,
   type ApiContent,
   type ApiCrawler,
   type ApiEmbedded,
-  type ApiEmbeddedCollection,
-  MIN_API_QUALITY_THRESHOLD
+  type ApiEmbeddedCollection
 } from '../../src/collection.patternFlyApi';
 import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import { type LoggingSession } from '../../src/options.defaults';
-import { escapeCsvField, formatCsv } from './collections.helpers';
+import { resolveFromRoot } from './collections.helpers';
+import {
+  diffCollections,
+  diffReport,
+  escapeCsvField,
+  formatCsv,
+  generateReportCsv,
+  type ModifiedRecordReport,
+  type RemovalReason,
+  type RemovedRecordReport
+} from './api.helpers';
 
 /**
- * Reason classification for omitted or removed API records.
+ * Options for running the PatternFly API embedded collection generator.
  */
-type RemovalReason =
-  'lacks quality' |
-  'empty response' |
-  'deferred category' |
-  'upstream removed' |
-  'other';
-
-/**
- * Entry describing a removed record with its determined reason and details.
- */
-interface RemovedRecordReport {
-  record: ApiEmbedded;
-  reason: RemovalReason;
-  details?: string;
+interface UpdateApiCollectionOptions {
+  isPrettyPrint?: boolean;
+  filterLowQualityRecords?: boolean;
+  outputCsv?: boolean;
+  csvOutputPath?: string;
+  outputPath?: string;
 }
-
-/**
- * Entry describing a modified record and the changed fields.
- */
-interface ModifiedRecordReport {
-  record: ApiEmbedded;
-  reasons: string[];
-}
-
-/**
- * Options for generating CSV report output.
- */
-interface GenerateCsvReportOptions {
-  diff: ReturnType<typeof diffCollections>;
-  oldRecords: ApiEmbedded[];
-  newRecords: ApiEmbedded[];
-  crawledMap: Map<string, { entry: ApiCrawler; metadata: ApiContent }>;
-}
-
-/**
- * Generate a complete, non-truncated CSV report for additions, removals, modifications, and unchanged records.
- *
- * @param options - Generation options
- * @param options.diff - Diff calculation between old and new records
- * @param options.oldRecords - Previous collection records
- * @param options.newRecords - Current collection records
- * @param options.crawledMap - Map of crawled entries and metadata
- */
-const generateReportCsv = ({
-  diff,
-  oldRecords,
-  newRecords,
-  crawledMap
-}: GenerateCsvReportOptions): string => {
-  const oldMap = new Map(oldRecords.map(record => [record.p, record]));
-  const headers = ['status', 'path', 'name', 'previousQualityScore', 'newQualityScore', 'contentType', 'reason', 'details'];
-  const rows: (string | number | undefined | null)[][] = [];
-
-  for (const record of diff.added) {
-    rows.push(['ADDED', record.p, record.n, '', record.q, record.c, '', '']);
-  }
-
-  for (const { record, reason, details } of diff.removed) {
-    const newQualityScore = crawledMap.get(record.p)?.entry.qualityScore ?? '';
-
-    rows.push(['REMOVED', record.p, record.n, record.q, newQualityScore, record.c, reason, details || '']);
-  }
-
-  for (const { record, reasons } of diff.modified) {
-    const previousQualityScore = oldMap.get(record.p)?.q ?? '';
-
-    rows.push(['MODIFIED', record.p, record.n, previousQualityScore, record.q, record.c, 'property changes', reasons.join('; ')]);
-  }
-
-  const changedPaths = new Set([
-    ...diff.added.map(record => record.p),
-    ...diff.removed.map(removedItem => removedItem.record.p),
-    ...diff.modified.map(modifiedItem => modifiedItem.record.p)
-  ]);
-
-  for (const record of newRecords) {
-    if (!changedPaths.has(record.p)) {
-      rows.push(['UNCHANGED', record.p, record.n, record.q, record.q, record.c, '', '']);
-    }
-  }
-
-  return formatCsv(headers, rows);
-};
-
-/**
- * Create a diff report with annotated reasons between old and new collections.
- *
- * @param oldRecords - Previous collection
- * @param newRecords - Updated collection
- * @param crawledMap - Map of all crawled entries and evaluated metadata
- */
-const diffCollections = (
-  oldRecords: ApiEmbedded[],
-  newRecords: ApiEmbedded[],
-  crawledMap: Map<string, { entry: ApiCrawler; metadata: ApiContent }>
-) => {
-  const oldMap = new Map(oldRecords.map(record => [record.p, record]));
-  const newMap = new Map(newRecords.map(record => [record.p, record]));
-
-  const added = newRecords.filter(record => !oldMap.has(record.p));
-
-  const removed: RemovedRecordReport[] = [];
-
-  for (const oldRecord of oldRecords) {
-    if (newMap.has(oldRecord.p)) {
-      continue;
-    }
-
-    const crawled = crawledMap.get(oldRecord.p);
-
-    if (!crawled) {
-      removed.push({
-        record: oldRecord,
-        reason: 'upstream removed',
-        details: 'Endpoint no longer referenced upstream'
-      });
-    } else if (!crawled.entry.content || crawled.entry.content.trim() === '' || crawled.entry.content === '{}' || crawled.entry.content === '[]') {
-      removed.push({
-        record: oldRecord,
-        reason: 'empty response',
-        details: 'Empty payload returned'
-      });
-    } else if (crawled.metadata.isDeferred) {
-      removed.push({
-        record: oldRecord,
-        reason: 'deferred category',
-        details: `Category '${crawled.metadata.category}' is deferred`
-      });
-    } else if (crawled.metadata.isLowQuality || crawled.entry.qualityScore < MIN_API_QUALITY_THRESHOLD) {
-      removed.push({
-        record: oldRecord,
-        reason: 'lacks quality',
-        details: `Evaluated Q: ${crawled.entry.qualityScore} < ${MIN_API_QUALITY_THRESHOLD} threshold`
-      });
-    } else {
-      removed.push({
-        record: oldRecord,
-        reason: 'other',
-        details: `Excluded during crawl processing (Q: ${crawled.entry.qualityScore})`
-      });
-    }
-  }
-
-  const modified: ModifiedRecordReport[] = [];
-
-  for (const record of newRecords) {
-    const prev = oldMap.get(record.p);
-
-    if (!prev) {
-      continue;
-    }
-
-    const reasons: string[] = [];
-
-    if (prev.q !== record.q) {
-      reasons.push(`quality score (${prev.q} -> ${record.q})`);
-    }
-
-    if (prev.n !== record.n) {
-      reasons.push(`name ("${prev.n}" -> "${record.n}")`);
-    }
-
-    if (prev.d !== record.d) {
-      reasons.push('description updated');
-    }
-
-    if (prev.c !== record.c) {
-      reasons.push(`content-type (${prev.c} -> ${record.c})`);
-    }
-
-    if (reasons.length > 0) {
-      modified.push({ record, reasons });
-    }
-  }
-
-  return { added, removed, modified };
-};
-
-/**
- * Create a light diff report between old and new collections.
- *
- * @param diff - Diff report
- */
-const diffReport = (diff: ReturnType<typeof diffCollections>) => {
-  const { added, removed, modified } = diff;
-  const hasChanges = added.length > 0 || removed.length > 0 || modified.length > 0;
-
-  console.log('\n📊 Collection Diff Report:');
-
-  if (!hasChanges) {
-    console.log('   ✨ No record additions, removals, or property modifications detected.');
-
-    return;
-  }
-
-  if (added.length > 0) {
-    console.log(`   ➕ Added (${added.length}):`);
-    added.slice(0, 10).forEach(record => console.log(`      + ${record.p} (Q: ${record.q})`));
-
-    if (added.length > 10) {
-      console.log(`      ... and ${added.length - 10} more`);
-    }
-  }
-
-  if (removed.length > 0) {
-    console.log(`   ➖ Removed (${removed.length}):`);
-    removed.slice(0, 15).forEach(({ record, reason, details }) => {
-      console.log(`      - ${record.p} (Previous Q: ${record.q}) [Reason: ${reason}${details ? ` — ${details}` : ''}]`);
-    });
-
-    if (removed.length > 15) {
-      console.log(`      ... and ${removed.length - 15} more`);
-    }
-  }
-
-  if (modified.length > 0) {
-    console.log(`   🔄 Modified (${modified.length}):`);
-    modified.slice(0, 10).forEach(({ record, reasons }) => {
-      console.log(`      ~ ${record.p} [${reasons.join(', ')}]`);
-    });
-
-    if (modified.length > 10) {
-      console.log(`      ... and ${modified.length - 10} more`);
-    }
-  }
-};
 
 /**
  * Run apiSpider directly and transform crawler entries into compressed embedded JSON.
  *
- * @param [options] - Optional configuration options.
- * @param [options.isPrettyPrint=true] - Whether to pretty-print the JSON output.
- * @param [options.filterLowQualityRecords=false] - Whether to filter low-quality records based on the collection's criteria.
- * @param [options.outputCsv=true] - Whether to generate and save a full CSV diff report.
- * @param [options.csvOutputPath] - Custom path to write CSV report.
+ * @param [options] - Optional configuration options
+ * @param [options.isPrettyPrint=true] - Whether to pretty-print the JSON output
+ * @param [options.filterLowQualityRecords=false] - Whether to filter low-quality records based on criteria
+ * @param [options.outputCsv=true] - Whether to generate and save a full CSV diff report
+ * @param [options.csvOutputPath] - Custom path to write CSV report
+ * @param [options.outputPath] - Custom path to write collection JSON
  */
-const run = async (
-  {
-    isPrettyPrint = true,
-    filterLowQualityRecords = false,
-    outputCsv = true,
-    csvOutputPath
-  }: { isPrettyPrint?: boolean; filterLowQualityRecords?: boolean; outputCsv?: boolean; csvOutputPath?: string; } = {}
-) => {
+const run = async ({
+  isPrettyPrint = true,
+  filterLowQualityRecords = false,
+  outputCsv = true,
+  csvOutputPath,
+  outputPath
+}: UpdateApiCollectionOptions = {}) => {
   // 1. Enable stderr logging so all diagnostics_channel logs (debug, info, warn, error) are printed
   const unsubscribeLogger = createLogger({
     channelName: getSessionOptions().channelName,
@@ -320,12 +109,12 @@ const run = async (
       records
     };
 
-    const outputPath = resolve(fileURLToPath(new URL('../../src/collection.patternFlyApi.json', import.meta.url)));
+    const targetOutputPath = outputPath || resolveFromRoot('src/collection.patternFlyApi.json');
     const jsonContent = isPrettyPrint ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
     let oldRecords: ApiEmbedded[] = [];
 
     try {
-      const existingContent = await readFile(outputPath, 'utf-8');
+      const existingContent = await readFile(targetOutputPath, 'utf-8');
       const parsedExisting: ApiEmbeddedCollection = JSON.parse(existingContent);
 
       oldRecords = parsedExisting.records || [];
@@ -333,12 +122,12 @@ const run = async (
       // File might not exist yet on initial run
     }
 
-    await writeFile(outputPath, jsonContent + '\n', 'utf-8');
+    await writeFile(targetOutputPath, jsonContent + '\n', 'utf-8');
 
     const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
     const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
 
-    console.log(`✅ Updated src/collection.patternFlyApi.json:`);
+    console.log(`✅ Updated ${targetOutputPath}:`);
     console.log(`   - Total Crawled: ${entries.length} endpoints`);
     console.log(`   - Admitted Records: ${records.length}`);
     console.log(`   - File Size: ${sizeKb} KB`);
@@ -349,16 +138,24 @@ const run = async (
     diffReport(diff);
 
     if (outputCsv) {
-      const targetCsvPath = csvOutputPath ||
+      const targetCsvPath =
+        csvOutputPath ||
         process.env.CSV_REPORT_PATH ||
-        resolve(fileURLToPath(new URL('../../reports/collection.patternFlyApi.report.csv', import.meta.url)));
+        resolveFromRoot('reports/collection.patternFlyApi.report.csv');
 
       await mkdir(dirname(targetCsvPath), { recursive: true });
-      const csvContent = generateReportCsv({ diff, oldRecords, newRecords: records, crawledMap });
+      const csvContent = generateReportCsv({
+        diff,
+        oldRecords,
+        newRecords: records,
+        crawledMap
+      });
 
       await writeFile(targetCsvPath, csvContent, 'utf-8');
       console.log(`📄 Exported full CSV report: ${targetCsvPath}`);
     }
+
+    return { payload, diff };
   } finally {
     clearTimeout(keepAlive);
     unsubscribeLogger();
@@ -384,5 +181,6 @@ export {
   run,
   type ModifiedRecordReport,
   type RemovalReason,
-  type RemovedRecordReport
+  type RemovedRecordReport,
+  type UpdateApiCollectionOptions
 };

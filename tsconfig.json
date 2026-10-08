@@ -27,7 +27,8 @@
       "#docsCatalog": ["./src/docs.json"],
       "#toolsHost": ["./src/server.toolsHost.ts"],
       "#workerEntry": ["./src/server.workerEntry.ts"],
-      "#collectionPatternFlyApi": ["./src/collection.patternFlyApi.ts"]
+      "#collectionPatternFlyApi": ["./src/collection.patternFlyApi.ts"],
+      "#tooling/*": ["./tooling/collections/*"]
     }
   },
   "include": [

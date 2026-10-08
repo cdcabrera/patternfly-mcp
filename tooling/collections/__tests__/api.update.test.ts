@@ -1,7 +1,10 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { jest } from '@jest/globals';
 import { expandApiEmbeddedCollection, type ApiEmbeddedCollection } from '../../../src/collection.patternFlyApi';
-import { escapeCsvField, formatCsv, generateReportCsv, diffCollections, run } from '../api.update';
+import { diffCollections, diffReport, generateReportCsv } from '../api.helpers';
+import { escapeCsvField, formatCsv } from '../collections.helpers';
+import { run } from '../api.update';
 
 const COLLECTION_PATH = resolve(process.cwd(), 'src/collection.patternFlyApi.json');
 
@@ -137,6 +140,53 @@ describe('collection.patternFlyApi CSV Report Generator', () => {
     expect(lines.some(line => line.startsWith('REMOVED,endpoint/removed,Old Doc,0.96,0.8') && line.includes('lacks quality'))).toBe(true);
     expect(lines.some(line => line.startsWith('MODIFIED,endpoint/modified,Mod Doc,0.95,0.99') && line.includes('quality score'))).toBe(true);
     expect(lines.some(line => line.startsWith('UNCHANGED,endpoint/unchanged,Unchanged Doc,0.98,0.98'))).toBe(true);
+  });
+
+  it('should correctly classify all API removal reasons', () => {
+    const oldRecords = [
+      { p: 'endpoint/upstream-removed', n: 'Doc 1', d: 'D', c: 'text/html', q: 1 },
+      { p: 'endpoint/empty-response', n: 'Doc 2', d: 'D', c: 'text/html', q: 1 },
+      { p: 'endpoint/deferred', n: 'Doc 3', d: 'D', c: 'text/html', q: 1 },
+      { p: 'endpoint/other', n: 'Doc 4', d: 'D', c: 'text/html', q: 1 }
+    ];
+
+    const crawledMap = new Map();
+
+    crawledMap.set('endpoint/empty-response', {
+      entry: { qualityScore: 1, content: '   ' },
+      metadata: { isDeferred: false, isLowQuality: false, category: 'components' }
+    });
+    crawledMap.set('endpoint/deferred', {
+      entry: { qualityScore: 1, content: 'some content' },
+      metadata: { isDeferred: true, isLowQuality: false, category: 'v5-legacy' }
+    });
+    crawledMap.set('endpoint/other', {
+      entry: { qualityScore: 0.99, content: 'content' },
+      metadata: { isDeferred: false, isLowQuality: false, category: 'components' }
+    });
+
+    const diff = diffCollections(oldRecords, [], crawledMap);
+
+    expect(diff.removed.some(item => item.record.p === 'endpoint/upstream-removed' && item.reason === 'upstream removed')).toBe(true);
+    expect(diff.removed.some(item => item.record.p === 'endpoint/empty-response' && item.reason === 'empty response')).toBe(true);
+    expect(diff.removed.some(item => item.record.p === 'endpoint/deferred' && item.reason === 'deferred category')).toBe(true);
+    expect(diff.removed.some(item => item.record.p === 'endpoint/other' && item.reason === 'other')).toBe(true);
+  });
+
+  it('should execute diffReport console logger without errors', () => {
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    diffReport({ added: [], removed: [], modified: [] });
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('No record additions'));
+
+    diffReport({
+      added: [{ p: 'added/p', n: 'Added', d: 'd', c: 'text/html', q: 1 }],
+      removed: [{ record: { p: 'removed/p', n: 'Removed', d: 'd', c: 'text/html', q: 1 }, reason: 'other' }],
+      modified: [{ record: { p: 'mod/p', n: 'Mod', d: 'd', c: 'text/html', q: 1 }, reasons: ['name updated'] }]
+    });
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Added (1)'));
+
+    consoleSpy.mockRestore();
   });
 
   it('should generate a CSV report from a sample of collection records', () => {
