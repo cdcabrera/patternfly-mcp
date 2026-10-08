@@ -1,4 +1,4 @@
-import { escapeCsvField, formatCsv } from '../csv.helpers';
+import { escapeCsvField, formatCsv } from '../csv';
 
 describe('escapeCsvField', () => {
   it('should correctly escape plain strings, numbers, null, and undefined', () => {

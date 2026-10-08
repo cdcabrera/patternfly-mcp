@@ -13,7 +13,7 @@ import {
 import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import { type LoggingSession } from '../../src/options.defaults';
-import { formatCsv } from './csv.helpers';
+import { formatCsv } from './csv';
 
 /**
  * Reason classification for omitted or removed API records.

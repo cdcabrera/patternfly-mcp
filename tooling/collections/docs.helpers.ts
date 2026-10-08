@@ -4,7 +4,7 @@ import {
   type PatternFlyMcpDocsCatalogEntry
 } from '../../src/docs.embedded';
 import { extractCommitHash, extractRepoInfo } from './helpers';
-import { formatCsv } from './csv.helpers';
+import { formatCsv } from './csv';
 
 /**
  * Report entry for an added document in the manifest.
