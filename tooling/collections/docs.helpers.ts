@@ -3,16 +3,8 @@ import {
   type PatternFlyMcpDocsCatalogDoc,
   type PatternFlyMcpDocsCatalogEntry
 } from '../../src/docs.embedded';
-import {
-  DEFAULT_TRACKED_REPOS,
-  extractCommitHash,
-  extractRepoInfo,
-  fetchLatestRepoHashes,
-  verifyUrlReachability,
-  type GitHubUrlInfo,
-  type TrackedRepository
-} from './collections.helpers';
-import { escapeCsvField, formatCsv } from './csv.helpers';
+import { extractCommitHash, extractRepoInfo } from './collections.helpers';
+import { formatCsv } from './csv.helpers';
 
 /**
  * Report entry for an added document in the manifest.
@@ -470,26 +462,18 @@ const recalculateManifestMetadata = (
 
 export {
   AI_GUIDELINE_ALIASES,
-  DEFAULT_TRACKED_REPOS,
   PINNED_HISTORICAL_REFS,
   diffDocsManifests,
-  escapeCsvField,
   extractCommitHash,
-  extractRepoInfo,
-  fetchLatestRepoHashes,
   findApiRedundantDocs,
-  formatCsv,
   generateDocsReportCsv,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc,
-  verifyUrlReachability,
   type ApiCollectionRecordRef,
   type DocsAddedRecordReport,
   type DocsDiffResult,
   type DocsModifiedRecordReport,
   type DocsRemovedRecordReport,
   type DocsUnchangedRecordReport,
-  type GitHubUrlInfo,
-  type RecalculateOptions,
-  type TrackedRepository
+  type RecalculateOptions
 };
