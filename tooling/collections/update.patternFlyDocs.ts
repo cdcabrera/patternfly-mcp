@@ -11,7 +11,7 @@ import {
   recalculateManifestMetadata,
   type ApiCollectionRecordRef,
   type DocsDiffResult
-} from './docs.helpers';
+} from './update.patternFlyDocsHelpers';
 
 /**
  * Options for running the documentation manifest collection update.

@@ -9,7 +9,7 @@ import {
   generateDocsReportCsv,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc
-} from '../docs.helpers';
+} from '../update.patternFlyDocsHelpers';
 
 const DOCS_PATH = resolve(process.cwd(), 'src/docs.json');
 const API_PATH = resolve(process.cwd(), 'src/collection.patternFlyApi.json');

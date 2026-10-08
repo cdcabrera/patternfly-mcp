@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
-import { run } from '../docs.update';
+import { run } from '../update.patternFlyDocs';
 
 const DOCS_PATH = resolve(process.cwd(), 'src/docs.json');
 
