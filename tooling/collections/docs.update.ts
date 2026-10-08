@@ -5,15 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
-  escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
   fetchLatestRepoHashes,
-  formatCsv,
   verifyUrlReachability,
   type GitHubUrlInfo,
   type TrackedRepository
 } from './collections.helpers';
+import { escapeCsvField, formatCsv } from './csv.helpers';
 import {
   AI_GUIDELINE_ALIASES,
   PINNED_HISTORICAL_REFS,

@@ -5,15 +5,14 @@ import {
 } from '../../src/docs.embedded';
 import {
   DEFAULT_TRACKED_REPOS,
-  escapeCsvField,
   extractCommitHash,
   extractRepoInfo,
   fetchLatestRepoHashes,
-  formatCsv,
   verifyUrlReachability,
   type GitHubUrlInfo,
   type TrackedRepository
 } from './collections.helpers';
+import { escapeCsvField, formatCsv } from './csv.helpers';
 
 /**
  * Report entry for an added document in the manifest.
