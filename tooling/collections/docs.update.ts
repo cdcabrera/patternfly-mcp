@@ -3,31 +3,14 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
+import { fetchLatestRepoHashes } from './collections.helpers';
 import {
-  DEFAULT_TRACKED_REPOS,
-  extractCommitHash,
-  extractRepoInfo,
-  fetchLatestRepoHashes,
-  verifyUrlReachability,
-  type GitHubUrlInfo,
-  type TrackedRepository
-} from './collections.helpers';
-import { escapeCsvField, formatCsv } from './csv.helpers';
-import {
-  AI_GUIDELINE_ALIASES,
-  PINNED_HISTORICAL_REFS,
   diffDocsManifests,
   findApiRedundantDocs,
   generateDocsReportCsv,
   recalculateManifestMetadata,
-  resolveApiEndpointForAiDoc,
   type ApiCollectionRecordRef,
-  type DocsAddedRecordReport,
-  type DocsDiffResult,
-  type DocsModifiedRecordReport,
-  type DocsRemovedRecordReport,
-  type DocsUnchangedRecordReport,
-  type RecalculateOptions
+  type DocsDiffResult
 } from './docs.helpers';
 
 /**
@@ -206,29 +189,7 @@ if (process.env.UPDATE_COLLECTIONS === 'true') {
 }
 
 export {
-  AI_GUIDELINE_ALIASES,
-  DEFAULT_TRACKED_REPOS,
-  PINNED_HISTORICAL_REFS,
-  diffDocsManifests,
-  escapeCsvField,
-  extractCommitHash,
-  extractRepoInfo,
-  fetchLatestRepoHashes,
-  findApiRedundantDocs,
-  formatCsv,
-  generateDocsReportCsv,
-  recalculateManifestMetadata,
-  resolveApiEndpointForAiDoc,
+  logDiffReport,
   run,
-  verifyUrlReachability,
-  type ApiCollectionRecordRef,
-  type DocsAddedRecordReport,
-  type DocsDiffResult,
-  type DocsModifiedRecordReport,
-  type DocsRemovedRecordReport,
-  type DocsUnchangedRecordReport,
-  type GitHubUrlInfo,
-  type RecalculateOptions,
-  type TrackedRepository,
   type UpdateDocsOptions
 };

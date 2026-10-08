@@ -13,7 +13,7 @@ import {
 import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import { type LoggingSession } from '../../src/options.defaults';
-import { escapeCsvField, formatCsv } from './csv.helpers';
+import { formatCsv } from './csv.helpers';
 
 /**
  * Reason classification for omitted or removed API records.
@@ -378,10 +378,10 @@ if (process.env.UPDATE_COLLECTIONS === 'true') {
 
 export {
   diffCollections,
-  escapeCsvField,
-  formatCsv,
+  diffReport,
   generateReportCsv,
   run,
+  type GenerateCsvReportOptions,
   type ModifiedRecordReport,
   type RemovalReason,
   type RemovedRecordReport
