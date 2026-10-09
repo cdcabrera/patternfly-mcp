@@ -4,7 +4,8 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import { saveCsvReport } from './csv';
-import { fetchLatestRepoHashes, printDiffSummary, runUpdateTask, writeJsonCollection } from './helpers';
+import { fetchLatestRepoHashes, runUpdateTask, writeJsonCollection } from './helpers';
+import { printDiffSummary } from './summary';
 import {
   diffDocsManifests,
   findApiRedundantDocs,

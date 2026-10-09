@@ -14,7 +14,8 @@ import { getSessionOptions, getOptions, runWithOptions } from '../../src/options
 import { createLogger } from '../../src/logger';
 import { type LoggingSession } from '../../src/options.defaults';
 import { generateDiffCsv, saveCsvReport } from './csv';
-import { printDiffSummary, runUpdateTask, writeJsonCollection } from './helpers';
+import { runUpdateTask, writeJsonCollection } from './helpers';
+import { printDiffSummary } from './summary';
 
 /**
  * Reason classification for omitted or removed API records.

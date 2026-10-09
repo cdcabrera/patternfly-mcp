@@ -1,6 +1,3 @@
-/**
- * Shared CSV formatting and escaping utilities for PatternFly MCP collection maintenance scripts.
- */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
