@@ -8,7 +8,7 @@ import {
 import {
   extractTrackedReposFromCatalog,
   fetchLatestRepoHashes,
-  getDefaultCollectionPath,
+  getSrcPath,
   runUpdateTask,
   writeJsonCollection
 } from './helpers';
@@ -89,9 +89,9 @@ const run = async ({
   docsFilename = DEFAULT_DOCS_FILENAME,
   apiFilename = DEFAULT_API_FILENAME,
   reportFilename = DEFAULT_DOCS_REPORT_FILENAME,
-  docsPath = process.env.DOCS_COLLECTION_PATH || getDefaultCollectionPath(docsFilename),
-  apiPath = process.env.API_COLLECTION_PATH || getDefaultCollectionPath(apiFilename),
-  csvOutputPath = process.env.CSV_DOCS_REPORT_PATH || getDefaultReportPath(reportFilename),
+  docsPath = getSrcPath(docsFilename),
+  apiPath = getSrcPath(apiFilename),
+  csvOutputPath = getDefaultReportPath(reportFilename),
   pruneApiOverlap = true,
   verifyReachability = false,
   updateHashes = true,

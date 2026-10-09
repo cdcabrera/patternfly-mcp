@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { memo } from '../../src/server.caching';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
+import { joinUrl } from '../../src/server.helpers';
 
 /**
  * Information extracted from a raw GitHub documentation URL.
@@ -325,10 +326,21 @@ const writeJsonCollection = async <T>(
  * Resolve the default absolute path for a JSON collection file in the src directory.
  *
  * @param filename - Collection JSON filename
+ * @param [path] - Default optional path to prepend to the filename.
  * @returns Fully resolved filesystem path in the src directory
  */
-const getDefaultCollectionPath = (filename: string): string =>
-  resolve(fileURLToPath(new URL(`../../src/${filename}`, import.meta.url)));
+const getSrcPath = (filename: string, path: string = '../../src'): string =>
+  resolve(fileURLToPath(new URL(joinUrl(path, filename), import.meta.url)));
+
+/**
+ * Resolve the default absolute path for a JSON collection file in the src directory.
+ *
+ * @param filename - Collection JSON filename
+ * @param [path] - Default optional path to prepend to the filename.
+ * @returns Fully resolved filesystem path in the src directory
+ */
+const getReportsPath = (filename: string, path: string = '../../reports'): string =>
+  getSrcPath(filename, path);
 
 /**
  * Generic lifecycle runner for collection update tasks invoked via environment variables.
@@ -360,7 +372,8 @@ export {
   fetchCommitViaGitLsRemote,
   fetchRepoCommit,
   fetchLatestRepoHashes,
-  getDefaultCollectionPath,
+  getReportsPath,
+  getSrcPath,
   probeUrl,
   runUpdateTask,
   verifyUrlReachability,

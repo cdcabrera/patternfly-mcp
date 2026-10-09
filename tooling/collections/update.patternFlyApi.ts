@@ -15,7 +15,7 @@ import {
   getDefaultReportPath,
   saveCsvReport
 } from './csv';
-import { getDefaultCollectionPath, runUpdateTask, writeJsonCollection } from './helpers';
+import { getSrcPath, runUpdateTask, writeJsonCollection } from './helpers';
 import { printDiffSummary } from './summary';
 
 /**
@@ -253,8 +253,8 @@ const run = async (
   {
     filename = DEFAULT_API_FILENAME,
     reportFilename = DEFAULT_API_REPORT_FILENAME,
-    outputPath = process.env.API_COLLECTION_PATH || getDefaultCollectionPath(filename),
-    csvOutputPath = process.env.CSV_REPORT_PATH || getDefaultReportPath(reportFilename),
+    outputPath = getSrcPath(filename),
+    csvOutputPath = getDefaultReportPath(reportFilename),
     isPrettyPrint = true,
     filterLowQualityRecords = false,
     outputCsv = true
