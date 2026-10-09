@@ -193,7 +193,7 @@ const verifyUrlReachability = async (url: string, timeoutMs = 5000): Promise<boo
  */
 verifyUrlReachability.memo = memo(verifyUrlReachability, {
   cacheLimit: 200,
-  keyHash: args => `${args[0]}:${args[1] ?? 5000}`
+  keyHash: args => `${args[0]}:${args[1] || 5000}`
 });
 
 /**
