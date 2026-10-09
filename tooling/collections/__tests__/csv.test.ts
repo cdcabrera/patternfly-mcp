@@ -1,8 +1,12 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import {
+  DEFAULT_API_REPORT_FILENAME,
+  DEFAULT_DOCS_REPORT_FILENAME,
   escapeCsvField,
   formatCsv,
   generateDiffCsv,
+  getDefaultReportPath,
+  getReportDatePrefix,
   saveCsvReport
 } from '../csv';
 
@@ -14,6 +18,35 @@ jest.mock('node:fs/promises', () => ({
 
 const mockMkdir = mkdir as jest.MockedFunction<typeof mkdir>;
 const mockWriteFile = writeFile as jest.MockedFunction<typeof writeFile>;
+
+describe('getReportDatePrefix', () => {
+  it('should format a given date into YYYYMMDD- prefix format', () => {
+    const fixedDate = new Date(2026, 9, 9); // Oct 9, 2026
+
+    expect(getReportDatePrefix(fixedDate)).toBe('20261009-');
+  });
+
+  it('should properly zero-pad single digit months and days', () => {
+    const singleDigitDate = new Date(2026, 0, 5); // Jan 5, 2026
+
+    expect(getReportDatePrefix(singleDigitDate)).toBe('20260105-');
+  });
+
+  it('should generate a valid 9-character prefix matching /^[0-9]{8}-$/ when using current date', () => {
+    expect(getReportDatePrefix()).toMatch(/^[0-9]{8}-$/);
+  });
+});
+
+describe('getDefaultReportPath', () => {
+  it('should resolve default path containing the timestamp prefix and filename', () => {
+    const fixedDate = new Date(2026, 9, 9);
+    const apiPath = getDefaultReportPath(DEFAULT_API_REPORT_FILENAME, fixedDate);
+    const docsPath = getDefaultReportPath(DEFAULT_DOCS_REPORT_FILENAME, fixedDate);
+
+    expect(apiPath).toMatch(/reports\/20261009-collection\.patternFlyApi\.report\.csv$/);
+    expect(docsPath).toMatch(/reports\/20261009-collection\.patternFlyDocs\.report\.csv$/);
+  });
+});
 
 describe('escapeCsvField', () => {
   it.each([

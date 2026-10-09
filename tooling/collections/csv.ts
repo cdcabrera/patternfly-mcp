@@ -1,5 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const DEFAULT_API_REPORT_FILENAME = 'collection.patternFlyApi.report.csv';
+const DEFAULT_DOCS_REPORT_FILENAME = 'collection.patternFlyDocs.report.csv';
 
 type CsvCellValue = string | number | boolean | undefined | null;
 type DiffStatus = 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
@@ -24,6 +28,33 @@ interface GenericDiff<TAdded, TRemoved, TModified, TUnchanged> {
   modified: Iterable<TModified>;
   unchanged: Iterable<TUnchanged>;
 }
+
+/**
+ * Generate a YYYYMMDD date prefix with trailing hyphen for report filenames.
+ *
+ * @param [date=new Date()] - Target date to format
+ * @returns Formatted date prefix (e.g., "20261009-")
+ */
+const getReportDatePrefix = (date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}${month}${day}-`;
+};
+
+/**
+ * Resolve the default absolute path for a CSV report with a YYYYMMDD- prefix.
+ *
+ * @param filename - Base report filename
+ * @param [date=new Date()] - Date to use for the timestamp prefix
+ * @returns Fully resolved filesystem path in the reports directory
+ */
+const getDefaultReportPath = (filename: string, date = new Date()): string => {
+  const prefix = getReportDatePrefix(date);
+
+  return resolve(fileURLToPath(new URL(`../../reports/${prefix}${filename}`, import.meta.url)));
+};
 
 /**
  * Safely escape and format a field for standard RFC 4180 CSV output.
@@ -114,6 +145,10 @@ const saveCsvReport = async (targetPath: string, csvContent: string): Promise<vo
 };
 
 export {
+  DEFAULT_API_REPORT_FILENAME,
+  DEFAULT_DOCS_REPORT_FILENAME,
+  getDefaultReportPath,
+  getReportDatePrefix,
   escapeCsvField,
   formatCsv,
   generateDiffCsv,

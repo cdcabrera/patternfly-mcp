@@ -12,7 +12,12 @@ import {
 } from '../../src/collection.patternFlyApi';
 import { getLoggerOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
-import { generateDiffCsv, saveCsvReport } from './csv';
+import {
+  DEFAULT_API_REPORT_FILENAME,
+  generateDiffCsv,
+  getDefaultReportPath,
+  saveCsvReport
+} from './csv';
 import { runUpdateTask, writeJsonCollection } from './helpers';
 import { printDiffSummary } from './summary';
 
@@ -313,9 +318,10 @@ const run = async (
     diffReport(diff);
 
     if (outputCsv) {
-      const targetCsvPath = csvOutputPath ||
+      const targetCsvPath =
+        csvOutputPath ||
         process.env.CSV_REPORT_PATH ||
-        resolve(fileURLToPath(new URL('../../reports/collection.patternFlyApi.report.csv', import.meta.url)));
+        getDefaultReportPath(DEFAULT_API_REPORT_FILENAME);
 
       const csvContent = generateReportCsv({ diff, oldRecords, newRecords: records, crawledMap });
 

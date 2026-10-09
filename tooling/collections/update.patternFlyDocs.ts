@@ -3,7 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
-import { saveCsvReport } from './csv';
+import {
+  DEFAULT_DOCS_REPORT_FILENAME,
+  getDefaultReportPath,
+  saveCsvReport
+} from './csv';
 import {
   extractTrackedReposFromCatalog,
   fetchLatestRepoHashes,
@@ -68,7 +72,7 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
   const csvOutputPath =
     options.csvOutputPath ||
     process.env.CSV_DOCS_REPORT_PATH ||
-    resolve(fileURLToPath(new URL('../../reports/collection.patternFlyDocs.report.csv', import.meta.url)));
+    getDefaultReportPath(DEFAULT_DOCS_REPORT_FILENAME);
 
   const pruneApiOverlap = options.pruneApiOverlap !== false;
   const updateHashes = options.updateHashes !== false;
