@@ -486,10 +486,6 @@ The server packages pre-seeded API endpoints to enable instant server startup wi
 - **Execution**: Crawls live PatternFly API endpoints via `apiSpider`, filters low-quality records, compresses content into `src/collection.patternFlyApi.json`, and outputs structured console diffs and timestamped CSV audit reports to `reports/YYYYMMDD-collection.patternFlyApi.report.csv`.
 - **Configuration & Environment Overrides**:
   - `UPDATE_COLLECTIONS=true`: Required environment flag to execute collection builds directly.
-  - `API_COLLECTION_PATH`: Custom path override for writing the API collection JSON.
-  - `DOCS_COLLECTION_PATH`: Custom path override for reading/writing the Docs collection JSON.
-  - `CSV_REPORT_PATH`: Custom path override for the API CSV diff report.
-  - `CSV_DOCS_REPORT_PATH`: Custom path override for the Docs CSV diff report.
 - **When to run**: When PatternFly publishes new releases, when updating metadata/quality filters, or as part of a general maintenance cycle.
 
 #### 3. Component schemas (`@patternfly/patternfly-component-schemas`)

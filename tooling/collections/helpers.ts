@@ -211,8 +211,6 @@ const fetchRepoCommit = async (
   repo: string,
   branch?: string
 ): Promise<string | undefined> => {
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
   let sha: string | undefined = undefined;
 
   try {
@@ -223,8 +221,7 @@ const fetchRepoCommit = async (
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'patternfly-mcp',
-        Accept: 'application/vnd.github.v3+json',
-        ...authHeader
+        Accept: 'application/vnd.github.v3+json'
       }
     });
 
