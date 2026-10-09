@@ -4,7 +4,12 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import { saveCsvReport } from './csv';
-import { fetchLatestRepoHashes, runUpdateTask, writeJsonCollection } from './helpers';
+import {
+  extractTrackedReposFromCatalog,
+  fetchLatestRepoHashes,
+  runUpdateTask,
+  writeJsonCollection
+} from './helpers';
 import { printDiffSummary } from './summary';
 import {
   diffDocsManifests,
@@ -98,7 +103,9 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
   let latestHashes = new Map<string, string>();
 
   if (updateHashes) {
-    latestHashes = await fetchLatestRepoHashes();
+    const trackedRepos = extractTrackedReposFromCatalog(oldCatalog);
+
+    latestHashes = await fetchLatestRepoHashes(trackedRepos);
   }
 
   // 5. Build updated catalog and recalculate manifest metadata

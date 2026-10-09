@@ -1,8 +1,10 @@
+import * as childProcess from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import {
-  DEFAULT_TRACKED_REPOS,
   extractCommitHash,
   extractRepoInfo,
+  extractTrackedReposFromCatalog,
+  fetchCommitViaGitLsRemote,
   fetchLatestRepoHashes,
   runUpdateTask,
   verifyUrlReachability,
@@ -16,22 +18,43 @@ jest.mock('node:fs/promises', () => ({
 
 const mockWriteFile = writeFile as jest.MockedFunction<typeof writeFile>;
 
-describe('DEFAULT_TRACKED_REPOS', () => {
-  it('should define expected tracked repositories with default main branch', () => {
-    expect(DEFAULT_TRACKED_REPOS.length).toBeGreaterThan(0);
-    const repoNames = DEFAULT_TRACKED_REPOS.map(repo => `${repo.owner}/${repo.repo}`);
+describe('extractTrackedReposFromCatalog', () => {
+  it('should extract and deduplicate repositories across multiple categories', () => {
+    const mockCatalog = {
+      version: '1',
+      generated: '2026-01-01',
+      meta: { totalEntries: 2, totalDocs: 3, source: 'test' },
+      docs: {
+        components: [
+          { displayName: 'Button', pathSlug: 'button', path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/sha1/pkg/button.md' },
+          { displayName: 'Card', pathSlug: 'card', path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/sha2/pkg/card.md' }
+        ],
+        guidelines: [
+          { displayName: 'AI Guidelines', pathSlug: 'ai', path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/sha3/docs/ai.md' },
+          { displayName: 'Invalid Path', pathSlug: 'invalid', path: 'https://example.com/invalid.md' }
+        ]
+      }
+    };
 
-    expect(repoNames).toContain('patternfly/patternfly-org');
-    expect(repoNames).toContain('patternfly/patternfly-react');
-    expect(repoNames).toContain('rh-uxd/ai-helpers');
-    expect(repoNames).toContain('patternfly/patternfly-cli');
-    expect(repoNames).toContain('patternfly/patternfly-elements');
-    expect(repoNames).toContain('patternfly/patternfly-mcp');
-    expect(repoNames).toContain('patternfly/pf-codemods');
+    const result = extractTrackedReposFromCatalog(mockCatalog as any);
 
-    for (const repo of DEFAULT_TRACKED_REPOS) {
-      expect(repo.branch).toBe('main');
-    }
+    expect(result).toHaveLength(2);
+    expect(result).toEqual([
+      { owner: 'patternfly', repo: 'patternfly-react', branch: undefined },
+      { owner: 'rh-uxd', repo: 'ai-helpers', branch: undefined }
+    ]);
+  });
+
+  it('should return an empty array when catalog contains no valid docs', () => {
+    expect(extractTrackedReposFromCatalog({} as any)).toEqual([]);
+    expect(extractTrackedReposFromCatalog({ docs: {} } as any)).toEqual([]);
+  });
+
+  it('should apply branch override when supplied', () => {
+    const catalog = { docs: { c: [{ path: 'https://raw.githubusercontent.com/org/repo/sha/file.md' }] } };
+    const result = extractTrackedReposFromCatalog(catalog as any, 'develop');
+
+    expect(result[0]?.branch).toBe('develop');
   });
 });
 
@@ -161,8 +184,51 @@ describe('verifyUrlReachability', () => {
   });
 });
 
-describe('fetchLatestRepoHashes', () => {
+describe('fetchCommitViaGitLsRemote', () => {
   afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should return commit SHA when git ls-remote output contains SHA with HEAD', () => {
+    jest.spyOn(childProcess, 'execSync').mockReturnValue(
+      'ref: refs/heads/main\tHEAD\n8f4a382e783457a4128509789234857234895723\tHEAD\n'
+    );
+
+    const sha = fetchCommitViaGitLsRemote('patternfly', 'patternfly-react');
+
+    expect(sha).toBe('8f4a382e783457a4128509789234857234895723');
+  });
+
+  it('should fallback to 40-character SHA if symref line is missing', () => {
+    jest.spyOn(childProcess, 'execSync').mockReturnValue(
+      '8f4a382e783457a4128509789234857234895723\trefs/heads/main\n'
+    );
+
+    const sha = fetchCommitViaGitLsRemote('patternfly', 'patternfly-react');
+
+    expect(sha).toBe('8f4a382e783457a4128509789234857234895723');
+  });
+
+  it('should return null if command fails or throws', () => {
+    jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
+      throw new Error('Command failed');
+    });
+
+    const sha = fetchCommitViaGitLsRemote('patternfly', 'patternfly-react');
+
+    expect(sha).toBeNull();
+  });
+});
+
+describe('fetchLatestRepoHashes', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
     jest.restoreAllMocks();
   });
 
@@ -190,6 +256,60 @@ describe('fetchLatestRepoHashes', () => {
     expect(hashes.get('patternfly/patternfly-react')).toBe('mock-react-sha-123');
     expect(hashes.get('patternfly-react')).toBe('mock-react-sha-123');
     expect(hashes.has('patternfly/nonexistent')).toBe(false);
+  });
+
+  it('should query commits list when branch is not specified and handle array response', async () => {
+    let capturedUrl = '';
+
+    jest.spyOn(global, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+      capturedUrl = typeof input === 'string' ? input : input.toString();
+
+      return {
+        ok: true,
+        json: async () => [{ sha: 'mock-default-sha-456' }]
+      } as Response;
+    });
+
+    const hashes = await fetchLatestRepoHashes([
+      { owner: 'patternfly', repo: 'patternfly-elements' }
+    ]);
+
+    expect(capturedUrl).toBe('https://api.github.com/repos/patternfly/patternfly-elements/commits');
+    expect(hashes.get('patternfly/patternfly-elements')).toBe('mock-default-sha-456');
+    expect(hashes.get('patternfly-elements')).toBe('mock-default-sha-456');
+  });
+
+  it('should include Authorization header when GITHUB_TOKEN or GH_TOKEN is set', async () => {
+    process.env.GITHUB_TOKEN = 'ghp_secret_token';
+    let capturedHeaders: Record<string, string> = {};
+
+    jest.spyOn(global, 'fetch').mockImplementation(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedHeaders = (init?.headers as Record<string, string>) || {};
+
+      return {
+        ok: true,
+        json: async () => ({ sha: 'mock-auth-sha' })
+      } as Response;
+    });
+
+    await fetchLatestRepoHashes([
+      { owner: 'patternfly', repo: 'patternfly-mcp', branch: 'main' }
+    ]);
+
+    expect(capturedHeaders.Authorization).toBe('Bearer ghp_secret_token');
+  });
+
+  it('should fall back to git ls-remote when GitHub API fails', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Rate limit exceeded'));
+    jest.spyOn(childProcess, 'execSync').mockReturnValue(
+      '0123456789abcdef0123456789abcdef01234567\tHEAD\n'
+    );
+
+    const hashes = await fetchLatestRepoHashes([
+      { owner: 'patternfly', repo: 'patternfly-org', branch: 'main' }
+    ]);
+
+    expect(hashes.get('patternfly/patternfly-org')).toBe('0123456789abcdef0123456789abcdef01234567');
   });
 
   it('should handle fetch failures gracefully without throwing', async () => {

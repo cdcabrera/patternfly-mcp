@@ -1,4 +1,6 @@
+import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
+import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 
 /**
  * Information extracted from a raw GitHub documentation URL.
@@ -18,19 +20,6 @@ interface TrackedRepository {
   repo: string;
   branch?: string | undefined;
 }
-
-/**
- * Default list of repositories tracked for PatternFly documentation updates.
- */
-const DEFAULT_TRACKED_REPOS: TrackedRepository[] = [
-  { owner: 'patternfly', repo: 'patternfly-org', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-react', branch: 'main' },
-  { owner: 'rh-uxd', repo: 'ai-helpers', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-cli', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-elements', branch: 'main' },
-  { owner: 'patternfly', repo: 'patternfly-mcp', branch: 'main' },
-  { owner: 'patternfly', repo: 'pf-codemods', branch: 'main' }
-];
 
 /**
  * Extract commit hash or ref from a raw GitHub documentation URL.
@@ -71,6 +60,70 @@ const extractRepoInfo = (url: string): GitHubUrlInfo | null => {
     ref: match[3],
     filePath: match[4]
   };
+};
+
+/**
+ * Dynamically extract unique repositories referenced across all documents in a catalog.
+ *
+ * @param catalog - Documentation catalog to inspect
+ * @param [defaultBranch] - Optional explicit tracking branch override
+ * @returns Array of unique TrackedRepository definitions
+ */
+const extractTrackedReposFromCatalog = (
+  catalog: PatternFlyMcpDocsCatalog,
+  defaultBranch?: string
+): TrackedRepository[] => {
+  const uniqueRepos = new Map<string, TrackedRepository>();
+
+  for (const entries of Object.values(catalog?.docs || {})) {
+    for (const doc of entries) {
+      if (!doc?.path || typeof doc.path !== 'string') {
+        continue;
+      }
+
+      const info = extractRepoInfo(doc.path);
+
+      if (info && info.owner && info.repo) {
+        const key = `${info.owner}/${info.repo}`.toLowerCase();
+
+        if (!uniqueRepos.has(key)) {
+          uniqueRepos.set(key, { owner: info.owner, repo: info.repo, branch: defaultBranch });
+        }
+      }
+    }
+  }
+
+  return Array.from(uniqueRepos.values());
+};
+
+/**
+ * Fallback helper to query HEAD commit SHA using `git ls-remote --symref`.
+ *
+ * @param owner - Repository owner/organization
+ * @param repo - Repository name
+ * @returns Commit SHA or null if git is unavailable or command fails
+ */
+const fetchCommitViaGitLsRemote = (owner: string, repo: string): string | null => {
+  try {
+    const remoteUrl = `https://github.com/${owner}/${repo}.git`;
+    const output = execSync(`git ls-remote --symref ${remoteUrl} HEAD`, {
+      encoding: 'utf-8',
+      timeout: 10_000,
+      stdio: ['ignore', 'pipe', 'ignore']
+    });
+
+    const shaMatch = output.match(/^([0-9a-f]{40})\s+HEAD/m);
+
+    if (shaMatch && shaMatch[1]) {
+      return shaMatch[1];
+    }
+
+    const fallbackMatch = output.match(/([0-9a-f]{40})/);
+
+    return fallbackMatch && fallbackMatch[1] ? fallbackMatch[1] : null;
+  } catch {
+    return null;
+  }
 };
 
 /**
@@ -127,39 +180,55 @@ const verifyUrlReachability = async (url: string, timeoutMs = 5000): Promise<boo
 };
 
 /**
- * Fetch latest commit hashes for tracked repositories from GitHub API.
+ * Fetch latest commit hashes for tracked repositories via GitHub API with git ls-remote fallback.
  *
- * @param [repos=DEFAULT_TRACKED_REPOS] - Repositories to query
+ * @param repos - Repositories to query
  * @returns Map of "owner/repo" and "repo" to commit SHA
  */
 const fetchLatestRepoHashes = async (
-  repos: TrackedRepository[] = DEFAULT_TRACKED_REPOS
+  repos: TrackedRepository[] = []
 ): Promise<Map<string, string>> => {
   const hashes = new Map<string, string>();
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
-  for (const { owner, repo, branch = 'main' } of repos) {
+  for (const { owner, repo, branch } of repos) {
     const key = `${owner}/${repo}`;
+    let sha: string | null = null;
 
     try {
-      const url = `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`;
+      const url = branch
+        ? `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`
+        : `https://api.github.com/repos/${owner}/${repo}/commits`;
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'patternfly-mcp',
-          Accept: 'application/vnd.github.v3+json'
+          Accept: 'application/vnd.github.v3+json',
+          ...authHeader
         }
       });
 
       if (response.ok) {
-        const data = (await response.json()) as { sha?: string };
+        const data = await response.json();
 
-        if (data.sha) {
-          hashes.set(key, data.sha);
-          // Also alias by repository name alone if unique
-          hashes.set(repo, data.sha);
+        if (Array.isArray(data) && data[0]?.sha) {
+          sha = data[0].sha;
+        } else if (data && typeof data === 'object' && 'sha' in data && typeof data.sha === 'string') {
+          sha = data.sha;
         }
       }
     } catch {
-      // Fallback: network unavailable or rate limited
+      // GitHub API failed or offline - fall back to git ls-remote
+    }
+
+    if (!sha) {
+      sha = fetchCommitViaGitLsRemote(owner, repo);
+    }
+
+    if (sha) {
+      hashes.set(key, sha);
+      hashes.set(repo, sha);
     }
   }
 
@@ -234,10 +303,12 @@ const runUpdateTask = async (
 };
 
 export {
-  DEFAULT_TRACKED_REPOS,
   extractCommitHash,
   extractRepoInfo,
+  extractTrackedReposFromCatalog,
+  fetchCommitViaGitLsRemote,
   fetchLatestRepoHashes,
+  probeUrl,
   runUpdateTask,
   verifyUrlReachability,
   writeJsonCollection,
