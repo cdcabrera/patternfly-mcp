@@ -85,29 +85,29 @@ describe('extractCommitHash', () => {
     {
       description: 'non-raw GitHub URL',
       url: 'https://github.com/patternfly/patternfly-org/blob/main/README.md',
-      expected: null
+      expected: undefined
     },
     {
       description: 'non-GitHub URL',
       url: 'https://example.com/invalid',
-      expected: null
+      expected: undefined
     },
     {
       description: 'empty string URL',
       url: '',
-      expected: null
+      expected: undefined
     },
     {
       description: 'null input',
       url: null as unknown as string,
-      expected: null
+      expected: undefined
     },
     {
       description: 'undefined input',
       url: undefined as unknown as string,
-      expected: null
+      expected: undefined
     }
-  ])('should extract commit hash or return null, $description', ({ url, expected }) => {
+  ])('should extract commit hash or return undefined, $description', ({ url, expected }) => {
     expect(extractCommitHash(url)).toBe(expected);
   });
 });
@@ -127,29 +127,29 @@ describe('extractRepoInfo', () => {
     {
       description: 'plain invalid URL string',
       url: 'invalid-url',
-      expected: null
+      expected: undefined
     },
     {
       description: 'incomplete GitHub path structure',
       url: 'https://raw.githubusercontent.com/incomplete',
-      expected: null
+      expected: undefined
     },
     {
       description: 'empty string input',
       url: '',
-      expected: null
+      expected: undefined
     },
     {
       description: 'null input',
       url: null as unknown as string,
-      expected: null
+      expected: undefined
     },
     {
       description: 'undefined input',
       url: undefined as unknown as string,
-      expected: null
+      expected: undefined
     }
-  ])('should extract repository metadata or return null, $description', ({ url, expected }) => {
+  ])('should extract repository metadata or return undefined, $description', ({ url, expected }) => {
     expect(extractRepoInfo(url)).toEqual(expected);
   });
 });
@@ -221,14 +221,14 @@ describe('fetchCommitViaGitLsRemote', () => {
     expect(sha).toBe('8f4a382e783457a4128509789234857234895723');
   });
 
-  it('should return null if command fails or throws', () => {
+  it('should return undefined if command fails or throws', () => {
     jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
       throw new Error('Command failed');
     });
 
     const sha = fetchCommitViaGitLsRemote('patternfly', 'patternfly-react');
 
-    expect(sha).toBeNull();
+    expect(sha).toBeUndefined();
   });
 });
 
@@ -278,7 +278,7 @@ describe('fetchRepoCommit', () => {
     expect(sha).toBe('0123456789abcdef0123456789abcdef01234567');
   });
 
-  it('should return null when API fails and git ls-remote fails', async () => {
+  it('should return undefined when API fails and git ls-remote fails', async () => {
     jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
     jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
       throw new Error('git error');
@@ -286,7 +286,7 @@ describe('fetchRepoCommit', () => {
 
     const sha = await fetchRepoCommit('patternfly', 'patternfly-org');
 
-    expect(sha).toBeNull();
+    expect(sha).toBeUndefined();
   });
 });
 

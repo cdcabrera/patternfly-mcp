@@ -9,9 +9,8 @@ import { fileURLToPath } from 'node:url';
  * - `number`: For numeric values within a CSV cell.
  * - `boolean`: For true/false values within a CSV cell.
  * - `undefined`: Represents the absence of a value within a CSV cell.
- * - `null`: Explicitly represents a null value within a CSV cell.
  */
-type CsvCellValue = string | number | boolean | undefined | null;
+type CsvCellValue = string | number | boolean | undefined;
 
 /**
  * Diff status

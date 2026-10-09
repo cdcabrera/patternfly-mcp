@@ -107,12 +107,12 @@ const PINNED_HISTORICAL_REFS = new Set<string>([
  *
  * @param doc - Document record to evaluate
  * @param highQualityApi - List of API collection records meeting the quality threshold
- * @returns Matched API endpoint path or null if not superseded
+ * @returns Matched API endpoint path or undefined if not superseded
  */
 const resolveApiEndpointForAiDoc = (
   doc: PatternFlyMcpDocsCatalogDoc,
   highQualityApi: ApiCollectionRecordRef[]
-): string | null => {
+): string | undefined => {
   const slug = doc.pathSlug || '';
 
   // 1. Root ai-helpers links superseded by the marketplace endpoint
@@ -141,7 +141,7 @@ const resolveApiEndpointForAiDoc = (
     return fuzzyMatch ? fuzzyMatch.p : candidate;
   }
 
-  return null;
+  return undefined;
 };
 
 /**

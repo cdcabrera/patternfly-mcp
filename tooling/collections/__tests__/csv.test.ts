@@ -108,11 +108,11 @@ describe('formatCsv', () => {
       expected: '\n'
     },
     {
-      description: 'mixed data types (numbers, booleans, null, undefined)',
+      description: 'mixed data types (numbers, booleans, undefined)',
       headers: ['id', 'name', 'score', 'active'],
       rows: [
         [1, 'Alice', 98.5, true],
-        [2, 'Bob, Jr.', null, undefined]
+        [2, 'Bob, Jr.', undefined, undefined]
       ],
       expected: 'id,name,score,active\n1,Alice,98.5,true\n2,"Bob, Jr.",,\n'
     }

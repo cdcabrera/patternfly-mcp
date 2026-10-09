@@ -26,33 +26,33 @@ interface TrackedRepository {
  * Extract commit hash or ref from a raw GitHub documentation URL.
  *
  * @param url - Raw GitHub URL
- * @returns Hash/ref string or null if not a recognized GitHub raw URL
+ * @returns Hash/ref string or undefined if not a recognized GitHub raw URL
  */
-const extractCommitHash = (url: string): string | null => {
+const extractCommitHash = (url: string): string | undefined => {
   if (!url || typeof url !== 'string') {
-    return null;
+    return undefined;
   }
 
   const match = url.match(/^https:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/([^/]+)\//);
 
-  return match && match[1] ? match[1] : null;
+  return match && match[1] ? match[1] : undefined;
 };
 
 /**
  * Extract structured repository and path information from a raw GitHub URL.
  *
  * @param url - Raw GitHub URL
- * @returns GitHubUrlInfo or null if not a recognized raw URL
+ * @returns GitHubUrlInfo or undefined if not a recognized raw URL
  */
-const extractRepoInfo = (url: string): GitHubUrlInfo | null => {
+const extractRepoInfo = (url: string): GitHubUrlInfo | undefined => {
   if (!url || typeof url !== 'string') {
-    return null;
+    return undefined;
   }
 
   const match = url.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/);
 
   if (!match || !match[1] || !match[2] || !match[3] || !match[4]) {
-    return null;
+    return undefined;
   }
 
   return {
@@ -110,9 +110,9 @@ const extractTrackedReposFromCatalog = (
  *
  * @param owner - Repository owner/organization
  * @param repo - Repository name
- * @returns Commit SHA or null if git is unavailable or command fails
+ * @returns Commit SHA or undefined if git is unavailable or command fails
  */
-const fetchCommitViaGitLsRemote = (owner: string, repo: string): string | null => {
+const fetchCommitViaGitLsRemote = (owner: string, repo: string): string | undefined => {
   try {
     const remoteUrl = `https://github.com/${owner}/${repo}.git`;
     const output = execSync(`git ls-remote --symref ${remoteUrl} HEAD`, {
@@ -129,9 +129,9 @@ const fetchCommitViaGitLsRemote = (owner: string, repo: string): string | null =
 
     const fallbackMatch = output.match(/([0-9a-f]{40})/);
 
-    return fallbackMatch && fallbackMatch[1] ? fallbackMatch[1] : null;
+    return fallbackMatch && fallbackMatch[1] ? fallbackMatch[1] : undefined;
   } catch {
-    return null;
+    return undefined;
   }
 };
 
@@ -202,16 +202,16 @@ verifyUrlReachability.memo = memo(verifyUrlReachability, {
  * @param owner - Repository owner
  * @param repo - Repository name
  * @param [branch] - Optional target branch
- * @returns Commit SHA or null if unresolved
+ * @returns Commit SHA or undefined if unresolved
  */
 const fetchRepoCommit = async (
   owner: string,
   repo: string,
   branch?: string
-): Promise<string | null> => {
+): Promise<string | undefined> => {
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
   const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
-  let sha: string | null = null;
+  let sha: string | undefined = undefined;
 
   try {
     const url = branch
