@@ -1,4 +1,4 @@
-import { escapeCsvField, formatCsv } from '../csv';
+import { escapeCsvField, formatCsv, generateDiffCsv } from '../csv';
 
 describe('escapeCsvField', () => {
   it('should correctly escape plain strings, numbers, null, and undefined', () => {
@@ -66,5 +66,32 @@ describe('formatCsv', () => {
     const result = formatCsv(headers, rows);
 
     expect(result).toBe('id,name,score,active\n1,Alice,98.5,true\n2,"Bob, Jr.",,\n');
+  });
+});
+
+describe('generateDiffCsv', () => {
+  it('should format all diff categories with status column prepended', () => {
+    const diff = {
+      added: [{ id: 'a1', val: 'Added Item' }],
+      removed: [{ id: 'r1', val: 'Removed Item' }],
+      modified: [{ id: 'm1', val: 'Modified Item' }],
+      unchanged: [{ id: 'u1', val: 'Unchanged Item' }]
+    };
+
+    const csv = generateDiffCsv(diff, {
+      headers: ['status', 'id', 'val'],
+      added: item => [item.id, item.val],
+      removed: item => [item.id, item.val],
+      modified: item => [item.id, item.val],
+      unchanged: item => [item.id, item.val]
+    });
+
+    const lines = csv.trim().split('\n');
+
+    expect(lines[0]).toBe('status,id,val');
+    expect(lines[1]).toBe('ADDED,a1,Added Item');
+    expect(lines[2]).toBe('REMOVED,r1,Removed Item');
+    expect(lines[3]).toBe('MODIFIED,m1,Modified Item');
+    expect(lines[4]).toBe('UNCHANGED,u1,Unchanged Item');
   });
 });

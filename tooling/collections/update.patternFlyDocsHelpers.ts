@@ -4,7 +4,7 @@ import {
   type PatternFlyMcpDocsCatalogEntry
 } from '../../src/docs.embedded';
 import { extractCommitHash, extractRepoInfo } from './helpers';
-import { formatCsv } from './csv';
+import { generateDiffCsv } from './csv';
 
 /**
  * Report entry for an added document in the manifest.
@@ -54,6 +54,13 @@ interface DocsDiffResult {
   removed: DocsRemovedRecordReport[];
   modified: DocsModifiedRecordReport[];
   unchanged: DocsUnchangedRecordReport[];
+}
+
+/**
+ * Options for generating Docs collection CSV diff report.
+ */
+interface GenerateCsvReportOptions {
+  diff: DocsDiffResult;
 }
 
 /**
@@ -301,62 +308,45 @@ const diffDocsManifests = (
 /**
  * Generate a complete RFC 4180 CSV report for the documentation manifest diff.
  *
- * @param diff - Documentation diff result
+ * @param options - CSV report options or diff result
  * @returns Formatted CSV content string
  */
-const generateDocsReportCsv = (diff: DocsDiffResult): string => {
-  const headers = [
-    'status',
-    'category',
-    'name',
-    'pathSlug',
-    'path',
-    'previousHash',
-    'newHash',
-    'reason',
-    'details'
-  ];
+const generateReportCsv = (options: DocsDiffResult | GenerateCsvReportOptions): string => {
+  const diff = 'diff' in options ? options.diff : options;
 
-  const rows: (string | number | undefined | null)[][] = [];
-
-  // 1. ADDED
-  for (const item of diff.added) {
-    const hash = extractCommitHash(item.record.path) || '';
-
-    rows.push([
-      'ADDED',
+  return generateDiffCsv(diff, {
+    headers: [
+      'status',
+      'category',
+      'name',
+      'pathSlug',
+      'path',
+      'previousHash',
+      'newHash',
+      'reason',
+      'details'
+    ],
+    added: item => [
       item.category,
       item.record.displayName,
       item.record.pathSlug,
       item.record.path,
       '',
-      hash,
+      extractCommitHash(item.record.path) || '',
       item.reason || 'new document',
       item.details || ''
-    ]);
-  }
-
-  // 2. REMOVED
-  for (const item of diff.removed) {
-    const hash = extractCommitHash(item.record.path) || '';
-
-    rows.push([
-      'REMOVED',
+    ],
+    removed: item => [
       item.category,
       item.record.displayName,
       item.record.pathSlug,
       item.record.path,
-      hash,
+      extractCommitHash(item.record.path) || '',
       '',
       item.reason,
       item.details || ''
-    ]);
-  }
-
-  // 3. MODIFIED
-  for (const item of diff.modified) {
-    rows.push([
-      'MODIFIED',
+    ],
+    modified: item => [
       item.category,
       item.record.displayName,
       item.record.pathSlug,
@@ -365,27 +355,22 @@ const generateDocsReportCsv = (diff: DocsDiffResult): string => {
       item.newHash || '',
       item.reasons.join('; '),
       item.previousRecord?.path || ''
-    ]);
-  }
+    ],
+    unchanged: item => {
+      const hash = extractCommitHash(item.record.path) || '';
 
-  // 4. UNCHANGED
-  for (const item of diff.unchanged) {
-    const hash = extractCommitHash(item.record.path) || '';
-
-    rows.push([
-      'UNCHANGED',
-      item.category,
-      item.record.displayName,
-      item.record.pathSlug,
-      item.record.path,
-      hash,
-      hash,
-      '',
-      ''
-    ]);
-  }
-
-  return formatCsv(headers, rows);
+      return [
+        item.category,
+        item.record.displayName,
+        item.record.pathSlug,
+        item.record.path,
+        hash,
+        hash,
+        '',
+        ''
+      ];
+    }
+  });
 };
 
 /**
@@ -466,10 +451,11 @@ export {
   diffDocsManifests,
   extractCommitHash,
   findApiRedundantDocs,
-  generateDocsReportCsv,
+  generateReportCsv,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc,
   type ApiCollectionRecordRef,
+  type GenerateCsvReportOptions,
   type DocsAddedRecordReport,
   type DocsDiffResult,
   type DocsModifiedRecordReport,

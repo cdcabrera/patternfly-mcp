@@ -2,6 +2,30 @@
  * Shared CSV formatting and escaping utilities for PatternFly MCP collection maintenance scripts.
  */
 
+type CsvCellValue = string | number | boolean | undefined | null;
+type DiffStatus = 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
+
+/**
+ * Diff row mapping transformations for each status category.
+ */
+interface DiffReportRowMappers<TAdded, TRemoved, TModified, TUnchanged> {
+  headers: string[];
+  added: (item: TAdded) => CsvCellValue[];
+  removed: (item: TRemoved) => CsvCellValue[];
+  modified: (item: TModified) => CsvCellValue[];
+  unchanged: (item: TUnchanged) => CsvCellValue[];
+}
+
+/**
+ * Generic container for categorized diff sets.
+ */
+interface GenericDiff<TAdded, TRemoved, TModified, TUnchanged> {
+  added: Iterable<TAdded>;
+  removed: Iterable<TRemoved>;
+  modified: Iterable<TModified>;
+  unchanged: Iterable<TUnchanged>;
+}
+
 /**
  * Safely escape and format a field for standard RFC 4180 CSV output.
  *
@@ -48,7 +72,42 @@ const formatCsv = (
   return [headerLine, ...rowLines].join('\n') + '\n';
 };
 
+/**
+ * Generic CSV generator for collection diff reports.
+ * Handles iteration across status buckets, prepends status tags, and formats RFC 4180 CSV.
+ *
+ * @param diff - Categorized diff buckets
+ * @param mappers - Column headers and row mapping functions
+ * @returns RFC 4180 CSV string
+ */
+const generateDiffCsv = <TAdded, TRemoved, TModified, TUnchanged>(
+  diff: GenericDiff<TAdded, TRemoved, TModified, TUnchanged>,
+  mappers: DiffReportRowMappers<TAdded, TRemoved, TModified, TUnchanged>
+): string => {
+  const rows: CsvCellValue[][] = [];
+
+  for (const item of diff.added) {
+    rows.push(['ADDED', ...mappers.added(item)]);
+  }
+  for (const item of diff.removed) {
+    rows.push(['REMOVED', ...mappers.removed(item)]);
+  }
+  for (const item of diff.modified) {
+    rows.push(['MODIFIED', ...mappers.modified(item)]);
+  }
+  for (const item of diff.unchanged) {
+    rows.push(['UNCHANGED', ...mappers.unchanged(item)]);
+  }
+
+  return formatCsv(mappers.headers, rows);
+};
+
 export {
   escapeCsvField,
-  formatCsv
+  formatCsv,
+  generateDiffCsv,
+  type CsvCellValue,
+  type DiffReportRowMappers,
+  type DiffStatus,
+  type GenericDiff
 };

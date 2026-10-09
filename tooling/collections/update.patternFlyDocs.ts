@@ -7,7 +7,7 @@ import { fetchLatestRepoHashes } from './helpers';
 import {
   diffDocsManifests,
   findApiRedundantDocs,
-  generateDocsReportCsv,
+  generateReportCsv,
   recalculateManifestMetadata,
   type ApiCollectionRecordRef,
   type DocsDiffResult
@@ -169,7 +169,7 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
   // 8. Generate and save CSV report if requested
   if (outputCsv) {
     await mkdir(dirname(csvOutputPath), { recursive: true });
-    const csvContent = generateDocsReportCsv(diff);
+    const csvContent = generateReportCsv({ diff });
 
     await writeFile(csvOutputPath, csvContent, 'utf-8');
     console.log(`📄 Exported full CSV report: ${csvOutputPath}`);

@@ -6,7 +6,7 @@ import {
   PINNED_HISTORICAL_REFS,
   diffDocsManifests,
   findApiRedundantDocs,
-  generateDocsReportCsv,
+  generateReportCsv,
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc
 } from '../update.patternFlyDocsHelpers';
@@ -87,7 +87,7 @@ describe('docs.helpers CSV Report Generator', () => {
       ]
     };
 
-    const csv = generateDocsReportCsv(diff);
+    const csv = generateReportCsv({ diff });
     const lines = csv.trim().split('\n');
 
     expect(lines[0]).toBe('status,category,name,pathSlug,path,previousHash,newHash,reason,details');

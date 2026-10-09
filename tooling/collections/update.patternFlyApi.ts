@@ -13,7 +13,7 @@ import {
 import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import { type LoggingSession } from '../../src/options.defaults';
-import { formatCsv } from './csv';
+import { generateDiffCsv } from './csv';
 
 /**
  * Reason classification for omitted or removed API records.
@@ -68,38 +68,39 @@ const generateReportCsv = ({
   crawledMap
 }: GenerateCsvReportOptions): string => {
   const oldMap = new Map(oldRecords.map(record => [record.p, record]));
-  const headers = ['status', 'path', 'name', 'previousQualityScore', 'newQualityScore', 'contentType', 'reason', 'details'];
-  const rows: (string | number | undefined | null)[][] = [];
-
-  for (const record of diff.added) {
-    rows.push(['ADDED', record.p, record.n, '', record.q, record.c, '', '']);
-  }
-
-  for (const { record, reason, details } of diff.removed) {
-    const newQualityScore = crawledMap.get(record.p)?.entry.qualityScore ?? '';
-
-    rows.push(['REMOVED', record.p, record.n, record.q, newQualityScore, record.c, reason, details || '']);
-  }
-
-  for (const { record, reasons } of diff.modified) {
-    const previousQualityScore = oldMap.get(record.p)?.q ?? '';
-
-    rows.push(['MODIFIED', record.p, record.n, previousQualityScore, record.q, record.c, 'property changes', reasons.join('; ')]);
-  }
-
   const changedPaths = new Set([
     ...diff.added.map(record => record.p),
     ...diff.removed.map(removedItem => removedItem.record.p),
     ...diff.modified.map(modifiedItem => modifiedItem.record.p)
   ]);
+  const unchanged = newRecords.filter(record => !changedPaths.has(record.p));
 
-  for (const record of newRecords) {
-    if (!changedPaths.has(record.p)) {
-      rows.push(['UNCHANGED', record.p, record.n, record.q, record.q, record.c, '', '']);
+  return generateDiffCsv(
+    { ...diff, unchanged },
+    {
+      headers: ['status', 'path', 'name', 'previousQualityScore', 'newQualityScore', 'contentType', 'reason', 'details'],
+      added: record => [record.p, record.n, '', record.q, record.c, '', ''],
+      removed: ({ record, reason, details }) => [
+        record.p,
+        record.n,
+        record.q,
+        crawledMap.get(record.p)?.entry.qualityScore ?? '',
+        record.c,
+        reason,
+        details || ''
+      ],
+      modified: ({ record, reasons }) => [
+        record.p,
+        record.n,
+        oldMap.get(record.p)?.q ?? '',
+        record.q,
+        record.c,
+        'property changes',
+        reasons.join('; ')
+      ],
+      unchanged: record => [record.p, record.n, record.q, record.q, record.c, '', '']
     }
-  }
-
-  return formatCsv(headers, rows);
+  );
 };
 
 /**
