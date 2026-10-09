@@ -4,7 +4,6 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { memo } from '../../src/server.caching';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
-import { joinUrl } from '../../src/server.helpers';
 
 /**
  * Information extracted from a raw GitHub documentation URL.
@@ -330,14 +329,14 @@ const writeJsonCollection = async <T>(
  * @returns Fully resolved filesystem path in the src directory
  */
 const getSrcPath = (filename: string, path: string = '../../src'): string =>
-  resolve(fileURLToPath(new URL(joinUrl(path, filename), import.meta.url)));
+  resolve(fileURLToPath(new URL(`${path}/${filename}`, import.meta.url)));
 
 /**
- * Resolve the default absolute path for a JSON collection file in the src directory.
+ * Resolve the default absolute path for a report file in the reports directory.
  *
- * @param filename - Collection JSON filename
+ * @param filename - Report filename
  * @param [path] - Default optional path to prepend to the filename.
- * @returns Fully resolved filesystem path in the src directory
+ * @returns Fully resolved filesystem path in the reports directory
  */
 const getReportsPath = (filename: string, path: string = '../../reports'): string =>
   getSrcPath(filename, path);

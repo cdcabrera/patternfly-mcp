@@ -6,9 +6,9 @@ import {
   diffCollections,
   run
 } from '../update.patternFlyApi';
-import { getDefaultCollectionPath } from '../helpers';
+import { getSrcPath } from '../helpers';
 
-const COLLECTION_PATH = getDefaultCollectionPath(DEFAULT_API_FILENAME);
+const COLLECTION_PATH = getSrcPath(DEFAULT_API_FILENAME);
 
 describe('collection.patternFlyApi', () => {
   it('should export the run function for programmatic invocation', () => {

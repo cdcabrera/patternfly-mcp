@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
 import { DEFAULT_DOCS_FILENAME, run } from '../update.patternFlyDocs';
-import { getDefaultCollectionPath } from '../helpers';
+import { getSrcPath } from '../helpers';
 
-const DOCS_PATH = getDefaultCollectionPath(DEFAULT_DOCS_FILENAME);
+const DOCS_PATH = getSrcPath(DEFAULT_DOCS_FILENAME);
 
 describe('collection.patternFlyDocs Script & Manifest Integrity', () => {
   it('should export the run function for programmatic invocation', () => {

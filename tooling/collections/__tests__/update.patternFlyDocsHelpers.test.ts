@@ -11,10 +11,10 @@ import {
   resolveApiEndpointForAiDoc
 } from '../update.patternFlyDocsHelpers';
 import { DEFAULT_API_FILENAME, DEFAULT_DOCS_FILENAME } from '../update.patternFlyDocs';
-import { getDefaultCollectionPath } from '../helpers';
+import { getSrcPath } from '../helpers';
 
-const DOCS_PATH = getDefaultCollectionPath(DEFAULT_DOCS_FILENAME);
-const API_PATH = getDefaultCollectionPath(DEFAULT_API_FILENAME);
+const DOCS_PATH = getSrcPath(DEFAULT_DOCS_FILENAME);
+const API_PATH = getSrcPath(DEFAULT_API_FILENAME);
 const RECORDS_MAINT_DOCS_PATH = resolve(process.cwd(), `records-maint/${DEFAULT_DOCS_FILENAME}`);
 
 describe('docs.helpers CSV Report Generator', () => {

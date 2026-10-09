@@ -7,7 +7,8 @@ import {
   fetchCommitViaGitLsRemote,
   fetchRepoCommit,
   fetchLatestRepoHashes,
-  getDefaultCollectionPath,
+  getReportsPath,
+  getSrcPath,
   runUpdateTask,
   verifyUrlReachability,
   writeJsonCollection
@@ -456,11 +457,23 @@ describe('writeJsonCollection', () => {
   });
 });
 
-describe('getDefaultCollectionPath', () => {
+describe('getSrcPath', () => {
   it('should resolve default path containing the filename within src directory', () => {
-    const resolved = getDefaultCollectionPath('test.json');
+    const resolved = getSrcPath('test.json');
 
     expect(resolved.endsWith('src/test.json')).toBe(true);
+  });
+
+  it('should support custom path overrides', () => {
+    const resolved = getSrcPath('custom.json', '../../custom');
+
+    expect(resolved.endsWith('custom/custom.json')).toBe(true);
+  });
+});
+
+describe('getReportsPath', () => {
+  it('should be an aliased function', () => {
+    expect(typeof getReportsPath).toBe('function');
   });
 });
 
