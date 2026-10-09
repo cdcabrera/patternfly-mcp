@@ -1,11 +1,21 @@
 import { jest } from '@jest/globals';
-import {
+
+const mockWriteFile = jest.fn();
+
+jest.unstable_mockModule('node:fs/promises', () => ({
+  writeFile: mockWriteFile
+}));
+
+const {
   DEFAULT_TRACKED_REPOS,
   extractCommitHash,
   extractRepoInfo,
   fetchLatestRepoHashes,
-  verifyUrlReachability
-} from '../helpers';
+  printDiffSummary,
+  runUpdateTask,
+  verifyUrlReachability,
+  writeJsonCollection
+} = await import('../helpers');
 
 describe('DEFAULT_TRACKED_REPOS', () => {
   it('should define expected tracked repositories with default main branch', () => {
@@ -151,5 +161,231 @@ describe('fetchLatestRepoHashes', () => {
     ]);
 
     expect(hashes.size).toBe(0);
+  });
+});
+
+describe('printDiffSummary', () => {
+  let logSpy: ReturnType<typeof jest.spyOn>;
+
+  beforeEach(() => {
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should print no-change message when diff buckets are empty', () => {
+    printDiffSummary(
+      { added: [], removed: [], modified: [] },
+      {
+        title: 'Empty Diff',
+        formatAdded: item => String(item),
+        formatRemoved: item => String(item),
+        formatModified: item => String(item)
+      }
+    );
+
+    expect(logSpy).toHaveBeenCalledWith('\n📊 Empty Diff:');
+    expect(logSpy).toHaveBeenCalledWith('   ✨ No record additions, removals, or property modifications detected.');
+  });
+
+  it('should print categorized changes with custom formatters', () => {
+    printDiffSummary(
+      {
+        added: [{ name: 'A1' }],
+        removed: [{ name: 'R1' }],
+        modified: [{ name: 'M1', reason: 'score' }]
+      },
+      {
+        title: 'Custom Changes',
+        formatAdded: item => `Item: ${item.name}`,
+        formatRemoved: item => `Item: ${item.name}`,
+        formatModified: item => `Item: ${item.name} (${item.reason})`
+      }
+    );
+
+    expect(logSpy).toHaveBeenCalledWith('\n📊 Custom Changes:');
+    expect(logSpy).toHaveBeenCalledWith('   ➕ Added (1):');
+    expect(logSpy).toHaveBeenCalledWith('      + Item: A1');
+    expect(logSpy).toHaveBeenCalledWith('   ➖ Removed (1):');
+    expect(logSpy).toHaveBeenCalledWith('      - Item: R1');
+    expect(logSpy).toHaveBeenCalledWith('   🔄 Modified (1):');
+    expect(logSpy).toHaveBeenCalledWith('      ~ Item: M1 (score)');
+  });
+
+  it('should truncate outputs exceeding default limits (10 added, 15 removed, 10 modified)', () => {
+    const added = Array.from({ length: 12 }, (_, i) => `add-${i + 1}`);
+    const removed = Array.from({ length: 18 }, (_, i) => `rem-${i + 1}`);
+    const modified = Array.from({ length: 11 }, (_, i) => `mod-${i + 1}`);
+
+    printDiffSummary(
+      { added, removed, modified },
+      {
+        title: 'Truncated Diff',
+        formatAdded: item => item,
+        formatRemoved: item => item,
+        formatModified: item => item
+      }
+    );
+
+    expect(logSpy).toHaveBeenCalledWith('   ➕ Added (12):');
+    expect(logSpy).toHaveBeenCalledWith('      + add-10');
+    expect(logSpy).toHaveBeenCalledWith('      ... and 2 more');
+
+    expect(logSpy).toHaveBeenCalledWith('   ➖ Removed (18):');
+    expect(logSpy).toHaveBeenCalledWith('      - rem-15');
+    expect(logSpy).toHaveBeenCalledWith('      ... and 3 more');
+
+    expect(logSpy).toHaveBeenCalledWith('   🔄 Modified (11):');
+    expect(logSpy).toHaveBeenCalledWith('      ~ mod-10');
+    expect(logSpy).toHaveBeenCalledWith('      ... and 1 more');
+  });
+
+  it('should truncate outputs exceeding custom limits', () => {
+    const added = ['a1', 'a2', 'a3'];
+    const removed = ['r1', 'r2'];
+    const modified = ['m1', 'm2', 'm3', 'm4'];
+
+    printDiffSummary(
+      { added, removed, modified },
+      {
+        title: 'Custom Limited Diff',
+        formatAdded: item => item,
+        formatRemoved: item => item,
+        formatModified: item => item,
+        limits: {
+          added: 1,
+          removed: 1,
+          modified: 2
+        }
+      }
+    );
+
+    expect(logSpy).toHaveBeenCalledWith('   ➕ Added (3):');
+    expect(logSpy).toHaveBeenCalledWith('      + a1');
+    expect(logSpy).toHaveBeenCalledWith('      ... and 2 more');
+
+    expect(logSpy).toHaveBeenCalledWith('   ➖ Removed (2):');
+    expect(logSpy).toHaveBeenCalledWith('      - r1');
+    expect(logSpy).toHaveBeenCalledWith('      ... and 1 more');
+
+    expect(logSpy).toHaveBeenCalledWith('   🔄 Modified (4):');
+    expect(logSpy).toHaveBeenCalledWith('      ~ m1');
+    expect(logSpy).toHaveBeenCalledWith('      ~ m2');
+    expect(logSpy).toHaveBeenCalledWith('      ... and 2 more');
+  });
+});
+
+describe('writeJsonCollection', () => {
+  let logSpy: ReturnType<typeof jest.spyOn>;
+
+  beforeEach(() => {
+    mockWriteFile.mockResolvedValue(undefined as never);
+    logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should format JSON as pretty-printed by default with trailing newline', async () => {
+    const targetPath = '/path/to/collection.json';
+    const data = { key: 'value', count: 42 };
+
+    const result = await writeJsonCollection(targetPath, data);
+
+    const expectedJson = JSON.stringify(data, null, 2);
+
+    expect(mockWriteFile).toHaveBeenCalledWith(targetPath, expectedJson + '\n', 'utf-8');
+    expect(result.jsonContent).toBe(expectedJson);
+    expect(logSpy).toHaveBeenCalledWith(`✅ Updated ${targetPath}:`);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/File Size: \d+\.\d+ KB/));
+  });
+
+  it('should format JSON in compact format when isPrettyPrint is false', async () => {
+    const targetPath = '/path/to/compact.json';
+    const data = { a: 1, b: 2 };
+
+    const result = await writeJsonCollection(targetPath, data, { isPrettyPrint: false });
+
+    const expectedJson = JSON.stringify(data);
+
+    expect(mockWriteFile).toHaveBeenCalledWith(targetPath, expectedJson + '\n', 'utf-8');
+    expect(result.jsonContent).toBe(expectedJson);
+  });
+
+  it('should calculate elapsed time when startTime is supplied and log custom stats', async () => {
+    const targetPath = '/path/to/stats.json';
+    const data = { items: [1, 2, 3] };
+    const startTime = Date.now() - 1500;
+
+    const result = await writeJsonCollection(targetPath, data, {
+      startTime,
+      stats: [
+        { label: 'Total Items', value: 3 },
+        { label: 'Status', value: 'OK' }
+      ]
+    });
+
+    expect(logSpy).toHaveBeenCalledWith('   - Total Items: 3');
+    expect(logSpy).toHaveBeenCalledWith('   - Status: OK');
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/Time Elapsed: \d+\.\d+s/));
+    expect(typeof result.durationSec).toBe('string');
+    expect(typeof result.sizeKb).toBe('string');
+  });
+});
+
+describe('runUpdateTask', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    jest.restoreAllMocks();
+  });
+
+  it('should not invoke task function if UPDATE_COLLECTIONS is not set to true', async () => {
+    delete process.env.UPDATE_COLLECTIONS;
+    const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
+
+    await runUpdateTask('Test Task', taskFn);
+
+    expect(taskFn).not.toHaveBeenCalled();
+  });
+
+  it('should invoke task function if UPDATE_COLLECTIONS is true', async () => {
+    process.env.UPDATE_COLLECTIONS = 'true';
+    const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
+
+    await runUpdateTask('Test Task', taskFn);
+
+    expect(taskFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('should invoke task function based on custom envVar option', async () => {
+    process.env.CUSTOM_TRIGGER = 'true';
+    const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
+
+    await runUpdateTask('Custom Task', taskFn, { envVar: 'CUSTOM_TRIGGER' });
+
+    expect(taskFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('should catch task errors, log failure message, and exit with status code 1', async () => {
+    process.env.UPDATE_COLLECTIONS = 'true';
+    const testError = new Error('Task execution failed');
+    const taskFn = jest.fn<() => Promise<void>>().mockRejectedValue(testError);
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
+
+    await runUpdateTask('Failing Task', taskFn);
+
+    expect(errorSpy).toHaveBeenCalledWith('❌ Failed to update Failing Task:', testError);
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 });

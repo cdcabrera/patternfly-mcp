@@ -1,6 +1,8 @@
 /**
  * Shared CSV formatting and escaping utilities for PatternFly MCP collection maintenance scripts.
  */
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 
 type CsvCellValue = string | number | boolean | undefined | null;
 type DiffStatus = 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
@@ -102,10 +104,23 @@ const generateDiffCsv = <TAdded, TRemoved, TModified, TUnchanged>(
   return formatCsv(mappers.headers, rows);
 };
 
+/**
+ * Standardized helper to persist a CSV report to disk and log output status.
+ *
+ * @param targetPath - Absolute or relative file path for the CSV report
+ * @param csvContent - Pre-formatted CSV string content
+ */
+const saveCsvReport = async (targetPath: string, csvContent: string): Promise<void> => {
+  await mkdir(dirname(targetPath), { recursive: true });
+  await writeFile(targetPath, csvContent, 'utf-8');
+  console.log(`📄 Exported full CSV report: ${targetPath}`);
+};
+
 export {
   escapeCsvField,
   formatCsv,
   generateDiffCsv,
+  saveCsvReport,
   type CsvCellValue,
   type DiffReportRowMappers,
   type DiffStatus,

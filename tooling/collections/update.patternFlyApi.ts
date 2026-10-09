@@ -1,5 +1,5 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   apiSpider,
@@ -13,7 +13,8 @@ import {
 import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import { type LoggingSession } from '../../src/options.defaults';
-import { generateDiffCsv } from './csv';
+import { generateDiffCsv, saveCsvReport } from './csv';
+import { printDiffSummary, runUpdateTask, writeJsonCollection } from './helpers';
 
 /**
  * Reason classification for omitted or removed API records.
@@ -198,52 +199,17 @@ const diffCollections = (
 };
 
 /**
- * Create a light diff report between old and new collections.
+ * Create a diff report with annotated reasons between old and new collections.
  *
- * @param diff - Diff report
+ * @param diff - Complete diff result
  */
 const diffReport = (diff: ReturnType<typeof diffCollections>) => {
-  const { added, removed, modified } = diff;
-  const hasChanges = added.length > 0 || removed.length > 0 || modified.length > 0;
-
-  console.log('\n📊 Collection Diff Report:');
-
-  if (!hasChanges) {
-    console.log('   ✨ No record additions, removals, or property modifications detected.');
-
-    return;
-  }
-
-  if (added.length > 0) {
-    console.log(`   ➕ Added (${added.length}):`);
-    added.slice(0, 10).forEach(record => console.log(`      + ${record.p} (Q: ${record.q})`));
-
-    if (added.length > 10) {
-      console.log(`      ... and ${added.length - 10} more`);
-    }
-  }
-
-  if (removed.length > 0) {
-    console.log(`   ➖ Removed (${removed.length}):`);
-    removed.slice(0, 15).forEach(({ record, reason, details }) => {
-      console.log(`      - ${record.p} (Previous Q: ${record.q}) [Reason: ${reason}${details ? ` — ${details}` : ''}]`);
-    });
-
-    if (removed.length > 15) {
-      console.log(`      ... and ${removed.length - 15} more`);
-    }
-  }
-
-  if (modified.length > 0) {
-    console.log(`   🔄 Modified (${modified.length}):`);
-    modified.slice(0, 10).forEach(({ record, reasons }) => {
-      console.log(`      ~ ${record.p} [${reasons.join(', ')}]`);
-    });
-
-    if (modified.length > 10) {
-      console.log(`      ... and ${modified.length - 10} more`);
-    }
-  }
+  printDiffSummary(diff, {
+    title: 'PatternFly API Collection Diff Report',
+    formatAdded: record => `${record.p} (${record.n})`,
+    formatRemoved: ({ record, reason, details }) => `${record.p} (${record.n}) [Reason: ${reason}${details ? ` — ${details}` : ''}]`,
+    formatModified: ({ record, reasons }) => `${record.p} [${reasons.join(', ')}]`
+  });
 };
 
 /**
@@ -322,7 +288,6 @@ const run = async (
     };
 
     const outputPath = resolve(fileURLToPath(new URL('../../src/collection.patternFlyApi.json', import.meta.url)));
-    const jsonContent = isPrettyPrint ? JSON.stringify(payload, null, 2) : JSON.stringify(payload);
     let oldRecords: ApiEmbedded[] = [];
 
     try {
@@ -334,16 +299,14 @@ const run = async (
       // File might not exist yet on initial run
     }
 
-    await writeFile(outputPath, jsonContent + '\n', 'utf-8');
-
-    const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
-    const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
-
-    console.log(`✅ Updated src/collection.patternFlyApi.json:`);
-    console.log(`   - Total Crawled: ${entries.length} endpoints`);
-    console.log(`   - Admitted Records: ${records.length}`);
-    console.log(`   - File Size: ${sizeKb} KB`);
-    console.log(`   - Time Elapsed: ${durationSec}s`);
+    await writeJsonCollection(outputPath, payload, {
+      isPrettyPrint,
+      startTime,
+      stats: [
+        { label: 'Total Crawled', value: `${entries.length} endpoints` },
+        { label: 'Admitted Records', value: records.length }
+      ]
+    });
 
     const diff = diffCollections(oldRecords, records, crawledMap);
 
@@ -354,11 +317,9 @@ const run = async (
         process.env.CSV_REPORT_PATH ||
         resolve(fileURLToPath(new URL('../../reports/collection.patternFlyApi.report.csv', import.meta.url)));
 
-      await mkdir(dirname(targetCsvPath), { recursive: true });
       const csvContent = generateReportCsv({ diff, oldRecords, newRecords: records, crawledMap });
 
-      await writeFile(targetCsvPath, csvContent, 'utf-8');
-      console.log(`📄 Exported full CSV report: ${targetCsvPath}`);
+      await saveCsvReport(targetCsvPath, csvContent);
     }
   } finally {
     clearTimeout(keepAlive);
@@ -367,15 +328,9 @@ const run = async (
 };
 
 /**
- * Configurable options for maintainers.
- * Only execute when explicitly requested via UPDATE_COLLECTIONS=true
+ * Direct execution when invoked via UPDATE_COLLECTIONS=true
  */
-if (process.env.UPDATE_COLLECTIONS === 'true') {
-  run({ isPrettyPrint: true, filterLowQualityRecords: true }).catch(error => {
-    console.error('❌ Failed to update API collection:', error);
-    process.exit(1);
-  });
-}
+runUpdateTask('API collection', run);
 
 export {
   diffCollections,

@@ -1,4 +1,14 @@
-import { escapeCsvField, formatCsv, generateDiffCsv } from '../csv';
+import { jest } from '@jest/globals';
+
+const mockMkdir = jest.fn();
+const mockWriteFile = jest.fn();
+
+jest.unstable_mockModule('node:fs/promises', () => ({
+  mkdir: mockMkdir,
+  writeFile: mockWriteFile
+}));
+
+const { escapeCsvField, formatCsv, generateDiffCsv, saveCsvReport } = await import('../csv');
 
 describe('escapeCsvField', () => {
   it('should correctly escape plain strings, numbers, null, and undefined', () => {
@@ -93,5 +103,30 @@ describe('generateDiffCsv', () => {
     expect(lines[2]).toBe('REMOVED,r1,Removed Item');
     expect(lines[3]).toBe('MODIFIED,m1,Modified Item');
     expect(lines[4]).toBe('UNCHANGED,u1,Unchanged Item');
+  });
+});
+
+describe('saveCsvReport', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should recursively create directories, write CSV content to disk, and log completion', async () => {
+    mockMkdir.mockResolvedValue(undefined as never);
+    mockWriteFile.mockResolvedValue(undefined as never);
+    const mockLog = jest.spyOn(console, 'log').mockImplementation(() => {});
+
+    const targetPath = '/path/to/nested/reports/summary.csv';
+    const csvContent = 'status,id,name\nADDED,1,Button\n';
+
+    await saveCsvReport(targetPath, csvContent);
+
+    expect(mockMkdir).toHaveBeenCalledWith('/path/to/nested/reports', { recursive: true });
+    expect(mockWriteFile).toHaveBeenCalledWith(targetPath, csvContent, 'utf-8');
+    expect(mockLog).toHaveBeenCalledWith(`📄 Exported full CSV report: ${targetPath}`);
   });
 });

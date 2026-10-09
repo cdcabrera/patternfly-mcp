@@ -1,9 +1,10 @@
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
-import { fetchLatestRepoHashes } from './helpers';
+import { saveCsvReport } from './csv';
+import { fetchLatestRepoHashes, printDiffSummary, runUpdateTask, writeJsonCollection } from './helpers';
 import {
   diffDocsManifests,
   findApiRedundantDocs,
@@ -33,51 +34,12 @@ interface UpdateDocsOptions {
  * @param diff - Complete diff result
  */
 const logDiffReport = (diff: DocsDiffResult) => {
-  const { added, removed, modified } = diff;
-  const hasChanges = added.length > 0 || removed.length > 0 || modified.length > 0;
-
-  console.log('\n📊 PatternFly Docs Collection Diff Report:');
-
-  if (!hasChanges) {
-    console.log('   ✨ No record additions, removals, or property modifications detected.');
-
-    return;
-  }
-
-  if (added.length > 0) {
-    console.log(`   ➕ Added (${added.length}):`);
-    added.slice(0, 10).forEach(item => {
-      console.log(`      + [${item.category}] ${item.record.displayName} (${item.record.pathSlug})`);
-    });
-
-    if (added.length > 10) {
-      console.log(`      ... and ${added.length - 10} more`);
-    }
-  }
-
-  if (removed.length > 0) {
-    console.log(`   ➖ Removed (${removed.length}):`);
-    removed.slice(0, 15).forEach(item => {
-      console.log(
-        `      - [${item.category}] ${item.record.displayName} (${item.record.pathSlug}) [Reason: ${item.reason}${item.details ? ` — ${item.details}` : ''}]`
-      );
-    });
-
-    if (removed.length > 15) {
-      console.log(`      ... and ${removed.length - 15} more`);
-    }
-  }
-
-  if (modified.length > 0) {
-    console.log(`   🔄 Modified (${modified.length}):`);
-    modified.slice(0, 10).forEach(item => {
-      console.log(`      ~ [${item.category}] ${item.record.displayName} [${item.reasons.join(', ')}]`);
-    });
-
-    if (modified.length > 10) {
-      console.log(`      ... and ${modified.length - 10} more`);
-    }
-  }
+  printDiffSummary(diff, {
+    title: 'PatternFly Docs Collection Diff Report',
+    formatAdded: item => `[${item.category}] ${item.record.displayName} (${item.record.pathSlug})`,
+    formatRemoved: item => `[${item.category}] ${item.record.displayName} (${item.record.pathSlug}) [Reason: ${item.reason}${item.details ? ` — ${item.details}` : ''}]`,
+    formatModified: item => `[${item.category}] ${item.record.displayName} [${item.reasons.join(', ')}]`
+  });
 };
 
 /**
@@ -146,20 +108,14 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
   });
 
   // 6. Write updated documentation manifest
-  const jsonContent = isPrettyPrint
-    ? JSON.stringify(updatedCatalog, null, 2)
-    : JSON.stringify(updatedCatalog);
-
-  await writeFile(docsPath, jsonContent + '\n', 'utf-8');
-
-  const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
-  const sizeKb = (Buffer.byteLength(jsonContent, 'utf-8') / 1024).toFixed(1);
-
-  console.log(`✅ Updated ${docsPath}:`);
-  console.log(`   - Total Categories: ${updatedCatalog.meta.totalEntries}`);
-  console.log(`   - Total Documents: ${updatedCatalog.meta.totalDocs}`);
-  console.log(`   - File Size: ${sizeKb} KB`);
-  console.log(`   - Time Elapsed: ${durationSec}s`);
+  await writeJsonCollection(docsPath, updatedCatalog, {
+    isPrettyPrint,
+    startTime,
+    stats: [
+      { label: 'Total Categories', value: updatedCatalog.meta.totalEntries },
+      { label: 'Total Documents', value: updatedCatalog.meta.totalDocs }
+    ]
+  });
 
   // 7. Calculate diff and print console summary
   const diff = diffDocsManifests(oldCatalog, updatedCatalog, redundantRecords);
@@ -168,11 +124,9 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
 
   // 8. Generate and save CSV report if requested
   if (outputCsv) {
-    await mkdir(dirname(csvOutputPath), { recursive: true });
     const csvContent = generateReportCsv({ diff });
 
-    await writeFile(csvOutputPath, csvContent, 'utf-8');
-    console.log(`📄 Exported full CSV report: ${csvOutputPath}`);
+    await saveCsvReport(csvOutputPath, csvContent);
   }
 
   return diff;
@@ -181,12 +135,7 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
 /**
  * Direct execution when invoked via UPDATE_COLLECTIONS=true
  */
-if (process.env.UPDATE_COLLECTIONS === 'true') {
-  run().catch(error => {
-    console.error('❌ Failed to update Docs collection:', error);
-    process.exit(1);
-  });
-}
+runUpdateTask('Docs collection', run);
 
 export {
   logDiffReport,
