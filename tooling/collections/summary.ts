@@ -31,12 +31,12 @@ interface DiffSummaryFormatters<TAdded, TRemoved, TModified> {
  * Print a truncated, categorized summary of additions, removals, and modifications to the console.
  *
  * @param diff - Categorized diff items
- * @param root0 - Formatters and configuration object
- * @param root0.title - Title for the summary report
- * @param root0.formatAdded - Formatter function for added items
- * @param root0.formatRemoved - Formatter function for removed items
- * @param root0.formatModified - Formatter function for modified items
- * @param [root0.limits] - Truncation limits
+ * @param options - Formatters and configuration object
+ * @param options.title - Title for the summary report
+ * @param options.formatAdded - Formatter function for added items
+ * @param options.formatRemoved - Formatter function for removed items
+ * @param options.formatModified - Formatter function for modified items
+ * @param [options.limits] - Truncation limits
  */
 const printDiffSummary = <TAdded, TRemoved, TModified>(
   diff: DiffSummaryBuckets<TAdded, TRemoved, TModified>,

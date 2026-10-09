@@ -1,5 +1,4 @@
 import { writeFile } from 'node:fs/promises';
-import { Buffer } from 'node:buffer';
 
 /**
  * Information extracted from a raw GitHub documentation URL.

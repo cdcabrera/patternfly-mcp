@@ -449,7 +449,6 @@ export {
   AI_GUIDELINE_ALIASES,
   PINNED_HISTORICAL_REFS,
   diffDocsManifests,
-  extractCommitHash,
   findApiRedundantDocs,
   generateReportCsv,
   recalculateManifestMetadata,

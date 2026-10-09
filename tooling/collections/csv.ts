@@ -63,7 +63,7 @@ const escapeCsvField = (field: unknown, sanitizeFormulas = true): string => {
  */
 const formatCsv = (
   headers: string[],
-  rows: (string | number | boolean | undefined | null)[][]
+  rows: CsvCellValue[][]
 ): string => {
   const headerLine = headers.map(header => escapeCsvField(header)).join(',');
   const rowLines = rows.map(row => row.map(cell => escapeCsvField(cell)).join(','));
