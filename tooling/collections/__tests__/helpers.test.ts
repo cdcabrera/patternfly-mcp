@@ -36,46 +36,86 @@ describe('DEFAULT_TRACKED_REPOS', () => {
 });
 
 describe('extractCommitHash', () => {
-  it('should extract commit hashes and branch refs from valid raw GitHub URLs', () => {
-    const fullShaUrl =
-      'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/packages/documentation-site/patternfly-docs/content/AI/ai.md';
-
-    expect(extractCommitHash(fullShaUrl)).toBe('540bb0d31cb18670dd02857f80aa8b444fed9be9');
-
-    const branchUrl =
-      'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md';
-
-    expect(extractCommitHash(branchUrl)).toBe('main');
-  });
-
-  it('should return null for invalid or non-GitHub URLs', () => {
-    expect(extractCommitHash('https://example.com/invalid')).toBeNull();
-    expect(extractCommitHash('https://github.com/patternfly/patternfly-org/blob/main/README.md')).toBeNull();
-    expect(extractCommitHash('')).toBeNull();
-    expect(extractCommitHash(null as unknown as string)).toBeNull();
-    expect(extractCommitHash(undefined as unknown as string)).toBeNull();
+  it.each([
+    {
+      description: 'full 40-character SHA raw GitHub URL',
+      url: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/packages/documentation-site/patternfly-docs/content/AI/ai.md',
+      expected: '540bb0d31cb18670dd02857f80aa8b444fed9be9'
+    },
+    {
+      description: 'branch ref raw GitHub URL',
+      url: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md',
+      expected: 'main'
+    },
+    {
+      description: 'non-raw GitHub URL',
+      url: 'https://github.com/patternfly/patternfly-org/blob/main/README.md',
+      expected: null
+    },
+    {
+      description: 'non-GitHub URL',
+      url: 'https://example.com/invalid',
+      expected: null
+    },
+    {
+      description: 'empty string URL',
+      url: '',
+      expected: null
+    },
+    {
+      description: 'null input',
+      url: null as unknown as string,
+      expected: null
+    },
+    {
+      description: 'undefined input',
+      url: undefined as unknown as string,
+      expected: null
+    }
+  ])('should extract commit hash or return null, $description', ({ url, expected }) => {
+    expect(extractCommitHash(url)).toBe(expected);
   });
 });
 
 describe('extractRepoInfo', () => {
-  it('should correctly parse owner, repo, ref, and filePath from raw GitHub URLs', () => {
-    const rawUrl =
-      'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31359c381c8152331575ca2481e3fe1ff/packages/v4/src/content/components/button.md';
-
-    expect(extractRepoInfo(rawUrl)).toEqual({
-      owner: 'patternfly',
-      repo: 'patternfly-org',
-      ref: '540bb0d31359c381c8152331575ca2481e3fe1ff',
-      filePath: 'packages/v4/src/content/components/button.md'
-    });
-  });
-
-  it('should return null for malformed URLs or non-string inputs', () => {
-    expect(extractRepoInfo('invalid-url')).toBeNull();
-    expect(extractRepoInfo('https://raw.githubusercontent.com/incomplete')).toBeNull();
-    expect(extractRepoInfo('')).toBeNull();
-    expect(extractRepoInfo(null as unknown as string)).toBeNull();
-    expect(extractRepoInfo(undefined as unknown as string)).toBeNull();
+  it.each([
+    {
+      description: 'valid raw GitHub URL with subpath',
+      url: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31359c381c8152331575ca2481e3fe1ff/packages/v4/src/content/components/button.md',
+      expected: {
+        owner: 'patternfly',
+        repo: 'patternfly-org',
+        ref: '540bb0d31359c381c8152331575ca2481e3fe1ff',
+        filePath: 'packages/v4/src/content/components/button.md'
+      }
+    },
+    {
+      description: 'plain invalid URL string',
+      url: 'invalid-url',
+      expected: null
+    },
+    {
+      description: 'incomplete GitHub path structure',
+      url: 'https://raw.githubusercontent.com/incomplete',
+      expected: null
+    },
+    {
+      description: 'empty string input',
+      url: '',
+      expected: null
+    },
+    {
+      description: 'null input',
+      url: null as unknown as string,
+      expected: null
+    },
+    {
+      description: 'undefined input',
+      url: undefined as unknown as string,
+      expected: null
+    }
+  ])('should extract repository metadata or return null, $description', ({ url, expected }) => {
+    expect(extractRepoInfo(url)).toEqual(expected);
   });
 });
 
@@ -235,31 +275,32 @@ describe('runUpdateTask', () => {
     jest.restoreAllMocks();
   });
 
-  it('should not invoke task function if UPDATE_COLLECTIONS is not set to true', async () => {
-    delete process.env.UPDATE_COLLECTIONS;
+  it.each([
+    {
+      description: 'default env var unset',
+      env: {},
+      options: undefined,
+      shouldInvoke: false
+    },
+    {
+      description: 'default UPDATE_COLLECTIONS set to true',
+      env: { UPDATE_COLLECTIONS: 'true' },
+      options: undefined,
+      shouldInvoke: true
+    },
+    {
+      description: 'custom env variable set to true',
+      env: { CUSTOM_TRIGGER: 'true' },
+      options: { envVar: 'CUSTOM_TRIGGER' },
+      shouldInvoke: true
+    }
+  ])('should handle execution trigger condition, $description', async ({ env, options, shouldInvoke }) => {
+    Object.assign(process.env, env);
     const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
 
-    await runUpdateTask('Test Task', taskFn);
+    await runUpdateTask('Test Task', taskFn, options);
 
-    expect(taskFn).not.toHaveBeenCalled();
-  });
-
-  it('should invoke task function if UPDATE_COLLECTIONS is true', async () => {
-    process.env.UPDATE_COLLECTIONS = 'true';
-    const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
-
-    await runUpdateTask('Test Task', taskFn);
-
-    expect(taskFn).toHaveBeenCalledTimes(1);
-  });
-
-  it('should invoke task function based on custom envVar option', async () => {
-    process.env.CUSTOM_TRIGGER = 'true';
-    const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
-
-    await runUpdateTask('Custom Task', taskFn, { envVar: 'CUSTOM_TRIGGER' });
-
-    expect(taskFn).toHaveBeenCalledTimes(1);
+    expect(taskFn).toHaveBeenCalledTimes(shouldInvoke ? 1 : 0);
   });
 
   it('should catch task errors, log failure message, and exit with status code 1', async () => {

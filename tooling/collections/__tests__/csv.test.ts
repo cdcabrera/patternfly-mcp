@@ -11,71 +11,75 @@ jest.unstable_mockModule('node:fs/promises', () => ({
 const { escapeCsvField, formatCsv, generateDiffCsv, saveCsvReport } = await import('../csv');
 
 describe('escapeCsvField', () => {
-  it('should correctly escape plain strings, numbers, null, and undefined', () => {
-    expect(escapeCsvField('normal')).toBe('normal');
-    expect(escapeCsvField(123)).toBe('123');
-    expect(escapeCsvField(0)).toBe('0');
-    expect(escapeCsvField(true)).toBe('true');
-    expect(escapeCsvField(false)).toBe('false');
-    expect(escapeCsvField(null)).toBe('');
-    expect(escapeCsvField(undefined)).toBe('');
+  it.each([
+    { description: 'plain string', input: 'normal', expected: 'normal' },
+    { description: 'integer number', input: 123, expected: '123' },
+    { description: 'zero', input: 0, expected: '0' },
+    { description: 'boolean true', input: true, expected: 'true' },
+    { description: 'boolean false', input: false, expected: 'false' },
+    { description: 'null', input: null, expected: '' },
+    { description: 'undefined', input: undefined, expected: '' },
+    { description: 'comma delimiter', input: 'with,comma', expected: '"with,comma"' },
+    { description: 'double quotes', input: 'with "quotes"', expected: '"with ""quotes"""' },
+    { description: 'newline character', input: 'with\nnewline', expected: '"with\nnewline"' },
+    { description: 'carriage return character', input: 'with\rreturn', expected: '"with\rreturn"' },
+    { description: 'CRLF characters', input: 'with\r\nboth', expected: '"with\r\nboth"' },
+    { description: 'combined quotes, commas, and newlines', input: 'all "in, one"\nline', expected: '"all ""in, one""\nline"' },
+    { description: 'formula injection (=)', input: '=SUM(1+1)', expected: "'=SUM(1+1)" },
+    { description: 'formula injection (+)', input: '+123', expected: "'+123" },
+    { description: 'formula injection (-)', input: '-456', expected: "'-456" },
+    { description: 'formula injection (@)', input: '@lookup', expected: "'@lookup" },
+    { description: 'formula injection (tab)', input: '\ttabPrefix', expected: "'\ttabPrefix" },
+    { description: 'formula injection (carriage return prefix)', input: '\rreturnPrefix', expected: '"\'\rreturnPrefix"' }
+  ])('should correctly escape field value, $description', ({ input, expected }) => {
+    expect(escapeCsvField(input)).toBe(expected);
   });
 
-  it('should wrap fields containing commas, double quotes, or newlines in double quotes', () => {
-    expect(escapeCsvField('with,comma')).toBe('"with,comma"');
-    expect(escapeCsvField('with "quotes"')).toBe('"with ""quotes"""');
-    expect(escapeCsvField('with\nnewline')).toBe('"with\nnewline"');
-    expect(escapeCsvField('with\rreturn')).toBe('"with\rreturn"');
-    expect(escapeCsvField('with\r\nboth')).toBe('"with\r\nboth"');
-    expect(escapeCsvField('all "in, one"\nline')).toBe('"all ""in, one""\nline"');
-  });
-
-  it('should sanitize formula injection characters by default', () => {
-    expect(escapeCsvField('=SUM(1+1)')).toBe("'=SUM(1+1)");
-    expect(escapeCsvField('+123')).toBe("'+123");
-    expect(escapeCsvField('-456')).toBe("'-456");
-    expect(escapeCsvField('@lookup')).toBe("'@lookup");
-    expect(escapeCsvField('\ttabPrefix')).toBe("'\ttabPrefix");
-    expect(escapeCsvField('\rreturnPrefix')).toBe('"\'\rreturnPrefix"');
-  });
-
-  it('should preserve raw formula characters when sanitizeFormulas is set to false', () => {
-    expect(escapeCsvField('=SUM(1+1)', false)).toBe('=SUM(1+1)');
-    expect(escapeCsvField('+123', false)).toBe('+123');
-    expect(escapeCsvField('-456', false)).toBe('-456');
-    expect(escapeCsvField('@lookup', false)).toBe('@lookup');
-    expect(escapeCsvField('\ttabPrefix', false)).toBe('\ttabPrefix');
+  it.each([
+    { description: 'equals formula', input: '=SUM(1+1)', expected: '=SUM(1+1)' },
+    { description: 'plus prefix', input: '+123', expected: '+123' },
+    { description: 'minus prefix', input: '-456', expected: '-456' },
+    { description: 'at symbol prefix', input: '@lookup', expected: '@lookup' },
+    { description: 'tab character prefix', input: '\ttabPrefix', expected: '\ttabPrefix' }
+  ])('should preserve raw characters when sanitizeFormulas is false, $description', ({ input, expected }) => {
+    expect(escapeCsvField(input, false)).toBe(expected);
   });
 });
 
 describe('formatCsv', () => {
-  it('should format header and row lines into standard CSV', () => {
-    const headers = ['col1', 'col2'];
-    const rows = [
-      ['val1', 'val2'],
-      ['val3,with,comma', 'val4 "quoted"']
-    ];
-
-    const result = formatCsv(headers, rows);
-
-    expect(result).toBe('col1,col2\nval1,val2\n"val3,with,comma","val4 ""quoted"""\n');
-  });
-
-  it('should handle empty rows and headers correctly', () => {
-    expect(formatCsv(['header1'], [])).toBe('header1\n');
-    expect(formatCsv([], [])).toBe('\n');
-  });
-
-  it('should handle rows with mixed types including numbers, nulls, and undefined', () => {
-    const headers = ['id', 'name', 'score', 'active'];
-    const rows = [
-      [1, 'Alice', 98.5, true],
-      [2, 'Bob, Jr.', null, undefined]
-    ];
-
-    const result = formatCsv(headers, rows);
-
-    expect(result).toBe('id,name,score,active\n1,Alice,98.5,true\n2,"Bob, Jr.",,\n');
+  it.each([
+    {
+      description: 'standard headers and escaped row lines',
+      headers: ['col1', 'col2'],
+      rows: [
+        ['val1', 'val2'],
+        ['val3,with,comma', 'val4 "quoted"']
+      ],
+      expected: 'col1,col2\nval1,val2\n"val3,with,comma","val4 ""quoted"""\n'
+    },
+    {
+      description: 'header with empty rows',
+      headers: ['header1'],
+      rows: [],
+      expected: 'header1\n'
+    },
+    {
+      description: 'empty headers and empty rows',
+      headers: [],
+      rows: [],
+      expected: '\n'
+    },
+    {
+      description: 'mixed data types (numbers, booleans, null, undefined)',
+      headers: ['id', 'name', 'score', 'active'],
+      rows: [
+        [1, 'Alice', 98.5, true],
+        [2, 'Bob, Jr.', null, undefined]
+      ],
+      expected: 'id,name,score,active\n1,Alice,98.5,true\n2,"Bob, Jr.",,\n'
+    }
+  ])('should format CSV output correctly, $description', ({ headers, rows, expected }) => {
+    expect(formatCsv(headers, rows)).toBe(expected);
   });
 });
 

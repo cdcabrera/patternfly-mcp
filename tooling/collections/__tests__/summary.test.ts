@@ -51,65 +51,64 @@ describe('printDiffSummary', () => {
     expect(logSpy).toHaveBeenCalledWith('      ~ Item: M1 (score)');
   });
 
-  it('should truncate outputs exceeding default limits (10 added, 15 removed, 10 modified)', () => {
-    const added = Array.from({ length: 12 }, (_, i) => `add-${i + 1}`);
-    const removed = Array.from({ length: 18 }, (_, i) => `rem-${i + 1}`);
-    const modified = Array.from({ length: 11 }, (_, i) => `mod-${i + 1}`);
-
-    printDiffSummary(
-      { added, removed, modified },
-      {
+  it.each([
+    {
+      description: 'default limits (10 added, 15 removed, 10 modified)',
+      diff: {
+        added: Array.from({ length: 12 }, (_, i) => `add-${i + 1}`),
+        removed: Array.from({ length: 18 }, (_, i) => `rem-${i + 1}`),
+        modified: Array.from({ length: 11 }, (_, i) => `mod-${i + 1}`)
+      },
+      options: {
         title: 'Truncated Diff',
-        formatAdded: item => item,
-        formatRemoved: item => item,
-        formatModified: item => item
-      }
-    );
-
-    expect(logSpy).toHaveBeenCalledWith('   ➕ Added (12):');
-    expect(logSpy).toHaveBeenCalledWith('      + add-10');
-    expect(logSpy).toHaveBeenCalledWith('      ... and 2 more');
-
-    expect(logSpy).toHaveBeenCalledWith('   ➖ Removed (18):');
-    expect(logSpy).toHaveBeenCalledWith('      - rem-15');
-    expect(logSpy).toHaveBeenCalledWith('      ... and 3 more');
-
-    expect(logSpy).toHaveBeenCalledWith('   🔄 Modified (11):');
-    expect(logSpy).toHaveBeenCalledWith('      ~ mod-10');
-    expect(logSpy).toHaveBeenCalledWith('      ... and 1 more');
-  });
-
-  it('should truncate outputs exceeding custom limits', () => {
-    const added = ['a1', 'a2', 'a3'];
-    const removed = ['r1', 'r2'];
-    const modified = ['m1', 'm2', 'm3', 'm4'];
-
-    printDiffSummary(
-      { added, removed, modified },
-      {
+        formatAdded: (item: string) => item,
+        formatRemoved: (item: string) => item,
+        formatModified: (item: string) => item
+      },
+      expectedLogs: [
+        '   ➕ Added (12):',
+        '      + add-10',
+        '      ... and 2 more',
+        '   ➖ Removed (18):',
+        '      - rem-15',
+        '      ... and 3 more',
+        '   🔄 Modified (11):',
+        '      ~ mod-10',
+        '      ... and 1 more'
+      ]
+    },
+    {
+      description: 'custom limits (1 added, 1 removed, 2 modified)',
+      diff: {
+        added: ['a1', 'a2', 'a3'],
+        removed: ['r1', 'r2'],
+        modified: ['m1', 'm2', 'm3', 'm4']
+      },
+      options: {
         title: 'Custom Limited Diff',
-        formatAdded: item => item,
-        formatRemoved: item => item,
-        formatModified: item => item,
-        limits: {
-          added: 1,
-          removed: 1,
-          modified: 2
-        }
-      }
-    );
+        formatAdded: (item: string) => item,
+        formatRemoved: (item: string) => item,
+        formatModified: (item: string) => item,
+        limits: { added: 1, removed: 1, modified: 2 }
+      },
+      expectedLogs: [
+        '   ➕ Added (3):',
+        '      + a1',
+        '      ... and 2 more',
+        '   ➖ Removed (2):',
+        '      - r1',
+        '      ... and 1 more',
+        '   🔄 Modified (4):',
+        '      ~ m1',
+        '      ~ m2',
+        '      ... and 2 more'
+      ]
+    }
+  ])('should truncate diff output properly, $description', ({ diff, options, expectedLogs }) => {
+    printDiffSummary(diff, options);
 
-    expect(logSpy).toHaveBeenCalledWith('   ➕ Added (3):');
-    expect(logSpy).toHaveBeenCalledWith('      + a1');
-    expect(logSpy).toHaveBeenCalledWith('      ... and 2 more');
-
-    expect(logSpy).toHaveBeenCalledWith('   ➖ Removed (2):');
-    expect(logSpy).toHaveBeenCalledWith('      - r1');
-    expect(logSpy).toHaveBeenCalledWith('      ... and 1 more');
-
-    expect(logSpy).toHaveBeenCalledWith('   🔄 Modified (4):');
-    expect(logSpy).toHaveBeenCalledWith('      ~ m1');
-    expect(logSpy).toHaveBeenCalledWith('      ~ m2');
-    expect(logSpy).toHaveBeenCalledWith('      ... and 2 more');
+    for (const log of expectedLogs) {
+      expect(logSpy).toHaveBeenCalledWith(log);
+    }
   });
 });

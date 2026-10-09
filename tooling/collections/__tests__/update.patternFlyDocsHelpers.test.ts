@@ -111,26 +111,40 @@ describe('API Deduplication Litmus Test (Regression Guard)', () => {
     if (docs.meta.totalDocs >= 341) {
       expect(redundant.length).toBe(20);
 
-      expect(redundant.some(report => report.record.displayName === 'Table Rules')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Charts')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Chatbot')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'AI Prompt Guidance')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Styling Standards')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'PatternFly React Development Rules')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Guidelines')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Setup')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Development Environment')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Quick Start')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'External Links')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'React Troubleshooting')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Component Architecture')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Quick Deployment Guide for Prototypes')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Component Groups')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Data Display')).toBe(true);
-      expect(redundant.some(report => report.record.displayName === 'Layout Components')).toBe(true);
-      expect(redundant.some(report => report.record.pathSlug === 'ai-helpers-readme')).toBe(true);
-      expect(redundant.some(report => report.record.pathSlug === 'ai-helpers-contributing')).toBe(true);
-      expect(redundant.some(report => report.record.pathSlug === 'ai-helpers-contributing-skills')).toBe(true);
+      const expectedDisplayNames = [
+        'Table Rules',
+        'React Charts',
+        'React Chatbot',
+        'AI Prompt Guidance',
+        'Styling Standards',
+        'PatternFly React Development Rules',
+        'React Guidelines',
+        'React Setup',
+        'Development Environment',
+        'Quick Start',
+        'External Links',
+        'React Troubleshooting',
+        'Component Architecture',
+        'Quick Deployment Guide for Prototypes',
+        'Component Groups',
+        'Data Display',
+        'Layout Components'
+      ];
+      const expectedPathSlugs = [
+        'ai-helpers-readme',
+        'ai-helpers-contributing',
+        'ai-helpers-contributing-skills'
+      ];
+
+      const redundantDisplayNames = new Set(redundant.map(report => report.record.displayName));
+      const redundantPathSlugs = new Set(redundant.map(report => report.record.pathSlug));
+
+      for (const name of expectedDisplayNames) {
+        expect(redundantDisplayNames.has(name)).toBe(true);
+      }
+      for (const slug of expectedPathSlugs) {
+        expect(redundantPathSlugs.has(slug)).toBe(true);
+      }
     } else {
       expect(redundant.length).toBe(0);
     }
@@ -309,60 +323,51 @@ describe('docs.helpers Manifest Recalculation & Diffing', () => {
     expect(AI_GUIDELINE_ALIASES['development-rules']).toBe('overview');
   });
 
-  it('should resolve AI helper documentation endpoints using aliases and token matching', () => {
-    const highQualityApi = [
-      { p: 'v6/AI/ai-assisted-development_marketplace/text', q: 1 },
-      { p: 'v6/AI/development-guidelines_overview/text', q: 1 },
-      { p: 'v6/AI/development-guidelines_table/text', q: 1 },
-      { p: 'v6/AI/development-guidelines_charts/text', q: 1 }
-    ];
+  const highQualityApi = [
+    { p: 'v6/AI/ai-assisted-development_marketplace/text', q: 1 },
+    { p: 'v6/AI/development-guidelines_overview/text', q: 1 },
+    { p: 'v6/AI/development-guidelines_table/text', q: 1 },
+    { p: 'v6/AI/development-guidelines_charts/text', q: 1 }
+  ];
 
-    expect(
-      resolveApiEndpointForAiDoc(
-        {
-          displayName: 'AI Helpers README',
-          pathSlug: 'ai-helpers-readme',
-          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/README.md',
-          version: 'v6',
-          category: 'AI',
-          description: '',
-          section: '',
-          source: 'github'
-        },
-        highQualityApi
-      )
-    ).toBe('v6/AI/ai-assisted-development_marketplace/text');
+  it.each([
+    {
+      description: 'README alias matching marketplace endpoint',
+      doc: {
+        displayName: 'AI Helpers README',
+        pathSlug: 'ai-helpers-readme',
+        path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/README.md'
+      },
+      expected: 'v6/AI/ai-assisted-development_marketplace/text'
+    },
+    {
+      description: 'table rules alias matching table endpoint',
+      doc: {
+        displayName: 'Table Rules',
+        pathSlug: 'table-rules',
+        path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md'
+      },
+      expected: 'v6/AI/development-guidelines_table/text'
+    },
+    {
+      description: 'charts token matching charts endpoint',
+      doc: {
+        displayName: 'Charts Rules',
+        pathSlug: 'charts',
+        path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/charts/README.md'
+      },
+      expected: 'v6/AI/development-guidelines_charts/text'
+    }
+  ])('should resolve AI endpoint, $description', ({ doc, expected }) => {
+    const fullDoc = {
+      version: 'v6',
+      category: 'AI',
+      description: '',
+      section: '',
+      source: 'github' as const,
+      ...doc
+    };
 
-    expect(
-      resolveApiEndpointForAiDoc(
-        {
-          displayName: 'Table Rules',
-          pathSlug: 'table-rules',
-          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md',
-          version: 'v6',
-          category: 'React',
-          description: '',
-          section: '',
-          source: 'github'
-        },
-        highQualityApi
-      )
-    ).toBe('v6/AI/development-guidelines_table/text');
-
-    expect(
-      resolveApiEndpointForAiDoc(
-        {
-          displayName: 'Charts Rules',
-          pathSlug: 'charts',
-          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/charts/README.md',
-          version: 'v6',
-          category: 'Charts',
-          description: '',
-          section: '',
-          source: 'github'
-        },
-        highQualityApi
-      )
-    ).toBe('v6/AI/development-guidelines_charts/text');
+    expect(resolveApiEndpointForAiDoc(fullDoc, highQualityApi)).toBe(expected);
   });
 });
