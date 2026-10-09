@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
+import { memo } from '../../src/server.caching';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 
 /**
@@ -61,6 +62,14 @@ const extractRepoInfo = (url: string): GitHubUrlInfo | null => {
     filePath: match[4]
   };
 };
+
+/**
+ * Memoized version of extractRepoInfo.
+ */
+extractRepoInfo.memo = memo(extractRepoInfo, {
+  cacheLimit: 500,
+  keyHash: args => args[0]
+});
 
 /**
  * Dynamically extract unique repositories referenced across all documents in a catalog.
@@ -180,6 +189,69 @@ const verifyUrlReachability = async (url: string, timeoutMs = 5000): Promise<boo
 };
 
 /**
+ * Memoized version of verifyUrlReachability.
+ */
+verifyUrlReachability.memo = memo(verifyUrlReachability, {
+  cacheLimit: 200,
+  keyHash: args => `${args[0]}:${args[1] ?? 5000}`
+});
+
+/**
+ * Resolve latest commit SHA for an individual repository via GitHub API or git ls-remote fallback.
+ *
+ * @param owner - Repository owner
+ * @param repo - Repository name
+ * @param [branch] - Optional target branch
+ * @returns Commit SHA or null if unresolved
+ */
+const fetchRepoCommit = async (
+  owner: string,
+  repo: string,
+  branch?: string
+): Promise<string | null> => {
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+  let sha: string | null = null;
+
+  try {
+    const url = branch
+      ? `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`
+      : `https://api.github.com/repos/${owner}/${repo}/commits`;
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'patternfly-mcp',
+        Accept: 'application/vnd.github.v3+json',
+        ...authHeader
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      if (Array.isArray(data) && data[0]?.sha) {
+        sha = data[0].sha;
+      } else if (data && typeof data === 'object' && 'sha' in data && typeof data.sha === 'string') {
+        sha = data.sha;
+      }
+    }
+  } catch {
+    // Fallback on network/API failure
+  }
+
+  return sha || fetchCommitViaGitLsRemote(owner, repo);
+};
+
+/**
+ * Memoized version of fetchRepoCommit.
+ */
+fetchRepoCommit.memo = memo(fetchRepoCommit, {
+  cacheLimit: 50,
+  expire: 60_000,
+  keyHash: args => `${args[0]}/${args[1]}:${args[2] || 'default'}`
+});
+
+/**
  * Fetch latest commit hashes for tracked repositories via GitHub API with git ls-remote fallback.
  *
  * @param repos - Repositories to query
@@ -189,42 +261,10 @@ const fetchLatestRepoHashes = async (
   repos: TrackedRepository[] = []
 ): Promise<Map<string, string>> => {
   const hashes = new Map<string, string>();
-  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
   for (const { owner, repo, branch } of repos) {
     const key = `${owner}/${repo}`;
-    let sha: string | null = null;
-
-    try {
-      const url = branch
-        ? `https://api.github.com/repos/${owner}/${repo}/commits/${branch}`
-        : `https://api.github.com/repos/${owner}/${repo}/commits`;
-
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'patternfly-mcp',
-          Accept: 'application/vnd.github.v3+json',
-          ...authHeader
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (Array.isArray(data) && data[0]?.sha) {
-          sha = data[0].sha;
-        } else if (data && typeof data === 'object' && 'sha' in data && typeof data.sha === 'string') {
-          sha = data.sha;
-        }
-      }
-    } catch {
-      // GitHub API failed or offline - fall back to git ls-remote
-    }
-
-    if (!sha) {
-      sha = fetchCommitViaGitLsRemote(owner, repo);
-    }
+    const sha = await fetchRepoCommit.memo(owner, repo, branch);
 
     if (sha) {
       hashes.set(key, sha);
@@ -307,6 +347,7 @@ export {
   extractRepoInfo,
   extractTrackedReposFromCatalog,
   fetchCommitViaGitLsRemote,
+  fetchRepoCommit,
   fetchLatestRepoHashes,
   probeUrl,
   runUpdateTask,

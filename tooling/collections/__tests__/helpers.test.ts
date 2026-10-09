@@ -5,6 +5,7 @@ import {
   extractRepoInfo,
   extractTrackedReposFromCatalog,
   fetchCommitViaGitLsRemote,
+  fetchRepoCommit,
   fetchLatestRepoHashes,
   runUpdateTask,
   verifyUrlReachability,
@@ -16,7 +17,18 @@ jest.mock('node:fs/promises', () => ({
   writeFile: jest.fn()
 }));
 
+jest.mock('node:child_process', () => ({
+  ...jest.requireActual('node:child_process'),
+  execSync: jest.fn()
+}));
+
 const mockWriteFile = writeFile as jest.MockedFunction<typeof writeFile>;
+
+afterEach(() => {
+  extractRepoInfo.memo.clear();
+  fetchRepoCommit.memo.clear();
+  verifyUrlReachability.memo.clear();
+});
 
 describe('extractTrackedReposFromCatalog', () => {
   it('should extract and deduplicate repositories across multiple categories', () => {
@@ -220,6 +232,64 @@ describe('fetchCommitViaGitLsRemote', () => {
   });
 });
 
+describe('fetchRepoCommit', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should resolve commit SHA for a specific branch from GitHub API', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sha: 'mock-branch-sha' })
+    } as Response);
+
+    const sha = await fetchRepoCommit('patternfly', 'patternfly-react', 'main');
+
+    expect(sha).toBe('mock-branch-sha');
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.github.com/repos/patternfly/patternfly-react/commits/main',
+      expect.any(Object)
+    );
+  });
+
+  it('should resolve commit SHA for default branch when branch is not specified', async () => {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => [{ sha: 'mock-default-sha' }]
+    } as Response);
+
+    const sha = await fetchRepoCommit('patternfly', 'patternfly-react');
+
+    expect(sha).toBe('mock-default-sha');
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://api.github.com/repos/patternfly/patternfly-react/commits',
+      expect.any(Object)
+    );
+  });
+
+  it('should fallback to git ls-remote when GitHub API fails', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
+    jest.spyOn(childProcess, 'execSync').mockReturnValue(
+      '0123456789abcdef0123456789abcdef01234567\tHEAD\n'
+    );
+
+    const sha = await fetchRepoCommit('patternfly', 'patternfly-org');
+
+    expect(sha).toBe('0123456789abcdef0123456789abcdef01234567');
+  });
+
+  it('should return null when API fails and git ls-remote fails', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Network error'));
+    jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
+      throw new Error('git error');
+    });
+
+    const sha = await fetchRepoCommit('patternfly', 'patternfly-org');
+
+    expect(sha).toBeNull();
+  });
+});
+
 describe('fetchLatestRepoHashes', () => {
   const originalEnv = process.env;
 
@@ -314,6 +384,9 @@ describe('fetchLatestRepoHashes', () => {
 
   it('should handle fetch failures gracefully without throwing', async () => {
     jest.spyOn(global, 'fetch').mockRejectedValue(new Error('Rate limit exceeded'));
+    jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
+      throw new Error('git command failed');
+    });
 
     const hashes = await fetchLatestRepoHashes([
       { owner: 'patternfly', repo: 'patternfly-org', branch: 'main' }
@@ -434,5 +507,62 @@ describe('runUpdateTask', () => {
 
     expect(errorSpy).toHaveBeenCalledWith('❌ Failed to update Failing Task:', testError);
     expect(exitSpy).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('memo cleanup and caching', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should allow clearing memo caches without errors', () => {
+    const url = 'https://raw.githubusercontent.com/patternfly/patternfly-react/main/packages/README.md';
+    const first = extractRepoInfo.memo(url);
+    const second = extractRepoInfo.memo(url);
+
+    expect(first).toEqual(second);
+    expect(extractRepoInfo.memo.clear()).toBe(true);
+  });
+
+  it('should cache fetchRepoCommit.memo calls and clear properly', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sha: 'mock-memo-sha' })
+    } as Response);
+
+    const first = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
+    const second = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
+
+    expect(first).toBe('mock-memo-sha');
+    expect(second).toBe('mock-memo-sha');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    expect(fetchRepoCommit.memo.clear()).toBe(true);
+
+    const third = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
+
+    expect(third).toBe('mock-memo-sha');
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should cache verifyUrlReachability.memo calls and clear properly', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200
+    } as Response);
+
+    const first = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
+    const second = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
+
+    expect(first).toBe(true);
+    expect(second).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    expect(verifyUrlReachability.memo.clear()).toBe(true);
+
+    const third = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
+
+    expect(third).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
