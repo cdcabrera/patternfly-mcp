@@ -75,6 +75,31 @@ const extractRepoInfo = (url: string): GitHubUrlInfo | null => {
 };
 
 /**
+ * Internal helper to perform a probe request with guaranteed timer cleanup.
+ *
+ * @param url - Target URL to probe
+ * @param method - HTTP method to use ('HEAD' | 'GET')
+ * @param timeoutMs - Timeout in milliseconds
+ * @returns Promise resolving to Response
+ */
+const probeUrl = async (url: string, method: 'HEAD' | 'GET', timeoutMs: number): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(url, {
+      method,
+      headers: { 'User-Agent': 'patternfly-mcp-audit' },
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+/**
  * Probe URL reachability using HTTP HEAD / GET request.
  *
  * @param url - Target URL to probe
@@ -83,18 +108,7 @@ const extractRepoInfo = (url: string): GitHubUrlInfo | null => {
  */
 const verifyUrlReachability = async (url: string, timeoutMs = 5000): Promise<boolean> => {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, timeoutMs);
-
-    const response = await fetch(url, {
-      method: 'HEAD',
-      headers: { 'User-Agent': 'patternfly-mcp-audit' },
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
+    const response = await probeUrl(url, 'HEAD', timeoutMs);
 
     if (response.ok) {
       return true;
@@ -102,18 +116,7 @@ const verifyUrlReachability = async (url: string, timeoutMs = 5000): Promise<boo
 
     // Fallback to GET for hosts that reject HEAD requests
     if (response.status === 405 || response.status === 403) {
-      const getController = new AbortController();
-      const getTimeoutId = setTimeout(() => {
-        getController.abort();
-      }, timeoutMs);
-
-      const getResponse = await fetch(url, {
-        method: 'GET',
-        headers: { 'User-Agent': 'patternfly-mcp-audit' },
-        signal: getController.signal
-      });
-
-      clearTimeout(getTimeoutId);
+      const getResponse = await probeUrl(url, 'GET', timeoutMs);
 
       return getResponse.ok;
     }
