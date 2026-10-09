@@ -7,6 +7,7 @@ import {
   fetchCommitViaGitLsRemote,
   fetchRepoCommit,
   fetchLatestRepoHashes,
+  getDefaultCollectionPath,
   runUpdateTask,
   verifyUrlReachability,
   writeJsonCollection
@@ -452,6 +453,14 @@ describe('writeJsonCollection', () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/Time Elapsed: \d+\.\d+s/));
     expect(typeof result.durationSec).toBe('string');
     expect(typeof result.sizeKb).toBe('string');
+  });
+});
+
+describe('getDefaultCollectionPath', () => {
+  it('should resolve default path containing the filename within src directory', () => {
+    const resolved = getDefaultCollectionPath('test.json');
+
+    expect(resolved.endsWith('src/test.json')).toBe(true);
   });
 });
 

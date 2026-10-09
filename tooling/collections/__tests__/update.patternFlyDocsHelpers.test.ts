@@ -10,10 +10,12 @@ import {
   recalculateManifestMetadata,
   resolveApiEndpointForAiDoc
 } from '../update.patternFlyDocsHelpers';
+import { DEFAULT_API_FILENAME, DEFAULT_DOCS_FILENAME } from '../update.patternFlyDocs';
+import { getDefaultCollectionPath } from '../helpers';
 
-const DOCS_PATH = resolve(process.cwd(), 'src/docs.json');
-const API_PATH = resolve(process.cwd(), 'src/collection.patternFlyApi.json');
-const RECORDS_MAINT_DOCS_PATH = resolve(process.cwd(), 'records-maint/docs.json');
+const DOCS_PATH = getDefaultCollectionPath(DEFAULT_DOCS_FILENAME);
+const API_PATH = getDefaultCollectionPath(DEFAULT_API_FILENAME);
+const RECORDS_MAINT_DOCS_PATH = resolve(process.cwd(), `records-maint/${DEFAULT_DOCS_FILENAME}`);
 
 describe('docs.helpers CSV Report Generator', () => {
   it('should produce a full structured CSV report for added, removed, modified, and unchanged doc entries', () => {

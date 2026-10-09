@@ -1,5 +1,7 @@
 import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { memo } from '../../src/server.caching';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 
@@ -320,6 +322,15 @@ const writeJsonCollection = async <T>(
 };
 
 /**
+ * Resolve the default absolute path for a JSON collection file in the src directory.
+ *
+ * @param filename - Collection JSON filename
+ * @returns Fully resolved filesystem path in the src directory
+ */
+const getDefaultCollectionPath = (filename: string): string =>
+  resolve(fileURLToPath(new URL(`../../src/${filename}`, import.meta.url)));
+
+/**
  * Generic lifecycle runner for collection update tasks invoked via environment variables.
  *
  * @param taskName - Human-readable name of the task for logging
@@ -349,6 +360,7 @@ export {
   fetchCommitViaGitLsRemote,
   fetchRepoCommit,
   fetchLatestRepoHashes,
+  getDefaultCollectionPath,
   probeUrl,
   runUpdateTask,
   verifyUrlReachability,
