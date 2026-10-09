@@ -10,9 +10,8 @@ import {
   type ApiEmbeddedCollection,
   MIN_API_QUALITY_THRESHOLD
 } from '../../src/collection.patternFlyApi';
-import { getSessionOptions, getOptions, runWithOptions } from '../../src/options.context';
+import { getLoggerOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
-import { type LoggingSession } from '../../src/options.defaults';
 import { generateDiffCsv, saveCsvReport } from './csv';
 import { runUpdateTask, writeJsonCollection } from './helpers';
 import { printDiffSummary } from './summary';
@@ -232,10 +231,10 @@ const run = async (
 ) => {
   // 1. Enable stderr logging so all diagnostics_channel logs (debug, info, warn, error) are printed
   const unsubscribeLogger = createLogger({
-    channelName: getSessionOptions().channelName,
+    ...getLoggerOptions(),
     stderr: true,
     level: 'debug'
-  } as LoggingSession);
+  });
 
   console.log('🚀 Generating PatternFly API embedded collection...');
   const keepAlive = setTimeout(() => {}, 86_400_000);
