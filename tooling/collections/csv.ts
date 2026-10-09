@@ -2,10 +2,25 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const DEFAULT_API_REPORT_FILENAME = 'collection.patternFlyApi.report.csv';
-const DEFAULT_DOCS_REPORT_FILENAME = 'collection.patternFlyDocs.report.csv';
-
+/**
+ * Value types stored in a CSV cell.
+ *
+ * - `string`: For text-based values within a CSV cell.
+ * - `number`: For numeric values within a CSV cell.
+ * - `boolean`: For true/false values within a CSV cell.
+ * - `undefined`: Represents the absence of a value within a CSV cell.
+ * - `null`: Explicitly represents a null value within a CSV cell.
+ */
 type CsvCellValue = string | number | boolean | undefined | null;
+
+/**
+ * Diff status
+ *
+ * - `ADDED`: Item exists in the target but not in the source.
+ * - `REMOVED`: Item exists in the source but not in the target.
+ * - `MODIFIED`: Item exists in both the source and target but has changed.
+ * - `UNCHANGED`: Item exists in both the source and the target without any change.
+ */
 type DiffStatus = 'ADDED' | 'REMOVED' | 'MODIFIED' | 'UNCHANGED';
 
 /**
@@ -145,8 +160,6 @@ const saveCsvReport = async (targetPath: string, csvContent: string): Promise<vo
 };
 
 export {
-  DEFAULT_API_REPORT_FILENAME,
-  DEFAULT_DOCS_REPORT_FILENAME,
   getDefaultReportPath,
   getReportDatePrefix,
   escapeCsvField,

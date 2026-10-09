@@ -1,7 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import {
-  DEFAULT_API_REPORT_FILENAME,
-  DEFAULT_DOCS_REPORT_FILENAME,
   escapeCsvField,
   formatCsv,
   generateDiffCsv,
@@ -40,11 +38,13 @@ describe('getReportDatePrefix', () => {
 describe('getDefaultReportPath', () => {
   it('should resolve default path containing the timestamp prefix and filename', () => {
     const fixedDate = new Date(2026, 9, 9);
-    const apiPath = getDefaultReportPath(DEFAULT_API_REPORT_FILENAME, fixedDate);
-    const docsPath = getDefaultReportPath(DEFAULT_DOCS_REPORT_FILENAME, fixedDate);
+    const apiFileName = 'loremIpsum.report.csv';
+    const docFileName = 'dolorSit.report.csv';
+    const apiPath = getDefaultReportPath(apiFileName, fixedDate);
+    const docsPath = getDefaultReportPath(docFileName, fixedDate);
 
-    expect(apiPath).toMatch(/reports\/20261009-collection\.patternFlyApi\.report\.csv$/);
-    expect(docsPath).toMatch(/reports\/20261009-collection\.patternFlyDocs\.report\.csv$/);
+    expect(apiPath).toMatch(new RegExp(`reports/20261009-${apiFileName}$`));
+    expect(docsPath).toMatch(new RegExp(`reports/20261009-${docFileName}$`));
   });
 });
 

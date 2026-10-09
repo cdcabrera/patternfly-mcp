@@ -4,7 +4,6 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { type PatternFlyMcpDocsCatalog } from '../../src/docs.embedded';
 import {
-  DEFAULT_DOCS_REPORT_FILENAME,
   getDefaultReportPath,
   saveCsvReport
 } from './csv';
@@ -37,6 +36,11 @@ interface UpdateDocsOptions {
   isPrettyPrint?: boolean | undefined;
   outputCsv?: boolean | undefined;
 }
+
+/**
+ * Configurable default filename for the documentation report.
+ */
+const DEFAULT_DOCS_REPORT_FILENAME = 'collection.patternFlyDocs.report.csv';
 
 /**
  * Log a structured diff summary of the documentation changes to the console.
@@ -150,6 +154,7 @@ const run = async (options: UpdateDocsOptions = {}): Promise<DocsDiffResult> => 
 runUpdateTask('Docs collection', run);
 
 export {
+  DEFAULT_DOCS_REPORT_FILENAME,
   logDiffReport,
   run,
   type UpdateDocsOptions

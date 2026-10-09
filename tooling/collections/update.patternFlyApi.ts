@@ -13,7 +13,6 @@ import {
 import { getLoggerOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import {
-  DEFAULT_API_REPORT_FILENAME,
   generateDiffCsv,
   getDefaultReportPath,
   saveCsvReport
@@ -57,6 +56,11 @@ interface GenerateCsvReportOptions {
   newRecords: ApiEmbedded[];
   crawledMap: Map<string, { entry: ApiCrawler; metadata: ApiContent }>;
 }
+
+/**
+ * Configurable default filename for the API report.
+ */
+const DEFAULT_API_REPORT_FILENAME = 'collection.patternFlyApi.report.csv';
 
 /**
  * Generate a complete, non-truncated CSV report for additions, removals, modifications, and unchanged records.
@@ -339,6 +343,7 @@ const run = async (
 runUpdateTask('API collection', run);
 
 export {
+  DEFAULT_API_REPORT_FILENAME,
   diffCollections,
   diffReport,
   generateReportCsv,
