@@ -1,12 +1,5 @@
-import { jest } from '@jest/globals';
-
-const mockWriteFile = jest.fn();
-
-jest.unstable_mockModule('node:fs/promises', () => ({
-  writeFile: mockWriteFile
-}));
-
-const {
+import { writeFile } from 'node:fs/promises';
+import {
   DEFAULT_TRACKED_REPOS,
   extractCommitHash,
   extractRepoInfo,
@@ -14,7 +7,14 @@ const {
   runUpdateTask,
   verifyUrlReachability,
   writeJsonCollection
-} = await import('../helpers');
+} from '../helpers';
+
+jest.mock('node:fs/promises', () => ({
+  ...jest.requireActual('node:fs/promises'),
+  writeFile: jest.fn()
+}));
+
+const mockWriteFile = writeFile as jest.MockedFunction<typeof writeFile>;
 
 describe('DEFAULT_TRACKED_REPOS', () => {
   it('should define expected tracked repositories with default main branch', () => {
@@ -296,7 +296,7 @@ describe('runUpdateTask', () => {
     }
   ])('should handle execution trigger condition, $description', async ({ env, options, shouldInvoke }) => {
     Object.assign(process.env, env);
-    const taskFn = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const taskFn = jest.fn().mockResolvedValue(undefined);
 
     await runUpdateTask('Test Task', taskFn, options);
 
@@ -306,7 +306,7 @@ describe('runUpdateTask', () => {
   it('should catch task errors, log failure message, and exit with status code 1', async () => {
     process.env.UPDATE_COLLECTIONS = 'true';
     const testError = new Error('Task execution failed');
-    const taskFn = jest.fn<() => Promise<void>>().mockRejectedValue(testError);
+    const taskFn = jest.fn().mockRejectedValue(testError);
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => {}) as any);
 

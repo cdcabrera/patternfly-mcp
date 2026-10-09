@@ -1,14 +1,19 @@
-import { jest } from '@jest/globals';
+import { mkdir, writeFile } from 'node:fs/promises';
+import {
+  escapeCsvField,
+  formatCsv,
+  generateDiffCsv,
+  saveCsvReport
+} from '../csv';
 
-const mockMkdir = jest.fn();
-const mockWriteFile = jest.fn();
-
-jest.unstable_mockModule('node:fs/promises', () => ({
-  mkdir: mockMkdir,
-  writeFile: mockWriteFile
+jest.mock('node:fs/promises', () => ({
+  ...jest.requireActual('node:fs/promises'),
+  mkdir: jest.fn(),
+  writeFile: jest.fn()
 }));
 
-const { escapeCsvField, formatCsv, generateDiffCsv, saveCsvReport } = await import('../csv');
+const mockMkdir = mkdir as jest.MockedFunction<typeof mkdir>;
+const mockWriteFile = writeFile as jest.MockedFunction<typeof writeFile>;
 
 describe('escapeCsvField', () => {
   it.each([
