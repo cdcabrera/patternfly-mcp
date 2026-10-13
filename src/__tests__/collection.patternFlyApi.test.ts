@@ -322,6 +322,53 @@ describe('collectionCallback', () => {
 
     expect(snapshotSubset).toMatchSnapshot();
   });
+
+  it('heals missing records from previous state when direct probe succeeds', async () => {
+    mockedProcessDocsFunction
+      .mockResolvedValueOnce([
+        {
+          content: JSON.stringify(['v1']),
+          path: VERSIONS,
+          resolvedPath: VERSIONS,
+          isSuccess: true
+        }
+      ])
+      .mockResolvedValueOnce([]) // crawler returns zero leaf entries
+      .mockResolvedValueOnce([
+        {
+          content: JSON.stringify({ name: 'ButtonProps' }),
+          path: `${BASE}/v1/components/Button/props`,
+          resolvedPath: `${BASE}/v1/components/Button/props`,
+          isSuccess: true
+        }
+      ]); // direct probe succeeds
+
+    const previousRecord = {
+      id: 'api::v1::components::button::props',
+      sourceId: `${BASE}/v1/components/Button/props`,
+      sourceType: 'api' as const,
+      data: {
+        Button: [
+          {
+            displayName: 'Button',
+            pathSlug: 'components-button-props',
+            source: 'api',
+            version: 'v1',
+            section: 'components',
+            category: 'props',
+            path: `${BASE}/v1/components/Button/props`
+          }
+        ]
+      }
+    };
+
+    const result = await collectionCallback({
+      previous: { records: [previousRecord] }
+    });
+
+    expect(result.records).toHaveLength(1);
+    expect(result.records[0]?.id).toBe('api::v1::components::button::props');
+  });
 });
 
 describe('isEmptyPayload', () => {

@@ -1,4 +1,9 @@
-import { type McpCollection, type McpCollectionCreator, type McpCollectionResult } from './collections';
+import {
+  type CollectionCallbackContext,
+  type McpCollection,
+  type McpCollectionCreator,
+  type McpCollectionResult
+} from './collections';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
 import { getHeavyPool } from './server.workerPool';
@@ -22,7 +27,7 @@ const makeParallelProxyCreator = ({
 options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
   const [name, config, _callback, _config] = creator(options);
 
-  const handler = async (args?: unknown): Promise<McpCollectionResult> => {
+  const handler = async (args?: CollectionCallbackContext): Promise<McpCollectionResult> => {
     const currentOptions = getOptions();
     const currentSession = getSessionOptions();
 
@@ -61,7 +66,7 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
     ...(typeof runSchedule?.repeat === 'number' ? { repeat: runSchedule.repeat } : {})
   };
 
-  const handler = async (args?: unknown): Promise<McpCollectionResult> => {
+  const handler = async (args?: CollectionCallbackContext): Promise<McpCollectionResult> => {
     const task = deferTask(callback, deferOptions)(args);
     let response;
 

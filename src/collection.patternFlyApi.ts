@@ -1,4 +1,5 @@
 import {
+  type CollectionCallbackContext,
   type McpCollection,
   type McpCollectionRecord,
   type McpCollectionResult
@@ -646,11 +647,13 @@ const collectionInitialCallback = async (): Promise<McpCollectionResult> => {
 
 /**
  * Async collect and process entries for a collection. Crawl the PatternFly API
- * catalog.
+ * catalog and heal missing entries against previous collection state.
  *
+ * @param [context={}] - Execution context containing previous collection state.
+ * @param [context.previous] - Previous collection result stored in the registry or passed by caller.
  * @returns {Promise<McpCollectionResult>} The processed collection of API records.
  */
-const collectionCallback = async (): Promise<McpCollectionResult> => {
+const collectionCallback = async ({ previous }: CollectionCallbackContext = {}): Promise<McpCollectionResult> => {
   const isHealthy = await probeHealth();
 
   if (!isHealthy) {
@@ -659,9 +662,34 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
     return { records: [] };
   }
 
-  const entries = await apiSpider();
+  const baseline = previous?.records || (await collectionInitialCallback()).records;
+  const baselineMap = new Map(baseline.map(record => [record.id, record]));
 
-  return getPatternFlyApiRecords(entries);
+  const entries = await apiSpider();
+  const currentResult = getPatternFlyApiRecords(entries);
+  const currentIds = new Set(currentResult.records.map(record => record.id));
+
+  const missingCandidates = [...baselineMap.values()].filter(record => !currentIds.has(record.id));
+
+  if (missingCandidates.length > 0) {
+    const probeUrls = missingCandidates.map(record => record.sourceId);
+    const probeResults = await processDocsFunction(
+      probeUrls,
+      { loadLimit: 100, parallelLoadLimit: 10, parallelLoadThrottleMs: 50 }
+    ) || [];
+
+    const probeMap = new Map(probeResults.map(probe => [probe.path, probe]));
+
+    for (const candidate of missingCandidates) {
+      const probed = probeMap.get(candidate.sourceId);
+
+      if (probed?.isSuccess && !isEmptyPayload.memo(probed.content)) {
+        currentResult.records.push(candidate);
+      }
+    }
+  }
+
+  return currentResult;
 };
 
 /**
@@ -672,9 +700,9 @@ const collectionCallback = async (): Promise<McpCollectionResult> => {
  * @returns {McpCollection} The collection definition tuple
  */
 const patternFlyApiCollection = (options = getOptions(), session = getSessionOptions()): McpCollection => {
-  const callback: McpCollection[2] = async () =>
+  const callback: McpCollection[2] = async context =>
     runWithSession(session, async () =>
-      runWithOptions(options, async () => collectionCallback()));
+      runWithOptions(options, async () => collectionCallback(context)));
 
   const initial = async () =>
     runWithSession(session, async () =>
