@@ -11,7 +11,7 @@ import {
   resolveApiEndpointForAiDoc
 } from '../update.patternFlyDocsHelpers';
 import { DEFAULT_API_FILENAME, DEFAULT_DOCS_FILENAME } from '../update.patternFlyDocs';
-import { getSrcPath } from '../helpers';
+import { getSrcPath, verifyUrlReachability } from '../helpers';
 
 const DOCS_PATH = getSrcPath(DEFAULT_DOCS_FILENAME);
 const API_PATH = getSrcPath(DEFAULT_API_FILENAME);
@@ -185,7 +185,7 @@ describe('API Deduplication Litmus Test (Regression Guard)', () => {
 });
 
 describe('docs.helpers Manifest Recalculation & Diffing', () => {
-  it('should recalculate manifest metadata totalEntries and totalDocs accurately', () => {
+  it('should recalculate manifest metadata totalEntries and totalDocs accurately', async () => {
     const sampleCollection: PatternFlyMcpDocsCatalog = {
       version: '1',
       generated: '2026-01-01T00:00:00.000Z',
@@ -236,7 +236,7 @@ describe('docs.helpers Manifest Recalculation & Diffing', () => {
       ['patternfly/patternfly-react', '3333333333333333333333333333333333333333']
     ]);
 
-    const updated = recalculateManifestMetadata(sampleCollection, { latestHashes });
+    const { collection: updated } = await recalculateManifestMetadata(sampleCollection, { latestHashes });
 
     expect(updated.meta.totalEntries).toBe(2);
     expect(updated.meta.totalDocs).toBe(3);
@@ -371,5 +371,146 @@ describe('docs.helpers Manifest Recalculation & Diffing', () => {
     };
 
     expect(resolveApiEndpointForAiDoc(fullDoc, highQualityApi)).toBe(expected);
+  });
+});
+
+describe('recalculateManifestMetadata', () => {
+  const sampleCollection: PatternFlyMcpDocsCatalog = {
+    version: '1',
+    generated: '2026-01-01T00:00:00.000Z',
+    meta: {
+      totalEntries: 2,
+      totalDocs: 2,
+      source: 'patternfly-mcp'
+    },
+    docs: {
+      Button: [
+        {
+          displayName: 'Button Design',
+          description: 'Button design guidelines',
+          pathSlug: 'button-design',
+          section: 'components',
+          category: 'design-guidelines',
+          source: 'github',
+          path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Button.md',
+          version: 'v6'
+        }
+      ],
+      Alert: [
+        {
+          displayName: 'Alert Design',
+          description: 'Alert design guidelines',
+          pathSlug: 'alert-design',
+          section: 'components',
+          category: 'design-guidelines',
+          source: 'github',
+          path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Alert.md',
+          version: 'v6'
+        }
+      ]
+    }
+  };
+
+  it('recalculates metadata and updates commit hashes for unpinned repositories', async () => {
+    const hashes = new Map<string, string>([
+      ['patternfly/patternfly-org', '1111111111111111111111111111111111111111']
+    ]);
+
+    const { collection: result } = await recalculateManifestMetadata(sampleCollection, {
+      latestHashes: hashes
+    });
+
+    expect(result.docs['Button']?.[0]?.path).toBe(
+      'https://raw.githubusercontent.com/patternfly/patternfly-org/1111111111111111111111111111111111111111/Button.md'
+    );
+    expect(result.docs['Alert']?.[0]?.path).toBe(
+      'https://raw.githubusercontent.com/patternfly/patternfly-org/1111111111111111111111111111111111111111/Alert.md'
+    );
+  });
+
+  it('prunes redundant AI helper entries and excludes empty categories from output', async () => {
+    const redundantReports = [
+      {
+        category: 'Overview',
+        record: {
+          displayName: 'Overview Guide',
+          description: 'Overview guide',
+          pathSlug: 'overview-guide',
+          section: 'components',
+          category: 'react',
+          source: 'github',
+          path: 'https://raw.githubusercontent.com/patternfly/ai-helpers/main/docs/overview.md',
+          version: 'v6'
+        },
+        reason: 'superseded by API collection'
+      }
+    ];
+
+    const collectionWithOverview: PatternFlyMcpDocsCatalog = {
+      ...sampleCollection,
+      docs: {
+        ...sampleCollection.docs,
+        Overview: [
+          redundantReports[0]!.record
+        ]
+      }
+    };
+
+    const { collection: result } = await recalculateManifestMetadata(collectionWithOverview, {
+      redundantRecords: redundantReports
+    });
+
+    expect(result.docs['Overview']).toBeUndefined();
+    expect(result.docs['Button']).toBeDefined();
+    expect(result.docs['Alert']).toBeDefined();
+    expect(result.meta.totalEntries).toBe(2);
+    expect(result.meta.totalDocs).toBe(2);
+  });
+
+  it.each([
+    {
+      description: 'prunes broken URLs (HTTP 404)',
+      latestHashes: undefined,
+      mockReachable: (url: string) => !url.includes('Button.md'),
+      expectedPaths: [
+        'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Alert.md'
+      ],
+      expectedRemovals: ['broken upstream link (HTTP 404)']
+    },
+    {
+      description: 'falls back to previous URL when bumped hash drifts/404s',
+      latestHashes: new Map([['patternfly/patternfly-org', '1111111111111111111111111111111111111111']]),
+      mockReachable: (url: string) => url.includes('540bb0d31cb18670dd02857f80aa8b444fed9be9'),
+      expectedPaths: [
+        'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Alert.md',
+        'https://raw.githubusercontent.com/patternfly/patternfly-org/540bb0d31cb18670dd02857f80aa8b444fed9be9/Button.md'
+      ],
+      expectedRemovals: []
+    },
+    {
+      description: 'updates commit hash when new URL is reachable',
+      latestHashes: new Map([['patternfly/patternfly-org', '1111111111111111111111111111111111111111']]),
+      mockReachable: () => true,
+      expectedPaths: [
+        'https://raw.githubusercontent.com/patternfly/patternfly-org/1111111111111111111111111111111111111111/Alert.md',
+        'https://raw.githubusercontent.com/patternfly/patternfly-org/1111111111111111111111111111111111111111/Button.md'
+      ],
+      expectedRemovals: []
+    }
+  ])('should recalculate manifest metadata, $description', async ({ latestHashes, mockReachable, expectedPaths, expectedRemovals }) => {
+    const reachabilitySpy = jest.spyOn(verifyUrlReachability, 'memo').mockImplementation(async (url: string) => mockReachable(url));
+
+    const { collection: result, reachabilityRemovals } = await recalculateManifestMetadata(sampleCollection, {
+      latestHashes,
+      verifyReachability: true
+    } as any);
+
+    expect(reachabilityRemovals.map(removal => removal.reason)).toEqual(expectedRemovals);
+
+    const paths = Object.entries(result.docs).map(([_key, categoryDocs]) => categoryDocs[0]?.path);
+
+    expect(paths).toEqual(expect.arrayContaining(expectedPaths));
+
+    reachabilitySpy.mockRestore();
   });
 });
