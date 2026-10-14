@@ -209,7 +209,7 @@ const probeHealth = async (options = getOptions()): Promise<boolean> => {
 
   const task = deferTask(check, {
     repeat: 3,
-    intervalMs: 200,
+    intervalMs: 1500,
     continueOnError: true
   })();
 
