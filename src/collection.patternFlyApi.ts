@@ -685,6 +685,10 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
 
   // 4. Probe missing candidate records directly (filters transient edge omissions vs true 404s)
   if (missingCandidates.length > 0) {
+    let viableCandidates = 0;
+
+    log.debug('Reviewing missing candidates from PatternFly API collection crawl.');
+
     const probeUrls = missingCandidates.map(record => record.sourceId);
     const probeResults = await processDocsFunction(
       probeUrls,
@@ -698,8 +702,11 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
 
       if (probed?.isSuccess && !isEmptyPayload.memo(probed.content)) {
         currentResult.records.push(candidate);
+        viableCandidates += 1;
       }
     }
+
+    log.debug(`Completed PatternFly API collection missing candidates review. ${viableCandidates} viable candidate(s) applied.`);
   }
 
   return currentResult;
