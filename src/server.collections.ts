@@ -2,7 +2,9 @@ import {
   type CollectionCallbackContext,
   type McpCollection,
   type McpCollectionCreator,
-  type McpCollectionResult
+  type McpCollectionRegistryEntry,
+  type McpCollectionResult,
+  getServerCollectionsRegistry
 } from './collections';
 import { type AppSession, type GlobalOptions } from './options';
 import { getOptions, getSessionOptions } from './options.context';
@@ -63,7 +65,15 @@ options: GlobalOptions = getOptions()): McpCollectionCreator => () => {
     ...(typeof runSchedule?.intervalMs === 'number' ? { intervalMs: runSchedule.intervalMs } : {}),
     ...(typeof runSchedule?.delayStartMs === 'number' ? { delayStartMs: runSchedule.delayStartMs } : {}),
     ...(typeof runSchedule?.continueOnError === 'boolean' ? { continueOnError: runSchedule.continueOnError } : {}),
-    ...(typeof runSchedule?.repeat === 'number' ? { repeat: runSchedule.repeat } : {})
+    ...(typeof runSchedule?.repeat === 'number' ? { repeat: runSchedule.repeat } : {}),
+    dynamicContext: (args?: CollectionCallbackContext): CollectionCallbackContext => {
+      const previous = (getServerCollectionsRegistry({ collectionName: name }) as McpCollectionRegistryEntry | undefined)?.response || args?.previous;
+
+      return {
+        ...args,
+        ...(previous !== undefined ? { previous } : {})
+      };
+    }
   };
 
   const handler = async (args?: CollectionCallbackContext): Promise<McpCollectionResult> => {
