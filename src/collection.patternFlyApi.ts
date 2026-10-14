@@ -192,6 +192,8 @@ const probeHealth = async (options = getOptions()): Promise<boolean> => {
   let successCount = 0;
   let isLastSuccess = false;
 
+  log.debug('Checking PatternFly API heartbeat.');
+
   const check = async () => {
     isLastSuccess = false;
 
