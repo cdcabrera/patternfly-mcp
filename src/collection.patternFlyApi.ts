@@ -151,6 +151,30 @@ interface ParsePayload {
 }
 
 /**
+ * Metadata for an entry discarded during collection processing.
+ *
+ * @interface ApiDiscardedRecord
+ *
+ * @property reason - Reason why the entry was discarded ('deferred' | 'low-quality').
+ * @property qualityScore - Quality score of the discarded entry.
+ */
+interface ApiDiscardedRecord {
+  reason: 'deferred' | 'low-quality';
+  qualityScore: number;
+}
+
+/**
+ * Processed API records result containing admitted records and discarded ledger.
+ *
+ * @interface ApiCollectionResult
+ *
+ * @property discarded - Map of discarded record IDs and their rejection reasons.
+ */
+interface ApiCollectionResult extends McpCollectionResult {
+  discarded: Map<string, ApiDiscardedRecord>;
+}
+
+/**
  * Deferred API categories.
  *
  * @note Minimal PatternFly API data quality threshold
@@ -192,6 +216,8 @@ const probeHealth = async (options = getOptions()): Promise<boolean> => {
   let successCount = 0;
   let isLastSuccess = false;
 
+  log.debug('Checking PatternFly API heartbeat.');
+
   const check = async () => {
     isLastSuccess = false;
 
@@ -209,7 +235,7 @@ const probeHealth = async (options = getOptions()): Promise<boolean> => {
 
   const task = deferTask(check, {
     repeat: 3,
-    intervalMs: 200,
+    intervalMs: 1500,
     continueOnError: true
   })();
 
@@ -587,15 +613,23 @@ const contentMetadata = (record: ApiCrawler | ApiEmbeddedExpanded, options = get
  * Generate a structured collection of API records.
  *
  * @param {ApiCrawler[] | ApiEmbeddedExpanded[]} entries - Array of crawler or embedded records for processing.
- * @returns {McpCollectionResult} A structured collection of API records.
+ * @returns {ApiCollectionResult} A structured collection of API records and discarded entries ledger.
  */
-const getPatternFlyApiRecords = (entries: ApiCrawler[] | ApiEmbeddedExpanded[]): McpCollectionResult => {
+const getPatternFlyApiRecords = (entries: ApiCrawler[] | ApiEmbeddedExpanded[]): ApiCollectionResult => {
   const recordsMap: Map<string, McpCollectionRecord> = new Map();
+  const discarded: Map<string, ApiDiscardedRecord> = new Map();
 
   for (const entry of entries) {
     const { name, isDeferred, isLowQuality, ...metadata } = contentMetadata(entry);
+    const { qualityScore } = entry;
 
-    if (isDeferred || isLowQuality) {
+    if (isDeferred) {
+      discarded.set(metadata.id, { reason: 'deferred', qualityScore });
+      continue;
+    }
+
+    if (isLowQuality) {
+      discarded.set(metadata.id, { reason: 'low-quality', qualityScore });
       continue;
     }
 
@@ -617,7 +651,7 @@ const getPatternFlyApiRecords = (entries: ApiCrawler[] | ApiEmbeddedExpanded[]):
     recordsMap.set(record.id, record);
   }
 
-  return { records: [...recordsMap.values()] };
+  return { records: [...recordsMap.values()], discarded };
 };
 
 /**
@@ -651,15 +685,15 @@ const collectionInitialCallback = async (): Promise<McpCollectionResult> => {
  *
  * @param [context={}] - Execution context containing previous collection state.
  * @param [context.previous] - Previous collection result stored in the registry or passed by caller.
- * @returns {Promise<McpCollectionResult>} The processed collection of API records.
+ * @returns {Promise<ApiCollectionResult>} The processed collection of API records with discard ledger.
  */
-const collectionCallback = async ({ previous }: CollectionCallbackContext = {}): Promise<McpCollectionResult> => {
+const collectionCallback = async ({ previous }: CollectionCallbackContext = {}): Promise<ApiCollectionResult> => {
   const isHealthy = await probeHealth();
 
   if (!isHealthy) {
     log.debug('PatternFly API health probe failed, skipping background updates.');
 
-    return { records: [] };
+    return { records: [], discarded: new Map() };
   }
 
   // 1. Resolve baseline: non-empty previous state -> fallback to seed catalog
@@ -670,19 +704,24 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
   // 2. Run a fresh crawler pass
   const entries = await apiSpider();
   const currentResult = getPatternFlyApiRecords(entries);
-
-  // 3. Baseline check against crawled IDs
   const currentIds = new Set(currentResult.records.map(record => record.id));
+  const updatedRecords = [...currentResult.records];
+
+  // 3. Filter missing candidates: skip admitted records and crawler-discarded entries
   const missingCandidates: McpCollectionRecord[] = [];
 
   for (const record of baseline) {
-    if (!currentIds.has(record.id)) {
+    if (!currentIds.has(record.id) && !currentResult.discarded.has(record.id)) {
       missingCandidates.push(record);
     }
   }
 
-  // 4. Probe missing candidate records directly (filters transient edge omissions vs true 404s)
+  // 4. Probe missing candidate records directly (filters transient edge omissions vs. true 404s)
   if (missingCandidates.length > 0) {
+    let viableCandidates = 0;
+
+    log.debug(`Start PatternFly API collection review of ${missingCandidates.length} missing candidate(s).`);
+
     const probeUrls = missingCandidates.map(record => record.sourceId);
     const probeResults = await processDocsFunction(
       probeUrls,
@@ -695,12 +734,20 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
       const probed = probeMap.get(candidate.sourceId);
 
       if (probed?.isSuccess && !isEmptyPayload.memo(probed.content)) {
-        currentResult.records.push(candidate);
+        log.debug(`ADD PatternFly API collection missing candidate: ${candidate.id}. Candidate path ${candidate.sourceId}`);
+
+        updatedRecords.push(candidate);
+        viableCandidates += 1;
+        continue;
       }
+
+      log.debug(`DROP PatternFly API collection missing candidate (unreachable, empty, or lacks quality): ${candidate.id}. Candidate path ${candidate.sourceId}`);
     }
+
+    log.debug(`Finish PatternFly API collection missing candidates review. ${viableCandidates} of ${missingCandidates.length} viable candidate(s) applied.`);
   }
 
-  return currentResult;
+  return { records: updatedRecords, discarded: currentResult.discarded };
 };
 
 /**
@@ -750,8 +797,10 @@ export {
   isEmptyPayload,
   parsePayload,
   probeHealth,
+  type ApiCollectionResult,
   type ApiContent,
   type ApiCrawler,
+  type ApiDiscardedRecord,
   type ApiEmbeddedCollection,
   type ApiEmbedded,
   type ApiEmbeddedExpanded,
