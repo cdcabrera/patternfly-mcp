@@ -662,15 +662,26 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
     return { records: [] };
   }
 
-  const baseline = previous?.records || (await collectionInitialCallback()).records;
-  const baselineMap = new Map(baseline.map(record => [record.id, record]));
+  // 1. Resolve baseline: non-empty previous state -> fallback to seed catalog
+  const baseline = previous?.records?.length
+    ? previous.records
+    : (await collectionInitialCallback()).records;
 
+  // 2. Execute fresh crawler pass
   const entries = await apiSpider();
   const currentResult = getPatternFlyApiRecords(entries);
+
+  // 3. Single-loop baseline check against crawled IDs
   const currentIds = new Set(currentResult.records.map(record => record.id));
+  const missingCandidates: McpCollectionRecord[] = [];
 
-  const missingCandidates = [...baselineMap.values()].filter(record => !currentIds.has(record.id));
+  for (const record of baseline) {
+    if (!currentIds.has(record.id)) {
+      missingCandidates.push(record);
+    }
+  }
 
+  // 4. Point-probe missing candidate records directly (filters transient edge omissions vs true 404s)
   if (missingCandidates.length > 0) {
     const probeUrls = missingCandidates.map(record => record.sourceId);
     const probeResults = await processDocsFunction(

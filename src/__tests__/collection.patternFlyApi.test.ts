@@ -369,6 +369,36 @@ describe('collectionCallback', () => {
     expect(result.records).toHaveLength(1);
     expect(result.records[0]?.id).toBe('api::v1::components::button::props');
   });
+
+  it('falls back to seed catalog baseline when previous records are empty', async () => {
+    const seedRecords = (await collectionInitialCallback()).records;
+    const firstSeed = seedRecords[0];
+
+    mockedProcessDocsFunction
+      .mockResolvedValueOnce([
+        {
+          content: JSON.stringify(['v1']),
+          path: VERSIONS,
+          resolvedPath: VERSIONS,
+          isSuccess: true
+        }
+      ])
+      .mockResolvedValueOnce([]) // crawler returns zero leaf entries
+      .mockResolvedValueOnce([
+        {
+          content: JSON.stringify({ name: 'AccessibilityDesign' }),
+          path: firstSeed?.sourceId,
+          resolvedPath: firstSeed?.sourceId,
+          isSuccess: true
+        }
+      ]); // direct probe succeeds
+
+    const result = await collectionCallback({
+      previous: { records: [] }
+    });
+
+    expect(result.records.length).toBeGreaterThan(0);
+  });
 });
 
 describe('isEmptyPayload', () => {
