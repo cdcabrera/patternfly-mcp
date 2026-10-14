@@ -667,11 +667,11 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
     ? previous.records
     : (await collectionInitialCallback()).records;
 
-  // 2. Execute fresh crawler pass
+  // 2. Run a fresh crawler pass
   const entries = await apiSpider();
   const currentResult = getPatternFlyApiRecords(entries);
 
-  // 3. Single-loop baseline check against crawled IDs
+  // 3. Baseline check against crawled IDs
   const currentIds = new Set(currentResult.records.map(record => record.id));
   const missingCandidates: McpCollectionRecord[] = [];
 
@@ -681,7 +681,7 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
     }
   }
 
-  // 4. Point-probe missing candidate records directly (filters transient edge omissions vs true 404s)
+  // 4. Probe missing candidate records directly (filters transient edge omissions vs true 404s)
   if (missingCandidates.length > 0) {
     const probeUrls = missingCandidates.map(record => record.sourceId);
     const probeResults = await processDocsFunction(
