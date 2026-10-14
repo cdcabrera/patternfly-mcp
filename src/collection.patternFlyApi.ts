@@ -687,7 +687,7 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
   if (missingCandidates.length > 0) {
     let viableCandidates = 0;
 
-    log.debug('Start PatternFly API collection reviewing for missing candidates.');
+    log.debug(`Start PatternFly API collection review of ${missingCandidates.length} missing candidate(s).`);
 
     const probeUrls = missingCandidates.map(record => record.sourceId);
     const probeResults = await processDocsFunction(
@@ -701,12 +701,16 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
       const probed = probeMap.get(candidate.sourceId);
 
       if (probed?.isSuccess && !isEmptyPayload.memo(probed.content)) {
+        log.debug(`ADD PatternFly API collection missing candidate: ${candidate.id}. Candidate path ${candidate.sourceId}`);
+
         currentResult.records.push(candidate);
         viableCandidates += 1;
+      } else {
+        log.debug(`DROP PatternFly API collection missing candidate (unreachable or empty): ${candidate.id}. Candidate path ${candidate.sourceId}`);
       }
     }
 
-    log.debug(`Finish PatternFly API collection missing candidates review. ${viableCandidates} viable candidate(s) applied.`);
+    log.debug(`Finish PatternFly API collection missing candidates review. ${viableCandidates} of ${missingCandidates.length} viable candidate(s) applied.`);
   }
 
   return currentResult;
