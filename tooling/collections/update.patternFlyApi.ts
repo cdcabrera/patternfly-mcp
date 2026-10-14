@@ -1,13 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import {
-  apiSpider,
-  contentMetadata,
+  collectionCallback,
+  expandApiEmbeddedCollection,
+  getPatternFlyApiRecords,
   type ApiContent,
   type ApiCrawler,
   type ApiEmbedded,
   type ApiEmbeddedCollection,
   MIN_API_QUALITY_THRESHOLD
 } from '../../src/collection.patternFlyApi';
+import { type McpCollectionResult } from '../../src/collections';
 import { getLoggerOptions, getOptions, runWithOptions } from '../../src/options.context';
 import { createLogger } from '../../src/logger';
 import {
@@ -52,7 +54,7 @@ interface GenerateCsvReportOptions {
   diff: ReturnType<typeof diffCollections>;
   oldRecords: ApiEmbedded[];
   newRecords: ApiEmbedded[];
-  crawledMap: Map<string, { entry: ApiCrawler; metadata: ApiContent }>;
+  crawledMap?: Map<string, { entry: ApiCrawler; metadata: ApiContent }> | undefined;
 }
 
 /**
@@ -110,7 +112,7 @@ const generateReportCsv = ({
         record.p,
         record.n,
         record.q,
-        crawledMap.get(record.p)?.entry.qualityScore ?? '',
+        crawledMap?.get(record.p)?.entry.qualityScore ?? '',
         record.c,
         reason,
         details || ''
@@ -134,12 +136,12 @@ const generateReportCsv = ({
  *
  * @param oldRecords - Previous collection
  * @param newRecords - Updated collection
- * @param crawledMap - Map of all crawled entries and evaluated metadata
+ * @param [crawledMap] - Optional map of all crawled entries and evaluated metadata
  */
 const diffCollections = (
   oldRecords: ApiEmbedded[],
   newRecords: ApiEmbedded[],
-  crawledMap: Map<string, { entry: ApiCrawler; metadata: ApiContent }>
+  crawledMap?: Map<string, { entry: ApiCrawler; metadata: ApiContent }>
 ) => {
   const oldMap = new Map(oldRecords.map(record => [record.p, record]));
   const newMap = new Map(newRecords.map(record => [record.p, record]));
@@ -153,7 +155,7 @@ const diffCollections = (
       continue;
     }
 
-    const crawled = crawledMap.get(oldRecord.p);
+    const crawled = crawledMap?.get(oldRecord.p);
 
     if (!crawled) {
       removed.push({
@@ -256,7 +258,7 @@ const run = async (
     outputPath = getSrcPath(filename),
     csvOutputPath = getDefaultReportPath(reportFilename),
     isPrettyPrint = true,
-    filterLowQualityRecords = true,
+    filterLowQualityRecords: _filterLowQualityRecords = true,
     outputCsv = true
   }: UpdateApiOptions = {}
 ) => {
@@ -275,41 +277,42 @@ const run = async (
   const { base } = options.patternflyOptions.api;
 
   try {
-    const entries: ApiCrawler[] = await runWithOptions(options, async () => apiSpider(options));
+    let oldRecords: ApiEmbedded[] = [];
+    let previousContext: McpCollectionResult | undefined;
 
-    if (!entries.length) {
+    try {
+      const existingContent = await readFile(outputPath, 'utf-8');
+      const parsedExisting: ApiEmbeddedCollection = JSON.parse(existingContent);
+
+      oldRecords = parsedExisting.records || [];
+      const expanded = expandApiEmbeddedCollection(parsedExisting);
+
+      previousContext = getPatternFlyApiRecords(expanded);
+    } catch {
+      // File might not exist yet on initial run
+    }
+
+    const result = await runWithOptions(options, async () =>
+      collectionCallback({ previous: previousContext }));
+
+    if (!result.records.length) {
       console.error('❌ Crawl failed or returned 0 entries. Aborting update.');
       process.exit(1);
     }
 
-    const recordsMap = new Map<string, ApiEmbedded>();
-    const crawledMap = new Map<string, { entry: ApiCrawler; metadata: ApiContent }>();
+    const records: ApiEmbedded[] = result.records.map(record => {
+      const dataMap = record.data as Record<string, ApiContent[]> | undefined;
+      const [data] = (dataMap && Object.values(dataMap)[0]) || [];
+      const relativePath = record.sourceId.replace(base, '').replace(/^\//, '');
 
-    for (const entry of entries) {
-      // Generate full metadata using the shared contentMetadata function
-      const metadata = contentMetadata(entry, options);
-      const relativePath = metadata.path.replace(base, '').replace(/^\//, '');
-
-      crawledMap.set(relativePath, { entry, metadata });
-
-      if (filterLowQualityRecords && (metadata.isDeferred || metadata.isLowQuality)) {
-        continue;
-      }
-
-      if (recordsMap.has(relativePath)) {
-        continue;
-      }
-
-      recordsMap.set(relativePath, {
+      return {
         p: relativePath,
-        n: metadata.displayName,
-        d: metadata.description,
-        c: metadata.contentType,
-        q: entry.qualityScore
-      });
-    }
-
-    const records = [...recordsMap.values()].sort((a, b) => a.p.localeCompare(b.p));
+        n: data?.displayName || '',
+        d: data?.description || '',
+        c: data?.contentType || 'json',
+        q: 1
+      };
+    }).sort((a, b) => a.p.localeCompare(b.p));
 
     const payload: ApiEmbeddedCollection = {
       version: '1',
@@ -318,32 +321,21 @@ const run = async (
       records
     };
 
-    let oldRecords: ApiEmbedded[] = [];
-
-    try {
-      const existingContent = await readFile(outputPath, 'utf-8');
-      const parsedExisting: ApiEmbeddedCollection = JSON.parse(existingContent);
-
-      oldRecords = parsedExisting.records || [];
-    } catch {
-      // File might not exist yet on initial run
-    }
-
     await writeJsonCollection(outputPath, payload, {
       isPrettyPrint,
       startTime,
       stats: [
-        { label: 'Total Crawled', value: `${entries.length} endpoints` },
-        { label: 'Admitted Records', value: records.length }
+        { label: 'Total Records', value: records.length },
+        { label: 'Baseline Records', value: oldRecords.length }
       ]
     });
 
-    const diff = diffCollections(oldRecords, records, crawledMap);
+    const diff = diffCollections(oldRecords, records);
 
     diffReport(diff);
 
     if (outputCsv) {
-      const csvContent = generateReportCsv({ diff, oldRecords, newRecords: records, crawledMap });
+      const csvContent = generateReportCsv({ diff, oldRecords, newRecords: records });
 
       await saveCsvReport(csvOutputPath, csvContent);
     }

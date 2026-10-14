@@ -106,6 +106,31 @@ describe('collection.patternFlyApi CSV Report Generator', () => {
     expect(lines.some(line => line.startsWith('UNCHANGED,endpoint/unchanged,Unchanged Doc,0.98,0.98'))).toBe(true);
   });
 
+  it('should support diffing and CSV generation when crawledMap is omitted', () => {
+    const oldRecords = [
+      { p: 'endpoint/removed', n: 'Old Doc', d: 'Desc', c: 'text/html', q: 0.96 },
+      { p: 'endpoint/unchanged', n: 'Unchanged Doc', d: 'Desc', c: 'text/html', q: 0.98 }
+    ];
+
+    const newRecords = [
+      { p: 'endpoint/added', n: 'New Doc', d: 'Desc', c: 'text/html', q: 0.97 },
+      { p: 'endpoint/unchanged', n: 'Unchanged Doc', d: 'Desc', c: 'text/html', q: 0.98 }
+    ];
+
+    const diff = diffCollections(oldRecords, newRecords);
+    const csv = generateReportCsv({ diff, oldRecords, newRecords });
+    const lines = csv.trim().split('\n');
+
+    expect(diff.removed).toHaveLength(1);
+    expect(diff.removed[0]?.reason).toBe('upstream removed');
+    expect(diff.added).toHaveLength(1);
+    expect(diff.modified).toHaveLength(0);
+    expect(lines[0]).toBe('status,path,name,previousQualityScore,newQualityScore,contentType,reason,details');
+    expect(lines.some(line => line.startsWith('ADDED,endpoint/added,New Doc,,0.97'))).toBe(true);
+    expect(lines.some(line => line.startsWith('REMOVED,endpoint/removed,Old Doc,0.96,,text/html,upstream removed'))).toBe(true);
+    expect(lines.some(line => line.startsWith('UNCHANGED,endpoint/unchanged,Unchanged Doc,0.98,0.98'))).toBe(true);
+  });
+
   it('should generate a CSV report from a sample of collection records', () => {
     const raw = readFileSync(COLLECTION_PATH, 'utf-8');
     const parsed: ApiEmbeddedCollection = JSON.parse(raw);
