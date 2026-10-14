@@ -171,6 +171,42 @@ describe('getPatternFlyApiRecords', () => {
 
     expect(result.records).toMatchSnapshot();
   });
+
+  it('populates discarded map with reasons and quality scores for deferred and low-quality entries', () => {
+    const entries = [
+      {
+        path: 'https://main.patternfly-org.pages.dev/api/v1/components/Button/props',
+        resolvedPath: 'https://main.patternfly-org.pages.dev/api/v1/components/Button/props',
+        displayName: 'Button',
+        description: 'Button props',
+        content: '{"props": {}}',
+        contentType: 'json',
+        qualityScore: 1
+      },
+      {
+        path: 'https://main.patternfly-org.pages.dev/api/v1/components/Lorem/react',
+        resolvedPath: 'https://main.patternfly-org.pages.dev/api/v1/components/Lorem/react',
+        displayName: 'Lorem',
+        description: 'Lorem component',
+        content: '',
+        contentType: 'text/markdown',
+        qualityScore: 0.8
+      }
+    ];
+
+    const result = getPatternFlyApiRecords(entries);
+
+    expect(result.records).toHaveLength(0);
+    expect(result.discarded.size).toBe(2);
+    expect(result.discarded.get('api::v1::components::button::props')).toEqual({
+      reason: 'deferred',
+      qualityScore: 1
+    });
+    expect(result.discarded.get('api::v1::components::lorem::react')).toEqual({
+      reason: 'low-quality',
+      qualityScore: 0.8
+    });
+  });
 });
 
 describe('collectionInitialCallback', () => {
@@ -368,6 +404,43 @@ describe('collectionCallback', () => {
 
     expect(result.records).toHaveLength(1);
     expect(result.records[0]?.id).toBe('api::v1::components::button::props');
+  });
+
+  it('does not re-probe entries that were visited during crawl pass but discarded for low quality', async () => {
+    mockedProcessDocsFunction
+      .mockResolvedValueOnce([
+        {
+          content: JSON.stringify(['v1']),
+          path: VERSIONS,
+          resolvedPath: VERSIONS,
+          isSuccess: true
+        }
+      ])
+      .mockResolvedValueOnce([
+        {
+          content: '<LiveExample src="1" />', // low quality HTML stub (qualityScore < 0.95)
+          path: `${BASE}/v1/components/Button/html`,
+          resolvedPath: `${BASE}/v1/components/Button/html`,
+          isSuccess: true
+        }
+      ]);
+
+    const previousRecord = {
+      id: 'api::v1::components::button::html',
+      sourceId: `${BASE}/v1/components/Button/html`,
+      sourceType: 'api' as const,
+      data: {
+        Button: [{ displayName: 'Button', pathSlug: 'components-button-html', source: 'api', version: 'v1', section: 'components', category: 'html', path: `${BASE}/v1/components/Button/html` }]
+      }
+    };
+
+    const result = await collectionCallback({
+      previous: { records: [previousRecord] }
+    });
+
+    // Should NOT have made a processDocsFunction call to re-probe Button/html
+    expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(3);
+    expect(result.records).toHaveLength(0);
   });
 
   it('falls back to seed catalog baseline when previous records are empty', async () => {
