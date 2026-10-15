@@ -231,37 +231,40 @@ describe('deferTask', () => {
     expect(mockFunc).toHaveBeenCalledWith('fallback-arg');
   });
 
-  it('should pass dynamicContext results to func with apply when dynamicContextInvoke is apply', async () => {
-    const mockFunc = jest.fn((first: string, second: string) => `${first}/${second}`);
-    const dynamicContext = jest.fn(() => ['left', 'right']);
+  it.each([
+    {
+      mode: 'apply' as const,
+      result: ['left', 'right'],
+      factoryArgs: ['seed-a', 'seed-b'],
+      expectedResult: 'left/right',
+      expectedCalls: ['left', 'right'],
+      mockFunc: jest.fn((first: string, second: string) => `${first}/${second}`)
+    },
+    {
+      mode: 'call' as const,
+      result: ['a', 'b'],
+      factoryArgs: [['seed']],
+      expectedResult: 'a+b',
+      expectedCalls: [['a', 'b']],
+      mockFunc: jest.fn((items: string[]) => items.join('+'))
+    }
+  ])(
+    'should pass dynamicContext results to func when dynamicContextInvoke is $mode',
+    async ({ mode, result, factoryArgs, expectedResult, expectedCalls, mockFunc }) => {
+      const dynamicContext = jest.fn(() => result);
 
-    const handle = deferTask(mockFunc, {
-      repeat: 1,
-      intervalMs: 50,
-      dynamicContext,
-      dynamicContextInvoke: 'apply'
-    })('seed-a', 'seed-b');
-    const result = await handle.start();
+      const handle = deferTask<unknown[], string>(mockFunc as (...args: unknown[]) => string, {
+        repeat: 1,
+        intervalMs: 50,
+        dynamicContext,
+        dynamicContextInvoke: mode
+      })(...(factoryArgs as [unknown, unknown]));
+      const output = await handle.start();
 
-    expect(result).toBe('left/right');
-    expect(mockFunc).toHaveBeenCalledWith('left', 'right');
-  });
-
-  it('should pass dynamicContext array results to func with call when dynamicContextInvoke is call', async () => {
-    const mockFunc = jest.fn((items: string[]) => items.join('+'));
-    const dynamicContext = jest.fn(() => ['a', 'b']);
-
-    const handle = deferTask(mockFunc, {
-      repeat: 1,
-      intervalMs: 50,
-      dynamicContext,
-      dynamicContextInvoke: 'call'
-    })(['seed']);
-    const result = await handle.start();
-
-    expect(result).toBe('a+b');
-    expect(mockFunc).toHaveBeenCalledWith(['a', 'b']);
-  });
+      expect(output).toBe(expectedResult);
+      expect(mockFunc).toHaveBeenCalledWith(...expectedCalls);
+    }
+  );
 
   it('should support async dynamicContext suppliers', async () => {
     const dynamicContext = jest.fn(async () => 'async-context-value');
@@ -275,37 +278,37 @@ describe('deferTask', () => {
     expect(mockFunc).toHaveBeenCalledWith('async-context-value');
   });
 
-  it('should pass undefined as single argument in call mode without falling back to factory args', async () => {
-    const mockFunc = jest.fn((val: unknown) => `received-${val}`);
-    const dynamicContext = jest.fn(() => undefined);
-    const handle = deferTask(mockFunc, {
-      repeat: 1,
-      intervalMs: 50,
-      dynamicContext,
-      dynamicContextInvoke: 'call'
-    })('initial-factory-arg');
-    const result = await handle.start();
+  it.each([
+    {
+      mode: 'call' as const,
+      expectedResult: 'received-undefined',
+      expectedArgs: [undefined]
+    },
+    {
+      mode: 'apply' as const,
+      expectedResult: 'args-count-0',
+      expectedArgs: []
+    }
+  ])(
+    'should handle undefined dynamicContext in $mode mode without falling back to factory args',
+    async ({ mode, expectedResult, expectedArgs }) => {
+      const mockFunc = jest.fn((...args: unknown[]) =>
+        (mode === 'call' ? `received-${args[0]}` : `args-count-${args.length}`));
+      const dynamicContext = jest.fn(() => undefined);
 
-    expect(result).toBe('received-undefined');
-    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'] });
-    expect(mockFunc).toHaveBeenCalledWith(undefined);
-  });
+      const handle = deferTask(mockFunc, {
+        repeat: 1,
+        intervalMs: 50,
+        dynamicContext,
+        dynamicContextInvoke: mode
+      })('initial-factory-arg');
+      const result = await handle.start();
 
-  it('should spread zero arguments in apply mode when dynamicContext resolves to undefined', async () => {
-    const mockFunc = jest.fn((...args: unknown[]) => `args-count-${args.length}`);
-    const dynamicContext = jest.fn(() => undefined);
-    const handle = deferTask(mockFunc, {
-      repeat: 1,
-      intervalMs: 50,
-      dynamicContext,
-      dynamicContextInvoke: 'apply'
-    })('initial-factory-arg');
-    const result = await handle.start();
-
-    expect(result).toBe('args-count-0');
-    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'] });
-    expect(mockFunc).toHaveBeenCalledWith();
-  });
+      expect(result).toBe(expectedResult);
+      expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'] });
+      expect(mockFunc).toHaveBeenCalledWith(...expectedArgs);
+    }
+  );
 });
 
 describe('delay', () => {
@@ -327,26 +330,26 @@ describe('delay', () => {
     ]);
   });
 
-  it('should reject if signal is aborted beforehand', async () => {
+  it.each([
+    {
+      timing: 'beforehand',
+      triggerAbort: (controller: AbortController) => controller.abort()
+    },
+    {
+      timing: 'during delay',
+      triggerAbort: async (controller: AbortController) => {
+        await jest.advanceTimersByTimeAsync(50);
+        controller.abort();
+      }
+    }
+  ])('should reject if signal is aborted $timing', async ({ triggerAbort }) => {
     const controller = new AbortController();
-
-    controller.abort();
-
-    const promise = delay({ ms: 100, signal: controller.signal });
-
-    await expect(promise).rejects.toThrow('Delay aborted');
-  });
-
-  it('should reject if signal is aborted during delay', async () => {
-    const controller = new AbortController();
+    const abortAction = triggerAbort(controller);
     const promise = delay({ ms: 100, signal: controller.signal });
 
     await Promise.all([
       expect(promise).rejects.toThrow('Delay aborted'),
-      (async () => {
-        await jest.advanceTimersByTimeAsync(50);
-        controller.abort();
-      })()
+      abortAction
     ]);
   });
 });
