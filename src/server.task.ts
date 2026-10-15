@@ -19,6 +19,16 @@ type DeferTaskDebugHandler = (info: { type: string; value: unknown; [key: string
 /** How {@link DeferTaskOptions.dynamicContext} return values are passed to `func`. */
 type DeferTaskDynamicContextInvoke = 'call' | 'apply';
 
+/** Parameter object passed to {@link DeferTaskOptions.dynamicContext}. */
+type DeferTaskDynamicContextParams<TArgs extends unknown[] = unknown[]> = {
+
+  /** Result from the previous successful dynamicContext resolution, or undefined on the first run. */
+  prev?: unknown;
+
+  /** Factory arguments passed to the task handle. */
+  args: TArgs;
+};
+
 /**
  * Handle for managing the deferred task's lifecycle.
  *
@@ -54,13 +64,12 @@ interface DeferTaskHandle<TReturn> {
  *     indefinitely. (default `1`)
  * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
  * @property [dynamicContext] - Optional hook that supplies the next value for `func`.
- *     First call: `dynamicContext(...factoryArgs)`. Later calls: `dynamicContext(lastReturn)`
- *     with a single argument (the previous return value, including arrays and objects as
- *     whole values). May be sync or async. If it throws or rejects, a warning is logged
- *     and that run uses `func(...factoryArgs)` instead.
+ *     Receives `{ prev, args }` where `prev` is the last successful return value
+ *     (undefined on the first run) and `args` are the original factory arguments.
+ *     May be sync or async. If it throws or rejects, a warning is logged and that
+ *     run falls back to `func(...factoryArgs)` without updating `prev`.
  * @property [dynamicContextInvoke] - `call` (default): `func(returnValue)`. `apply`:
- *     `func(...argList)` where `argList` is the return value when it is an array, otherwise
- *     `[returnValue]`.
+ *     `func(...argList)` spreading the returned argument tuple.
  */
 interface DeferTaskOptions<TArgs extends unknown[] = unknown[]> {
   cancelMs?: number;
@@ -70,7 +79,7 @@ interface DeferTaskOptions<TArgs extends unknown[] = unknown[]> {
   intervalMs?: number;
   repeat?: number | undefined;
   errorMessage?: string;
-  dynamicContext?: ((...passedFromDeferTask: unknown[]) => unknown | Promise<unknown>) | undefined;
+  dynamicContext?: ((params: DeferTaskDynamicContextParams<TArgs>) => unknown | Promise<unknown>) | undefined;
   dynamicContextInvoke?: DeferTaskDynamicContextInvoke;
 }
 
@@ -134,9 +143,9 @@ const delay = ({ ms, signal }: { ms: number; signal?: AbortSignal | undefined })
  * - `debug`: callback invoked for lifecycle events. Emitted `type` values:
  *   `start`, `run`, `run:stopped`, `run:error`, `run:cancel`, `stop`, `stop:error`,
  *   `isRunning`. `info.value` is a thunk returning a snapshot of internal state.
- * - `dynamicContext`: optional per-run value resolver. First invocation spreads factory
- *   args; later invocations receive the prior return as one value. May be async. On failure,
- *   logs a warning and that run falls back to `func(...factoryArgs)`.
+ * - `dynamicContext`: optional per-run value resolver receiving `{ prev, args }`.
+ *   May be async. On failure, logs a warning and that run falls back to `func(...factoryArgs)`
+ *   without updating `prev`.
  * - `dynamicContextInvoke`: `call` (default) or `apply` — how the hook return is passed to
  *   `func`. See {@link DeferTaskOptions.dynamicContextInvoke}.
  *
@@ -226,20 +235,24 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       controller: undefined
     };
 
-    const resolveArgs = async (): Promise<TArgs> => {
+    let prevValue: unknown | undefined;
+
+    const resolveDynamic = async (): Promise<unknown | undefined> => {
       if (typeof dynamicContext === 'function') {
         try {
-          const dynamicResult = await dynamicContext(...args);
+          const dynamicResult = await dynamicContext({ prev: prevValue, args });
 
-          return (Array.isArray(dynamicResult) ? dynamicResult : [dynamicResult]) as TArgs;
+          prevValue = dynamicResult;
+
+          return dynamicResult;
         } catch (error) {
           log.warn(`Defer task dynamicContext resolution failed: ${formatUnknownError(error)}`);
 
-          return args;
+          return undefined;
         }
       }
 
-      return args;
+      return undefined;
     };
 
     const task = async (): Promise<TReturn | undefined> => {
@@ -274,9 +287,19 @@ const deferTask = <TArgs extends unknown[], TReturn>(
       const startFunc = timeoutFunction(async () => {
         if (state.isRunning) {
           state.count += 1;
-          const currentArgs = typeof dynamicContext === 'function' ? await resolveArgs() : args;
+          if (typeof dynamicContext === 'function') {
+            const dynamicResult = await resolveDynamic();
 
-          return updatedFunc(...currentArgs);
+            if (dynamicResult !== undefined) {
+              if (updatedDynamicContextInvoke === 'apply') {
+                return updatedFunc(...(dynamicResult as TArgs));
+              }
+
+              return (updatedFunc as unknown as (arg: unknown) => TReturn | Promise<TReturn>)(dynamicResult);
+            }
+          }
+
+          return updatedFunc(...args);
         }
 
         debug({
@@ -410,5 +433,6 @@ export {
   type DeferTaskOptions,
   type DeferTaskHandle,
   type DeferTaskDebugHandler,
-  type DeferTaskDynamicContextInvoke
+  type DeferTaskDynamicContextInvoke,
+  type DeferTaskDynamicContextParams
 };

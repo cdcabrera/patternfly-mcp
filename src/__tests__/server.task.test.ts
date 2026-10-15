@@ -185,13 +185,14 @@ describe('deferTask', () => {
       initialRun?: number;
     };
 
-    const dynamicContext = jest.fn((...hookArgs: unknown[]): RunContext => {
-      const ctx = hookArgs[0] as RunContext;
+    const dynamicContext = jest.fn(({ prev, args }: { prev?: unknown; args: [RunContext] }): RunContext => {
+      const prevCtx = prev as RunContext | undefined;
+      const initialCtx = args[0];
 
       return {
-        run: ctx.run + 1,
-        previousRun: ctx.run,
-        initialRun: ctx.initialRun ?? ctx.run
+        run: prevCtx ? prevCtx.run + 1 : initialCtx.run + 1,
+        previousRun: prevCtx ? prevCtx.run : initialCtx.run,
+        initialRun: initialCtx.run
       };
     });
     const mockFunc = jest.fn((ctx: RunContext) => `result-${ctx.run}`);
@@ -205,9 +206,9 @@ describe('deferTask', () => {
 
     expect(result).toBe('result-3');
     expect(dynamicContext).toHaveBeenCalledTimes(3);
-    expect(dynamicContext).toHaveBeenNthCalledWith(1, { run: 0 });
-    expect(dynamicContext).toHaveBeenNthCalledWith(2, { run: 1, previousRun: 0, initialRun: 0 });
-    expect(dynamicContext).toHaveBeenNthCalledWith(3, { run: 2, previousRun: 1, initialRun: 0 });
+    expect(dynamicContext).toHaveBeenNthCalledWith(1, { prev: undefined, args: [{ run: 0 }] });
+    expect(dynamicContext).toHaveBeenNthCalledWith(2, { prev: { run: 1, previousRun: 0, initialRun: 0 }, args: [{ run: 0 }] });
+    expect(dynamicContext).toHaveBeenNthCalledWith(3, { prev: { run: 2, previousRun: 1, initialRun: 0 }, args: [{ run: 0 }] });
     expect(mockFunc).toHaveBeenCalledTimes(3);
     expect(mockFunc).toHaveBeenNthCalledWith(1, { run: 1, previousRun: 0, initialRun: 0 });
     expect(mockFunc).toHaveBeenNthCalledWith(2, { run: 2, previousRun: 1, initialRun: 0 });
@@ -223,7 +224,7 @@ describe('deferTask', () => {
     const result = await handle.start();
 
     expect(result).toBe('handled-fallback-arg');
-    expect(dynamicContext).toHaveBeenCalledWith('fallback-arg');
+    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['fallback-arg'] });
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Defer task dynamicContext resolution failed: Error: dynamic context lookup failure')
     );
@@ -270,7 +271,7 @@ describe('deferTask', () => {
     const result = await handle.start();
 
     expect(result).toBe('async-context-value');
-    expect(dynamicContext).toHaveBeenCalledWith('initial');
+    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial'] });
     expect(mockFunc).toHaveBeenCalledWith('async-context-value');
   });
 });

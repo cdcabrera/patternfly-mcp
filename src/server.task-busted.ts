@@ -62,7 +62,7 @@ interface DeferTaskHandle<TReturn> {
  *     `func(...argList)` where `argList` is the return value when it is an array, otherwise
  *     `[returnValue]`.
  */
-interface DeferTaskOptions<TArgs extends unknown[] = unknown[]> {
+interface DeferTaskOptions<_TArgs extends unknown[] = unknown[]> {
   cancelMs?: number;
   continueOnError?: boolean;
   debug?: DeferTaskDebugHandler;
