@@ -709,6 +709,7 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
   const currentResult: McpCollectionResult = { records };
   const currentIds = new Set(records.map(record => record.id));
 
+  // 3. Filter missing candidates: skip admitted records and crawler-discarded entries
   const missingCandidates: McpCollectionRecord[] = [];
 
   for (const record of baseline) {
@@ -717,7 +718,7 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
     }
   }
 
-  // 4. Probe missing candidate records directly (filters transient edge omissions vs true 404s)
+  // 4. Probe missing candidate records directly (filters transient edge omissions vs. true 404s)
   if (missingCandidates.length > 0) {
     let viableCandidates = 0;
 
@@ -734,16 +735,12 @@ const collectionCallback = async ({ previous }: CollectionCallbackContext = {}):
     for (const candidate of missingCandidates) {
       const probed = probeMap.get(candidate.sourceId);
 
-      if (probed?.isSuccess) {
-        const { isEmpty, qualityScore } = parsePayload.memo(probed.content);
+      if (probed?.isSuccess && !isEmptyPayload.memo(probed.content)) {
+        log.debug(`ADD PatternFly API collection missing candidate: ${candidate.id}. Candidate path ${candidate.sourceId}`);
 
-        if (!isEmpty && qualityScore >= MIN_API_QUALITY_THRESHOLD) {
-          log.debug(`ADD PatternFly API collection missing candidate: ${candidate.id}. Candidate path ${candidate.sourceId}`);
-
-          currentResult.records.push(candidate);
-          viableCandidates += 1;
-          continue;
-        }
+        currentResult.records.push(candidate);
+        viableCandidates += 1;
+        continue;
       }
 
       log.debug(`DROP PatternFly API collection missing candidate (unreachable, empty, or lacks quality): ${candidate.id}. Candidate path ${candidate.sourceId}`);
