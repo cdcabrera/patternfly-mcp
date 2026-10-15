@@ -178,13 +178,23 @@ describe('deferTask', () => {
     expect(mockDebug.mock.calls).toMatchSnapshot();
   });
 
-  it('should evaluate dynamicContext on each repeating execution', async () => {
-    let counter = 0;
-    const dynamicContext = jest.fn((ctx?: { run: number; initialRun?: number | undefined }) => ({
-      run: counter += 1,
-      initialRun: ctx?.run
-    }));
-    const mockFunc = jest.fn((ctx: { run: number; initialRun?: number | undefined }) => `result-${ctx.run}`);
+  it('should evaluate dynamicContext on each repeating execution with prior resolved context', async () => {
+    type RunContext = {
+      run: number;
+      previousRun?: number;
+      initialRun?: number;
+    };
+
+    const dynamicContext = jest.fn((...hookArgs: unknown[]): RunContext => {
+      const ctx = hookArgs[0] as RunContext;
+
+      return {
+        run: ctx.run + 1,
+        previousRun: ctx.run,
+        initialRun: ctx.initialRun ?? ctx.run
+      };
+    });
+    const mockFunc = jest.fn((ctx: RunContext) => `result-${ctx.run}`);
 
     const handle = deferTask(mockFunc, { repeat: 3, intervalMs: 100, dynamicContext })({ run: 0 });
     const runPromise = handle.start();
@@ -195,10 +205,13 @@ describe('deferTask', () => {
 
     expect(result).toBe('result-3');
     expect(dynamicContext).toHaveBeenCalledTimes(3);
+    expect(dynamicContext).toHaveBeenNthCalledWith(1, { run: 0 });
+    expect(dynamicContext).toHaveBeenNthCalledWith(2, { run: 1, previousRun: 0, initialRun: 0 });
+    expect(dynamicContext).toHaveBeenNthCalledWith(3, { run: 2, previousRun: 1, initialRun: 0 });
     expect(mockFunc).toHaveBeenCalledTimes(3);
-    expect(mockFunc).toHaveBeenNthCalledWith(1, { run: 1, initialRun: 0 });
-    expect(mockFunc).toHaveBeenNthCalledWith(2, { run: 2, initialRun: 0 });
-    expect(mockFunc).toHaveBeenNthCalledWith(3, { run: 3, initialRun: 0 });
+    expect(mockFunc).toHaveBeenNthCalledWith(1, { run: 1, previousRun: 0, initialRun: 0 });
+    expect(mockFunc).toHaveBeenNthCalledWith(2, { run: 2, previousRun: 1, initialRun: 0 });
+    expect(mockFunc).toHaveBeenNthCalledWith(3, { run: 3, previousRun: 2, initialRun: 0 });
   });
 
   it('should catch dynamicContext errors, log a warning, and fall back to initial arguments', async () => {
@@ -215,6 +228,38 @@ describe('deferTask', () => {
       expect.stringContaining('Defer task dynamicContext resolution failed: Error: dynamic context lookup failure')
     );
     expect(mockFunc).toHaveBeenCalledWith('fallback-arg');
+  });
+
+  it('should pass dynamicContext results to func with apply when dynamicContextInvoke is apply', async () => {
+    const mockFunc = jest.fn((first: string, second: string) => `${first}/${second}`);
+    const dynamicContext = jest.fn(() => ['left', 'right']);
+
+    const handle = deferTask(mockFunc, {
+      repeat: 1,
+      intervalMs: 50,
+      dynamicContext,
+      dynamicContextInvoke: 'apply'
+    })('seed-a', 'seed-b');
+    const result = await handle.start();
+
+    expect(result).toBe('left/right');
+    expect(mockFunc).toHaveBeenCalledWith('left', 'right');
+  });
+
+  it('should pass dynamicContext array results to func with call when dynamicContextInvoke is call', async () => {
+    const mockFunc = jest.fn((items: string[]) => items.join('+'));
+    const dynamicContext = jest.fn(() => ['a', 'b']);
+
+    const handle = deferTask(mockFunc, {
+      repeat: 1,
+      intervalMs: 50,
+      dynamicContext,
+      dynamicContextInvoke: 'call'
+    })(['seed']);
+    const result = await handle.start();
+
+    expect(result).toBe('a+b');
+    expect(mockFunc).toHaveBeenCalledWith(['a', 'b']);
   });
 
   it('should support async dynamicContext suppliers', async () => {

@@ -16,6 +16,9 @@ import { formatUnknownError, log } from './logger';
  */
 type DeferTaskDebugHandler = (info: { type: string; value: unknown; [key: string]: unknown; }) => void;
 
+/** How {@link DeferTaskOptions.dynamicContext} return values are passed to `func`. */
+type DeferTaskDynamicContextInvoke = 'call' | 'apply';
+
 /**
  * Handle for managing the deferred task's lifecycle.
  *
@@ -50,7 +53,14 @@ interface DeferTaskHandle<TReturn> {
  * @property [repeat] - Number of loops.  Pass `Infinity` explicitly to loop
  *     indefinitely. (default `1`)
  * @property [errorMessage] - Custom error for timeouts. (default `'Task timed out'`)
- * @property [dynamicContext] - Dynamic context supplier evaluated on each execution cycle.
+ * @property [dynamicContext] - Optional hook that supplies the next value for `func`.
+ *     First call: `dynamicContext(...factoryArgs)`. Later calls: `dynamicContext(lastReturn)`
+ *     with a single argument (the previous return value, including arrays and objects as
+ *     whole values). May be sync or async. If it throws or rejects, a warning is logged
+ *     and that run uses `func(...factoryArgs)` instead.
+ * @property [dynamicContextInvoke] - `call` (default): `func(returnValue)`. `apply`:
+ *     `func(...argList)` where `argList` is the return value when it is an array, otherwise
+ *     `[returnValue]`.
  */
 interface DeferTaskOptions<TArgs extends unknown[] = unknown[]> {
   cancelMs?: number;
@@ -60,7 +70,8 @@ interface DeferTaskOptions<TArgs extends unknown[] = unknown[]> {
   intervalMs?: number;
   repeat?: number | undefined;
   errorMessage?: string;
-  dynamicContext?: ((...args: TArgs) => TArgs | TArgs[0] | Promise<TArgs | TArgs[0]>) | undefined;
+  dynamicContext?: ((...passedFromDeferTask: unknown[]) => unknown | Promise<unknown>) | undefined;
+  dynamicContextInvoke?: DeferTaskDynamicContextInvoke;
 }
 
 /**
@@ -109,6 +120,8 @@ const delay = ({ ms, signal }: { ms: number; signal?: AbortSignal | undefined })
  * - `intervalMs`: randomized base delay between repetitions. Defaults to `1000` ms.
  *   The per-execution timeout is derived as `intervalMs * 1.5`; exceeding it rejects
  *   `start()` with `errorMessage` and emits a `run:error` debug event.
+ * - `delayStartMs`: extra wait before the **first** run only. Defaults to `0`. Like
+ *   `intervalMs`, the actual delay is randomized slightly around this value.
  * - `continueOnError`: when `true`, a run error (including a per-run timeout) is
  *   logged and the repeat loop continues instead of rejecting out of `start()`.
  *   Defaults to `false`. `stop()` and `cancelMs` still terminate the loop.
@@ -121,6 +134,11 @@ const delay = ({ ms, signal }: { ms: number; signal?: AbortSignal | undefined })
  * - `debug`: callback invoked for lifecycle events. Emitted `type` values:
  *   `start`, `run`, `run:stopped`, `run:error`, `run:cancel`, `stop`, `stop:error`,
  *   `isRunning`. `info.value` is a thunk returning a snapshot of internal state.
+ * - `dynamicContext`: optional per-run value resolver. First invocation spreads factory
+ *   args; later invocations receive the prior return as one value. May be async. On failure,
+ *   logs a warning and that run falls back to `func(...factoryArgs)`.
+ * - `dynamicContextInvoke`: `call` (default) or `apply` — how the hook return is passed to
+ *   `func`. See {@link DeferTaskOptions.dynamicContextInvoke}.
  *
  * @note Repeating loops yield between iterations (this implementation uses
  * `await delay(intervalMs)`). This interval is part of a randomized base delay
@@ -136,8 +154,8 @@ const delay = ({ ms, signal }: { ms: number; signal?: AbortSignal | undefined })
  * @param func Function (sync or async) or a Promise to execute. When a Promise is
  *     provided, it is awaited on each repetition (i.e. the same settled value is
  *     reused).
- * @param {DeferTaskOptions} options Optional {@link DeferTaskOptions} controlling
- *     repeat, timeout, cancel, debug, and error message behavior.
+ * @param {DeferTaskOptions} options Optional {@link DeferTaskOptions} (see Options
+ *     above and interface `@property` entries for full detail).
  * @returns A factory `(...args: TArgs) => DeferTaskHandle<TReturn>`. Each
  *     invocation produces an independent handle with its own running state.
  *
@@ -173,8 +191,12 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     repeat,
     intervalMs,
     errorMessage = 'Task timed out',
-    dynamicContext
+    dynamicContext,
+    dynamicContextInvoke = 'call'
   } = options || {};
+
+  const updatedDynamicContextInvoke: DeferTaskDynamicContextInvoke =
+    dynamicContextInvoke === 'apply' ? 'apply' : 'call';
 
   const validRepeat = typeof repeat === 'number' && repeat > 0 ? repeat : 1;
   const updatedRepeat = Number.isFinite(validRepeat) ? validRepeat : undefined;
@@ -387,5 +409,6 @@ export {
   delay,
   type DeferTaskOptions,
   type DeferTaskHandle,
-  type DeferTaskDebugHandler
+  type DeferTaskDebugHandler,
+  type DeferTaskDynamicContextInvoke
 };
