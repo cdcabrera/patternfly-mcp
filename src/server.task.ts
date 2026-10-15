@@ -237,22 +237,20 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
     let prevValue: unknown | undefined;
 
-    const resolveDynamic = async (): Promise<unknown | undefined> => {
+    const resolveDynamic = async (): Promise<{ resolved: boolean; value?: unknown }> => {
       if (typeof dynamicContext === 'function') {
         try {
           const dynamicResult = await dynamicContext({ prev: prevValue, args });
 
           prevValue = dynamicResult;
 
-          return dynamicResult;
+          return { resolved: true, value: dynamicResult };
         } catch (error) {
           log.warn(`Defer task dynamicContext resolution failed: ${formatUnknownError(error)}`);
-
-          return undefined;
         }
       }
 
-      return undefined;
+      return { resolved: false };
     };
 
     const task = async (): Promise<TReturn | undefined> => {
@@ -288,14 +286,16 @@ const deferTask = <TArgs extends unknown[], TReturn>(
         if (state.isRunning) {
           state.count += 1;
           if (typeof dynamicContext === 'function') {
-            const dynamicResult = await resolveDynamic();
+            const { resolved, value } = await resolveDynamic();
 
-            if (dynamicResult !== undefined) {
+            if (resolved) {
               if (updatedDynamicContextInvoke === 'apply') {
-                return updatedFunc(...(dynamicResult as TArgs));
+                const updatedValue = (value ?? []) as TArgs;
+
+                return updatedFunc(...updatedValue);
               }
 
-              return (updatedFunc as unknown as (arg: unknown) => TReturn | Promise<TReturn>)(dynamicResult);
+              return (updatedFunc as unknown as (arg: unknown) => TReturn | Promise<TReturn>)(value);
             }
           }
 

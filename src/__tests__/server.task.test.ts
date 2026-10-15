@@ -274,6 +274,38 @@ describe('deferTask', () => {
     expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial'] });
     expect(mockFunc).toHaveBeenCalledWith('async-context-value');
   });
+
+  it('should pass undefined as single argument in call mode without falling back to factory args', async () => {
+    const mockFunc = jest.fn((val: unknown) => `received-${val}`);
+    const dynamicContext = jest.fn(() => undefined);
+    const handle = deferTask(mockFunc, {
+      repeat: 1,
+      intervalMs: 50,
+      dynamicContext,
+      dynamicContextInvoke: 'call'
+    })('initial-factory-arg');
+    const result = await handle.start();
+
+    expect(result).toBe('received-undefined');
+    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'] });
+    expect(mockFunc).toHaveBeenCalledWith(undefined);
+  });
+
+  it('should spread zero arguments in apply mode when dynamicContext resolves to undefined', async () => {
+    const mockFunc = jest.fn((...args: unknown[]) => `args-count-${args.length}`);
+    const dynamicContext = jest.fn(() => undefined);
+    const handle = deferTask(mockFunc, {
+      repeat: 1,
+      intervalMs: 50,
+      dynamicContext,
+      dynamicContextInvoke: 'apply'
+    })('initial-factory-arg');
+    const result = await handle.start();
+
+    expect(result).toBe('args-count-0');
+    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'] });
+    expect(mockFunc).toHaveBeenCalledWith();
+  });
 });
 
 describe('delay', () => {
