@@ -43,9 +43,14 @@ describe('probeHealth', () => {
   let mockGet: jest.Mock;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.resetAllMocks();
     mockGet = jest.fn();
     mockedSetFetch.mockReturnValue({ get: mockGet });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it.each([
@@ -93,7 +98,11 @@ describe('probeHealth', () => {
       }
     });
 
-    const isHealthy = await probeHealth();
+    const promise = probeHealth();
+
+    await jest.runAllTimersAsync();
+
+    const isHealthy = await promise;
 
     expect(isHealthy).toBe(expected);
     expect(mockGet).toHaveBeenCalledTimes(3);
@@ -102,7 +111,11 @@ describe('probeHealth', () => {
   it('should handle fetch exceptions without throwing an error', async () => {
     mockGet.mockRejectedValue(new Error('Connection refused'));
 
-    const isHealthy = await probeHealth();
+    const promise = probeHealth();
+
+    await jest.runAllTimersAsync();
+
+    const isHealthy = await promise;
 
     expect(isHealthy).toBe(false);
   });
@@ -226,9 +239,14 @@ describe('collectionCallback', () => {
   let mockGet: jest.Mock;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.resetAllMocks();
     mockGet = jest.fn().mockResolvedValue({ status: 200 });
     mockedSetFetch.mockReturnValue({ get: mockGet });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('should generate API records and match McpCollectionResult structure', async () => {
@@ -251,7 +269,11 @@ describe('collectionCallback', () => {
         }
       ]);
 
-    const result = await collectionCallback();
+    const promise = collectionCallback();
+
+    await jest.runAllTimersAsync();
+
+    const result = await promise;
 
     expect(result).toHaveProperty('records');
     expect(Array.isArray(result.records)).toBe(true);
@@ -311,7 +333,11 @@ describe('collectionCallback', () => {
         }
       ]);
 
-    const result = await collectionCallback();
+    const promise = collectionCallback();
+
+    await jest.runAllTimersAsync();
+
+    const result = await promise;
 
     expect(result.records.length).toBe(1);
     const rec: any = result.records[0];
@@ -349,7 +375,11 @@ describe('collectionCallback', () => {
         }
       ]);
 
-    const result = await collectionCallback();
+    const promise = collectionCallback();
+
+    await jest.runAllTimersAsync();
+
+    const result = await promise;
 
     const snapshotSubset = {
       ...result,
@@ -398,9 +428,13 @@ describe('collectionCallback', () => {
       }
     };
 
-    const result = await collectionCallback({
+    const promise = collectionCallback({
       previous: { records: [previousRecord] }
     });
+
+    await jest.runAllTimersAsync();
+
+    const result = await promise;
 
     expect(result.records).toHaveLength(1);
     expect(result.records[0]?.id).toBe('api::v1::components::button::props');
@@ -434,9 +468,13 @@ describe('collectionCallback', () => {
       }
     };
 
-    const result = await collectionCallback({
+    const promise = collectionCallback({
       previous: { records: [previousRecord] }
     });
+
+    await jest.runAllTimersAsync();
+
+    const result = await promise;
 
     // Should NOT have made a processDocsFunction call to re-probe Button/html
     expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(3);
@@ -466,9 +504,13 @@ describe('collectionCallback', () => {
         }
       ]); // direct probe succeeds
 
-    const result = await collectionCallback({
+    const promise = collectionCallback({
       previous: { records: [] }
     });
+
+    await jest.runAllTimersAsync();
+
+    const result = await promise;
 
     expect(result.records.length).toBeGreaterThan(0);
   });

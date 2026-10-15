@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "generated": "2026-09-30T21:56:29.488Z",
+  "generated": "2026-10-15T01:17:32.148Z",
   "base": "https://main.patternfly-org.pages.dev/api",
   "records": [
     {
@@ -84,6 +84,118 @@
       "p": "v6/AI/ai-assisted-development_rapid-prototyping/new-prototypes",
       "n": "Starting new prototypes",
       "d": "This guide provides instructions for setting up new PatternFly prototypes using AI-assisted development tools.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_ai-prompt-guidance/text",
+      "n": "AI Prompt Guidance",
+      "d": "How to write effective AI prompts for PatternFly development.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_charts/text",
+      "n": "Charts Rules",
+      "d": "Essential rules for PatternFly Charts implementation using Victory.js and ECharts.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_chatbot/text",
+      "n": "Chatbot Rules",
+      "d": "Essential rules for PatternFly Chatbot implementation and integration patterns.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_common-issues/text",
+      "n": "Common Issues",
+      "d": "This document covers frequently encountered problems and their solutions when working with PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_component-architecture/text",
+      "n": "Component Architecture",
+      "d": "This document outlines the essential rules for structuring PatternFly components, managing state, and ensuring performance. It is a high-level guide that links to more detailed documentation for sp...",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_component-groups/text",
+      "n": "PatternFly Component Groups Rules",
+      "d": "Essential rules for using and contributing to PatternFly React Component Groups.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_data-display/text",
+      "n": "Data Display Rules",
+      "d": "Essential rules for PatternFly data display components including lists, data presentation, and data view patterns.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_deployment-guide/text",
+      "n": "Quick Deployment Guide for Prototypes",
+      "d": "This guide provides simple, fast methods for building and deploying your React application so you can share a live prototype with others.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_development-environment/text",
+      "n": "Development Environment Rules",
+      "d": "Configuration rules for development tools and environment settings for PatternFly React development.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_external-links/text",
+      "n": "External References",
+      "d": "This document provides links to official PatternFly documentation, repositories, and helpful external resources for AI coders working with PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_layout/text",
+      "n": "Layout Components",
+      "d": "This section covers PatternFly layout components and page structure patterns for building consistent application layouts.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_overview/text",
+      "n": "PatternFly React Development Rules",
+      "d": "> Starting a new project?",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_quick-start/text",
+      "n": "Quick Start Guide",
+      "d": "This guide provides step-by-step instructions to get a PatternFly React application running quickly using the PatternFly React Seed.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_setup/text",
+      "n": "Setup Rules",
+      "d": "Project initialization requirements for PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_styling-standards/text",
+      "n": "Styling Standards",
+      "d": "Essential CSS and styling rules for PatternFly React applications.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/AI/development-guidelines_table/text",
+      "n": "Table Component Rules",
+      "d": "Essential rules for using the PatternFly React Table component.",
       "c": "markdown",
       "q": 1
     },
@@ -256,9 +368,9 @@
       "q": 1
     },
     {
-      "p": "v6/components/action-list/html",
+      "p": "v6/components/action-list/react",
       "n": "Action List",
-      "d": "PatternFly HTML examples and markup structure for Action List.",
+      "d": "PatternFly React component examples and demos for Action List.",
       "c": "markdown",
       "q": 1
     },
@@ -316,7 +428,7 @@
       "n": "Alert",
       "d": "This example shows how an alert could be triggered by an asynchronous event in the application. Note that you can customize how the alert will be announced to assistive technology. See the alert ac...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/alert/react/examples/AlertAsyncLiveRegion",
@@ -463,7 +575,7 @@
       "n": "Back To Top",
       "d": "PatternFly React component examples and demos for Back To Top.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/back-to-top/react/examples/BackToTopBasic",
@@ -489,7 +601,7 @@
     {
       "p": "v6/components/backdrop/html",
       "n": "Backdrop",
-      "d": "This component puts a backdrop over the entire viewport.",
+      "d": "Toggle the .pf-m-show class to see the show and hide animation.",
       "c": "markdown",
       "q": 1
     },
@@ -543,6 +655,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/badge/html",
+      "n": "Badge",
+      "d": "Always add a modifier class. Never use the class .pf-v6-c-badge on its own.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/badge/react/examples/BadgeDisabled",
       "n": "Badge Disabled",
       "d": "PatternFly examples and demos for Badge Disabled.",
@@ -578,13 +697,6 @@
       "q": 1
     },
     {
-      "p": "v6/components/banner/html",
-      "n": "Banner",
-      "d": "Banners can be styled with one of 9 different nonstatus colors. A nonstatus banner should only be used when the banner color does not represent status or severity.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/banner/react/examples/BannerBasic",
       "n": "Banner Basic",
       "d": "PatternFly examples and demos for Banner Basic.",
@@ -609,6 +721,13 @@
       "p": "v6/components/banner/text",
       "n": "Banner",
       "d": "PatternFly offers 5 different banner types detailed below. We suggest that users adopt one of these 5 colors, as they’ve been tested with their text colors for accessibility. However, if colors out...",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/components/brand/html",
+      "n": "Brand",
+      "d": "Simple brand component.",
       "c": "markdown",
       "q": 1
     },
@@ -816,13 +935,6 @@
       "q": 1
     },
     {
-      "p": "v6/components/card/html",
-      "n": "Card",
-      "d": "A card is a generic rectangular container that can be used to build other components. Use a default card for regular page content and the compact variation for dashboard or small cards.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/card/react/examples/CardBasic",
       "n": "Card Basic",
       "d": "PatternFly examples and demos for Card Basic.",
@@ -1015,7 +1127,7 @@
       "p": "v6/components/charts_legends/text",
       "n": "Charts Legends",
       "d": "A legend chart is a chart with a legend next to it, showing the different data entries or values being represented, often by category. A legend can be added to any chart type.",
-      "c": "",
+      "c": "json",
       "q": 1
     },
     {
@@ -1064,7 +1176,7 @@
       "p": "v6/components/charts_scatter-chart/text",
       "n": "Charts Scatter Chart",
       "d": "A scatter chart uses dots to represent values in a chart. These dots can be added to area and line charts to outline specific interactive points along a line.",
-      "c": "",
+      "c": "json",
       "q": 1
     },
     {
@@ -1092,7 +1204,7 @@
       "p": "v6/components/charts_threshold-chart/text",
       "n": "Charts Threshold Chart",
       "d": "A threshold chart can be used to visually specify a threshold for certain variables on the chart.",
-      "c": "",
+      "c": "json",
       "q": 1
     },
     {
@@ -1243,6 +1355,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/code-editor/html",
+      "n": "Code Editor",
+      "d": "This is an extra container used in React to prevent event propagation if upload is enabled or there is a provided empty state.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/code-editor/text",
       "n": "Code Editor",
       "d": "By default, the bulk of the code editor is the text editor itself. The component is extremely flexible, so many of the features are optional. Much of the functionality of the Monaco Editor has been...",
@@ -1289,7 +1408,7 @@
       "n": "Compass",
       "d": "When building a more custom implementation with Compass components, there are some intended or expected structures that must remain present.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/compass/react/examples/CompassDockLayout",
@@ -1509,6 +1628,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/date-and-time_date-picker/html",
+      "n": "Date And Time Date Picker",
+      "d": "PatternFly HTML examples and markup structure for Date And Time Date Picker.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/date-and-time_date-picker/react/examples/DatePickerAmerican",
       "n": "Date Picker American",
       "d": "PatternFly examples and demos for Date Picker American.",
@@ -1632,6 +1758,13 @@
       "n": "Description List CSS",
       "d": "PatternFly variables and tokens for Description List CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/description-list/html",
+      "n": "Description List",
+      "d": "Column fill will modify the default placement of description list groups to fill from top to bottom using css column-count, instead of left to right. Note: using this modifier will change the layou...",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -2090,11 +2223,39 @@
       "q": 1
     },
     {
-      "p": "v6/components/dual-list-selector/react",
-      "n": "Dual List Selector",
-      "d": "The dual list selector is built in a composable manner to make customization easier. The standard sub-component relationships are arranged as follows.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorBasic",
+      "n": "Dual List Selector Basic",
+      "d": "PatternFly examples and demos for Dual List Selector Basic.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorBasicSearch",
+      "n": "Dual List Selector Basic Search",
+      "d": "PatternFly examples and demos for Dual List Selector Basic Search.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorBasicTooltips",
+      "n": "Dual List Selector Basic Tooltips",
+      "d": "PatternFly examples and demos for Dual List Selector Basic Tooltips.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorComplexOptionsActions",
+      "n": "Dual List Selector Complex Options Actions",
+      "d": "PatternFly examples and demos for Dual List Selector Complex Options Actions.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/dual-list-selector/react/examples/DualListSelectorTree",
+      "n": "Dual List Selector Tree",
+      "d": "PatternFly examples and demos for Dual List Selector Tree.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/components/dual-list-selector/text",
@@ -2111,11 +2272,60 @@
       "q": 1
     },
     {
-      "p": "v6/components/empty-state/react",
-      "n": "Empty State",
-      "d": "PatternFly React component examples and demos for Empty State.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/components/empty-state/react/examples/EmptyStateBasic",
+      "n": "Empty State Basic",
+      "d": "PatternFly examples and demos for Empty State Basic.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateExtraLarge",
+      "n": "Empty State Extra Large",
+      "d": "PatternFly examples and demos for Empty State Extra Large.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateExtraSmall",
+      "n": "Empty State Extra Small",
+      "d": "PatternFly examples and demos for Empty State Extra Small.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateLarge",
+      "n": "Empty State Large",
+      "d": "PatternFly examples and demos for Empty State Large.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateNoMatchFound",
+      "n": "Empty State No Match Found",
+      "d": "PatternFly examples and demos for Empty State No Match Found.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateSmall",
+      "n": "Empty State Small",
+      "d": "PatternFly examples and demos for Empty State Small.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateSpinner",
+      "n": "Empty State Spinner",
+      "d": "PatternFly examples and demos for Empty State Spinner.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/empty-state/react/examples/EmptyStateWithStatus",
+      "n": "Empty State With Status",
+      "d": "PatternFly examples and demos for Empty State With Status.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/components/empty-state/text",
@@ -2216,18 +2426,11 @@
       "q": 1
     },
     {
-      "p": "v6/components/file-upload_multiple-file-upload/html",
-      "n": "File Upload Multiple File Upload",
-      "d": "PatternFly HTML examples and markup structure for File Upload Multiple File Upload.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/file-upload_multiple-file-upload/react",
       "n": "File Upload Multiple File Upload",
       "d": "Multiple file upload is able to.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/file-upload_multiple-file-upload/react/examples/MultipleFileUploadBasic",
@@ -2311,13 +2514,6 @@
       "n": "Forms Checkbox CSS",
       "d": "PatternFly variables and tokens for Forms Checkbox CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/forms_checkbox/html",
-      "n": "Forms Checkbox",
-      "d": "The Check component is provided for use cases outside of forms. If it is used without label text ensure some sort of label for assistive technologies. (for example: aria-label)",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -2458,13 +2654,6 @@
       "n": "Forms Form CSS",
       "d": "PatternFly variables and tokens for Forms Form CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/forms_form/html",
-      "n": "Forms Form",
-      "d": "To avoid the form label's required indicator or help tooltip icon from wrapping separately from the form label text, all whitespace characters between the last word of the label text, the required ...",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -2797,6 +2986,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/helper-text/html",
+      "n": "Helper Text",
+      "d": "You can include multiple HelperTextItem components inside a single HelperText container.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/helper-text/react/examples/HelperTextBasic",
       "n": "Helper Text Basic",
       "d": "PatternFly examples and demos for Helper Text Basic.",
@@ -2843,7 +3039,7 @@
       "n": "Hero",
       "d": "If you need finer control over the placement of text content within the Hero, such as when you omit a background image, adjust the bodyWidth and bodyMaxWidth properties. Be mindful of using these p...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/hero/react/examples/HeroBasic",
@@ -2902,18 +3098,11 @@
       "q": 1
     },
     {
-      "p": "v6/components/icon/html",
-      "n": "Icon",
-      "d": "Use a size modifier on the icon container to maintain a consistent size, even if the contents change in size.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/icon/react",
       "n": "Icon",
       "d": "These are the standard options for sizing icons.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/inline-edit/css",
@@ -2941,7 +3130,7 @@
       "n": "Input Group",
       "d": "Use the input group to extend form controls by adding text, buttons, selects, etc. The input group handles border overlap.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/input-group/react/examples/InputGroupBasic",
@@ -2983,13 +3172,6 @@
       "n": "Jump Links CSS",
       "d": "PatternFly variables and tokens for Jump Links CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/jump-links/html",
-      "n": "Jump Links",
-      "d": "PatternFly HTML examples and markup structure for Jump Links.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -3371,13 +3553,6 @@
       "q": 1
     },
     {
-      "p": "v6/components/menus_menu-toggle/html",
-      "n": "Menus Menu Toggle",
-      "d": "Shown with default, primary, and secondary styling",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/menus_menu-toggle/react/examples/MenuToggleAvatarText",
       "n": "Menu Toggle Avatar Text",
       "d": "PatternFly examples and demos for Menu Toggle Avatar Text.",
@@ -3536,6 +3711,13 @@
       "n": "Menus Menu CSS",
       "d": "PatternFly variables and tokens for Menus Menu CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/menus_menu/html",
+      "n": "Menus Menu",
+      "d": "PatternFly HTML examples and markup structure for Menus Menu.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -3805,11 +3987,116 @@
       "q": 1
     },
     {
-      "p": "v6/components/modal/react",
-      "n": "Modal",
-      "d": "Basic modals give users the option to either confirm or cancel an action.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/components/modal/react/examples/ModalBasic",
+      "n": "Modal Basic",
+      "d": "PatternFly examples and demos for Modal Basic.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalCustomFocus",
+      "n": "Modal Custom Focus",
+      "d": "PatternFly examples and demos for Modal Custom Focus.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalCustomHeader",
+      "n": "Modal Custom Header",
+      "d": "PatternFly examples and demos for Modal Custom Header.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalCustomTitleIcon",
+      "n": "Modal Custom Title Icon",
+      "d": "PatternFly examples and demos for Modal Custom Title Icon.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalCustomWidth",
+      "n": "Modal Custom Width",
+      "d": "PatternFly examples and demos for Modal Custom Width.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalNoHeaderFooter",
+      "n": "Modal No Header Footer",
+      "d": "PatternFly examples and demos for Modal No Header Footer.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalNotAnimated",
+      "n": "Modal Not Animated",
+      "d": "PatternFly examples and demos for Modal Not Animated.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalSize",
+      "n": "Modal Size",
+      "d": "PatternFly examples and demos for Modal Size.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalTitleIcon",
+      "n": "Modal Title Icon",
+      "d": "PatternFly examples and demos for Modal Title Icon.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalTopAligned",
+      "n": "Modal Top Aligned",
+      "d": "PatternFly examples and demos for Modal Top Aligned.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalWithDescription",
+      "n": "Modal With Description",
+      "d": "PatternFly examples and demos for Modal With Description.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalWithDropdown",
+      "n": "Modal With Dropdown",
+      "d": "PatternFly examples and demos for Modal With Dropdown.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalWithForm",
+      "n": "Modal With Form",
+      "d": "PatternFly examples and demos for Modal With Form.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalWithHelp",
+      "n": "Modal With Help",
+      "d": "PatternFly examples and demos for Modal With Help.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalWithOverflowingContent",
+      "n": "Modal With Overflowing Content",
+      "d": "PatternFly examples and demos for Modal With Overflowing Content.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/modal/react/examples/ModalWithWizard",
+      "n": "Modal With Wizard",
+      "d": "PatternFly examples and demos for Modal With Wizard.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/components/modal/text",
@@ -3826,9 +4113,23 @@
       "q": 1
     },
     {
+      "p": "v6/components/navigation/html",
+      "n": "Navigation",
+      "d": "The docked nav opens and closes inline when .pf-m-expanded is applied and changes to an overlay when .pf-m-overlay is applied to a page or compass dock.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/navigation/react/examples/NavDefault",
       "n": "Nav Default",
       "d": "PatternFly examples and demos for Nav Default.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/navigation/react/examples/NavDocked",
+      "n": "Nav Docked",
+      "d": "PatternFly examples and demos for Nav Docked.",
       "c": "javascript",
       "q": 1
     },
@@ -3899,6 +4200,13 @@
       "p": "v6/components/navigation/text",
       "n": "Navigation",
       "d": "Use navigation to organize a page's structure and content for user clarity and convenience. Use cases differ depending on component variation.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/components/notification-badge/react",
+      "n": "Notification Badge",
+      "d": "The following example demonstrates the three variants of notification badge that are available: \"read\", \"unread\", and \"attention\".",
       "c": "markdown",
       "q": 1
     },
@@ -4047,6 +4355,13 @@
       "n": "Overflow Menu CSS",
       "d": "PatternFly variables and tokens for Overflow Menu CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/overflow-menu/html",
+      "n": "Overflow Menu",
+      "d": "The overflow menu component condenses actions inside .pf-v6-c-overflow-menucontent container into a single menu button wrapped in .pf-v6-c-overflow-menucontrol.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -4484,6 +4799,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/progress-stepper/html",
+      "n": "Progress Stepper",
+      "d": "The progress stepper is intended to show progress through a finite number of discrete steps.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/progress-stepper/react/examples/ProgressStepperBasic",
       "n": "Progress Stepper Basic",
       "d": "PatternFly examples and demos for Progress Stepper Basic.",
@@ -4736,13 +5058,6 @@
       "q": 1
     },
     {
-      "p": "v6/components/sidebar/html",
-      "n": "Sidebar",
-      "d": "PatternFly HTML examples and markup structure for Sidebar.",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/components/sidebar/react/examples/SidebarBasic",
       "n": "Sidebar Basic",
       "d": "PatternFly examples and demos for Sidebar Basic.",
@@ -4820,6 +5135,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/simple-list/react",
+      "n": "Simple List",
+      "d": "PatternFly React component examples and demos for Simple List.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/simple-list/react/examples/SimpleListBasic",
       "n": "Simple List Basic",
       "d": "PatternFly examples and demos for Simple List Basic.",
@@ -4859,13 +5181,6 @@
       "n": "Skeleton CSS",
       "d": "PatternFly variables and tokens for Skeleton CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/skeleton/html",
-      "n": "Skeleton",
-      "d": "PatternFly HTML examples and markup structure for Skeleton.",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -4960,6 +5275,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/slider/react/examples/SliderCustomTooltip",
+      "n": "Slider Custom Tooltip",
+      "d": "PatternFly examples and demos for Slider Custom Tooltip.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
       "p": "v6/components/slider/react/examples/SliderDisabled",
       "n": "Slider Disabled",
       "d": "PatternFly examples and demos for Slider Disabled.",
@@ -4999,6 +5321,13 @@
       "n": "Spinner CSS",
       "d": "PatternFly variables and tokens for Spinner CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/spinner/react",
+      "n": "Spinner",
+      "d": "PatternFly React component examples and demos for Spinner.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -5125,13 +5454,20 @@
       "n": "Table",
       "d": "Note: Table lives in its own package at @patternfly/react-table!",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/components/tabs/css",
       "n": "Tabs CSS",
       "d": "PatternFly variables and tokens for Tabs CSS.",
       "c": "json",
+      "q": 1
+    },
+    {
+      "p": "v6/components/tabs/html",
+      "n": "Examples",
+      "d": "To animate the current tab accent, you must set the following variables on the .pf-v6-c-tabs wrapper. As tabs are added, removed, and resized, these values may need to be updated dynamically. The f...",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -5324,6 +5660,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/text-input-group/html",
+      "n": "Text Input Group",
+      "d": "The following example shows a TextInputGroup with the .pf-m-plain class applied. A plain TextInputGroup must only be used when contained in an ancestor that has its own border or background color s...",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/text-input-group/react/examples/TextInputGroupBasic",
       "n": "Text Input Group Basic",
       "d": "PatternFly examples and demos for Text Input Group Basic.",
@@ -5443,6 +5786,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/title/html",
+      "n": "Title",
+      "d": "The title component styles font-size, font-weight, and line-height to titles.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/components/title/react/examples/TitleCustomSizes",
       "n": "Title Custom Sizes",
       "d": "PatternFly examples and demos for Title Custom Sizes.",
@@ -5548,6 +5898,13 @@
       "q": 1
     },
     {
+      "p": "v6/components/toolbar/react/examples/ToolbarContainerQuery",
+      "n": "Toolbar Container Query",
+      "d": "PatternFly examples and demos for Toolbar Container Query.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
       "p": "v6/components/toolbar/react/examples/ToolbarContentWrap",
       "n": "Toolbar Content Wrap",
       "d": "PatternFly examples and demos for Toolbar Content Wrap.",
@@ -5565,6 +5922,13 @@
       "p": "v6/components/toolbar/react/examples/ToolbarDynamicSticky",
       "n": "Toolbar Dynamic Sticky",
       "d": "PatternFly examples and demos for Toolbar Dynamic Sticky.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/components/toolbar/react/examples/ToolbarFlexGrowAndWidths",
+      "n": "Toolbar Flex Grow And Widths",
+      "d": "PatternFly examples and demos for Toolbar Flex Grow And Widths.",
       "c": "javascript",
       "q": 1
     },
@@ -5692,13 +6056,6 @@
       "n": "Tree View CSS",
       "d": "PatternFly variables and tokens for Tree View CSS.",
       "c": "json",
-      "q": 1
-    },
-    {
-      "p": "v6/components/tree-view/html",
-      "n": "Tree View",
-      "d": "A tree view can be setup to allow multiple nodes to be selected. When a tree view is intended to allow multiple selection, aria-multiselectable=\"true\" must be passed to the root ul[role=\"tree\"] ele...",
-      "c": "markdown",
       "q": 1
     },
     {
@@ -5873,6 +6230,13 @@
       "p": "v6/components/wizard/html",
       "n": "Wizard",
       "d": "PatternFly HTML examples and markup structure for Wizard.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/components/wizard/react",
+      "n": "Wizard",
+      "d": "To focus the main content element of the Wizard, pass in the shouldFocusContent property. It is recommended that this is passed in so that users can navigate through a WizardStep content in order.",
       "c": "markdown",
       "q": 1
     },
@@ -6112,7 +6476,7 @@
       "n": "Writing Guides CLI Handbook",
       "d": "CLI output messages typically fall into one of 3 categories.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/content-design/writing-guides_error-messages/text",
@@ -6147,7 +6511,7 @@
       "n": "React Flow",
       "d": "While React Flow is built with accessibility in mind, you should always check that your implementation (when paired with PatternFly) is accessible via mouse, keyboard, and other assistive technolog...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/developer-guides/react-flow/text/examples/CompassReactFlowDemo",
@@ -6224,7 +6588,14 @@
       "n": "Chat Bot Messages",
       "d": "When a user selects a positive or negative message action, you can display a message feedback card that acknowledges their response and provides space for additional written feedback. These cards c...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/chat-bot_messages/react",
+      "n": "Chat Bot Messages",
+      "d": "The content prop of the Message component is passed to a Markdown component (from react-markdown), which is configured to translate plain text strings into PatternFly Content components and code bl...",
+      "c": "markdown",
+      "q": 1
     },
     {
       "p": "v6/extensions/chat-bot_messages/react/examples/AttachmentEdit",
@@ -6448,7 +6819,7 @@
       "n": "Chat Bot Overview",
       "d": "This demo displays a basic ChatBot, which includes.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/chat-bot_overview/design-guidelines",
@@ -6469,49 +6840,63 @@
       "n": "Chat Bot UI",
       "d": "The PatternFly ChatBot is a separate window that overlays or is embedded within other UI content. This container can be shown and hidden via the ChatBot toggle.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_ansible/react",
       "n": "Component Groups Ansible",
       "d": "The Ansible component displays the Ansible project logo, with a support status style.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
-      "p": "v6/extensions/component-groups_bulk-select/react",
-      "n": "Component Groups Bulk Select",
-      "d": "The bulk select provides a way of selecting data records in batches. You can select all data at once, all data on current page or deselect all.",
-      "c": "markdown",
-      "q": 0.97
+      "p": "v6/extensions/component-groups_bulk-select/react/examples/BulkSelectAllExample",
+      "n": "Bulk Select All Example",
+      "d": "PatternFly examples and demos for Bulk Select All Example.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_bulk-select/react/examples/BulkSelectExample",
+      "n": "Bulk Select Example",
+      "d": "PatternFly examples and demos for Bulk Select Example.",
+      "c": "javascript",
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_close-button/react",
       "n": "Component Groups Close Button",
       "d": "The close button component provides a way for users to exit a modal, dialogue, or similar action. To further customize this component, you can also utilize all properties of the button component.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_column-management-modal/react",
       "n": "Component Groups Column Management Modal",
       "d": "The column management modal component can be used to implement customizable table columns. Columns can be configured to be enabled or disabled by default or be unhidable.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_deck/react",
       "n": "Component Groups Deck",
       "d": "The deck component is a compact, sequential container for presenting a suite of static announcements or an informational walkthrough. It is not intended for task completion or form-filling workflows.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_error-boundary/react",
       "n": "Component Groups Error Boundary",
       "d": "The error boundary component repurposes the ErrorState component for an application error boundary.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_error-state/react",
+      "n": "Component Groups Error State",
+      "d": "The error state component repurposes the EmptyState component to display an error to users. To further customize this component, you can also utilize all properties of the empty state component, wi...",
+      "c": "markdown",
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_error-state/react/examples/ErrorStateExample",
@@ -6532,6 +6917,13 @@
       "n": "Error State Footer Example",
       "d": "PatternFly examples and demos for Error State Footer Example.",
       "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_external-link-button/react",
+      "n": "Component Groups External Link Button",
+      "d": "The external link button component is a button that opens links in an external tab. To further customize this component, you can also utilize all properties of the button component.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -6581,7 +6973,7 @@
       "n": "Component Groups Log Snippet",
       "d": "A log snippet component provides a way to display a log snippet or code along with a message.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_log-snippet/react/examples/LogSnippetExample",
@@ -6609,7 +7001,7 @@
       "n": "Component Groups Missing Page",
       "d": "The missing page component can be used to display an error message and \"return to homepage\" button when an error occurs.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_missing-page/react/examples/MissingPageExample",
@@ -6836,10 +7228,24 @@
       "q": 1
     },
     {
+      "p": "v6/extensions/component-groups_skeleton-table/react/examples/SkeletonTableNoHeaderExample",
+      "n": "Skeleton Table No Header Example",
+      "d": "PatternFly examples and demos for Skeleton Table No Header Example.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
       "p": "v6/extensions/component-groups_skeleton-table/react/examples/SkeletonTableSelectableExample",
       "n": "Skeleton Table Selectable Example",
       "d": "PatternFly examples and demos for Skeleton Table Selectable Example.",
       "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_stale-data-warning/react",
+      "n": "Component Groups Stale Data Warning",
+      "d": "A stale data warning component displays a warning status when an object is stale and planned for removal. Additional warning details can be displayed as a tooltip or text label.",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -6906,6 +7312,34 @@
       "q": 1
     },
     {
+      "p": "v6/extensions/component-groups_tearsheet/react/examples/TearsheetBasic",
+      "n": "Tearsheet Basic",
+      "d": "PatternFly examples and demos for Tearsheet Basic.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_tearsheet/react/examples/TearsheetComparison",
+      "n": "Tearsheet Comparison",
+      "d": "PatternFly examples and demos for Tearsheet Comparison.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_tearsheet/react/examples/TearsheetLayouts",
+      "n": "Tearsheet Layouts",
+      "d": "PatternFly examples and demos for Tearsheet Layouts.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/extensions/component-groups_tearsheet/react/examples/TearsheetStacked",
+      "n": "Tearsheet Stacked",
+      "d": "PatternFly examples and demos for Tearsheet Stacked.",
+      "c": "javascript",
+      "q": 1
+    },
+    {
       "p": "v6/extensions/component-groups_unauthorized-access/react/examples/UnauthorizedAccessActionsExample",
       "n": "Unauthorized Access Actions Example",
       "d": "PatternFly examples and demos for Unauthorized Access Actions Example.",
@@ -6924,7 +7358,7 @@
       "n": "Component Groups Unavailable Content",
       "d": "An unavailable content component displays a screen to users when they attempt to view a page that is currently unavailable to view.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/component-groups_unavailable-content/react/examples/UnavailableContentExample",
@@ -6966,21 +7400,21 @@
       "n": "Data View Overview",
       "d": "Note: Data view lives in its own package @patternfly/react-data-view",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/data-view_table/react",
       "n": "Data View Table",
       "d": "The data view table component renders your data into columns and rows within a PatternFly table component. You can easily customize and configure the table with these additional data view component...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/data-view_toolbar/react",
       "n": "Data View Toolbar",
       "d": "The data view toolbar component renders a default opinionated data view toolbar above or below the data section.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/log-viewer/design-guidelines",
@@ -7029,7 +7463,7 @@
       "n": "Introduction",
       "d": "An anchor is the point at which an edge connects to a node.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_context-menu/text",
@@ -7043,7 +7477,7 @@
       "n": "Introduction",
       "d": "A control bar adds visualization controls to a Topology view, so that users can more easily explore the graph layout.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_custom-edges/text",
@@ -7085,7 +7519,7 @@
       "n": "Introduction",
       "d": "PatternFly documentation and guidelines for Introduction.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_pan-and-zoom/text/examples/TopologyPanZoomDemo",
@@ -7099,7 +7533,7 @@
       "n": "Introduction",
       "d": "PatternFly documentation and guidelines for Introduction.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_pipelines/text/examples/TopologyPipelinesGettingStartedDemo",
@@ -7113,7 +7547,7 @@
       "n": "Introduction",
       "d": "PatternFly documentation and guidelines for Introduction.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_selection/text/examples/TopologySelectableDemo",
@@ -7127,7 +7561,7 @@
       "n": "Introduction",
       "d": "PatternFly documentation and guidelines for Introduction.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_sidebar/text/examples/TopologySidebarDemo",
@@ -7141,7 +7575,7 @@
       "n": "Introduction",
       "d": "PatternFly documentation and guidelines for Introduction.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/topology_toolbar/text/examples/TopologyToolbarDemo",
@@ -7162,21 +7596,21 @@
       "n": "User Feedback",
       "d": "The user feedback extension is a PatternFly React based component used to collect user feedback. Examples of how to use this extension are documented below. This extensions allows users to submit f...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/virtual-scroll-table/react",
       "n": "Virtual Scroll Table",
       "d": "Note: React Virtualized Extension lives in its own package at @patternfly/react-virtualized-extension!",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/extensions/virtual-scroll-window-scroller/react",
       "n": "Virtual Scroll Window Scroller",
       "d": "Note: React Virtualized Extension lives in its own package at @patternfly/react-virtualized-extension!",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/foundations-and-styles/colors/text",
@@ -7218,14 +7652,14 @@
       "n": "Layouts Bullseye CSS",
       "d": "PatternFly variables and tokens for Layouts Bullseye CSS.",
       "c": "json",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/foundations-and-styles/layouts_bullseye/html",
       "n": "Layouts Bullseye",
       "d": "The bullseye layout is designed to center a single child element horizontally and vertically within its parent.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/foundations-and-styles/layouts_bullseye/react/examples/BullseyeBasic",
@@ -7564,13 +7998,6 @@
       "q": 1
     },
     {
-      "p": "v6/foundations-and-styles/layouts_grid/html",
-      "n": "Layouts Grid",
-      "d": "Ordering - Ordering can be applied to nested code.pf-v6-l-grid and code.pf-v6-l-grid\\\\items. Spacing may need to be managed based on how items are ordered. Because order could apply to an innumerab...",
-      "c": "markdown",
-      "q": 1
-    },
-    {
       "p": "v6/foundations-and-styles/layouts_grid/react/examples/GridAlternativeComponents",
       "n": "Grid Alternative Components",
       "d": "PatternFly examples and demos for Grid Alternative Components.",
@@ -7697,6 +8124,13 @@
       "q": 1
     },
     {
+      "p": "v6/foundations-and-styles/layouts_stack/html",
+      "n": "Layouts Stack",
+      "d": "The stack layout is designed to position items vertically.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
       "p": "v6/foundations-and-styles/layouts_stack/react/examples/StackBasic",
       "n": "Stack Basic",
       "d": "PatternFly examples and demos for Stack Basic.",
@@ -7792,27 +8226,34 @@
       "n": "Utility Classes Alignment",
       "d": "Breakpoints are optional. Breakpoint options include: base (no breakpoint value), -on-sm, -on-md, -on-lg, and -on-xl. Example: .pf-v6-u-text-align-start-on-lg",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/foundations-and-styles/utility-classes_background-color/html",
       "n": "Utility Classes Background Color",
       "d": "These background color utilities can be used to modify the background color of an element. In most cases, using the components with available modifiers should be sufficient to implement most design...",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/foundations-and-styles/utility-classes_float/html",
       "n": "Utility Classes Float",
       "d": "Breakpoints are optional. Breakpoint options include: base (no breakpoint value), -on-sm, -on-md, -on-lg, and -on-xl. Example: .pf-v6-u-float-inline-start-on-lg",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/foundations-and-styles/utility-classes_overview/text",
       "n": "Utility Classes Overview",
       "d": "PatternFly’s utility classes enable you to further customize and modify elements in your project without having to write any custom CSS.",
       "c": "javascript",
+      "q": 1
+    },
+    {
+      "p": "v6/foundations-and-styles/utility-classes_spacing/html",
+      "n": "Utility Classes Spacing",
+      "d": "Breakpoints are optional. Breakpoint options include: base (no breakpoint value), -on-sm, -on-md, -on-lg, and -on-xl. Example: .pf-v6-u-m-sm-on-lg",
+      "c": "markdown",
       "q": 1
     },
     {
@@ -7883,7 +8324,7 @@
       "n": "Develop",
       "d": "In order to develop with PatternFly, you will need to.",
       "c": "markdown",
-      "q": 0.97
+      "q": 1
     },
     {
       "p": "v6/get-started/training_html-css-variables-and-overrides-training/text",
@@ -7931,6 +8372,13 @@
       "p": "v6/patterns/bulk-selection/text",
       "n": "Bulk Selection",
       "d": "Bulk selection enables users to select or deselect multiple items in a content view, such as lists, tables, or card views.",
+      "c": "markdown",
+      "q": 1
+    },
+    {
+      "p": "v6/patterns/canvas/demo-demos",
+      "n": "Canvas",
+      "d": "Canvas lets users work with generated or editable content alongside a conversation. Canvas content is fully flexible, allowing you to render any content suitable for your use case. It is recommende...",
       "c": "markdown",
       "q": 1
     },
@@ -7993,7 +8441,7 @@
     {
       "p": "v6/releases/release-highlights/text",
       "n": "Release Highlights",
-      "d": "This release refines components and improves visual consistency to help you build better experiences. You'll find focused updates to typography, icons, and foundational components, plus important c...",
+      "d": "This release gives you more ways to organize pages, navigate complex workflows, and work with data. Highlights include expandable docked navigation, responsive toolbars, sticky table footers, and a...",
       "c": "markdown",
       "q": 1
     },
