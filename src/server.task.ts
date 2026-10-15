@@ -30,6 +30,7 @@ type DeferTaskDynamicContextInvoke = 'call' | 'apply';
 type DeferTaskDynamicContextParams<TArgs extends unknown[] = unknown[]> = {
   prev?: unknown;
   args: TArgs;
+  signal?: AbortSignal | undefined;
 };
 
 /**
@@ -243,7 +244,11 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     const resolveDynamic = async (): Promise<{ resolved: boolean; value?: unknown }> => {
       if (typeof dynamicContext === 'function') {
         try {
-          const dynamicResult = await dynamicContext({ prev: prevValue, args });
+          const dynamicResult = await dynamicContext({
+            prev: prevValue,
+            args,
+            signal: state.controller?.signal
+          });
 
           prevValue = dynamicResult;
 
@@ -290,6 +295,15 @@ const deferTask = <TArgs extends unknown[], TReturn>(
           state.count += 1;
           if (typeof dynamicContext === 'function') {
             const { resolved, value } = await resolveDynamic();
+
+            if (!state.isRunning) {
+              debug({
+                type: 'run:stopped',
+                value: () => ({ ...state })
+              });
+
+              return undefined;
+            }
 
             if (resolved) {
               if (updatedDynamicContextInvoke === 'apply') {
