@@ -206,9 +206,9 @@ describe('deferTask', () => {
 
     expect(result).toBe('result-3');
     expect(dynamicContext).toHaveBeenCalledTimes(3);
-    expect(dynamicContext).toHaveBeenNthCalledWith(1, { prev: undefined, args: [{ run: 0 }], signal: expect.any(AbortSignal) });
-    expect(dynamicContext).toHaveBeenNthCalledWith(2, { prev: { run: 1, previousRun: 0, initialRun: 0 }, args: [{ run: 0 }], signal: expect.any(AbortSignal) });
-    expect(dynamicContext).toHaveBeenNthCalledWith(3, { prev: { run: 2, previousRun: 1, initialRun: 0 }, args: [{ run: 0 }], signal: expect.any(AbortSignal) });
+    expect(dynamicContext).toHaveBeenNthCalledWith(1, { prev: undefined, args: [{ run: 0 }] });
+    expect(dynamicContext).toHaveBeenNthCalledWith(2, { prev: { run: 1, previousRun: 0, initialRun: 0 }, args: [{ run: 0 }] });
+    expect(dynamicContext).toHaveBeenNthCalledWith(3, { prev: { run: 2, previousRun: 1, initialRun: 0 }, args: [{ run: 0 }] });
     expect(mockFunc).toHaveBeenCalledTimes(3);
     expect(mockFunc).toHaveBeenNthCalledWith(1, { run: 1, previousRun: 0, initialRun: 0 });
     expect(mockFunc).toHaveBeenNthCalledWith(2, { run: 2, previousRun: 1, initialRun: 0 });
@@ -224,7 +224,7 @@ describe('deferTask', () => {
     const result = await handle.start();
 
     expect(result).toBe('handled-fallback-arg');
-    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['fallback-arg'], signal: expect.any(AbortSignal) });
+    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['fallback-arg'] });
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('Defer task dynamicContext resolution failed: Error: dynamic context lookup failure')
     );
@@ -274,7 +274,7 @@ describe('deferTask', () => {
     const result = await handle.start();
 
     expect(result).toBe('async-context-value');
-    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial'], signal: expect.any(AbortSignal) });
+    expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial'] });
     expect(mockFunc).toHaveBeenCalledWith('async-context-value');
   });
 
@@ -324,7 +324,7 @@ describe('deferTask', () => {
       const result = await handle.start();
 
       expect(result).toBe(expectedResult);
-      expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'], signal: expect.any(AbortSignal) });
+      expect(dynamicContext).toHaveBeenCalledWith({ prev: undefined, args: ['initial-factory-arg'] });
       expect(mockFunc).toHaveBeenCalledWith(...expectedArgs);
     }
   );

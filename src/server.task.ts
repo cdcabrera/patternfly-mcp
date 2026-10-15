@@ -1,4 +1,4 @@
-import { isAsync, isPromise, timeoutFunction } from './server.helpers';
+import { cancelFunction, isAsync, isPromise, timeoutFunction } from './server.helpers';
 import { formatUnknownError, log } from './logger';
 
 /**
@@ -30,7 +30,6 @@ type DeferTaskDynamicContextInvoke = 'call' | 'apply';
 type DeferTaskDynamicContextParams<TArgs extends unknown[] = unknown[]> = {
   prev?: unknown;
   args: TArgs;
-  signal?: AbortSignal | undefined;
 };
 
 /**
@@ -244,16 +243,18 @@ const deferTask = <TArgs extends unknown[], TReturn>(
     const resolveDynamic = async (): Promise<{ resolved: boolean; value?: unknown }> => {
       if (typeof dynamicContext === 'function') {
         try {
-          const dynamicResult = await dynamicContext({
-            prev: prevValue,
-            args,
-            signal: state.controller?.signal
-          });
+          const dynamicResult = await cancelFunction(
+            () => dynamicContext({ prev: prevValue, args }),
+            { signal: state.controller?.signal }
+          );
 
           prevValue = dynamicResult;
 
           return { resolved: true, value: dynamicResult };
         } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return { resolved: false };
+          }
           log.warn(`Defer task dynamicContext resolution failed: ${formatUnknownError(error)}`);
         }
       }

@@ -836,6 +836,62 @@ const createError = <TMetadata extends Record<string, unknown>>(
 };
 
 /**
+ * Wrap a function, or another Promise in an abort signal, returning a
+ * Promise that either resolves, rejects, or rejects when the signal aborts.
+ *
+ * @param func - Function or Promise to wrap
+ * @param settings - Cancellation settings
+ * @param settings.signal - AbortSignal used to trigger cancellation
+ * @param [settings.errorMessage] - Error message to use if canceled (default: `'Call canceled'`)
+ * @param [settings.error] - Optional custom Error or DOMException to reject with
+ * @returns Resolves with the function/promise result or rejects if canceled/failed
+ */
+const cancelFunction = async <TReturn>(
+  func: Promise<TReturn> | (() => TReturn | Promise<TReturn>),
+  {
+    signal,
+    errorMessage = 'Call canceled',
+    error
+  }: {
+    signal?: AbortSignal | undefined;
+    errorMessage?: string | undefined;
+    error?: unknown;
+  } = {}
+) => {
+  const getAbortError = () =>
+    error || (signal?.reason instanceof Error ? signal.reason : new DOMException(errorMessage, 'AbortError'));
+
+  if (signal?.aborted) {
+    return Promise.reject(getAbortError());
+  }
+
+  let onAbort: (() => void) | undefined;
+  const abortListener = () =>
+    new Promise<never>((_, reject) => {
+      if (!signal) {
+        return;
+      }
+      onAbort = () => reject(getAbortError());
+      signal.addEventListener('abort', onAbort, { once: true });
+    });
+
+  try {
+    const updatedFunc = async () =>
+      (!isAsync(func) && isPromise(func) ? (func as Promise<TReturn>) : (func as () => TReturn | Promise<TReturn>)());
+
+    if (!signal) {
+      return await updatedFunc();
+    }
+
+    return await Promise.race([updatedFunc(), abortListener()]);
+  } finally {
+    if (signal && onAbort) {
+      signal.removeEventListener('abort', onAbort);
+    }
+  }
+};
+
+/**
  * Wrap a function, or another Promise in a timeout, returning a
  * Promise that either resolves, rejects, or rejects after the timeout.
  *
@@ -868,6 +924,7 @@ const timeoutFunction = async <TReturn>(
 
 export {
   buildSearchString,
+  cancelFunction,
   createError,
   freezeObject,
   generateHash,
