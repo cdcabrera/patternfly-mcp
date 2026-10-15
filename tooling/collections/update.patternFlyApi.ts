@@ -1,12 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import {
   collectionCallback,
+  contentMetadata,
   expandApiEmbeddedCollection,
   getPatternFlyApiRecords,
   type ApiContent,
   type ApiCrawler,
   type ApiEmbedded,
   type ApiEmbeddedCollection,
+  type ApiDiscardedRecord,
+  type ApiCollectionResult,
   MIN_API_QUALITY_THRESHOLD
 } from '../../src/collection.patternFlyApi';
 import { type McpCollectionResult } from '../../src/collections';
@@ -31,11 +34,12 @@ type RemovalReason =
   'other';
 
 /**
- * Entry describing a removed record with its determined reason and details.
+ * Entry describing a removed record with its determined reason, evaluated quality score, and details.
  */
 interface RemovedRecordReport {
   record: ApiEmbedded;
   reason: RemovalReason;
+  qualityScore?: number | undefined;
   details?: string;
 }
 
@@ -54,7 +58,6 @@ interface GenerateCsvReportOptions {
   diff: ReturnType<typeof diffCollections>;
   oldRecords: ApiEmbedded[];
   newRecords: ApiEmbedded[];
-  crawledMap?: Map<string, { entry: ApiCrawler; metadata: ApiContent }> | undefined;
 }
 
 /**
@@ -87,13 +90,11 @@ interface UpdateApiOptions {
  * @param options.diff - Diff calculation between old and new records
  * @param options.oldRecords - Previous collection records
  * @param options.newRecords - Current collection records
- * @param options.crawledMap - Map of crawled entries and metadata
  */
 const generateReportCsv = ({
   diff,
   oldRecords,
-  newRecords,
-  crawledMap
+  newRecords
 }: GenerateCsvReportOptions): string => {
   const oldMap = new Map(oldRecords.map(record => [record.p, record]));
   const changedPaths = new Set([
@@ -108,11 +109,11 @@ const generateReportCsv = ({
     {
       headers: ['status', 'path', 'name', 'previousQualityScore', 'newQualityScore', 'contentType', 'reason', 'details'],
       added: record => [record.p, record.n, '', record.q, record.c, '', ''],
-      removed: ({ record, reason, details }) => [
+      removed: ({ record, reason, qualityScore, details }) => [
         record.p,
         record.n,
         record.q,
-        crawledMap?.get(record.p)?.entry.qualityScore ?? '',
+        qualityScore ?? '',
         record.c,
         reason,
         details || ''
@@ -136,11 +137,13 @@ const generateReportCsv = ({
  *
  * @param oldRecords - Previous collection
  * @param newRecords - Updated collection
+ * @param [discarded] - Optional map of discarded record IDs and metadata from crawler
  * @param [crawledMap] - Optional map of all crawled entries and evaluated metadata
  */
 const diffCollections = (
   oldRecords: ApiEmbedded[],
   newRecords: ApiEmbedded[],
+  discarded?: Map<string, ApiDiscardedRecord>,
   crawledMap?: Map<string, { entry: ApiCrawler; metadata: ApiContent }>
 ) => {
   const oldMap = new Map(oldRecords.map(record => [record.p, record]));
@@ -155,9 +158,21 @@ const diffCollections = (
       continue;
     }
 
+    const [expanded] = expandApiEmbeddedCollection({ records: [oldRecord], base: '', version: '', generated: '' });
+    const recordId = expanded ? contentMetadata(expanded).id : '';
+    const discardInfo = discarded?.get(recordId) ?? discarded?.get(`api::${oldRecord.p.split('/').join('::')}`);
     const crawled = crawledMap?.get(oldRecord.p);
 
-    if (!crawled) {
+    if (discardInfo) {
+      removed.push({
+        record: oldRecord,
+        reason: discardInfo.reason === 'low-quality' ? 'lacks quality' : 'deferred category',
+        qualityScore: discardInfo.qualityScore,
+        details: discardInfo.reason === 'low-quality'
+          ? `Evaluated Q: ${discardInfo.qualityScore} < ${MIN_API_QUALITY_THRESHOLD} threshold`
+          : 'Category is deferred'
+      });
+    } else if (!crawled) {
       removed.push({
         record: oldRecord,
         reason: 'upstream removed',
@@ -167,24 +182,28 @@ const diffCollections = (
       removed.push({
         record: oldRecord,
         reason: 'empty response',
+        qualityScore: crawled.entry.qualityScore,
         details: 'Empty payload returned'
       });
     } else if (crawled.metadata.isDeferred) {
       removed.push({
         record: oldRecord,
         reason: 'deferred category',
+        qualityScore: crawled.entry.qualityScore,
         details: `Category '${crawled.metadata.category}' is deferred`
       });
     } else if (crawled.metadata.isLowQuality || crawled.entry.qualityScore < MIN_API_QUALITY_THRESHOLD) {
       removed.push({
         record: oldRecord,
         reason: 'lacks quality',
+        qualityScore: crawled.entry.qualityScore,
         details: `Evaluated Q: ${crawled.entry.qualityScore} < ${MIN_API_QUALITY_THRESHOLD} threshold`
       });
     } else {
       removed.push({
         record: oldRecord,
         reason: 'other',
+        qualityScore: crawled.entry.qualityScore,
         details: `Excluded during crawl processing (Q: ${crawled.entry.qualityScore})`
       });
     }
@@ -330,7 +349,8 @@ const run = async (
       ]
     });
 
-    const diff = diffCollections(oldRecords, records);
+    const discarded = (result as ApiCollectionResult)?.discarded;
+    const diff = diffCollections(oldRecords, records, discarded);
 
     diffReport(diff);
 
