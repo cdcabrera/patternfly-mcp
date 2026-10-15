@@ -291,10 +291,12 @@ describe('deferTask', () => {
 
     resolveContext('delayed-context');
 
-    await Promise.all([runPromise, stopPromise]);
+    const [runResult] = await Promise.all([runPromise, stopPromise]);
 
     expect(dynamicContext).toHaveBeenCalledTimes(1);
     expect(mockFunc).not.toHaveBeenCalled();
+    expect(runResult).toBeUndefined();
+    expect(handle.isRunning()).toBe(false);
   });
 
   it.each([
