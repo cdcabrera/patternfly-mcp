@@ -293,7 +293,6 @@ const deferTask = <TArgs extends unknown[], TReturn>(
 
       const startFunc = timeoutFunction(async () => {
         if (state.isRunning) {
-          state.count += 1;
           if (typeof dynamicContext === 'function') {
             const { resolved, value } = await resolveDynamic();
 
@@ -306,6 +305,8 @@ const deferTask = <TArgs extends unknown[], TReturn>(
               return undefined;
             }
 
+            state.count += 1;
+
             if (resolved) {
               if (updatedDynamicContextInvoke === 'apply') {
                 const updatedValue = (value ?? []) as TArgs;
@@ -316,6 +317,8 @@ const deferTask = <TArgs extends unknown[], TReturn>(
               return (updatedFunc as unknown as (arg: unknown) => TReturn | Promise<TReturn>)(value);
             }
           }
+
+          state.count += 1;
 
           return updatedFunc(...args);
         }
