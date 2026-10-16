@@ -836,6 +836,13 @@ const createError = <TMetadata extends Record<string, unknown>>(
 };
 
 /**
+ * Promise decorated with a cancel method.
+ */
+type CancelablePromise<TReturn> = Promise<TReturn> & {
+  cancel: (reason?: unknown) => void;
+};
+
+/**
  * Wrap a function, or another Promise in an abort signal, returning a
  * Promise that either resolves, rejects, or rejects when the signal aborts.
  *
@@ -844,12 +851,12 @@ const createError = <TMetadata extends Record<string, unknown>>(
  * @param settings.signal - AbortSignal used to trigger cancellation
  * @param [settings.errorMessage] - Error message to use if canceled (default: `'Call canceled'`)
  * @param [settings.error] - Optional custom Error or DOMException to reject with
- * @returns Resolves with the function/promise result or rejects if canceled/failed
+ * @returns Decorated cancelable promise resolving with result or rejecting if canceled/failed
  */
-const cancelFunction = async <TReturn>(
+const cancelFunction = <TReturn>(
   func: Promise<TReturn> | (() => TReturn | Promise<TReturn>),
   {
-    signal,
+    signal: externalSignal,
     errorMessage = 'Call canceled',
     error
   }: {
@@ -857,38 +864,44 @@ const cancelFunction = async <TReturn>(
     errorMessage?: string | undefined;
     error?: unknown;
   } = {}
-) => {
-  const getAbortError = () =>
-    error || (signal?.reason instanceof Error ? signal.reason : new DOMException(errorMessage, 'AbortError'));
+): CancelablePromise<TReturn> => {
+  const internalController = new AbortController();
+  const signal = externalSignal ? AbortSignal.any([externalSignal, internalController.signal]) : internalController.signal;
 
-  if (signal?.aborted) {
-    return Promise.reject(getAbortError());
-  }
+  const runnerPromise = (async () => {
+    const getAbortError = () =>
+      error || (signal?.reason instanceof Error ? signal.reason : new DOMException(errorMessage, 'AbortError'));
 
-  let onAbort: (() => void) | undefined;
-  const abortListener = () =>
-    new Promise<never>((_, reject) => {
-      if (!signal) {
-        return;
+    if (signal?.aborted) {
+      return Promise.reject(getAbortError());
+    }
+
+    let onAbort: (() => void) | undefined;
+    const abortListener = () =>
+      new Promise<never>((_, reject) => {
+        onAbort = () => reject(getAbortError());
+        signal.addEventListener('abort', onAbort, { once: true });
+      });
+
+    try {
+      const updatedFunc = async () =>
+        (!isAsync(func) && isPromise(func) ? (func as Promise<TReturn>) : (func as () => TReturn | Promise<TReturn>)());
+
+      return await Promise.race([updatedFunc(), abortListener()]);
+    } finally {
+      if (onAbort) {
+        signal.removeEventListener('abort', onAbort);
       }
-      onAbort = () => reject(getAbortError());
-      signal.addEventListener('abort', onAbort, { once: true });
-    });
-
-  try {
-    const updatedFunc = async () =>
-      (!isAsync(func) && isPromise(func) ? (func as Promise<TReturn>) : (func as () => TReturn | Promise<TReturn>)());
-
-    if (!signal) {
-      return await updatedFunc();
     }
+  })();
 
-    return await Promise.race([updatedFunc(), abortListener()]);
-  } finally {
-    if (signal && onAbort) {
-      signal.removeEventListener('abort', onAbort);
-    }
-  }
+  const cancelable = runnerPromise as CancelablePromise<TReturn>;
+
+  cancelable.cancel = (reason?: unknown) => {
+    internalController.abort(reason);
+  };
+
+  return cancelable;
 };
 
 /**
@@ -925,6 +938,7 @@ const timeoutFunction = async <TReturn>(
 export {
   buildSearchString,
   cancelFunction,
+  type CancelablePromise,
   createError,
   freezeObject,
   generateHash,

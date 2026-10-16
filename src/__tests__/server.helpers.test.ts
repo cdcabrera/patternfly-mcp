@@ -1496,6 +1496,37 @@ describe('cancelFunction', () => {
 
     await expect(cancelFunction(() => 'success', { signal: controller.signal })).rejects.toBe(reasonError);
   });
+
+  it('should support standalone cancel() method on returned promise without passing signal', async () => {
+    const pendingPromise = new Promise(resolve => setTimeout(resolve, 500));
+    const cancelable = cancelFunction(pendingPromise);
+
+    expect(typeof cancelable.cancel).toBe('function');
+
+    cancelable.cancel();
+
+    await expect(cancelable).rejects.toThrow('Call canceled');
+  });
+
+  it('should support standalone cancel() with custom reason on returned promise', async () => {
+    const pendingPromise = new Promise(resolve => setTimeout(resolve, 500));
+    const cancelable = cancelFunction(pendingPromise);
+    const customError = new Error('Custom standalone abort');
+
+    cancelable.cancel(customError);
+
+    await expect(cancelable).rejects.toBe(customError);
+  });
+
+  it('should allow cancel() when an external signal was also provided', async () => {
+    const controller = new AbortController();
+    const pendingPromise = new Promise(resolve => setTimeout(resolve, 500));
+    const cancelable = cancelFunction(pendingPromise, { signal: controller.signal });
+
+    cancelable.cancel();
+
+    await expect(cancelable).rejects.toThrow('Call canceled');
+  });
 });
 
 describe('timeoutFunction', () => {
