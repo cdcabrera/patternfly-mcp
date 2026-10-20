@@ -392,7 +392,8 @@ const generateReportCsv = (options: DocsDiffResult | GenerateCsvReportOptions): 
  *
  * @param collection - Source documentation collection
  * @param [options={}] - Options for recalculation
- * @returns Promise resolving to a recalculation result with updated collection and any reachability removals
+ * @returns Promise resolving to a {@link RecalculateManifestResult} containing the
+ *   updated collection and any reachability removals pruned due to broken links
  */
 const recalculateManifestMetadata = async (
   collection: PatternFlyMcpDocsCatalog,
@@ -413,14 +414,14 @@ const recalculateManifestMetadata = async (
 
   const updatedDocs: PatternFlyMcpDocsCatalogEntry = {};
   const reachabilityRemovals: DocsRemovedRecordReport[] = [];
+  const allCandidates: Array<{
+    category: string;
+    doc: PatternFlyMcpDocsCatalogDoc;
+    targetPath: string;
+    shouldProbe: boolean;
+  }> = [];
 
   for (const [category, entries] of Object.entries(collection.docs || {})) {
-    const candidateDocs: Array<{
-      doc: PatternFlyMcpDocsCatalogDoc;
-      targetPath: string;
-      shouldProbe: boolean;
-    }> = [];
-
     for (const doc of entries) {
       const key = `${category}::${doc.pathSlug}::${doc.displayName}`;
 
@@ -446,61 +447,64 @@ const recalculateManifestMetadata = async (
         }
       }
 
-      candidateDocs.push({
+      allCandidates.push({
+        category,
         doc,
         targetPath: updatedPath,
         shouldProbe: verifyReachability && typeof updatedPath === 'string' && updatedPath.startsWith('http')
       });
     }
+  }
 
-    const verifiedEntries: PatternFlyMcpDocsCatalogDoc[] = [];
+  // Global sliding window queue across all categories
+  const inFlight = new Set<Promise<void>>();
 
-    // 2. Perform concurrent reachability probing in batches
-    for (let i = 0; i < candidateDocs.length; i += probeConcurrency) {
-      const batch = candidateDocs.slice(i, i + probeConcurrency);
+  for (const item of allCandidates) {
+    const task = (async () => {
+      let isLive = true;
+      let targetPath = item.targetPath;
 
-      const results = await Promise.all(
-        batch.map(async item => {
-          if (!item.shouldProbe) {
-            return { ...item, isLive: true };
+      if (item.shouldProbe) {
+        isLive = await verifyUrlReachability.memo(item.targetPath);
+
+        // Fallback probe: if newly bumped URL failed, check if previous URL was reachable (path drift detection)
+        if (!isLive && item.targetPath !== item.doc.path && item.doc.path.startsWith('http')) {
+          const isPreviousLive = await verifyUrlReachability.memo(item.doc.path);
+
+          if (isPreviousLive) {
+            targetPath = item.doc.path;
+            isLive = true;
           }
-
-          const isLive = await verifyUrlReachability.memo(item.targetPath);
-
-          // Fallback probe: if newly bumped URL failed, check if previous URL was reachable (path drift detection)
-          if (!isLive && item.targetPath !== item.doc.path && item.doc.path.startsWith('http')) {
-            const isPreviousLive = await verifyUrlReachability.memo(item.doc.path);
-
-            if (isPreviousLive) {
-              return { ...item, targetPath: item.doc.path, isLive: true };
-            }
-          }
-
-          return { ...item, isLive };
-        })
-      );
-
-      for (const res of results) {
-        if (res.isLive) {
-          verifiedEntries.push({
-            ...res.doc,
-            path: res.targetPath
-          });
-        } else {
-          reachabilityRemovals.push({
-            category,
-            record: res.doc,
-            reason: 'broken upstream link (HTTP 404)',
-            details: `Unreachable target: ${res.targetPath}`
-          });
         }
       }
-    }
 
-    if (verifiedEntries.length > 0) {
-      updatedDocs[category] = verifiedEntries;
+      if (isLive) {
+        if (!updatedDocs[item.category]) {
+          updatedDocs[item.category] = [];
+        }
+
+        updatedDocs[item.category]?.push({
+          ...item.doc,
+          path: targetPath
+        });
+      } else {
+        reachabilityRemovals.push({
+          category: item.category,
+          record: item.doc,
+          reason: 'broken upstream link (HTTP 404)',
+          details: `Unreachable target: ${item.targetPath}`
+        });
+      }
+    })().finally(() => {
+      inFlight.delete(task);
+    });
+
+    inFlight.add(task);
+    if (inFlight.size >= probeConcurrency) {
+      await Promise.race(inFlight);
     }
   }
+  await Promise.all(inFlight);
 
   const totalEntries = Object.keys(updatedDocs).length;
   const totalDocs = Object.values(updatedDocs).reduce((acc, arr) => acc + arr.length, 0);
