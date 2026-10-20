@@ -100,8 +100,8 @@ describe('docs.helpers CSV Report Generator', () => {
   });
 });
 
-describe('API Deduplication Litmus Test (Regression Guard)', () => {
-  it('correctly detects all 20 redundant AI-helper entries when cross-referenced with API seed', () => {
+describe('API Deduplication Regression Guard', () => {
+  it('should correctly detect all redundant AI-helper entries when cross-referenced with API seed', () => {
     const sourcePath = existsSync(RECORDS_MAINT_DOCS_PATH) ? RECORDS_MAINT_DOCS_PATH : DOCS_PATH;
     const rawDocs = readFileSync(sourcePath, 'utf-8');
     const rawApi = readFileSync(API_PATH, 'utf-8');
@@ -152,7 +152,7 @@ describe('API Deduplication Litmus Test (Regression Guard)', () => {
     }
   });
 
-  it('preserves the 6 core root AIHelpers guides and ecosystem repositories without false positives', () => {
+  it('should preserve the current root AIHelpers guides and ecosystem repositories without false positives', () => {
     const rawDocs = readFileSync(DOCS_PATH, 'utf-8');
     const rawApi = readFileSync(API_PATH, 'utf-8');
     const docs = JSON.parse(rawDocs);
@@ -366,11 +366,32 @@ describe('docs.helpers Manifest Recalculation & Diffing', () => {
       category: 'AI',
       description: '',
       section: '',
-      source: 'github' as const,
+      source: 'github',
       ...doc
     };
 
     expect(resolveApiEndpointForAiDoc(fullDoc, highQualityApi)).toBe(expected);
+  });
+
+  it('should not prune an AI-helper document without a qualifying API endpoint', () => {
+    const doc = {
+      displayName: 'Unindexed guide',
+      description: '',
+      pathSlug: 'unindexed-guide',
+      section: '',
+      category: 'AI',
+      source: 'github',
+      path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/unindexed.md',
+      version: 'v6'
+    };
+
+    const collection = {
+      meta: { totalEntries: 1, totalDocs: 1, source: 'test' },
+      docs: { Guides: [doc] }
+    };
+
+    expect(resolveApiEndpointForAiDoc(doc, [])).toBeUndefined();
+    expect(findApiRedundantDocs(collection, [])).toEqual([]);
   });
 });
 
@@ -411,7 +432,7 @@ describe('recalculateManifestMetadata', () => {
     }
   };
 
-  it('recalculates metadata and updates commit hashes for unpinned repositories', async () => {
+  it('should recalculate metadata and update commit hashes for unpinned repositories', async () => {
     const hashes = new Map<string, string>([
       ['patternfly/patternfly-org', '1111111111111111111111111111111111111111']
     ]);
@@ -428,7 +449,7 @@ describe('recalculateManifestMetadata', () => {
     );
   });
 
-  it('prunes redundant AI helper entries and excludes empty categories from output', async () => {
+  it('should prune redundant AI helper entries and excludes empty categories from output', async () => {
     const redundantReports = [
       {
         category: 'Overview',

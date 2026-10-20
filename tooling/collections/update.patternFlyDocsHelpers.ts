@@ -130,7 +130,8 @@ const resolveApiEndpointForAiDoc = (
 
   // 1. Root ai-helpers links superseded by the marketplace endpoint
   if (/^ai-helpers-(readme|contributing|contributing-skills)$/.test(slug)) {
-    return 'v6/AI/ai-assisted-development_marketplace/text';
+    return highQualityApi.find(apiRecord =>
+      apiRecord.p === 'v6/AI/ai-assisted-development_marketplace/text')?.p;
   }
 
   // 2. Component and development guidelines in ai-helpers
@@ -151,7 +152,7 @@ const resolveApiEndpointForAiDoc = (
         apiRecord.p.toLowerCase().replace(/[^a-z0-9]/g, '').includes(token)
     );
 
-    return fuzzyMatch ? fuzzyMatch.p : candidate;
+    return fuzzyMatch?.p;
   }
 
   return undefined;
