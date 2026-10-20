@@ -111,26 +111,12 @@ describe('API Deduplication Regression Guard', () => {
     const redundant = findApiRedundantDocs(docs, api.records);
 
     if (docs.meta.totalDocs >= 341) {
-      expect(redundant.length).toBe(20);
+      expect(redundant.length).toBe(3);
 
       const expectedDisplayNames = [
-        'Table Rules',
-        'React Charts',
-        'React Chatbot',
-        'AI Prompt Guidance',
-        'Styling Standards',
-        'PatternFly React Development Rules',
-        'React Guidelines',
-        'React Setup',
-        'Development Environment',
-        'Quick Start',
-        'External Links',
-        'React Troubleshooting',
-        'Component Architecture',
-        'Quick Deployment Guide for Prototypes',
-        'Component Groups',
-        'Data Display',
-        'Layout Components'
+        'AI Helpers, an agent marketplace for skills',
+        'AI Helpers contributing skills',
+        'AI Helpers contributing'
       ];
       const expectedPathSlugs = [
         'ai-helpers-readme',
