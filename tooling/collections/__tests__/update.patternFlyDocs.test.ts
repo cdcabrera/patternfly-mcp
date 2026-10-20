@@ -5,7 +5,7 @@ import { getSrcPath } from '../helpers';
 
 const DOCS_PATH = getSrcPath(DEFAULT_DOCS_FILENAME);
 
-describe('collection.patternFlyDocs Script & Manifest Integrity', () => {
+describe('collection.patternFlyDocs', () => {
   it('should export the run function for programmatic invocation', () => {
     expect(typeof run).toBe('function');
   });

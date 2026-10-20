@@ -560,10 +560,10 @@ The original curated Markdown collection. It pins remote repository URLs to spec
   ```bash
   # Reseed the Docs collection
   npm run build:collections-docs
-  
+
   # Run collection test suites only
   npm run test:collections
-  
+
   # Run collection test suites in watch mode
   npm run test:collections-dev
   ```
