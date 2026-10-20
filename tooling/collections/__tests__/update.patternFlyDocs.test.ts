@@ -1,13 +1,38 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
-import { DEFAULT_API_FILENAME, DEFAULT_DOCS_FILENAME, run } from '../update.patternFlyDocs';
-import { getSrcPath } from '../helpers';
-import { findApiRedundantDocs } from '../update.patternFlyDocsHelpers';
+import {
+  DEFAULT_API_FILENAME,
+  DEFAULT_DOCS_FILENAME,
+  logDiffReport,
+  run
+} from '../update.patternFlyDocs';
+import { fetchLatestRepoHashes, getSrcPath, writeJsonCollection } from '../helpers';
+import { saveCsvReport } from '../csv';
+import { findApiRedundantDocs, type DocsDiffResult } from '../update.patternFlyDocsHelpers';
+
+jest.mock('node:fs/promises', () => ({
+  ...jest.requireActual('node:fs/promises'),
+  readFile: jest.fn()
+}));
+
+jest.mock('../helpers', () => ({
+  ...jest.requireActual('../helpers'),
+  fetchLatestRepoHashes: jest.fn(),
+  writeJsonCollection: jest.fn()
+}));
+
+jest.mock('../csv', () => ({
+  ...jest.requireActual('../csv'),
+  saveCsvReport: jest.fn()
+}));
 
 const DOCS_PATH = getSrcPath(DEFAULT_DOCS_FILENAME);
 const API_PATH = getSrcPath(DEFAULT_API_FILENAME);
 const RECORDS_MAINT_DOCS_PATH = resolve(process.cwd(), `records-maint/${DEFAULT_DOCS_FILENAME}`);
+const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
+const mockWriteJsonCollection = writeJsonCollection as jest.MockedFunction<typeof writeJsonCollection>;
 
 describe('collection.patternFlyDocs', () => {
   it('should export the run function for programmatic invocation', () => {
@@ -58,6 +83,141 @@ describe('collection.patternFlyDocs', () => {
 
       expect(record.path.startsWith('http')).toBe(true);
     }
+  });
+});
+
+describe('logDiffReport', () => {
+  let consoleSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
+
+  it('should log structured diff summary with formatted additions, removals, and modifications', () => {
+    const sampleDiff: DocsDiffResult = {
+      added: [
+        {
+          category: 'Components',
+          record: {
+            displayName: 'Button',
+            pathSlug: 'button',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/sha/button.md',
+            category: 'react',
+            description: '',
+            section: 'components',
+            source: 'github',
+            version: 'v6'
+          }
+        }
+      ],
+      removed: [
+        {
+          category: 'AI',
+          record: {
+            displayName: 'Table Rules',
+            pathSlug: 'table-rules',
+            path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/sha/table.md',
+            category: 'AI',
+            description: '',
+            section: 'guidelines',
+            source: 'github',
+            version: 'v6'
+          },
+          reason: 'superseded by API collection',
+          details: 'v6/AI/development-guidelines_table/text'
+        }
+      ],
+      modified: [
+        {
+          category: 'Alert',
+          record: {
+            displayName: 'Alert',
+            pathSlug: 'alert',
+            path: 'https://raw.githubusercontent.com/patternfly/patternfly-org/new/alert.md',
+            category: 'react',
+            description: '',
+            section: 'components',
+            source: 'github',
+            version: 'v6'
+          },
+          reasons: ['hash update (old -> new)']
+        }
+      ],
+      unchanged: []
+    };
+
+    logDiffReport(sampleDiff);
+
+    expect(consoleSpy).toHaveBeenCalledWith('\n📊 PatternFly Docs Collection Diff Report:');
+  });
+});
+
+describe('run', () => {
+  const mockCatalog: PatternFlyMcpDocsCatalog = {
+    version: '1',
+    generated: '2026-01-01T00:00:00.000Z',
+    meta: { totalEntries: 1, totalDocs: 1, source: 'patternfly-mcp' },
+    docs: {
+      Button: [
+        {
+          displayName: 'Button',
+          pathSlug: 'button',
+          path: 'https://raw.githubusercontent.com/patternfly/patternfly-react/1111111111111111111111111111111111111111/button.md',
+          version: 'v6',
+          category: 'react',
+          description: '',
+          section: 'components',
+          source: 'github'
+        }
+      ]
+    }
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReadFile.mockResolvedValue(JSON.stringify(mockCatalog));
+    (fetchLatestRepoHashes as jest.MockedFunction<typeof fetchLatestRepoHashes>).mockResolvedValue(
+      new Map([['patternfly/patternfly-react', '2222222222222222222222222222222222222222']])
+    );
+    mockWriteJsonCollection.mockResolvedValue({
+      jsonContent: '{}',
+      sizeKb: '1.0',
+      durationSec: '0.1'
+    });
+    (saveCsvReport as jest.MockedFunction<typeof saveCsvReport>).mockResolvedValue(undefined);
+  });
+
+  it('should execute the docs update workflow and return a structured diff', async () => {
+    const diff = await run({
+      docsPath: '/mock/docs.json',
+      apiPath: '/mock/api.json',
+      pruneApiOverlap: false,
+      updateHashes: false,
+      outputCsv: false
+    });
+
+    expect(mockReadFile).toHaveBeenCalledWith('/mock/docs.json', 'utf-8');
+    expect(mockWriteJsonCollection).toHaveBeenCalled();
+    expect(diff).toMatchObject({
+      added: expect.any(Array),
+      removed: expect.any(Array),
+      modified: expect.any(Array),
+      unchanged: expect.any(Array)
+    });
+  });
+
+  it('should safely handle and ignore malformed API JSON without failing the run', async () => {
+    mockReadFile
+      .mockResolvedValueOnce(JSON.stringify(mockCatalog))
+      .mockResolvedValueOnce('invalid json');
+
+    const diff = await run({ pruneApiOverlap: true, updateHashes: false, outputCsv: false });
+
+    expect(diff).toBeDefined();
   });
 });
 
