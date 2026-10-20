@@ -26,7 +26,12 @@ describe('Embedded Server', () => {
       import { start } from '${distIndexPath}';
       async function runHostApp() {
         const server = await start(
-          { mode: 'test', modeOptions: { baseUrl: '${fetchMock?.fixture.baseUrl}' }, isHttp: true, http: { port: 8091 } }
+          {
+            mode: 'test',
+            modeOptions: { test: { baseUrl: '${fetchMock?.fixture.baseUrl}' } },
+            isHttp: true,
+            http: { port: 8091 }
+          },
         );
         console.log('HOST_APP:SERVER_RUNNING');
         await server.stop();
@@ -62,7 +67,12 @@ describe('Embedded Server', () => {
       import { start } from '${distIndexPath}';
       async function runHostApp() {
         const server = await start(
-          { mode: 'test', modeOptions: { baseUrl: '${fetchMock?.fixture.baseUrl}' }, isHttp: true, http: { port: 8092 } },
+          {
+            mode: 'test',
+            modeOptions: { test: { baseUrl: '${fetchMock?.fixture.baseUrl}' } },
+            isHttp: true,
+            http: { port: 8092 }
+          },
           { allowProcessExit: false }
         );
         console.log('HOST_APP:SERVER_RUNNING');
