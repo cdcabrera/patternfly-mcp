@@ -1,9 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import { type PatternFlyMcpDocsCatalog } from '../../../src/docs.embedded';
 import {
-  DEFAULT_API_FILENAME,
   DEFAULT_DOCS_FILENAME,
   logDiffReport,
   run
@@ -34,8 +32,6 @@ jest.mock('../csv', () => ({
 }));
 
 const DOCS_PATH = getSrcPath(DEFAULT_DOCS_FILENAME);
-const API_PATH = getSrcPath(DEFAULT_API_FILENAME);
-const RECORDS_MAINT_DOCS_PATH = resolve(process.cwd(), `records-maint/${DEFAULT_DOCS_FILENAME}`);
 const mockReadFile = readFile as jest.MockedFunction<typeof readFile>;
 const mockWriteJsonCollection = writeJsonCollection as jest.MockedFunction<typeof writeJsonCollection>;
 
@@ -350,72 +346,110 @@ describe('run', () => {
   });
 });
 
-describe('API Deduplication Regression Guard (E2E)', () => {
-  it('should correctly detect all redundant AI-helper entries when cross-referenced with API seed', () => {
-    const sourcePath = existsSync(RECORDS_MAINT_DOCS_PATH) ? RECORDS_MAINT_DOCS_PATH : DOCS_PATH;
-    const rawDocs = readFileSync(sourcePath, 'utf-8');
-    const rawApi = readFileSync(API_PATH, 'utf-8');
-    const docs = JSON.parse(rawDocs);
-    const api = JSON.parse(rawApi);
+describe('API Deduplication Regression Guard (Deterministic Fixtures)', () => {
+  const fixtureDocs: PatternFlyMcpDocsCatalog = {
+    version: '1',
+    generated: '2026-01-01T00:00:00.000Z',
+    meta: {
+      totalEntries: 2,
+      totalDocs: 5,
+      source: 'patternfly-mcp'
+    },
+    docs: {
+      AIHelpers: [
+        {
+          displayName: 'AI Helpers README',
+          pathSlug: 'ai-helpers-readme',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/README.md',
+          version: 'v6',
+          category: 'AI',
+          description: 'Marketplace guide',
+          section: 'guidelines',
+          source: 'github'
+        },
+        {
+          displayName: 'Table Rules',
+          pathSlug: 'table-rules',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/components/data-display/table.md',
+          version: 'v6',
+          category: 'AI',
+          description: 'Table guidelines',
+          section: 'guidelines',
+          source: 'github'
+        },
+        {
+          displayName: 'Unindexed Doc',
+          pathSlug: 'unindexed-guideline',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/unindexed.md',
+          version: 'v6',
+          category: 'AI',
+          description: 'Unindexed document',
+          section: 'guidelines',
+          source: 'github'
+        },
+        {
+          displayName: 'UXD Preserved Style Guide',
+          pathSlug: 'uxd-ai-helpers-style-guide',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/main/docs/style-guide.md',
+          version: 'v6',
+          category: 'AI',
+          description: 'UXD style guide',
+          section: 'guidelines',
+          source: 'github'
+        }
+      ],
+      Ecosystem: [
+        {
+          displayName: 'CLI Guide',
+          pathSlug: 'patternfly-cli-readme',
+          path: 'https://raw.githubusercontent.com/patternfly/patternfly-cli/main/README.md',
+          version: 'v6',
+          category: 'tooling',
+          description: 'CLI tool documentation',
+          section: 'ecosystem',
+          source: 'github'
+        }
+      ]
+    }
+  };
 
-    const redundant = findApiRedundantDocs(docs, api.records);
+  const fixtureApiRecords = [
+    { p: 'v6/AI/ai-assisted-development_marketplace/text', q: 1.0 },
+    { p: 'v6/AI/development-guidelines_table/text', q: 1.0 }
+  ];
 
-    if (docs.meta.totalDocs >= 341) {
-      expect(redundant.length).toBe(3);
+  it('should detect redundant AI-helper entries matching qualifying high-quality API endpoints', () => {
+    const redundant = findApiRedundantDocs(fixtureDocs, fixtureApiRecords);
 
-      const expectedDisplayNames = [
-        'AI Helpers, an agent marketplace for skills',
-        'AI Helpers contributing skills',
-        'AI Helpers contributing'
-      ];
-      const expectedPathSlugs = [
-        'ai-helpers-readme',
-        'ai-helpers-contributing',
-        'ai-helpers-contributing-skills'
-      ];
+    expect(redundant).toHaveLength(2);
 
-      const redundantDisplayNames = new Set(redundant.map(report => report.record.displayName));
-      const redundantPathSlugs = new Set(redundant.map(report => report.record.pathSlug));
+    const redundantSlugs = redundant.map(report => report.record.pathSlug);
 
-      for (const name of expectedDisplayNames) {
-        expect(redundantDisplayNames.has(name)).toBe(true);
-      }
-      for (const slug of expectedPathSlugs) {
-        expect(redundantPathSlugs.has(slug)).toBe(true);
-      }
-    } else {
-      expect(redundant.length).toBe(0);
+    expect(redundantSlugs).toContain('ai-helpers-readme');
+    expect(redundantSlugs).toContain('table-rules');
+
+    for (const item of redundant) {
+      expect(item.reason).toBe('superseded by API collection');
+      expect(item.details).toBeDefined();
     }
   });
 
-  it('should preserve the current root AIHelpers guides and ecosystem repositories without false positives', () => {
-    const rawDocs = readFileSync(DOCS_PATH, 'utf-8');
-    const rawApi = readFileSync(API_PATH, 'utf-8');
-    const docs = JSON.parse(rawDocs);
-    const api = JSON.parse(rawApi);
+  it('should preserve root AIHelpers guides and ecosystem repositories without false positives', () => {
+    const redundant = findApiRedundantDocs(fixtureDocs, fixtureApiRecords);
+    const redundantSlugs = new Set(redundant.map(report => report.record.pathSlug));
 
-    const redundant = findApiRedundantDocs(docs, api.records);
-    const redundantPaths = new Set(redundant.map(report => report.record.path));
+    // Unmatched AI helper documents must NOT be marked redundant
+    expect(redundantSlugs.has('unindexed-guideline')).toBe(false);
 
-    const rootAiHelpers = docs.docs['AIHelpers'] || [];
+    // Negative boundary: uxd-ai-helpers-* prefix must be preserved
+    expect(redundantSlugs.has('uxd-ai-helpers-style-guide')).toBe(false);
 
-    for (const item of rootAiHelpers) {
-      if (item.pathSlug.startsWith('uxd-ai-helpers-')) {
-        expect(redundantPaths.has(item.path)).toBe(false);
-      }
-    }
+    // Negative boundary: ecosystem repos must be preserved
+    expect(redundantSlugs.has('patternfly-cli-readme')).toBe(false);
+  });
 
-    for (const entries of Object.values(docs.docs as Record<string, any[]>)) {
-      for (const item of entries) {
-        if (
-          item.path.includes('/patternfly-cli/') ||
-          item.path.includes('/patternfly-elements/') ||
-          item.path.includes('/patternfly-mcp/') ||
-          item.path.includes('/pf-codemods/')
-        ) {
-          expect(redundantPaths.has(item.path)).toBe(false);
-        }
-      }
-    }
+  it('should return empty array when API records list is empty or undefined', () => {
+    expect(findApiRedundantDocs(fixtureDocs, [])).toEqual([]);
+    expect(findApiRedundantDocs(fixtureDocs, undefined)).toEqual([]);
   });
 });
