@@ -11,7 +11,7 @@ import {
   crawler
 } from '../collection.patternFlyApi';
 import { processDocsFunction } from '../server.getResources';
-import { getOptions } from '../options.context';
+import { getOptions, setOptions } from '../options.context';
 import { setFetch } from '../server.fetch';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 
@@ -27,7 +27,7 @@ describe('patternFlyApiCollection', () => {
     jest.resetAllMocks();
   });
 
-  it('should return the correct collection name and configuration', async () => {
+  it('should return the correct collection configuration when crawl is disabled', async () => {
     const [name, config, callback, _config] = patternFlyApiCollection();
 
     expect(name).toBe('patternfly-api');
@@ -35,6 +35,23 @@ describe('patternFlyApiCollection', () => {
     expect(callback).toBeDefined();
     expect(typeof _config?.initial).toBe('function');
     expect(_config?.retainLastViable).toBe(true);
+    expect(_config?.runParallel).toBeUndefined();
+    expect(_config?.runSchedule).toBeUndefined();
+  });
+
+  it('should configure parallel execution and schedule when crawl is enabled', async () => {
+    const enabledOptions = {
+      ...DEFAULT_OPTIONS,
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawl: true
+        }
+      }
+    };
+    const [, , , _config] = patternFlyApiCollection(enabledOptions);
+
     expect(_config?.runParallel).toContain('#collection');
     expect(_config?.runSchedule).toBeDefined();
   });
@@ -246,10 +263,38 @@ describe('collectionCallback', () => {
     jest.resetAllMocks();
     mockGet = jest.fn().mockResolvedValue({ status: 200 });
     mockedSetFetch.mockReturnValue({ get: mockGet });
+    setOptions({
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawl: true
+        }
+      }
+    } as any);
   });
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('should return baseline records and bypass crawl when crawl is disabled', async () => {
+    setOptions({
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawl: false
+        }
+      }
+    } as any);
+
+    const result = await collectionCallback();
+
+    expect(result).toHaveProperty('records');
+    expect(result.records.length).toBeGreaterThan(0);
+    expect(mockGet).not.toHaveBeenCalled();
+    expect(mockedProcessDocsFunction).not.toHaveBeenCalled();
   });
 
   it('should generate API records and match McpCollectionResult structure', async () => {

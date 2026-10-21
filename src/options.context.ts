@@ -85,6 +85,8 @@ const runWithSession = async <TReturn>(
  */
 const optionsContext = new AsyncLocalStorage<GlobalOptions>();
 
+let defaultOptionsContext: GlobalOptions | undefined;
+
 /**
  * Set and freeze cloned options in the current async context.
  *
@@ -154,6 +156,7 @@ const setOptions = (
   const frozen = freezeObject(restoreOriginalToolModules);
 
   optionsContext.enterWith(frozen);
+  defaultOptionsContext = frozen;
 
   return frozen;
 };
@@ -168,7 +171,7 @@ const setOptions = (
  *
  * @returns {GlobalOptions} Current options from context or defaults
  */
-const getOptions = (): GlobalOptions => optionsContext.getStore() || setOptions();
+const getOptions = (): GlobalOptions => optionsContext.getStore() || defaultOptionsContext || setOptions();
 
 /**
  * Get logging options from the current context.
