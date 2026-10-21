@@ -157,6 +157,10 @@ describe('logDiffReport', () => {
 });
 
 describe('run', () => {
+  let consoleLogSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
+
+  // Mock catalog with both standard component docs and AI marketplace docs
   const mockCatalog: PatternFlyMcpDocsCatalog = {
     version: '1',
     generated: '2026-01-01T00:00:00.000Z',
@@ -173,12 +177,33 @@ describe('run', () => {
           section: 'components',
           source: 'github'
         }
+      ],
+      AIHelpers: [
+        {
+          displayName: 'AI Helpers README',
+          pathSlug: 'ai-helpers-readme',
+          path: 'https://raw.githubusercontent.com/rh-uxd/ai-helpers/1111111111111111111111111111111111111111/README.md',
+          version: 'v6',
+          category: 'AI',
+          description: 'Agent marketplace description',
+          section: 'guidelines',
+          source: 'github'
+        }
       ]
     }
   };
 
+  const mockApiCollection = {
+    records: [
+      { p: 'v6/AI/ai-assisted-development_marketplace/text', q: 1.0 }
+    ]
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
     mockReadFile.mockResolvedValue(JSON.stringify(mockCatalog));
     (fetchLatestRepoHashes as jest.MockedFunction<typeof fetchLatestRepoHashes>).mockResolvedValue(
       new Map([['patternfly/patternfly-react', '2222222222222222222222222222222222222222']])
@@ -191,7 +216,52 @@ describe('run', () => {
     (saveCsvReport as jest.MockedFunction<typeof saveCsvReport>).mockResolvedValue(undefined);
   });
 
-  it('should execute the docs update workflow and return a structured diff', async () => {
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+  });
+
+  it('should default pruneApiOverlap to false and preserve overlapping documentation records', async () => {
+    const diff = await run({ docsPath: '/mock/docs.json', outputCsv: false });
+
+    expect(diff).toMatchObject({
+      added: expect.any(Array),
+      removed: expect.any(Array),
+      modified: expect.any(Array),
+      unchanged: expect.any(Array)
+    });
+
+    // Overlap pruning is disabled by default: no records removed
+    expect(diff.removed).toHaveLength(0);
+
+    // API file read should not have been attempted
+    expect(mockReadFile).toHaveBeenCalledTimes(1);
+    expect(mockReadFile).toHaveBeenCalledWith('/mock/docs.json', 'utf-8');
+  });
+
+  it('should prune API redundant records when pruneApiOverlap is explicitly enabled', async () => {
+    mockReadFile
+      .mockResolvedValueOnce(JSON.stringify(mockCatalog))
+      .mockResolvedValueOnce(JSON.stringify(mockApiCollection));
+
+    const diff = await run({
+      docsPath: '/mock/docs.json',
+      apiPath: '/mock/api.json',
+      pruneApiOverlap: true,
+      updateHashes: false,
+      outputCsv: false
+    });
+
+    expect(mockReadFile).toHaveBeenCalledWith('/mock/docs.json', 'utf-8');
+    expect(mockReadFile).toHaveBeenCalledWith('/mock/api.json', 'utf-8');
+
+    // ai-helpers-readme should be identified and removed as superseded
+    expect(diff.removed).toHaveLength(1);
+    expect(diff.removed[0]?.record.pathSlug).toBe('ai-helpers-readme');
+    expect(diff.removed[0]?.reason).toBe('superseded by API collection');
+  });
+
+  it('should preserve docs and skip API reading when pruneApiOverlap is explicitly false', async () => {
     const diff = await run({
       docsPath: '/mock/docs.json',
       apiPath: '/mock/api.json',
@@ -200,14 +270,67 @@ describe('run', () => {
       outputCsv: false
     });
 
+    expect(mockReadFile).toHaveBeenCalledTimes(1);
     expect(mockReadFile).toHaveBeenCalledWith('/mock/docs.json', 'utf-8');
+    expect(diff.removed).toHaveLength(0);
+  });
+
+  it('should sync commit hashes by default when updateHashes is not disabled', async () => {
+    await run({ docsPath: '/mock/docs.json', outputCsv: false });
+
+    expect(fetchLatestRepoHashes).toHaveBeenCalledTimes(1);
     expect(mockWriteJsonCollection).toHaveBeenCalled();
-    expect(diff).toMatchObject({
-      added: expect.any(Array),
-      removed: expect.any(Array),
-      modified: expect.any(Array),
-      unchanged: expect.any(Array)
+
+    const savedCollection = mockWriteJsonCollection.mock.calls[0]?.[1] as PatternFlyMcpDocsCatalog;
+
+    expect(savedCollection.docs.Button?.[0]?.path).toContain('2222222222222222222222222222222222222222');
+  });
+
+  it('should bypass commit hash updates when updateHashes is false', async () => {
+    await run({ docsPath: '/mock/docs.json', updateHashes: false, outputCsv: false });
+
+    expect(fetchLatestRepoHashes).not.toHaveBeenCalled();
+
+    const savedCollection = mockWriteJsonCollection.mock.calls[0]?.[1] as PatternFlyMcpDocsCatalog;
+
+    expect(savedCollection.docs.Button?.[0]?.path).toContain('1111111111111111111111111111111111111111');
+  });
+
+  it('should generate and save CSV report by default or when outputCsv is true', async () => {
+    await run({
+      docsPath: '/mock/docs.json',
+      csvOutputPath: '/mock/output.csv',
+      outputCsv: true
     });
+
+    expect(saveCsvReport).toHaveBeenCalledTimes(1);
+    expect(saveCsvReport).toHaveBeenCalledWith('/mock/output.csv', expect.any(String));
+  });
+
+  it('should skip CSV report generation when outputCsv is false', async () => {
+    await run({ docsPath: '/mock/docs.json', outputCsv: false });
+
+    expect(saveCsvReport).not.toHaveBeenCalled();
+  });
+
+  it('should write JSON collection with correct stats and format flags', async () => {
+    await run({
+      docsPath: '/mock/custom-docs.json',
+      isPrettyPrint: true,
+      outputCsv: false
+    });
+
+    expect(mockWriteJsonCollection).toHaveBeenCalledWith(
+      '/mock/custom-docs.json',
+      expect.any(Object),
+      expect.objectContaining({
+        isPrettyPrint: true,
+        stats: expect.arrayContaining([
+          { label: 'Total Categories', value: expect.any(Number) },
+          { label: 'Total Documents', value: expect.any(Number) }
+        ])
+      })
+    );
   });
 
   it('should safely handle and ignore malformed API JSON without failing the run', async () => {
@@ -218,6 +341,7 @@ describe('run', () => {
     const diff = await run({ pruneApiOverlap: true, updateHashes: false, outputCsv: false });
 
     expect(diff).toBeDefined();
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining('Could not parse API collection'));
   });
 });
 

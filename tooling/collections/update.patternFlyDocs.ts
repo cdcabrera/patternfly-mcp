@@ -78,7 +78,7 @@ const logDiffReport = (diff: DocsDiffResult) => {
  * @param [options.docsPath] - Fully resolved path to write the documentation collection.
  * @param [options.apiPath] - Fully resolved path to read the API collection.
  * @param [options.csvOutputPath] - Fully resolved path to write the CSV report.
- * @param [options.pruneApiOverlap=true] - Whether to prune duplicate docs that exist in API collection.
+ * @param [options.pruneApiOverlap=false] - Whether to prune duplicate docs that exist in API collection.
  * @param [options.verifyReachability=false] - Whether to probe URLs for reachability.
  * @param [options.updateHashes=true] - Whether to sync repository commit SHAs.
  * @param [options.isPrettyPrint=true] - Whether to pretty-print the JSON output.
@@ -92,7 +92,7 @@ const run = async ({
   docsPath = getSrcPath(docsFilename),
   apiPath = getSrcPath(apiFilename),
   csvOutputPath = getDefaultReportPath(reportFilename),
-  pruneApiOverlap = true,
+  pruneApiOverlap = false,
   verifyReachability = false,
   updateHashes = true,
   isPrettyPrint = true,
