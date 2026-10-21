@@ -12,6 +12,11 @@ import { fetchLatestRepoHashes, getSrcPath, writeJsonCollection } from '../helpe
 import { saveCsvReport } from '../csv';
 import { findApiRedundantDocs, type DocsDiffResult } from '../update.patternFlyDocsHelpers';
 
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
+  existsSync: jest.fn((path: string) => (typeof path === 'string' && path.startsWith('/mock/')) || jest.requireActual('node:fs').existsSync(path))
+}));
+
 jest.mock('node:fs/promises', () => ({
   ...jest.requireActual('node:fs/promises'),
   readFile: jest.fn()
