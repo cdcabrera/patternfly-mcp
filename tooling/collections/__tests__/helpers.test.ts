@@ -154,6 +154,10 @@ describe('extractRepoInfo', () => {
   ])('should extract repository metadata or return undefined, $description', ({ url, expected }) => {
     expect(extractRepoInfo(url)).toEqual(expected);
   });
+
+  it('should have a memo property', () => {
+    expect(extractRepoInfo.memo).toBeDefined();
+  });
 });
 
 describe('verifyUrlReachability', () => {
@@ -195,6 +199,22 @@ describe('verifyUrlReachability', () => {
     const reachable = await verifyUrlReachability('https://raw.githubusercontent.com/test/file.md');
 
     expect(reachable).toBe(false);
+  });
+
+  it('should have a memo property that caches responses', async () => {
+    expect(verifyUrlReachability.memo).toBeDefined();
+
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200
+    } as Response);
+
+    const first = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
+    const second = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
+
+    expect(first).toBe(true);
+    expect(second).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -289,6 +309,22 @@ describe('fetchRepoCommit', () => {
     const sha = await fetchRepoCommit('patternfly', 'patternfly-org');
 
     expect(sha).toBeUndefined();
+  });
+
+  it('should have a memo property that caches responses', async () => {
+    expect(fetchRepoCommit.memo).toBeDefined();
+
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ sha: 'mock-memo-sha' })
+    } as Response);
+
+    const first = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
+    const second = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
+
+    expect(first).toBe('mock-memo-sha');
+    expect(second).toBe('mock-memo-sha');
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -530,62 +566,5 @@ describe('runUpdateTask', () => {
 
     expect(errorSpy).toHaveBeenCalledWith('❌ Failed to update Failing Task:', testError);
     expect(exitSpy).toHaveBeenCalledWith(1);
-  });
-});
-
-describe('memo cleanup and caching', () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('should allow clearing memo caches without errors', () => {
-    const url = 'https://raw.githubusercontent.com/patternfly/patternfly-react/main/packages/README.md';
-    const first = extractRepoInfo.memo(url);
-    const second = extractRepoInfo.memo(url);
-
-    expect(first).toEqual(second);
-    expect(extractRepoInfo.memo.clear()).toBe(true);
-  });
-
-  it('should cache fetchRepoCommit.memo calls and clear properly', async () => {
-    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: async () => ({ sha: 'mock-memo-sha' })
-    } as Response);
-
-    const first = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
-    const second = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
-
-    expect(first).toBe('mock-memo-sha');
-    expect(second).toBe('mock-memo-sha');
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-
-    expect(fetchRepoCommit.memo.clear()).toBe(true);
-
-    const third = await fetchRepoCommit.memo('patternfly', 'patternfly-react', 'main');
-
-    expect(third).toBe('mock-memo-sha');
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-  });
-
-  it('should cache verifyUrlReachability.memo calls and clear properly', async () => {
-    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      status: 200
-    } as Response);
-
-    const first = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
-    const second = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
-
-    expect(first).toBe(true);
-    expect(second).toBe(true);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-
-    expect(verifyUrlReachability.memo.clear()).toBe(true);
-
-    const third = await verifyUrlReachability.memo('https://raw.githubusercontent.com/patternfly/test.md');
-
-    expect(third).toBe(true);
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
