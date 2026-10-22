@@ -315,85 +315,57 @@ describe('collectionCallback', () => {
 
   it.each([
     {
-      description: 'should generate API records and match McpCollectionResult structure',
+      description: 'generate API records and match McpCollectionResult structure',
       mockLeaf: {
         content: 'Button react component content with length enough to pass quality scoring...',
         path: `${BASE}/v1/components/Button`,
         resolvedPath: `${BASE}/v1/components/Button/react`,
         isSuccess: true
       },
-      assert: (result: any) => {
-        expect(result).toHaveProperty('records');
-        expect(Array.isArray(result.records)).toBe(true);
-        expect(result.records.length).toBeGreaterThan(0);
-
-        const first: any = result.records[0];
-
-        expect(first).toMatchObject({
-          id: expect.stringMatching(/^api::/),
-          sourceType: 'api',
-          sourceId: `${BASE}/v1/components/Button/react`
-        });
-
-        const keys = Object.keys(first.data as any);
-
-        expect(keys.length).toBe(1);
-        const key: any = keys[0];
-
-        expect(key).toBe('Button');
-        expect(Array.isArray(first.data[key])).toBe(true);
-        expect(first.data[key][0]).toMatchObject({
-          displayName: 'Button',
-          pathSlug: 'components-button-react',
-          source: 'api',
-          version: 'v1',
-          section: 'components',
-          category: 'react',
-          path: `${BASE}/v1/components/Button/react`
-        });
+      componentName: 'Button',
+      expectedId: /^api::/,
+      expectedItem: {
+        displayName: 'Button',
+        pathSlug: 'components-button-react',
+        source: 'api',
+        version: 'v1',
+        section: 'components',
+        category: 'react',
+        path: `${BASE}/v1/components/Button/react`
       }
     },
     {
-      description: 'should use an extrapolated category',
+      description: 'use an extrapolated category',
       mockLeaf: {
         content: 'Overview content',
         path: `${BASE}/v1/components/Card`,
         resolvedPath: `${BASE}/v1/components/Card/overview`,
         isSuccess: true
       },
-      assert: (result: any) => {
-        expect(result.records.length).toBe(1);
-        const rec: any = result.records[0];
-
-        expect(rec?.id).toMatch(/^api::v1::components::card::overview$/);
-
-        const key: any = rec?.data ? Object.keys(rec.data)[0] : '';
-
-        expect(key).toBe('Card');
-        expect(rec?.data?.[key]).toContainEqual(expect.objectContaining({
-          displayName: 'Card',
-          category: 'overview'
-        }));
+      componentName: 'Card',
+      expectedId: /^api::v1::components::card::overview$/,
+      expectedItem: {
+        displayName: 'Card',
+        category: 'overview'
       }
     },
     {
-      description: 'should match snapshot for collection result',
+      description: 'match snapshot for collection result',
       mockLeaf: {
         content: 'Card css content',
         path: `${BASE}/v1/components/Card`,
         resolvedPath: `${BASE}/v1/components/Card/css`,
         isSuccess: true
       },
-      assert: (result: any) => {
-        const snapshotSubset = {
-          ...result,
-          records: result.records.slice(0, 3)
-        };
-
-        expect(snapshotSubset).toMatchSnapshot();
-      }
+      componentName: 'Card',
+      expectedId: /^api::v1::components::card::css$/,
+      expectedItem: {
+        displayName: 'Card CSS',
+        category: 'css'
+      },
+      snapshot: true
     }
-  ])('$description', async ({ mockLeaf, assert }) => {
+  ])('should $description', async ({ mockLeaf, componentName, expectedId, expectedItem, snapshot }) => {
     // getVersions to ["v1"]
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -411,7 +383,24 @@ describe('collectionCallback', () => {
     await jest.runAllTimersAsync();
     const result = await promise;
 
-    assert(result);
+    expect(result).toHaveProperty('records');
+    expect(Array.isArray(result.records)).toBe(true);
+    expect(result.records.length).toBeGreaterThan(0);
+
+    const first: any = result.records[0];
+
+    expect(first.sourceType).toBe('api');
+    expect(first.sourceId).toBe(mockLeaf.resolvedPath);
+    expect(first.id).toMatch(expectedId);
+    expect(first.data).toHaveProperty(componentName);
+    expect(first.data[componentName]).toContainEqual(expect.objectContaining(expectedItem));
+
+    if (snapshot) {
+      expect({
+        ...result,
+        records: result.records.slice(0, 3)
+      }).toMatchSnapshot();
+    }
   });
 
   it('heals missing records from previous state when direct probe succeeds', async () => {
