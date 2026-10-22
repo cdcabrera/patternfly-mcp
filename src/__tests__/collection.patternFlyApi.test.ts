@@ -46,7 +46,7 @@ describe('patternFlyApiCollection', () => {
         ...DEFAULT_OPTIONS.patternflyOptions,
         api: {
           ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawl: true
+          crawlEnabled: true
         }
       }
     };
@@ -258,6 +258,19 @@ describe('collectionInitialCallback', () => {
 describe('collectionCallback', () => {
   const BASE = DEFAULT_OPTIONS.patternflyOptions.api.base;
   const VERSIONS = `${BASE}/versions`;
+  /*
+  const ENABLED_OPTIONS = {
+    ...DEFAULT_OPTIONS,
+    patternflyOptions: {
+      ...DEFAULT_OPTIONS.patternflyOptions,
+      api: {
+        ...DEFAULT_OPTIONS.patternflyOptions.api,
+        crawlEnabled: true
+      }
+    }
+  };
+  */
+
   let mockGet: jest.Mock;
 
   beforeEach(() => {
@@ -265,15 +278,17 @@ describe('collectionCallback', () => {
     jest.resetAllMocks();
     mockGet = jest.fn().mockResolvedValue({ status: 200 });
     mockedSetFetch.mockReturnValue({ get: mockGet });
+    /*
     setOptions({
       patternflyOptions: {
         ...DEFAULT_OPTIONS.patternflyOptions,
         api: {
           ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawl: true
+          crawlEnabled: true
         }
       }
     } as any);
+    */
   });
 
   afterEach(() => {
@@ -281,17 +296,17 @@ describe('collectionCallback', () => {
   });
 
   it('should return baseline records and bypass crawl when crawl is disabled', async () => {
-    setOptions({
+    const options = {
       patternflyOptions: {
         ...DEFAULT_OPTIONS.patternflyOptions,
         api: {
           ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawl: false
+          crawlEnabled: false
         }
       }
-    } as any);
+    } as any;
 
-    const result = await collectionCallback();
+    const result = await collectionCallback({}, options);
 
     expect(result).toHaveProperty('records');
     expect(result.records.length).toBeGreaterThan(0);
@@ -300,6 +315,16 @@ describe('collectionCallback', () => {
   });
 
   it('should generate API records and match McpCollectionResult structure', async () => {
+    const options = {
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawlEnabled: true
+        }
+      }
+    } as any;
+
     // getVersions to ["v1"]
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -319,7 +344,7 @@ describe('collectionCallback', () => {
         }
       ]);
 
-    const promise = collectionCallback();
+    const promise = collectionCallback({}, options);
 
     await jest.runAllTimersAsync();
 
@@ -363,6 +388,16 @@ describe('collectionCallback', () => {
   });
 
   it('should use an extrapolated category', async () => {
+    const options = {
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawlEnabled: true
+        }
+      }
+    } as any;
+
     // getVersions to ["v1"]
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -383,7 +418,7 @@ describe('collectionCallback', () => {
         }
       ]);
 
-    const promise = collectionCallback();
+    const promise = collectionCallback({}, options);
 
     await jest.runAllTimersAsync();
 
@@ -405,6 +440,16 @@ describe('collectionCallback', () => {
   });
 
   it('should match snapshot for collection result', async () => {
+    const options = {
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawlEnabled: true
+        }
+      }
+    } as any;
+
     // getVersions to ["v1"]
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -425,7 +470,7 @@ describe('collectionCallback', () => {
         }
       ]);
 
-    const promise = collectionCallback();
+    const promise = collectionCallback({}, options);
 
     await jest.runAllTimersAsync();
 
@@ -491,6 +536,16 @@ describe('collectionCallback', () => {
   });
 
   it('does not re-probe entries that were visited during crawl pass but discarded for low quality', async () => {
+    const options = {
+      patternflyOptions: {
+        ...DEFAULT_OPTIONS.patternflyOptions,
+        api: {
+          ...DEFAULT_OPTIONS.patternflyOptions.api,
+          crawlEnabled: true
+        }
+      }
+    } as any;
+
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
         {
@@ -518,9 +573,7 @@ describe('collectionCallback', () => {
       }
     };
 
-    const promise = collectionCallback({
-      previous: { records: [previousRecord] }
-    });
+    const promise = collectionCallback({ previous: { records: [previousRecord] } }, options);
 
     await jest.runAllTimersAsync();
 
