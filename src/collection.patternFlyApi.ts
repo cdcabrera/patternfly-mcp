@@ -695,7 +695,7 @@ const collectionCallback = async (
   { previous }: McpCollectionCallbackContext = {},
   options = getOptions()
 ): Promise<ApiCollectionResult> => {
-  if (!options.patternflyOptions.api.crawl) {
+  if (!options.patternflyOptions.api.crawlEnabled) {
     log.debug('PatternFly API crawler is disabled, using baseline records.');
 
     const baseline = previous?.records?.length
@@ -794,7 +794,7 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     },
     callback,
     {
-      ...(options.patternflyOptions.api.crawl
+      ...(options.patternflyOptions.api.crawlEnabled
         ? {
           initial,
           runParallel: '#collectionPatternFlyApi',
