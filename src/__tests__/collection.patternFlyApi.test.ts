@@ -33,10 +33,10 @@ describe('patternFlyApiCollection', () => {
     expect(name).toBe('patternfly-api');
     expect(config).toBeDefined();
     expect(callback).toBeDefined();
-    expect(typeof _config?.initial).toBe('function');
-    expect(_config?.retainLastViable).toBe(true);
+    expect(typeof _config?.initial).toBe('undefined');
     expect(_config?.runParallel).toBeUndefined();
     expect(_config?.runSchedule).toBeUndefined();
+    expect(_config?.retainLastViable).toBe(true);
   });
 
   it('should configure parallel execution and schedule when crawl is enabled', async () => {
@@ -52,8 +52,10 @@ describe('patternFlyApiCollection', () => {
     };
     const [, , , _config] = patternFlyApiCollection(enabledOptions);
 
+    expect(typeof _config?.initial).toBe('function');
     expect(_config?.runParallel).toContain('#collection');
     expect(_config?.runSchedule).toBeDefined();
+    expect(_config?.retainLastViable).toBe(true);
   });
 });
 

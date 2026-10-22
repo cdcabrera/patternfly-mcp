@@ -696,7 +696,7 @@ const collectionCallback = async (
   options = getOptions()
 ): Promise<ApiCollectionResult> => {
   if (!options.patternflyOptions.api.crawl) {
-    log.debug('PatternFly API crawler is disabled to prevent Cloudflare rate limits.');
+    log.debug('PatternFly API crawler is disabled, using baseline records.');
 
     const baseline = previous?.records?.length
       ? previous.records
@@ -794,15 +794,17 @@ const patternFlyApiCollection = (options = getOptions(), session = getSessionOpt
     },
     callback,
     {
-      initial,
       ...(options.patternflyOptions.api.crawl
         ? {
+          initial,
           runParallel: '#collectionPatternFlyApi',
           runSchedule: {
             ...options.patternflyOptions.api.schedule
           }
         }
-        : {}),
+        : {
+          isRequired: true
+        }),
       retainLastViable: true
     }
   ];
