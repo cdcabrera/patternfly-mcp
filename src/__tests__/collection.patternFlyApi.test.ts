@@ -276,18 +276,6 @@ describe('collectionCallback', () => {
     jest.resetAllMocks();
     mockGet = jest.fn().mockResolvedValue({ status: 200 });
     mockedSetFetch.mockReturnValue({ get: mockGet });
-
-    /*
-    setOptions({
-      patternflyOptions: {
-        ...DEFAULT_OPTIONS.patternflyOptions,
-        api: {
-          ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawlEnabled: true
-        }
-      }
-    } as any);
-    */
   });
 
   afterEach(() => {
