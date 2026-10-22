@@ -394,7 +394,7 @@ describe('collectionCallback', () => {
   it.each([
     {
       description: 'heal missing records from previous state when direct probe succeeds',
-      getPrevious: () => [
+      previous: [
         {
           id: 'api::v1::components::button::props',
           sourceId: `${BASE}/v1/components/Button/props`,
@@ -413,7 +413,7 @@ describe('collectionCallback', () => {
         }
       ],
       crawlEntries: [],
-      getProbeResponse: () => [
+      probeResponse: [
         {
           content: JSON.stringify({ name: 'ButtonProps' }),
           path: `${BASE}/v1/components/Button/props`,
@@ -426,7 +426,7 @@ describe('collectionCallback', () => {
     },
     {
       description: 'not re-probe entries that were visited during crawl pass but discarded for low quality',
-      getPrevious: () => [
+      previous: [
         {
           id: 'api::v1::components::button::html',
           sourceId: `${BASE}/v1/components/Button/html`,
@@ -444,33 +444,26 @@ describe('collectionCallback', () => {
           isSuccess: true
         }
       ],
-      getProbeResponse: () => undefined,
+      probeResponse: undefined,
       expectedRecordId: undefined,
       expectedLength: 0
     },
     {
       description: 'fall back to seed catalog baseline when previous records are empty',
-      getPrevious: () => [],
+      previous: [],
       crawlEntries: [],
-      getProbeResponse: async () => {
-        const firstSeed = (await collectionInitialCallback()).records[0];
-
-        return [
-          {
-            content: JSON.stringify({ name: 'AccessibilityDesign' }),
-            path: firstSeed?.sourceId,
-            resolvedPath: firstSeed?.sourceId,
-            isSuccess: true
-          }
-        ];
-      },
-      expectedRecordId: undefined,
+      probeResponse: [
+        {
+          content: JSON.stringify({ name: 'AccessibilityDesign' }),
+          path: `${BASE}/v6/accessibility/design/text`,
+          resolvedPath: `${BASE}/v6/accessibility/design/text`,
+          isSuccess: true
+        }
+      ],
+      expectedRecordId: 'api::v6::accessibility::design::text',
       expectedLength: 1
     }
-  ])('should $description', async ({ getPrevious, crawlEntries, getProbeResponse, expectedRecordId, expectedLength }) => {
-    const probeDocs = await getProbeResponse();
-    const previousRecords = getPrevious();
-
+  ])('should $description', async ({ previous, crawlEntries, probeResponse, expectedRecordId, expectedLength }) => {
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
         {
@@ -482,22 +475,19 @@ describe('collectionCallback', () => {
       ])
       .mockResolvedValueOnce(crawlEntries);
 
-    if (probeDocs) {
-      mockedProcessDocsFunction.mockResolvedValueOnce(probeDocs);
+    if (probeResponse) {
+      mockedProcessDocsFunction.mockResolvedValueOnce(probeResponse);
     }
 
-    const promise = collectionCallback({ previous: { records: previousRecords } }, ENABLED_OPTIONS);
+    const promise = collectionCallback({ previous: { records: previous } }, ENABLED_OPTIONS);
 
     await jest.runAllTimersAsync();
-
     const result = await promise;
 
     expect(result.records).toHaveLength(expectedLength);
-
     if (expectedRecordId) {
       expect(result.records[0]?.id).toBe(expectedRecordId);
     }
-
     expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(3);
   });
 });
