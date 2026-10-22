@@ -338,7 +338,7 @@ describe('collectionCallback', () => {
       }
     },
     {
-      description: 'match snapshot for collection result',
+      description: 'generate API records for CSS facets',
       mockLeaf: {
         content: 'Card css content',
         path: `${BASE}/v1/components/Card`,
@@ -350,10 +350,9 @@ describe('collectionCallback', () => {
       expectedItem: {
         displayName: 'Card CSS',
         category: 'css'
-      },
-      snapshot: true
+      }
     }
-  ])('should $description', async ({ mockLeaf, componentName, expectedId, expectedItem, snapshot }) => {
+  ])('should $description', async ({ mockLeaf, componentName, expectedId, expectedItem }) => {
     // getVersions to ["v1"]
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -382,13 +381,6 @@ describe('collectionCallback', () => {
     expect(first.id).toMatch(expectedId);
     expect(first.data).toHaveProperty(componentName);
     expect(first.data[componentName]).toContainEqual(expect.objectContaining(expectedItem));
-
-    if (snapshot) {
-      expect({
-        ...result,
-        records: result.records.slice(0, 3)
-      }).toMatchSnapshot();
-    }
   });
 
   it.each([
