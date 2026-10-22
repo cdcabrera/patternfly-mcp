@@ -11,7 +11,7 @@ import {
   crawler
 } from '../collection.patternFlyApi';
 import { processDocsFunction } from '../server.getResources';
-import { getOptions, setOptions } from '../options.context';
+import { getOptions } from '../options.context';
 import { setFetch } from '../server.fetch';
 import { DEFAULT_OPTIONS } from '../options.defaults';
 
@@ -258,7 +258,6 @@ describe('collectionInitialCallback', () => {
 describe('collectionCallback', () => {
   const BASE = DEFAULT_OPTIONS.patternflyOptions.api.base;
   const VERSIONS = `${BASE}/versions`;
-  /*
   const ENABLED_OPTIONS = {
     ...DEFAULT_OPTIONS,
     patternflyOptions: {
@@ -268,8 +267,7 @@ describe('collectionCallback', () => {
         crawlEnabled: true
       }
     }
-  };
-  */
+  } as any;
 
   let mockGet: jest.Mock;
 
@@ -278,6 +276,7 @@ describe('collectionCallback', () => {
     jest.resetAllMocks();
     mockGet = jest.fn().mockResolvedValue({ status: 200 });
     mockedSetFetch.mockReturnValue({ get: mockGet });
+
     /*
     setOptions({
       patternflyOptions: {
@@ -314,17 +313,87 @@ describe('collectionCallback', () => {
     expect(mockedProcessDocsFunction).not.toHaveBeenCalled();
   });
 
-  it('should generate API records and match McpCollectionResult structure', async () => {
-    const options = {
-      patternflyOptions: {
-        ...DEFAULT_OPTIONS.patternflyOptions,
-        api: {
-          ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawlEnabled: true
-        }
-      }
-    } as any;
+  it.each([
+    {
+      description: 'should generate API records and match McpCollectionResult structure',
+      mockLeaf: {
+        content: 'Button react component content with length enough to pass quality scoring...',
+        path: `${BASE}/v1/components/Button`,
+        resolvedPath: `${BASE}/v1/components/Button/react`,
+        isSuccess: true
+      },
+      assert: (result: any) => {
+        expect(result).toHaveProperty('records');
+        expect(Array.isArray(result.records)).toBe(true);
+        expect(result.records.length).toBeGreaterThan(0);
 
+        const first: any = result.records[0];
+
+        expect(first).toMatchObject({
+          id: expect.stringMatching(/^api::/),
+          sourceType: 'api',
+          sourceId: `${BASE}/v1/components/Button/react`
+        });
+
+        const keys = Object.keys(first.data as any);
+
+        expect(keys.length).toBe(1);
+        const key: any = keys[0];
+
+        expect(key).toBe('Button');
+        expect(Array.isArray(first.data[key])).toBe(true);
+        expect(first.data[key][0]).toMatchObject({
+          displayName: 'Button',
+          pathSlug: 'components-button-react',
+          source: 'api',
+          version: 'v1',
+          section: 'components',
+          category: 'react',
+          path: `${BASE}/v1/components/Button/react`
+        });
+      }
+    },
+    {
+      description: 'should use an extrapolated category',
+      mockLeaf: {
+        content: 'Overview content',
+        path: `${BASE}/v1/components/Card`,
+        resolvedPath: `${BASE}/v1/components/Card/overview`,
+        isSuccess: true
+      },
+      assert: (result: any) => {
+        expect(result.records.length).toBe(1);
+        const rec: any = result.records[0];
+
+        expect(rec?.id).toMatch(/^api::v1::components::card::overview$/);
+
+        const key: any = rec?.data ? Object.keys(rec.data)[0] : '';
+
+        expect(key).toBe('Card');
+        expect(rec?.data?.[key]).toContainEqual(expect.objectContaining({
+          displayName: 'Card',
+          category: 'overview'
+        }));
+      }
+    },
+    {
+      description: 'should match snapshot for collection result',
+      mockLeaf: {
+        content: 'Card css content',
+        path: `${BASE}/v1/components/Card`,
+        resolvedPath: `${BASE}/v1/components/Card/css`,
+        isSuccess: true
+      },
+      assert: (result: any) => {
+        const snapshotSubset = {
+          ...result,
+          records: result.records.slice(0, 3)
+        };
+
+        expect(snapshotSubset).toMatchSnapshot();
+      }
+    }
+  ])('$description', async ({ mockLeaf, assert }) => {
     // getVersions to ["v1"]
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -335,153 +404,14 @@ describe('collectionCallback', () => {
           isSuccess: true
         }
       ])
-      .mockResolvedValueOnce([
-        {
-          content: 'Button react component content with length enough to pass quality scoring...',
-          path: `${BASE}/v1/components/Button`,
-          resolvedPath: `${BASE}/v1/components/Button/react`,
-          isSuccess: true
-        }
-      ]);
+      .mockResolvedValueOnce([mockLeaf]);
 
-    const promise = collectionCallback({}, options);
+    const promise = collectionCallback({}, ENABLED_OPTIONS);
 
     await jest.runAllTimersAsync();
-
     const result = await promise;
 
-    expect(result).toHaveProperty('records');
-    expect(Array.isArray(result.records)).toBe(true);
-    expect(result.records.length).toBeGreaterThan(0);
-
-    const first: any = result.records[0];
-
-    // Basic record shape
-    expect(first).toMatchObject({
-      id: expect.stringMatching(/^api::/),
-      sourceType: 'api'
-    });
-
-    // Data entry shape
-    const keys = Object.keys(first.data as any);
-
-    expect(keys.length).toBe(1);
-    const key: any = keys[0];
-
-    expect(key).toBe('Button');
-
-    expect(first).toMatchObject({
-      sourceId: `${BASE}/v1/components/Button/react`
-    });
-
-    expect(Array.isArray(first.data[key])).toBe(true);
-
-    expect(first.data[key][0]).toMatchObject({
-      displayName: 'Button',
-      pathSlug: 'components-button-react',
-      source: 'api',
-      version: 'v1',
-      section: 'components',
-      category: 'react',
-      path: `${BASE}/v1/components/Button/react`
-    });
-  });
-
-  it('should use an extrapolated category', async () => {
-    const options = {
-      patternflyOptions: {
-        ...DEFAULT_OPTIONS.patternflyOptions,
-        api: {
-          ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawlEnabled: true
-        }
-      }
-    } as any;
-
-    // getVersions to ["v1"]
-    mockedProcessDocsFunction
-      .mockResolvedValueOnce([
-        {
-          content: JSON.stringify(['v1']),
-          path: VERSIONS,
-          resolvedPath: VERSIONS,
-          isSuccess: true
-        }
-      ])
-      // crawler to leaf with non-component facet ("overview")
-      .mockResolvedValueOnce([
-        {
-          content: 'Overview content',
-          path: `${BASE}/v1/components/Card`,
-          resolvedPath: `${BASE}/v1/components/Card/overview`,
-          isSuccess: true
-        }
-      ]);
-
-    const promise = collectionCallback({}, options);
-
-    await jest.runAllTimersAsync();
-
-    const result = await promise;
-
-    expect(result.records.length).toBe(1);
-    const rec: any = result.records[0];
-
-    // id encodes version, section, item, kind, and index
-    expect(rec?.id).toMatch(/^api::v1::components::card::overview$/);
-
-    const key: any = rec?.data ? Object.keys(rec.data)[0] : '';
-
-    expect(key).toBe('Card');
-    expect(rec?.data?.[key]).toContainEqual(expect.objectContaining({
-      displayName: 'Card',
-      category: 'overview'
-    }));
-  });
-
-  it('should match snapshot for collection result', async () => {
-    const options = {
-      patternflyOptions: {
-        ...DEFAULT_OPTIONS.patternflyOptions,
-        api: {
-          ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawlEnabled: true
-        }
-      }
-    } as any;
-
-    // getVersions to ["v1"]
-    mockedProcessDocsFunction
-      .mockResolvedValueOnce([
-        {
-          content: JSON.stringify(['v1']),
-          path: VERSIONS,
-          resolvedPath: VERSIONS,
-          isSuccess: true
-        }
-      ])
-      // crawler returns a single leaf entry (enough to snapshot deterministically here)
-      .mockResolvedValueOnce([
-        {
-          content: 'Card css content',
-          path: `${BASE}/v1/components/Card`,
-          resolvedPath: `${BASE}/v1/components/Card/css`,
-          isSuccess: true
-        }
-      ]);
-
-    const promise = collectionCallback({}, options);
-
-    await jest.runAllTimersAsync();
-
-    const result = await promise;
-
-    const snapshotSubset = {
-      ...result,
-      records: result.records.slice(0, 3)
-    };
-
-    expect(snapshotSubset).toMatchSnapshot();
+    assert(result);
   });
 
   it('heals missing records from previous state when direct probe succeeds', async () => {
@@ -536,16 +466,6 @@ describe('collectionCallback', () => {
   });
 
   it('does not re-probe entries that were visited during crawl pass but discarded for low quality', async () => {
-    const options = {
-      patternflyOptions: {
-        ...DEFAULT_OPTIONS.patternflyOptions,
-        api: {
-          ...DEFAULT_OPTIONS.patternflyOptions.api,
-          crawlEnabled: true
-        }
-      }
-    } as any;
-
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
         {
@@ -573,7 +493,7 @@ describe('collectionCallback', () => {
       }
     };
 
-    const promise = collectionCallback({ previous: { records: [previousRecord] } }, options);
+    const promise = collectionCallback({ previous: { records: [previousRecord] } }, ENABLED_OPTIONS);
 
     await jest.runAllTimersAsync();
 

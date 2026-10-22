@@ -695,8 +695,6 @@ const collectionCallback = async (
   { previous }: McpCollectionCallbackContext = {},
   options = getOptions()
 ): Promise<ApiCollectionResult> => {
-  console.log('collectionCallback', options);
-
   if (!options.patternflyOptions.api.crawlEnabled) {
     log.debug('PatternFly API crawler is disabled, using baseline records.');
 
