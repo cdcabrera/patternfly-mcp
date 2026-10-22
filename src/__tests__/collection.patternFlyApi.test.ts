@@ -391,99 +391,85 @@ describe('collectionCallback', () => {
     }
   });
 
-  it('heals missing records from previous state when direct probe succeeds', async () => {
-    mockedProcessDocsFunction
-      .mockResolvedValueOnce([
+  it.each([
+    {
+      description: 'heal missing records from previous state when direct probe succeeds',
+      getPrevious: () => [
         {
-          content: JSON.stringify(['v1']),
-          path: VERSIONS,
-          resolvedPath: VERSIONS,
-          isSuccess: true
+          id: 'api::v1::components::button::props',
+          sourceId: `${BASE}/v1/components/Button/props`,
+          sourceType: 'api' as const,
+          data: {
+            Button: [{
+              displayName: 'Button',
+              pathSlug: 'components-button-props',
+              source: 'api',
+              version: 'v1',
+              section: 'components',
+              category: 'props',
+              path: `${BASE}/v1/components/Button/props`
+            }]
+          }
         }
-      ])
-      .mockResolvedValueOnce([]) // crawler returns zero leaf entries
-      .mockResolvedValueOnce([
+      ],
+      crawlEntries: [],
+      getProbeResponse: () => [
         {
           content: JSON.stringify({ name: 'ButtonProps' }),
           path: `${BASE}/v1/components/Button/props`,
           resolvedPath: `${BASE}/v1/components/Button/props`,
           isSuccess: true
         }
-      ]); // direct probe succeeds
-
-    const previousRecord = {
-      id: 'api::v1::components::button::props',
-      sourceId: `${BASE}/v1/components/Button/props`,
-      sourceType: 'api' as const,
-      data: {
-        Button: [
-          {
-            displayName: 'Button',
-            pathSlug: 'components-button-props',
-            source: 'api',
-            version: 'v1',
-            section: 'components',
-            category: 'props',
-            path: `${BASE}/v1/components/Button/props`
+      ],
+      expectedRecordId: 'api::v1::components::button::props',
+      expectedLength: 1
+    },
+    {
+      description: 'not re-probe entries that were visited during crawl pass but discarded for low quality',
+      getPrevious: () => [
+        {
+          id: 'api::v1::components::button::html',
+          sourceId: `${BASE}/v1/components/Button/html`,
+          sourceType: 'api' as const,
+          data: {
+            Button: [{ displayName: 'Button', pathSlug: 'components-button-html', source: 'api', version: 'v1', section: 'components', category: 'html', path: `${BASE}/v1/components/Button/html` }]
           }
-        ]
-      }
-    };
-
-    const promise = collectionCallback({
-      previous: { records: [previousRecord] }
-    });
-
-    await jest.runAllTimersAsync();
-
-    const result = await promise;
-
-    expect(result.records).toHaveLength(1);
-    expect(result.records[0]?.id).toBe('api::v1::components::button::props');
-  });
-
-  it('does not re-probe entries that were visited during crawl pass but discarded for low quality', async () => {
-    mockedProcessDocsFunction
-      .mockResolvedValueOnce([
-        {
-          content: JSON.stringify(['v1']),
-          path: VERSIONS,
-          resolvedPath: VERSIONS,
-          isSuccess: true
         }
-      ])
-      .mockResolvedValueOnce([
+      ],
+      crawlEntries: [
         {
-          content: '<LiveExample src="1" />', // low quality HTML stub (qualityScore < 0.95)
+          content: '<LiveExample src="1" />',
           path: `${BASE}/v1/components/Button/html`,
           resolvedPath: `${BASE}/v1/components/Button/html`,
           isSuccess: true
         }
-      ]);
+      ],
+      getProbeResponse: () => undefined,
+      expectedRecordId: undefined,
+      expectedLength: 0
+    },
+    {
+      description: 'fall back to seed catalog baseline when previous records are empty',
+      getPrevious: () => [],
+      crawlEntries: [],
+      getProbeResponse: async () => {
+        const firstSeed = (await collectionInitialCallback()).records[0];
 
-    const previousRecord = {
-      id: 'api::v1::components::button::html',
-      sourceId: `${BASE}/v1/components/Button/html`,
-      sourceType: 'api' as const,
-      data: {
-        Button: [{ displayName: 'Button', pathSlug: 'components-button-html', source: 'api', version: 'v1', section: 'components', category: 'html', path: `${BASE}/v1/components/Button/html` }]
-      }
-    };
-
-    const promise = collectionCallback({ previous: { records: [previousRecord] } }, ENABLED_OPTIONS);
-
-    await jest.runAllTimersAsync();
-
-    const result = await promise;
-
-    // Should NOT have made a processDocsFunction call to re-probe Button/html
-    expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(3);
-    expect(result.records).toHaveLength(0);
-  });
-
-  it('falls back to seed catalog baseline when previous records are empty', async () => {
-    const seedRecords = (await collectionInitialCallback()).records;
-    const firstSeed = seedRecords[0];
+        return [
+          {
+            content: JSON.stringify({ name: 'AccessibilityDesign' }),
+            path: firstSeed?.sourceId,
+            resolvedPath: firstSeed?.sourceId,
+            isSuccess: true
+          }
+        ];
+      },
+      expectedRecordId: undefined,
+      expectedLength: 1
+    }
+  ])('should $description', async ({ getPrevious, crawlEntries, getProbeResponse, expectedRecordId, expectedLength }) => {
+    const probeDocs = await getProbeResponse();
+    const previousRecords = getPrevious();
 
     mockedProcessDocsFunction
       .mockResolvedValueOnce([
@@ -494,25 +480,25 @@ describe('collectionCallback', () => {
           isSuccess: true
         }
       ])
-      .mockResolvedValueOnce([]) // crawler returns zero leaf entries
-      .mockResolvedValueOnce([
-        {
-          content: JSON.stringify({ name: 'AccessibilityDesign' }),
-          path: firstSeed?.sourceId,
-          resolvedPath: firstSeed?.sourceId,
-          isSuccess: true
-        }
-      ]); // direct probe succeeds
+      .mockResolvedValueOnce(crawlEntries);
 
-    const promise = collectionCallback({
-      previous: { records: [] }
-    });
+    if (probeDocs) {
+      mockedProcessDocsFunction.mockResolvedValueOnce(probeDocs);
+    }
+
+    const promise = collectionCallback({ previous: { records: previousRecords } }, ENABLED_OPTIONS);
 
     await jest.runAllTimersAsync();
 
     const result = await promise;
 
-    expect(result.records.length).toBeGreaterThan(0);
+    expect(result.records).toHaveLength(expectedLength);
+
+    if (expectedRecordId) {
+      expect(result.records[0]?.id).toBe(expectedRecordId);
+    }
+
+    expect(mockedProcessDocsFunction).toHaveBeenCalledTimes(3);
   });
 });
 
