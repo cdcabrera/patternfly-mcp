@@ -60,12 +60,17 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha,prefix=sha-
+      - name: Setup architecture
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: 'linux/amd64,linux/arm64'
       - name: Build image
         id: build-image
         uses: redhat-actions/buildah-build@v3
         with:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: ${{ steps.meta.outputs.tags }}
+          archs: amd64, arm64
           containerfiles: |
             ./Containerfile
       - name: Audit MCP
