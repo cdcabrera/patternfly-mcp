@@ -56,7 +56,7 @@ const buildImage = async (engine: 'podman' | 'docker', image: string) => {
 const startContainer = async ({
   engine,
   args = [],
-  image = 'localhost/patternfly-mcp:latest'
+  image = process.env.PFMCP_CONTAINER_IMAGE || 'localhost/patternfly-mcp:latest'
 }: StartOptions = {}): Promise<StdioTransportClient> => {
   if (!engine) {
     throw new Error('Container engine not found');

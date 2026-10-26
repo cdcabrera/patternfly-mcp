@@ -222,6 +222,36 @@ The server can also be launched from a container image instead of `npx`. This is
 >
 > We make a minimal effort to support Docker, and additional configuration may be required.
 
+#### Use the hosted image
+
+Update your MCP configuration to use the hosted container image, that's it!
+
+> We make allowances for `amd64` and `arm64` architectures which should cover most use cases across Linux and macOS. In the event you need access to a different architecture, you can either build your own image from source (see below) or open an issue requesting the new architecture.
+
+```json
+{
+  "mcpServers": {
+    "patternfly-mcp": {
+      "command": "podman",
+      "env": {
+        "PODMAN_USERNS": "keep-id"
+      },
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "--security-opt=no-new-privileges",
+        "--cap-drop=ALL",
+        "ghcr.io/cdcabrera/patternfly-mcp:test",
+        "--log-stderr"
+      ],
+      "description": "PatternFly rules and documentation (hosted container image)"
+    }
+  }
+}
+```
+
+
 #### Build the image locally
 
 From the repository root:
