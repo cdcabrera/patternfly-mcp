@@ -307,8 +307,15 @@ You can confirm by running `$ podman images` from the terminal. View the [Contai
 
 #### Smoke test
 
+Confirm the container image is available
+
 ```bash
-podman run --rm --entrypoint node localhost/patternfly-mcp:latest -e "console.log(process.versions.node)"  # -> 24.x
+podman run --rm --entrypoint node ghcr.io/patternfly/patternfly-mcp:latest -e "console.log(process.versions.node)"
+
+Or confirm a locally built container image is available
+
+```bash
+podman run --rm --entrypoint node localhost/patternfly-mcp:latest -e "console.log(process.versions.node)"
 ```
 
 #### Running in HTTP transport mode
@@ -323,7 +330,7 @@ podman run --rm \
   --read-only \
   --tmpfs /tmp:rw,size=64m \
   -p 3030:8080 \
-  localhost/patternfly-mcp:latest \
+  ghcr.io/patternfly/patternfly-mcp:latest \
   --http \
   --port 8080 \
   --allowed-origins "http://127.0.0.1:3030" \
@@ -354,7 +361,7 @@ HTTP MCP clients connect via URL rather than spawning a process. Start the conta
 }
 ```
 
-> Stdio-only MCP clients should keep using the [stdio container configuration above](#running-your-local-image-mcp-client-configuration); the HTTP form requires a client that supports HTTP/SSE MCP transports.
+> Stdio-only MCP clients should keep using the [stdio container configuration above](#use-the-hosted-image); the HTTP form requires a client that supports HTTP/SSE MCP transports.
 
 ##### Verify it's listening
 
