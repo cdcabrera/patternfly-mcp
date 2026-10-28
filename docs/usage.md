@@ -311,6 +311,7 @@ Confirm the container image is available
 
 ```bash
 podman run --rm --entrypoint node ghcr.io/patternfly/patternfly-mcp:latest -e "console.log(process.versions.node)"
+```
 
 Or confirm a locally built container image is available
 
