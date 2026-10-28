@@ -242,10 +242,10 @@ Update your MCP configuration to use the hosted container image, that's it!
         "-i",
         "--security-opt=no-new-privileges",
         "--cap-drop=ALL",
-        "ghcr.io/cdcabrera/patternfly-mcp:test",
+        "ghcr.io/patternfly/patternfly-mcp:latest",
         "--log-stderr"
       ],
-      "description": "PatternFly rules and documentation (hosted container image)"
+      "description": "PatternFly rules and documentation"
     }
   }
 }

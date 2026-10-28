@@ -19,9 +19,9 @@ on:
         type: boolean
         default: true
       tag_override:
-        description: 'Custom tag (default to "test" or branch name)'
+        description: 'Custom tag (default to "latest" or branch name)'
         type: string
-        default: 'test'
+        default: 'latest'
 
 env:
   REGISTRY: ghcr.io
@@ -58,7 +58,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ github.event.inputs.tag_override || 'test' }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=raw,value=${{ github.event.inputs.tag_override || 'latest' }},enable=${{ github.event_name == 'workflow_dispatch' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -78,7 +78,7 @@ jobs:
             ./Containerfile
       - name: Audit MCP
         run: |
-          # Test built image before pushing
+          # Confirm built image before pushing
           PFMCP_CONTAINER_IMAGE="${{ steps.build-image.outputs.image-with-tag }}" npm run container:test
       - name: Push image to registry
         if: ${{ github.event.inputs.publish == 'true' || startsWith(github.ref, 'refs/tags/v') }}
