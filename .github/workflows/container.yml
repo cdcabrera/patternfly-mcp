@@ -1,9 +1,8 @@
 name: Container CI & GHCR
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [ published ]
   pull_request:
     paths:
       - '.containerignore'
