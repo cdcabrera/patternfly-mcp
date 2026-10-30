@@ -203,7 +203,8 @@ class FetchError extends Error {
    * @param options.statusText - HTTP status text.
    * @param options.cause - Cause of the error.
    * @param options.cancelled - Indicates if the fetch operation was canceled.
-   * @param options.sanitize - Activates message sanitizing.
+   * @param options.sanitize - Applies best-effort sanitization to `message` and `statusText`. The `cause` is
+   *   preserved unchanged.
    */
   constructor(options: {
     message: string;
@@ -218,7 +219,7 @@ class FetchError extends Error {
     super(updatedMessage);
 
     this.status = options.status;
-    this.statusText = options.statusText;
+    this.statusText = options.sanitize && options.statusText ? sanitizeMessage(options.statusText) : options.statusText;
     this.cause = options.cause;
     this.cancelled = options.cancelled ?? false;
   }
@@ -388,8 +389,6 @@ const decodeStream = async ({
 /**
  * Opt-in HEAD preflight.
  *
- * @param url
- * @param signal
  * @note Off by default. When enabled via `options.xhrFetch.preflightHead`,
  * we HEAD the URL to catch oversized / disallowed-binary responses without
  * opening a body stream. Returns `null` (and callers fall back to GET-only
@@ -401,6 +400,9 @@ const decodeStream = async ({
  * Header values from HEAD are advisory. Authoritative size enforcement
  * still lives in `decodeStream`. Authoritative type enforcement still
  * lives in `parsePayload`. HEAD is a fast-fail hint, not a gate.
+ *
+ * @param url
+ * @param signal
  */
 const preflight = async (
   url: string,
@@ -549,8 +551,10 @@ const setFetch = (options = getOptions()): SetFetch => {
    */
   const executeFetch = async (url: string, settings: RequestInit = {}): Promise<FetchResponse> => {
     if (isTestModeFetchBlocked) {
+      const displayUrl = xhrFetch.sanitizeMessages ? sanitizeMessage(url) : url;
+
       log.warn(
-        `Network access blocked for ${sanitizeMessage(url)}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
+        `Network access blocked for ${displayUrl}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
         `Configure 'modeOptions.test.baseUrl' to allow outbound fetches.`
       );
     }
@@ -608,11 +612,15 @@ const setFetch = (options = getOptions()): SetFetch => {
       }
 
       if (!response.ok) {
+        const displayUrl = xhrFetch.sanitizeMessages ? sanitizeMessage(url) : url;
+        const displayStatusText = xhrFetch.sanitizeMessages ? sanitizeMessage(response.statusText) : response.statusText;
+
         throw new FetchError({
-          message: `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
+          message: `Failed to fetch ${displayUrl}: ${response.status} ${displayStatusText}`,
           status: response.status,
-          statusText: response.statusText,
-          sanitize: xhrFetch.sanitizeMessages
+          statusText: displayStatusText,
+          // When enabled, sanitize values before the status delimiter is added
+          sanitize: false
         });
       }
 
@@ -668,7 +676,12 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       const fetchError = error instanceof FetchError
         ? error
-        : new FetchError({ message: formatUnknownError(error), cause: error, cancelled, sanitize: xhrFetch.sanitizeMessages });
+        : new FetchError({
+          message: formatUnknownError(error, { sanitize: xhrFetch.sanitizeMessages }),
+          cause: error,
+          cancelled,
+          sanitize: xhrFetch.sanitizeMessages
+        });
 
       updateState({ phase: cancelled ? 'cancelled' : 'error', error: fetchError, message: fetchError.message });
       throw fetchError;

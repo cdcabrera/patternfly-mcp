@@ -85,25 +85,62 @@ describe('decodeStream', () => {
 describe('FetchError', () => {
   it.each([
     {
-      description: 'should sanitize an error message',
+      description: 'sanitize an error message',
       options: {
         message: 'Failed to fetch https://patternfly.org/x?private_token=abc123',
         sanitize: true
       },
-      expected: 'private_token=%5BREDACTED%5D'
+      expected: {
+        message: expect.stringContaining('private_token=%5BREDACTED%5D')
+      }
     },
     {
-      description: 'should not sanitize an error message',
+      description: 'not sanitize an error message',
       options: {
         message: 'Failed to fetch https://patternfly.org/x?private_token=abc123',
         sanitize: false
       },
-      expected: 'private_token=abc123'
+      expected: {
+        message: expect.stringContaining('private_token=abc123')
+      }
+    },
+    {
+      description: 'sanitize statusText',
+      options: {
+        message: 'Failed to fetch',
+        statusText: 'Unauthorized: private_token=abc123',
+        sanitize: true
+      },
+      expected: {
+        statusText: expect.stringContaining('private_token=[REDACTED]')
+      }
+    },
+    {
+      description: 'sanitize statusText with api_key and token',
+      options: {
+        message: 'Failed to fetch',
+        statusText: 'Unauthorized: api_key=xyz123 and token=abc456',
+        sanitize: true
+      },
+      expected: {
+        statusText: 'Unauthorized: api_key=[REDACTED] and token=[REDACTED]'
+      }
+    },
+    {
+      description: 'not sanitize statusText',
+      options: {
+        message: 'Failed to fetch',
+        statusText: 'Unauthorized: private_token=abc123',
+        sanitize: false
+      },
+      expected: {
+        statusText: 'Unauthorized: private_token=abc123'
+      }
     }
-  ])('should sanitize an error message', ({ options, expected }) => {
+  ])('should $description', ({ options, expected }) => {
     const err = new FetchError(options);
 
-    expect(err.message).toContain(expected);
+    expect(err).toMatchObject(expected);
   });
 
   it('should preserve raw cause object identity', () => {
@@ -288,27 +325,57 @@ describe('setFetch', () => {
     expect(postPhase).toBe('error');
   });
 
-  it('should sanitize URL secrets in FetchError message for non-ok response', async () => {
-    const mockResponse = {
+  it.each([
+    {
+      description: 'sanitize URL and statusText secrets',
+      url: 'https://patternfly.org/secure?private_token=abc123&view=full',
+      statusText: 'Unauthorized: access_token=secret123',
+      expected: {
+        message: expect.stringContaining('private_token=%5BREDACTED%5D'),
+        statusText: expect.stringContaining('access_token=[REDACTED]')
+      },
+      unexpected: ['private_token=abc123', 'access_token=secret123']
+    },
+    {
+      description: 'preserve the status delimiter after sanitizing a request URL',
+      url: 'https://patternfly.org/secure?access_token=abc123&view=full',
+      statusText: 'Unauthorized',
+      expected: {
+        message: expect.stringContaining('https://patternfly.org/secure?access_token=%5BREDACTED%5D&view=full: 401 Unauthorized'),
+        statusText: expect.stringContaining('Unauthorized')
+      },
+      unexpected: ['access_token=abc123']
+    },
+    {
+      description: 'sanitize a URL secret in statusText with a parenthesis in its path',
+      url: 'https://patternfly.org/start',
+      statusText: 'Unauthorized: https://patternfly.org/a)path?token=abc123',
+      expected: {
+        message: expect.stringContaining('https://patternfly.org/a)path?token=%5BREDACTED%5D'),
+        statusText: expect.stringContaining('https://patternfly.org/a)path?token=%5BREDACTED%5D')
+      },
+      unexpected: ['token=abc123']
+    }
+  ])('should $description for a non-ok response', async ({ url, statusText, expected, unexpected }) => {
+    (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
       status: 401,
-      statusText: 'Unauthorized',
+      statusText,
       headers: {
         get: () => null
       }
-    };
-
-    (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
-
-    const { get } = setFetch();
-    const urlWithSecret = 'https://patternfly.org/secure?private_token=abc123&view=full';
-
-    await expect(get(urlWithSecret)).rejects.toMatchObject({
-      message: expect.stringContaining('private_token=%5BREDACTED%5D')
     });
 
-    await expect(get(urlWithSecret)).rejects.toMatchObject({
-      message: expect.not.stringContaining('private_token=abc123')
+    const { get } = setFetch();
+    const error = await get(url).catch(reason => reason);
+
+    expect(error).toMatchObject(expected);
+
+    unexpected.forEach(value => {
+      expect(error).toMatchObject({
+        message: expect.not.stringContaining(value),
+        statusText: expect.not.stringContaining(value)
+      });
     });
   });
 
@@ -509,6 +576,30 @@ describe('setFetch', () => {
     warnSpy.mockRestore();
   });
 
+  it('should preserve the warning URL when message sanitization is disabled', async () => {
+    const warnSpy = jest.spyOn(log, 'warn').mockImplementation(() => {});
+    const url = 'https://patternfly.org/path?private_token=abc123';
+    const options = getOptions();
+    const fetchOptions = {
+      ...options,
+      mode: 'test' as const,
+      modeOptions: {},
+      xhrFetch: {
+        ...options.xhrFetch,
+        sanitizeMessages: false
+      }
+    };
+    const { get } = setFetch(fetchOptions as any);
+
+    await expect(get(url)).rejects.toThrow(FetchError);
+    expect(warnSpy).toHaveBeenCalledWith(
+      `Network access blocked for ${url}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
+      `Configure 'modeOptions.test.baseUrl' to allow outbound fetches.`
+    );
+
+    warnSpy.mockRestore();
+  });
+
   it('should allow matching fixture URL and reject external URLs in test mode with baseUrl configured', async () => {
     const warnSpy = jest.spyOn(log, 'warn').mockImplementation(() => {});
 
@@ -559,12 +650,33 @@ describe('setFetch', () => {
     warnSpy.mockRestore();
   });
 
-  it('should wrap sanitized unknown errors into FetchError', async () => {
+  it.each([
+    {
+      description: 'sanitize unknown errors by default',
+      sanitizeMessages: undefined,
+      expectedMessage: 'lorem ipsum private_token=[REDACTED]'
+    },
+    {
+      description: 'retain unknown errors when sanitization is disabled',
+      sanitizeMessages: false,
+      expectedMessage: 'lorem ipsum private_token=abc123'
+    }
+  ])('should $description', async ({ sanitizeMessages, expectedMessage }) => {
     (global.fetch as jest.Mock).mockRejectedValue(new Error('lorem ipsum private_token=abc123'));
-    const { get } = setFetch();
+    const options = getOptions();
+    const fetchOptions = sanitizeMessages === undefined
+      ? undefined
+      : {
+        ...options,
+        xhrFetch: {
+          ...options.xhrFetch,
+          sanitizeMessages
+        }
+      };
+    const { get } = setFetch(fetchOptions);
 
     await expect(get('https://patternfly.org/data')).rejects.toMatchObject({
-      message: expect.stringContaining('lorem ipsum private_token=[REDACTED]')
+      message: expect.stringContaining(expectedMessage)
     });
   });
 });
