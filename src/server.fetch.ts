@@ -271,7 +271,11 @@ const parsePayload = async (
           data: JSON.parse(decoded.text)
         };
       } catch (err) {
-        throw new FetchError({ message: 'Invalid JSON payload.', cause: err });
+        throw new FetchError({
+          message: 'Invalid JSON payload.',
+          cause: err,
+          sanitize: xhrFetch.sanitizeMessages
+        });
       }
     }
 
@@ -285,7 +289,10 @@ const parsePayload = async (
     };
   }
 
-  throw new FetchError({ message: `Binary data is not allowed (${mime}).` });
+  throw new FetchError({
+    message: `Binary data is not allowed (${mime}).`,
+    sanitize: xhrFetch.sanitizeMessages
+  });
 };
 
 /**
@@ -315,6 +322,7 @@ const parsePayload = async (
  *    - `bytes` {number} - The number of bytes processed so far.
  *    - `progress` {number | undefined} - The percentage progress of the stream (optional, depends on having
  *    `totalSize`).
+ * @param [params.sanitize] - Activates message sanitizing.
  * @returns A promise resolving to an object containing either:
  *    - `{ kind: 'text', text: string }` if the stream is decoded as text.
  *    - `{ kind: 'bytes', chunks: Uint8Array[] }` if the stream is decoded as binary data.
@@ -322,13 +330,14 @@ const parsePayload = async (
  * @throws {FetchError} If accumulated size exceeds `maxSizeBytes`.
  */
 const decodeStream = async ({
-  stream, mimeType, totalSize, maxSizeBytes, onProgress
+  stream, mimeType, totalSize, maxSizeBytes, onProgress, sanitize
 }: {
   stream: Readable;
   mimeType: string;
   totalSize?: number | undefined;
   maxSizeBytes: number;
   onProgress: (bytes: number, progress?: number | undefined) => void;
+  sanitize?: boolean | undefined;
 }): Promise<DecodedStreamResult> => {
   const asText = isTextMime(mimeType);
   const decoder = asText ? new TextDecoder('utf-8') : undefined;
@@ -343,7 +352,10 @@ const decodeStream = async ({
 
       if (maxSizeBytes && totalBytes > maxSizeBytes) {
         stream.destroy();
-        throw new FetchError({ message: 'File download aborted: Size exceeded maximum limit.' });
+        throw new FetchError({
+          message: 'File download aborted: Size exceeded maximum limit.',
+          sanitize
+        });
       }
 
       if (decoder) {
@@ -513,7 +525,10 @@ const setFetch = (options = getOptions()): SetFetch => {
         return inflight.promise;
       }
 
-      return Promise.reject(new FetchError({ message: 'Fetch already in progress. Create a new setFetch.' }));
+      return Promise.reject(new FetchError({
+        message: 'Fetch already in progress. Create a new setFetch.',
+        sanitize: xhrFetch.sanitizeMessages
+      }));
     }
 
     const promise = startFetch().finally(() => {
@@ -535,7 +550,7 @@ const setFetch = (options = getOptions()): SetFetch => {
   const executeFetch = async (url: string, settings: RequestInit = {}): Promise<FetchResponse> => {
     if (isTestModeFetchBlocked) {
       log.warn(
-        `Network access blocked for ${url}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
+        `Network access blocked for ${sanitizeMessage(url)}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
         `Configure 'modeOptions.test.baseUrl' to allow outbound fetches.`
       );
     }
@@ -563,13 +578,15 @@ const setFetch = (options = getOptions()): SetFetch => {
         if (hint) {
           if (hint.contentLength && xhrFetch.maxSizeBytes && hint.contentLength > xhrFetch.maxSizeBytes) {
             throw new FetchError({
-              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${xhrFetch.maxSizeBytes}.`
+              message: `File blocked (preflight): content-length ${hint.contentLength} exceeds ${xhrFetch.maxSizeBytes}.`,
+              sanitize: xhrFetch.sanitizeMessages
             });
           }
 
           if (hint.contentType && isBinaryMime(hint.contentType) && !xhrFetch.allowBinary) {
             throw new FetchError({
-              message: `Binary data is not allowed (preflight: ${normalizeMime(hint.contentType)}).`
+              message: `Binary data is not allowed (preflight: ${normalizeMime(hint.contentType)}).`,
+              sanitize: xhrFetch.sanitizeMessages
             });
           }
         }
@@ -630,6 +647,7 @@ const setFetch = (options = getOptions()): SetFetch => {
           mimeType,
           totalSize,
           maxSizeBytes: xhrFetch.maxSizeBytes,
+          sanitize: xhrFetch.sanitizeMessages,
           onProgress: (bytesReceived, progress) => updateState({ bytesReceived, progress })
         })
         : ({ kind: 'text', text: '' } as const);
