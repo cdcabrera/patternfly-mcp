@@ -554,7 +554,7 @@ const setFetch = (options = getOptions()): SetFetch => {
       assertInputUrlWhiteListed(url, updatedWhitelist, {
         allowedProtocols: whitelist.protocols,
         inputDisplayName: 'setFetch URL',
-        codeOrError: (message, cause) => new FetchError({ message, cause, sanitize: true })
+        codeOrError: (message, cause) => new FetchError({ message, cause, sanitize: xhrFetch.sanitizeMessages })
       });
 
       if (xhrFetch.preflightHead) {
@@ -583,7 +583,7 @@ const setFetch = (options = getOptions()): SetFetch => {
         await Promise.resolve().then(() => assertInputUrlWhiteListed(response.url, updatedWhitelist, {
           allowedProtocols: whitelist.protocols,
           inputDisplayName: 'setFetch URL',
-          codeOrError: (message, cause) => new FetchError({ message, cause, sanitize: true })
+          codeOrError: (message, cause) => new FetchError({ message, cause, sanitize: xhrFetch.sanitizeMessages })
         })).catch(error => {
           response.body?.cancel?.().catch(() => {});
           throw error;
@@ -595,7 +595,7 @@ const setFetch = (options = getOptions()): SetFetch => {
           message: `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
           status: response.status,
           statusText: response.statusText,
-          sanitize: true
+          sanitize: xhrFetch.sanitizeMessages
         });
       }
 
@@ -610,7 +610,7 @@ const setFetch = (options = getOptions()): SetFetch => {
           message,
           status: response.status,
           statusText: response.statusText,
-          sanitize: true
+          sanitize: xhrFetch.sanitizeMessages
         });
       };
 
@@ -650,7 +650,7 @@ const setFetch = (options = getOptions()): SetFetch => {
 
       const fetchError = error instanceof FetchError
         ? error
-        : new FetchError({ message: formatUnknownError(error), cause: error, cancelled });
+        : new FetchError({ message: formatUnknownError(error), cause: error, cancelled, sanitize: xhrFetch.sanitizeMessages });
 
       updateState({ phase: cancelled ? 'cancelled' : 'error', error: fetchError, message: fetchError.message });
       throw fetchError;
