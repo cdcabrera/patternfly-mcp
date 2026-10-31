@@ -141,6 +141,43 @@ const copyTextToClipboard = (text: string): ClipboardCopyResult => {
   }
 };
 
+const MCP_PROVENANCE_LINE = /^\s*<!--\s*mcp:provenance[\s\S]*?-->\s*$/i;
+
+/**
+ * Split MCP resource markdown into a title bar label and scrollable body.
+ *
+ * Strips `mcp:provenance` HTML comments and avoids repeating the first `#` heading in the body.
+ *
+ * @param fullText - Raw markdown from `readResource`.
+ * @param uri - Resource URI fallback title.
+ */
+const prepareReaderDisplay = (fullText: string, uri: string): { titleLine: string; body: string } => {
+  const lines = fullText.split('\n');
+  const withoutProvenance = lines.filter(line => !MCP_PROVENANCE_LINE.test(line));
+  const headingIndex = withoutProvenance.findIndex(line => /^#\s+/.test(line.trim()));
+
+  if (headingIndex >= 0) {
+    const heading = withoutProvenance[headingIndex] ?? '';
+    const titleLine = heading.replace(/^#\s+/, '').trim();
+    const bodyLines = [
+      ...withoutProvenance.slice(0, headingIndex),
+      ...withoutProvenance.slice(headingIndex + 1)
+    ];
+
+    return {
+      titleLine,
+      body: bodyLines.join('\n').replace(/^\n+/, '').trimEnd()
+    };
+  }
+
+  const firstLine = withoutProvenance.find(line => line.trim().length)?.trim();
+
+  return {
+    titleLine: firstLine ?? uri,
+    body: withoutProvenance.join('\n').replace(/^\n+/, '').trimEnd()
+  };
+};
+
 export {
   clearTerminal,
   copyTextOsc52,
@@ -148,5 +185,6 @@ export {
   enterAlternateScreen,
   isClipboardAvailable,
   leaveAlternateScreen,
+  prepareReaderDisplay,
   type ClipboardCopyResult
 };

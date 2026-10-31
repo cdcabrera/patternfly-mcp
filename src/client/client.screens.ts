@@ -6,7 +6,8 @@ import {
   copyTextToClipboard,
   enterAlternateScreen,
   isClipboardAvailable,
-  leaveAlternateScreen
+  leaveAlternateScreen,
+  prepareReaderDisplay
 } from './client.helpers';
 import { createKeyReader, promptLine } from './client.input';
 import { type AgentlessClientSession, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client.transport';
@@ -233,8 +234,8 @@ const runReaderScreen = async (
   clipboardEnabled: boolean
 ): Promise<ReaderAction> => {
   const { text: fullText } = await session.readResource(uri);
-  const body = displayTextForTerminal(fullText, clipboardEnabled);
-  const titleLine = fullText.split('\n').find(line => line.trim().length)?.replace(/^#\s*/, '') ?? uri;
+  const { titleLine, body: displayBody } = prepareReaderDisplay(fullText, uri);
+  const body = displayTextForTerminal(displayBody, clipboardEnabled);
   const innerWidth = terminalWidth() - 4;
   const bodyLines = wrapLines(body, innerWidth);
   let scrollOffset = 0;
