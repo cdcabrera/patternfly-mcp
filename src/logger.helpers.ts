@@ -16,24 +16,19 @@ const SECRET_PARAM_REGEXP = /(access[_-]?token|private[_-]?token|token|auth|auth
 const BEARER_HEADER_REGEXP = /(authorization\s*:\s*)(bearer\s+)([^\s"'}]+)(\s*)/gi;
 
 /**
- * Match for private and access token assignments.
- */
-const PRIVATE_TOKEN_REGEXP = /((?:private|access)[_-]?token\s*[:=]\s*)([^\s&]+)/gi;
-
-/**
- * Sanitize header-like content.
+ * Sanitize header-like content and key-value assignments.
  *
  * @param input - String to sanitize.
  * @param [options] - Configurable options.
  * @param [options.redacted] - Redact default value.
  * @param [options.bearerHeaderRegExp] - Bearer header regex.
- * @param [options.privateTokenRegExp] - Private token regex.
+ * @param [options.secretParamRegExp] - Secret param regex.
  */
 const sanitizeHeaderContent = (input?: unknown, {
   redacted = REDACTED,
   bearerHeaderRegExp = BEARER_HEADER_REGEXP,
-  privateTokenRegExp = PRIVATE_TOKEN_REGEXP
-}: { redacted?: string; bearerHeaderRegExp?: RegExp; privateTokenRegExp?: RegExp } = {}) => {
+  secretParamRegExp = SECRET_PARAM_REGEXP
+}: { redacted?: string; bearerHeaderRegExp?: RegExp; secretParamRegExp?: RegExp } = {}) => {
   if (typeof input !== 'string') {
     return undefined;
   }
@@ -43,7 +38,49 @@ const sanitizeHeaderContent = (input?: unknown, {
     (_m, g1, g2, _g3, suffix) => `${g1}${g2}${redacted}${suffix}`
   );
 
-  return withBearerRedaction.replace(privateTokenRegExp, (_m, g1) => `${g1}${redacted}`);
+  const tokens = withBearerRedaction.split(/(\s+|&)/);
+
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+
+    if (!token) {
+      continue;
+    }
+
+    const eqIdx = token.indexOf('=');
+
+    if (eqIdx > 0) {
+      const key = token.substring(0, eqIdx);
+      const val = token.substring(eqIdx + 1);
+
+      if (secretParamRegExp.test(key) && val.length > 0 && val !== redacted) {
+        tokens[i] = `${key}=${redacted}`;
+      }
+
+      continue;
+    }
+
+    const colonIdx = token.indexOf(':');
+
+    if (colonIdx > 0) {
+      const key = token.substring(0, colonIdx);
+      const rest = token.substring(colonIdx + 1);
+
+      if (/^[a-zA-Z0-9_-]+$/.test(key) && key.toLowerCase() !== 'unauthorized' && secretParamRegExp.test(key)) {
+        if (rest.length > 0 && rest !== redacted && rest.toLowerCase() !== 'bearer') {
+          tokens[i] = `${key}:${redacted}`;
+        } else if (rest.length === 0 && i + 2 < tokens.length) {
+          const nextVal = tokens[i + 2];
+
+          if (nextVal && nextVal !== redacted && nextVal.toLowerCase() !== 'bearer') {
+            tokens[i + 2] = redacted;
+          }
+        }
+      }
+    }
+  }
+
+  return tokens.join('');
 };
 
 /**
@@ -135,7 +172,7 @@ const sanitizeTokenContent = (
 
 /**
  * Best-effort sanitization of log text by redacting:
- * - Authorization/Private-Token header patterns
+ * - Authorization header patterns and secret key/token assignments
  * - Secrets in parseable URL candidates (query params, basic auth) via sanitizeUrlContent
  * - Long token-like substrings (hex/base64-like)
  *

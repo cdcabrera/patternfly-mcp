@@ -27,6 +27,53 @@ describe('sanitizeHeaderContent', () => {
       input: 'Authorization: Bearer abc123',
       options: { redacted: '<MASKED>' },
       expected: 'Authorization: Bearer <MASKED>'
+    },
+    {
+      description: 'api_key assignment',
+      input: 'api_key=xyz123',
+      expected: 'api_key=[REDACTED]'
+    },
+    {
+      description: 'api-key header',
+      input: 'api-key: xyz123',
+      expected: 'api-key: [REDACTED]'
+    },
+    {
+      description: 'token assignment',
+      input: 'token=abc456',
+      expected: 'token=[REDACTED]'
+    },
+    {
+      description: 'key assignment',
+      input: 'key=secret123',
+      expected: 'key=[REDACTED]'
+    },
+    {
+      description: 'auth assignment',
+      input: 'auth=secret123',
+      expected: 'auth=[REDACTED]'
+    },
+    {
+      description: 'authorization assignment',
+      input: 'authorization=secret123',
+      expected: 'authorization=[REDACTED]'
+    },
+    {
+      description: 'api-key without space after colon',
+      input: 'api-key:xyz123',
+      expected: 'api-key:[REDACTED]'
+    },
+    {
+      description: 'custom secretParamRegExp option',
+      input: 'custom_identifier=xyz123',
+      options: { secretParamRegExp: /custom_identifier/i },
+      expected: 'custom_identifier=[REDACTED]'
+    },
+    {
+      description: 'custom secretParamRegExp option with multiple search params',
+      input: 'custom_identifier=xyz123!&lorem=ipsum',
+      options: { secretParamRegExp: /custom_identifier/i },
+      expected: 'custom_identifier=[REDACTED]&lorem=ipsum'
     }
   ])('should sanitize header content, $description', ({ input, options, expected }) => {
     expect(sanitizeHeaderContent(input, options as any)).toBe(expected);
@@ -161,6 +208,11 @@ describe('sanitizeMessage', () => {
       description: 'non-string serializable object',
       input: { auth: 'Authorization: Bearer abc123' },
       expected: '{"auth":"Authorization: Bearer [REDACTED]"}'
+    },
+    {
+      description: 'sanitize non-URL api_key and token assignments',
+      input: 'Failed upstream: api_key=xyz123 and token=abc456',
+      expected: 'Failed upstream: api_key=[REDACTED] and token=[REDACTED]'
     }
   ])('should sanitize message content, $description', ({ input, expected }) => {
     expect(sanitizeMessage(input)).toContain(expected);

@@ -116,6 +116,17 @@ describe('FetchError', () => {
       }
     },
     {
+      description: 'sanitize statusText with api_key and token',
+      options: {
+        message: 'Failed to fetch',
+        statusText: 'Unauthorized: api_key=xyz123 and token=abc456',
+        sanitize: true
+      },
+      expected: {
+        statusText: 'Unauthorized: api_key=[REDACTED] and token=[REDACTED]'
+      }
+    },
+    {
       description: 'not sanitize statusText',
       options: {
         message: 'Failed to fetch',
