@@ -58,7 +58,10 @@ describe('AgentlessClientSession', () => {
     const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
     const { AgentlessClientSession } = await import('../client/client.transport');
 
-    const session = new AgentlessClientSession('/tmp/pf-cli.js', ['--log-stderr']);
+    const session = new AgentlessClientSession(
+      { command: 'node', args: ['/tmp/pf-cli.js'] },
+      ['--log-stderr']
+    );
 
     await session.connect();
 
@@ -82,7 +85,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession('/tmp/pf-cli.js');
+    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
 
     const results = await session.search('button');
 
@@ -99,7 +102,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession('/tmp/pf-cli.js');
+    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toBe('# Button\n\nDocs body');
   });

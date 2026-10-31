@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,11 @@ interface ResourceLinkItem {
   uri: string;
   name: string;
   description?: string;
+}
+
+interface ServerSpawnSpec {
+  command: string;
+  args: string[];
 }
 
 const isResourceLinkContent = (
@@ -33,17 +39,52 @@ const parseResourceLinks = (result: CallToolResult): ResourceLinkItem[] => {
 };
 
 /**
- * Resolve the built server CLI path for local dev (tsx) and packaged `dist/` layouts.
+ * Locate the server CLI entry for spawning a stdio MCP child (built `dist/` or dev `tsx`).
+ *
+ * @returns Command and args to exec before `--client` is appended.
  */
-const resolveDefaultServerPath = (): string => {
+const resolveServerSpawn = (): ServerSpawnSpec => {
   const moduleDir = dirname(fileURLToPath(import.meta.url));
-  const candidates = [
+  const require = createRequire(import.meta.url);
+
+  const distCandidates = [
+    join(moduleDir, 'cli.js'),
     join(moduleDir, '..', 'cli.js'),
     join(moduleDir, '..', '..', 'dist', 'cli.js'),
     join(process.cwd(), 'dist', 'cli.js')
   ];
 
-  return candidates.find(candidate => existsSync(candidate)) ?? join(process.cwd(), 'dist', 'cli.js');
+  for (const entry of distCandidates) {
+    if (existsSync(entry)) {
+      return { command: process.execPath, args: [entry] };
+    }
+  }
+
+  const srcCandidates = [
+    join(moduleDir, '..', 'cli.ts'),
+    join(moduleDir, '..', '..', 'src', 'cli.ts')
+  ];
+
+  for (const entry of srcCandidates) {
+    if (existsSync(entry)) {
+      const tsxCli = require.resolve('tsx/cli');
+
+      return { command: process.execPath, args: [tsxCli, entry] };
+    }
+  }
+
+  throw new Error(
+    'PatternFly MCP server entry not found. Run `npm run build` or use a source checkout with src/cli.ts.'
+  );
+};
+
+/**
+ * @deprecated Prefer {@link resolveServerSpawn}. Returns dist path only when present.
+ */
+const resolveDefaultServerPath = (): string => {
+  const spawn = resolveServerSpawn();
+
+  return spawn.args[spawn.args.length - 1] ?? join(process.cwd(), 'dist', 'cli.js');
 };
 
 /**
@@ -54,13 +95,13 @@ class AgentlessClientSession {
   private transport: StdioClientTransport;
 
   /**
-   * @param serverPath - Path to the built PatternFly MCP server CLI.
-   * @param extraArgs - Additional server CLI arguments.
+   * @param spawn - Server process command (defaults to {@link resolveServerSpawn}).
+   * @param extraArgs - Additional server CLI arguments (e.g. `--log-stderr`).
    */
-  constructor(serverPath: string = resolveDefaultServerPath(), extraArgs: string[] = []) {
+  constructor(spawn: ServerSpawnSpec = resolveServerSpawn(), extraArgs: string[] = []) {
     this.transport = new StdioClientTransport({
-      command: 'node',
-      args: [serverPath, '--client', ...extraArgs],
+      command: spawn.command,
+      args: [...spawn.args, '--client', ...extraArgs],
       stderr: 'pipe'
     });
 
@@ -112,5 +153,7 @@ export {
   AgentlessClientSession,
   parseResourceLinks,
   resolveDefaultServerPath,
-  type ResourceLinkItem
+  resolveServerSpawn,
+  type ResourceLinkItem,
+  type ServerSpawnSpec
 };
