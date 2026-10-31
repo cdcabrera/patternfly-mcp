@@ -5,6 +5,7 @@ import {
   clearTerminal,
   copyTextToClipboard,
   enterAlternateScreen,
+  isClipboardAvailable,
   leaveAlternateScreen
 } from './client.helpers';
 import { createKeyReader, promptLine } from './client.input';
@@ -90,7 +91,8 @@ const renderReaderScreen = (
   titleLine: string,
   bodyLines: string[],
   scrollOffset: number,
-  statusNote = ''
+  statusNote = '',
+  clipboardEnabled = true
 ): void => {
   clearTerminal();
   const width = terminalWidth();
@@ -117,17 +119,20 @@ const renderReaderScreen = (
 
   output.write(`  └${'─'.repeat(innerWidth + 1)}\n`);
   output.write(`\n  ${scrollLabel}${statusNote ? `  ·  ${statusNote}` : ''}\n`);
-  output.write('  [↑/↓ PgUp/PgDn scroll · Enter/b back · c copy · r save .md · q quit]\n');
+  const copyHint = clipboardEnabled ? 'c copy · ' : '';
+
+  output.write(`  [↑/↓ PgUp/PgDn scroll · Enter/b back · ${copyHint}r save .md · q quit]\n`);
 };
 
-const displayTextForTerminal = (fullText: string): string => {
+const displayTextForTerminal = (fullText: string, clipboardEnabled: boolean): string => {
   if (fullText.length <= MAX_TERMINAL_DISPLAY_CHARS) {
     return fullText;
   }
 
   const omitted = fullText.length - MAX_TERMINAL_DISPLAY_CHARS;
+  const exportHint = clipboardEnabled ? '[c] copy or [r] save full file' : '[r] save full file';
 
-  return `${fullText.slice(0, MAX_TERMINAL_DISPLAY_CHARS)}\n\n… [${omitted} characters hidden in view — [c] copy or [r] save full file]`;
+  return `${fullText.slice(0, MAX_TERMINAL_DISPLAY_CHARS)}\n\n… [${omitted} characters hidden in view — ${exportHint}]`;
 };
 
 const markdownFileNameForUri = (uri: string): string => {
@@ -219,14 +224,16 @@ const runSearchScreen = async (
  * @param session - Connected MCP client session.
  * @param uri - Resource URI to load.
  * @param keys - Shared TTY key reader for the interactive session.
+ * @param clipboardEnabled - When false, copy shortcut is hidden and ignored.
  */
 const runReaderScreen = async (
   session: AgentlessClientSession,
   uri: string,
-  keys: ReturnType<typeof createKeyReader>
+  keys: ReturnType<typeof createKeyReader>,
+  clipboardEnabled: boolean
 ): Promise<ReaderAction> => {
   const { text: fullText } = await session.readResource(uri);
-  const body = displayTextForTerminal(fullText);
+  const body = displayTextForTerminal(fullText, clipboardEnabled);
   const titleLine = fullText.split('\n').find(line => line.trim().length)?.replace(/^#\s*/, '') ?? uri;
   const innerWidth = terminalWidth() - 4;
   const bodyLines = wrapLines(body, innerWidth);
@@ -236,7 +243,7 @@ const runReaderScreen = async (
   const maxScroll = (): number => Math.max(0, bodyLines.length - readerBodyRows());
 
   for (;;) {
-    renderReaderScreen(uri, titleLine, bodyLines, scrollOffset, statusNote);
+    renderReaderScreen(uri, titleLine, bodyLines, scrollOffset, statusNote, clipboardEnabled);
     statusNote = '';
     const key = await keys.readKey();
 
@@ -268,7 +275,7 @@ const runReaderScreen = async (
       continue;
     }
 
-    if (key === 'c') {
+    if (key === 'c' && clipboardEnabled) {
       const copyResult = copyTextToClipboard(fullText);
 
       statusNote = copyResult.message;
@@ -319,6 +326,7 @@ const runInteractiveClient = async (
   }
 
   const keys = createKeyReader();
+  const clipboardEnabled = isClipboardAvailable();
 
   enterAlternateScreen();
   keys.enable();
@@ -338,7 +346,7 @@ const runInteractiveClient = async (
       }
 
       searchState = searchOutcome.state;
-      const readerOutcome = await runReaderScreen(session, searchOutcome.uri, keys);
+      const readerOutcome = await runReaderScreen(session, searchOutcome.uri, keys, clipboardEnabled);
 
       if (readerOutcome === 'quit') {
         break;

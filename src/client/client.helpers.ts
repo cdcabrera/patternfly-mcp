@@ -1,10 +1,68 @@
 import { Buffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 
 interface ClipboardCopyResult {
   ok: boolean;
   message: string;
 }
+
+/**
+ * Best-effort detection of OCI/container runtimes (Docker, Podman, etc.).
+ */
+const isRunningInContainer = (): boolean => {
+  if (existsSync('/.dockerenv')) {
+    return true;
+  }
+
+  try {
+    const cgroup = readFileSync('/proc/1/cgroup', 'utf8');
+
+    return /docker|podman|containerd|kubepods|libpod/i.test(cgroup);
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Whether the interactive reader should offer clipboard copy (`c`).
+ *
+ * Uses lightweight OS/environment checks at startup (no clipboard probe write).
+ * Override with `PF_CLIENT_CLIPBOARD=0` or `PF_CLIENT_CLIPBOARD=1`.
+ */
+const isClipboardAvailable = (): boolean => {
+  const override = process.env.PF_CLIENT_CLIPBOARD?.trim().toLowerCase();
+
+  if (override === '0' || override === 'false' || override === 'no') {
+    return false;
+  }
+
+  if (override === '1' || override === 'true' || override === 'yes') {
+    return true;
+  }
+
+  if (process.env.CI) {
+    return false;
+  }
+
+  if (isRunningInContainer()) {
+    return false;
+  }
+
+  if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) {
+    return false;
+  }
+
+  if (process.platform === 'darwin' || process.platform === 'win32') {
+    return true;
+  }
+
+  if (process.platform === 'linux') {
+    return true;
+  }
+
+  return false;
+};
 
 /**
  * Clear the terminal viewport (full reset).
@@ -88,6 +146,7 @@ export {
   copyTextOsc52,
   copyTextToClipboard,
   enterAlternateScreen,
+  isClipboardAvailable,
   leaveAlternateScreen,
   type ClipboardCopyResult
 };
