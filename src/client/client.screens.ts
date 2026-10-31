@@ -1,4 +1,3 @@
-import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import {
   clearTerminal,
@@ -6,6 +5,7 @@ import {
   enterAlternateScreen,
   leaveAlternateScreen
 } from './client.helpers';
+import { createKeyReader, promptLine } from './client.input';
 import { type AgentlessClientSession, type ResourceLinkItem } from './client.transport';
 
 interface SearchScreenState {
@@ -59,57 +59,6 @@ const wrapLines = (text: string, width: number): string[] => {
   return lines;
 };
 
-const readKey = (): Promise<string> =>
-  new Promise(resolve => {
-    const onData = (chunk: Buffer) => {
-      input.off('data', onData);
-      const key = chunk.toString('utf8');
-
-      if (key === '\u0003') {
-        resolve('ctrl-c');
-
-        return;
-      }
-
-      if (key === '\r' || key === '\n') {
-        resolve('enter');
-
-        return;
-      }
-
-      if (key === '\u001b[A') {
-        resolve('up');
-
-        return;
-      }
-
-      if (key === '\u001b[B') {
-        resolve('down');
-
-        return;
-      }
-
-      if (key === '\u001b') {
-        resolve('esc');
-
-        return;
-      }
-
-      resolve(key);
-    };
-
-    input.once('data', onData);
-  });
-
-const promptForQuery = async (current: string): Promise<string> => {
-  const rl = readline.createInterface({ input, output });
-  const answer = await rl.question(`Search query [${current}]: `);
-
-  rl.close();
-
-  return answer.trim() || current;
-};
-
 const renderSearchScreen = (state: SearchScreenState): void => {
   clearTerminal();
   const width = terminalWidth();
@@ -118,7 +67,7 @@ const renderSearchScreen = (state: SearchScreenState): void => {
   output.write(`\n  ◇ PatternFly Search: "${state.query}" (${count} matches found)\n\n`);
 
   if (!count) {
-    output.write('  No matches. Press / to search again or q to quit.\n');
+    output.write('  No matches yet. Press / to change query or q to quit.\n\n');
   }
 
   state.results.forEach((item, index) => {
@@ -129,7 +78,7 @@ const renderSearchScreen = (state: SearchScreenState): void => {
     output.write(`  ${label.slice(0, width - 4)}\n`);
   });
 
-  output.write('\n  [↑/↓ navigate, Enter view, / filter, q quit]\n');
+  output.write('\n  [↑/↓ navigate, Enter view, / new query, q quit]\n');
 };
 
 const renderReaderScreen = (uri: string, titleLine: string, body: string): void => {
@@ -151,18 +100,17 @@ const renderReaderScreen = (uri: string, titleLine: string, body: string): void 
   output.write('\n  [b] Back   [c] Copy   [r] Raw text   [q] Quit\n');
 };
 
-const withRawInput = async <T>(run: () => Promise<T>): Promise<T> => {
-  const wasRaw = input.isRaw;
+const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, current: string): Promise<string> => {
+  leaveAlternateScreen();
+  keys.disable();
+  clearTerminal();
 
-  input.setRawMode?.(true);
-  input.resume();
+  const query = await promptLine('  ◇ PatternFly Search — enter query', current);
 
-  try {
-    return await run();
-  } finally {
-    input.setRawMode?.(wasRaw ?? false);
-    input.pause();
-  }
+  enterAlternateScreen();
+  keys.enable();
+
+  return query;
 };
 
 /**
@@ -170,10 +118,12 @@ const withRawInput = async <T>(run: () => Promise<T>): Promise<T> => {
  *
  * @param session - Connected MCP client session.
  * @param initialState - Query, results, and selection index.
+ * @param keys - Shared TTY key reader for the interactive session.
  */
 const runSearchScreen = async (
   session: AgentlessClientSession,
-  initialState: SearchScreenState
+  initialState: SearchScreenState,
+  keys: ReturnType<typeof createKeyReader>
 ): Promise<{ action: 'quit' } | { action: 'open'; uri: string; state: SearchScreenState }> => {
   const state: SearchScreenState = { ...initialState };
 
@@ -182,10 +132,9 @@ const runSearchScreen = async (
     state.selectedIndex = 0;
   }
 
-  // Interactive loop until quit or open
   for (;;) {
     renderSearchScreen(state);
-    const key = await withRawInput(readKey);
+    const key = await keys.readKey();
 
     if (key === 'q' || key === 'ctrl-c') {
       return { action: 'quit' };
@@ -202,8 +151,12 @@ const runSearchScreen = async (
     }
 
     if (key === '/') {
-      input.setRawMode?.(false);
-      state.query = await promptForQuery(state.query);
+      state.query = await promptForSearchQuery(keys, state.query);
+
+      if (!state.query) {
+        continue;
+      }
+
       state.results = await session.search(state.query);
       state.selectedIndex = 0;
       continue;
@@ -228,18 +181,19 @@ const runSearchScreen = async (
  *
  * @param session - Connected MCP client session.
  * @param uri - Resource URI to load.
+ * @param keys - Shared TTY key reader for the interactive session.
  */
 const runReaderScreen = async (
   session: AgentlessClientSession,
-  uri: string
+  uri: string,
+  keys: ReturnType<typeof createKeyReader>
 ): Promise<ReaderAction> => {
   const body = await session.readResource(uri);
   const titleLine = body.split('\n').find(line => line.trim().length)?.replace(/^#\s*/, '') ?? uri;
 
-  // Interactive loop until quit or open
   for (;;) {
     renderReaderScreen(uri, titleLine, body);
-    const key = await withRawInput(readKey);
+    const key = await keys.readKey();
 
     if (key === 'b' || key === 'esc') {
       return 'back';
@@ -256,6 +210,7 @@ const runReaderScreen = async (
 
     if (key === 'r') {
       leaveAlternateScreen();
+      keys.dispose();
       output.write(`${body}\n`);
 
       return 'raw';
@@ -267,40 +222,55 @@ const runReaderScreen = async (
  * Interactive two-screen search and read loop for TTY sessions.
  *
  * @param session - Connected MCP client session.
- * @param initialQuery - Initial search string.
+ * @param initialQuery - Optional initial search string (prompts when empty).
  */
 const runInteractiveClient = async (
   session: AgentlessClientSession,
-  initialQuery: string
+  initialQuery = ''
 ): Promise<void> => {
+  if (!input.isTTY || !output.isTTY) {
+    throw new Error('Interactive pf-client requires a TTY. Use `pf-client search <query> --json` for scripts.');
+  }
+
+  let query = initialQuery.trim();
+
+  if (!query) {
+    clearTerminal();
+    query = await promptLine('  ◇ PatternFly Search — enter query');
+
+    if (!query) {
+      return;
+    }
+  }
+
+  const keys = createKeyReader();
+
   enterAlternateScreen();
+  keys.enable();
 
   let searchState: SearchScreenState = {
-    query: initialQuery,
-    results: [],
+    query,
+    results: await session.search(query),
     selectedIndex: 0
   };
 
   try {
-    if (initialQuery) {
-      searchState.results = await session.search(initialQuery);
-    }
-
     for (;;) {
-      const searchOutcome = await runSearchScreen(session, searchState);
+      const searchOutcome = await runSearchScreen(session, searchState, keys);
 
       if (searchOutcome.action === 'quit') {
         break;
       }
 
       searchState = searchOutcome.state;
-      const readerOutcome = await runReaderScreen(session, searchOutcome.uri);
+      const readerOutcome = await runReaderScreen(session, searchOutcome.uri, keys);
 
       if (readerOutcome === 'quit' || readerOutcome === 'raw') {
         break;
       }
     }
   } finally {
+    keys.dispose();
     leaveAlternateScreen();
   }
 };
