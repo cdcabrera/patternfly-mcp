@@ -1,3 +1,5 @@
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   ResourceTemplate,
   type McpServer,
@@ -5,6 +7,9 @@ import {
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type Tool } from '@modelcontextprotocol/sdk/types.js';
+import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js';
+// import { StdioClientTransport as McpStdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { type CallToolResult as McpClientCallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { type GlobalOptions } from './options';
 import { listAllCombinations, listIncrementalCombinations, splitUri } from './server.helpers';
 
@@ -167,6 +172,20 @@ type McpResource = [
 type McpResourceCreator = ((options?: GlobalOptions) => McpResource) & { resourceName?: string };
 
 /**
+ * In-memory bidirectional communication channel for in-process MCP client-server communication.
+ *
+ * @interface McpChannel
+ * @property clientChannel - Transport channel for the client end.
+ * @property serverChannel - Transport channel for the server end.
+ * @property close - Teardown callback that safely closes both ends of the channel.
+ */
+interface McpChannel {
+  clientChannel: Transport;
+  serverChannel: Transport;
+  close: () => Promise<void>;
+}
+
+/**
  * Register an MCP resource.
  *
  * Capable of registering specific resource variations indicated when a URI template is used,
@@ -262,8 +281,42 @@ const registerResource = (
   server.registerResource(name, uriOrTemplate as any, config, callback);
 };
 
+/**
+ * Creates a linked in-memory communication channel for in-process MCP client-server communication.
+ * Encapsulates SDK transport wiring and lifecycle teardown.
+ *
+ * @returns {McpChannel} Linked channel with client, server, and unified close handles
+ */
+const createMcpChannel = (): McpChannel => {
+  let channels: [InMemoryTransport, InMemoryTransport];
+
+  try {
+    channels = InMemoryTransport.createLinkedPair();
+  } catch (error) {
+    throw new Error(`Failed to create MCP channel: ${error}`);
+  }
+
+  const [clientChannel, serverChannel] = channels;
+
+  return {
+    clientChannel,
+    serverChannel,
+    close: async (): Promise<void> => {
+      await Promise.allSettled([
+        clientChannel.close().catch(() => {}),
+        serverChannel.close().catch(() => {})
+      ]);
+    }
+  };
+};
+
 export {
+  createMcpChannel,
+  type McpChannel,
   registerResource,
+  McpClient,
+  // McpStdioClientTransport,
+  type McpClientCallToolResult,
   type McpTool,
   type McpToolCreator,
   type McpResourceListResult,
@@ -272,5 +325,6 @@ export {
   type McpResourceMetadataComplete,
   type McpResourceMetadataCompleteMemo,
   type McpResource,
-  type McpResourceCreator
+  type McpResourceCreator,
+  type McpServer
 };
