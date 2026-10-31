@@ -1,12 +1,14 @@
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import {
   clearTerminal,
-  copyTextOsc52,
+  copyTextToClipboard,
   enterAlternateScreen,
   leaveAlternateScreen
 } from './client.helpers';
 import { createKeyReader, promptLine } from './client.input';
-import { type AgentlessClientSession, type ResourceLinkItem } from './client.transport';
+import { type AgentlessClientSession, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client.transport';
 
 interface SearchScreenState {
   query: string;
@@ -14,7 +16,7 @@ interface SearchScreenState {
   selectedIndex: number;
 }
 
-type ReaderAction = 'back' | 'quit' | 'raw';
+type ReaderAction = 'back' | 'quit';
 
 const terminalWidth = (): number => output.columns ?? 80;
 
@@ -115,7 +117,24 @@ const renderReaderScreen = (
 
   output.write(`  └${'─'.repeat(innerWidth + 1)}\n`);
   output.write(`\n  ${scrollLabel}${statusNote ? `  ·  ${statusNote}` : ''}\n`);
-  output.write('  [↑/↓ PgUp/PgDn scroll · Enter/b back · c copy · r raw · q quit]\n');
+  output.write('  [↑/↓ PgUp/PgDn scroll · Enter/b back · c copy · r save .md · q quit]\n');
+};
+
+const displayTextForTerminal = (fullText: string): string => {
+  if (fullText.length <= MAX_TERMINAL_DISPLAY_CHARS) {
+    return fullText;
+  }
+
+  const omitted = fullText.length - MAX_TERMINAL_DISPLAY_CHARS;
+
+  return `${fullText.slice(0, MAX_TERMINAL_DISPLAY_CHARS)}\n\n… [${omitted} characters hidden in view — [c] copy or [r] save full file]`;
+};
+
+const markdownFileNameForUri = (uri: string): string => {
+  const tail = uri.split('/').pop()?.split('?')[0] ?? 'resource';
+  const safe = tail.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
+
+  return `patternfly-${safe.slice(0, 64)}.md`;
 };
 
 const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, current: string): Promise<string> => {
@@ -206,8 +225,9 @@ const runReaderScreen = async (
   uri: string,
   keys: ReturnType<typeof createKeyReader>
 ): Promise<ReaderAction> => {
-  const { text: body } = await session.readResource(uri);
-  const titleLine = body.split('\n').find(line => line.trim().length)?.replace(/^#\s*/, '') ?? uri;
+  const { text: fullText } = await session.readResource(uri);
+  const body = displayTextForTerminal(fullText);
+  const titleLine = fullText.split('\n').find(line => line.trim().length)?.replace(/^#\s*/, '') ?? uri;
   const innerWidth = terminalWidth() - 4;
   const bodyLines = wrapLines(body, innerWidth);
   let scrollOffset = 0;
@@ -249,18 +269,26 @@ const runReaderScreen = async (
     }
 
     if (key === 'c') {
-      const copiedAll = copyTextOsc52(body);
+      const copyResult = copyTextToClipboard(fullText);
 
-      statusNote = copiedAll ? 'Copied to clipboard' : 'Copied first 48k chars to clipboard';
+      statusNote = copyResult.message;
       continue;
     }
 
     if (key === 'r') {
-      leaveAlternateScreen();
-      keys.dispose();
-      output.write(`${body}\n`);
+      const fileName = markdownFileNameForUri(uri);
+      const filePath = join(process.cwd(), fileName);
 
-      return 'raw';
+      try {
+        await writeFile(filePath, fullText, 'utf8');
+        statusNote = `Saved ${fullText.length} chars to ${fileName}`;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+
+        statusNote = `Save failed: ${message}`;
+      }
+
+      continue;
     }
   }
 };
@@ -312,7 +340,7 @@ const runInteractiveClient = async (
       searchState = searchOutcome.state;
       const readerOutcome = await runReaderScreen(session, searchOutcome.uri, keys);
 
-      if (readerOutcome === 'quit' || readerOutcome === 'raw') {
+      if (readerOutcome === 'quit') {
         break;
       }
     }

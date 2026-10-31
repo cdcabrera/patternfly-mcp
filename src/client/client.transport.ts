@@ -17,7 +17,7 @@ interface ResourceReadResult {
   truncated: boolean;
 }
 
-const MAX_RESOURCE_TEXT_CHARS = 512_000;
+const MAX_TERMINAL_DISPLAY_CHARS = 512_000;
 
 interface ServerSpawnSpec {
   command: string;
@@ -172,18 +172,9 @@ class AgentlessClientSession {
   async readResource(uri: string): Promise<ResourceReadResult> {
     try {
       const result = await this.client.readResource({ uri });
-      let text = materializeResourceText(result.contents ?? []);
+      const text = materializeResourceText(result.contents ?? []);
 
-      let truncated = false;
-
-      if (text.length > MAX_RESOURCE_TEXT_CHARS) {
-        const omitted = text.length - MAX_RESOURCE_TEXT_CHARS;
-
-        text = `${text.slice(0, MAX_RESOURCE_TEXT_CHARS)}\n\n… [${omitted} characters omitted from terminal view — use \`pf-client read "${uri}"\` for full output]`;
-        truncated = true;
-      }
-
-      return { text, truncated };
+      return { text, truncated: false };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 
@@ -204,6 +195,7 @@ class AgentlessClientSession {
 export {
   AgentlessClientSession,
   materializeResourceText,
+  MAX_TERMINAL_DISPLAY_CHARS,
   parseResourceLinks,
   resolveDefaultServerPath,
   resolveServerSpawn,
