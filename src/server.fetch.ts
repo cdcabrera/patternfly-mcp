@@ -203,7 +203,8 @@ class FetchError extends Error {
    * @param options.statusText - HTTP status text.
    * @param options.cause - Cause of the error.
    * @param options.cancelled - Indicates if the fetch operation was canceled.
-   * @param options.sanitize - Activates message sanitizing.
+   * @param options.sanitize - Applies best-effort sanitization to `message` and `statusText`. The `cause` is
+   *   preserved unchanged.
    */
   constructor(options: {
     message: string;
@@ -549,8 +550,10 @@ const setFetch = (options = getOptions()): SetFetch => {
    */
   const executeFetch = async (url: string, settings: RequestInit = {}): Promise<FetchResponse> => {
     if (isTestModeFetchBlocked) {
+      const displayUrl = xhrFetch.sanitizeMessages ? sanitizeMessage(url) : url;
+
       log.warn(
-        `Network access blocked for ${sanitizeMessage(url)}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
+        `Network access blocked for ${displayUrl}: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.`,
         `Configure 'modeOptions.test.baseUrl' to allow outbound fetches.`
       );
     }

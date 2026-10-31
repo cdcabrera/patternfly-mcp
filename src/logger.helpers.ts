@@ -53,6 +53,10 @@ const sanitizeHeaderContent = (input?: unknown, {
  * @param [options] - Configurable options.
  * @param [options.redacted] - Redact default value.
  * @param [options.secretParamRegExp] - Secret param regex.
+ * @note Keep matched URL candidates intact. Query values may validly end with delimiter-like characters such as
+ *   `)`, `]`, or `>`, so do not strip them based on surrounding prose.
+ * @note URL query and basic-auth redaction applies only to candidates accepted by `parseUrl`. Malformed URL-like
+ *   text is returned unchanged; this helper is not a general-purpose `key=value` secret scanner.
  */
 const sanitizeUrlContent = (
   input?: unknown,
@@ -87,7 +91,7 @@ const sanitizeUrlContent = (
     return parsed.toString();
   };
 
-  return input.replace(/https?:\/\/[^\s)]+/gi, (urlCandidate: string) =>
+  return input.replace(/https?:\/\/[^\s]+/gi, (urlCandidate: string) =>
     sanitize(urlCandidate) || urlCandidate);
 };
 
@@ -128,11 +132,12 @@ const sanitizeTokenContent = (
 };
 
 /**
- * Sanitize arbitrary text for logs by redacting:
+ * Best-effort sanitization of log text by redacting:
  * - Authorization/Private-Token header patterns
- * - Secrets embedded in URLs (query params, basic auth) via sanitizeUrl
+ * - Secrets in parseable URL candidates (query params, basic auth) via sanitizeUrlContent
  * - Long token-like substrings (hex/base64-like)
  *
+ * @note This helper does not guarantee redaction of malformed URL-like text or unrecognized short key/value patterns.
  * @param input
  */
 const sanitizeMessage = (

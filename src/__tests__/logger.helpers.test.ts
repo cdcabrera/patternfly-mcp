@@ -56,6 +56,31 @@ describe('sanitizeUrlContent', () => {
       expected: 'Fetch https://example.com/api?access_token=%5BREDACTED%5D now'
     },
     {
+      description: 'sanitize a URL with a parenthesis in its path',
+      input: 'Fetch https://example.com/a)path?token=abc123 now',
+      expected: 'Fetch https://example.com/a)path?token=%5BREDACTED%5D now'
+    },
+    {
+      description: 'sanitize a token ending in a parenthesis',
+      input: 'Fetch (https://example.com/docs?token=abc123)',
+      expected: 'Fetch (https://example.com/docs?token=%5BREDACTED%5D'
+    },
+    {
+      description: 'sanitize a token ending in nested parentheses',
+      input: 'Fetch ((https://example.com/a)path?token=abc123))',
+      expected: 'Fetch ((https://example.com/a)path?token=%5BREDACTED%5D'
+    },
+    {
+      description: 'sanitize a token ending in square brackets',
+      input: 'Fetch [https://example.com/docs?token=abc123]',
+      expected: 'Fetch [https://example.com/docs?token=%5BREDACTED%5D'
+    },
+    {
+      description: 'sanitize a token ending in an angle bracket',
+      input: 'Fetch <https://example.com/docs?token=abc123>',
+      expected: 'Fetch <https://example.com/docs?token=%5BREDACTED%5D'
+    },
+    {
       description: 'non-string input',
       input: null,
       expected: undefined
