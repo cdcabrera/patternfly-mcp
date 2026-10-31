@@ -23,6 +23,10 @@ const resolveKeyToken = (_str: string, key: readline.Key): string => {
     return 'pagedown';
   }
 
+  if (key.name === 'space' || _str === ' ') {
+    return 'pagedown';
+  }
+
   if (key.name === 'return') {
     return 'enter';
   }

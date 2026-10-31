@@ -121,7 +121,7 @@ const renderReaderScreen = (
   output.write(`\n  ${scrollLabel}${statusNote ? `  ·  ${statusNote}` : ''}\n`);
   const copyHint = clipboardEnabled ? 'c copy · ' : '';
 
-  output.write(`  [↑/↓ PgUp/PgDn scroll · Enter/b back · ${copyHint}r save .md · q quit]\n`);
+  output.write(`  [↑/↓ PgUp/PgDn Space scroll · Enter/b back · ${copyHint}r save .md · q quit]\n`);
 };
 
 const displayTextForTerminal = (fullText: string, clipboardEnabled: boolean): string => {
