@@ -389,8 +389,6 @@ const decodeStream = async ({
 /**
  * Opt-in HEAD preflight.
  *
- * @param url
- * @param signal
  * @note Off by default. When enabled via `options.xhrFetch.preflightHead`,
  * we HEAD the URL to catch oversized / disallowed-binary responses without
  * opening a body stream. Returns `null` (and callers fall back to GET-only
@@ -402,6 +400,9 @@ const decodeStream = async ({
  * Header values from HEAD are advisory. Authoritative size enforcement
  * still lives in `decodeStream`. Authoritative type enforcement still
  * lives in `parsePayload`. HEAD is a fast-fail hint, not a gate.
+ *
+ * @param url
+ * @param signal
  */
 const preflight = async (
   url: string,
