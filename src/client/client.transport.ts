@@ -12,6 +12,13 @@ interface ResourceLinkItem {
   description?: string;
 }
 
+interface ResourceReadResult {
+  text: string;
+  truncated: boolean;
+}
+
+const MAX_RESOURCE_TEXT_CHARS = 512_000;
+
 interface ServerSpawnSpec {
   command: string;
   args: string[];
@@ -36,6 +43,33 @@ const parseResourceLinks = (result: CallToolResult): ResourceLinkItem[] => {
     name: item.name,
     ...(item.description !== undefined ? { description: item.description } : {})
   }));
+};
+
+const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<Client['readResource']>>['contents']>): string => {
+  const parts: string[] = [];
+
+  for (const content of contents) {
+    if ('text' in content && typeof content.text === 'string') {
+      parts.push(content.text);
+      continue;
+    }
+
+    if ('blob' in content && typeof content.blob === 'string') {
+      try {
+        parts.push(Buffer.from(content.blob, 'base64').toString('utf8'));
+      } catch {
+        parts.push('[Binary resource blob — use `pf-client read <uri>` in a shell to redirect output to a file.]');
+      }
+    }
+  }
+
+  const joined = parts.join('\n\n---\n\n').trim();
+
+  if (joined.length) {
+    return joined;
+  }
+
+  return '(No readable text returned for this URI. Prefer a specific doc entry instead of a collection link.)';
 };
 
 /**
@@ -135,11 +169,29 @@ class AgentlessClientSession {
    *
    * @param uri - MCP resource URI to read.
    */
-  async readResource(uri: string): Promise<string> {
-    const result = await this.client.readResource({ uri });
-    const content = result.contents?.[0];
+  async readResource(uri: string): Promise<ResourceReadResult> {
+    try {
+      const result = await this.client.readResource({ uri });
+      let text = materializeResourceText(result.contents ?? []);
 
-    return content && 'text' in content && typeof content.text === 'string' ? content.text : '';
+      let truncated = false;
+
+      if (text.length > MAX_RESOURCE_TEXT_CHARS) {
+        const omitted = text.length - MAX_RESOURCE_TEXT_CHARS;
+
+        text = `${text.slice(0, MAX_RESOURCE_TEXT_CHARS)}\n\n… [${omitted} characters omitted from terminal view — use \`pf-client read "${uri}"\` for full output]`;
+        truncated = true;
+      }
+
+      return { text, truncated };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      return {
+        text: `# Unable to read resource\n\n\`${uri}\`\n\n${message}\n\nIf this was a **Collection** link, open a specific doc row from search instead.`,
+        truncated: false
+      };
+    }
   }
 
   /** Close the MCP session and child server process. */
@@ -151,9 +203,11 @@ class AgentlessClientSession {
 
 export {
   AgentlessClientSession,
+  materializeResourceText,
   parseResourceLinks,
   resolveDefaultServerPath,
   resolveServerSpawn,
   type ResourceLinkItem,
+  type ResourceReadResult,
   type ServerSpawnSpec
 };

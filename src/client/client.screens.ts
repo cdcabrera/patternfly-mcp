@@ -18,6 +18,8 @@ type ReaderAction = 'back' | 'quit' | 'raw';
 
 const terminalWidth = (): number => output.columns ?? 80;
 
+const readerBodyRows = (): number => Math.max(8, (output.rows ?? 24) - 10);
+
 const badgeForResult = (item: ResourceLinkItem): string => {
   if (item.uri.includes('/records/') || item.uri.startsWith('patternfly://records/')) {
     return '[Record]';
@@ -81,10 +83,21 @@ const renderSearchScreen = (state: SearchScreenState): void => {
   output.write('\n  [↑/↓ navigate, Enter view, / new query, q quit]\n');
 };
 
-const renderReaderScreen = (uri: string, titleLine: string, body: string): void => {
+const renderReaderScreen = (
+  uri: string,
+  titleLine: string,
+  bodyLines: string[],
+  scrollOffset: number,
+  statusNote = ''
+): void => {
   clearTerminal();
   const width = terminalWidth();
   const innerWidth = width - 4;
+  const viewport = readerBodyRows();
+  const visible = bodyLines.slice(scrollOffset, scrollOffset + viewport);
+  const total = bodyLines.length;
+  const scrollEnd = Math.min(total, scrollOffset + visible.length);
+  const scrollLabel = total ? `lines ${scrollOffset + 1}-${scrollEnd} of ${total}` : 'empty';
 
   output.write(`\n  ┌── ${uri} ${'─'.repeat(Math.max(0, innerWidth - uri.length - 5))}\n`);
   wrapLines(titleLine, innerWidth).forEach(line => {
@@ -92,12 +105,17 @@ const renderReaderScreen = (uri: string, titleLine: string, body: string): void 
   });
   output.write(`  ├${'─'.repeat(innerWidth + 1)}\n`);
 
-  wrapLines(body, innerWidth).slice(0, Math.max(10, (output.rows ?? 24) - 8)).forEach(line => {
+  if (!visible.length) {
+    output.write(`  │ ${'(no content)'.padEnd(innerWidth)}\n`);
+  }
+
+  visible.forEach(line => {
     output.write(`  │ ${line.padEnd(innerWidth)}\n`);
   });
 
   output.write(`  └${'─'.repeat(innerWidth + 1)}\n`);
-  output.write('\n  [b] Back   [c] Copy   [r] Raw text   [q] Quit\n');
+  output.write(`\n  ${scrollLabel}${statusNote ? `  ·  ${statusNote}` : ''}\n`);
+  output.write('  [↑/↓ PgUp/PgDn scroll · Enter/b back · c copy · r raw · q quit]\n');
 };
 
 const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, current: string): Promise<string> => {
@@ -188,14 +206,21 @@ const runReaderScreen = async (
   uri: string,
   keys: ReturnType<typeof createKeyReader>
 ): Promise<ReaderAction> => {
-  const body = await session.readResource(uri);
+  const { text: body } = await session.readResource(uri);
   const titleLine = body.split('\n').find(line => line.trim().length)?.replace(/^#\s*/, '') ?? uri;
+  const innerWidth = terminalWidth() - 4;
+  const bodyLines = wrapLines(body, innerWidth);
+  let scrollOffset = 0;
+  let statusNote = '';
+
+  const maxScroll = (): number => Math.max(0, bodyLines.length - readerBodyRows());
 
   for (;;) {
-    renderReaderScreen(uri, titleLine, body);
+    renderReaderScreen(uri, titleLine, bodyLines, scrollOffset, statusNote);
+    statusNote = '';
     const key = await keys.readKey();
 
-    if (key === 'b' || key === 'esc') {
+    if (key === 'b' || key === 'esc' || key === 'enter') {
       return 'back';
     }
 
@@ -203,8 +228,30 @@ const runReaderScreen = async (
       return 'quit';
     }
 
+    if (key === 'up') {
+      scrollOffset = Math.max(0, scrollOffset - 1);
+      continue;
+    }
+
+    if (key === 'down') {
+      scrollOffset = Math.min(maxScroll(), scrollOffset + 1);
+      continue;
+    }
+
+    if (key === 'pageup') {
+      scrollOffset = Math.max(0, scrollOffset - readerBodyRows());
+      continue;
+    }
+
+    if (key === 'pagedown') {
+      scrollOffset = Math.min(maxScroll(), scrollOffset + readerBodyRows());
+      continue;
+    }
+
     if (key === 'c') {
-      copyTextOsc52(body);
+      const copiedAll = copyTextOsc52(body);
+
+      statusNote = copiedAll ? 'Copied to clipboard' : 'Copied first 48k chars to clipboard';
       continue;
     }
 

@@ -117,7 +117,7 @@ const runPfClient = async (
         process.exit(1);
       }
 
-      const markdown = await session.readResource(uri);
+      const { text: markdown } = await session.readResource(uri);
 
       process.stdout.write(`${markdown}\n`);
 

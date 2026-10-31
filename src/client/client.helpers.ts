@@ -25,11 +25,16 @@ const leaveAlternateScreen = (): void => {
  * Copy plain text to the system clipboard via OSC-52 (supported in many modern terminals).
  *
  * @param text - UTF-8 string to place on the clipboard.
+ * @returns Whether the full string was copied (false when truncated for terminal limits).
  */
-const copyTextOsc52 = (text: string): void => {
-  const encoded = Buffer.from(text, 'utf8').toString('base64');
+const copyTextOsc52 = (text: string): boolean => {
+  const OSC52_MAX_CHARS = 48_000;
+  const payload = text.length > OSC52_MAX_CHARS ? text.slice(0, OSC52_MAX_CHARS) : text;
+  const encoded = Buffer.from(payload, 'utf8').toString('base64');
 
   process.stdout.write(`\x1b]52;c;${encoded}\x07`);
+
+  return payload.length === text.length;
 };
 
 export {

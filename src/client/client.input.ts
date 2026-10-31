@@ -2,6 +2,50 @@ import readline from 'node:readline';
 import { createInterface as createPromiseInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
+const resolveKeyToken = (_str: string, key: readline.Key): string => {
+  if (key.ctrl && key.name === 'c') {
+    return 'ctrl-c';
+  }
+
+  if (key.name === 'up') {
+    return 'up';
+  }
+
+  if (key.name === 'down') {
+    return 'down';
+  }
+
+  if (key.name === 'pageup') {
+    return 'pageup';
+  }
+
+  if (key.name === 'pagedown') {
+    return 'pagedown';
+  }
+
+  if (key.name === 'return') {
+    return 'enter';
+  }
+
+  if (key.name === 'escape') {
+    return 'esc';
+  }
+
+  if (key.name === 'backspace') {
+    return 'backspace';
+  }
+
+  if (_str.length === 1) {
+    return _str;
+  }
+
+  if (key.name && /^[a-z0-9]$/i.test(key.name)) {
+    return key.name;
+  }
+
+  return 'other';
+};
+
 /**
  * Create a TTY key reader using Node readline keypress events (handles arrow keys reliably).
  */
@@ -19,50 +63,7 @@ const createKeyReader = () => {
     const resolve = pending;
 
     pending = null;
-
-    if (key.ctrl && key.name === 'c') {
-      resolve('ctrl-c');
-
-      return;
-    }
-
-    if (key.name === 'up') {
-      resolve('up');
-
-      return;
-    }
-
-    if (key.name === 'down') {
-      resolve('down');
-
-      return;
-    }
-
-    if (key.name === 'return') {
-      resolve('enter');
-
-      return;
-    }
-
-    if (key.name === 'escape') {
-      resolve('esc');
-
-      return;
-    }
-
-    if (key.name === 'backspace') {
-      resolve('backspace');
-
-      return;
-    }
-
-    if (_str.length === 1) {
-      resolve(_str);
-
-      return;
-    }
-
-    resolve('other');
+    resolve(resolveKeyToken(_str, key));
   };
 
   input.on('keypress', onKeypress);
@@ -113,4 +114,4 @@ const promptLine = async (label: string, current = ''): Promise<string> => {
   return answer.trim() || current;
 };
 
-export { createKeyReader, promptLine };
+export { createKeyReader, promptLine, resolveKeyToken };

@@ -104,6 +104,9 @@ describe('AgentlessClientSession', () => {
     const { AgentlessClientSession } = await import('../client/client.transport');
     const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
 
-    await expect(session.readResource('patternfly://docs/button')).resolves.toBe('# Button\n\nDocs body');
+    await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({
+      text: '# Button\n\nDocs body',
+      truncated: false
+    });
   });
 });
