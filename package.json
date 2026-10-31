@@ -24,7 +24,8 @@
   "bin": {
     "patternfly-mcp": "dist/cli.js",
     "pf-mcp": "dist/cli.js",
-    "pfmcp": "dist/cli.js"
+    "pfmcp": "dist/cli.js",
+    "pf-client": "dist/cli.client.js"
   },
   "files": [
     "dist/**/*",
@@ -38,6 +39,7 @@
     "build:collections": "npm run build:collections-api && npm run build:collections-docs && jest --selectProjects tooling:collections",
     "build:collections-api": "UPDATE_COLLECTIONS=true tsx ./tooling/collections/update.patternFlyApi.ts",
     "build:collections-docs": "UPDATE_COLLECTIONS=true tsx ./tooling/collections/update.patternFlyDocs.ts",
+    "client": "tsx src/cli.client.ts",
     "container:build": "bash ./scripts/container.build.sh",
     "container:start": "bash ./scripts/container.run.sh",
     "container:test": "jest --selectProjects audit:container",
