@@ -86,8 +86,11 @@ const sanitizeHeaderContent = (input?: unknown, {
 /**
  * Sanitize a URL string.
  *
- * @note Keep matched URL candidates intact. Query values may validly end with delimiter-like characters such as
- *   `)`, `]`, or `>`, so do not strip them based on surrounding prose.
+ * @note **IMPORTANT! Keep matched URL candidates intact.** Do not filter, trim, or strip trailing
+ *   delimiter characters (such as `)`, `]`, or `>`) based on surrounding prose. It is ambiguous
+ *   and unreliable to determine whether trailing punctuation belongs to the URL or surrounding
+ *   text in arbitrary prose; attempting to filter them introduces fragile heuristics and false
+ *   positives. Candidates are kept intact and delegated directly to `parseUrl`.
  *
  * @note URL query and basic-auth redaction applies only to candidates accepted by `parseUrl`. Malformed URL-like
  *   text is returned unchanged; this helper is not a general-purpose `key=value` secret scanner.
@@ -130,6 +133,8 @@ const sanitizeUrlContent = (
     return parsed.toString();
   };
 
+  // IMPORTANT: Keep matched URL candidates intact. Do not filter or strip trailing delimiters (e.g., ')', ']', '>')
+  // based on surrounding prose. Delimiter classification in unstructured text is unreliable.
   return input.replace(/https?:\/\/[^\s]+/gi, (urlCandidate: string) =>
     sanitize(urlCandidate) || urlCandidate);
 };

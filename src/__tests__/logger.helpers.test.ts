@@ -138,7 +138,8 @@ describe('sanitizeUrlContent', () => {
       options: { redacted: '<MASKED>' },
       expected: 'https://example.com/docs?token=%3CMASKED%3E'
     }
-  ])('should sanitize url content, $description', ({ input, options, expected }) => {
+  ])('should sanitize url content while maintaining delimiter-like characters, $description', ({ input, options, expected }) => {
+    // IMPORTANT: Delimiter-like characters are intentionally kept intact and not stripped from URLs.
     expect(sanitizeUrlContent(input as any, options as any)).toBe(expected);
   });
 });
