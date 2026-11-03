@@ -68,6 +68,40 @@ describe('client.screens', () => {
       expect(groups[1]?.isExpanded).toBe(false);
     });
 
+    it('purges empty collections that have zero child records', () => {
+      const resultsWithEmpty: ResourceLinkItem[] = [
+        {
+          uri: 'patternfly://docs/user-feedback',
+          name: 'User Feedback (Collection)',
+          groupId: 'user-feedback'
+        },
+        {
+          uri: 'patternfly://records/modal-doc',
+          name: 'Modal — Docs (v6)',
+          groupId: 'modal'
+        }
+      ];
+
+      const groups = buildCollectionTree(resultsWithEmpty);
+
+      expect(groups.find(group => group.groupId === 'user-feedback')).toBeUndefined();
+      expect(groups).toHaveLength(1);
+      expect(groups[0]?.records).toHaveLength(1);
+    });
+
+    it('sanitizes raw hex hashes from group titles', () => {
+      const hashResult: ResourceLinkItem = {
+        uri: 'patternfly://records/btn-acc',
+        name: 'Button - Accessibility (v6)',
+        groupId: '39f74ce79e010122147ee142402d9caf4e99382b'
+      };
+
+      const groups = buildCollectionTree([hashResult]);
+
+      expect(groups[0]?.name).toBe('Button');
+      expect(/^[a-f0-9]{32,40}$/i.test(groups[0]!.name)).toBe(false);
+    });
+
     it('auto-expands single collection matches when previousExpanded is empty', () => {
       const singleResults: ResourceLinkItem[] = [
         {
@@ -100,13 +134,14 @@ describe('client.screens', () => {
   });
 
   describe('flattenTree', () => {
-    it('flattens tree based on expanded states', () => {
+    it('flattens multi-record collections and renders single-record matches as top-level records', () => {
       const groups: CollectionGroup[] = [
         {
           groupId: 'modal',
           name: 'Modal',
           records: [
-            { uri: 'patternfly://records/modal-doc', name: 'Modal — Docs (v6)' }
+            { uri: 'patternfly://records/modal-doc-1', name: 'Modal — Docs (v6)' },
+            { uri: 'patternfly://records/modal-doc-2', name: 'Modal — Examples (v6)' }
           ],
           isExpanded: false
         },
@@ -114,21 +149,45 @@ describe('client.screens', () => {
           groupId: 'button',
           name: 'Button',
           records: [
-            { uri: 'patternfly://records/button-doc', name: 'Button — Docs (v6)' }
+            { uri: 'patternfly://records/button-doc-1', name: 'Button — Docs (v6)' },
+            { uri: 'patternfly://records/button-doc-2', name: 'Button — Examples (v6)' }
           ],
           isExpanded: true
+        },
+        {
+          groupId: 'wizard-submit',
+          name: 'Wizard',
+          records: [
+            { uri: 'patternfly://records/wizard-step', name: 'Wizard - Step Actions (v6)' }
+          ],
+          isExpanded: false
         }
       ];
 
       const flat = flattenTree(groups);
 
-      expect(flat).toHaveLength(3);
+      // Expect:
+      // [0]: Collection 'modal' (collapsed)
+      // [1]: Collection 'button' (expanded)
+      // [2]: Record 'Button — Docs' (child of button)
+      // [3]: Record 'Button — Examples' (child of button)
+      // [4]: Record 'Wizard - Step Actions' (standalone top-level record, no collection wrapper)
+      expect(flat).toHaveLength(5);
       expect(flat[0]).toEqual({ kind: 'collection', group: groups[0] });
       expect(flat[1]).toEqual({ kind: 'collection', group: groups[1] });
       expect(flat[2]).toEqual({
         kind: 'record',
         item: groups[1]!.records[0],
         parentGroup: groups[1]
+      });
+      expect(flat[3]).toEqual({
+        kind: 'record',
+        item: groups[1]!.records[1],
+        parentGroup: groups[1]
+      });
+      expect(flat[4]).toEqual({
+        kind: 'record',
+        item: groups[2]!.records[0]
       });
     });
   });
@@ -192,8 +251,8 @@ describe('client.screens', () => {
 
       renderSearchScreen(state);
 
-      expect(outputData).toContain('Filter: <patternfly-docs>  (1 collections, 1 records)');
-      expect(outputData).toContain('[Collection] Modal [1 records]');
+      // Modal has 1 record -> rendered as top-level record, collection count is 0
+      expect(outputData).toContain('Filter: <patternfly-docs>  (0 collections, 1 records)');
       expect(outputData).toContain('[Record] Modal — Docs (v6)');
       expect(outputData).toContain('[<↑/↓> navigate · <Enter> select · <Space> toggle · <Tab> filter · </> search · <q> quit]');
     });
@@ -233,13 +292,18 @@ describe('client.screens', () => {
         name: 'Modal (Collection)',
         groupId: 'modal'
       };
-      const modalRecord: ResourceLinkItem = {
+      const modalRecord1: ResourceLinkItem = {
         uri: 'patternfly://records/modal-doc',
         name: 'Modal — Docs (v6)',
         groupId: 'modal'
       };
+      const modalRecord2: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-schema',
+        name: 'Modal — JSON Schema (v6)',
+        groupId: 'modal'
+      };
 
-      const groups = buildCollectionTree([modalCollection, modalRecord]);
+      const groups = buildCollectionTree([modalCollection, modalRecord1, modalRecord2]);
 
       // starts expanded because 1 group
       groups[0]!.isExpanded = true;
@@ -247,7 +311,7 @@ describe('client.screens', () => {
 
       const state: SearchScreenState = {
         query: 'modal',
-        results: [modalCollection, modalRecord],
+        results: [modalCollection, modalRecord1, modalRecord2],
         collectionGroups: groups,
         flatVisibleTree: flat,
         selectedIndex: 0
@@ -276,20 +340,25 @@ describe('client.screens', () => {
         name: 'Modal (Collection)',
         groupId: 'modal'
       };
-      const modalRecord: ResourceLinkItem = {
+      const modalRecord1: ResourceLinkItem = {
         uri: 'patternfly://records/modal-doc',
         name: 'Modal — Docs (v6)',
         groupId: 'modal'
       };
+      const modalRecord2: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-schema',
+        name: 'Modal — JSON Schema (v6)',
+        groupId: 'modal'
+      };
 
-      const groups = buildCollectionTree([modalCollection, modalRecord]);
+      const groups = buildCollectionTree([modalCollection, modalRecord1, modalRecord2]);
 
       groups[0]!.isExpanded = true;
       const flat = flattenTree(groups);
 
       const state: SearchScreenState = {
         query: 'modal',
-        results: [modalCollection, modalRecord],
+        results: [modalCollection, modalRecord1, modalRecord2],
         collectionGroups: groups,
         flatVisibleTree: flat,
         selectedIndex: 1 // On record node
@@ -309,6 +378,41 @@ describe('client.screens', () => {
         action: 'open',
         uri: 'patternfly://records/modal-doc',
         state: expect.objectContaining({ selectedIndex: 1 })
+      });
+    });
+
+    it('opens reader on enter when standalone top-level record is selected', async () => {
+      const standaloneRecord: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-doc',
+        name: 'Modal — Docs (v6)',
+        groupId: 'modal'
+      };
+
+      const groups = buildCollectionTree([standaloneRecord]);
+      const flat = flattenTree(groups);
+
+      const state: SearchScreenState = {
+        query: 'modal',
+        results: [standaloneRecord],
+        collectionGroups: groups,
+        flatVisibleTree: flat,
+        selectedIndex: 0
+      };
+
+      const keyQueue = ['enter'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'q')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      const result = await runSearchScreen(mockSession as never, state, mockKeys as never);
+
+      expect(result).toEqual({
+        action: 'open',
+        uri: 'patternfly://records/modal-doc',
+        state: expect.objectContaining({ selectedIndex: 0 })
       });
     });
 

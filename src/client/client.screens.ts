@@ -29,7 +29,7 @@ interface CollectionGroup {
 
 type TreeItem =
   | { kind: 'collection'; group: CollectionGroup } |
-  { kind: 'record'; item: ResourceLinkItem; parentGroup: CollectionGroup };
+  { kind: 'record'; item: ResourceLinkItem; parentGroup?: CollectionGroup };
 
 interface SearchScreenState {
   query: string;
@@ -58,6 +58,24 @@ const badgeForResult = (item: ResourceLinkItem): string => {
   return '[Record]';
 };
 
+const isHexHash = (val: string): boolean => /^[a-f0-9]{32,40}$/i.test(val);
+
+const deriveCleanGroupName = (rawName: string, records: ResourceLinkItem[]): string => {
+  if (rawName && !isHexHash(rawName)) {
+    return rawName;
+  }
+
+  const first = records[0];
+
+  if (!first) {
+    return 'Component';
+  }
+
+  const clean = first.name.replace(/\s*\(v\d+\)/i, '').split(/\s+[-—]\s+/)[0]?.trim();
+
+  return clean || 'Component';
+};
+
 const buildCollectionTree = (
   results: ResourceLinkItem[],
   previousExpanded = new Set<string>()
@@ -66,17 +84,20 @@ const buildCollectionTree = (
 
   for (const item of results) {
     const gid = item.groupId || item.uri.split('/').pop() || 'general';
+    const isCollection = item.name.includes('(Collection)');
 
-    if (item.name.includes('(Collection)')) {
+    if (isCollection) {
+      const rawName = item.name.replace(/\s*\(Collection\)/, '').trim();
+
       if (!groupMap.has(gid)) {
         groupMap.set(gid, {
           groupId: gid,
-          name: item.name.replace(/\s*\(Collection\)/, '').trim(),
+          name: rawName,
           records: [],
           isExpanded: previousExpanded.has(gid)
         });
-      } else {
-        groupMap.get(gid)!.name = item.name.replace(/\s*\(Collection\)/, '').trim();
+      } else if (!isHexHash(rawName)) {
+        groupMap.get(gid)!.name = rawName;
       }
     } else {
       if (!groupMap.has(gid)) {
@@ -90,24 +111,45 @@ const buildCollectionTree = (
       groupMap.get(gid)!.records.push(item);
     }
   }
-  const groups = Array.from(groupMap.values());
 
-  if (groups.length === 1 && previousExpanded.size === 0 && groups[0]) {
-    groups[0].isExpanded = true;
+  // Purge any collection that ended up with 0 child records in search results
+  const activeGroups = Array.from(groupMap.values()).filter(group => group.records.length > 0);
+
+  // Sanitize group titles so hashes never display to users
+  for (const group of activeGroups) {
+    group.name = deriveCleanGroupName(group.name, group.records);
   }
 
-  return groups;
+  // Auto-expand if only 1 collection group exists and no prior state was tracked
+  if (activeGroups.length === 1 && previousExpanded.size === 0 && activeGroups[0]) {
+    activeGroups[0].isExpanded = true;
+  }
+
+  return activeGroups;
 };
 
 const flattenTree = (groups: CollectionGroup[]): TreeItem[] => {
   const flat: TreeItem[] = [];
 
-  for (const group of groups) {
+  // Multi-record groups (>= 2 records) render as collapsible collections
+  const multiRecordGroups = groups.filter(group => group.records.length >= 2);
+  // Single-record groups (== 1 record) render directly as top-level records
+  const singleRecordGroups = groups.filter(group => group.records.length === 1);
+
+  for (const group of multiRecordGroups) {
     flat.push({ kind: 'collection', group });
     if (group.isExpanded) {
       for (const record of group.records) {
         flat.push({ kind: 'record', item: record, parentGroup: group });
       }
+    }
+  }
+
+  for (const group of singleRecordGroups) {
+    const record = group.records[0];
+
+    if (record) {
+      flat.push({ kind: 'record', item: record });
     }
   }
 
@@ -156,12 +198,12 @@ const renderSearchScreen = (state: SearchScreenState): void => {
   clearTerminal();
   const width = terminalWidth();
   const totalRecords = state.collectionGroups.reduce((acc, group) => acc + group.records.length, 0);
-  const groupCount = state.collectionGroups.length;
+  const collectionCount = state.collectionGroups.filter(group => group.records.length >= 2).length;
   const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<All Collections>';
 
-  output.write(`\n  ◇ PatternFly Search: "${state.query}"  ·  Filter: ${filterLabel}  (${groupCount} collections, ${totalRecords} records)\n\n`);
+  output.write(`\n  ◇ PatternFly Search: "${state.query}"  ·  Filter: ${filterLabel}  (${collectionCount} collections, ${totalRecords} records)\n\n`);
 
-  if (!groupCount) {
+  if (!totalRecords) {
     output.write('  No matches yet. Press </> to change query or <q> to quit.\n\n');
   }
 
@@ -173,8 +215,12 @@ const renderSearchScreen = (state: SearchScreenState): void => {
       const label = `${marker} ${exp} [Collection] ${treeItem.group.name} [${treeItem.group.records.length} records]`;
 
       output.write(`  ${label.slice(0, width - 4)}\n`);
-    } else {
+    } else if (treeItem.parentGroup) {
       const label = `    ${marker} [Record] ${treeItem.item.name}`;
+
+      output.write(`  ${label.slice(0, width - 4)}\n`);
+    } else {
+      const label = `${marker}   [Record] ${treeItem.item.name}`;
 
       output.write(`  ${label.slice(0, width - 4)}\n`);
     }
