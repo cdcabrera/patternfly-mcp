@@ -15,7 +15,8 @@ import { type AgentlessClientSession, type ResourceLinkItem, MAX_TERMINAL_DISPLA
 const AVAILABLE_COLLECTIONS = [
   'patternfly-docs',
   'patternfly-component-schemas',
-  'patternfly-api'
+  'patternfly-api',
+  'ai-handbook'
 ] as const;
 
 type PrimaryCollection = typeof AVAILABLE_COLLECTIONS[number];
@@ -199,7 +200,7 @@ const renderSearchScreen = (state: SearchScreenState): void => {
   const width = terminalWidth();
   const totalRecords = state.collectionGroups.reduce((acc, group) => acc + group.records.length, 0);
   const collectionCount = state.collectionGroups.filter(group => group.records.length >= 2).length;
-  const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<All Collections>';
+  const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<Closest match>';
 
   output.write(`\n  ◇ PatternFly Search: "${state.query}"  ·  Filter: ${filterLabel}  (${collectionCount} collections, ${totalRecords} records)\n\n`);
 
@@ -226,7 +227,7 @@ const renderSearchScreen = (state: SearchScreenState): void => {
     }
   });
 
-  output.write('\n  [<↑/↓> navigate · <Enter> select · <Space> toggle · <Tab> filter · </> search · <q> quit]\n');
+  output.write('\n  [<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]\n');
 };
 
 const renderReaderScreen = (
@@ -375,20 +376,6 @@ const runSearchScreen = async (
 
       if (selected?.kind === 'collection') {
         selected.group.isExpanded = false;
-        state.flatVisibleTree = flattenTree(state.collectionGroups);
-        state.selectedIndex = Math.min(
-          Math.max(0, state.selectedIndex),
-          Math.max(0, state.flatVisibleTree.length - 1)
-        );
-      }
-      continue;
-    }
-
-    if (key === 'space') {
-      const selected = state.flatVisibleTree[state.selectedIndex];
-
-      if (selected?.kind === 'collection') {
-        selected.group.isExpanded = !selected.group.isExpanded;
         state.flatVisibleTree = flattenTree(state.collectionGroups);
         state.selectedIndex = Math.min(
           Math.max(0, state.selectedIndex),

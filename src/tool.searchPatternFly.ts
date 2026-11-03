@@ -254,7 +254,14 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
   };
 
   const getCollections: string[] = Object.keys(getPatternFlyCollection() || {});
-  const availableCollections = getCollections.length ? getCollections : ['patternfly-docs', 'patternfly-component-schemas', 'patternfly-api'];
+  const availableCollections = getCollections.length
+    ? getCollections
+    : [
+      'patternfly-docs',
+      'patternfly-component-schemas',
+      'patternfly-api',
+      'ai-handbook'
+    ];
 
   return [
     'searchPatternFly',

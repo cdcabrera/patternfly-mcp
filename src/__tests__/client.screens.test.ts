@@ -197,7 +197,8 @@ describe('client.screens', () => {
       expect(AVAILABLE_COLLECTIONS).toEqual([
         'patternfly-docs',
         'patternfly-component-schemas',
-        'patternfly-api'
+        'patternfly-api',
+        'ai-handbook'
       ]);
 
       let current: string | undefined = undefined;
@@ -210,6 +211,9 @@ describe('client.screens', () => {
 
       current = cycleCollectionFilter(current);
       expect(current).toBe('patternfly-api');
+
+      current = cycleCollectionFilter(current);
+      expect(current).toBe('ai-handbook');
 
       current = cycleCollectionFilter(current);
       expect(current).toBeUndefined();
@@ -254,10 +258,10 @@ describe('client.screens', () => {
       // Modal has 1 record -> rendered as top-level record, collection count is 0
       expect(outputData).toContain('Filter: <patternfly-docs>  (0 collections, 1 records)');
       expect(outputData).toContain('[Record] Modal — Docs (v6)');
-      expect(outputData).toContain('[<↑/↓> navigate · <Enter> select · <Space> toggle · <Tab> filter · </> search · <q> quit]');
+      expect(outputData).toContain('[<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]');
     });
 
-    it('renders <All Collections> when activeCollectionFilter is undefined', () => {
+    it('renders <Closest match> when activeCollectionFilter is undefined', () => {
       const state: SearchScreenState = {
         query: 'test',
         activeCollectionFilter: undefined,
@@ -269,7 +273,7 @@ describe('client.screens', () => {
 
       renderSearchScreen(state);
 
-      expect(outputData).toContain('Filter: <All Collections>  (0 collections, 0 records)');
+      expect(outputData).toContain('Filter: <Closest match>  (0 collections, 0 records)');
       expect(outputData).toContain('No matches yet. Press </> to change query or <q> to quit.');
     });
   });
@@ -286,7 +290,7 @@ describe('client.screens', () => {
       jest.clearAllMocks();
     });
 
-    it('handles toggle navigation with space and enter on collection nodes and opens record', async () => {
+    it('handles toggle navigation with enter on collection nodes and opens record', async () => {
       const modalCollection: ResourceLinkItem = {
         uri: 'patternfly://docs/modal',
         name: 'Modal (Collection)',
@@ -317,7 +321,7 @@ describe('client.screens', () => {
         selectedIndex: 0
       };
 
-      const keyQueue = ['space', 'down', 'enter'];
+      const keyQueue = ['enter', 'down', 'enter'];
       const mockKeys = {
         readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'q')),
         enable: jest.fn(),
@@ -325,9 +329,9 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      // 1. 'space' collapses modal collection
+      // 1. 'enter' collapses modal collection
       // 2. 'down' keeps selectedIndex on only visible row (0)
-      // 3. 'enter' expands modal collection
+      // 3. 'enter' expands modal collection again
       // 4. 'q' quits
       const result = await runSearchScreen(mockSession as never, state, mockKeys as never);
 
