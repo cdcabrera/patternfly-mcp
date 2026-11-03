@@ -49,6 +49,13 @@ describe('parseCliOptions', () => {
       })
     },
     {
+      description: 'with --client flag',
+      args: ['node', 'script.js', '--client'],
+      expectedOptions: expect.objectContaining({
+        client: true
+      })
+    },
+    {
       description: 'with --http and --port',
       args: ['node', 'script.js', '--http', '--port', '6000'],
       expectedOptions: expect.objectContaining({
