@@ -365,8 +365,20 @@ const runSearchScreen = async (
       const selected = state.flatVisibleTree[state.selectedIndex];
 
       if (selected?.kind === 'collection') {
-        selected.group.isExpanded = true;
+        const targetGroupId = selected.group.groupId;
+
+        for (const group of state.collectionGroups) {
+          group.isExpanded = group.groupId === targetGroupId;
+        }
+
         state.flatVisibleTree = flattenTree(state.collectionGroups);
+        const newIndex = state.flatVisibleTree.findIndex(
+          item => item.kind === 'collection' && item.group.groupId === targetGroupId
+        );
+
+        if (newIndex !== -1) {
+          state.selectedIndex = newIndex;
+        }
       }
       continue;
     }
@@ -403,12 +415,26 @@ const runSearchScreen = async (
       const selected = state.flatVisibleTree[state.selectedIndex];
 
       if (selected?.kind === 'collection') {
-        selected.group.isExpanded = !selected.group.isExpanded;
+        const targetGroupId = selected.group.groupId;
+        const willExpand = !selected.group.isExpanded;
+
+        for (const group of state.collectionGroups) {
+          group.isExpanded = willExpand ? group.groupId === targetGroupId : false;
+        }
+
         state.flatVisibleTree = flattenTree(state.collectionGroups);
-        state.selectedIndex = Math.min(
-          Math.max(0, state.selectedIndex),
-          Math.max(0, state.flatVisibleTree.length - 1)
+        const newIndex = state.flatVisibleTree.findIndex(
+          item => item.kind === 'collection' && item.group.groupId === targetGroupId
         );
+
+        if (newIndex !== -1) {
+          state.selectedIndex = newIndex;
+        } else {
+          state.selectedIndex = Math.min(
+            Math.max(0, state.selectedIndex),
+            Math.max(0, state.flatVisibleTree.length - 1)
+          );
+        }
         continue;
       }
 

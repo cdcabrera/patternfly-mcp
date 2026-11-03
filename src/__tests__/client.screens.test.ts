@@ -338,6 +338,152 @@ describe('client.screens', () => {
       expect(result).toEqual({ action: 'quit' });
     });
 
+    it('enforces accordion behavior by closing other collections when expanding a collection', async () => {
+      const modalCol: ResourceLinkItem = {
+        uri: 'patternfly://docs/modal',
+        name: 'Modal (Collection)',
+        groupId: 'modal'
+      };
+      const modalRec1: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-1',
+        name: 'Modal - Doc 1 (v6)',
+        groupId: 'modal'
+      };
+      const modalRec2: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-2',
+        name: 'Modal - Doc 2 (v6)',
+        groupId: 'modal'
+      };
+      const btnCol: ResourceLinkItem = {
+        uri: 'patternfly://docs/button',
+        name: 'Button (Collection)',
+        groupId: 'button'
+      };
+      const btnRec1: ResourceLinkItem = {
+        uri: 'patternfly://records/btn-1',
+        name: 'Button - Doc 1 (v6)',
+        groupId: 'button'
+      };
+      const btnRec2: ResourceLinkItem = {
+        uri: 'patternfly://records/btn-2',
+        name: 'Button - Doc 2 (v6)',
+        groupId: 'button'
+      };
+
+      const groups = buildCollectionTree([modalCol, modalRec1, modalRec2, btnCol, btnRec1, btnRec2]);
+
+      groups[0]!.isExpanded = true;
+      groups[1]!.isExpanded = false;
+
+      const state: SearchScreenState = {
+        query: 'test',
+        results: [modalCol, modalRec1, modalRec2, btnCol, btnRec1, btnRec2],
+        collectionGroups: groups,
+        flatVisibleTree: flattenTree(groups),
+        selectedIndex: 3 // Cursor on Button collection header
+      };
+
+      // Press 'enter' on Button collection: expands Button, collapses Modal
+      const keyQueue = ['enter'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'q')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      const result = await runSearchScreen(mockSession as never, state, mockKeys as never);
+
+      expect(result).toEqual({ action: 'quit' });
+
+      // Modal should now be collapsed, Button should be expanded
+      const modalGroup = state.collectionGroups.find(group => group.groupId === 'modal');
+      const btnGroup = state.collectionGroups.find(group => group.groupId === 'button');
+
+      expect(modalGroup?.isExpanded).toBe(false);
+      expect(btnGroup?.isExpanded).toBe(true);
+
+      // Cursor should remain on the Button collection header
+      const currentItem = state.flatVisibleTree[state.selectedIndex];
+
+      expect(currentItem?.kind).toBe('collection');
+      if (currentItem?.kind === 'collection') {
+        expect(currentItem.group.groupId).toBe('button');
+      }
+    });
+
+    it('enforces accordion behavior when expanding a collection using right arrow', async () => {
+      const modalCol: ResourceLinkItem = {
+        uri: 'patternfly://docs/modal',
+        name: 'Modal (Collection)',
+        groupId: 'modal'
+      };
+      const modalRec1: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-1',
+        name: 'Modal - Doc 1 (v6)',
+        groupId: 'modal'
+      };
+      const modalRec2: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-2',
+        name: 'Modal - Doc 2 (v6)',
+        groupId: 'modal'
+      };
+      const btnCol: ResourceLinkItem = {
+        uri: 'patternfly://docs/button',
+        name: 'Button (Collection)',
+        groupId: 'button'
+      };
+      const btnRec1: ResourceLinkItem = {
+        uri: 'patternfly://records/btn-1',
+        name: 'Button - Doc 1 (v6)',
+        groupId: 'button'
+      };
+      const btnRec2: ResourceLinkItem = {
+        uri: 'patternfly://records/btn-2',
+        name: 'Button - Doc 2 (v6)',
+        groupId: 'button'
+      };
+
+      const groups = buildCollectionTree([modalCol, modalRec1, modalRec2, btnCol, btnRec1, btnRec2]);
+
+      groups[0]!.isExpanded = true;
+      groups[1]!.isExpanded = false;
+
+      const state: SearchScreenState = {
+        query: 'test',
+        results: [modalCol, modalRec1, modalRec2, btnCol, btnRec1, btnRec2],
+        collectionGroups: groups,
+        flatVisibleTree: flattenTree(groups),
+        selectedIndex: 3 // Cursor on Button collection header
+      };
+
+      // Press 'right' on Button collection: expands Button, collapses Modal
+      const keyQueue = ['right'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'q')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      const result = await runSearchScreen(mockSession as never, state, mockKeys as never);
+
+      expect(result).toEqual({ action: 'quit' });
+
+      const modalGroup = state.collectionGroups.find(group => group.groupId === 'modal');
+      const btnGroup = state.collectionGroups.find(group => group.groupId === 'button');
+
+      expect(modalGroup?.isExpanded).toBe(false);
+      expect(btnGroup?.isExpanded).toBe(true);
+
+      const currentItem = state.flatVisibleTree[state.selectedIndex];
+
+      expect(currentItem?.kind).toBe('collection');
+      if (currentItem?.kind === 'collection') {
+        expect(currentItem.group.groupId).toBe('button');
+      }
+    });
+
     it('opens reader on enter when child record is selected', async () => {
       const modalCollection: ResourceLinkItem = {
         uri: 'patternfly://docs/modal',
