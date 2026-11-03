@@ -14,4 +14,21 @@ describe('splitServerClientArgv', () => {
       serverExtraArgs: []
     });
   });
+
+  it('retains collection flags in clientArgv for subcommands and interactive search', () => {
+    expect(splitServerClientArgv(['search', 'modal', '-c', 'patternfly-docs', '--json'])).toEqual({
+      clientArgv: ['search', 'modal', '-c', 'patternfly-docs', '--json'],
+      serverExtraArgs: []
+    });
+
+    expect(splitServerClientArgv(['--log-stderr', '--client', 'modal', '--collection', 'patternfly-api'])).toEqual({
+      clientArgv: ['modal', '--collection', 'patternfly-api'],
+      serverExtraArgs: ['--log-stderr']
+    });
+
+    expect(splitServerClientArgv(['--log-stderr', '--client', 'modal', '-c', 'patternfly-docs'])).toEqual({
+      clientArgv: ['modal', '-c', 'patternfly-docs'],
+      serverExtraArgs: ['--log-stderr']
+    });
+  });
 });

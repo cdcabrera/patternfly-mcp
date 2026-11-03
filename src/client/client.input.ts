@@ -15,6 +15,18 @@ const resolveKeyToken = (_str: string, key: readline.Key): string => {
     return 'down';
   }
 
+  if (key.name === 'right') {
+    return 'right';
+  }
+
+  if (key.name === 'left') {
+    return 'left';
+  }
+
+  if (key.name === 'tab') {
+    return 'tab';
+  }
+
   if (key.name === 'pageup') {
     return 'pageup';
   }
@@ -24,7 +36,7 @@ const resolveKeyToken = (_str: string, key: readline.Key): string => {
   }
 
   if (key.name === 'space' || _str === ' ') {
-    return 'pagedown';
+    return 'space';
   }
 
   if (key.name === 'return') {

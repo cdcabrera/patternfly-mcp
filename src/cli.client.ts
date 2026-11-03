@@ -16,8 +16,8 @@ const SERVER_VALUE_FLAGS = new Set([
 
 const printUsage = (): void => {
   console.error(`Usage:
-  pf-client [query]                 Interactive search (TTY) or JSON results (pipe)
-  pf-client search <query> --json Headless JSON resource links
+  pf-client [query] [-c collection] Interactive search (TTY) or JSON results (pipe)
+  pf-client search <query> [-c collection] --json Headless JSON resource links
   pf-client read <uri>              Headless markdown for one resource
 
   npm run start -- --client [query] Same as pf-client when run in a terminal`);
@@ -40,6 +40,17 @@ const splitServerClientArgv = (argv: string[]): { clientArgv: string[]; serverEx
 
   for (let index = 0; index < filtered.length; index += 1) {
     const token = filtered[index]!;
+
+    if (token === '--collection' || token === '-c') {
+      clientArgv.push(token);
+      const nextToken = filtered[index + 1];
+
+      if (nextToken && !nextToken.startsWith('-')) {
+        index += 1;
+        clientArgv.push(nextToken);
+      }
+      continue;
+    }
 
     if (!token.startsWith('--')) {
       clientArgv.push(token);
@@ -88,7 +99,20 @@ const runPfClient = async (
 
   try {
     if (argv[0] === 'search') {
-      const query = argv[1];
+      const cIdx = argv.findIndex(item => item === '--collection' || item === '-c');
+      const collection = cIdx !== -1 ? argv[cIdx + 1] : undefined;
+      const queryTokens = argv.slice(1).filter((item, idx) => {
+        if (item.startsWith('--')) {
+          return false;
+        }
+
+        if (cIdx !== -1 && (idx + 1 === cIdx || idx + 1 === cIdx + 1)) {
+          return false;
+        }
+
+        return true;
+      });
+      const query = queryTokens[0];
       const asJson = argv.includes('--json');
 
       if (!query) {
@@ -96,7 +120,7 @@ const runPfClient = async (
         process.exit(1);
       }
 
-      const results = await session.search(query);
+      const results = await session.search(query, collection);
 
       if (asJson || !process.stdout.isTTY) {
         process.stdout.write(`${JSON.stringify(results)}\n`);
@@ -124,10 +148,26 @@ const runPfClient = async (
       return;
     }
 
-    const initialQuery = argv.filter(token => !token.startsWith('-')).join(' ').trim();
+    const cIdx = argv.findIndex(item => item === '--collection' || item === '-c');
+    const collection = cIdx !== -1 ? argv[cIdx + 1] : undefined;
+
+    const initialQuery = argv
+      .filter((item, idx) => {
+        if (item.startsWith('-')) {
+          return false;
+        }
+
+        if (cIdx !== -1 && (idx === cIdx || idx === cIdx + 1)) {
+          return false;
+        }
+
+        return true;
+      })
+      .join(' ')
+      .trim();
 
     if (process.stdout.isTTY && process.stdin.isTTY) {
-      await runInteractiveClient(session, initialQuery);
+      await runInteractiveClient(session, initialQuery, collection);
 
       return;
     }
@@ -137,7 +177,7 @@ const runPfClient = async (
       process.exit(1);
     }
 
-    const results = await session.search(initialQuery);
+    const results = await session.search(initialQuery, collection);
 
     process.stdout.write(`${JSON.stringify(results)}\n`);
   } finally {

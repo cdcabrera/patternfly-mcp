@@ -9,7 +9,9 @@ import { type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 interface ResourceLinkItem {
   uri: string;
   name: string;
-  description?: string;
+  description?: string | undefined;
+  groupId?: string | undefined;
+  primaryCollection?: string | undefined;
 }
 
 interface ResourceReadResult {
@@ -41,6 +43,8 @@ const parseResourceLinks = (result: CallToolResult): ResourceLinkItem[] => {
   return result.content.filter(isResourceLinkContent).map(item => ({
     uri: item.uri,
     name: item.name,
+    ...((item as any).groupId ? { groupId: (item as any).groupId } : {}),
+    ...((item as any).primaryCollection ? { primaryCollection: (item as any).primaryCollection } : {}),
     ...(item.description !== undefined ? { description: item.description } : {})
   }));
 };
@@ -154,11 +158,17 @@ class AgentlessClientSession {
    * Run `searchPatternFly` and return resource link entries from the tool result.
    *
    * @param query - Search query passed to the server tool.
+   * @param collection - Optional primary collection filter.
    */
-  async search(query: string): Promise<ResourceLinkItem[]> {
+  async search(query: string, collection?: string): Promise<ResourceLinkItem[]> {
+    const args: Record<string, string> = { query };
+
+    if (collection) {
+      args.collection = collection;
+    }
     const result = await this.client.callTool({
       name: 'searchPatternFly',
-      arguments: { query }
+      arguments: args
     }) as CallToolResult;
 
     return parseResourceLinks(result);

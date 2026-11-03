@@ -12,9 +12,31 @@ import {
 import { createKeyReader, promptLine } from './client.input';
 import { type AgentlessClientSession, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client.transport';
 
+const AVAILABLE_COLLECTIONS = [
+  'patternfly-docs',
+  'patternfly-component-schemas',
+  'patternfly-api'
+] as const;
+
+type PrimaryCollection = typeof AVAILABLE_COLLECTIONS[number];
+
+interface CollectionGroup {
+  groupId: string;
+  name: string;
+  records: ResourceLinkItem[];
+  isExpanded: boolean;
+}
+
+type TreeItem =
+  | { kind: 'collection'; group: CollectionGroup } |
+  { kind: 'record'; item: ResourceLinkItem; parentGroup: CollectionGroup };
+
 interface SearchScreenState {
   query: string;
+  activeCollectionFilter?: string | undefined;
   results: ResourceLinkItem[];
+  collectionGroups: CollectionGroup[];
+  flatVisibleTree: TreeItem[];
   selectedIndex: number;
 }
 
@@ -29,15 +51,80 @@ const badgeForResult = (item: ResourceLinkItem): string => {
     return '[Record]';
   }
 
-  if (item.name.includes('JSON Schema')) {
-    return '[Schema]';
-  }
-
   if (item.name.includes('(Collection)')) {
     return '[Collection]';
   }
 
-  return '[Doc]';
+  return '[Record]';
+};
+
+const buildCollectionTree = (
+  results: ResourceLinkItem[],
+  previousExpanded = new Set<string>()
+): CollectionGroup[] => {
+  const groupMap = new Map<string, CollectionGroup>();
+
+  for (const item of results) {
+    const gid = item.groupId || item.uri.split('/').pop() || 'general';
+
+    if (item.name.includes('(Collection)')) {
+      if (!groupMap.has(gid)) {
+        groupMap.set(gid, {
+          groupId: gid,
+          name: item.name.replace(/\s*\(Collection\)/, '').trim(),
+          records: [],
+          isExpanded: previousExpanded.has(gid)
+        });
+      } else {
+        groupMap.get(gid)!.name = item.name.replace(/\s*\(Collection\)/, '').trim();
+      }
+    } else {
+      if (!groupMap.has(gid)) {
+        groupMap.set(gid, {
+          groupId: gid,
+          name: gid,
+          records: [],
+          isExpanded: previousExpanded.has(gid)
+        });
+      }
+      groupMap.get(gid)!.records.push(item);
+    }
+  }
+  const groups = Array.from(groupMap.values());
+
+  if (groups.length === 1 && previousExpanded.size === 0 && groups[0]) {
+    groups[0].isExpanded = true;
+  }
+
+  return groups;
+};
+
+const flattenTree = (groups: CollectionGroup[]): TreeItem[] => {
+  const flat: TreeItem[] = [];
+
+  for (const group of groups) {
+    flat.push({ kind: 'collection', group });
+    if (group.isExpanded) {
+      for (const record of group.records) {
+        flat.push({ kind: 'record', item: record, parentGroup: group });
+      }
+    }
+  }
+
+  return flat;
+};
+
+const cycleCollectionFilter = (current?: string): string | undefined => {
+  if (!current) {
+    return AVAILABLE_COLLECTIONS[0];
+  }
+  const idx = AVAILABLE_COLLECTIONS.indexOf(current as PrimaryCollection);
+
+  if (idx === -1 || idx === AVAILABLE_COLLECTIONS.length - 1) {
+    return undefined;
+  }
+
+  return AVAILABLE_COLLECTIONS[idx + 1];
 };
 
 const wrapLines = (text: string, width: number): string[] => {
@@ -68,23 +155,32 @@ const wrapLines = (text: string, width: number): string[] => {
 const renderSearchScreen = (state: SearchScreenState): void => {
   clearTerminal();
   const width = terminalWidth();
-  const count = state.results.length;
+  const totalRecords = state.collectionGroups.reduce((acc, group) => acc + group.records.length, 0);
+  const groupCount = state.collectionGroups.length;
+  const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<All Collections>';
 
-  output.write(`\n  ◇ PatternFly Search: "${state.query}" (${count} matches found)\n\n`);
+  output.write(`\n  ◇ PatternFly Search: "${state.query}"  ·  Filter: ${filterLabel}  (${groupCount} collections, ${totalRecords} records)\n\n`);
 
-  if (!count) {
-    output.write('  No matches yet. Press / to change query or q to quit.\n\n');
+  if (!groupCount) {
+    output.write('  No matches yet. Press </> to change query or <q> to quit.\n\n');
   }
 
-  state.results.forEach((item, index) => {
+  state.flatVisibleTree.forEach((treeItem, index) => {
     const marker = index === state.selectedIndex ? '◉' : '○';
-    const badge = badgeForResult(item);
-    const label = `${marker} ${badge} ${item.name}`;
 
-    output.write(`  ${label.slice(0, width - 4)}\n`);
+    if (treeItem.kind === 'collection') {
+      const exp = treeItem.group.isExpanded ? '▼' : '▸';
+      const label = `${marker} ${exp} [Collection] ${treeItem.group.name} [${treeItem.group.records.length} records]`;
+
+      output.write(`  ${label.slice(0, width - 4)}\n`);
+    } else {
+      const label = `    ${marker} [Record] ${treeItem.item.name}`;
+
+      output.write(`  ${label.slice(0, width - 4)}\n`);
+    }
   });
 
-  output.write('\n  [↑/↓ navigate, Enter view, / new query, q quit]\n');
+  output.write('\n  [<↑/↓> navigate · <Enter> select · <Space> toggle · <Tab> filter · </> search · <q> quit]\n');
 };
 
 const renderReaderScreen = (
@@ -120,9 +216,9 @@ const renderReaderScreen = (
 
   output.write(`  └${'─'.repeat(innerWidth + 1)}\n`);
   output.write(`\n  ${scrollLabel}${statusNote ? `  ·  ${statusNote}` : ''}\n`);
-  const copyHint = clipboardEnabled ? 'c copy · ' : '';
+  const copyHint = clipboardEnabled ? '<c> copy · ' : '';
 
-  output.write(`  [↑/↓ PgUp/PgDn Space scroll · Enter/b back · ${copyHint}r save .md · q quit]\n`);
+  output.write(`  [<↑/↓/PgUp/PgDn/Space> scroll · <Enter/b> back · ${copyHint}<r> save .md · <q> quit]\n`);
 };
 
 const displayTextForTerminal = (fullText: string, clipboardEnabled: boolean): string => {
@@ -170,9 +266,16 @@ const runSearchScreen = async (
 ): Promise<{ action: 'quit' } | { action: 'open'; uri: string; state: SearchScreenState }> => {
   const state: SearchScreenState = { ...initialState };
 
-  if (!state.results.length && state.query) {
-    state.results = await session.search(state.query);
-    state.selectedIndex = 0;
+  if (!state.collectionGroups || !state.flatVisibleTree) {
+    if (!state.results?.length && state.query) {
+      state.results = await session.search(state.query, state.activeCollectionFilter);
+    }
+    state.collectionGroups = buildCollectionTree(state.results || []);
+    state.flatVisibleTree = flattenTree(state.collectionGroups);
+    state.selectedIndex = Math.min(
+      Math.max(0, state.selectedIndex || 0),
+      Math.max(0, state.flatVisibleTree.length - 1)
+    );
   }
 
   for (;;) {
@@ -189,7 +292,63 @@ const runSearchScreen = async (
     }
 
     if (key === 'down') {
-      state.selectedIndex = Math.min(Math.max(0, state.results.length - 1), state.selectedIndex + 1);
+      state.selectedIndex = Math.min(Math.max(0, state.flatVisibleTree.length - 1), state.selectedIndex + 1);
+      continue;
+    }
+
+    if (key === 'tab') {
+      state.activeCollectionFilter = cycleCollectionFilter(state.activeCollectionFilter);
+      if (state.query) {
+        const previousExpanded = new Set(
+          state.collectionGroups.filter(group => group.isExpanded).map(group => group.groupId)
+        );
+
+        state.results = await session.search(state.query, state.activeCollectionFilter);
+        state.collectionGroups = buildCollectionTree(state.results, previousExpanded);
+        state.flatVisibleTree = flattenTree(state.collectionGroups);
+        state.selectedIndex = Math.min(
+          Math.max(0, state.selectedIndex),
+          Math.max(0, state.flatVisibleTree.length - 1)
+        );
+      }
+      continue;
+    }
+
+    if (key === 'right') {
+      const selected = state.flatVisibleTree[state.selectedIndex];
+
+      if (selected?.kind === 'collection') {
+        selected.group.isExpanded = true;
+        state.flatVisibleTree = flattenTree(state.collectionGroups);
+      }
+      continue;
+    }
+
+    if (key === 'left') {
+      const selected = state.flatVisibleTree[state.selectedIndex];
+
+      if (selected?.kind === 'collection') {
+        selected.group.isExpanded = false;
+        state.flatVisibleTree = flattenTree(state.collectionGroups);
+        state.selectedIndex = Math.min(
+          Math.max(0, state.selectedIndex),
+          Math.max(0, state.flatVisibleTree.length - 1)
+        );
+      }
+      continue;
+    }
+
+    if (key === 'space') {
+      const selected = state.flatVisibleTree[state.selectedIndex];
+
+      if (selected?.kind === 'collection') {
+        selected.group.isExpanded = !selected.group.isExpanded;
+        state.flatVisibleTree = flattenTree(state.collectionGroups);
+        state.selectedIndex = Math.min(
+          Math.max(0, state.selectedIndex),
+          Math.max(0, state.flatVisibleTree.length - 1)
+        );
+      }
       continue;
     }
 
@@ -200,18 +359,30 @@ const runSearchScreen = async (
         continue;
       }
 
-      state.results = await session.search(state.query);
+      state.results = await session.search(state.query, state.activeCollectionFilter);
+      state.collectionGroups = buildCollectionTree(state.results);
+      state.flatVisibleTree = flattenTree(state.collectionGroups);
       state.selectedIndex = 0;
       continue;
     }
 
     if (key === 'enter') {
-      const selected = state.results[state.selectedIndex];
+      const selected = state.flatVisibleTree[state.selectedIndex];
 
-      if (selected) {
+      if (selected?.kind === 'collection') {
+        selected.group.isExpanded = !selected.group.isExpanded;
+        state.flatVisibleTree = flattenTree(state.collectionGroups);
+        state.selectedIndex = Math.min(
+          Math.max(0, state.selectedIndex),
+          Math.max(0, state.flatVisibleTree.length - 1)
+        );
+        continue;
+      }
+
+      if (selected?.kind === 'record') {
         return {
           action: 'open',
-          uri: selected.uri,
+          uri: selected.item.uri,
           state: { ...state }
         };
       }
@@ -271,7 +442,7 @@ const runReaderScreen = async (
       continue;
     }
 
-    if (key === 'pagedown') {
+    if (key === 'pagedown' || key === 'space') {
       scrollOffset = Math.min(maxScroll(), scrollOffset + readerBodyRows());
       continue;
     }
@@ -306,10 +477,12 @@ const runReaderScreen = async (
  *
  * @param session - Connected MCP client session.
  * @param initialQuery - Optional initial search string (prompts when empty).
+ * @param initialCollection - Optional initial collection filter.
  */
 const runInteractiveClient = async (
   session: AgentlessClientSession,
-  initialQuery = ''
+  initialQuery = '',
+  initialCollection?: string
 ): Promise<void> => {
   if (!input.isTTY || !output.isTTY) {
     throw new Error('Interactive pf-client requires a TTY. Use `pf-client search <query> --json` for scripts.');
@@ -332,9 +505,16 @@ const runInteractiveClient = async (
   enterAlternateScreen();
   keys.enable();
 
+  const results = await session.search(query, initialCollection);
+  const collectionGroups = buildCollectionTree(results);
+  const flatVisibleTree = flattenTree(collectionGroups);
+
   let searchState: SearchScreenState = {
     query,
-    results: await session.search(query),
+    activeCollectionFilter: initialCollection,
+    results,
+    collectionGroups,
+    flatVisibleTree,
     selectedIndex: 0
   };
 
@@ -360,8 +540,18 @@ const runInteractiveClient = async (
 };
 
 export {
+  AVAILABLE_COLLECTIONS,
+  badgeForResult,
+  buildCollectionTree,
+  cycleCollectionFilter,
+  flattenTree,
+  renderReaderScreen,
+  renderSearchScreen,
   runInteractiveClient,
   runReaderScreen,
   runSearchScreen,
-  type SearchScreenState
+  type CollectionGroup,
+  type PrimaryCollection,
+  type SearchScreenState,
+  type TreeItem
 };

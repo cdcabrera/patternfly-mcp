@@ -9,8 +9,10 @@ describe('parseResourceLinks', () => {
           type: 'resource_link',
           uri: 'patternfly://records/abc',
           name: 'Modal — Docs',
-          description: 'Modal documentation'
-        }
+          description: 'Modal documentation',
+          groupId: 'modal',
+          primaryCollection: 'patternfly-docs'
+        } as never
       ]
     });
 
@@ -18,7 +20,9 @@ describe('parseResourceLinks', () => {
       {
         uri: 'patternfly://records/abc',
         name: 'Modal — Docs',
-        description: 'Modal documentation'
+        description: 'Modal documentation',
+        groupId: 'modal',
+        primaryCollection: 'patternfly-docs'
       }
     ]);
   });
@@ -94,6 +98,30 @@ describe('AgentlessClientSession', () => {
       arguments: { query: 'button' }
     });
     expect(results[0]?.uri).toBe('patternfly://docs/button');
+  });
+
+  it('passes collection filter when provided to search', async () => {
+    mockCallTool.mockResolvedValue({
+      content: [{
+        type: 'resource_link',
+        uri: 'patternfly://records/modal-doc',
+        name: 'Modal — Docs',
+        groupId: 'modal',
+        primaryCollection: 'patternfly-docs'
+      }]
+    });
+
+    const { AgentlessClientSession } = await import('../client/client.transport');
+    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+
+    const results = await session.search('modal', 'patternfly-docs');
+
+    expect(mockCallTool).toHaveBeenCalledWith({
+      name: 'searchPatternFly',
+      arguments: { query: 'modal', collection: 'patternfly-docs' }
+    });
+    expect(results[0]?.groupId).toBe('modal');
+    expect(results[0]?.primaryCollection).toBe('patternfly-docs');
   });
 
   it('reads resource text from the first content item', async () => {
