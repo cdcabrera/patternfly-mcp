@@ -114,8 +114,9 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             groupId: result.groupId,
             primaryCollection: record.collection,
             _meta: {
+              primaryCollection: record.collection,
               groupId: result.groupId,
-              primaryCollection: record.collection
+              recordId: record.id
             }
           });
         }
@@ -132,7 +133,14 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             mimeType: 'text/markdown',
             groupId: result.groupId,
             _meta: {
-              groupId: result.groupId
+              // This may need to be hardcoded `'patternfly-component-schemas'`
+              primaryCollection: record.collection,
+              groupId: result.groupId,
+
+              /**
+               * Schemas currently retain the groupId as their recordId, see {@link getPatternFlyMcpResources}
+               */
+              recordId: result.groupId
             }
           });
         }

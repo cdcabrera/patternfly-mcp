@@ -37,6 +37,7 @@
     "unsub",
     "untampered",
     "userns",
-    "xclip"
+    "xclip",
+    "bugbot"
   ]
 }

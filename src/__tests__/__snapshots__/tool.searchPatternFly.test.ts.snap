@@ -30,6 +30,7 @@ Found 2 collections with 5 related resources. Use the attached resources to acce
     "_meta": {
       "groupId": "654321",
       "primaryCollection": "patternfly-docs",
+      "recordId": undefined,
     },
     "description": "Design Guidelines",
     "groupId": "654321",
@@ -43,6 +44,7 @@ Found 2 collections with 5 related resources. Use the attached resources to acce
     "_meta": {
       "groupId": "654321",
       "primaryCollection": "patternfly-docs",
+      "recordId": undefined,
     },
     "description": "Design Guidelines",
     "groupId": "654321",
@@ -55,6 +57,8 @@ Found 2 collections with 5 related resources. Use the attached resources to acce
   {
     "_meta": {
       "groupId": "654321",
+      "primaryCollection": "patternfly-docs",
+      "recordId": "654321",
     },
     "description": "Component JSON schema with property definitions for Lorem Button.",
     "groupId": "654321",
@@ -78,6 +82,7 @@ Found 2 collections with 5 related resources. Use the attached resources to acce
     "_meta": {
       "groupId": "123456",
       "primaryCollection": "patternfly-docs",
+      "recordId": undefined,
     },
     "description": "Design Guidelines",
     "groupId": "123456",
@@ -90,6 +95,8 @@ Found 2 collections with 5 related resources. Use the attached resources to acce
   {
     "_meta": {
       "groupId": "123456",
+      "primaryCollection": "patternfly-docs",
+      "recordId": "123456",
     },
     "description": "Component JSON schema with property definitions for Button.",
     "groupId": "123456",

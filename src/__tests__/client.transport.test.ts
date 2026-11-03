@@ -124,7 +124,7 @@ describe('AgentlessClientSession', () => {
     expect(results[0]?.primaryCollection).toBe('patternfly-docs');
   });
 
-  it('extracts groupId and primaryCollection from _meta payload', async () => {
+  it('extracts groupId, recordId, and primaryCollection from _meta payload', async () => {
     mockCallTool.mockResolvedValueOnce({
       content: [
         {
@@ -132,6 +132,7 @@ describe('AgentlessClientSession', () => {
           uri: 'patternfly://docs/modal-acc',
           name: 'Modal - Accessibility (v6)',
           _meta: {
+            recordId: 'modal-acc-id',
             groupId: 'modal-hash-123',
             primaryCollection: 'patternfly-docs'
           }
@@ -146,6 +147,7 @@ describe('AgentlessClientSession', () => {
     const items = await session.search('modal');
 
     expect(items).toHaveLength(1);
+    expect(items[0]?.recordId).toBe('modal-acc-id');
     expect(items[0]?.groupId).toBe('modal-hash-123');
     expect(items[0]?.primaryCollection).toBe('patternfly-docs');
   });

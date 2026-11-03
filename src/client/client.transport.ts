@@ -11,6 +11,7 @@ interface ResourceLinkItem {
   name: string;
   description?: string | undefined;
   groupId?: string | undefined;
+  recordId?: string | undefined;
   primaryCollection?: string | undefined;
 }
 
@@ -49,6 +50,11 @@ const parseResourceLinks = (result: CallToolResult): ResourceLinkItem[] => {
       (typeof (item as any).groupId === 'string' && (item as any).groupId) ||
       undefined;
 
+    const recordId =
+      (typeof meta?.recordId === 'string' && meta.recordId) ||
+      (typeof (item as any).recordId === 'string' && (item as any).recordId) ||
+      undefined;
+
     const primaryCollection =
       (typeof meta?.primaryCollection === 'string' && meta.primaryCollection) ||
       (typeof meta?.['patternfly.org/primaryCollection'] === 'string' && meta['patternfly.org/primaryCollection']) ||
@@ -59,6 +65,7 @@ const parseResourceLinks = (result: CallToolResult): ResourceLinkItem[] => {
       uri: item.uri,
       name: item.name,
       ...(groupId ? { groupId } : {}),
+      ...(recordId ? { recordId } : {}),
       ...(primaryCollection ? { primaryCollection } : {}),
       ...(item.description !== undefined ? { description: item.description } : {})
     };
