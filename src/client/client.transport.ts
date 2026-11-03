@@ -40,13 +40,29 @@ const parseResourceLinks = (result: CallToolResult): ResourceLinkItem[] => {
     return [];
   }
 
-  return result.content.filter(isResourceLinkContent).map(item => ({
-    uri: item.uri,
-    name: item.name,
-    ...((item as any).groupId ? { groupId: (item as any).groupId } : {}),
-    ...((item as any).primaryCollection ? { primaryCollection: (item as any).primaryCollection } : {}),
-    ...(item.description !== undefined ? { description: item.description } : {})
-  }));
+  return result.content.filter(isResourceLinkContent).map(item => {
+    const meta = (item as { _meta?: Record<string, unknown> })._meta;
+
+    const groupId =
+      (typeof meta?.groupId === 'string' && meta.groupId) ||
+      (typeof meta?.['patternfly.org/groupId'] === 'string' && meta['patternfly.org/groupId']) ||
+      (typeof (item as any).groupId === 'string' && (item as any).groupId) ||
+      undefined;
+
+    const primaryCollection =
+      (typeof meta?.primaryCollection === 'string' && meta.primaryCollection) ||
+      (typeof meta?.['patternfly.org/primaryCollection'] === 'string' && meta['patternfly.org/primaryCollection']) ||
+      (typeof (item as any).primaryCollection === 'string' && (item as any).primaryCollection) ||
+      undefined;
+
+    return {
+      uri: item.uri,
+      name: item.name,
+      ...(groupId ? { groupId } : {}),
+      ...(primaryCollection ? { primaryCollection } : {}),
+      ...(item.description !== undefined ? { description: item.description } : {})
+    };
+  });
 };
 
 const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<Client['readResource']>>['contents']>): string => {

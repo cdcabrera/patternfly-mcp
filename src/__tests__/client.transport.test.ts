@@ -124,6 +124,32 @@ describe('AgentlessClientSession', () => {
     expect(results[0]?.primaryCollection).toBe('patternfly-docs');
   });
 
+  it('extracts groupId and primaryCollection from _meta payload', async () => {
+    mockCallTool.mockResolvedValueOnce({
+      content: [
+        {
+          type: 'resource_link',
+          uri: 'patternfly://docs/modal-acc',
+          name: 'Modal - Accessibility (v6)',
+          _meta: {
+            groupId: 'modal-hash-123',
+            primaryCollection: 'patternfly-docs'
+          }
+        }
+      ]
+    });
+
+    const { AgentlessClientSession } = await import('../client/client.transport');
+    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+
+    await session.connect();
+    const items = await session.search('modal');
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.groupId).toBe('modal-hash-123');
+    expect(items[0]?.primaryCollection).toBe('patternfly-docs');
+  });
+
   it('reads resource text from the first content item', async () => {
     mockReadResource.mockResolvedValue({
       contents: [{ uri: 'patternfly://docs/button', text: '# Button\n\nDocs body' }]

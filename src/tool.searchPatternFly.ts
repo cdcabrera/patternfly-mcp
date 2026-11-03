@@ -112,7 +112,11 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             description: record.description,
             mimeType: 'text/markdown',
             groupId: result.groupId,
-            primaryCollection: record.collection
+            primaryCollection: record.collection,
+            _meta: {
+              groupId: result.groupId,
+              primaryCollection: record.collection
+            }
           });
         }
 
@@ -126,7 +130,10 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
             name: `${record.displayName} - JSON Schema (${record.version})`,
             description: `Component JSON schema with property definitions for ${record.displayName}.`,
             mimeType: 'text/markdown',
-            groupId: result.groupId
+            groupId: result.groupId,
+            _meta: {
+              groupId: result.groupId
+            }
           });
         }
       });
@@ -156,7 +163,10 @@ const searchPatternFlyTool = (options = getOptions()): McpTool => {
         name: `${collectionName} (Collection)`,
         description: `A resource collection series for ${collectionNames}`,
         mimeType: 'text/markdown',
-        groupId: result.groupId
+        groupId: result.groupId,
+        _meta: {
+          groupId: result.groupId
+        }
       });
     });
 
