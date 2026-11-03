@@ -1,16 +1,16 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
+import terminalKit from 'terminal-kit';
 import {
-  clearTerminal,
   copyTextToClipboard,
-  enterAlternateScreen,
   isClipboardAvailable,
-  leaveAlternateScreen,
   prepareReaderDisplay
 } from './client.helpers';
 import { createKeyReader, promptLine } from './client.input';
 import { type AgentlessClientSession, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client.transport';
+
+const { terminal: term } = terminalKit;
 
 const AVAILABLE_COLLECTIONS = [
   'patternfly-docs',
@@ -43,9 +43,9 @@ interface SearchScreenState {
 
 type ReaderAction = 'back' | 'quit';
 
-const terminalWidth = (): number => output.columns ?? 80;
+const terminalWidth = (): number => term.width;
 
-const readerBodyRows = (): number => Math.max(8, (output.rows ?? 24) - 10);
+const readerBodyRows = (): number => Math.max(8, term.height - 10);
 
 const badgeForResult = (item: ResourceLinkItem): string => {
   if (item.uri.includes('/records/') || item.uri.startsWith('patternfly://records/')) {
@@ -196,16 +196,15 @@ const wrapLines = (text: string, width: number): string[] => {
 };
 
 const renderSearchScreen = (state: SearchScreenState): void => {
-  clearTerminal();
-  const width = terminalWidth();
+  term.clear();
   const totalRecords = state.collectionGroups.reduce((acc, group) => acc + group.records.length, 0);
   const collectionCount = state.collectionGroups.filter(group => group.records.length >= 2).length;
   const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<Closest match>';
 
-  output.write(`\n  ◇ PatternFly Search: "${state.query}"  ·  Filter: ${filterLabel}  (${collectionCount} collections, ${totalRecords} records)\n\n`);
+  term(`\n  ^c◇^ PatternFly Search: ^_"${state.query}"^  ·  Filter: ^y${filterLabel}^  ^K(${collectionCount} collections, ${totalRecords} records)^\n\n`);
 
   if (!totalRecords) {
-    output.write('  No matches yet. Press </> to change query or <q> to quit.\n\n');
+    term('  ^KNo matches yet. Press </> to change query or <q> to quit.^\n\n');
   }
 
   state.flatVisibleTree.forEach((treeItem, index) => {
@@ -213,21 +212,22 @@ const renderSearchScreen = (state: SearchScreenState): void => {
 
     if (treeItem.kind === 'collection') {
       const exp = treeItem.group.isExpanded ? '▼' : '▸';
-      const label = `${marker} ${exp} [Collection] ${treeItem.group.name} [${treeItem.group.records.length} records]`;
+      const isSelected = index === state.selectedIndex;
+      const color = isSelected ? '^G' : '^w';
 
-      output.write(`  ${label.slice(0, width - 4)}\n`);
+      term(`  ${color}${marker} ${exp} [Collection] ${treeItem.group.name} [${treeItem.group.records.length} records]^\n`);
     } else if (treeItem.parentGroup) {
-      const label = `    ${marker} [Record] ${treeItem.item.name}`;
+      const color = index === state.selectedIndex ? '^G' : '^K';
 
-      output.write(`  ${label.slice(0, width - 4)}\n`);
+      term(`    ${color}${marker} [Record] ${treeItem.item.name}^\n`);
     } else {
-      const label = `${marker}   [Record] ${treeItem.item.name}`;
+      const color = index === state.selectedIndex ? '^G' : '^w';
 
-      output.write(`  ${label.slice(0, width - 4)}\n`);
+      term(`  ${color}${marker}   [Record] ${treeItem.item.name}^\n`);
     }
   });
 
-  output.write('\n  [<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]\n');
+  term('\n  ^K[<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]^\n');
 };
 
 const renderReaderScreen = (
@@ -238,7 +238,7 @@ const renderReaderScreen = (
   statusNote = '',
   clipboardEnabled = true
 ): void => {
-  clearTerminal();
+  term.clear();
   const width = terminalWidth();
   const innerWidth = width - 4;
   const viewport = readerBodyRows();
@@ -247,21 +247,21 @@ const renderReaderScreen = (
   const scrollEnd = Math.min(total, scrollOffset + visible.length);
   const scrollLabel = total ? `lines ${scrollOffset + 1}-${scrollEnd} of ${total}` : 'empty';
 
-  output.write(`\n  ┌── ${uri} ${'─'.repeat(Math.max(0, innerWidth - uri.length - 5))}\n`);
+  term(`\n  ^b┌── ${uri} ${'─'.repeat(Math.max(0, innerWidth - uri.length - 5))}^\n`);
   wrapLines(titleLine, innerWidth).forEach(line => {
-    output.write(`  │ ${line.padEnd(innerWidth)}\n`);
+    term(`  ^b│^ ^W${line.padEnd(innerWidth)}^\n`);
   });
-  output.write(`  ├${'─'.repeat(innerWidth + 1)}\n`);
+  term(`  ^b├${'─'.repeat(innerWidth + 1)}^\n`);
 
   if (!visible.length) {
-    output.write(`  │ ${'(no content)'.padEnd(innerWidth)}\n`);
+    term(`  ^b│^ ^K${'(no content)'.padEnd(innerWidth)}^\n`);
   }
 
   visible.forEach(line => {
-    output.write(`  │ ${line.padEnd(innerWidth)}\n`);
+    term(`  ^b│^ ${line.padEnd(innerWidth)}\n`);
   });
 
-  output.write(`  └${'─'.repeat(innerWidth + 1)}\n`);
+  term(`  ^b└${'─'.repeat(innerWidth + 1)}^\n`);
   output.write(`\n  ${scrollLabel}${statusNote ? `  ·  ${statusNote}` : ''}\n`);
   const copyHint = clipboardEnabled ? '<c> copy · ' : '';
 
@@ -287,13 +287,9 @@ const markdownFileNameForUri = (uri: string): string => {
 };
 
 const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, current: string): Promise<string> => {
-  leaveAlternateScreen();
   keys.disable();
-  clearTerminal();
+  const query = await promptLine('PatternFly Search — enter query', current);
 
-  const query = await promptLine('  ◇ PatternFly Search — enter query', current);
-
-  enterAlternateScreen();
   keys.enable();
 
   return query;
@@ -550,8 +546,8 @@ const runInteractiveClient = async (
   let query = initialQuery.trim();
 
   if (!query) {
-    clearTerminal();
-    query = await promptLine('  ◇ PatternFly Search — enter query');
+    term.clear();
+    query = await promptLine('PatternFly Search — enter query');
 
     if (!query) {
       return;
@@ -561,7 +557,7 @@ const runInteractiveClient = async (
   const keys = createKeyReader();
   const clipboardEnabled = isClipboardAvailable();
 
-  enterAlternateScreen();
+  term.fullscreen(true);
   keys.enable();
 
   const results = await session.search(query, initialCollection);
@@ -594,7 +590,7 @@ const runInteractiveClient = async (
     }
   } finally {
     keys.dispose();
-    leaveAlternateScreen();
+    term.fullscreen(false);
   }
 };
 

@@ -26,3 +26,12 @@ declare module '@patternfly/patternfly-component-schemas/json' {
     required?: string[];
   }>;
 }
+
+declare module 'terminal-kit' {
+  const terminalKit: {
+    terminal: any;
+    [key: string]: any;
+  };
+
+  export default terminalKit;
+}

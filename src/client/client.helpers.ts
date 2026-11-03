@@ -65,27 +65,6 @@ const isClipboardAvailable = (): boolean => {
 };
 
 /**
- * Clear the terminal viewport (full reset).
- */
-const clearTerminal = (): void => {
-  process.stdout.write('\x1Bc');
-};
-
-/**
- * Switch to the terminal alternate screen buffer (restores on leave).
- */
-const enterAlternateScreen = (): void => {
-  process.stdout.write('\x1b[?1049h');
-};
-
-/**
- * Restore the primary screen buffer after alternate-screen use.
- */
-const leaveAlternateScreen = (): void => {
-  process.stdout.write('\x1b[?1049l');
-};
-
-/**
  * Copy via OSC-52 (terminal clipboard integration).
  *
  * @param text - UTF-8 string to place on the clipboard.
@@ -179,12 +158,9 @@ const prepareReaderDisplay = (fullText: string, uri: string): { titleLine: strin
 };
 
 export {
-  clearTerminal,
   copyTextOsc52,
   copyTextToClipboard,
-  enterAlternateScreen,
   isClipboardAvailable,
-  leaveAlternateScreen,
   prepareReaderDisplay,
   type ClipboardCopyResult
 };
