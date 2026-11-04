@@ -10,7 +10,7 @@ describe('prepareReaderDisplay', () => {
       'Body paragraph.'
     ].join('\n');
 
-    const { titleLine, body } = prepareReaderDisplay(raw, 'patternfly://docs/x');
+    const { titleLine, body } = prepareReaderDisplay({ fullText: raw, uri: 'patternfly://docs/x' });
 
     expect(titleLine).toBe('Documentation for Component Groups Close Button - Examples (v6)');
     expect(body).not.toContain('mcp:provenance');

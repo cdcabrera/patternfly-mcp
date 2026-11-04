@@ -141,27 +141,32 @@ const copyTextToClipboard = (text: string): ClipboardCopyResult => {
   }
 };
 
-const MCP_PROVENANCE_LINE = /^\s*<!--\s*mcp:provenance[\s\S]*?-->\s*$/i;
-
 /**
  * Split MCP resource markdown into a title bar label and scrollable body.
  *
  * Strips `mcp:provenance` HTML comments and avoids repeating the first `#` heading in the body.
  *
- * @param fullText - Raw markdown from `readResource`.
- * @param uri - Resource URI fallback title.
+ * @param params - Parameters for preparing reader display.
+ * @param params.fullText - Raw Markdown from `readResource`.
+ * @param params.uri - Resource URI fallback title.
+ * @param [settings] - Optional configuration.
+ * @param [settings.headerFilterRegEx] - Regular expression to filter out headers.
+ * @returns Object containing title line and body.
  */
-const prepareReaderDisplay = (fullText: string, uri: string): { titleLine: string; body: string } => {
+const prepareReaderDisplay = (
+  { fullText, uri }: { fullText: string, uri: string },
+  { headerFilterRegEx = /^\s*<!--\s*mcp:provenance[\s\S]*?-->\s*$/i } = {}
+): { titleLine: string; body: string } => {
   const lines = fullText.split('\n');
-  const withoutProvenance = lines.filter(line => !MCP_PROVENANCE_LINE.test(line));
-  const headingIndex = withoutProvenance.findIndex(line => /^#\s+/.test(line.trim()));
+  const filteredHeader = lines.filter(line => !headerFilterRegEx.test(line));
+  const headingIndex = filteredHeader.findIndex(line => /^#\s+/.test(line.trim()));
 
   if (headingIndex >= 0) {
-    const heading = withoutProvenance[headingIndex] ?? '';
+    const heading = filteredHeader[headingIndex] ?? '';
     const titleLine = heading.replace(/^#\s+/, '').trim();
     const bodyLines = [
-      ...withoutProvenance.slice(0, headingIndex),
-      ...withoutProvenance.slice(headingIndex + 1)
+      ...filteredHeader.slice(0, headingIndex),
+      ...filteredHeader.slice(headingIndex + 1)
     ];
 
     return {
@@ -170,11 +175,11 @@ const prepareReaderDisplay = (fullText: string, uri: string): { titleLine: strin
     };
   }
 
-  const firstLine = withoutProvenance.find(line => line.trim().length)?.trim();
+  const firstLine = filteredHeader.find(line => line.trim().length)?.trim();
 
   return {
     titleLine: firstLine ?? uri,
-    body: withoutProvenance.join('\n').replace(/^\n+/, '').trimEnd()
+    body: filteredHeader.join('\n').replace(/^\n+/, '').trimEnd()
   };
 };
 
