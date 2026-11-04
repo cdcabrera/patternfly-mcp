@@ -1,4 +1,17 @@
-import { parseResourceLinks, type ResourceLinkItem } from '../client/client.transport';
+import { materializeResourceText, parseResourceLinks, type ResourceLinkItem } from '../client';
+
+describe('materializeResourceText', () => {
+  it('joins multiple text contents', () => {
+    expect(materializeResourceText([
+      { uri: 'a', mimeType: 'text/markdown', text: 'Part one' },
+      { uri: 'b', mimeType: 'text/markdown', text: 'Part two' }
+    ])).toBe('Part one\n\n---\n\nPart two');
+  });
+
+  it('returns guidance when no text is present', () => {
+    expect(materializeResourceText([])).toContain('No readable text');
+  });
+});
 
 describe('parseResourceLinks', () => {
   it('maps resource_link content entries', () => {
@@ -60,12 +73,12 @@ describe('AgentlessClientSession', () => {
 
   it('passes --client when spawning the server CLI', async () => {
     const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
-    const { AgentlessClientSession } = await import('../client/client.transport');
+    const { runClient } = await import('../client');
 
-    const session = new AgentlessClientSession(
-      { command: 'node', args: ['/tmp/pf-cli.js'] },
-      ['--log-stderr']
-    );
+    const session = runClient({
+      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] },
+      extraArgs: ['--log-stderr']
+    });
 
     await session.connect();
 
@@ -88,8 +101,10 @@ describe('AgentlessClientSession', () => {
       }]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const { runClient } = await import('../client');
+    const session = runClient({
+      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    });
 
     const results = await session.search('button');
 
@@ -111,8 +126,10 @@ describe('AgentlessClientSession', () => {
       }]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const { runClient } = await import('../client');
+    const session = runClient({
+      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    });
 
     const results = await session.search('modal', 'patternfly-docs');
 
@@ -140,8 +157,10 @@ describe('AgentlessClientSession', () => {
       ]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const { runClient } = await import('../client');
+    const session = runClient({
+      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    });
 
     await session.connect();
     const items = await session.search('modal');
@@ -157,8 +176,10 @@ describe('AgentlessClientSession', () => {
       contents: [{ uri: 'patternfly://docs/button', text: '# Button\n\nDocs body' }]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const { runClient } = await import('../client');
+    const session = runClient({
+      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    });
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({
       text: '# Button\n\nDocs body',
