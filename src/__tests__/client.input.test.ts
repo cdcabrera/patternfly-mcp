@@ -1,21 +1,53 @@
-import { resolveKeyToken } from '../client/client.input';
+import { resolveKeyToken } from '../client.input';
 
 describe('resolveKeyToken', () => {
-  it('maps key.name when str is empty', () => {
-    expect(resolveKeyToken('', { name: 'c' } as never)).toBe('c');
-    expect(resolveKeyToken('', { name: 'q' } as never)).toBe('q');
-  });
-
-  it('maps space to space', () => {
-    expect(resolveKeyToken(' ', { name: 'space' } as never)).toBe('space');
-    expect(resolveKeyToken('', { name: 'space' } as never)).toBe('space');
-  });
-
-  it('maps navigation and filter keys', () => {
-    expect(resolveKeyToken('', { name: 'right' } as never)).toBe('right');
-    expect(resolveKeyToken('', { name: 'left' } as never)).toBe('left');
-    expect(resolveKeyToken('', { name: 'tab' } as never)).toBe('tab');
-    expect(resolveKeyToken('', { name: 'up' } as never)).toBe('up');
-    expect(resolveKeyToken('', { name: 'down' } as never)).toBe('down');
+  it.each([
+    {
+      description: 'single letter, copy',
+      input: '',
+      metadata: { name: 'c' }
+    },
+    {
+      description: 'single letter, quit',
+      input: '',
+      metadata: { name: 'q' }
+    },
+    {
+      description: 'no space input, space',
+      input: '',
+      metadata: { name: 'space' }
+    },
+    {
+      description: 'empty space input, space',
+      input: ' ',
+      metadata: { name: 'space' }
+    },
+    {
+      description: 'right',
+      input: '',
+      metadata: { name: 'right' }
+    },
+    {
+      description: 'left',
+      input: '',
+      metadata: { name: 'left' }
+    },
+    {
+      description: 'tab',
+      input: '',
+      metadata: { name: 'tab' }
+    },
+    {
+      description: 'up',
+      input: '',
+      metadata: { name: 'up' }
+    },
+    {
+      description: 'down',
+      input: '',
+      metadata: { name: 'down' }
+    }
+  ])('should return key tokens, $description', ({ input, metadata }) => {
+    expect(resolveKeyToken({ str: input, key: metadata })).toBe(metadata?.name);
   });
 });
