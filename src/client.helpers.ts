@@ -154,7 +154,7 @@ const copyTextToClipboard = (text: string): ClipboardCopyResult => {
  * @returns Object containing title line and body.
  */
 const prepareReaderDisplay = (
-  { fullText, uri }: { fullText: string, uri: string },
+  { fullText, uri }: { fullText: string; uri: string },
   { headerFilterRegEx = /^\s*<!--\s*mcp:provenance[\s\S]*?-->\s*$/i } = {}
 ): { titleLine: string; body: string } => {
   const lines = fullText.split('\n');
