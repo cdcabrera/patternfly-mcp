@@ -1,8 +1,54 @@
-import { parseResourceLinks, type ResourceLinkItem } from '../client/client.transport';
+import {
+  materializeResourceText,
+  parseResourceLinks,
+  runClient
+} from '../client';
+
+const mockConnect = jest.fn();
+const mockCallTool = jest.fn();
+const mockReadResource = jest.fn();
+const mockClientClose = jest.fn();
+const mockRunInteractiveClient = jest.fn().mockResolvedValue(undefined);
+
+jest.mock('../client.screens', () => ({
+  ...jest.requireActual('../client.screens'),
+  runInteractiveClient: (...args: unknown[]) => mockRunInteractiveClient(...args)
+}));
+
+jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
+  Client: jest.fn().mockImplementation(() => ({
+    connect: mockConnect,
+    callTool: mockCallTool,
+    readResource: mockReadResource,
+    close: mockClientClose
+  }))
+}));
+
+jest.mock('../mcpSdk', () => {
+  const actual = jest.requireActual('../mcpSdk');
+
+  return {
+    ...actual,
+    McpClient: jest.requireMock('@modelcontextprotocol/sdk/client/index.js').Client
+  };
+});
+
+describe('materializeResourceText', () => {
+  it('joins multiple text contents', () => {
+    expect(materializeResourceText([
+      { uri: 'a', mimeType: 'text/markdown', text: 'Part one' },
+      { uri: 'b', mimeType: 'text/markdown', text: 'Part two' }
+    ])).toBe('Part one\n\n---\n\nPart two');
+  });
+
+  it('returns guidance when no text is present', () => {
+    expect(materializeResourceText([])).toContain('No readable text');
+  });
+});
 
 describe('parseResourceLinks', () => {
   it('maps resource_link content entries', () => {
-    const links: ResourceLinkItem[] = parseResourceLinks({
+    const links: any[] = parseResourceLinks({
       content: [
         { type: 'text', text: 'summary' },
         {
@@ -32,50 +78,24 @@ describe('parseResourceLinks', () => {
   });
 });
 
-const mockConnect = jest.fn();
-const mockCallTool = jest.fn();
-const mockReadResource = jest.fn();
-const mockClientClose = jest.fn();
-const mockTransportClose = jest.fn();
+describe('runClient', () => {
+  let mockServer: any;
 
-jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    connect: mockConnect,
-    callTool: mockCallTool,
-    readResource: mockReadResource,
-    close: mockClientClose
-  }))
-}));
-
-jest.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
-  StdioClientTransport: jest.fn().mockImplementation(() => ({
-    close: mockTransportClose
-  }))
-}));
-
-describe('AgentlessClientSession', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockServer = { connect: jest.fn().mockResolvedValue(undefined) };
   });
 
-  it('passes --client when spawning the server CLI', async () => {
-    const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
-    const { AgentlessClientSession } = await import('../client/client.transport');
-
-    const session = new AgentlessClientSession(
-      { command: 'node', args: ['/tmp/pf-cli.js'] },
-      ['--log-stderr']
+  it('connects to the provided mcpChannel directly', async () => {
+    const session = await runClient(
+      { name: 'test-client' } as any,
+      { server: mockServer } as any
     );
 
     await session.connect();
 
-    expect(StdioClientTransport).toHaveBeenCalledWith(
-      expect.objectContaining({
-        command: 'node',
-        args: ['/tmp/pf-cli.js', '--client', '--log-stderr'],
-        stderr: 'pipe'
-      })
-    );
+    expect(mockRunInteractiveClient).toHaveBeenCalledWith(session);
+    expect(mockServer.connect).toHaveBeenCalled();
     expect(mockConnect).toHaveBeenCalled();
   });
 
@@ -88,8 +108,7 @@ describe('AgentlessClientSession', () => {
       }]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     const results = await session.search('button');
 
@@ -111,8 +130,7 @@ describe('AgentlessClientSession', () => {
       }]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     const results = await session.search('modal', 'patternfly-docs');
 
@@ -140,10 +158,8 @@ describe('AgentlessClientSession', () => {
       ]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const session = await runClient(undefined, { server: mockServer } as any);
 
-    await session.connect();
     const items = await session.search('modal');
 
     expect(items).toHaveLength(1);
@@ -157,8 +173,7 @@ describe('AgentlessClientSession', () => {
       contents: [{ uri: 'patternfly://docs/button', text: '# Button\n\nDocs body' }]
     });
 
-    const { AgentlessClientSession } = await import('../client/client.transport');
-    const session = new AgentlessClientSession({ command: 'node', args: ['/tmp/pf-cli.js'] });
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({
       text: '# Button\n\nDocs body',

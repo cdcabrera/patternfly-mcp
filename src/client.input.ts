@@ -138,7 +138,7 @@ const createKeyReader = () => {
  * @param params.label - Prompt label shown to the user.
  * @param params.current - Optional default query text.
  */
-const promptLine = async ({ label, current = '' }: { label: string; current: string }): Promise<string> => {
+const promptLine = async ({ label, current = '' }: { label: string; current?: string | undefined }): Promise<string> => {
   const rl = createPromiseInterface({ input, output, terminal: true });
   const suffix = current ? ` [${current}]` : '';
   const answer = await rl.question(`${label}${suffix}: `);
