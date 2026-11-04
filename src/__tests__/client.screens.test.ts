@@ -8,8 +8,8 @@ import {
   runSearchScreen,
   type CollectionGroup,
   type SearchScreenState
-} from '../client/client.screens';
-import { type ResourceLinkItem } from '../client/client.transport';
+} from '../client.screens';
+import { type ResourceLinkItem } from '../client';
 
 describe('client.screens', () => {
   describe('badgeForResult', () => {

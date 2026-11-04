@@ -10,7 +10,7 @@ import {
   prepareReaderDisplay
 } from './client.helpers';
 import { createKeyReader, promptLine } from './client.input';
-import { type AgentlessClientSession, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client.transport';
+import { type ClientInstance, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client';
 
 const AVAILABLE_COLLECTIONS = [
   'patternfly-docs',
@@ -291,7 +291,7 @@ const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, cu
   keys.disable();
   clearTerminal();
 
-  const query = await promptLine('  ◇ PatternFly Search — enter query', current);
+  const query = await promptLine({ label: '  ◇ PatternFly Search — enter query', current });
 
   enterAlternateScreen();
   keys.enable();
@@ -307,7 +307,7 @@ const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, cu
  * @param keys - Shared TTY key reader for the interactive session.
  */
 const runSearchScreen = async (
-  session: AgentlessClientSession,
+  session: ClientInstance,
   initialState: SearchScreenState,
   keys: ReturnType<typeof createKeyReader>
 ): Promise<{ action: 'quit' } | { action: 'open'; uri: string; state: SearchScreenState }> => {
@@ -458,13 +458,13 @@ const runSearchScreen = async (
  * @param clipboardEnabled - When false, copy shortcut is hidden and ignored.
  */
 const runReaderScreen = async (
-  session: AgentlessClientSession,
+  session: ClientInstance,
   uri: string,
   keys: ReturnType<typeof createKeyReader>,
   clipboardEnabled: boolean
 ): Promise<ReaderAction> => {
   const { text: fullText } = await session.readResource(uri);
-  const { titleLine, body: displayBody } = prepareReaderDisplay(fullText, uri);
+  const { titleLine, body: displayBody } = prepareReaderDisplay({ fullText, uri });
   const body = displayTextForTerminal(displayBody, clipboardEnabled);
   const innerWidth = terminalWidth() - 4;
   const bodyLines = wrapLines(body, innerWidth);
@@ -539,7 +539,7 @@ const runReaderScreen = async (
  * @param initialCollection - Optional initial collection filter.
  */
 const runInteractiveClient = async (
-  session: AgentlessClientSession,
+  session: ClientInstance,
   initialQuery = '',
   initialCollection?: string
 ): Promise<void> => {
@@ -551,7 +551,7 @@ const runInteractiveClient = async (
 
   if (!query) {
     clearTerminal();
-    query = await promptLine('  ◇ PatternFly Search — enter query');
+    query = await promptLine({ label: '  ◇ PatternFly Search — enter query' });
 
     if (!query) {
       return;
