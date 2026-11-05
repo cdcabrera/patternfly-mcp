@@ -71,11 +71,11 @@ describe('AgentlessClientSession', () => {
     jest.clearAllMocks();
   });
 
-  it('passes --client when spawning the server CLI', async () => {
+  it('passes --experimental-client when spawning the server CLI', async () => {
     const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
     const { runClient } = await import('../client');
 
-    const session = runClient({
+    const session = await runClient({
       spawn: { command: 'node', args: ['/tmp/pf-cli.js'] },
       extraArgs: ['--log-stderr']
     });
@@ -85,7 +85,7 @@ describe('AgentlessClientSession', () => {
     expect(StdioClientTransport).toHaveBeenCalledWith(
       expect.objectContaining({
         command: 'node',
-        args: ['/tmp/pf-cli.js', '--client', '--log-stderr'],
+        args: ['/tmp/pf-cli.js', '--experimental-client', '--log-stderr'],
         stderr: 'pipe'
       })
     );
@@ -102,7 +102,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = runClient({
+    const session = await runClient({
       spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
     });
 
@@ -127,7 +127,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = runClient({
+    const session = await runClient({
       spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
     });
 
@@ -158,7 +158,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = runClient({
+    const session = await runClient({
       spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
     });
 
@@ -177,7 +177,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = runClient({
+    const session = await runClient({
       spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
     });
 

@@ -4,7 +4,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { McpClient, McpStdioClientTransport, type McpClientCallToolResult } from './mcpSdk';
 import { memo } from './server.caching';
-import { getOptions } from './options.context';
+import { getOptions, getSessionOptions } from './options.context';
+import { type GlobalOptions } from './options';
+import { runInteractiveClient } from './client.screens';
 
 /**
  * A linkable resource item.
@@ -70,11 +72,22 @@ interface ClientInstance {
   readResource: (uri: string) => Promise<ResourceReadResult>;
   close: () => Promise<void>;
   isConnected: () => boolean;
+  runInteractive: (initialQuery?: string, initialCollection?: string) => Promise<void>;
 }
 
-interface ClientOptions {
+/**
+ * Client options. Extends GlobalOptions with optional spawn overrides.
+ */
+type ClientOptions = Partial<GlobalOptions> & {
   spawn?: ServerSpawnSpec;
   extraArgs?: string[];
+};
+
+/**
+ * Client settings matching server lifecycle options.
+ */
+interface ClientSettings {
+  allowProcessExit?: boolean;
 }
 
 /**
@@ -175,7 +188,7 @@ const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<McpCli
 /**
  * Locate the server CLI entry for spawning a stdio MCP child (built `dist/` or dev `tsx`).
  *
- * @returns Command and args to exec before `--client` is appended.
+ * @returns Command and args to exec before `--experimental-client` is appended.
  */
 const resolveServerSpawn = (): ServerSpawnSpec => {
   const moduleDir = dirname(fileURLToPath(import.meta.url));
@@ -217,27 +230,37 @@ const resolveServerSpawn = (): ServerSpawnSpec => {
  *
  * TODO: the entire resolveServerSpawn function needs to be re-evaluated under the guise of "unnecessary bot add" and "sure, lets over-eng it".
  *
- * @param params - Parameters for the client.
- * @param [params.spawn] - Spawn specification for the server.
- * @param [params.extraArgs] - Extra args for the server.
- * @param options - Global options.
+ * @param [options] - Client options.
+ * @param [_settings] - Client lifecycle settings.
+ * @returns Client instance with search, read, and interactive UI methods.
  */
-const runClient = ({
-  spawn = resolveServerSpawn(),
-  extraArgs = []
-}: ClientOptions = {}, options = getOptions()): ClientInstance => {
+const runClient = async (
+  options: ClientOptions = getOptions(),
+  _settings: ClientSettings = {}
+): Promise<ClientInstance> => {
+  const _session = getSessionOptions();
+  const spawn = options.spawn || resolveServerSpawn();
+  const extraArgs = options.extraArgs || [];
   let connected = false;
+
+  const serverArgs = [...spawn.args, '--experimental-client'];
+
+  if (options.logging?.stderr) {
+    serverArgs.push('--log-stderr');
+  }
+
+  serverArgs.push(...extraArgs);
 
   const transport = new McpStdioClientTransport({
     command: spawn.command,
-    args: [...spawn.args, '--client', ...extraArgs],
+    args: serverArgs,
     stderr: 'pipe'
   });
 
   const client = new McpClient(
     {
-      name: options.name,
-      version: options.version
+      name: options.name || getOptions().name,
+      version: options.version || getOptions().version
     },
     { capabilities: {} }
   );
@@ -289,13 +312,25 @@ const runClient = ({
 
   const isConnected = (): boolean => connected;
 
-  return {
+  const runInteractive = async (initialQuery = '', initialCollection?: string): Promise<void> => {
+    await connect();
+    try {
+      await runInteractiveClient(instance, initialQuery, initialCollection);
+    } finally {
+      await close();
+    }
+  };
+
+  const instance: ClientInstance = {
     connect,
     search,
     readResource,
     close,
-    isConnected
+    isConnected,
+    runInteractive
   };
+
+  return instance;
 };
 
 /**

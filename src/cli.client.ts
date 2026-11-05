@@ -93,7 +93,7 @@ const runPfClient = async (
     process.exit(0);
   }
 
-  const session = runClient({ extraArgs: serverExtraArgs });
+  const session = await runClient({ extraArgs: serverExtraArgs });
 
   await session.connect();
 
