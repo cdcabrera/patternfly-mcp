@@ -36,6 +36,7 @@ export default {
     'src/**/*.ts',
     '!src/**/.*/**',
     '!src/cli.ts',
+    '!src/cli.client.ts',
     '!src/declarations*',
     '!src/server.workerEntry.ts'
   ],
