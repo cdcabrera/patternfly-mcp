@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { AgentlessClientSession } from './client/client.transport';
-import { runInteractiveClient } from './client/client.screens';
+import { runClient } from './client';
+import { runInteractiveClient } from './client.screens';
 
 const SERVER_VALUE_FLAGS = new Set([
   '--log-level',
@@ -93,7 +93,7 @@ const runPfClient = async (
     process.exit(0);
   }
 
-  const session = new AgentlessClientSession(undefined, serverExtraArgs);
+  const session = runClient({ extraArgs: serverExtraArgs });
 
   await session.connect();
 
