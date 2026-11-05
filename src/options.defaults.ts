@@ -10,7 +10,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @interface DefaultOptions
  *
  * @template TLogOptions The logging options type, defaulting to LoggingOptions.
- * @property client - Streamlined single-tool mode for the agentless pf-client CLI (`searchPatternFly` only).
+ * @property client - Streamlined single-tool mode for the agentless terminal client. Uses the optimized MCP tooling activated by `contextManagement`.
  * @property contextManagement - Strategy for managing agent context and response sizes, primarily within MCP tools.
  *    - 'false': Default standard text-heavy responses.
  *    - 'true': High-efficiency mode for MCP tools, using McpResource links.

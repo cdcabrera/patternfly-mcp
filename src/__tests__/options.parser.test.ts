@@ -49,10 +49,10 @@ describe('parseCliOptions', () => {
       })
     },
     {
-      description: 'with --client flag',
+      description: 'with bare --client flag when registered as experimental',
       args: ['node', 'script.js', '--client'],
       expectedOptions: expect.objectContaining({
-        client: true
+        client: false
       })
     },
     {
@@ -298,6 +298,12 @@ describe('parseProgrammaticOptions', () => {
       input: { pluginIsolation: 'strict' },
       experimentalOptions: new Set<any>(['pluginIsolation']),
       expectedOptions: expect.objectContaining({}),
+      expectedExperimental: []
+    },
+    {
+      description: 'ignores direct client key registered as experimental',
+      input: { client: true },
+      expectedOptions: expect.not.objectContaining({ client: true }),
       expectedExperimental: []
     },
     {
