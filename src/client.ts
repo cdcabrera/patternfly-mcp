@@ -1,7 +1,3 @@
-import { createRequire } from 'node:module';
-import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { McpClient, McpStdioClientTransport, type McpClientCallToolResult } from './mcpSdk';
 import { memo } from './server.caching';
 import { getOptions, getSessionOptions } from './options.context';
@@ -43,19 +39,6 @@ interface ResourceReadResult {
 }
 
 /**
- * A server spawn specification.
- *
- * @interface ServerSpawnSpec
- *
- * @property command - The command to spawn.
- * @property args - The arguments to pass to the command.
- */
-interface ServerSpawnSpec {
-  command: string;
-  args: string[];
-}
-
-/**
  * Async MCP client instance.
  *
  * @interface ClientInstance
@@ -76,18 +59,23 @@ interface ClientInstance {
 }
 
 /**
- * Client options. Extends GlobalOptions with optional spawn overrides.
+ * Client options. Equivalent to GlobalOptions.
  */
-type ClientOptions = Partial<GlobalOptions> & {
-  spawn?: ServerSpawnSpec;
-  extraArgs?: string[];
-};
+type ClientOptions = GlobalOptions;
 
 /**
  * Client settings matching server lifecycle options.
+ *
+ * @interface ClientSettings
+ *
+ * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
+ * @property [serverCommand] - Path to the executable used to run the server (testing override).
+ * @property [serverArgs] - Arguments passed to the executable before CLI flags (testing override).
  */
 interface ClientSettings {
   allowProcessExit?: boolean;
+  serverCommand?: string;
+  serverArgs?: string[];
 }
 
 /**
@@ -186,73 +174,29 @@ const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<McpCli
 };
 
 /**
- * Locate the server CLI entry for spawning a stdio MCP child (built `dist/` or dev `tsx`).
- *
- * @returns Command and args to exec before `--experimental-client` is appended.
- */
-const resolveServerSpawn = (): ServerSpawnSpec => {
-  const moduleDir = dirname(fileURLToPath(import.meta.url));
-  const require = createRequire(import.meta.url);
-
-  const distCandidates = [
-    join(moduleDir, 'cli.js'),
-    join(moduleDir, '..', 'cli.js'),
-    join(moduleDir, '..', '..', 'dist', 'cli.js'),
-    join(process.cwd(), 'dist', 'cli.js')
-  ];
-
-  for (const entry of distCandidates) {
-    if (existsSync(entry)) {
-      return { command: process.execPath, args: [entry] };
-    }
-  }
-
-  const srcCandidates = [
-    join(moduleDir, '..', 'cli.ts'),
-    join(moduleDir, '..', '..', 'src', 'cli.ts')
-  ];
-
-  for (const entry of srcCandidates) {
-    if (existsSync(entry)) {
-      const tsxCli = require.resolve('tsx/cli');
-
-      return { command: process.execPath, args: [tsxCli, entry] };
-    }
-  }
-
-  throw new Error(
-    'PatternFly MCP server entry not found. Run `npm run build` or use a source checkout with src/cli.ts.'
-  );
-};
-
-/**
  * MCP client for agentless search and resource reads.
  *
- * TODO: the entire resolveServerSpawn function needs to be re-evaluated under the guise of "unnecessary bot add" and "sure, lets over-eng it".
- *
  * @param [options] - Client options.
- * @param [_settings] - Client lifecycle settings.
+ * @param [settings] - Client lifecycle settings and test execution overrides.
  * @returns Client instance with search, read, and interactive UI methods.
  */
 const runClient = async (
   options: ClientOptions = getOptions(),
-  _settings: ClientSettings = {}
+  settings: ClientSettings = {}
 ): Promise<ClientInstance> => {
   const _session = getSessionOptions();
-  const spawn = options.spawn || resolveServerSpawn();
-  const extraArgs = options.extraArgs || [];
+  const command = settings.serverCommand || process.execPath;
+  const baseArgs = settings.serverArgs || ['dist/cli.js'];
   let connected = false;
 
-  const serverArgs = [...spawn.args, '--experimental-client'];
+  const serverArgs = [...baseArgs, '--experimental-client'];
 
   if (options.logging?.stderr) {
     serverArgs.push('--log-stderr');
   }
 
-  serverArgs.push(...extraArgs);
-
   const transport = new McpStdioClientTransport({
-    command: spawn.command,
+    command,
     args: serverArgs,
     stderr: 'pipe'
   });
@@ -365,10 +309,9 @@ export {
   materializeResourceText,
   MAX_TERMINAL_DISPLAY_CHARS,
   parseResourceLinks,
-  resolveServerSpawn,
   type ClientInstance,
   type ClientOptions,
+  type ClientSettings,
   type ResourceLinkItem,
-  type ResourceReadResult,
-  type ServerSpawnSpec
+  type ResourceReadResult
 };

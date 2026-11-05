@@ -75,10 +75,10 @@ describe('AgentlessClientSession', () => {
     const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
     const { runClient } = await import('../client');
 
-    const session = await runClient({
-      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] },
-      extraArgs: ['--log-stderr']
-    });
+    const session = await runClient(
+      { logging: { stderr: true } } as never,
+      { serverCommand: 'node', serverArgs: ['/tmp/pf-cli.js'] }
+    );
 
     await session.connect();
 
@@ -102,8 +102,9 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient({
-      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    const session = await runClient(undefined, {
+      serverCommand: 'node',
+      serverArgs: ['/tmp/pf-cli.js']
     });
 
     const results = await session.search('button');
@@ -127,8 +128,9 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient({
-      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    const session = await runClient(undefined, {
+      serverCommand: 'node',
+      serverArgs: ['/tmp/pf-cli.js']
     });
 
     const results = await session.search('modal', 'patternfly-docs');
@@ -158,8 +160,9 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient({
-      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    const session = await runClient(undefined, {
+      serverCommand: 'node',
+      serverArgs: ['/tmp/pf-cli.js']
     });
 
     await session.connect();
@@ -177,8 +180,9 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient({
-      spawn: { command: 'node', args: ['/tmp/pf-cli.js'] }
+    const session = await runClient(undefined, {
+      serverCommand: 'node',
+      serverArgs: ['/tmp/pf-cli.js']
     });
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({

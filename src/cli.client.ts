@@ -86,14 +86,14 @@ const splitServerClientArgv = (argv: string[]): { clientArgv: string[]; serverEx
  */
 const runPfClient = async (
   argv: string[] = process.argv.slice(2),
-  { serverExtraArgs = [] }: { serverExtraArgs?: string[] } = {}
+  { serverExtraArgs: _serverExtraArgs = [] }: { serverExtraArgs?: string[] } = {}
 ): Promise<void> => {
   if (argv.includes('--help') || argv.includes('-h')) {
     printUsage();
     process.exit(0);
   }
 
-  const session = await runClient({ extraArgs: serverExtraArgs });
+  const session = await runClient();
 
   await session.connect();
 
