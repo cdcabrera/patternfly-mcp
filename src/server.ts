@@ -301,6 +301,59 @@ const registerServerTools = async (tools: McpToolCreator[], server: McpServer, o
   }
 };
 
+/*
+const createClient = async ({
+  running,
+  server,
+  allowProcessExit
+}: { running: boolean, server: McpServer, allowProcessExit: boolean }, options = getOptions()): Promise<ClientInstance> => {
+  let mcpClient: Promise<ClientInstance>;
+
+  const create = async () => {
+    if (!running || !server) {
+      throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
+    }
+
+    // if (mcpClient && mcpClient.isConnected()) {
+    if (mcpClient) {
+      return mcpClient;
+    }
+
+    const { runClient } = await import('./client');
+
+    return await runClient.memo(options, {
+      server,
+      allowProcessExit
+    });
+  };
+
+  mcpClient = create();
+
+  return mcpClient;
+};
+*/
+
+const createClient = async ({
+  running,
+  server,
+  allowProcessExit
+}: { running: boolean, server: McpServer, allowProcessExit: boolean }, options = getOptions()): Promise<ClientInstance | null> => {
+  if (!running || !server) {
+    throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
+  }
+
+  if (options.client) {
+    const { runClient } = await import('./client');
+
+    return await runClient.memo(options, {
+      server,
+      allowProcessExit
+    });
+  }
+
+  return null;
+};
+
 /**
  * Create and run the MCP server, register tools, and return a handle.
  *
@@ -502,28 +555,7 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
     throw error;
   }
 
-  if (options.client) {
-    const createClient = async (): Promise<ClientInstance> => {
-      if (!running || !server) {
-        throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
-      }
-
-      if (mcpClient && mcpClient.isConnected()) {
-        return mcpClient;
-      }
-
-      const { runClient } = await import('./client');
-
-      mcpClient = await runClient.memo(options, {
-        server,
-        allowProcessExit: settings.allowProcessExit
-      });
-
-      return mcpClient;
-    };
-
-    createClient();
-  }
+  mcpClient = await createClient({ running, server, allowProcessExit }, options);
 
   return {
     async stop(): Promise<void> {
