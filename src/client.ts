@@ -205,9 +205,7 @@ const runClient = async (
       return;
     }
 
-    const [cChannel, serverChannel] = createMcpChannel();
-
-    clientChannel = cChannel;
+    const [clientChannel, serverChannel] = createMcpChannel();
 
     serverInstance = await runServer(
       { ...options, client: true },
