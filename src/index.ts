@@ -257,8 +257,22 @@ const main = async (
     const { runServer } = await import('./server');
 
     // Start the server, apply session values, then apply merged options to ensure stable hashing.
-    return await runWithSession(session, async () =>
-      await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit }));
+    return await runWithSession(session, async () => {
+      const { createClient, ...programmaticServerInstance } = await runServer.memo(mergedOptions, { allowProcessExit: updatedAllowProcessExit });
+
+      if (mergedOptions.client) {
+        if (!process.stdin.isTTY || !process.stdout.isTTY) {
+          processExit(
+            'MCP client environment error, failed to start server:',
+            new Error('The MCP client option requires an interactive terminal (TTY).')
+          );
+        }
+
+        createClient();
+      }
+
+      return programmaticServerInstance;
+    });
   } catch (error) {
     processExit('Failed to start server:', error);
   }

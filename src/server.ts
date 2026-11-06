@@ -120,7 +120,6 @@ interface ServerInstance {
   isRunning(): boolean;
   getStats: ServerGetStats;
   onLog: ServerOnLog;
-  createClient(): Promise<ClientInstance>;
 }
 
 /**
@@ -503,6 +502,29 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
     throw error;
   }
 
+  if (options.client) {
+    const createClient = async (): Promise<ClientInstance> => {
+      if (!running || !server) {
+        throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
+      }
+
+      if (mcpClient && mcpClient.isConnected()) {
+        return mcpClient;
+      }
+
+      const { runClient } = await import('./client');
+
+      mcpClient = await runClient.memo(options, {
+        server,
+        allowProcessExit: settings.allowProcessExit
+      });
+
+      return mcpClient;
+    };
+
+    createClient();
+  }
+
   return {
     async stop(): Promise<void> {
       return await stopServer();
@@ -521,25 +543,6 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
       handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging?.transport } as LogEvent);
 
       return onLogSetup(handler);
-    },
-
-    async createClient(): Promise<ClientInstance> {
-      if (!running || !server) {
-        throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
-      }
-
-      if (mcpClient && mcpClient.isConnected()) {
-        return mcpClient;
-      }
-
-      const { runClient } = await import('./client');
-
-      mcpClient = await runClient.memo(options, {
-        server,
-        allowProcessExit: settings.allowProcessExit
-      });
-
-      return mcpClient;
     }
   };
 };

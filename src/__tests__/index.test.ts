@@ -24,6 +24,8 @@ describe('main', () => {
   let processExitSpy: jest.SpyInstance;
   let callOrder: string[] = [];
   const defaultLogging = { level: 'info' as const, stderr: false, protocol: false };
+  let mockServerInstance: any;
+  let mockClientInstance: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -61,12 +63,18 @@ describe('main', () => {
 
     mockRunWithSession.mockImplementation(async (_session, callback: any) => await callback());
 
-    const mockServerInstance = {
+    mockClientInstance = {
+      runInteractive: jest.fn().mockResolvedValue(undefined),
+      close: jest.fn().mockResolvedValue(undefined),
+      isConnected: jest.fn().mockReturnValue(true)
+    };
+
+    mockServerInstance = {
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true),
       getStats: jest.fn().mockReturnValue({}),
       onLog: jest.fn(),
-      createClient: jest.fn()
+      createClient: jest.fn().mockResolvedValue(mockClientInstance)
     };
 
     mockRunServer.mockImplementation(async () => {
@@ -159,6 +167,68 @@ describe('main', () => {
     expect(mockParseProgrammaticOptions).toHaveBeenCalledTimes(1);
     expect(mockSetOptions).toHaveBeenCalledTimes(1);
     expect(callOrder).toEqual(expect.arrayContaining(['parse', 'set', 'run']));
+  });
+
+  describe('experimental client execution', () => {
+    const originalStdinIsTTY = process.stdin.isTTY;
+    const originalStdoutIsTTY = process.stdout.isTTY;
+
+    beforeEach(() => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+      Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: originalStdinIsTTY, configurable: true });
+      Object.defineProperty(process.stdout, 'isTTY', { value: originalStdoutIsTTY, configurable: true });
+    });
+
+    it('rejects client when invoked outside CLI mode', async () => {
+      mockSetOptions.mockReturnValueOnce({
+        ...DEFAULT_OPTIONS,
+        client: true,
+        mode: 'stdio'
+      } as unknown as GlobalOptions);
+
+      await expect(main()).rejects.toThrow('The client option is only available when executed via CLI.');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Client option error, failed to start server:',
+        expect.any(Error)
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('rejects client when TTY is not available', async () => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+
+      mockSetOptions.mockReturnValueOnce({
+        ...DEFAULT_OPTIONS,
+        client: true,
+        mode: 'cli'
+      } as GlobalOptions);
+
+      await expect(main()).rejects.toThrow('The client option requires an interactive terminal (TTY).');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Client environment error, failed to start server:',
+        expect.any(Error)
+      );
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('runs interactive client and cleans up server instance upon completion', async () => {
+      mockSetOptions.mockReturnValueOnce({
+        ...DEFAULT_OPTIONS,
+        client: true,
+        mode: 'cli'
+      } as GlobalOptions);
+
+      const result = await main();
+
+      expect(mockServerInstance.createClient).toHaveBeenCalledTimes(1);
+      expect(mockClientInstance.runInteractive).toHaveBeenCalledTimes(1);
+      expect(mockServerInstance.stop).toHaveBeenCalledTimes(1);
+      expect(result).toBe(mockServerInstance);
+    });
   });
 });
 

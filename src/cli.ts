@@ -62,21 +62,6 @@ const run = async (): Promise<void> => {
     return;
   }
 
-  const cliArgs = process.argv.slice(2);
-
-  if (cliArgs.includes('--client') && process.stdin.isTTY && process.stdout.isTTY) {
-    try {
-      const { runPfClient, splitServerClientArgv } = await import('./cli.client.js');
-      const { clientArgv, serverExtraArgs } = splitServerClientArgv(cliArgs);
-
-      await runPfClient(clientArgv, { serverExtraArgs });
-    } catch (error) {
-      processExit(`${appName} client failed`, error);
-    }
-
-    return;
-  }
-
   let main: typeof import('./index').main;
 
   try {
