@@ -1,3 +1,5 @@
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { type Transport as McpChannel } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   ResourceTemplate,
   type McpServer,
@@ -265,7 +267,18 @@ const registerResource = (
   server.registerResource(name, uriOrTemplate as any, config, callback);
 };
 
+/**
+ * Creates a linked pair of in-memory communication channels for in-process MCP client-server communication.
+ * Encapsulates SDK transport wiring to maintain stability across SDK version migrations.
+ *
+ * @returns [clientChannel, serverChannel]
+ */
+const createMcpChannel = (): [clientChannel: McpChannel, serverChannel: McpChannel] =>
+  InMemoryTransport.createLinkedPair();
+
 export {
+  createMcpChannel,
+  type McpChannel,
   registerResource,
   McpClient,
   McpStdioClientTransport,

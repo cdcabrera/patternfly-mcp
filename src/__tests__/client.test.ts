@@ -49,7 +49,12 @@ const mockConnect = jest.fn();
 const mockCallTool = jest.fn();
 const mockReadResource = jest.fn();
 const mockClientClose = jest.fn();
-const mockTransportClose = jest.fn();
+const mockChannelClose = jest.fn();
+const mockServerStop = jest.fn();
+const mockServerIsRunning = jest.fn().mockReturnValue(true);
+
+const mockClientChannel = { close: mockChannelClose };
+const mockServerChannel = { close: jest.fn() };
 
 jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -60,9 +65,17 @@ jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   }))
 }));
 
-jest.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
-  StdioClientTransport: jest.fn().mockImplementation(() => ({
-    close: mockTransportClose
+jest.mock('../mcpSdk', () => ({
+  createMcpChannel: jest.fn().mockImplementation(() => [mockClientChannel, mockServerChannel]),
+  McpClient: jest.requireMock('@modelcontextprotocol/sdk/client/index.js').Client
+}));
+
+jest.mock('../server', () => ({
+  runServer: jest.fn().mockImplementation(async () => ({
+    stop: mockServerStop,
+    isRunning: mockServerIsRunning,
+    getStats: jest.fn(),
+    onLog: jest.fn()
   }))
 }));
 
@@ -71,25 +84,28 @@ describe('AgentlessClientSession', () => {
     jest.clearAllMocks();
   });
 
-  it('passes --experimental-client when spawning the server CLI', async () => {
-    const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
+  it('initializes in-process server with searchPatternFly and connects via mcpChannel', async () => {
+    const { runServer } = await import('../server');
     const { runClient } = await import('../client');
+    const { searchPatternFlyTool } = await import('../tool.searchPatternFly');
 
-    const session = await runClient(
-      { logging: { stderr: true } } as never,
-      { serverCommand: 'node', serverArgs: ['/tmp/pf-cli.js'] }
-    );
+    const session = await runClient({ name: 'test-client' } as never);
 
     await session.connect();
 
-    expect(StdioClientTransport).toHaveBeenCalledWith(
+    expect(runServer).toHaveBeenCalledWith(
       expect.objectContaining({
-        command: 'node',
-        args: ['/tmp/pf-cli.js', '--experimental-client', '--log-stderr'],
-        stderr: 'pipe'
+        client: true,
+        name: 'test-client'
+      }),
+      expect.objectContaining({
+        tools: [searchPatternFlyTool],
+        enableSigint: false,
+        allowProcessExit: false,
+        mcpChannel: mockServerChannel
       })
     );
-    expect(mockConnect).toHaveBeenCalled();
+    expect(mockConnect).toHaveBeenCalledWith(mockClientChannel);
   });
 
   it('calls searchPatternFly and maps links', async () => {
@@ -102,10 +118,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient(undefined, {
-      serverCommand: 'node',
-      serverArgs: ['/tmp/pf-cli.js']
-    });
+    const session = await runClient();
 
     const results = await session.search('button');
 
@@ -128,10 +141,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient(undefined, {
-      serverCommand: 'node',
-      serverArgs: ['/tmp/pf-cli.js']
-    });
+    const session = await runClient();
 
     const results = await session.search('modal', 'patternfly-docs');
 
@@ -160,10 +170,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient(undefined, {
-      serverCommand: 'node',
-      serverArgs: ['/tmp/pf-cli.js']
-    });
+    const session = await runClient();
 
     await session.connect();
     const items = await session.search('modal');
@@ -180,10 +187,7 @@ describe('AgentlessClientSession', () => {
     });
 
     const { runClient } = await import('../client');
-    const session = await runClient(undefined, {
-      serverCommand: 'node',
-      serverArgs: ['/tmp/pf-cli.js']
-    });
+    const session = await runClient();
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({
       text: '# Button\n\nDocs body',

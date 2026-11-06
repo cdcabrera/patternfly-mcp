@@ -5,7 +5,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   registerResource,
   type McpToolCreator,
-  type McpResourceCreator
+  type McpResourceCreator,
+  type McpChannel
 } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
@@ -54,6 +55,8 @@ type ServerOptions = GlobalOptions;
  * @property {McpCollectionCreator[]} [collections] - An optional array of collection (of records') creators used by the server.
  * @property [enableSigint] - Indicates whether SIGINT signal handling is enabled.
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
+ * @property [mcpChannel] - Optional custom MCP communication channel (e.g. in-process channel created via createMcpChannel, or test mocks).
+ *   When provided, bypasses default HTTP/stdio transport creation.
  */
 interface ServerSettings {
   tools?: McpToolCreator[];
@@ -61,6 +64,7 @@ interface ServerSettings {
   collections?: McpCollectionCreator[];
   enableSigint?: boolean;
   allowProcessExit?: boolean;
+  mcpChannel?: McpChannel;
 }
 
 /**
@@ -314,17 +318,18 @@ const registerServerTools = async (tools: McpToolCreator[], server: McpServer, o
  * @param settings.resources
  * @returns Server instance with `stop()`, `getStats()` `isRunning()`, and `onLog()` subscription.
  */
-const runServer = async (options: ServerOptions = getOptions(), {
-  tools = builtinTools,
-  resources = builtinResources,
-  collections = builtinCollections,
-  enableSigint = true,
-  allowProcessExit = true
-}: ServerSettings = {}): Promise<ServerInstance> => {
+const runServer = async (options: ServerOptions = getOptions(), settings: ServerSettings = {}): Promise<ServerInstance> => {
+  const {
+    tools = builtinTools,
+    resources = builtinResources,
+    collections = builtinCollections,
+    enableSigint = true,
+    allowProcessExit = true
+  } = settings;
   const session = getSessionOptions();
 
   let server: McpServer | null = null;
-  let transport: StdioServerTransport | null = null;
+  let transport: StdioServerTransport | McpChannel | null = null;
   let httpHandle: HttpServerHandle | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let unsubscribeServerStats: (() => void) | null = null;
@@ -456,7 +461,15 @@ const runServer = async (options: ServerOptions = getOptions(), {
       process.on('SIGINT', sigintHandler);
     }
 
-    if (options.isHttp) {
+    if (settings.mcpChannel) {
+      transport = settings.mcpChannel;
+      await timeoutFunction(
+        server.connect(transport),
+        {
+          errorMessage: 'MCP channel connection timed out.'
+        }
+      );
+    } else if (options.isHttp) {
       httpHandle = await startHttpTransport(server, options);
     } else {
       transport = new StdioServerTransport();

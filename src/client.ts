@@ -1,7 +1,14 @@
-import { McpClient, McpStdioClientTransport, type McpClientCallToolResult } from './mcpSdk';
+import {
+  McpClient,
+  createMcpChannel,
+  type McpClientCallToolResult,
+  type McpChannel
+} from './mcpSdk';
 import { memo } from './server.caching';
 import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
+import { runServer, type ServerInstance } from './server';
+import { searchPatternFlyTool } from './tool.searchPatternFly';
 import { runInteractiveClient } from './client.screens';
 
 /**
@@ -69,13 +76,9 @@ type ClientOptions = GlobalOptions;
  * @interface ClientSettings
  *
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
- * @property [serverCommand] - Path to the executable used to run the server (testing override).
- * @property [serverArgs] - Arguments passed to the executable before CLI flags (testing override).
  */
 interface ClientSettings {
   allowProcessExit?: boolean;
-  serverCommand?: string;
-  serverArgs?: string[];
 }
 
 /**
@@ -177,29 +180,17 @@ const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<McpCli
  * MCP client for agentless search and resource reads.
  *
  * @param [options] - Client options.
- * @param [settings] - Client lifecycle settings and test execution overrides.
+ * @param [_settings] - Client lifecycle settings.
  * @returns Client instance with search, read, and interactive UI methods.
  */
 const runClient = async (
   options: ClientOptions = getOptions(),
-  settings: ClientSettings = {}
+  _settings: ClientSettings = {}
 ): Promise<ClientInstance> => {
   const _session = getSessionOptions();
-  const command = settings.serverCommand || process.execPath;
-  const baseArgs = settings.serverArgs || ['dist/cli.js'];
   let connected = false;
-
-  const serverArgs = [...baseArgs, '--experimental-client'];
-
-  if (options.logging?.stderr) {
-    serverArgs.push('--log-stderr');
-  }
-
-  const transport = new McpStdioClientTransport({
-    command,
-    args: serverArgs,
-    stderr: 'pipe'
-  });
+  let serverInstance: ServerInstance | null = null;
+  let clientChannel: McpChannel | null = null;
 
   const client = new McpClient(
     {
@@ -213,7 +204,22 @@ const runClient = async (
     if (connected) {
       return;
     }
-    await client.connect(transport);
+
+    const [cChannel, serverChannel] = createMcpChannel();
+
+    clientChannel = cChannel;
+
+    serverInstance = await runServer(
+      { ...options, client: true },
+      {
+        tools: [searchPatternFlyTool],
+        enableSigint: false,
+        allowProcessExit: false,
+        mcpChannel: serverChannel
+      }
+    );
+
+    await client.connect(clientChannel);
     connected = true;
   };
 
@@ -251,7 +257,12 @@ const runClient = async (
   const close = async (): Promise<void> => {
     connected = false;
     await client.close();
-    await transport.close();
+    await clientChannel?.close();
+    if (serverInstance?.isRunning()) {
+      await serverInstance.stop();
+    }
+    serverInstance = null;
+    clientChannel = null;
   };
 
   const isConnected = (): boolean => connected;
