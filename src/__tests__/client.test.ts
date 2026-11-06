@@ -1,4 +1,31 @@
-import { materializeResourceText, parseResourceLinks, type ResourceLinkItem } from '../client';
+import {
+  materializeResourceText,
+  parseResourceLinks,
+  runClient
+} from '../client';
+
+const mockConnect = jest.fn();
+const mockCallTool = jest.fn();
+const mockReadResource = jest.fn();
+const mockClientClose = jest.fn();
+
+jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
+  Client: jest.fn().mockImplementation(() => ({
+    connect: mockConnect,
+    callTool: mockCallTool,
+    readResource: mockReadResource,
+    close: mockClientClose
+  }))
+}));
+
+jest.mock('../mcpSdk', () => {
+  const actual = jest.requireActual('../mcpSdk');
+
+  return {
+    ...actual,
+    McpClient: jest.requireMock('@modelcontextprotocol/sdk/client/index.js').Client
+  };
+});
 
 describe('materializeResourceText', () => {
   it('joins multiple text contents', () => {
@@ -15,7 +42,7 @@ describe('materializeResourceText', () => {
 
 describe('parseResourceLinks', () => {
   it('maps resource_link content entries', () => {
-    const links: ResourceLinkItem[] = parseResourceLinks({
+    const links: any[] = parseResourceLinks({
       content: [
         { type: 'text', text: 'summary' },
         {
@@ -45,41 +72,23 @@ describe('parseResourceLinks', () => {
   });
 });
 
-const mockConnect = jest.fn();
-const mockCallTool = jest.fn();
-const mockReadResource = jest.fn();
-const mockClientClose = jest.fn();
-const mockChannel = { close: jest.fn() };
-
-jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    connect: mockConnect,
-    callTool: mockCallTool,
-    readResource: mockReadResource,
-    close: mockClientClose
-  }))
-}));
-
-jest.mock('../mcpSdk', () => ({
-  McpClient: jest.requireMock('@modelcontextprotocol/sdk/client/index.js').Client
-}));
-
-describe('AgentlessClientSession', () => {
+describe('runClient', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('connects to the provided mcpChannel directly', async () => {
-    const { runClient } = await import('../client');
+    const mockServer = { connect: jest.fn().mockResolvedValue(undefined) };
 
     const session = await runClient(
-      { name: 'test-client' } as never,
-      { channel: mockChannel as never }
+      { name: 'test-client' } as any,
+      { server: mockServer } as any
     );
 
     await session.connect();
 
-    expect(mockConnect).toHaveBeenCalledWith(mockChannel);
+    expect(mockServer.connect).toHaveBeenCalled();
+    expect(mockConnect).toHaveBeenCalled();
   });
 
   it('calls searchPatternFly and maps links', async () => {
@@ -91,7 +100,6 @@ describe('AgentlessClientSession', () => {
       }]
     });
 
-    const { runClient } = await import('../client');
     const session = await runClient();
 
     const results = await session.search('button');
@@ -114,7 +122,6 @@ describe('AgentlessClientSession', () => {
       }]
     });
 
-    const { runClient } = await import('../client');
     const session = await runClient();
 
     const results = await session.search('modal', 'patternfly-docs');
@@ -143,7 +150,6 @@ describe('AgentlessClientSession', () => {
       ]
     });
 
-    const { runClient } = await import('../client');
     const session = await runClient();
 
     const items = await session.search('modal');
@@ -159,7 +165,6 @@ describe('AgentlessClientSession', () => {
       contents: [{ uri: 'patternfly://docs/button', text: '# Button\n\nDocs body' }]
     });
 
-    const { runClient } = await import('../client');
     const session = await runClient();
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({

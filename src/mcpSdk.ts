@@ -172,6 +172,20 @@ type McpResource = [
 type McpResourceCreator = ((options?: GlobalOptions) => McpResource) & { resourceName?: string };
 
 /**
+ * In-memory bidirectional communication channel for in-process MCP client-server communication.
+ *
+ * @interface McpChannel
+ * @property clientChannel - Transport channel for the client end.
+ * @property serverChannel - Transport channel for the server end.
+ * @property close - Teardown callback that safely closes both ends of the channel.
+ */
+interface McpChannel {
+  clientChannel: Transport;
+  serverChannel: Transport;
+  close: () => Promise<void>;
+}
+
+/**
  * Register an MCP resource.
  *
  * Capable of registering specific resource variations indicated when a URI template is used,
@@ -268,27 +282,21 @@ const registerResource = (
 };
 
 /**
- * In-memory bidirectional communication channel for in-process MCP client-server communication.
- *
- * @interface McpChannel
- * @property clientChannel - Transport channel for the client end.
- * @property serverChannel - Transport channel for the server end.
- * @property close - Teardown callback that safely closes both ends of the channel.
- */
-interface McpChannel {
-  clientChannel: Transport;
-  serverChannel: Transport;
-  close: () => Promise<void>;
-}
-
-/**
  * Creates a linked in-memory communication channel for in-process MCP client-server communication.
  * Encapsulates SDK transport wiring and lifecycle teardown.
  *
  * @returns {McpChannel} Linked channel with client, server, and unified close handles
  */
 const createMcpChannel = (): McpChannel => {
-  const [clientChannel, serverChannel] = InMemoryTransport.createLinkedPair();
+  let channels: [InMemoryTransport, InMemoryTransport];
+
+  try {
+    channels = InMemoryTransport.createLinkedPair();
+  } catch (error) {
+    throw new Error(`Failed to create MCP channel: ${error}`);
+  }
+
+  const [clientChannel, serverChannel] = channels;
 
   return {
     clientChannel,
@@ -317,5 +325,6 @@ export {
   type McpResourceMetadataComplete,
   type McpResourceMetadataCompleteMemo,
   type McpResource,
-  type McpResourceCreator
+  type McpResourceCreator,
+  type McpServer
 };

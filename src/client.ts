@@ -1,10 +1,9 @@
-import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   McpClient,
   createMcpChannel,
   type McpClientCallToolResult,
-  type McpChannel
+  type McpChannel,
+  type McpServer
 } from './mcpSdk';
 import { timeoutFunction } from './server.helpers';
 import { memo } from './server.caching';
@@ -77,12 +76,10 @@ type ClientOptions = GlobalOptions;
  * @interface ClientSettings
  *
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
- * @property [channel] - Transport channel connected to the target server instance.
  * @property [server] - Active McpServer instance to link to via in-process channel.
  */
 interface ClientSettings {
   allowProcessExit?: boolean | undefined;
-  channel?: Transport | undefined;
   server?: McpServer | undefined;
 }
 
@@ -186,6 +183,8 @@ const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<McpCli
  *
  * @param [options] - Client options.
  * @param [settings] - Client lifecycle settings and connection channel.
+ * @param [settings.allowProcessExit] - Determines if the process is allowed to exit explicitly.
+ * @param [settings.server] - Active McpServer instance to bridge the in-process channel.
  * @returns Client instance with search, read, and interactive UI methods.
  */
 const runClient = async (
@@ -209,19 +208,14 @@ const runClient = async (
       return;
     }
 
-    if (settings.channel) {
-      await client.connect(settings.channel);
-      connected = true;
-
-      return;
-    }
-
     if (settings.server) {
       channel = createMcpChannel();
+
       await timeoutFunction(
         settings.server.connect(channel.serverChannel),
         { errorMessage: 'MCP in-process channel connection timed out.' }
       );
+
       await client.connect(channel.clientChannel);
       connected = true;
 
