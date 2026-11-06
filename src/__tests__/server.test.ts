@@ -289,6 +289,32 @@ describe('runServer', () => {
 
     await expect(runServer(undefined, { tools: [] })).rejects.toThrowErrorMatchingSnapshot('Connection failed');
   });
+
+  it('attaches an in-process client via createClient', async () => {
+    const mockClientChannel = { close: jest.fn() };
+    const mockServerChannel = { close: jest.fn() };
+    const mockChannelPair = {
+      clientChannel: mockClientChannel,
+      serverChannel: mockServerChannel,
+      close: jest.fn().mockResolvedValue(undefined)
+    };
+
+    jest.spyOn(mcpSdk, 'createMcpChannel').mockReturnValue(mockChannelPair as never);
+
+    const instance = await runServer({
+      ...DEFAULT_OPTIONS,
+      name: 'test-create-client',
+      version: '1.0.0'
+    });
+
+    const client = await instance.createClient();
+
+    expect(client).toBeDefined();
+    expect(mockServer.connect).toHaveBeenCalledWith(mockServerChannel);
+
+    await instance.stop();
+    expect(mockChannelPair.close).toHaveBeenCalled();
+  });
 });
 
 describe('registerServerTools', () => {

@@ -49,12 +49,7 @@ const mockConnect = jest.fn();
 const mockCallTool = jest.fn();
 const mockReadResource = jest.fn();
 const mockClientClose = jest.fn();
-const mockChannelClose = jest.fn();
-const mockServerStop = jest.fn();
-const mockServerIsRunning = jest.fn().mockReturnValue(true);
-
-const mockClientChannel = { close: mockChannelClose };
-const mockServerChannel = { close: jest.fn() };
+const mockChannel = { close: jest.fn() };
 
 jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -66,17 +61,7 @@ jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
 }));
 
 jest.mock('../mcpSdk', () => ({
-  createMcpChannel: jest.fn().mockImplementation(() => [mockClientChannel, mockServerChannel]),
   McpClient: jest.requireMock('@modelcontextprotocol/sdk/client/index.js').Client
-}));
-
-jest.mock('../server', () => ({
-  runServer: jest.fn().mockImplementation(async () => ({
-    stop: mockServerStop,
-    isRunning: mockServerIsRunning,
-    getStats: jest.fn(),
-    onLog: jest.fn()
-  }))
 }));
 
 describe('AgentlessClientSession', () => {
@@ -84,28 +69,17 @@ describe('AgentlessClientSession', () => {
     jest.clearAllMocks();
   });
 
-  it('initializes in-process server with searchPatternFly and connects via mcpChannel', async () => {
-    const { runServer } = await import('../server');
+  it('connects to the provided mcpChannel directly', async () => {
     const { runClient } = await import('../client');
-    const { searchPatternFlyTool } = await import('../tool.searchPatternFly');
 
-    const session = await runClient({ name: 'test-client' } as never);
+    const session = await runClient(
+      { name: 'test-client' } as never,
+      { channel: mockChannel as never }
+    );
 
     await session.connect();
 
-    expect(runServer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        client: true,
-        name: 'test-client'
-      }),
-      expect.objectContaining({
-        tools: [searchPatternFlyTool],
-        enableSigint: false,
-        allowProcessExit: false,
-        mcpChannel: mockServerChannel
-      })
-    );
-    expect(mockConnect).toHaveBeenCalledWith(mockClientChannel);
+    expect(mockConnect).toHaveBeenCalledWith(mockChannel);
   });
 
   it('calls searchPatternFly and maps links', async () => {
@@ -172,7 +146,6 @@ describe('AgentlessClientSession', () => {
     const { runClient } = await import('../client');
     const session = await runClient();
 
-    await session.connect();
     const items = await session.search('modal');
 
     expect(items).toHaveLength(1);

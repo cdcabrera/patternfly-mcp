@@ -1,14 +1,11 @@
 import {
   McpClient,
-  createMcpChannel,
   type McpClientCallToolResult,
   type McpChannel
 } from './mcpSdk';
 import { memo } from './server.caching';
 import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
-import { runServer, type ServerInstance } from './server';
-import { searchPatternFlyTool } from './tool.searchPatternFly';
 import { runInteractiveClient } from './client.screens';
 
 /**
@@ -76,9 +73,11 @@ type ClientOptions = GlobalOptions;
  * @interface ClientSettings
  *
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
+ * @property [channel] - Linked MCP transport channel connected to the target server instance.
  */
 interface ClientSettings {
   allowProcessExit?: boolean;
+  channel?: McpChannel;
 }
 
 /**
@@ -180,17 +179,15 @@ const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<McpCli
  * MCP client for agentless search and resource reads.
  *
  * @param [options] - Client options.
- * @param [_settings] - Client lifecycle settings.
+ * @param [settings] - Client lifecycle settings and connection channel.
  * @returns Client instance with search, read, and interactive UI methods.
  */
 const runClient = async (
   options: ClientOptions = getOptions(),
-  _settings: ClientSettings = {}
+  settings: ClientSettings = {}
 ): Promise<ClientInstance> => {
   const _session = getSessionOptions();
   let connected = false;
-  let serverInstance: ServerInstance | null = null;
-  let clientChannel: McpChannel | null = null;
 
   const client = new McpClient(
     {
@@ -205,19 +202,27 @@ const runClient = async (
       return;
     }
 
-    const [clientChannel, serverChannel] = createMcpChannel();
+    const targetChannel = settings.channel;
 
-    serverInstance = await runServer(
-      { ...options, client: true },
-      {
-        tools: [searchPatternFlyTool],
-        enableSigint: false,
-        allowProcessExit: false,
-        mcpChannel: serverChannel
-      }
-    );
+    if (!targetChannel) {
+      const { runServer } = await import('./server');
+      const { searchPatternFlyTool } = await import('./tool.searchPatternFly');
+      const server = await runServer(
+        { ...options, client: true },
+        {
+          tools: [searchPatternFlyTool],
+          enableSigint: false,
+          allowProcessExit: false
+        }
+      );
+      const attachedClient = await server.createClient();
 
-    await client.connect(clientChannel);
+      await attachedClient.connect();
+
+      return;
+    }
+
+    await client.connect(targetChannel);
     connected = true;
   };
 
@@ -255,12 +260,6 @@ const runClient = async (
   const close = async (): Promise<void> => {
     connected = false;
     await client.close();
-    await clientChannel?.close();
-    if (serverInstance?.isRunning()) {
-      await serverInstance.stop();
-    }
-    serverInstance = null;
-    clientChannel = null;
   };
 
   const isConnected = (): boolean => connected;

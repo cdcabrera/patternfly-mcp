@@ -6,7 +6,9 @@ import {
   registerResource,
   type McpToolCreator,
   type McpResourceCreator,
-  type McpChannel
+  type McpChannel,
+  type McpChannelPair,
+  createMcpChannel
 } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
@@ -27,6 +29,7 @@ import { DEFAULT_OPTIONS } from './options.defaults';
 import { isZodRawShape, isZodSchema } from './server.schema';
 import { isPlainObject, timeoutFunction } from './server.helpers';
 import { createServerStats, type Stats } from './server.stats';
+import type { ClientInstance } from './client';
 import { stat, type StatReport } from './stats';
 import {
   builtinTools,
@@ -113,12 +116,14 @@ type ServerOnLog = (handler: ServerOnLogHandler) => () => void;
  * @property isRunning - Indicates whether the server is running.
  * @property {ServerGetStats} getStats - Resolves server stats.
  * @property {ServerOnLog} onLog - Subscribes to server logs. Automatically unsubscribed on server shutdown.
+ * @property createClient - Creates and attaches an in-process MCP client connected to this server.
  */
 interface ServerInstance {
   stop(): Promise<void>;
   isRunning(): boolean;
   getStats: ServerGetStats;
   onLog: ServerOnLog;
+  createClient(): Promise<ClientInstance>;
 }
 
 /**
@@ -331,6 +336,7 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
   let server: McpServer | null = null;
   let transport: StdioServerTransport | McpChannel | null = null;
   let httpHandle: HttpServerHandle | null = null;
+  const activeChannelPairs: McpChannelPair[] = [];
   let unsubscribeServerLogger: (() => void) | null = null;
   let unsubscribeServerStats: (() => void) | null = null;
   let sigintHandler: (() => void) | null = null;
@@ -353,6 +359,12 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
       if (sigintHandler) {
         process.off('SIGINT', sigintHandler);
         sigintHandler = null;
+      }
+
+      while (activeChannelPairs.length > 0) {
+        const pair = activeChannelPairs.pop();
+
+        await pair?.close().catch(() => {});
       }
 
       log.debug('...closing Server');
@@ -512,6 +524,24 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
       handler({ level: 'info', msg: `${options.name} running!`, transport: options.logging?.transport } as LogEvent);
 
       return onLogSetup(handler);
+    },
+
+    async createClient(): Promise<ClientInstance> {
+      if (!running || !server) {
+        throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
+      }
+
+      const { runClient } = await import('./client');
+      const channelPair = createMcpChannel();
+
+      activeChannelPairs.push(channelPair);
+
+      await timeoutFunction(
+        server.connect(channelPair.serverChannel),
+        { errorMessage: 'MCP in-process channel connection timed out.' }
+      );
+
+      return await runClient(options, { channel: channelPair.clientChannel });
     }
   };
 };

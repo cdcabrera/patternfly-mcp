@@ -268,17 +268,44 @@ const registerResource = (
 };
 
 /**
- * Creates a linked pair of in-memory communication channels for in-process MCP client-server communication.
- * Encapsulates SDK transport wiring to maintain stability across SDK version migrations.
+ * In-memory communication channel pair for in-process MCP client-server communication.
  *
- * @returns [clientChannel, serverChannel]
+ * @interface McpChannelPair
+ * @property clientChannel - Transport channel for the client end.
+ * @property serverChannel - Transport channel for the server end.
+ * @property close - Teardown callback that safely closes both channels.
  */
-const createMcpChannel = (): [clientChannel: McpChannel, serverChannel: McpChannel] =>
-  InMemoryTransport.createLinkedPair();
+interface McpChannelPair {
+  clientChannel: McpChannel;
+  serverChannel: McpChannel;
+  close: () => Promise<void>;
+}
+
+/**
+ * Creates a linked pair of in-memory communication channels for in-process MCP client-server communication.
+ * Encapsulates SDK transport wiring and lifecycle teardown.
+ *
+ * @returns {McpChannelPair} Named channel pair with client, server, and unified close handles
+ */
+const createMcpChannel = (): McpChannelPair => {
+  const [clientChannel, serverChannel] = InMemoryTransport.createLinkedPair();
+
+  return {
+    clientChannel,
+    serverChannel,
+    close: async (): Promise<void> => {
+      await Promise.allSettled([
+        clientChannel.close().catch(() => {}),
+        serverChannel.close().catch(() => {})
+      ]);
+    }
+  };
+};
 
 export {
   createMcpChannel,
   type McpChannel,
+  type McpChannelPair,
   registerResource,
   McpClient,
   McpStdioClientTransport,
