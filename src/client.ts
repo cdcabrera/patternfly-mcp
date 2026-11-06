@@ -62,7 +62,7 @@ interface ClientInstance {
   readResource: (uri: string) => Promise<ResourceReadResult>;
   close: () => Promise<void>;
   isConnected: () => boolean;
-  runInteractive: (initialQuery?: string, initialCollection?: string) => Promise<void>;
+  // runInteractive: (initialQuery?: string, initialCollection?: string) => Promise<void>;
 }
 
 /**
@@ -265,6 +265,14 @@ const runClient = async (
 
   const isConnected = (): boolean => connected;
 
+  const instance: ClientInstance = {
+    connect,
+    search,
+    readResource,
+    close,
+    isConnected
+  };
+
   const runInteractive = async (initialQuery = '', initialCollection?: string): Promise<void> => {
     await connect();
     try {
@@ -274,14 +282,7 @@ const runClient = async (
     }
   };
 
-  const instance: ClientInstance = {
-    connect,
-    search,
-    readResource,
-    close,
-    isConnected,
-    runInteractive
-  };
+  runInteractive();
 
   return instance;
 };
