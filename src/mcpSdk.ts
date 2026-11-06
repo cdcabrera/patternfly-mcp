@@ -1,5 +1,5 @@
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { type Transport as McpChannel } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   ResourceTemplate,
   type McpServer,
@@ -268,26 +268,26 @@ const registerResource = (
 };
 
 /**
- * In-memory communication channel pair for in-process MCP client-server communication.
+ * In-memory bidirectional communication channel for in-process MCP client-server communication.
  *
- * @interface McpChannelPair
+ * @interface McpChannel
  * @property clientChannel - Transport channel for the client end.
  * @property serverChannel - Transport channel for the server end.
- * @property close - Teardown callback that safely closes both channels.
+ * @property close - Teardown callback that safely closes both ends of the channel.
  */
-interface McpChannelPair {
-  clientChannel: McpChannel;
-  serverChannel: McpChannel;
+interface McpChannel {
+  clientChannel: Transport;
+  serverChannel: Transport;
   close: () => Promise<void>;
 }
 
 /**
- * Creates a linked pair of in-memory communication channels for in-process MCP client-server communication.
+ * Creates a linked in-memory communication channel for in-process MCP client-server communication.
  * Encapsulates SDK transport wiring and lifecycle teardown.
  *
- * @returns {McpChannelPair} Named channel pair with client, server, and unified close handles
+ * @returns {McpChannel} Linked channel with client, server, and unified close handles
  */
-const createMcpChannel = (): McpChannelPair => {
+const createMcpChannel = (): McpChannel => {
   const [clientChannel, serverChannel] = InMemoryTransport.createLinkedPair();
 
   return {
@@ -305,7 +305,6 @@ const createMcpChannel = (): McpChannelPair => {
 export {
   createMcpChannel,
   type McpChannel,
-  type McpChannelPair,
   registerResource,
   McpClient,
   McpStdioClientTransport,

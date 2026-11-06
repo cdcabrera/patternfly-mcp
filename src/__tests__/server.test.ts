@@ -291,15 +291,15 @@ describe('runServer', () => {
   });
 
   it('attaches an in-process client via createClient', async () => {
-    const mockClientChannel = { close: jest.fn() };
-    const mockServerChannel = { close: jest.fn() };
-    const mockChannelPair = {
-      clientChannel: mockClientChannel,
-      serverChannel: mockServerChannel,
-      close: jest.fn().mockResolvedValue(undefined)
+    const mockClient = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      close: jest.fn().mockResolvedValue(undefined),
+      isConnected: jest.fn().mockReturnValue(true)
     };
 
-    jest.spyOn(mcpSdk, 'createMcpChannel').mockReturnValue(mockChannelPair as never);
+    const clientModule = await import('../client');
+
+    jest.spyOn(clientModule.runClient, 'memo').mockResolvedValue(mockClient as never);
 
     const instance = await runServer({
       ...DEFAULT_OPTIONS,
@@ -309,11 +309,14 @@ describe('runServer', () => {
 
     const client = await instance.createClient();
 
-    expect(client).toBeDefined();
-    expect(mockServer.connect).toHaveBeenCalledWith(mockServerChannel);
+    expect(client).toBe(mockClient);
+    expect(clientModule.runClient.memo).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'test-create-client' }),
+      expect.objectContaining({ server: mockServer })
+    );
 
     await instance.stop();
-    expect(mockChannelPair.close).toHaveBeenCalled();
+    expect(mockClient.close).toHaveBeenCalled();
   });
 });
 

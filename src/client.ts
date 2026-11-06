@@ -1,8 +1,12 @@
+import { type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   McpClient,
+  createMcpChannel,
   type McpClientCallToolResult,
   type McpChannel
 } from './mcpSdk';
+import { timeoutFunction } from './server.helpers';
 import { memo } from './server.caching';
 import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
@@ -73,11 +77,13 @@ type ClientOptions = GlobalOptions;
  * @interface ClientSettings
  *
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
- * @property [channel] - Linked MCP transport channel connected to the target server instance.
+ * @property [channel] - Transport channel connected to the target server instance.
+ * @property [server] - Active McpServer instance to link to via in-process channel.
  */
 interface ClientSettings {
-  allowProcessExit?: boolean;
-  channel?: McpChannel;
+  allowProcessExit?: boolean | undefined;
+  channel?: Transport | undefined;
+  server?: McpServer | undefined;
 }
 
 /**
@@ -188,6 +194,7 @@ const runClient = async (
 ): Promise<ClientInstance> => {
   const _session = getSessionOptions();
   let connected = false;
+  let channel: McpChannel | null = null;
 
   const client = new McpClient(
     {
@@ -202,28 +209,26 @@ const runClient = async (
       return;
     }
 
-    const targetChannel = settings.channel;
-
-    if (!targetChannel) {
-      const { runServer } = await import('./server');
-      const { searchPatternFlyTool } = await import('./tool.searchPatternFly');
-      const server = await runServer(
-        { ...options, client: true },
-        {
-          tools: [searchPatternFlyTool],
-          enableSigint: false,
-          allowProcessExit: false
-        }
-      );
-      const attachedClient = await server.createClient();
-
-      await attachedClient.connect();
+    if (settings.channel) {
+      await client.connect(settings.channel);
+      connected = true;
 
       return;
     }
 
-    await client.connect(targetChannel);
-    connected = true;
+    if (settings.server) {
+      channel = createMcpChannel();
+      await timeoutFunction(
+        settings.server.connect(channel.serverChannel),
+        { errorMessage: 'MCP in-process channel connection timed out.' }
+      );
+      await client.connect(channel.clientChannel);
+      connected = true;
+
+      return;
+    }
+
+    throw new Error('A connected channel or active McpServer instance must be provided to connect runClient.');
   };
 
   const search = async (query: string, collection?: string): Promise<ResourceLinkItem[]> => {
@@ -260,6 +265,8 @@ const runClient = async (
   const close = async (): Promise<void> => {
     connected = false;
     await client.close();
+    await channel?.close();
+    channel = null;
   };
 
   const isConnected = (): boolean => connected;

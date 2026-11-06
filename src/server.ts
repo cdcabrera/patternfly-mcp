@@ -2,13 +2,11 @@ import {
   McpServer
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { type Transport as McpTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   registerResource,
   type McpToolCreator,
-  type McpResourceCreator,
-  type McpChannel,
-  type McpChannelPair,
-  createMcpChannel
+  type McpResourceCreator
 } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
@@ -58,8 +56,7 @@ type ServerOptions = GlobalOptions;
  * @property {McpCollectionCreator[]} [collections] - An optional array of collection (of records') creators used by the server.
  * @property [enableSigint] - Indicates whether SIGINT signal handling is enabled.
  * @property [allowProcessExit] - Determines if the process is allowed to exit explicitly.
- * @property [mcpChannel] - Optional custom MCP communication channel (e.g. in-process channel created via createMcpChannel, or test mocks).
- *   When provided, bypasses default HTTP/stdio transport creation.
+ * @property [mcpChannel] - Optional transport channel instance (for tests or custom transport injection).
  */
 interface ServerSettings {
   tools?: McpToolCreator[];
@@ -67,7 +64,7 @@ interface ServerSettings {
   collections?: McpCollectionCreator[];
   enableSigint?: boolean;
   allowProcessExit?: boolean;
-  mcpChannel?: McpChannel;
+  mcpChannel?: McpTransport;
 }
 
 /**
@@ -334,9 +331,9 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
   const session = getSessionOptions();
 
   let server: McpServer | null = null;
-  let transport: StdioServerTransport | McpChannel | null = null;
+  let transport: StdioServerTransport | McpTransport | null = null;
   let httpHandle: HttpServerHandle | null = null;
-  const activeChannelPairs: McpChannelPair[] = [];
+  let mcpClient: ClientInstance | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let unsubscribeServerStats: (() => void) | null = null;
   let sigintHandler: (() => void) | null = null;
@@ -361,10 +358,10 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         sigintHandler = null;
       }
 
-      while (activeChannelPairs.length > 0) {
-        const pair = activeChannelPairs.pop();
-
-        await pair?.close().catch(() => {});
+      if (mcpClient) {
+        log.debug('...closing in-process client');
+        await mcpClient.close().catch(() => {});
+        mcpClient = null;
       }
 
       log.debug('...closing Server');
@@ -531,17 +528,18 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
       }
 
+      if (mcpClient && mcpClient.isConnected()) {
+        return mcpClient;
+      }
+
       const { runClient } = await import('./client');
-      const channelPair = createMcpChannel();
 
-      activeChannelPairs.push(channelPair);
+      mcpClient = await runClient.memo(options, {
+        server,
+        allowProcessExit: settings.allowProcessExit
+      });
 
-      await timeoutFunction(
-        server.connect(channelPair.serverChannel),
-        { errorMessage: 'MCP in-process channel connection timed out.' }
-      );
-
-      return await runClient(options, { channel: channelPair.clientChannel });
+      return mcpClient;
     }
   };
 };
