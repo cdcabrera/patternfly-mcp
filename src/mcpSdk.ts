@@ -8,7 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type Tool } from '@modelcontextprotocol/sdk/types.js';
 import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport as McpStdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+// import { StdioClientTransport as McpStdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { type CallToolResult as McpClientCallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { type GlobalOptions } from './options';
 import { listAllCombinations, listIncrementalCombinations, splitUri } from './server.helpers';
@@ -315,7 +315,7 @@ export {
   type McpChannel,
   registerResource,
   McpClient,
-  McpStdioClientTransport,
+  // McpStdioClientTransport,
   type McpClientCallToolResult,
   type McpTool,
   type McpToolCreator,
