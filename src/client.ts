@@ -2,6 +2,7 @@ import {
   McpClient,
   createMcpChannel,
   type McpClientCallToolResult,
+  type McpClientCallResourceResult,
   type McpChannel,
   type McpServer
 } from './mcpSdk';
@@ -149,11 +150,11 @@ const parseResourceLinks = (result: McpClientCallToolResult): ResourceLinkItem[]
 /**
  * Convert resource-read result contents to text.
  *
- * TODO: rename this function
+ * TODO: rename this function, fix the typing we also have "ResourceReadResult" and it's a little confusing, need prefixes to denote internal or a result of the internal client.
  *
  * @param contents
  */
-const materializeResourceText = (contents: NonNullable<Awaited<ReturnType<McpClient['readResource']>>['contents']>): string => {
+const materializeResourceText = (contents: McpClientCallResourceResult['contents']): string => {
   const parts: string[] = [];
 
   for (const content of contents) {

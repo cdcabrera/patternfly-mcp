@@ -1,5 +1,5 @@
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { type Transport as McpTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   ResourceTemplate,
   type McpServer,
@@ -7,10 +7,24 @@ import {
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { type Tool } from '@modelcontextprotocol/sdk/types.js';
-import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js';
-import { type CallToolResult as McpClientCallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { type GlobalOptions } from './options';
 import { listAllCombinations, listIncrementalCombinations, splitUri } from './server.helpers';
+
+/**
+ * Transport layer for MCP communication.
+ *
+ * @alias Transport
+ */
+type McpTransport = Transport;
+
+/**
+ * Result returned by an MCP client after calling a tool.
+ *
+ * @alias CallToolResult
+ */
+type McpClientCallToolResult = CallToolResult;
 
 /**
  * A tool registered with the MCP server.
@@ -185,6 +199,20 @@ interface McpChannel {
 }
 
 /**
+ * Resolved result of an MCP client resource read operation.
+ *
+ * @derived See {@link Client}.
+ */
+type McpClientCallResourceResult = Awaited<ReturnType<Client['readResource']>>;
+
+/**
+ * An MCP client on top of a pluggable transport
+ *
+ * @alias Client
+ */
+const McpClient = Client;
+
+/**
  * Register an MCP resource.
  *
  * Capable of registering specific resource variations indicated when a URI template is used,
@@ -315,6 +343,7 @@ export {
   registerResource,
   McpClient,
   type McpClientCallToolResult,
+  type McpClientCallResourceResult,
   type McpTool,
   type McpToolCreator,
   type McpTransport,
