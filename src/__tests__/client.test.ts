@@ -107,7 +107,6 @@ describe('runClient', () => {
       { name: 'test-client' } as any,
       { server: mockServer } as any
     );
-    await new Promise(resolve => setImmediate(resolve));
 
     expect(mockRunInteractiveClient).toHaveBeenCalled();
     expect(mockServer.connect).toHaveBeenCalled();
@@ -209,8 +208,6 @@ describe('runClient', () => {
 
   it('handles client close and isConnected status', async () => {
     const session = await runClient(undefined, { server: mockServer } as any);
-
-    await new Promise(resolve => setImmediate(resolve));
 
     expect(mockConnect).toHaveBeenCalled();
 

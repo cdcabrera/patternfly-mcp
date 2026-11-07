@@ -304,8 +304,6 @@ const runClient = async (
    * @throws Propagates any error thrown while connecting, running the interactive session, or closing the client.
    */
   const startClient = async (client: ClientInstance): Promise<void> => {
-    await connectClient();
-
     try {
       await runInteractiveClient(client);
     } finally {
@@ -319,6 +317,11 @@ const runClient = async (
     close,
     isConnected
   };
+
+  /**
+   * Provide sync behavior and allow immediate connection.
+   */
+  await connectClient();
 
   /**
    * Start and run the interactive client session.
