@@ -400,6 +400,13 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
   try {
     const enableProtocolLogging = options?.logging?.protocol;
     const serverInstructions = options?.serverInstanceOptions?.instructions;
+    let serverProcess: 'in-process' | 'HTTP' | 'stdio' = 'in-process';
+
+    if (options?.isHttp) {
+      serverProcess = 'HTTP';
+    } else if (!options?.client) {
+      serverProcess = 'stdio';
+    }
 
     server = new McpServer(
       {
@@ -498,9 +505,9 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
           errorMessage: 'MCP channel connection timed out.'
         }
       );
-    } else if (options.isHttp) {
+    } else if (serverProcess === 'HTTP') {
       httpHandle = await startHttpTransport(server, options);
-    } else if (!options.client) {
+    } else if (serverProcess === 'stdio') {
       transport = new StdioServerTransport();
 
       await timeoutFunction(
@@ -516,7 +523,7 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
     }
 
     running = true;
-    log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : options.client ? 'in-process' : 'stdio'} transport`);
+    log.info(`${options.name} server running on ${serverProcess} transport`);
     statsTracker.startStats(httpHandle);
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
