@@ -105,8 +105,6 @@ const isResourceLinkContent = (
 /**
  * Parse resource links from a call tool result.
  *
- * ToDo: these any's need to be replaced with unknown, removed, or the actual typing
- *
  * @param result
  */
 const parseResourceLinks = (result: McpClientCallToolResult): ResourceLinkItem[] => {
