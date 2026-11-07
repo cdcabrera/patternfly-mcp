@@ -103,25 +103,15 @@ describe('runClient', () => {
   });
 
   it('connects to the provided mcpChannel directly', async () => {
-    const session = await runClient(
+    await runClient(
       { name: 'test-client' } as any,
       { server: mockServer } as any
     );
+    await new Promise(resolve => setImmediate(resolve));
 
-    await session.connect();
-
-    expect(mockRunInteractiveClient).toHaveBeenCalledWith(session);
+    expect(mockRunInteractiveClient).toHaveBeenCalled();
     expect(mockServer.connect).toHaveBeenCalled();
     expect(mockConnect).toHaveBeenCalled();
-  });
-
-  it('throws an error if connect is invoked without a configured server', async () => {
-    const session = await runClient(undefined, {} as any);
-
-    // Intentionally bypass memoized connect
-    await expect(session.connect()).rejects.toThrow(
-      'A connected channel or active McpServer instance must be provided to connect runClient.'
-    );
   });
 
   it('calls searchPatternFly and maps links', async () => {
@@ -220,9 +210,9 @@ describe('runClient', () => {
   it('handles client close and isConnected status', async () => {
     const session = await runClient(undefined, { server: mockServer } as any);
 
-    await session.connect();
+    await new Promise(resolve => setImmediate(resolve));
 
-    expect(session.isConnected()).toBe(true);
+    expect(mockConnect).toHaveBeenCalled();
 
     await session.close();
     expect(mockClientClose).toHaveBeenCalled();

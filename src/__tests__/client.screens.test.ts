@@ -601,7 +601,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      await runSearchScreen(mockSession as never, state, mockKeys as never);
+      await runSearchScreen(mockSession as any, state, mockKeys as any);
 
       expect(mockSession.search).toHaveBeenCalledWith('modal', 'patternfly-docs');
     });
@@ -633,7 +633,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      await runSearchScreen(mockSession as never, state, mockKeys as never);
+      await runSearchScreen(mockSession as any, state, mockKeys as any);
 
       expect(state.query).toBe('card');
       expect(mockSession.search).toHaveBeenCalledWith('card', undefined);
@@ -678,7 +678,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      await runSearchScreen(mockSession as never, state, mockKeys as never);
+      await runSearchScreen(mockSession as any, state, mockKeys as any);
 
       expect(groups[0]?.isExpanded).toBe(false);
     });
@@ -694,7 +694,7 @@ describe('client.screens', () => {
         outputData += chunk;
 
         return true;
-      }) as never;
+      }) as any;
     });
 
     afterEach(() => {
@@ -730,8 +730,8 @@ describe('client.screens', () => {
     const mockSession = {
       search: jest.fn(),
       readResource: jest.fn(),
-      connect: jest.fn(),
-      close: jest.fn()
+      close: jest.fn(),
+      isConnected: jest.fn()
     };
 
     beforeEach(() => {
@@ -750,7 +750,7 @@ describe('client.screens', () => {
           dispose: jest.fn()
         };
 
-        const result = await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+        const result = await runReaderScreen(mockSession as any, 'patternfly://records/test', mockKeys as any, true);
 
         expect(result).toBe('back');
       }
@@ -765,7 +765,7 @@ describe('client.screens', () => {
           dispose: jest.fn()
         };
 
-        const result = await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+        const result = await runReaderScreen(mockSession as any, 'patternfly://records/test', mockKeys as any, true);
 
         expect(result).toBe('quit');
       }
@@ -780,7 +780,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      const result = await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+      const result = await runReaderScreen(mockSession as any, 'patternfly://records/test', mockKeys as any, true);
 
       expect(result).toBe('back');
     });
@@ -799,7 +799,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+      await runReaderScreen(mockSession as any, 'patternfly://records/test', mockKeys as any, true);
       expect(copySpy).toHaveBeenCalled();
     });
 
@@ -813,7 +813,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+      await runReaderScreen(mockSession as any, 'patternfly://records/test', mockKeys as any, true);
       expect(writeFileSpy).toHaveBeenCalled();
 
       writeFileSpy.mockRejectedValueOnce(new Error('disk write denied'));
@@ -825,7 +825,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeysFail as never, true);
+      await runReaderScreen(mockSession as any, 'patternfly://records/test', mockKeysFail as any, true);
       expect(writeFileSpy).toHaveBeenCalledTimes(2);
     });
 
@@ -841,7 +841,7 @@ describe('client.screens', () => {
         dispose: jest.fn()
       };
 
-      const result = await runReaderScreen(mockSession as never, 'patternfly://records/long', mockKeys as never, true);
+      const result = await runReaderScreen(mockSession as any, 'patternfly://records/long', mockKeys as any, true);
 
       expect(result).toBe('back');
     });
@@ -853,7 +853,7 @@ describe('client.screens', () => {
 
       Object.defineProperty(input, 'isTTY', { value: false, configurable: true });
 
-      await expect(runInteractiveClient({} as never)).rejects.toThrow('Interactive pf-client requires a TTY');
+      await expect(runInteractiveClient({} as any)).rejects.toThrow('Interactive pf-client requires a TTY');
 
       Object.defineProperty(input, 'isTTY', { value: originalInputTTY, configurable: true });
     });
