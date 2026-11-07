@@ -211,23 +211,6 @@ const runClient = async (
   );
 
   /**
-   * Start and run the interactive client session.
-   *
-   * @param client - Client instance to connect, run, and close.
-   * @returns Promise that resolves when the client session has finished or is closed.
-   * @throws Propagates any error thrown while connecting, running the interactive session, or closing the client.
-   */
-  const startClient = async (client: ClientInstance): Promise<void> => {
-    await client.connect();
-
-    try {
-      await runInteractiveClient(client);
-    } finally {
-      await client.close();
-    }
-  };
-
-  /**
    * Establish the client connection to an available MCP server channel.
    *
    * @returns A promise that resolves when the client has been connected.
@@ -314,6 +297,23 @@ const runClient = async (
    * Check if the client is connected.
    */
   const isConnected = (): boolean => connected;
+
+  /**
+   * Start and run the interactive client session.
+   *
+   * @param client - Client instance to connect, run, and close.
+   * @returns Promise that resolves when the client session has finished or is closed.
+   * @throws Propagates any error thrown while connecting, running the interactive session, or closing the client.
+   */
+  const startClient = async (client: ClientInstance): Promise<void> => {
+    await client.connect();
+
+    try {
+      await runInteractiveClient(client);
+    } finally {
+      await client.close();
+    }
+  };
 
   const instance: ClientInstance = {
     connect,
