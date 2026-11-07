@@ -166,6 +166,7 @@ const promptLine = async ({ label, current = '' }: { label: string; current?: st
 
     return answer.trim() || current;
   } catch (error: any) {
+    // TODO: Fix this any
     if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') {
       return '';
     }
