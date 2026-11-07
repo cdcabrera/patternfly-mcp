@@ -115,23 +115,31 @@ const parseResourceLinks = (result: McpClientCallToolResult): ResourceLinkItem[]
   }
 
   return result.content.filter(isResourceLinkContent).map(item => {
-    const meta = (item as { _meta?: Record<string, unknown> })._meta;
+    // const meta = (item as { _meta?: Record<string, unknown> })._meta;
+    const itemRecord = item as {
+      groupId?: string;
+      recordId?: string;
+      primaryCollection?: unknown;
+      _meta?: Record<string, unknown>;
+    };
+
+    const meta = itemRecord._meta;
 
     const groupId =
       (typeof meta?.groupId === 'string' && meta.groupId) ||
       (typeof meta?.['patternfly.org/groupId'] === 'string' && meta['patternfly.org/groupId']) ||
-      (typeof (item as any).groupId === 'string' && (item as any).groupId) ||
+      (typeof itemRecord.groupId === 'string' && itemRecord.groupId) ||
       undefined;
 
     const recordId =
       (typeof meta?.recordId === 'string' && meta.recordId) ||
-      (typeof (item as any).recordId === 'string' && (item as any).recordId) ||
+      (typeof itemRecord.recordId === 'string' && itemRecord.recordId) ||
       undefined;
 
     const primaryCollection =
       (typeof meta?.primaryCollection === 'string' && meta.primaryCollection) ||
       (typeof meta?.['patternfly.org/primaryCollection'] === 'string' && meta['patternfly.org/primaryCollection']) ||
-      (typeof (item as any).primaryCollection === 'string' && (item as any).primaryCollection) ||
+      (typeof itemRecord.primaryCollection === 'string' && itemRecord.primaryCollection) ||
       undefined;
 
     return {
@@ -204,6 +212,30 @@ const runClient = async (
     { capabilities: {} }
   );
 
+  /**
+   * Start and run the interactive client session.
+   *
+   * @param client - Client instance to connect, run, and close.
+   * @returns Promise that resolves when the client session has finished or is closed.
+   * @throws Propagates any error thrown while connecting, running the interactive session, or closing the client.
+   */
+  const startClient = async (client: ClientInstance): Promise<void> => {
+    await client.connect();
+
+    try {
+      await runInteractiveClient(client);
+    } finally {
+      await client.close();
+    }
+  };
+
+  /**
+   * Establish the client connection to an available MCP server channel.
+   *
+   * @returns A promise that resolves when the client has been connected.
+   * @throws If no connected channel or active MCP server instance is available.
+   * @throws If the in-process server channel connection times out.
+   */
   const connect = async (): Promise<void> => {
     if (connected) {
       return;
@@ -226,6 +258,13 @@ const runClient = async (
     throw new Error('A connected channel or active McpServer instance must be provided to connect runClient.');
   };
 
+  /**
+   * Search for resources using the provided query and optional collection.
+   *
+   * @param query - Search query.
+   * @param collection - Optional collection to search within.
+   * @returns A promise that resolves with an array of ResourceLinkItem objects.
+   */
   const search = async (query: string, collection?: string): Promise<ResourceLinkItem[]> => {
     const args: Record<string, string> = { query };
 
@@ -241,6 +280,12 @@ const runClient = async (
     return parseResourceLinks(result);
   };
 
+  /**
+   * Read a resource using the provided URI.
+   *
+   * @param uri - Resource URI.
+   * @returns A promise that resolves with a ResourceReadResult object.
+   */
   const readResource = async (uri: string): Promise<ResourceReadResult> => {
     try {
       const result = await client.readResource({ uri });
@@ -257,6 +302,9 @@ const runClient = async (
     }
   };
 
+  /**
+   * Close the client connection and resources.
+   */
   const close = async (): Promise<void> => {
     connected = false;
     await client.close();
@@ -264,6 +312,9 @@ const runClient = async (
     channel = null;
   };
 
+  /**
+   * Check if the client is connected.
+   */
   const isConnected = (): boolean => connected;
 
   const instance: ClientInstance = {
@@ -274,17 +325,7 @@ const runClient = async (
     isConnected
   };
 
-  // Todo: temporary runInteractive with default query and collection. this will be removed and replaced with just the base try/catch with `runInteractiveClient`
-  const runInteractive = async (initialQuery = '', initialCollection?: string): Promise<void> => {
-    await connect();
-    try {
-      await runInteractiveClient(instance, initialQuery, initialCollection);
-    } finally {
-      await close();
-    }
-  };
-
-  void runInteractive();
+  void startClient(instance);
 
   return instance;
 };

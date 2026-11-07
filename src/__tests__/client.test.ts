@@ -94,7 +94,7 @@ describe('runClient', () => {
 
     await session.connect();
 
-    expect(mockRunInteractiveClient).toHaveBeenCalledWith(session, '', undefined);
+    expect(mockRunInteractiveClient).toHaveBeenCalledWith(session);
     expect(mockServer.connect).toHaveBeenCalled();
     expect(mockConnect).toHaveBeenCalled();
   });
