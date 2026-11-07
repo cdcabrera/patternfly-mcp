@@ -734,11 +734,20 @@ describe('client.screens', () => {
       isConnected: jest.fn()
     };
 
+    const originalWrite = process.stdout.write;
+
     beforeEach(() => {
       jest.clearAllMocks();
+
+      process.stdout.write = (() => true) as any;
+
       mockSession.readResource.mockResolvedValue({
         text: '# Test Title\n\n' + Array.from({ length: 40 }, (_, i) => `Paragraph line ${i + 1}`).join('\n')
       });
+    });
+
+    afterEach(() => {
+      process.stdout.write = originalWrite;
     });
 
     it('exits with back on "b", "esc", or "enter"', async () => {
