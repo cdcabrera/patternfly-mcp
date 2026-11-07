@@ -320,7 +320,7 @@ const renderSearchScreen = (state: SearchScreenState): void => {
     output.write(`  … [showing ${startIdx + 1}-${endIdx} of ${totalItems} items${remaining > 0 ? ` · ${remaining} more below` : ''}${prev > 0 ? ` · ${prev} above` : ''}]\n`);
   }
 
-  output.write('\n  [<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]\n');
+  output.write('\n  [<↑/↓> navigate · <Enter> submit or select · <Tab> filter · </> search · <q> quit]\n');
 };
 
 /**
@@ -403,7 +403,7 @@ const markdownFileNameForUri = (uri: string): string => {
 };
 
 /**
- * Prompt for search query input while preserving screen buffer and header context.
+ * Prompt for search query input while preserving screen buffer, header, and control footer.
  *
  * @param keys - Key reader instance to disable during line input.
  * @param state - Current search screen state providing filter and result context.
@@ -414,11 +414,21 @@ const promptForSearchQuery = async (keys: KeyReader, state: SearchScreenState): 
   clearTerminal();
 
   const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<Closest match>';
+  const totalRecords = state.collectionGroups.reduce((acc, group) => acc + group.records.length, 0);
+  const collectionCount = state.collectionGroups.filter(group => group.records.length >= 2).length;
+  const queryDisplay = state.query ? `"${state.query}"` : '""';
 
-  output.write(`\n  ◇ PatternFly Search  ·  Filter: ${filterLabel}\n\n`);
-  output.write('  [Enter new search term · <Enter> submit · empty keeps current]\n\n');
+  output.write(`\n  ◇ PatternFly Search: ${queryDisplay}  ·  Filter: ${filterLabel}  (${collectionCount} collections, ${totalRecords} records)\n\n`);
 
-  const query = await promptLine({ label: '  Query', current: state.query });
+  if (state.query) {
+    output.write('  [Enter new search · empty keeps previous search]\n');
+  } else {
+    output.write('  [Enter search term · <Enter> submit]\n');
+  }
+
+  const query = await promptLine({ label: '  Search', current: state.query });
+
+  output.write('\n  [<↑/↓> navigate · <Enter> submit or select · <Tab> filter · </> search · <q> quit]\n');
 
   keys.enable();
 
@@ -698,8 +708,9 @@ const runInteractiveClient = async (
 
   if (!query) {
     clearTerminal();
-    output.write('\n  ◇ PatternFly MCP Interactive Search\n\n  [Enter a component, topic, or keyword to explore]\n\n');
-    query = await promptLine({ label: '  Query' });
+    output.write('\n  ◇ PatternFly Search: ""  ·  Filter: <Closest match>  (0 collections, 0 records)\n\n');
+    output.write('  [Enter search term · <Enter> submit]\n');
+    query = await promptLine({ label: '  Search' });
 
     if (!query) {
       return;

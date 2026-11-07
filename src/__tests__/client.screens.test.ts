@@ -282,12 +282,12 @@ describe('renderSearchScreen', () => {
     // Modal has 1 record -> rendered as top-level record, collection count is 0
     expect(outputData).toContain('Filter: <patternfly-docs>  (0 collections, 1 records)');
     expect(outputData).toContain('[Record] Modal — Docs (v6)');
-    expect(outputData).toContain('[<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]');
+    expect(outputData).toContain('[<↑/↓> navigate · <Enter> submit or select · <Tab> filter · </> search · <q> quit]');
   });
 
   it('renders <Closest match> when activeCollectionFilter is undefined', () => {
     const state: SearchScreenState = {
-      query: 'test',
+      query: 'modal',
       activeCollectionFilter: undefined,
       results: [],
       collectionGroups: [],
@@ -297,8 +297,10 @@ describe('renderSearchScreen', () => {
 
     renderSearchScreen(state);
 
+    expect(outputData).toContain('◇ PatternFly Search: "modal"');
     expect(outputData).toContain('Filter: <Closest match>  (0 collections, 0 records)');
     expect(outputData).toContain('No matches yet. Press </> to change query or <q> to quit.');
+    expect(outputData).toContain('[<↑/↓> navigate · <Enter> submit or select · <Tab> filter · </> search · <q> quit]');
   });
 
   it('clamps visible rows when items exceed terminal viewport height', () => {

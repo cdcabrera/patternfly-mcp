@@ -313,6 +313,8 @@ const createClient = async ({
   if (options.client) {
     const { runClient } = await import('./client');
 
+    log.info('Starting embedded MCP client');
+
     return await runClient.memo(options, {
       server,
       allowProcessExit
