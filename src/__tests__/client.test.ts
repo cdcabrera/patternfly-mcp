@@ -44,6 +44,22 @@ describe('renderClientResourceText', () => {
   it('returns guidance when no text is present', () => {
     expect(renderClientResourceText([])).toContain('No readable text');
   });
+
+  it('decodes base64 blob content items', () => {
+    const blobBase64 = Buffer.from('Decoded blob markdown').toString('base64');
+    const text = renderClientResourceText([{ uri: 'test://blob', mimeType: 'text/plain', blob: blobBase64 }]);
+
+    expect(text).toBe('Decoded blob markdown');
+  });
+
+  it('handles invalid base64 blob gracefully with guidance fallback', () => {
+    jest.spyOn(Buffer, 'from').mockImplementationOnce(() => {
+      throw new Error('decode error');
+    });
+    const text = renderClientResourceText([{ uri: 'test://bad-blob', mimeType: 'application/octet-stream', blob: '%%%' }]);
+
+    expect(text).toContain('[Binary resource blob');
+  });
 });
 
 describe('parseResourceLinks', () => {
@@ -97,6 +113,15 @@ describe('runClient', () => {
     expect(mockRunInteractiveClient).toHaveBeenCalledWith(session);
     expect(mockServer.connect).toHaveBeenCalled();
     expect(mockConnect).toHaveBeenCalled();
+  });
+
+  it('throws an error if connect is invoked without a configured server', async () => {
+    const session = await runClient(undefined, {} as any);
+
+    // Intentionally bypass memoized connect
+    await expect(session.connect()).rejects.toThrow(
+      'A connected channel or active McpServer instance must be provided to connect runClient.'
+    );
   });
 
   it('calls searchPatternFly and maps links', async () => {
@@ -179,5 +204,28 @@ describe('runClient', () => {
       text: '# Button\n\nDocs body',
       truncated: false
     });
+  });
+
+  it('returns fallback guidance when readResource fails', async () => {
+    mockReadResource.mockRejectedValueOnce(new Error('Connection dropped'));
+
+    const session = await runClient(undefined, { server: mockServer } as any);
+    const result = await session.readResource('patternfly://docs/missing');
+
+    expect(result.text).toContain('# Unable to read resource');
+    expect(result.text).toContain('Connection dropped');
+    expect(result.truncated).toBe(false);
+  });
+
+  it('handles client close and isConnected status', async () => {
+    const session = await runClient(undefined, { server: mockServer } as any);
+
+    await session.connect();
+
+    expect(session.isConnected()).toBe(true);
+
+    await session.close();
+    expect(mockClientClose).toHaveBeenCalled();
+    expect(session.isConnected()).toBe(false);
   });
 });
