@@ -34,14 +34,14 @@ interface ResourceLinkItem {
 }
 
 /**
- * A resource read result.
+ * Client resource read result.
  *
- * @interface ResourceReadResult
+ * @interface ClientResourceReadResult
  *
  * @property text - Resource text content.
  * @property truncated - Whether the resource text was truncated.
  */
-interface ResourceReadResult {
+interface ClientResourceReadResult {
   text: string;
   truncated: boolean;
 }
@@ -60,7 +60,7 @@ interface ResourceReadResult {
 interface ClientInstance {
   connect: () => Promise<void>;
   search: (query: string, collection?: string) => Promise<ResourceLinkItem[]>;
-  readResource: (uri: string) => Promise<ResourceReadResult>;
+  readResource: (uri: string) => Promise<ClientResourceReadResult>;
   close: () => Promise<void>;
   isConnected: () => boolean;
 }
@@ -101,7 +101,8 @@ const isResourceLinkContent = (
 /**
  * Parse resource links from a call tool result.
  *
- * @param result
+ * @param result - Tool execution result containing candidate resource links.
+ * @returns Extracted list of resource link items.
  */
 const parseResourceLinks = (result: McpClientCallToolResult): ResourceLinkItem[] => {
   if (!result.content?.length) {
@@ -148,13 +149,12 @@ const parseResourceLinks = (result: McpClientCallToolResult): ResourceLinkItem[]
 };
 
 /**
- * Convert resource-read result contents to text.
+ * Convert MCP client resource-read contents into plain text.
  *
- * TODO: rename this function, fix the typing we also have "ResourceReadResult" and it's a little confusing, need prefixes to denote internal or a result of the internal client.
- *
- * @param contents
+ * @param contents - Array of text or binary blob content returned by MCP resource read.
+ * @returns Materialized text representation of the resource.
  */
-const materializeResourceText = (contents: McpClientCallResourceResult['contents']): string => {
+const materializeClientResourceText = (contents: McpClientCallResourceResult['contents']): string => {
   const parts: string[] = [];
 
   for (const content of contents) {
@@ -261,12 +261,12 @@ const runClient = async (
    * Read a resource using the provided URI.
    *
    * @param uri - Resource URI.
-   * @returns A promise that resolves with a ResourceReadResult object.
+   * @returns A promise that resolves with a ClientResourceReadResult object.
    */
-  const readResource = async (uri: string): Promise<ResourceReadResult> => {
+  const readResource = async (uri: string): Promise<ClientResourceReadResult> => {
     try {
       const result = await client.readResource({ uri });
-      const text = materializeResourceText(result.contents ?? []);
+      const text = materializeClientResourceText(result.contents ?? []);
 
       return { text, truncated: false };
     } catch (error) {
@@ -353,11 +353,12 @@ runClient.memo = memo(
 
 export {
   runClient,
-  materializeResourceText,
+  materializeClientResourceText,
   parseResourceLinks,
   type ClientInstance,
   type ClientOptions,
   type ClientSettings,
   type ResourceLinkItem,
-  type ResourceReadResult
+  type ClientResourceReadResult,
+  type ClientResourceReadResult as ResourceReadResult
 };
