@@ -69,10 +69,10 @@ const isClipboardAvailable = (): boolean => {
 };
 
 /**
- * Clear the terminal viewport (full reset).
+ * Clear the terminal viewport without resetting terminal emulator state.
  */
 const clearTerminal = (): void => {
-  process.stdout.write('\x1Bc');
+  process.stdout.write('\x1b[H\x1b[J');
 };
 
 /**

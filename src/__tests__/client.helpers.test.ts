@@ -132,9 +132,9 @@ describe('terminal buffer and clear sequences', () => {
     process.stdout.write = originalWrite;
   });
 
-  it('clearTerminal writes ANSI clear escape code', () => {
+  it('clearTerminal writes cursor home and clear down escape codes', () => {
     clearTerminal();
-    expect(outputData).toBe('\x1Bc');
+    expect(outputData).toBe('\x1b[H\x1b[J');
   });
 
   it('enterAlternateScreen writes alternate buffer code', () => {

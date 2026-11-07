@@ -300,6 +300,31 @@ describe('renderSearchScreen', () => {
     expect(outputData).toContain('Filter: <Closest match>  (0 collections, 0 records)');
     expect(outputData).toContain('No matches yet. Press </> to change query or <q> to quit.');
   });
+
+  it('clamps visible rows when items exceed terminal viewport height', () => {
+    const records = Array.from({ length: 30 }, (_, i) => ({
+      uri: `patternfly://records/item-${i}`,
+      name: `Item ${i}`,
+      groupId: `group-${i}`
+    }));
+    const groups = buildCollectionTree(records);
+    const flatVisibleTree = flattenTree(groups);
+
+    const state: SearchScreenState = {
+      query: 'items',
+      activeCollectionFilter: undefined,
+      results: records,
+      collectionGroups: groups,
+      flatVisibleTree,
+      selectedIndex: 20
+    };
+
+    renderSearchScreen(state);
+
+    expect(outputData).toContain('… [showing');
+    expect(outputData).toContain('of 30 items');
+    expect(outputData).toContain('[Record] Item 20');
+  });
 });
 
 describe('runSearchScreen', () => {

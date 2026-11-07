@@ -266,6 +266,7 @@ const wrapLines = (text: string, width: number): string[] => {
 const renderSearchScreen = (state: SearchScreenState): void => {
   clearTerminal();
   const width = terminalWidth();
+  const maxVisibleRows = Math.max(5, (output.rows ?? 24) - 8);
   const totalRecords = state.collectionGroups.reduce((acc, group) => acc + group.records.length, 0);
   const collectionCount = state.collectionGroups.filter(group => group.records.length >= 2).length;
   const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<Closest match>';
@@ -276,7 +277,24 @@ const renderSearchScreen = (state: SearchScreenState): void => {
     output.write('  No matches yet. Press </> to change query or <q> to quit.\n\n');
   }
 
-  state.flatVisibleTree.forEach((treeItem, index) => {
+  const totalItems = state.flatVisibleTree.length;
+  let startIdx = 0;
+  let endIdx = totalItems;
+
+  if (totalItems > maxVisibleRows) {
+    const half = Math.floor(maxVisibleRows / 2);
+
+    startIdx = Math.max(0, Math.min(state.selectedIndex - half, totalItems - maxVisibleRows));
+    endIdx = Math.min(totalItems, startIdx + maxVisibleRows);
+  }
+
+  for (let index = startIdx; index < endIdx; index++) {
+    const treeItem = state.flatVisibleTree[index];
+
+    if (!treeItem) {
+      continue;
+    }
+
     const marker = index === state.selectedIndex ? '◉' : '○';
 
     if (treeItem.kind === 'collection') {
@@ -293,7 +311,14 @@ const renderSearchScreen = (state: SearchScreenState): void => {
 
       output.write(`  ${label.slice(0, width - 4)}\n`);
     }
-  });
+  }
+
+  if (totalItems > maxVisibleRows) {
+    const remaining = totalItems - endIdx;
+    const prev = startIdx;
+
+    output.write(`  … [showing ${startIdx + 1}-${endIdx} of ${totalItems} items${remaining > 0 ? ` · ${remaining} more below` : ''}${prev > 0 ? ` · ${prev} above` : ''}]\n`);
+  }
 
   output.write('\n  [<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]\n');
 };
@@ -378,23 +403,26 @@ const markdownFileNameForUri = (uri: string): string => {
 };
 
 /**
- * Temporarily exit alternate screen to prompt for search query input.
+ * Prompt for search query input while preserving screen buffer and header context.
  *
  * @param keys - Key reader instance to disable during line input.
- * @param current - Current query string.
+ * @param state - Current search screen state providing filter and result context.
  * @returns New query input string.
  */
-const promptForSearchQuery = async (keys: KeyReader, current: string): Promise<string> => {
-  leaveAlternateScreen();
+const promptForSearchQuery = async (keys: KeyReader, state: SearchScreenState): Promise<string> => {
   keys.disable();
   clearTerminal();
 
-  const query = await promptLine({ label: '  ◇ PatternFly Search — enter query', current });
+  const filterLabel = state.activeCollectionFilter ? `<${state.activeCollectionFilter}>` : '<Closest match>';
 
-  enterAlternateScreen();
+  output.write(`\n  ◇ PatternFly Search  ·  Filter: ${filterLabel}\n\n`);
+  output.write('  [Enter new search term · <Enter> submit · empty keeps current]\n\n');
+
+  const query = await promptLine({ label: '  Query', current: state.query });
+
   keys.enable();
 
-  return query;
+  return query || state.query;
 };
 
 /**
@@ -515,16 +543,16 @@ const runSearchScreen = async (
     }
 
     if (key === '/') {
-      state.query = await promptForSearchQuery(keys, state.query);
+      const newQuery = await promptForSearchQuery(keys, state);
 
-      if (!state.query) {
-        continue;
+      if (newQuery !== state.query) {
+        state.query = newQuery;
+
+        state.results = await session.search(state.query, state.activeCollectionFilter);
+        state.collectionGroups = buildCollectionTree(state.results);
+        state.flatVisibleTree = flattenTree(state.collectionGroups);
+        state.selectedIndex = 0;
       }
-
-      state.results = await session.search(state.query, state.activeCollectionFilter);
-      state.collectionGroups = buildCollectionTree(state.results);
-      state.flatVisibleTree = flattenTree(state.collectionGroups);
-      state.selectedIndex = 0;
       continue;
     }
 
@@ -670,7 +698,8 @@ const runInteractiveClient = async (
 
   if (!query) {
     clearTerminal();
-    query = await promptLine({ label: '  ◇ PatternFly Search — enter query' });
+    output.write('\n  ◇ PatternFly MCP Interactive Search\n\n  [Enter a component, topic, or keyword to explore]\n\n');
+    query = await promptLine({ label: '  Query' });
 
     if (!query) {
       return;
