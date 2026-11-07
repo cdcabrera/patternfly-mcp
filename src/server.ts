@@ -2,11 +2,11 @@ import {
   McpServer
 } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { type Transport as McpTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   registerResource,
   type McpToolCreator,
-  type McpResourceCreator
+  type McpResourceCreator,
+  type McpTransport
 } from './mcpSdk';
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
