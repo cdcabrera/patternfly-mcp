@@ -272,6 +272,7 @@ const runClient = async (
     isConnected
   };
 
+  // Todo: temporary runInteractive with default query and collection. this will be removed and replaced with just the base try/catch with `runInteractiveClient`
   const runInteractive = async (initialQuery = '', initialCollection?: string): Promise<void> => {
     await connect();
     try {
