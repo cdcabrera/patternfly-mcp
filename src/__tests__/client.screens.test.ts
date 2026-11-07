@@ -124,7 +124,7 @@ describe('buildCollectionTree', () => {
     const groups = buildCollectionTree([hashResult]);
 
     expect(groups[0]?.name).toBe('Button');
-    expect(/^[a-f0-9]{32,40}$/i.test(groups[0]!.name)).toBe(false);
+    expect(/^[a-f0-9]{32,40}$/i.test(groups[0]?.name ?? '')).toBe(false);
   });
 
   it('auto-expands single collection matches when previousExpanded is empty', () => {
@@ -202,17 +202,17 @@ describe('flattenTree', () => {
     expect(flat[1]).toEqual({ kind: 'collection', group: groups[1] });
     expect(flat[2]).toEqual({
       kind: 'record',
-      item: groups[1]!.records[0],
+      item: groups[1]?.records[0],
       parentGroup: groups[1]
     });
     expect(flat[3]).toEqual({
       kind: 'record',
-      item: groups[1]!.records[1],
+      item: groups[1]?.records[1],
       parentGroup: groups[1]
     });
     expect(flat[4]).toEqual({
       kind: 'record',
-      item: groups[2]!.records[0]
+      item: groups[2]?.records[0]
     });
   });
 });
@@ -335,7 +335,9 @@ describe('runSearchScreen', () => {
     const groups = buildCollectionTree([modalCollection, modalRecord1, modalRecord2]);
 
     // starts expanded because 1 group
-    groups[0]!.isExpanded = true;
+    if (groups[0]) {
+      groups[0].isExpanded = true;
+    }
     const flat = flattenTree(groups);
 
     const state: SearchScreenState = {
@@ -397,8 +399,12 @@ describe('runSearchScreen', () => {
 
     const groups = buildCollectionTree([modalCol, modalRec1, modalRec2, btnCol, btnRec1, btnRec2]);
 
-    groups[0]!.isExpanded = true;
-    groups[1]!.isExpanded = false;
+    if (groups[0]) {
+      groups[0].isExpanded = true;
+    }
+    if (groups[1]) {
+      groups[1].isExpanded = false;
+    }
 
     const state: SearchScreenState = {
       query: 'test',
@@ -471,8 +477,12 @@ describe('runSearchScreen', () => {
 
     const groups = buildCollectionTree([modalCol, modalRec1, modalRec2, btnCol, btnRec1, btnRec2]);
 
-    groups[0]!.isExpanded = true;
-    groups[1]!.isExpanded = false;
+    if (groups[0]) {
+      groups[0].isExpanded = true;
+    }
+    if (groups[1]) {
+      groups[1].isExpanded = false;
+    }
 
     const state: SearchScreenState = {
       query: 'test',
@@ -528,7 +538,9 @@ describe('runSearchScreen', () => {
 
     const groups = buildCollectionTree([modalCollection, modalRecord1, modalRecord2]);
 
-    groups[0]!.isExpanded = true;
+    if (groups[0]) {
+      groups[0].isExpanded = true;
+    }
     const flat = flattenTree(groups);
 
     const state: SearchScreenState = {
@@ -676,7 +688,9 @@ describe('runSearchScreen', () => {
 
     const groups = buildCollectionTree([modalCollection, modalRecord1, modalRecord2]);
 
-    groups[0]!.isExpanded = true;
+    if (groups[0]) {
+      groups[0].isExpanded = true;
+    }
     const flat = flattenTree(groups);
 
     const state: SearchScreenState = {

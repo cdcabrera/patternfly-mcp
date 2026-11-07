@@ -74,7 +74,7 @@ describe('parseResourceLinks', () => {
           description: 'Modal documentation',
           groupId: 'modal',
           primaryCollection: 'patternfly-docs'
-        } as never
+        } as any
       ]
     });
 

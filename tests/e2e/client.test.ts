@@ -14,7 +14,7 @@ const cliPath = resolve(process.cwd(), 'dist/cli.js');
 
 describe('CLI environment checks and arguments', () => {
   it('should exit with error when --experimental-client is invoked without an interactive TTY', async () => {
-    let exitError: (Error & { code?: number; stderr?: string }) | undefined;
+    let exitError: any;
 
     try {
       await execFileAsync(
@@ -23,7 +23,7 @@ describe('CLI environment checks and arguments', () => {
         { cwd: process.cwd(), env: process.env }
       );
     } catch (error) {
-      exitError = error as Error & { code?: number; stderr?: string };
+      exitError = error;
     }
 
     expect(exitError).toBeDefined();
@@ -32,7 +32,7 @@ describe('CLI environment checks and arguments', () => {
   });
 
   it('should ignore unprefixed --client flag as an unrecognized flag', async () => {
-    let exitError: (Error & { stderr?: string }) | undefined;
+    let exitError: any;
 
     try {
       await execFileAsync(
@@ -41,7 +41,7 @@ describe('CLI environment checks and arguments', () => {
         { cwd: process.cwd(), env: process.env, timeout: 1000 }
       );
     } catch (error) {
-      exitError = error as Error & { stderr?: string };
+      exitError = error;
     }
 
     expect(exitError?.stderr).not.toContain('The MCP client option requires an interactive terminal (TTY).');

@@ -1,6 +1,5 @@
 import * as readlinePromises from 'node:readline/promises';
 import { stdin as input } from 'node:process';
-import type { Key } from 'node:readline';
 import { createKeyReader, promptLine, resolveKeyToken } from '../client.input';
 
 jest.mock('node:readline/promises', () => ({
@@ -59,24 +58,24 @@ describe('resolveKeyToken', () => {
   });
 
   it('handles ctrl-c token', () => {
-    expect(resolveKeyToken({ str: '\x03', key: { ctrl: true, name: 'c' } as Key })).toBe('ctrl-c');
+    expect(resolveKeyToken({ str: '\x03', key: { ctrl: true, name: 'c' } as any })).toBe('ctrl-c');
   });
 
   it('handles return as enter', () => {
-    expect(resolveKeyToken({ str: '\r', key: { name: 'return' } as Key })).toBe('enter');
+    expect(resolveKeyToken({ str: '\r', key: { name: 'return' } as any })).toBe('enter');
   });
 
   it('handles escape as esc', () => {
-    expect(resolveKeyToken({ str: '\x1b', key: { name: 'escape' } as Key })).toBe('esc');
+    expect(resolveKeyToken({ str: '\x1b', key: { name: 'escape' } as any })).toBe('esc');
   });
 
   it('handles alphanumeric key names as fallback', () => {
-    expect(resolveKeyToken({ str: '', key: { name: 'x' } as Key })).toBe('x');
-    expect(resolveKeyToken({ str: '', key: { name: '1' } as Key })).toBe('1');
+    expect(resolveKeyToken({ str: '', key: { name: 'x' } as any })).toBe('x');
+    expect(resolveKeyToken({ str: '', key: { name: '1' } as any })).toBe('1');
   });
 
   it('returns "other" when key cannot be resolved', () => {
-    expect(resolveKeyToken({ str: 'multi-char', key: { name: 'unknown-symbol' } as Key })).toBe('other');
+    expect(resolveKeyToken({ str: 'multi-char', key: { name: 'unknown-symbol' } as any })).toBe('other');
   });
 });
 
@@ -184,7 +183,7 @@ describe('promptLine', () => {
     jest.spyOn(readlinePromises, 'createInterface').mockReturnValue({
       question: mockQuestion,
       close: mockClose
-    } as unknown as readlinePromises.Interface);
+    } as any);
 
     const result = await promptLine({ label: 'Search', current: 'initial' });
 
@@ -196,7 +195,7 @@ describe('promptLine', () => {
     jest.spyOn(readlinePromises, 'createInterface').mockReturnValue({
       question: jest.fn().mockResolvedValue('   '),
       close: jest.fn()
-    } as unknown as readlinePromises.Interface);
+    } as any);
 
     const result = await promptLine({ label: 'Search', current: 'default-query' });
 

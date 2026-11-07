@@ -9,7 +9,7 @@ import {
   leaveAlternateScreen,
   prepareReaderDisplay
 } from './client.helpers';
-import { createKeyReader, promptLine } from './client.input';
+import { createKeyReader, promptLine, type KeyReader } from './client.input';
 import { type ClientInstance, type ResourceLinkItem } from './client';
 
 /**
@@ -381,7 +381,7 @@ const markdownFileNameForUri = (uri: string): string => {
  * @param current - Current query string.
  * @returns New query input string.
  */
-const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, current: string): Promise<string> => {
+const promptForSearchQuery = async (keys: KeyReader, current: string): Promise<string> => {
   leaveAlternateScreen();
   keys.disable();
   clearTerminal();
@@ -404,7 +404,7 @@ const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, cu
 const runSearchScreen = async (
   session: ClientInstance,
   initialState: SearchScreenState,
-  keys: ReturnType<typeof createKeyReader>
+  keys: KeyReader
 ): Promise<{ action: 'quit' } | { action: 'open'; uri: string; state: SearchScreenState }> => {
   const state: SearchScreenState = { ...initialState };
 
@@ -559,7 +559,7 @@ const runSearchScreen = async (
 const runReaderScreen = async (
   session: ClientInstance,
   uri: string,
-  keys: ReturnType<typeof createKeyReader>,
+  keys: KeyReader,
   clipboardEnabled: boolean
 ): Promise<ReaderAction> => {
   const { text: fullText } = await session.readResource(uri);

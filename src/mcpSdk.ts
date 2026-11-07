@@ -6,7 +6,7 @@ import {
   type ResourceMetadata,
   type CompleteResourceTemplateCallback
 } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type Tool } from '@modelcontextprotocol/sdk/types.js';
+import { type Tool, type ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { type GlobalOptions } from './options';
@@ -201,14 +201,14 @@ interface McpChannel {
 /**
  * Resolved result of an MCP client resource read operation.
  *
- * @derived See {@link Client}.
+ * @alias ReadResourceResult
  */
-type McpClientCallResourceResult = Awaited<ReturnType<Client['readResource']>>;
+type McpClientCallResourceResult = ReadResourceResult;
 
 /**
  * Content item from an MCP client resource read operation.
  *
- * @derived See {@link McpClientCallResourceResult}.
+ * @alias ReadResourceResult['contents']
  */
 type McpClientCallResourceResultContent = McpClientCallResourceResult['contents'];
 

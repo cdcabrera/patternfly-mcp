@@ -182,7 +182,7 @@ describe('copyTextToClipboard', () => {
     const spawnSyncSpy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
       status: 0,
       error: undefined
-    } as unknown as childProcess.SpawnSyncReturns<string>);
+    } as any);
 
     const result = copyTextToClipboard('test snippet');
 
@@ -197,7 +197,7 @@ describe('copyTextToClipboard', () => {
     const spawnSyncSpy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
       status: 0,
       error: undefined
-    } as unknown as childProcess.SpawnSyncReturns<string>);
+    } as any);
 
     const result = copyTextToClipboard('test snippet');
 
@@ -212,7 +212,7 @@ describe('copyTextToClipboard', () => {
     const spawnSyncSpy = jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
       status: 0,
       error: undefined
-    } as unknown as childProcess.SpawnSyncReturns<string>);
+    } as any);
 
     const result = copyTextToClipboard('test snippet');
 
@@ -225,7 +225,7 @@ describe('copyTextToClipboard', () => {
     jest.spyOn(childProcess, 'spawnSync').mockReturnValue({
       status: 1,
       error: new Error('command failed')
-    } as unknown as childProcess.SpawnSyncReturns<string>);
+    } as any);
 
     const result = copyTextToClipboard('hello');
 
@@ -238,7 +238,7 @@ describe('copyTextToClipboard', () => {
     Object.defineProperty(process, 'platform', { value: 'other' });
     process.stdout.write = (() => {
       throw new Error('write error');
-    }) as unknown as typeof process.stdout.write;
+    }) as any;
 
     const result = copyTextToClipboard('hello');
 

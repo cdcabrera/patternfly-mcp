@@ -3,6 +3,16 @@ import { createInterface as createPromiseInterface } from 'node:readline/promise
 import { stdin as input, stdout as output } from 'node:process';
 
 /**
+ * Key reader utility interface for capturing TTY keypress events.
+ */
+interface KeyReader {
+  enable: () => void;
+  disable: () => void;
+  dispose: () => void;
+  readKey: () => Promise<string>;
+}
+
+/**
  * Return a token for a keypress.
  *
  * @param params - Parameters
@@ -64,7 +74,7 @@ const resolveKeyToken = ({ str, key }: { str: string; key: readline.Key }): stri
  * - `dispose`: Cleans up and removes the event listener for keypress handling.
  * - `readKey`: Waits for the next keypress event and resolves with the captured key string.
  */
-const createKeyReader = () => {
+const createKeyReader = (): KeyReader => {
   readline.emitKeypressEvents(input);
 
   let listening = false;
@@ -157,4 +167,4 @@ const promptLine = async ({ label, current = '' }: { label: string; current?: st
   return answer.trim() || current;
 };
 
-export { createKeyReader, promptLine, resolveKeyToken };
+export { createKeyReader, promptLine, resolveKeyToken, type KeyReader };

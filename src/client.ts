@@ -88,13 +88,20 @@ interface ClientSettings {
  * @returns `true` if the item is a resource link content object; otherwise, `false`.
  */
 const isResourceLinkContent = (
-  item: McpClientCallToolResult['content'] extends (infer U)[] | undefined ? U : never
-): item is { type: 'resource_link'; uri: string; name: string; description?: string } =>
-  typeof item === 'object' &&
-  item !== null &&
-  (item as { type?: string }).type === 'resource_link' &&
-  typeof (item as { uri?: string }).uri === 'string' &&
-  typeof (item as { name?: string }).name === 'string';
+  item: unknown
+): item is { type: 'resource_link'; uri: string; name: string; description?: string } => {
+  if (!item || typeof item !== 'object') {
+    return false;
+  }
+
+  const candidate = item as Record<string, unknown>;
+
+  return (
+    candidate.type === 'resource_link' &&
+    typeof candidate.uri === 'string' &&
+    typeof candidate.name === 'string'
+  );
+};
 
 /**
  * Parse resource links from a call tool result.

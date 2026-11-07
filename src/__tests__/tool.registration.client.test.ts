@@ -51,6 +51,6 @@ describe('tool registration with --client mode', () => {
     const shouldRegister = config?.shouldRegister;
 
     expect(shouldRegister).toBeDefined();
-    expect(shouldRegister!({ client, contextManagement } as never)).toBe(expected);
+    expect(shouldRegister?.({ client, contextManagement } as any)).toBe(expected);
   });
 });
