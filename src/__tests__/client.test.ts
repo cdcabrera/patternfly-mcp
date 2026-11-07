@@ -8,6 +8,12 @@ const mockConnect = jest.fn();
 const mockCallTool = jest.fn();
 const mockReadResource = jest.fn();
 const mockClientClose = jest.fn();
+const mockRunInteractiveClient = jest.fn().mockResolvedValue(undefined);
+
+jest.mock('../client.screens', () => ({
+  ...jest.requireActual('../client.screens'),
+  runInteractiveClient: (...args: unknown[]) => mockRunInteractiveClient(...args)
+}));
 
 jest.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -73,13 +79,14 @@ describe('parseResourceLinks', () => {
 });
 
 describe('runClient', () => {
+  let mockServer: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockServer = { connect: jest.fn().mockResolvedValue(undefined) };
   });
 
   it('connects to the provided mcpChannel directly', async () => {
-    const mockServer = { connect: jest.fn().mockResolvedValue(undefined) };
-
     const session = await runClient(
       { name: 'test-client' } as any,
       { server: mockServer } as any
@@ -87,6 +94,7 @@ describe('runClient', () => {
 
     await session.connect();
 
+    expect(mockRunInteractiveClient).toHaveBeenCalledWith(session, '', undefined);
     expect(mockServer.connect).toHaveBeenCalled();
     expect(mockConnect).toHaveBeenCalled();
   });
@@ -100,7 +108,7 @@ describe('runClient', () => {
       }]
     });
 
-    const session = await runClient();
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     const results = await session.search('button');
 
@@ -122,7 +130,7 @@ describe('runClient', () => {
       }]
     });
 
-    const session = await runClient();
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     const results = await session.search('modal', 'patternfly-docs');
 
@@ -150,7 +158,7 @@ describe('runClient', () => {
       ]
     });
 
-    const session = await runClient();
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     const items = await session.search('modal');
 
@@ -165,7 +173,7 @@ describe('runClient', () => {
       contents: [{ uri: 'patternfly://docs/button', text: '# Button\n\nDocs body' }]
     });
 
-    const session = await runClient();
+    const session = await runClient(undefined, { server: mockServer } as any);
 
     await expect(session.readResource('patternfly://docs/button')).resolves.toEqual({
       text: '# Button\n\nDocs body',

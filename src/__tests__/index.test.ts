@@ -25,7 +25,6 @@ describe('main', () => {
   let callOrder: string[] = [];
   const defaultLogging = { level: 'info' as const, stderr: false, protocol: false };
   let mockServerInstance: any;
-  let mockClientInstance: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -63,18 +62,11 @@ describe('main', () => {
 
     mockRunWithSession.mockImplementation(async (_session, callback: any) => await callback());
 
-    mockClientInstance = {
-      runInteractive: jest.fn().mockResolvedValue(undefined),
-      close: jest.fn().mockResolvedValue(undefined),
-      isConnected: jest.fn().mockReturnValue(true)
-    };
-
     mockServerInstance = {
       stop: jest.fn().mockResolvedValue(undefined),
       isRunning: jest.fn().mockReturnValue(true),
       getStats: jest.fn().mockReturnValue({}),
-      onLog: jest.fn(),
-      createClient: jest.fn().mockResolvedValue(mockClientInstance)
+      onLog: jest.fn()
     };
 
     mockRunServer.mockImplementation(async () => {
@@ -183,19 +175,20 @@ describe('main', () => {
       Object.defineProperty(process.stdout, 'isTTY', { value: originalStdoutIsTTY, configurable: true });
     });
 
-    it('rejects client when invoked outside CLI mode', async () => {
+    it('sanitizes client option when invoked outside CLI mode', async () => {
       mockSetOptions.mockReturnValueOnce({
         ...DEFAULT_OPTIONS,
-        client: true,
+        client: false,
         mode: 'stdio'
       } as unknown as GlobalOptions);
 
-      await expect(main()).rejects.toThrow('The client option is only available when executed via CLI.');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Client option error, failed to start server:',
-        expect.any(Error)
+      const result = await main();
+
+      expect(mockRunServer).toHaveBeenCalledWith(
+        expect.objectContaining({ client: false, mode: 'stdio' }),
+        expect.any(Object)
       );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      expect(result).toBe(mockServerInstance);
     });
 
     it('rejects client when TTY is not available', async () => {
@@ -207,27 +200,12 @@ describe('main', () => {
         mode: 'cli'
       } as GlobalOptions);
 
-      await expect(main()).rejects.toThrow('The client option requires an interactive terminal (TTY).');
+      await expect(main()).rejects.toThrow('The MCP client option requires an interactive terminal (TTY).');
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Client environment error, failed to start server:',
+        'MCP client environment error, failed to start server:',
         expect.any(Error)
       );
       expect(processExitSpy).toHaveBeenCalledWith(1);
-    });
-
-    it('runs interactive client and cleans up server instance upon completion', async () => {
-      mockSetOptions.mockReturnValueOnce({
-        ...DEFAULT_OPTIONS,
-        client: true,
-        mode: 'cli'
-      } as GlobalOptions);
-
-      const result = await main();
-
-      expect(mockServerInstance.createClient).toHaveBeenCalledTimes(1);
-      expect(mockClientInstance.runInteractive).toHaveBeenCalledTimes(1);
-      expect(mockServerInstance.stop).toHaveBeenCalledTimes(1);
-      expect(result).toBe(mockServerInstance);
     });
   });
 });

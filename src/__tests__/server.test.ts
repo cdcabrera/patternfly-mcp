@@ -290,7 +290,7 @@ describe('runServer', () => {
     await expect(runServer(undefined, { tools: [] })).rejects.toThrowErrorMatchingSnapshot('Connection failed');
   });
 
-  it('attaches an in-process client via createClient', async () => {
+  it('auto-starts in-process client when options.client is enabled', async () => {
     const mockClient = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
@@ -303,20 +303,19 @@ describe('runServer', () => {
 
     const instance = await runServer({
       ...DEFAULT_OPTIONS,
-      name: 'test-create-client',
-      version: '1.0.0'
+      name: 'test-auto-client',
+      version: '1.0.0',
+      client: true
     });
 
-    const client = await instance.createClient();
-
-    expect(client).toBe(mockClient);
+    expect(instance.isRunning()).toBe(true);
     expect(clientModule.runClient.memo).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'test-create-client' }),
+      expect.objectContaining({ name: 'test-auto-client', client: true }),
       expect.objectContaining({ server: mockServer })
     );
 
     await instance.stop();
-    expect(mockClient.close).toHaveBeenCalled();
+    expect(mockClient.close).toHaveBeenCalledTimes(1);
   });
 });
 

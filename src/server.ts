@@ -301,38 +301,6 @@ const registerServerTools = async (tools: McpToolCreator[], server: McpServer, o
   }
 };
 
-/*
-const createClient = async ({
-  running,
-  server,
-  allowProcessExit
-}: { running: boolean, server: McpServer, allowProcessExit: boolean }, options = getOptions()): Promise<ClientInstance> => {
-  let mcpClient: Promise<ClientInstance>;
-
-  const create = async () => {
-    if (!running || !server) {
-      throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
-    }
-
-    // if (mcpClient && mcpClient.isConnected()) {
-    if (mcpClient) {
-      return mcpClient;
-    }
-
-    const { runClient } = await import('./client');
-
-    return await runClient.memo(options, {
-      server,
-      allowProcessExit
-    });
-  };
-
-  mcpClient = create();
-
-  return mcpClient;
-};
-*/
-
 const createClient = async ({
   running,
   server,
