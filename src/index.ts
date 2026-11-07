@@ -266,7 +266,7 @@ const main = async (
         }
 
         if (!process.stdin.isTTY || !process.stdout.isTTY) {
-          clientError = new Error('The MCP client option requires an interactive terminal (TTY).')
+          clientError = new Error('The MCP client option requires an interactive terminal (TTY).');
         }
 
         if (clientError) {
