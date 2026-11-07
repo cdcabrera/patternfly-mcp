@@ -51,14 +51,12 @@ interface ClientResourceReadResult {
  *
  * @interface ClientInstance
  *
- * @property connect - Connect to the resource service.
  * @property search - Search available resources.
  * @property readResource - Read resource contents by URI.
  * @property close - Close the client connection.
  * @property isConnected - Check if the client is connected.
  */
 interface ClientInstance {
-  connect: () => Promise<void>;
   search: (query: string, collection?: string) => Promise<ResourceLinkItem[]>;
   readResource: (uri: string) => Promise<ClientResourceReadResult>;
   close: () => Promise<void>;
@@ -207,35 +205,6 @@ const runClient = async (
   );
 
   /**
-   * Establish the client connection to an available MCP server channel.
-   *
-   * @returns A promise that resolves when the client has been connected.
-   * @throws If no connected channel or active MCP server instance is available.
-   * @throws If the in-process server channel connection times out.
-   */
-  const connect = async (): Promise<void> => {
-    if (connected) {
-      return;
-    }
-
-    if (settings.server) {
-      channel = createMcpChannel();
-
-      await timeoutFunction(
-        settings.server.connect(channel.serverChannel),
-        { errorMessage: 'MCP in-process channel connection timed out.' }
-      );
-
-      await client.connect(channel.clientChannel);
-      connected = true;
-
-      return;
-    }
-
-    throw new Error('A connected channel or active McpServer instance must be provided to connect runClient.');
-  };
-
-  /**
    * Search for resources using the provided query and optional collection.
    *
    * @param query - Search query.
@@ -295,14 +264,47 @@ const runClient = async (
   const isConnected = (): boolean => connected;
 
   /**
-   * Start and run the interactive client session.
+   * Establish the client connection to an available MCP server channel.
+   *
+   * @returns A promise that resolves when the client has been connected.
+   * @throws If no connected channel or active MCP server instance is available.
+   * @throws If the in-process server channel connection times out.
+   */
+  const connectClient = async (): Promise<void> => {
+    if (connected) {
+      return;
+    }
+
+    if (settings.server) {
+      channel = createMcpChannel();
+
+      await timeoutFunction(
+        settings.server.connect(channel.serverChannel),
+        { errorMessage: 'MCP in-process channel connection timed out.' }
+      );
+
+      await client.connect(channel.clientChannel);
+      connected = true;
+
+      return;
+    }
+
+    throw new Error('A connected channel or active McpServer instance must be provided to connect runClient.');
+  };
+
+  /**
+   * Wrap start and run for the interactive client session.
+   *
+   * @note Separated to help isolate functionality. In the future this could be
+   * exported as part of the instance, altered or combined with connectClient for
+   * convenience or a shift in architecture.
    *
    * @param client - Client instance to connect, run, and close.
    * @returns Promise that resolves when the client session has finished or is closed.
    * @throws Propagates any error thrown while connecting, running the interactive session, or closing the client.
    */
   const startClient = async (client: ClientInstance): Promise<void> => {
-    await client.connect();
+    await connectClient();
 
     try {
       await runInteractiveClient(client);
@@ -312,13 +314,15 @@ const runClient = async (
   };
 
   const instance: ClientInstance = {
-    connect,
     search,
     readResource,
     close,
     isConnected
   };
 
+  /**
+   * Start and run the interactive client session.
+   */
   void startClient(instance);
 
   return instance;
