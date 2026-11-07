@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import { stdin as input } from 'node:process';
 import {
-  AVAILABLE_COLLECTIONS,
   MAX_TERMINAL_DISPLAY_CHARS,
   badgeForResult,
   buildCollectionTree,
@@ -218,30 +217,30 @@ describe('flattenTree', () => {
 });
 
 describe('cycleCollectionFilter', () => {
-  it('cycles from undefined through all available collections and back to undefined', () => {
-    expect(AVAILABLE_COLLECTIONS).toEqual([
-      'patternfly-docs',
-      'patternfly-component-schemas',
-      'patternfly-api',
-      'ai-handbook'
-    ]);
-
+  it('cycles from undefined through provided collections and back to undefined', () => {
+    const collections = ['col-a', 'col-b', 'col-c'];
     let current: string | undefined = undefined;
 
-    current = cycleCollectionFilter(current);
-    expect(current).toBe('patternfly-docs');
+    current = cycleCollectionFilter(collections, current);
+    expect(current).toBe('col-a');
 
-    current = cycleCollectionFilter(current);
-    expect(current).toBe('patternfly-component-schemas');
+    current = cycleCollectionFilter(collections, current);
+    expect(current).toBe('col-b');
 
-    current = cycleCollectionFilter(current);
-    expect(current).toBe('patternfly-api');
+    current = cycleCollectionFilter(collections, current);
+    expect(current).toBe('col-c');
 
-    current = cycleCollectionFilter(current);
-    expect(current).toBe('ai-handbook');
-
-    current = cycleCollectionFilter(current);
+    current = cycleCollectionFilter(collections, current);
     expect(current).toBeUndefined();
+  });
+
+  it('returns undefined when collections list is empty', () => {
+    expect(cycleCollectionFilter([], undefined)).toBeUndefined();
+    expect(cycleCollectionFilter([], 'col-a')).toBeUndefined();
+  });
+
+  it('returns first collection when current is not in collections array', () => {
+    expect(cycleCollectionFilter(['col-a', 'col-b'], 'unknown-col')).toBe('col-a');
   });
 });
 
@@ -307,6 +306,7 @@ describe('runSearchScreen', () => {
   const mockSession = {
     search: jest.fn(),
     readResource: jest.fn(),
+    listCollections: jest.fn().mockReturnValue(['patternfly-docs', 'patternfly-component-schemas']),
     connect: jest.fn(),
     close: jest.fn()
   };
@@ -613,9 +613,12 @@ describe('runSearchScreen', () => {
       }
     ]);
 
+    mockSession.listCollections.mockReturnValue(['patternfly-docs', 'patternfly-component-schemas']);
+
     const state: SearchScreenState = {
       query: 'modal',
       activeCollectionFilter: undefined,
+      availableCollections: ['patternfly-docs', 'patternfly-component-schemas'],
       results: [],
       collectionGroups: [],
       flatVisibleTree: [],

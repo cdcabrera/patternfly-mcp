@@ -17,15 +17,6 @@ import { type ClientInstance, type ResourceLinkItem } from './client';
  */
 const MAX_TERMINAL_DISPLAY_CHARS = 512_000;
 
-const AVAILABLE_COLLECTIONS = [
-  'patternfly-docs',
-  'patternfly-component-schemas',
-  'patternfly-api',
-  'ai-handbook'
-] as const;
-
-type PrimaryCollection = typeof AVAILABLE_COLLECTIONS[number];
-
 interface CollectionGroup {
   groupId: string;
   name: string;
@@ -40,6 +31,7 @@ type TreeItem =
 interface SearchScreenState {
   query: string;
   activeCollectionFilter?: string | undefined;
+  availableCollections?: string[] | undefined;
   results: ResourceLinkItem[];
   collectionGroups: CollectionGroup[];
   flatVisibleTree: TreeItem[];
@@ -207,20 +199,31 @@ const flattenTree = (groups: CollectionGroup[]): TreeItem[] => {
 /**
  * Cycle through available collection filters on Tab keystroke.
  *
+ * @param collections - Available collection names.
  * @param [current] - Current active collection filter name.
  * @returns Next collection filter or undefined if reset to all.
  */
-const cycleCollectionFilter = (current?: string): string | undefined => {
-  if (!current) {
-    return AVAILABLE_COLLECTIONS[0];
+const cycleCollectionFilter = (
+  collections: string[],
+  current?: string
+): string | undefined => {
+  if (!collections?.length) {
+    return undefined;
   }
-  const idx = AVAILABLE_COLLECTIONS.indexOf(current as PrimaryCollection);
+  if (!current) {
+    return collections[0];
+  }
+  const idx = collections.indexOf(current);
 
-  if (idx === -1 || idx === AVAILABLE_COLLECTIONS.length - 1) {
+  if (idx === -1) {
+    return collections[0];
+  }
+
+  if (idx === collections.length - 1) {
     return undefined;
   }
 
-  return AVAILABLE_COLLECTIONS[idx + 1];
+  return collections[idx + 1];
 };
 
 /**
@@ -408,6 +411,20 @@ const runSearchScreen = async (
 ): Promise<{ action: 'quit' } | { action: 'open'; uri: string; state: SearchScreenState }> => {
   const state: SearchScreenState = { ...initialState };
 
+  if (!state.availableCollections?.length) {
+    const serverCollections = typeof session.listCollections === 'function'
+      ? session.listCollections()
+      : [];
+
+    if (serverCollections.length > 0) {
+      state.availableCollections = serverCollections;
+    } else if (state.results?.length) {
+      state.availableCollections = Array.from(
+        new Set(state.results.map(item => item.primaryCollection).filter((col): col is string => Boolean(col)))
+      ).sort();
+    }
+  }
+
   if (!state.collectionGroups || !state.flatVisibleTree) {
     if (!state.results?.length && state.query) {
       state.results = await session.search(state.query, state.activeCollectionFilter);
@@ -441,7 +458,10 @@ const runSearchScreen = async (
     }
 
     if (key === 'tab') {
-      state.activeCollectionFilter = cycleCollectionFilter(state.activeCollectionFilter);
+      state.activeCollectionFilter = cycleCollectionFilter(
+        state.availableCollections ?? [],
+        state.activeCollectionFilter
+      );
       if (state.query) {
         const previousExpanded = new Set(
           state.collectionGroups.filter(group => group.isExpanded).map(group => group.groupId)
@@ -698,7 +718,6 @@ const runInteractiveClient = async (
 };
 
 export {
-  AVAILABLE_COLLECTIONS,
   MAX_TERMINAL_DISPLAY_CHARS,
   badgeForResult,
   buildCollectionTree,
@@ -710,7 +729,6 @@ export {
   runReaderScreen,
   runSearchScreen,
   type CollectionGroup,
-  type PrimaryCollection,
   type SearchScreenState,
   type TreeItem
 };

@@ -206,6 +206,13 @@ describe('runClient', () => {
     expect(result.truncated).toBe(false);
   });
 
+  it('returns collection names via listCollections', async () => {
+    const session = await runClient(undefined, { server: mockServer } as any);
+    const collections = session.listCollections();
+
+    expect(Array.isArray(collections)).toBe(true);
+  });
+
   it('handles client close and isConnected status', async () => {
     const session = await runClient(undefined, { server: mockServer } as any);
 

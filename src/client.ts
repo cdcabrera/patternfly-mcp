@@ -11,6 +11,7 @@ import { memo } from './server.caching';
 import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { runInteractiveClient } from './client.screens';
+import { getServerCollectionsRegistry } from './collections';
 
 /**
  * A linkable resource item.
@@ -53,12 +54,14 @@ interface ClientResourceReadResult {
  *
  * @property search - Search available resources.
  * @property readResource - Read resource contents by URI.
+ * @property listCollections - Retrieve available collection names registered on the server.
  * @property close - Close the client connection.
  * @property isConnected - Check if the client is connected.
  */
 interface ClientInstance {
   search: (query: string, collection?: string) => Promise<ResourceLinkItem[]>;
   readResource: (uri: string) => Promise<ClientResourceReadResult>;
+  listCollections: () => string[];
   close: () => Promise<void>;
   isConnected: () => boolean;
 }
@@ -256,6 +259,21 @@ const runClient = async (
   };
 
   /**
+   * Retrieve available collection names currently registered on the server.
+   *
+   * @returns Array of registered collection names.
+   */
+  const listCollections = (): string[] => {
+    const registry = getServerCollectionsRegistry();
+
+    if (registry instanceof Map && registry.size > 0) {
+      return Array.from(registry.keys()).filter(Boolean);
+    }
+
+    return [];
+  };
+
+  /**
    * Close the client connection and resources.
    */
   const close = async (): Promise<void> => {
@@ -321,6 +339,7 @@ const runClient = async (
   const instance: ClientInstance = {
     search,
     readResource,
+    listCollections,
     close,
     isConnected
   };
