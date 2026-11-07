@@ -160,11 +160,19 @@ const createKeyReader = (): KeyReader => {
 const promptLine = async ({ label, current = '' }: { label: string; current?: string | undefined }): Promise<string> => {
   const rl = createPromiseInterface({ input, output, terminal: true });
   const suffix = current ? ` [${current}]` : '';
-  const answer = await rl.question(`${label}${suffix}: `);
 
-  rl.close();
+  try {
+    const answer = await rl.question(`${label}${suffix}: `);
 
-  return answer.trim() || current;
+    return answer.trim() || current;
+  } catch (error: any) {
+    if (error?.name === 'AbortError' || error?.code === 'ABORT_ERR') {
+      return '';
+    }
+    throw error;
+  } finally {
+    rl.close();
+  }
 };
 
 export { createKeyReader, promptLine, resolveKeyToken, type KeyReader };

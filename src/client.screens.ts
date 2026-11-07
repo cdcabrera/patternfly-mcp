@@ -432,7 +432,7 @@ const promptForSearchQuery = async (keys: KeyReader, state: SearchScreenState): 
 
   keys.enable();
 
-  return query || state.query;
+  return query.trim();
 };
 
 /**

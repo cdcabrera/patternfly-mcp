@@ -201,4 +201,20 @@ describe('promptLine', () => {
 
     expect(result).toBe('default-query');
   });
+
+  it('handles Ctrl+C AbortError cleanly by returning empty string', async () => {
+    const abortError = new Error('Aborted with Ctrl+C');
+
+    abortError.name = 'AbortError';
+    (abortError as any).code = 'ABORT_ERR';
+
+    jest.spyOn(readlinePromises, 'createInterface').mockReturnValue({
+      question: jest.fn().mockRejectedValue(abortError),
+      close: jest.fn()
+    } as any);
+
+    const result = await promptLine({ label: 'Search', current: 'existing' });
+
+    expect(result).toBe('');
+  });
 });
