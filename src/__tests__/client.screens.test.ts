@@ -1,15 +1,23 @@
+import fs from 'node:fs/promises';
+import { stdin as input } from 'node:process';
 import {
   AVAILABLE_COLLECTIONS,
+  MAX_TERMINAL_DISPLAY_CHARS,
   badgeForResult,
   buildCollectionTree,
   cycleCollectionFilter,
   flattenTree,
+  renderReaderScreen,
   renderSearchScreen,
+  runInteractiveClient,
+  runReaderScreen,
   runSearchScreen,
   type CollectionGroup,
   type SearchScreenState
 } from '../client.screens';
 import { type ResourceLinkItem } from '../client';
+import * as clientHelpers from '../client.helpers';
+import * as clientInput from '../client.input';
 
 describe('client.screens', () => {
   describe('badgeForResult', () => {
@@ -596,6 +604,258 @@ describe('client.screens', () => {
       await runSearchScreen(mockSession as never, state, mockKeys as never);
 
       expect(mockSession.search).toHaveBeenCalledWith('modal', 'patternfly-docs');
+    });
+
+    it('handles query prompt via "/" and updates search state', async () => {
+      jest.spyOn(clientInput, 'promptLine').mockResolvedValue('card');
+      mockSession.search.mockResolvedValue([
+        {
+          uri: 'patternfly://records/card-doc',
+          name: 'Card — Docs',
+          groupId: 'card',
+          primaryCollection: 'patternfly-docs'
+        }
+      ]);
+
+      const state: SearchScreenState = {
+        query: 'modal',
+        results: [],
+        collectionGroups: [],
+        flatVisibleTree: [],
+        selectedIndex: 0
+      };
+
+      const keyQueue = ['/', 'q'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'q')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      await runSearchScreen(mockSession as never, state, mockKeys as never);
+
+      expect(state.query).toBe('card');
+      expect(mockSession.search).toHaveBeenCalledWith('card', undefined);
+      expect(state.results).toHaveLength(1);
+    });
+
+    it('handles left arrow to collapse collection node', async () => {
+      const modalCollection: ResourceLinkItem = {
+        uri: 'patternfly://docs/modal',
+        name: 'Modal (Collection)',
+        groupId: 'modal'
+      };
+      const modalRecord1: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-doc',
+        name: 'Modal — Docs (v6)',
+        groupId: 'modal'
+      };
+      const modalRecord2: ResourceLinkItem = {
+        uri: 'patternfly://records/modal-schema',
+        name: 'Modal — JSON Schema (v6)',
+        groupId: 'modal'
+      };
+
+      const groups = buildCollectionTree([modalCollection, modalRecord1, modalRecord2]);
+
+      groups[0]!.isExpanded = true;
+      const flat = flattenTree(groups);
+
+      const state: SearchScreenState = {
+        query: 'modal',
+        results: [modalCollection, modalRecord1, modalRecord2],
+        collectionGroups: groups,
+        flatVisibleTree: flat,
+        selectedIndex: 0
+      };
+
+      const keyQueue = ['left', 'q'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'q')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      await runSearchScreen(mockSession as never, state, mockKeys as never);
+
+      expect(groups[0]?.isExpanded).toBe(false);
+    });
+  });
+
+  describe('renderReaderScreen', () => {
+    let outputData = '';
+    const originalWrite = process.stdout.write;
+
+    beforeEach(() => {
+      outputData = '';
+      process.stdout.write = ((chunk: string) => {
+        outputData += chunk;
+
+        return true;
+      }) as never;
+    });
+
+    afterEach(() => {
+      process.stdout.write = originalWrite;
+    });
+
+    it('renders title, body lines, scroll position, and shortcuts', () => {
+      renderReaderScreen(
+        'patternfly://records/test',
+        '# Title Heading',
+        ['Line 1', 'Line 2', 'Line 3'],
+        0,
+        'Status message',
+        true
+      );
+
+      expect(outputData).toContain('# Title Heading');
+      expect(outputData).toContain('Line 1');
+      expect(outputData).toContain('Status message');
+      expect(outputData).toContain('<c> copy');
+      expect(outputData).toContain('<r> save .md');
+    });
+
+    it('omits copy shortcut hint when clipboardEnabled is false', () => {
+      renderReaderScreen('patternfly://records/test', '# Title', ['Line 1'], 0, '', false);
+
+      expect(outputData).not.toContain('<c> copy');
+      expect(outputData).toContain('<r> save .md');
+    });
+  });
+
+  describe('runReaderScreen', () => {
+    const mockSession = {
+      search: jest.fn(),
+      readResource: jest.fn(),
+      connect: jest.fn(),
+      close: jest.fn()
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockSession.readResource.mockResolvedValue({
+        text: '# Test Title\n\n' + Array.from({ length: 40 }, (_, i) => `Paragraph line ${i + 1}`).join('\n')
+      });
+    });
+
+    it('exits with back on "b", "esc", or "enter"', async () => {
+      for (const exitKey of ['b', 'esc', 'enter']) {
+        const mockKeys = {
+          readKey: jest.fn().mockResolvedValue(exitKey),
+          enable: jest.fn(),
+          disable: jest.fn(),
+          dispose: jest.fn()
+        };
+
+        const result = await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+
+        expect(result).toBe('back');
+      }
+    });
+
+    it('exits with quit on "q" or "ctrl-c"', async () => {
+      for (const quitKey of ['q', 'ctrl-c']) {
+        const mockKeys = {
+          readKey: jest.fn().mockResolvedValue(quitKey),
+          enable: jest.fn(),
+          disable: jest.fn(),
+          dispose: jest.fn()
+        };
+
+        const result = await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+
+        expect(result).toBe('quit');
+      }
+    });
+
+    it('handles scrolling with down, up, pagedown, space, and pageup', async () => {
+      const keyQueue = ['down', 'down', 'up', 'pagedown', 'space', 'pageup', 'b'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'b')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      const result = await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+
+      expect(result).toBe('back');
+    });
+
+    it('handles clipboard copy on "c" when enabled', async () => {
+      const copySpy = jest.spyOn(clientHelpers, 'copyTextToClipboard').mockReturnValue({
+        ok: true,
+        message: 'Copied document'
+      });
+
+      const keyQueue = ['c', 'b'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'b')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+      expect(copySpy).toHaveBeenCalled();
+    });
+
+    it('handles file save on "r" including success and failure notes', async () => {
+      const writeFileSpy = jest.spyOn(fs, 'writeFile').mockResolvedValue(undefined);
+      const keyQueue = ['r', 'b'];
+      const mockKeys = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(keyQueue.shift() || 'b')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeys as never, true);
+      expect(writeFileSpy).toHaveBeenCalled();
+
+      writeFileSpy.mockRejectedValueOnce(new Error('disk write denied'));
+      const failQueue = ['r', 'b'];
+      const mockKeysFail = {
+        readKey: jest.fn().mockImplementation(() => Promise.resolve(failQueue.shift() || 'b')),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      await runReaderScreen(mockSession as never, 'patternfly://records/test', mockKeysFail as never, true);
+      expect(writeFileSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('truncates text exceeding MAX_TERMINAL_DISPLAY_CHARS for display', async () => {
+      const longText = 'A'.repeat(MAX_TERMINAL_DISPLAY_CHARS + 500);
+
+      mockSession.readResource.mockResolvedValueOnce({ text: longText });
+
+      const mockKeys = {
+        readKey: jest.fn().mockResolvedValue('b'),
+        enable: jest.fn(),
+        disable: jest.fn(),
+        dispose: jest.fn()
+      };
+
+      const result = await runReaderScreen(mockSession as never, 'patternfly://records/long', mockKeys as never, true);
+
+      expect(result).toBe('back');
+    });
+  });
+
+  describe('runInteractiveClient', () => {
+    it('throws error when stdin or stdout is not a TTY', async () => {
+      const originalInputTTY = input.isTTY;
+
+      Object.defineProperty(input, 'isTTY', { value: false, configurable: true });
+
+      await expect(runInteractiveClient({} as never)).rejects.toThrow('Interactive pf-client requires a TTY');
+
+      Object.defineProperty(input, 'isTTY', { value: originalInputTTY, configurable: true });
     });
   });
 });

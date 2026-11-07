@@ -425,6 +425,8 @@ const runSearchScreen = async (
     const key = await keys.readKey();
 
     if (key === 'q' || key === 'ctrl-c') {
+      Object.assign(initialState, state);
+
       return { action: 'quit' };
     }
 
@@ -534,6 +536,8 @@ const runSearchScreen = async (
       }
 
       if (selected?.kind === 'record') {
+        Object.assign(initialState, state);
+
         return {
           action: 'open',
           uri: selected.item.uri,
