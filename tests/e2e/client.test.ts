@@ -1,13 +1,18 @@
-import { execFile } from 'node:child_process';
+/**
+ * Requires: npm run build prior to running Jest.
+ * - If typings are needed, use public types from dist to avoid type identity mismatches between src and dist
+ */
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
-// import { startServer, type StdioTransportClient } from './utils/stdioTransportClient';
 import { resolve } from 'node:path';
-// import { start } from '../../dist/index.js';
+
+// @ts-ignore - dist/ isn't necessarily built yet; run npm run build before e2e tests
+import { start } from '../../dist/index.js';
 
 const execFileAsync = promisify(execFile);
 const cliPath = resolve(process.cwd(), 'dist/cli.js');
 
-describe('MCP client', () => {
+describe('CLI environment checks and arguments', () => {
   it('should exit with error when --experimental-client is invoked without an interactive TTY', async () => {
     let exitError: (Error & { code?: number; stderr?: string }) | undefined;
 
@@ -41,99 +46,54 @@ describe('MCP client', () => {
 
     expect(exitError?.stderr).not.toContain('The MCP client option requires an interactive terminal (TTY).');
   });
+
+  it('should sanitize client option when started programmatically', async () => {
+    const server = await start({
+      mode: 'programmatic',
+      experimentalClient: true
+    });
+
+    expect(server.isRunning()).toBe(true);
+    await server.stop();
+    expect(server.isRunning()).toBe(false);
+  });
 });
 
-/*
-describe('MCP client', () => {
-  let CLIENT: StdioTransportClient;
+describe('Interactive MCP client', () => {
+  it('should start interactive terminal client and respond to search query', async () => {
+    const child = spawn('node', [
+      '--input-type=module',
+      '-e',
+      `
+      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+      Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
+      process.argv = ['node', '${cliPath}', '--experimental-client'];
+      import('${cliPath}');
+    `
+    ]);
 
-  beforeAll(async () => {
-    CLIENT = await startServer({
-      args: ['--experimental-client']
-    });
-  });
+    let output = '';
 
-  afterAll(async () => {
-    if (CLIENT) {
-      await CLIENT.close();
-    }
-  });
+    const searchCompleted = new Promise<void>(resolve => {
+      child.stdout.on('data', data => {
+        const str = data.toString();
 
-  it('should only expose searchPatternFly tool', async () => {
-    const response = await CLIENT.send({
-      method: 'tools/list',
-      params: {}
-    });
-    const toolNames = (response?.result?.tools || []).map((tool: { name: string }) => tool.name);
+        output += str;
 
-    expect(toolNames).toEqual(['searchPatternFly']);
-  });
+        if (output.includes('PatternFly Search — enter query:')) {
+          child.stdin.write('button\n');
+        }
 
-  it('should return resource_link items for modal search', async () => {
-    const response = await CLIENT.send({
-      method: 'tools/call',
-      params: {
-        name: 'searchPatternFly',
-        arguments: { query: 'modal' }
-      }
+        if (output.includes('[Collection] button')) {
+          child.kill('SIGINT');
+          resolve();
+        }
+      });
     });
 
-    const resources = (response?.result?.content || []).filter(
-      (item: { type: string }) => item.type === 'resource_link'
-    );
+    await searchCompleted;
 
-    expect(resources.length).toBeGreaterThan(0);
-
-    const link = resources.find(
-      (item: { uri: string; name: string }) =>
-        item.uri.startsWith('patternfly://') && !item.name.includes('Collection')
-    );
-
-    expect(link).toBeDefined();
-
-    const readResponse = await CLIENT.send({
-      method: 'resources/read',
-      params: { uri: link.uri }
-    });
-
-    expect(readResponse.result.contents[0].text).toBeDefined();
+    expect(output).toContain('PatternFly Search: "button"');
+    expect(output).toContain('[Collection] button');
   });
 });
-*/
-/*
-describe('pf-client headless CLI', () => {
-  it('should print JSON resource links for search --json', async () => {
-    const { stdout } = await execFileAsync(
-      process.execPath,
-      ['dist/cli.client.js', 'search', 'button', '--json'],
-      { cwd: process.cwd(), env: process.env }
-    );
-
-    const parsed = JSON.parse(stdout.trim()) as { uri: string; name: string }[];
-
-    expect(Array.isArray(parsed)).toBe(true);
-    expect(parsed.some(item => item.uri.startsWith('patternfly://'))).toBe(true);
-  });
-
-  it('should print markdown for read subcommand', async () => {
-    const { stdout: searchOut } = await execFileAsync(
-      process.execPath,
-      ['dist/cli.client.js', 'search', 'button', '--json'],
-      { cwd: process.cwd(), env: process.env }
-    );
-
-    const links = JSON.parse(searchOut.trim()) as { uri: string }[];
-    const uri = links.find(item => item.uri.startsWith('patternfly://docs/'))?.uri;
-
-    expect(uri).toBeDefined();
-
-    const { stdout: markdown } = await execFileAsync(
-      process.execPath,
-      ['dist/cli.client.js', 'read', uri as string],
-      { cwd: process.cwd(), env: process.env }
-    );
-
-    expect(markdown.length).toBeGreaterThan(20);
-  });
-});
-*/
