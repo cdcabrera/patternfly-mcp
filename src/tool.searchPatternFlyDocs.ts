@@ -158,7 +158,14 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
   };
 
   const getCollections: string[] = Object.keys(getPatternFlyCollection() || {});
-  const availableCollections = getCollections.length ? getCollections : ['patternfly-docs', 'patternfly-component-schemas', 'patternfly-api'];
+  const availableCollections = getCollections.length
+    ? getCollections
+    : [
+      'patternfly-docs',
+      'patternfly-component-schemas',
+      'patternfly-api',
+      'ai-handbook'
+    ];
 
   return [
     'searchPatternFlyDocs',
@@ -186,7 +193,7 @@ const searchPatternFlyDocsTool = (options = getOptions()): McpTool => {
     },
     callback,
     {
-      shouldRegister: opts => opts.contextManagement === false || opts.contextManagement === undefined
+      shouldRegister: opts => !opts.contextManagement && !opts.client
     }
   ];
 };
