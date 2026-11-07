@@ -83,11 +83,6 @@ interface ClientSettings {
 }
 
 /**
- * Maximum terminal display characters.
- */
-const MAX_TERMINAL_DISPLAY_CHARS = 512_000;
-
-/**
  * Determine whether a tool result content item is a "resource link".
  *
  * @param item - Tool result content item to inspect.
@@ -358,7 +353,6 @@ runClient.memo = memo(
 export {
   runClient,
   materializeResourceText,
-  MAX_TERMINAL_DISPLAY_CHARS,
   parseResourceLinks,
   type ClientInstance,
   type ClientOptions,

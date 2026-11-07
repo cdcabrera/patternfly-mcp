@@ -10,7 +10,12 @@ import {
   prepareReaderDisplay
 } from './client.helpers';
 import { createKeyReader, promptLine } from './client.input';
-import { type ClientInstance, type ResourceLinkItem, MAX_TERMINAL_DISPLAY_CHARS } from './client';
+import { type ClientInstance, type ResourceLinkItem } from './client';
+
+/**
+ * Maximum terminal display characters.
+ */
+const MAX_TERMINAL_DISPLAY_CHARS = 512_000;
 
 const AVAILABLE_COLLECTIONS = [
   'patternfly-docs',
@@ -600,6 +605,7 @@ const runInteractiveClient = async (
 
 export {
   AVAILABLE_COLLECTIONS,
+  MAX_TERMINAL_DISPLAY_CHARS,
   badgeForResult,
   buildCollectionTree,
   cycleCollectionFilter,
