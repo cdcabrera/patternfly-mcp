@@ -337,7 +337,8 @@ const createClient = async ({
  * @param [settings.collections] - Built-in collections to register.
  * @param [settings.enableSigint] - Indicates whether SIGINT signal handling is enabled.
  * @param [settings.allowProcessExit] - Determines if the process is allowed to exit explicitly, useful for testing.
- * @param settings.resources
+ * @param [settings.resources] - Built-in resources to register.
+ * @param [settings.mcpChannel] - Optional transport channel instance for in-process or custom communication.
  * @returns Server instance with `stop()`, `getStats()` `isRunning()`, and `onLog()` subscription.
  */
 const runServer = async (options: ServerOptions = getOptions(), settings: ServerSettings = {}): Promise<ServerInstance> => {

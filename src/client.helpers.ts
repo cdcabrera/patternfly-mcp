@@ -9,6 +9,8 @@ interface ClipboardCopyResult {
 
 /**
  * Best-effort detection of OCI/container runtimes (Docker, Podman, etc.).
+ *
+ * @returns True if running inside a container environment.
  */
 const isRunningInContainer = (): boolean => {
   if (existsSync('/.dockerenv')) {
@@ -29,6 +31,8 @@ const isRunningInContainer = (): boolean => {
  *
  * Uses lightweight OS/environment checks at startup (no clipboard probe write).
  * Override with `PF_CLIENT_CLIPBOARD=0` or `PF_CLIENT_CLIPBOARD=1`.
+ *
+ * @returns True if system clipboard can be used.
  */
 const isClipboardAvailable = (): boolean => {
   const override = process.env.PF_CLIENT_CLIPBOARD?.trim().toLowerCase();
@@ -100,6 +104,7 @@ const copyTextOsc52 = (text: string): void => {
  * Copy plain text to the system clipboard (pbcopy / wl-copy / xclip, then OSC-52).
  *
  * @param text - UTF-8 content to copy.
+ * @returns Result object with status flag and user feedback message.
  */
 const copyTextToClipboard = (text: string): ClipboardCopyResult => {
   if (process.platform === 'darwin') {

@@ -60,7 +60,7 @@ const resolveKeyToken = ({ str, key }: { str: string; key: readline.Key }): stri
  *
  * @returns {Object} An object with the following methods:
  * - `enable`: Activates the key reader, enabling keypress events to be captured.
- * - `disable`: Deactivates the key reader, stopping the capture of keypress events.
+ * - `disable`: Deactivates raw mode and pauses capturing keypress events.
  * - `dispose`: Cleans up and removes the event listener for keypress handling.
  * - `readKey`: Waits for the next keypress event and resolves with the captured key string.
  */
@@ -91,6 +91,8 @@ const createKeyReader = () => {
 
   /**
    * Enable the key reader.
+   *
+   * Sets stdin to raw mode, resumes stream flow, and enables event dispatch.
    */
   const enable = (): void => {
     if (!input.isTTY) {
@@ -104,6 +106,8 @@ const createKeyReader = () => {
 
   /**
    * Disable the key reader.
+   *
+   * Resets listening state and restores terminal raw mode to false.
    */
   const disable = (): void => {
     listening = false;
@@ -113,6 +117,8 @@ const createKeyReader = () => {
 
   /**
    * Dispose of the key reader.
+   *
+   * Cleans up listeners and pauses stdin.
    */
   const dispose = (): void => {
     disable();
@@ -122,6 +128,8 @@ const createKeyReader = () => {
 
   /**
    * Prompt for a keypress.
+   *
+   * @returns Promise resolving to the next recognized key token string.
    */
   const readKey = (): Promise<string> =>
     new Promise(resolve => {
@@ -137,6 +145,7 @@ const createKeyReader = () => {
  * @param params - Parameters
  * @param params.label - Prompt label shown to the user.
  * @param params.current - Optional default query text.
+ * @returns User-submitted query string or current default if submitted empty.
  */
 const promptLine = async ({ label, current = '' }: { label: string; current?: string | undefined }): Promise<string> => {
   const rl = createPromiseInterface({ input, output, terminal: true });

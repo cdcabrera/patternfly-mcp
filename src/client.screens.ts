@@ -48,10 +48,26 @@ interface SearchScreenState {
 
 type ReaderAction = 'back' | 'quit';
 
+/**
+ * Resolve current terminal column width with an 80-column fallback.
+ *
+ * @returns Terminal width in columns.
+ */
 const terminalWidth = (): number => output.columns ?? 80;
 
+/**
+ * Calculate available viewport height for reader body text.
+ *
+ * @returns Usable lines for content scrolling.
+ */
 const readerBodyRows = (): number => Math.max(8, (output.rows ?? 24) - 10);
 
+/**
+ * Determine badge tag for a search result item.
+ *
+ * @param item - Search result resource item.
+ * @returns Formatted badge label string.
+ */
 const badgeForResult = (item: ResourceLinkItem): string => {
   if (item.uri.includes('/records/') || item.uri.startsWith('patternfly://records/')) {
     return '[Record]';
@@ -64,8 +80,21 @@ const badgeForResult = (item: ResourceLinkItem): string => {
   return '[Record]';
 };
 
+/**
+ * Check if a string is a 32- or 40-character hexadecimal hash.
+ *
+ * @param val - String value to inspect.
+ * @returns True if value is an MD5/SHA hash string.
+ */
 const isHexHash = (val: string): boolean => /^[a-f0-9]{32,40}$/i.test(val);
 
+/**
+ * Derive a user-friendly group title, omitting raw hash IDs.
+ *
+ * @param rawName - Raw collection or group name.
+ * @param records - Collection item records.
+ * @returns Sanitized display name.
+ */
 const deriveCleanGroupName = (rawName: string, records: ResourceLinkItem[]): string => {
   if (rawName && !isHexHash(rawName)) {
     return rawName;
@@ -82,6 +111,13 @@ const deriveCleanGroupName = (rawName: string, records: ResourceLinkItem[]): str
   return clean || 'Component';
 };
 
+/**
+ * Build collapsible collection groups from a flat search result list.
+ *
+ * @param results - Flat array of search result items.
+ * @param [previousExpanded] - Set of group IDs that were previously expanded.
+ * @returns Structured collection groups.
+ */
 const buildCollectionTree = (
   results: ResourceLinkItem[],
   previousExpanded = new Set<string>()
@@ -134,6 +170,12 @@ const buildCollectionTree = (
   return activeGroups;
 };
 
+/**
+ * Flatten hierarchical collection groups into a linear list of tree items.
+ *
+ * @param groups - Array of collection groups.
+ * @returns Flat list of collection and record items for terminal display.
+ */
 const flattenTree = (groups: CollectionGroup[]): TreeItem[] => {
   const flat: TreeItem[] = [];
 
@@ -162,6 +204,12 @@ const flattenTree = (groups: CollectionGroup[]): TreeItem[] => {
   return flat;
 };
 
+/**
+ * Cycle through available collection filters on Tab keystroke.
+ *
+ * @param [current] - Current active collection filter name.
+ * @returns Next collection filter or undefined if reset to all.
+ */
 const cycleCollectionFilter = (current?: string): string | undefined => {
   if (!current) {
     return AVAILABLE_COLLECTIONS[0];
@@ -175,6 +223,13 @@ const cycleCollectionFilter = (current?: string): string | undefined => {
   return AVAILABLE_COLLECTIONS[idx + 1];
 };
 
+/**
+ * Hard-wrap lines of text to fit within terminal width.
+ *
+ * @param text - Text content to wrap.
+ * @param width - Maximum line character width.
+ * @returns Array of wrapped lines.
+ */
 const wrapLines = (text: string, width: number): string[] => {
   const lines: string[] = [];
 
@@ -200,6 +255,11 @@ const wrapLines = (text: string, width: number): string[] => {
   return lines;
 };
 
+/**
+ * Render search screen header, filter status, and tree results.
+ *
+ * @param state - Current search screen state.
+ */
 const renderSearchScreen = (state: SearchScreenState): void => {
   clearTerminal();
   const width = terminalWidth();
@@ -235,6 +295,16 @@ const renderSearchScreen = (state: SearchScreenState): void => {
   output.write('\n  [<↑/↓> navigate · <Enter> select · <Tab> filter · </> search · <q> quit]\n');
 };
 
+/**
+ * Render resource viewer screen with bordered box and pagination status.
+ *
+ * @param uri - Resource URI displayed in title bar.
+ * @param titleLine - Title line extracted from markdown.
+ * @param bodyLines - Wrapped document body lines.
+ * @param scrollOffset - Current line offset in document.
+ * @param [statusNote] - Transient note (e.g. copy or save feedback).
+ * @param [clipboardEnabled] - Whether clipboard action is enabled in footer.
+ */
 const renderReaderScreen = (
   uri: string,
   titleLine: string,
@@ -273,6 +343,13 @@ const renderReaderScreen = (
   output.write(`  [<↑/↓/PgUp/PgDn/Space> scroll · <Enter/b> back · ${copyHint}<r> save .md · <q> quit]\n`);
 };
 
+/**
+ * Truncate large document text to avoid terminal memory and rendering limits.
+ *
+ * @param fullText - Full document body text.
+ * @param clipboardEnabled - Whether clipboard copy is available.
+ * @returns Display text truncated if beyond threshold.
+ */
 const displayTextForTerminal = (fullText: string, clipboardEnabled: boolean): string => {
   if (fullText.length <= MAX_TERMINAL_DISPLAY_CHARS) {
     return fullText;
@@ -284,6 +361,12 @@ const displayTextForTerminal = (fullText: string, clipboardEnabled: boolean): st
   return `${fullText.slice(0, MAX_TERMINAL_DISPLAY_CHARS)}\n\n… [${omitted} characters hidden in view — ${exportHint}]`;
 };
 
+/**
+ * Generate sanitized local file name for saving a resource.
+ *
+ * @param uri - Resource URI.
+ * @returns Sanitized markdown file name.
+ */
 const markdownFileNameForUri = (uri: string): string => {
   const tail = uri.split('/').pop()?.split('?')[0] ?? 'resource';
   const safe = tail.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'resource';
@@ -291,6 +374,13 @@ const markdownFileNameForUri = (uri: string): string => {
   return `patternfly-${safe.slice(0, 64)}.md`;
 };
 
+/**
+ * Temporarily exit alternate screen to prompt for search query input.
+ *
+ * @param keys - Key reader instance to disable during line input.
+ * @param current - Current query string.
+ * @returns New query input string.
+ */
 const promptForSearchQuery = async (keys: ReturnType<typeof createKeyReader>, current: string): Promise<string> => {
   leaveAlternateScreen();
   keys.disable();
@@ -330,7 +420,7 @@ const runSearchScreen = async (
     );
   }
 
-  for (;;) {
+  while (true) {
     renderSearchScreen(state);
     const key = await keys.readKey();
 
@@ -478,7 +568,7 @@ const runReaderScreen = async (
 
   const maxScroll = (): number => Math.max(0, bodyLines.length - readerBodyRows());
 
-  for (;;) {
+  while (true) {
     renderReaderScreen(uri, titleLine, bodyLines, scrollOffset, statusNote, clipboardEnabled);
     statusNote = '';
     const key = await keys.readKey();
@@ -583,7 +673,7 @@ const runInteractiveClient = async (
   };
 
   try {
-    for (;;) {
+    while (true) {
       const searchOutcome = await runSearchScreen(session, searchState, keys);
 
       if (searchOutcome.action === 'quit') {
