@@ -2,7 +2,6 @@ import {
   McpClient,
   createMcpChannel,
   type McpClientCallToolResult,
-  type McpClientCallResourceResult,
   type McpClientCallResourceResultContent,
   type McpChannel,
   type McpServer
