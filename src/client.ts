@@ -3,6 +3,7 @@ import {
   createMcpChannel,
   type McpClientCallToolResult,
   type McpClientCallResourceResult,
+  type McpClientCallResourceResultContent,
   type McpChannel,
   type McpServer
 } from './mcpSdk';
@@ -154,7 +155,7 @@ const parseResourceLinks = (result: McpClientCallToolResult): ResourceLinkItem[]
  * @param contents - Array of text or binary blob content returned by MCP resource read.
  * @returns Materialized text representation of the resource.
  */
-const materializeClientResourceText = (contents: McpClientCallResourceResult['contents']): string => {
+const renderClientResourceText = (contents: McpClientCallResourceResultContent): string => {
   const parts: string[] = [];
 
   for (const content of contents) {
@@ -266,7 +267,7 @@ const runClient = async (
   const readResource = async (uri: string): Promise<ClientResourceReadResult> => {
     try {
       const result = await client.readResource({ uri });
-      const text = materializeClientResourceText(result.contents ?? []);
+      const text = renderClientResourceText(result.contents ?? []);
 
       return { text, truncated: false };
     } catch (error) {
@@ -352,13 +353,12 @@ runClient.memo = memo(
 );
 
 export {
+  renderClientResourceText,
   runClient,
-  materializeClientResourceText,
   parseResourceLinks,
   type ClientInstance,
   type ClientOptions,
   type ClientSettings,
   type ResourceLinkItem,
-  type ClientResourceReadResult,
-  type ClientResourceReadResult as ResourceReadResult
+  type ClientResourceReadResult
 };

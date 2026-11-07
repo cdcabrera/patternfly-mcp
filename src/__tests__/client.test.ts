@@ -1,5 +1,5 @@
 import {
-  materializeClientResourceText,
+  renderClientResourceText,
   parseResourceLinks,
   runClient
 } from '../client';
@@ -33,16 +33,16 @@ jest.mock('../mcpSdk', () => {
   };
 });
 
-describe('materializeClientResourceText', () => {
+describe('renderClientResourceText', () => {
   it('joins multiple text contents', () => {
-    expect(materializeClientResourceText([
+    expect(renderClientResourceText([
       { uri: 'a', mimeType: 'text/markdown', text: 'Part one' },
       { uri: 'b', mimeType: 'text/markdown', text: 'Part two' }
     ])).toBe('Part one\n\n---\n\nPart two');
   });
 
   it('returns guidance when no text is present', () => {
-    expect(materializeClientResourceText([])).toContain('No readable text');
+    expect(renderClientResourceText([])).toContain('No readable text');
   });
 });
 

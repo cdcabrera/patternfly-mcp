@@ -208,9 +208,9 @@ type McpClientCallResourceResult = Awaited<ReturnType<Client['readResource']>>;
 /**
  * Content item from an MCP client resource read operation.
  *
- * @derived See {@link Client}.
+ * @derived See {@link McpClientCallResourceResult}.
  */
-type McpClientResourceContent = McpClientCallResourceResult['contents'][number];
+type McpClientCallResourceResultContent = McpClientCallResourceResult['contents'];
 
 /**
  * An MCP client on top of a pluggable transport
@@ -351,7 +351,7 @@ export {
   McpClient,
   type McpClientCallToolResult,
   type McpClientCallResourceResult,
-  type McpClientResourceContent,
+  type McpClientCallResourceResultContent,
   type McpTool,
   type McpToolCreator,
   type McpTransport,
