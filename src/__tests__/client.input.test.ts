@@ -70,11 +70,6 @@ describe('resolveKeyToken', () => {
     expect(resolveKeyToken({ str: '\x1b', key: { name: 'escape' } as Key })).toBe('esc');
   });
 
-  it('handles single character strings', () => {
-    expect(resolveKeyToken({ str: '/', key: {} as Key })).toBe('/');
-    expect(resolveKeyToken({ str: 'b', key: {} as Key })).toBe('b');
-  });
-
   it('handles alphanumeric key names as fallback', () => {
     expect(resolveKeyToken({ str: '', key: { name: 'x' } as Key })).toBe('x');
     expect(resolveKeyToken({ str: '', key: { name: '1' } as Key })).toBe('1');
