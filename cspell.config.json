@@ -3,6 +3,7 @@
   "words": [
     "amet",
     "apikey",
+    "bugbot",
     "codemods",
     "containerfile",
     "deprioritized",
@@ -37,7 +38,6 @@
     "unsub",
     "untampered",
     "userns",
-    "xclip",
-    "bugbot"
+    "xclip"
   ]
 }
