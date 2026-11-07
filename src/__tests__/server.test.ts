@@ -309,6 +309,7 @@ describe('runServer', () => {
     });
 
     expect(instance.isRunning()).toBe(true);
+    expect(mockServer.connect).not.toHaveBeenCalled();
     expect(clientModule.runClient.memo).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'test-auto-client', client: true }),
       expect.objectContaining({ server: mockServer })

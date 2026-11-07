@@ -500,7 +500,7 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
       );
     } else if (options.isHttp) {
       httpHandle = await startHttpTransport(server, options);
-    } else {
+    } else if (!options.client) {
       transport = new StdioServerTransport();
 
       await timeoutFunction(
@@ -511,12 +511,12 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
       );
     }
 
-    if (!httpHandle && !transport) {
+    if (!httpHandle && !transport && !options.client) {
       throw new Error('No transport available');
     }
 
     running = true;
-    log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : 'stdio'} transport`);
+    log.info(`${options.name} server running on ${options.isHttp ? 'HTTP' : options.client ? 'in-process' : 'stdio'} transport`);
     statsTracker.startStats(httpHandle);
   } catch (error) {
     log.error(`Error creating ${options.name} server:`, error);
