@@ -12,6 +12,7 @@ import { getOptions, getSessionOptions } from './options.context';
 import { type GlobalOptions } from './options';
 import { runInteractiveClient } from './client.screens';
 import { getServerCollectionsRegistry } from './collections';
+import { log } from './logger';
 
 /**
  * A linkable resource item.
@@ -331,6 +332,8 @@ const runClient = async (
   const startClient = async (client: ClientInstance): Promise<void> => {
     try {
       await runInteractiveClient(client);
+    } catch (error) {
+      log.error(`Error running interactive client:`, error);
     } finally {
       await client.close();
     }
@@ -344,6 +347,8 @@ const runClient = async (
     isConnected
   };
 
+  log.info('Interactive client starting');
+
   /**
    * Provide sync behavior and allow immediate connection.
    */
@@ -351,6 +356,9 @@ const runClient = async (
 
   /**
    * Start and run the interactive client session.
+   *
+   * @note Avoid/limit firing log events right after `startClient` they can
+   * interfere in the terminal display.
    */
   void startClient(instance);
 
@@ -376,8 +384,12 @@ runClient.memo = memo(
           try {
             await session?.close();
           } catch (error) {
-            console.error(`Error closing memoized client session on rollout: ${error}`);
+            // Avoid engaging the contextual log channel on rollout.
+            console.error(`Error closing interactive client: ${error}`);
           }
+        } else {
+          // Avoid engaging the contextual log channel on rollout.
+          console.error(`Error cleaning up interactive client: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
         }
       }
     }

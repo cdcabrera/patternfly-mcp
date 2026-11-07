@@ -307,13 +307,11 @@ const createClient = async ({
   allowProcessExit
 }: { running: boolean, server: McpServer, allowProcessExit: boolean }, options = getOptions()): Promise<ClientInstance | null> => {
   if (!running || !server) {
-    throw new Error('Cannot create client on a stopped or uninitialized MCP server instance.');
+    throw new Error('Cannot create interactive client on a stopped or uninitialized MCP server instance.');
   }
 
   if (options.client) {
     const { runClient } = await import('./client');
-
-    log.info('Starting embedded MCP client');
 
     return await runClient.memo(options, {
       server,
