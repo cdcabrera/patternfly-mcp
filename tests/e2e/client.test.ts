@@ -74,21 +74,26 @@ describe('Interactive MCP client', () => {
 
     let output = '';
 
-    const searchCompleted = new Promise<void>(resolve => {
+    const searchCompleted = new Promise<void>((resolve, reject) => {
+      let querySubmitted = false;
+
       child.stdout.on('data', data => {
         const str = data.toString();
 
         output += str;
 
-        if (output.includes('PatternFly Search — enter query:')) {
+        if (!querySubmitted && (output.includes('Search:') || output.includes('Enter search term'))) {
+          querySubmitted = true;
           child.stdin.write('button\n');
         }
 
         if (output.includes('[Collection] button')) {
           child.kill('SIGINT');
-          resolve();
         }
       });
+
+      child.on('close', () => resolve());
+      child.on('error', reject);
     });
 
     await searchCompleted;
