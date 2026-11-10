@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import matter from 'gray-matter';
+import { parseFrontMatter } from '../../src/resource.helpers';
 
 const AI_HELPERS_DEFAULT_OWNER = 'rh-uxd';
 const AI_HELPERS_DEFAULT_REPO = 'ai-helpers';
@@ -380,23 +380,16 @@ const parseSkillFrontmatter = (markdown: string): AiHelpersSkillFrontmatter => {
     throw new Error('Skill markdown must be a UTF-8 string without binary content.');
   }
 
-  let parsed: ReturnType<typeof matter>;
+  let frontMatter: Record<string, string>;
 
   try {
-    parsed = matter(markdown);
+    ({ frontMatter } = parseFrontMatter(markdown));
   } catch {
     throw new Error('Skill frontmatter is not valid YAML.');
   }
 
-  const data = parsed.data as Record<string, unknown>;
-  const name = typeof data.name === 'string' ? data.name.trim() : '';
-  let description = '';
-
-  if (typeof data.description === 'string') {
-    description = data.description.trim();
-  } else if (data.description != null) {
-    description = String(data.description).trim();
-  }
+  const name = frontMatter.name?.trim() || '';
+  const description = frontMatter.description?.trim() || '';
 
   if (!name) {
     throw new Error('Skill frontmatter requires a non-empty name.');
@@ -407,6 +400,14 @@ const parseSkillFrontmatter = (markdown: string): AiHelpersSkillFrontmatter => {
   }
 
   return { name, description };
+};
+
+/**
+ * @param sourcePath - Admitted path from marketplace discovery
+ * @param reason - Validation failure summary
+ */
+const throwAdmittedCandidateError = (sourcePath: string, reason: string): never => {
+  throw new Error(`Admitted ai-helpers candidate "${sourcePath}" failed validation: ${reason}`);
 };
 
 /**
@@ -556,41 +557,31 @@ const crawlAiHelpersCatalog = async (
   const rejections: AiHelpersPathRejection[] = [];
 
   for (const [sourcePath, plugin] of [...skillPaths.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-    const family = classifySkillFamily(sourcePath);
+    const family = classifySkillFamily(sourcePath) || throwAdmittedCandidateError(sourcePath, 'unclassified skill family');
 
-    if (!family) {
-      rejections.push({ path: sourcePath, reason: 'unclassified skill family' });
-      continue;
-    }
-
-    let blob: AiHelpersBlobReadResult;
-
-    try {
-      blob = await reader.readBlob(commitSha, sourcePath);
-    } catch (error) {
-      rejections.push({
-        path: sourcePath,
-        reason: error instanceof Error ? error.message : 'blob read failed'
-      });
-      continue;
-    }
+    const blob = await reader.readBlob(commitSha, sourcePath).catch((error: unknown) =>
+      throwAdmittedCandidateError(
+        sourcePath,
+        error instanceof Error ? error.message : 'blob read failed'
+      ));
 
     if (blob.size > MAX_MARKDOWN_BYTES || blob.content.includes('\0')) {
-      rejections.push({ path: sourcePath, reason: blob.content.includes('\0') ? 'binary content' : 'oversized blob' });
-      continue;
+      throwAdmittedCandidateError(
+        sourcePath,
+        blob.content.includes('\0') ? 'binary content' : 'oversized blob'
+      );
     }
 
-    let frontmatter: AiHelpersSkillFrontmatter;
-
-    try {
-      frontmatter = parseSkillFrontmatter(blob.content);
-    } catch (error) {
-      rejections.push({
-        path: sourcePath,
-        reason: error instanceof Error ? error.message : 'invalid skill frontmatter'
-      });
-      continue;
-    }
+    const frontmatter = (() => {
+      try {
+        return parseSkillFrontmatter(blob.content);
+      } catch (error) {
+        return throwAdmittedCandidateError(
+          sourcePath,
+          error instanceof Error ? error.message : 'invalid skill frontmatter'
+        );
+      }
+    })();
 
     const record: AiHelpersCatalogRecord = {
       displayName: frontmatter.name,
@@ -612,29 +603,24 @@ const crawlAiHelpersCatalog = async (
     const duplicate = registerSlug(record, slugCounts);
 
     if (duplicate) {
-      rejections.push({ path: sourcePath, reason: duplicate });
-      continue;
+      throwAdmittedCandidateError(sourcePath, duplicate);
     }
 
     records.push(record);
   }
 
   for (const sourcePath of overviewPaths) {
-    let blob: AiHelpersBlobReadResult;
-
-    try {
-      blob = await reader.readBlob(commitSha, sourcePath);
-    } catch (error) {
-      rejections.push({
-        path: sourcePath,
-        reason: error instanceof Error ? error.message : 'blob read failed'
-      });
-      continue;
-    }
+    const blob = await reader.readBlob(commitSha, sourcePath).catch((error: unknown) =>
+      throwAdmittedCandidateError(
+        sourcePath,
+        error instanceof Error ? error.message : 'blob read failed'
+      ));
 
     if (blob.size > MAX_MARKDOWN_BYTES || blob.content.includes('\0')) {
-      rejections.push({ path: sourcePath, reason: blob.content.includes('\0') ? 'binary content' : 'oversized blob' });
-      continue;
+      throwAdmittedCandidateError(
+        sourcePath,
+        blob.content.includes('\0') ? 'binary content' : 'oversized blob'
+      );
     }
 
     const displayName = sourcePath.replace(/\.md$/i, '');
@@ -658,8 +644,7 @@ const crawlAiHelpersCatalog = async (
     const duplicate = registerSlug(record, slugCounts);
 
     if (duplicate) {
-      rejections.push({ path: sourcePath, reason: duplicate });
-      continue;
+      throwAdmittedCandidateError(sourcePath, duplicate);
     }
 
     records.push(record);
@@ -692,10 +677,8 @@ const crawlAiHelpersCatalog = async (
 
   records.sort((a, b) => a.pathSlug.localeCompare(b.pathSlug) || a.sourcePath.localeCompare(b.sourcePath));
 
-  if (rejections.length > 0 && records.length === 0) {
-    throw new Error(
-      `ai-helpers crawl produced no catalog records (${rejections.length} rejected candidates).`
-    );
+  if (records.length === 0) {
+    throw new Error('ai-helpers crawl produced no catalog records.');
   }
 
   return {

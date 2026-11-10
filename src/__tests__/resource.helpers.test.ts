@@ -14,6 +14,7 @@ import {
   isShellLike,
   isXmlLike,
   normalizeEnumeratedCollectionVersion,
+  parseFrontMatter,
   stringToCase,
   paramCompletion
 } from '../resource.helpers';
@@ -914,5 +915,96 @@ describe('paramCompletion', () => {
     expect(MockFilter).toHaveBeenCalledWith(
       expect.objectContaining({ version: 'v6' })
     );
+  });
+});
+
+describe('parseFrontMatter', () => {
+  it('should return empty frontMatter if none exists', () => {
+    const content = '# No Frontmatter';
+    const result = parseFrontMatter(content);
+
+    expect(result.frontMatter).toEqual({});
+    expect(result.content).toBe(content);
+  });
+
+  it('should parse simple YAML frontmatter', () => {
+    const content = '---\ntitle: My Page\ncategory: component\n---\n# Content';
+    const result = parseFrontMatter(content);
+
+    expect(result.frontMatter).toEqual({
+      title: 'My Page',
+      category: 'component'
+    });
+    expect(result.content).toBe('# Content');
+  });
+
+  it('should handle different line endings', () => {
+    const content = '---\r\ntitle: Windows Style\r\n---\r\n# Content';
+    const result = parseFrontMatter(content);
+
+    expect(result.frontMatter).toEqual({
+      title: 'Windows Style'
+    });
+    expect(result.content).toBe('# Content');
+  });
+
+  it('should handle empty or malformed lines in frontmatter', () => {
+    const content = '---\ntitle: Valid\nInvalidLine\n: NoKey\n---\n# Content';
+    const result = parseFrontMatter(content);
+
+    expect(result.frontMatter).toEqual({
+      title: 'Valid'
+    });
+    expect(result.content).toBe('# Content');
+  });
+
+  it('should parse quoted scalar and folded block descriptions', () => {
+    const quoted = `---
+name: skill
+description: "Quoted description for a skill."
+---
+# Body`;
+    const folded = `---
+name: folded
+description: >
+  Folded YAML description
+  spanning multiple physical lines.
+---
+# Body`;
+
+    expect(parseFrontMatter(quoted).frontMatter).toEqual({
+      name: 'skill',
+      description: 'Quoted description for a skill.'
+    });
+    expect(parseFrontMatter(folded).frontMatter.description).toContain('Folded YAML description');
+    expect(parseFrontMatter(folded).frontMatter.description).toContain('spanning multiple physical lines');
+  });
+
+  it('should parse literal block descriptions and chomping indicators', () => {
+    const literal = `---
+name: literal
+description: |
+  Literal block description
+  keeps line breaks.
+---
+# Body`;
+    const clipped = `---
+name: clipped
+description: |-
+  Line one
+  Line two
+
+---
+# Body`;
+
+    expect(parseFrontMatter(literal).frontMatter.description).toContain('Literal block description');
+    expect(parseFrontMatter(literal).frontMatter.description).toContain('keeps line breaks.');
+    expect(parseFrontMatter(clipped).frontMatter.description).toBe('Line one\nLine two');
+  });
+
+  it('should reject nested mappings, flow collections, and aliases', () => {
+    expect(() => parseFrontMatter('---\nmeta:\n  nested: value\n---\n')).toThrow(/nested YAML mapping/);
+    expect(() => parseFrontMatter('---\nname: [broken\n---\n')).toThrow(/Unsupported YAML/);
+    expect(() => parseFrontMatter('---\nalias: *ref\n---\n')).toThrow(/Unsupported YAML/);
   });
 });

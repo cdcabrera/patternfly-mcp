@@ -14,6 +14,295 @@ const DEFAULT_STRING_SPLIT_REGEX = /[\s\-_.:/]+|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z]
  */
 const DEFAULT_ACRONYMS = ['ai', 'css', 'html', 'mcp', 'cli', 'uxd', 'ui', 'api', 'faq', 'faqs', 'aria', 'rtl'];
 
+const FRONT_MATTER_BOUNDARY = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+
+type FrontMatterBlockChomp = 'clip' | 'strip' | 'keep';
+
+/**
+ * @param line - Front matter map entry with a leading colon and no key name
+ * @returns True when the line is a known malformed pattern from historic parsing
+ */
+const isIgnorableMalformedFrontMatterLine = (line: string): boolean => {
+  const trimmed = line.trim();
+
+  return trimmed === '' || trimmed.startsWith(':') || (!trimmed.includes(':') && trimmed.length > 0);
+};
+
+/**
+ * @param rawValue - Scalar token after a front matter key separator
+ */
+const assertSupportedScalarToken = (rawValue: string): void => {
+  const trimmed = rawValue.trim();
+
+  if (
+    trimmed.startsWith('{') ||
+    trimmed.startsWith('[') ||
+    trimmed.startsWith('&') ||
+    trimmed.startsWith('*') ||
+    trimmed.startsWith('!')
+  ) {
+    throw new Error('Unsupported YAML front matter structure.');
+  }
+};
+
+/**
+ * @param rawValue - Quoted or plain YAML scalar
+ * @returns Unquoted scalar string
+ */
+const parseInlineFrontMatterScalar = (rawValue: string): string => {
+  const trimmed = rawValue.trim();
+
+  if (!trimmed) {
+    return '';
+  }
+
+  assertSupportedScalarToken(trimmed);
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    const quote = trimmed.charAt(0);
+
+    if (trimmed.length === 1) {
+      throw new Error('Unsupported YAML front matter structure.');
+    }
+
+    const inner = trimmed.slice(1, -1);
+
+    return quote === '"'
+      ? inner.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+      : inner.replace(/''/g, "'");
+  }
+
+  return trimmed;
+};
+
+/**
+ * @param indicator - Block indicator token (for example `>` or `|-`)
+ */
+const parseFrontMatterBlockIndicator = (
+  indicator: string
+): { style: 'folded' | 'literal'; chomp: FrontMatterBlockChomp } => {
+  const trimmed = indicator.trim();
+
+  if (trimmed.startsWith('>')) {
+    const chomp: FrontMatterBlockChomp = trimmed.endsWith('+') ? 'keep' : trimmed.endsWith('-') ? 'clip' : 'strip';
+
+    return { style: 'folded', chomp };
+  }
+
+  if (trimmed.startsWith('|')) {
+    const chomp: FrontMatterBlockChomp = trimmed.endsWith('+') ? 'keep' : trimmed.endsWith('-') ? 'clip' : 'strip';
+
+    return { style: 'literal', chomp };
+  }
+
+  throw new Error('Unsupported YAML front matter structure.');
+};
+
+/**
+ * @param blockLines - Indented content lines belonging to a block scalar
+ * @returns Content lines with their common indent removed
+ */
+const stripFrontMatterBlockIndent = (blockLines: string[]): string[] => {
+  const nonEmpty = blockLines.filter(line => line.trim() !== '');
+  const minIndent = nonEmpty.length
+    ? Math.min(...nonEmpty.map(line => line.match(/^\s*/)?.[0]?.length || 0))
+    : 0;
+
+  return blockLines.map(line => (line.trim() === '' ? '' : line.slice(minIndent)));
+};
+
+/**
+ * @param text - Folded block scalar content
+ * @param chomp - YAML chomping indicator
+ */
+const applyFrontMatterChomp = (text: string, chomp: FrontMatterBlockChomp): string => {
+  if (chomp === 'keep') {
+    return text;
+  }
+
+  if (chomp === 'clip') {
+    return text.replace(/\n+$/, '');
+  }
+
+  const trimmed = text.replace(/\n+$/, '');
+
+  return trimmed.length ? `${trimmed}\n` : '';
+};
+
+/**
+ * @param blockLines - Indented lines collected for a folded scalar
+ * @param chomp - YAML chomping indicator
+ */
+const foldFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockChomp): string => {
+  const stripped = stripFrontMatterBlockIndent(blockLines);
+  const parts: string[] = [];
+  let paragraph: string[] = [];
+
+  const flushParagraph = () => {
+    if (paragraph.length) {
+      parts.push(paragraph.join(' '));
+      paragraph = [];
+    }
+  };
+
+  for (const line of stripped) {
+    if (line.trim() === '') {
+      flushParagraph();
+      parts.push('');
+    } else {
+      paragraph.push(line.trim());
+    }
+  }
+
+  flushParagraph();
+
+  let folded = '';
+
+  for (const part of parts) {
+    if (part === '') {
+      folded = folded.replace(/[ \t]+$/, '');
+      folded += '\n';
+    } else if (folded.endsWith('\n') || !folded) {
+      folded += part;
+    } else {
+      folded += ` ${part}`;
+    }
+  }
+
+  return applyFrontMatterChomp(folded, chomp).trim();
+};
+
+/**
+ * @param blockLines - Indented lines collected for a literal scalar
+ * @param chomp - YAML chomping indicator
+ */
+const literalFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockChomp): string => {
+  const stripped = stripFrontMatterBlockIndent(blockLines);
+  const joined = stripped.join('\n');
+  const chomped = applyFrontMatterChomp(joined, chomp);
+
+  return chomp === 'keep' ? chomped : chomped.trimEnd();
+};
+
+/**
+ * @param lines - Raw front matter body split by line
+ * @param startIndex - Index immediately after the block indicator line
+ * @param style - Folded or literal block scalar
+ * @param chomp - YAML chomping indicator
+ */
+const readFrontMatterBlockScalar = (
+  lines: string[],
+  startIndex: number,
+  style: 'folded' | 'literal',
+  chomp: FrontMatterBlockChomp
+): { value: string; nextIndex: number } => {
+  const blockLines: string[] = [];
+  let i = startIndex;
+
+  while (i < lines.length) {
+    const line = lines[i] || '';
+
+    if (line.trim() === '') {
+      blockLines.push('');
+      i++;
+      continue;
+    }
+
+    if (/^[A-Za-z_][\w-]*\s*:/.test(line)) {
+      break;
+    }
+
+    if (/^\s+\S+:\s*/.test(line)) {
+      throw new Error('Unsupported nested YAML mapping in front matter.');
+    }
+
+    if (!/^\s/.test(line) && blockLines.length > 0) {
+      break;
+    }
+
+    blockLines.push(line);
+    i++;
+  }
+
+  const value = style === 'folded'
+    ? foldFrontMatterBlock(blockLines, chomp)
+    : literalFrontMatterBlock(blockLines, chomp);
+
+  return { value, nextIndex: i };
+};
+
+/**
+ * Parses supported YAML front matter from the beginning of markdown content.
+ *
+ * Supports top-level scalar keys, quoted scalars, and folded/literal block scalars
+ * used by the ai-helpers catalog. Rejects nested mappings, flow collections, aliases,
+ * tags, and other unsupported YAML constructs.
+ *
+ * @param content - Input text that may contain YAML front matter.
+ * @returns Parsed front matter values and the remaining markdown body.
+ */
+const parseFrontMatter = (content: string): { frontMatter: Record<string, string>; content: string } => {
+  const match = content.match(FRONT_MATTER_BOUNDARY);
+
+  if (!match) {
+    return { frontMatter: {}, content };
+  }
+
+  const strippedContent = content.slice(match[0].length);
+  const rawYaml = match[1] || '';
+  const lines = rawYaml.split(/\r?\n/);
+  const frontMatter: Record<string, string> = {};
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i] || '';
+
+    if (isIgnorableMalformedFrontMatterLine(line)) {
+      i++;
+      continue;
+    }
+
+    if (/^\s+\S+:\s*/.test(line)) {
+      throw new Error('Unsupported nested YAML mapping in front matter.');
+    }
+
+    const keyMatch = line.match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
+
+    if (!keyMatch || !keyMatch[1]) {
+      i++;
+      continue;
+    }
+
+    const key = keyMatch[1];
+    const rawValue = keyMatch[2] ?? '';
+
+    if (/^[>|]/.test(rawValue.trim())) {
+      const blockIndicator = parseFrontMatterBlockIndicator(rawValue.trim());
+      const { value, nextIndex } = readFrontMatterBlockScalar(
+        lines,
+        i + 1,
+        blockIndicator.style,
+        blockIndicator.chomp
+      );
+
+      frontMatter[key] = value;
+      i = nextIndex;
+      continue;
+    }
+
+    frontMatter[key] = parseInlineFrontMatterScalar(rawValue);
+    i++;
+  }
+
+  return {
+    frontMatter,
+    content: strippedContent
+  };
+};
+
 /**
  * Convert a string into a casing style.
  *
@@ -739,6 +1028,7 @@ export {
   isXmlLike,
   normalizeEnumeratedCollectionVersion,
   paramCompletion,
+  parseFrontMatter,
   stringToCase,
   DEFAULT_STRING_SPLIT_REGEX,
   DEFAULT_ACRONYMS

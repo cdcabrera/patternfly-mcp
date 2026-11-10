@@ -255,35 +255,21 @@ describe('crawlAiHelpersCatalog', () => {
     });
   });
 
-  it('rejects symlink, binary, oversize, and unapproved markdown paths', async () => {
+  it('ignores explicitly unpublished or blocked markdown paths when no admitted candidates fail', async () => {
     const marketplace = await readFixture('marketplace.json');
     const tree: AiHelpersGitTreeEntry[] = [
       makeTreeEntry(MARKETPLACE_JSON_PATH),
       makeTreeEntry('README.md'),
-      makeTreeEntry('plugins/patternfly/pf-react/skills/rejected-skill/SKILL.md'),
       makeTreeEntry('CLAUDE.md'),
-      makeTreeEntry('plugins/patternfly/pf-react/skills/binary-skill/SKILL.md'),
       makeTreeEntry('plugins/patternfly/pf-react/skills/symlink-skill/SKILL.md', {
         mode: '120000'
-      }),
-      makeTreeEntry('plugins/patternfly/pf-react/skills/oversize-skill/SKILL.md', {
-        size: 600_000
       }),
       makeTreeEntry('plugins/uxd-unlisted/skills/unapproved-sidecar/SKILL.md')
     ];
 
     const blobs = new Map<string, MockBlobDefinition>([
       [MARKETPLACE_JSON_PATH, { content: marketplace }],
-      ['README.md', { content: '# readme\n' }],
-      [
-        'plugins/patternfly/pf-react/skills/rejected-skill/SKILL.md',
-        { content: await readFixture('skills/missing-name.md') }
-      ],
-      ['plugins/patternfly/pf-react/skills/binary-skill/SKILL.md', { content: 'binary\0content' }],
-      [
-        'plugins/uxd-unlisted/skills/unapproved-sidecar/SKILL.md',
-        { content: '---\nname: sidecar\ndescription: nope\n---\n' }
-      ]
+      ['README.md', { content: '# readme\n' }]
     ]);
 
     const reader = new MockAiHelpersRepositoryReader({ blobs, tree });
@@ -291,6 +277,35 @@ describe('crawlAiHelpersCatalog', () => {
 
     expect(result.records).toHaveLength(1);
     expect(result.records[0]?.pathSlug).toBe('uxd-ai-helpers-readme');
+  });
+
+  it('fails the crawl when one admitted skill is valid and another admitted skill is invalid', async () => {
+    const marketplace = await readFixture('marketplace.json');
+    const tree: AiHelpersGitTreeEntry[] = [
+      makeTreeEntry(MARKETPLACE_JSON_PATH),
+      makeTreeEntry('README.md'),
+      makeTreeEntry('plugins/patternfly/pf-react/skills/pf-coding-standards/SKILL.md'),
+      makeTreeEntry('plugins/patternfly/pf-react/skills/rejected-skill/SKILL.md')
+    ];
+
+    const blobs = new Map<string, MockBlobDefinition>([
+      [MARKETPLACE_JSON_PATH, { content: marketplace }],
+      ['README.md', { content: '# readme\n' }],
+      [
+        'plugins/patternfly/pf-react/skills/pf-coding-standards/SKILL.md',
+        { content: await readFixture('skills/pf-standard.md') }
+      ],
+      [
+        'plugins/patternfly/pf-react/skills/rejected-skill/SKILL.md',
+        { content: await readFixture('skills/missing-name.md') }
+      ]
+    ]);
+
+    const reader = new MockAiHelpersRepositoryReader({ blobs, tree });
+
+    await expect(crawlAiHelpersCatalog(reader, { ref: 'main' })).rejects.toThrow(
+      /Admitted ai-helpers candidate "plugins\/patternfly\/pf-react\/skills\/rejected-skill\/SKILL.md" failed validation/
+    );
   });
 
   it('rejects duplicate path slugs across admitted records', async () => {
@@ -311,13 +326,11 @@ describe('crawlAiHelpersCatalog', () => {
     ]);
 
     const reader = new MockAiHelpersRepositoryReader({ blobs, tree });
-    const result = await crawlAiHelpersCatalog(reader, { ref: 'main' });
 
-    expect(result.records.filter(record => record.kind === 'skill')).toHaveLength(1);
-    expect(result.records.find(record => record.pathSlug === 'uxd-ai-helpers-readme')).toBeDefined();
+    await expect(crawlAiHelpersCatalog(reader, { ref: 'main' })).rejects.toThrow(/duplicate pathSlug/);
   });
 
-  it('returns overview-only results when every skill candidate is rejected', async () => {
+  it('fails when an admitted skill candidate is invalid even if an overview is available', async () => {
     const marketplace = await readFixture('marketplace.json');
     const tree: AiHelpersGitTreeEntry[] = [
       makeTreeEntry(MARKETPLACE_JSON_PATH),
@@ -332,10 +345,10 @@ describe('crawlAiHelpersCatalog', () => {
     ]);
 
     const reader = new MockAiHelpersRepositoryReader({ blobs, tree });
-    const result = await crawlAiHelpersCatalog(reader, { ref: 'main' });
 
-    expect(result.records).toHaveLength(1);
-    expect(result.records[0]?.kind).toBe('overview');
+    await expect(crawlAiHelpersCatalog(reader, { ref: 'main' })).rejects.toThrow(
+      /Admitted ai-helpers candidate "plugins\/patternfly\/pf-react\/skills\/bad-skill\/SKILL.md"/
+    );
   });
 
   it('surfaces reader failures and empty invalid crawls', async () => {
@@ -352,7 +365,9 @@ describe('crawlAiHelpersCatalog', () => {
       failReads: new Set(['plugins/patternfly/pf-react/skills/failing-skill/SKILL.md'])
     });
 
-    await expect(crawlAiHelpersCatalog(reader, { ref: 'main' })).rejects.toThrow(/no catalog records/);
+    await expect(crawlAiHelpersCatalog(reader, { ref: 'main' })).rejects.toThrow(
+      /Admitted ai-helpers candidate "plugins\/patternfly\/pf-react\/skills\/failing-skill\/SKILL.md"/
+    );
 
     await expect(
       crawlAiHelpersCatalog(
@@ -365,7 +380,7 @@ describe('crawlAiHelpersCatalog', () => {
         },
         { ref: 'main' }
       )
-    ).rejects.toThrow(/reader unavailable|no catalog records/);
+    ).rejects.toThrow(/reader unavailable/);
   });
 
   it('does not execute skill bodies and only reads repository blobs through the reader', async () => {
