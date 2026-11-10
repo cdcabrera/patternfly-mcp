@@ -1023,6 +1023,32 @@ description: >-
     expect(parseFrontMatter(foldedStrip).frontMatter.description).toBe('alpha beta');
   });
 
+  const buildKeepChompFrontMatter = (
+    indicator: string,
+    line: string,
+    trailingBlankLines: number
+  ): string => {
+    const trailingBlanks = '\n'.repeat(trailingBlankLines);
+
+    return `---\nname: x\ndescription: ${indicator}\n  ${line}${trailingBlanks}\n---\n# Body`;
+  };
+
+  it.each([
+    { indicator: '|+', line: 'one', trailingBlankLines: 0, expected: 'one\n' },
+    { indicator: '|+', line: 'one', trailingBlankLines: 1, expected: 'one\n\n' },
+    { indicator: '|+', line: 'one', trailingBlankLines: 2, expected: 'one\n\n\n' },
+    { indicator: '>+', line: 'alpha', trailingBlankLines: 0, expected: 'alpha\n' },
+    { indicator: '>+', line: 'alpha', trailingBlankLines: 1, expected: 'alpha\n\n' },
+    { indicator: '>+', line: 'alpha', trailingBlankLines: 2, expected: 'alpha\n\n\n' }
+  ])(
+    'should preserve implicit and trailing blank lines for keep chomp ($indicator, $trailingBlankLines trailing blank lines)',
+    ({ indicator, line, trailingBlankLines, expected }) => {
+      expect(parseFrontMatter(buildKeepChompFrontMatter(indicator, line, trailingBlankLines)).frontMatter.description).toBe(
+        expected
+      );
+    }
+  );
+
   it('should preserve colons and URLs inside block scalar content', () => {
     const literal = `---
 name: x

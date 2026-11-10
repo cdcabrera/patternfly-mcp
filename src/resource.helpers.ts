@@ -121,7 +121,7 @@ const stripFrontMatterBlockIndent = (blockLines: string[]): string[] => {
  */
 const applyFrontMatterChomp = (text: string, chomp: FrontMatterBlockChomp): string => {
   if (chomp === 'keep') {
-    return text;
+    return text.length ? `${text}\n` : '';
   }
 
   if (chomp === 'strip') {
@@ -176,36 +176,9 @@ const foldFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockChomp
   return applyFrontMatterChomp(folded, chomp);
 };
 
-/**
- * @param blockLines - Indented lines collected for a literal scalar
- * @param chomp - YAML chomping indicator
- */
-/**
- * @param lines - Block content lines with common indent removed
- * @returns Count of trailing empty lines preserved for chomping
- */
-const countTrailingEmptyBlockLines = (lines: string[]): number => {
-  let trailingEmptyLines = 0;
-
-  for (let lineIndex = lines.length - 1; lineIndex >= 0; lineIndex -= 1) {
-    if (lines[lineIndex] === '') {
-      trailingEmptyLines += 1;
-    } else {
-      break;
-    }
-  }
-
-  return trailingEmptyLines;
-};
-
 const literalFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockChomp): string => {
   const stripped = stripFrontMatterBlockIndent(blockLines);
-  let joined = stripped.join('\n');
-  const trailingEmptyLines = countTrailingEmptyBlockLines(stripped);
-
-  if (chomp === 'keep' && trailingEmptyLines > 0) {
-    joined += '\n'.repeat(trailingEmptyLines);
-  }
+  const joined = stripped.join('\n');
 
   return applyFrontMatterChomp(joined, chomp);
 };
