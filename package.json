@@ -38,6 +38,7 @@
     "build:collections": "npm run build:collections-api && npm run build:collections-docs && jest --selectProjects tooling:collections",
     "build:collections-api": "UPDATE_COLLECTIONS=true tsx ./tooling/collections/update.patternFlyApi.ts",
     "build:collections-docs": "UPDATE_COLLECTIONS=true tsx ./tooling/collections/update.patternFlyDocs.ts",
+    "build:collections-ai-helpers": "UPDATE_COLLECTIONS=true tsx ./tooling/collections/update.aiHelpers.ts",
     "container:build": "bash ./scripts/container.build.sh",
     "container:start": "bash ./scripts/container.run.sh",
     "container:test": "jest --selectProjects audit:container",
