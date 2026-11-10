@@ -69,8 +69,8 @@ describe('memo', () => {
           type,
           successValue,
           errorValue,
-          cacheKeys: cache.filter((_value: any, index: number) => index % 2 === 0).filter(Boolean),
-          cacheLength: cache.length
+          cacheKeys: [...cache.keys()].reverse(), // .filter(Boolean),
+          cacheLength: cache.size
         });
       }
 
