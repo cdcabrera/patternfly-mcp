@@ -235,7 +235,9 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             .resolve(func.call(null, ...args))
             .catch((error: unknown) => {
               // Remove the promise
-              cache.delete(key);
+              if (isCacheErrors === false) {
+                cache.delete(key);
+              }
 
               return Promise.reject(error);
             });
@@ -262,12 +264,13 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             const allCacheEntries: MemoCache<TReturn> = new Map(cache);
 
             const temp = Array.from(allCacheEntries.entries());
+            const remaining = allCacheEntries.size - cacheLimit;
             // Oldest cache entries
-            const removedCacheEntries = [...temp].slice(0, cacheLimit);
+            const removedCacheEntries = temp.slice(0, remaining);
 
             if (removedCacheEntries.length > 0) {
               // Newest cache entries
-              const remainingCacheEntries = [...temp].slice(cacheLimit);
+              const remainingCacheEntries = temp.slice(remaining);
 
               notifyCacheChange({
                 all: allCacheEntries,
