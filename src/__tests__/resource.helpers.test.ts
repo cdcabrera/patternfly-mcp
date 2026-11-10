@@ -981,25 +981,78 @@ description: >
   });
 
   it('should parse literal block descriptions and chomping indicators', () => {
-    const literal = `---
+    const literalClip = `---
 name: literal
 description: |
-  Literal block description
-  keeps line breaks.
+  one
 ---
 # Body`;
-    const clipped = `---
-name: clipped
+    const literalStrip = `---
+name: literal
 description: |-
-  Line one
-  Line two
+  one
+---
+# Body`;
+    const literalKeep = `---
+name: literal
+description: |+
+  one
+
+---
+# Body`;
+    const foldedClip = `---
+name: folded
+description: >
+  alpha
+  beta
+---
+# Body`;
+    const foldedStrip = `---
+name: folded
+description: >-
+  alpha
+  beta
 
 ---
 # Body`;
 
-    expect(parseFrontMatter(literal).frontMatter.description).toContain('Literal block description');
-    expect(parseFrontMatter(literal).frontMatter.description).toContain('keeps line breaks.');
-    expect(parseFrontMatter(clipped).frontMatter.description).toBe('Line one\nLine two');
+    expect(parseFrontMatter(literalClip).frontMatter.description).toBe('one\n');
+    expect(parseFrontMatter(literalStrip).frontMatter.description).toBe('one');
+    expect(parseFrontMatter(literalKeep).frontMatter.description).toBe('one\n\n');
+    expect(parseFrontMatter(foldedClip).frontMatter.description).toBe('alpha beta\n');
+    expect(parseFrontMatter(foldedStrip).frontMatter.description).toBe('alpha beta');
+  });
+
+  it('should preserve colons and URLs inside block scalar content', () => {
+    const literal = `---
+name: x
+description: |
+  Note: colon is content
+  See https://example.com/path
+---
+# Body`;
+    const folded = `---
+name: y
+description: >
+  Note: folded colon
+  https://example.com
+---
+# Body`;
+
+    expect(parseFrontMatter(literal).frontMatter.description).toBe(
+      'Note: colon is content\nSee https://example.com/path\n'
+    );
+    expect(parseFrontMatter(folded).frontMatter.description).toBe(
+      'Note: folded colon https://example.com\n'
+    );
+  });
+
+  it('should reject unsupported block indicators, unterminated quotes, and unindented block content', () => {
+    expect(() => parseFrontMatter('---\nname: x\ndescription: >bogus\n  body\n---\n')).toThrow(/Unsupported YAML/);
+    expect(() => parseFrontMatter('---\nname: x\ndescription: "unterminated\n---\n')).toThrow(/Unsupported YAML/);
+    expect(() => parseFrontMatter('---\nname: x\ndescription: |\nNote: not indented\n---\n')).toThrow(
+      /Block scalar content must be indented/
+    );
   });
 
   it('should reject nested mappings, flow collections, and aliases', () => {

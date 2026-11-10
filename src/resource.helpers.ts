@@ -45,6 +45,8 @@ const assertSupportedScalarToken = (rawValue: string): void => {
   }
 };
 
+const SUPPORTED_BLOCK_INDICATORS = new Set(['>', '>-', '>+', '|', '|-', '|+']);
+
 /**
  * @param rawValue - Quoted or plain YAML scalar
  * @returns Unquoted scalar string
@@ -58,13 +60,10 @@ const parseInlineFrontMatterScalar = (rawValue: string): string => {
 
   assertSupportedScalarToken(trimmed);
 
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
+  if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
     const quote = trimmed.charAt(0);
 
-    if (trimmed.length === 1) {
+    if (trimmed.length < 2 || !trimmed.endsWith(quote)) {
       throw new Error('Unsupported YAML front matter structure.');
     }
 
@@ -86,19 +85,21 @@ const parseFrontMatterBlockIndicator = (
 ): { style: 'folded' | 'literal'; chomp: FrontMatterBlockChomp } => {
   const trimmed = indicator.trim();
 
-  if (trimmed.startsWith('>')) {
-    const chomp: FrontMatterBlockChomp = trimmed.endsWith('+') ? 'keep' : trimmed.endsWith('-') ? 'clip' : 'strip';
+  if (!SUPPORTED_BLOCK_INDICATORS.has(trimmed)) {
+    throw new Error('Unsupported YAML front matter structure.');
+  }
 
+  const chomp: FrontMatterBlockChomp = trimmed.endsWith('+')
+    ? 'keep'
+    : trimmed.endsWith('-')
+      ? 'strip'
+      : 'clip';
+
+  if (trimmed.startsWith('>')) {
     return { style: 'folded', chomp };
   }
 
-  if (trimmed.startsWith('|')) {
-    const chomp: FrontMatterBlockChomp = trimmed.endsWith('+') ? 'keep' : trimmed.endsWith('-') ? 'clip' : 'strip';
-
-    return { style: 'literal', chomp };
-  }
-
-  throw new Error('Unsupported YAML front matter structure.');
+  return { style: 'literal', chomp };
 };
 
 /**
@@ -123,13 +124,13 @@ const applyFrontMatterChomp = (text: string, chomp: FrontMatterBlockChomp): stri
     return text;
   }
 
-  if (chomp === 'clip') {
+  if (chomp === 'strip') {
     return text.replace(/\n+$/, '');
   }
 
-  const trimmed = text.replace(/\n+$/, '');
+  const withoutTrailing = text.replace(/\n+$/, '');
 
-  return trimmed.length ? `${trimmed}\n` : '';
+  return withoutTrailing.length ? `${withoutTrailing}\n` : '';
 };
 
 /**
@@ -172,19 +173,41 @@ const foldFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockChomp
     }
   }
 
-  return applyFrontMatterChomp(folded, chomp).trim();
+  return applyFrontMatterChomp(folded, chomp);
 };
 
 /**
  * @param blockLines - Indented lines collected for a literal scalar
  * @param chomp - YAML chomping indicator
  */
+/**
+ * @param lines - Block content lines with common indent removed
+ * @returns Count of trailing empty lines preserved for chomping
+ */
+const countTrailingEmptyBlockLines = (lines: string[]): number => {
+  let trailingEmptyLines = 0;
+
+  for (let lineIndex = lines.length - 1; lineIndex >= 0; lineIndex -= 1) {
+    if (lines[lineIndex] === '') {
+      trailingEmptyLines += 1;
+    } else {
+      break;
+    }
+  }
+
+  return trailingEmptyLines;
+};
+
 const literalFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockChomp): string => {
   const stripped = stripFrontMatterBlockIndent(blockLines);
-  const joined = stripped.join('\n');
-  const chomped = applyFrontMatterChomp(joined, chomp);
+  let joined = stripped.join('\n');
+  const trailingEmptyLines = countTrailingEmptyBlockLines(stripped);
 
-  return chomp === 'keep' ? chomped : chomped.trimEnd();
+  if (chomp === 'keep' && trailingEmptyLines > 0) {
+    joined += '\n'.repeat(trailingEmptyLines);
+  }
+
+  return applyFrontMatterChomp(joined, chomp);
 };
 
 /**
@@ -193,12 +216,31 @@ const literalFrontMatterBlock = (blockLines: string[], chomp: FrontMatterBlockCh
  * @param style - Folded or literal block scalar
  * @param chomp - YAML chomping indicator
  */
+const resolveFrontMatterBlockIndent = (lines: string[], startIndex: number): number => {
+  for (let lineIndex = startIndex; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex] || '';
+
+    if (line.trim() === '') {
+      continue;
+    }
+
+    if (!/^\s/.test(line)) {
+      throw new Error('Block scalar content must be indented.');
+    }
+
+    return line.match(/^\s*/)?.[0]?.length || 0;
+  }
+
+  return 0;
+};
+
 const readFrontMatterBlockScalar = (
   lines: string[],
   startIndex: number,
   style: 'folded' | 'literal',
   chomp: FrontMatterBlockChomp
 ): { value: string; nextIndex: number } => {
+  const blockIndent = resolveFrontMatterBlockIndent(lines, startIndex);
   const blockLines: string[] = [];
   let i = startIndex;
 
@@ -207,7 +249,7 @@ const readFrontMatterBlockScalar = (
 
     if (line.trim() === '') {
       blockLines.push('');
-      i++;
+      i += 1;
       continue;
     }
 
@@ -215,16 +257,18 @@ const readFrontMatterBlockScalar = (
       break;
     }
 
-    if (/^\s+\S+:\s*/.test(line)) {
-      throw new Error('Unsupported nested YAML mapping in front matter.');
+    if (!/^\s/.test(line)) {
+      throw new Error('Block scalar content must be indented.');
     }
 
-    if (!/^\s/.test(line) && blockLines.length > 0) {
+    const indent = line.match(/^\s*/)?.[0]?.length || 0;
+
+    if (indent < blockIndent) {
       break;
     }
 
     blockLines.push(line);
-    i++;
+    i += 1;
   }
 
   const value = style === 'folded'
@@ -261,7 +305,7 @@ const parseFrontMatter = (content: string): { frontMatter: Record<string, string
     const line = lines[i] || '';
 
     if (isIgnorableMalformedFrontMatterLine(line)) {
-      i++;
+      i += 1;
       continue;
     }
 
@@ -272,7 +316,7 @@ const parseFrontMatter = (content: string): { frontMatter: Record<string, string
     const keyMatch = line.match(/^([A-Za-z_][\w-]*)\s*:\s*(.*)$/);
 
     if (!keyMatch || !keyMatch[1]) {
-      i++;
+      i += 1;
       continue;
     }
 
@@ -294,7 +338,7 @@ const parseFrontMatter = (content: string): { frontMatter: Record<string, string
     }
 
     frontMatter[key] = parseInlineFrontMatterScalar(rawValue);
-    i++;
+    i += 1;
   }
 
   return {

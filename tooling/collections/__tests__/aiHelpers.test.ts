@@ -169,6 +169,22 @@ describe('parseSkillFrontmatter', () => {
     expect(() => parseSkillFrontmatter(missingName)).toThrow(/requires a non-empty name/);
     expect(() => parseSkillFrontmatter(malformed)).toThrow(/not valid YAML/);
   });
+
+  it('rejects malformed block indicators and unterminated quoted descriptions', () => {
+    expect(() =>
+      parseSkillFrontmatter('---\nname: x\ndescription: >bogus\n  body\n---\n')).toThrow(/not valid YAML/);
+    expect(() => parseSkillFrontmatter('---\nname: x\ndescription: "unterminated\n---\n')).toThrow(/not valid YAML/);
+    expect(() => parseSkillFrontmatter('---\nname: x\ndescription: |\nNote: bad\n---\n')).toThrow(/not valid YAML/);
+  });
+
+  it('parses literal descriptions that contain colons and URLs', async () => {
+    const markdown = await readFixture('skills/pf-colon-literal.md');
+    const parsed = parseSkillFrontmatter(markdown);
+
+    expect(parsed.name).toBe('pf-colon-literal');
+    expect(parsed.description).toContain('Note: colon is content');
+    expect(parsed.description).toContain('https://example.com/path');
+  });
 });
 
 describe('buildPinnedRawGitHubUrl', () => {
