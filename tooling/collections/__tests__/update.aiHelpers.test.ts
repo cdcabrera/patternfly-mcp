@@ -7,6 +7,7 @@ import packageJson from '../../../package.json';
 import {
   AI_HELPERS_ATTRIBUTION,
   AI_HELPERS_SEED_LICENSE,
+  DEFAULT_AI_HELPERS_FILENAME,
   buildAiHelpersSeedCollection,
   createGitHubAiHelpersReader,
   describeAiHelpersModification,
@@ -211,6 +212,85 @@ describe('update.aiHelpers package wiring', () => {
     expect(packageJson.scripts['build:collections-ai-helpers']).toBe(
       'UPDATE_COLLECTIONS=true tsx ./tooling/collections/update.aiHelpers.ts'
     );
+    expect(packageJson.scripts['build:collections']).toContain('build:collections-ai-helpers');
+  });
+});
+
+describe('collection.aiHelpers committed seed integrity', () => {
+  const COLLECTION_PATH = getSrcPath(DEFAULT_AI_HELPERS_FILENAME);
+  const SHA40_PATTERN = /^[0-9a-f]{40}$/;
+  const PINNED_RAW_URL_PATTERN = /^https:\/\/raw\.githubusercontent\.com\/rh-uxd\/ai-helpers\/[0-9a-f]{40}\//;
+  const EXPECTED_OVERVIEW_SLUGS = [
+    'uxd-ai-helpers-contributing',
+    'uxd-ai-helpers-contributing-skills',
+    'uxd-ai-helpers-faq',
+    'uxd-ai-helpers-plugins',
+    'uxd-ai-helpers-quickstart',
+    'uxd-ai-helpers-readme'
+  ];
+  const EXCLUDED_SOURCE_PATTERNS = [
+    /agent-docs\//,
+    /\.github\//,
+    /\.fullsend\//,
+    /\/scripts\//,
+    /\/evals\//,
+    /\/assets\//,
+    /AGENTS\.md$/,
+    /CLAUDE\.md$/
+  ];
+
+  it('should ship a non-empty seed with metadata counts matching grouped records', () => {
+    expect(existsSync(COLLECTION_PATH)).toBe(true);
+
+    const raw = readFileSync(COLLECTION_PATH, 'utf-8');
+    const seed = validateExistingAiHelpersSeed(JSON.parse(raw) as unknown);
+    const records = flattenAiHelpersSeedRecords(seed);
+    const sectionCount = Object.keys(seed.docs).length;
+
+    expect(records.length).toBeGreaterThan(0);
+    expect(seed.meta.totalEntries).toBe(sectionCount);
+    expect(seed.meta.totalDocs).toBe(records.length);
+    expect(seed.meta.resolvedCommitSha).toMatch(SHA40_PATTERN);
+    expect(seed.meta.requestedRef).toBe('main');
+    expect(seed.meta.sourceRepository).toBe('rh-uxd/ai-helpers');
+    expect(seed.meta.license).toBe(AI_HELPERS_SEED_LICENSE);
+    expect(seed.meta.attribution).toBe(AI_HELPERS_ATTRIBUTION);
+  });
+
+  it('should include six approved root overviews, unique slugs, SHA-pinned URLs, and representative PF/UXD skills', () => {
+    const raw = readFileSync(COLLECTION_PATH, 'utf-8');
+    const seed = validateExistingAiHelpersSeed(JSON.parse(raw) as unknown);
+    const records = flattenAiHelpersSeedRecords(seed);
+    const resolvedSha = seed.meta.resolvedCommitSha;
+    const slugs = new Set<string>();
+
+    for (const record of records) {
+      expect(slugs.has(record.pathSlug)).toBe(false);
+      slugs.add(record.pathSlug);
+      expect(record.path).toMatch(PINNED_RAW_URL_PATTERN);
+      expect(record.path).toContain(`/${resolvedSha}/`);
+      expect(record.path).not.toContain('/main/');
+
+      for (const pattern of EXCLUDED_SOURCE_PATTERNS) {
+        expect(record.sourcePath).not.toMatch(pattern);
+      }
+
+      if (record.kind === 'skill') {
+        expect(record.sourcePath.endsWith('/SKILL.md')).toBe(true);
+      }
+    }
+
+    const overviewSlugs = records.filter(record => record.kind === 'overview').map(record => record.pathSlug).sort();
+
+    expect(overviewSlugs).toEqual([...EXPECTED_OVERVIEW_SLUGS].sort());
+
+    const patternflySkill = records.find(record => record.pathSlug === 'ai-helpers-skill-pf-chart-gen');
+    const uxdSkill = records.find(record => record.pathSlug === 'ai-helpers-skill-uxd-discovery');
+
+    expect(patternflySkill?.family).toBe('patternfly');
+    expect(patternflySkill?.kind).toBe('skill');
+    expect(uxdSkill?.family).toBe('uxd');
+    expect(uxdSkill?.kind).toBe('skill');
   });
 });
 
