@@ -400,7 +400,7 @@ describe('memo', () => {
     expect(mockDebug).toHaveBeenCalledWith({
       type: 'memo clear',
       value: undefined,
-      cache: []
+      cache: new Map()
     });
   });
 
@@ -416,14 +416,14 @@ describe('memo', () => {
     expect(mockDebug).toHaveBeenCalledWith({
       type: 'memo clear',
       value: undefined,
-      cache: []
+      cache: new Map()
     });
 
     const payload = mockCallback.mock.calls[0][0];
 
-    expect(payload.all).toHaveLength(1);
-    expect(payload.removed).toHaveLength(1);
-    expect(payload.remaining).toHaveLength(0);
+    expect([...payload.all.values()]).toHaveLength(1);
+    expect([...payload.removed.values()]).toHaveLength(1);
+    expect([...payload.remaining.values()]).toHaveLength(0);
   });
 
   it('should cancel pending expire timeout on clear()', () => {
