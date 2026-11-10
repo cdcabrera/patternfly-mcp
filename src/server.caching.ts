@@ -29,14 +29,14 @@ type MemoCache<TReturn = unknown> = Map<unknown, MemoCacheEntry<TReturn>>;
  *
  * @template TReturn Return type of the memoized function.
  *
- * @property {MemoCache<TReturn>} remaining Map of cache entries that were NOT removed from the cache due to cache limit.
- * @property {MemoCache<TReturn>} removed Map of cache entries that were removed from the cache due to cache limit.
- * @property {MemoCache<TReturn>} all Map of all cache entries, including removed entries.
+ * @property {Map<unknown, TReturn>} remaining Map of cache entries that were NOT removed from the cache due to cache limit.
+ * @property {Map<unknown, TReturn>} removed Map of cache entries that were removed from the cache due to cache limit.
+ * @property {Map<unknown, TReturn>} all Map of all cache entries, including removed entries.
  */
 type MemoCacheHandlerResponse<TReturn = unknown> = {
-  remaining: MemoCache<TReturn>;
-  removed: MemoCache<TReturn>;
-  all: MemoCache<TReturn>;
+  remaining: Map<unknown, TReturn>;
+  removed: Map<unknown, TReturn>;
+  all: Map<unknown, TReturn>;
 };
 
 /**
@@ -178,9 +178,9 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
     const errorDesc = handlerDescription ? `: ${handlerDescription}` : '';
     const payload: MemoCacheHandlerResponse<TReturn> = {
-      all,
-      remaining,
-      removed
+      all: all as Map<unknown, TReturn>,
+      remaining: remaining as Map<unknown, TReturn>,
+      removed: removed as Map<unknown, TReturn>
     };
 
     if (isPromise(handler)) {
