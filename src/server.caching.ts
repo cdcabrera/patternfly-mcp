@@ -6,6 +6,20 @@ import {
 import { log } from './logger';
 
 /**
+ * Map-like interface. Support both synchronous and asynchronous storage implementations.
+ *
+ * @template K Key type.
+ * @template V Value type.
+ */
+interface MemoMapLike<K, V> {
+  get(key: K): V | undefined | Promise<V | undefined>;
+  set(key: K, value: V): unknown | Promise<unknown>;
+  has(key: K): boolean | Promise<boolean>;
+  delete?(key: K): unknown | Promise<unknown>;
+  clear?(): unknown | Promise<unknown>;
+}
+
+/**
  * Error wrapper for memoized synchronous errors.
  */
 type MemoErrorFunction = (() => never) & { isError: boolean };
@@ -95,6 +109,7 @@ type MemoNotifyCacheChangeOptions<TReturn = unknown> = {
  * @property {OnMemoCacheHandler<TReturn>} [onCacheClear] Callback when cache entries are cleared.
  * @property {OnMemoCacheHandler<TReturn>} [onCacheExpire] Callback when cache expires. Only fires when the `expire` option is set.
  * @property {OnMemoCacheHandler<TReturn>} [onCacheRollout] Callback when cache entries are rolled off due to cache limit.
+ * @property [storage] External storage backing (Map or MapLike).
  */
 interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   cacheErrors?: boolean;
@@ -105,6 +120,7 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   onCacheClear?: OnMemoCacheHandler<TReturn>;
   onCacheExpire?: OnMemoCacheHandler<TReturn>;
   onCacheRollout?: OnMemoCacheHandler<TReturn>;
+  storage?: Map<unknown, TReturn> | MemoMapLike<unknown, TReturn> | Promise<Map<unknown, TReturn> | MemoMapLike<unknown, TReturn>>;
 }
 
 /**
@@ -144,7 +160,8 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     keyHash = generateHash,
     onCacheClear,
     onCacheExpire,
-    onCacheRollout
+    onCacheRollout,
+    storage
   }: MemoOptions<TArgs, TReturn> = {}
 ): MemoReturn<TArgs, TReturn> => {
   const isCacheErrors = Boolean(cacheErrors);
@@ -212,8 +229,17 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
   const ized = function () {
     const cache: MemoCache<TReturn> = new Map();
     let timeout: NodeJS.Timeout | undefined;
+    let resolvedStorage: MemoMapLike<unknown, TReturn> | Map<unknown, TReturn> | undefined;
+    let storagePromise: Promise<MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>> | undefined;
+
+    if (isPromise(storage)) {
+      storagePromise = storage;
+    } else if (storage) {
+      resolvedStorage = storage;
+    }
 
     const memoized = (...args: TArgs): TReturn => {
+      const store = resolvedStorage;
       const isMemo = cacheLimit > 0;
 
       if (typeof updatedExpire === 'number') {
@@ -254,16 +280,54 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       }
 
       const key = setKey(args);
+      // const isStoragePromise = Boolean(storagePromise);
+
+      /*
+      const resolveFromStore = (activeStore: MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>) => {
+        const stored = activeStore.get(key);
+
+        const handleStored = (val: unknown) => {
+          if (val !== undefined) {
+            cache.set(key, val as MemoCacheEntry<TReturn>);
+
+            return val as TReturn;
+          }
+
+          return invokeAndCache();
+        };
+
+        if (isPromise(stored)) {
+          return (stored as Promise<unknown>).then(handleStored);
+        }
+
+        return handleStored(stored);
+      };
+       */
 
       // Parse, memoize and return the original value
       if (!cache.has(key)) {
         if (isFuncPromise) {
           const promiseResolve = Promise
             .resolve(func.call(null, ...args))
+            .then((result: unknown) => {
+              if (resolvedStorage) {
+                try {
+                  Promise.resolve(resolvedStorage.set(key, result as TReturn)).catch(() => {});
+                } catch {}
+              }
+
+              // return result;
+            })
             .catch((error: unknown) => {
               // Remove the promise
               if (isCacheErrors === false) {
                 cache.delete(key);
+
+                if (resolvedStorage?.delete) {
+                  Promise.resolve(resolvedStorage.delete(key)).catch(() => {});
+                }
+              } else if (resolvedStorage) {
+                Promise.resolve(resolvedStorage.set(key, error as unknown as TReturn)).catch(() => {});
               }
 
               return Promise.reject(error);
@@ -273,7 +337,13 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
           cache.set(key, promiseResolve);
         } else {
           try {
-            cache.set(key, func.call(null, ...args));
+            const result = func.call(null, ...args);
+
+            cache.set(key, result);
+
+            if (resolvedStorage) {
+              Promise.resolve(resolvedStorage.set(key, result)).catch(() => {});
+            }
           } catch (error) {
             // Wrap a sync error in a function then cache it
             const errorFunc = () => {
@@ -282,6 +352,10 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
             errorFunc.isError = true;
             cache.set(key, errorFunc);
+
+            if (resolvedStorage) {
+              Promise.resolve(resolvedStorage.set(key, errorFunc as unknown as TReturn)).catch(() => {});
+            }
           }
         }
 
@@ -386,6 +460,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
 export {
   memo,
+  type MemoMapLike,
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
   type MemoCache,
