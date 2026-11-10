@@ -230,16 +230,18 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     const cache: MemoCache<TReturn> = new Map();
     let timeout: NodeJS.Timeout | undefined;
     let resolvedStorage: MemoMapLike<unknown, TReturn> | Map<unknown, TReturn> | undefined;
-    let storagePromise: Promise<MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>> | undefined;
 
     if (isPromise(storage)) {
-      storagePromise = storage;
+      Promise.resolve(storage)
+        .then(store => {
+          resolvedStorage = store as MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>;
+        })
+        .catch(() => {});
     } else if (storage) {
-      resolvedStorage = storage;
+      resolvedStorage = storage as MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>;
     }
 
     const memoized = (...args: TArgs): TReturn => {
-      const store = resolvedStorage;
       const isMemo = cacheLimit > 0;
 
       if (typeof updatedExpire === 'number') {
@@ -293,7 +295,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
                 } catch {}
               }
 
-              // return result;
+              return result as TReturn;
             })
             .catch((error: unknown) => {
               // Remove the promise
@@ -301,10 +303,14 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
                 cache.delete(key);
 
                 if (resolvedStorage?.delete) {
-                  Promise.resolve(resolvedStorage.delete(key)).catch(() => {});
+                  try {
+                    Promise.resolve(resolvedStorage.delete(key)).catch(() => {});
+                  } catch {}
                 }
               } else if (resolvedStorage) {
-                Promise.resolve(resolvedStorage.set(key, error as unknown as TReturn)).catch(() => {});
+                try {
+                  Promise.resolve(resolvedStorage.set(key, error as unknown as TReturn)).catch(() => {});
+                } catch {}
               }
 
               return Promise.reject(error);
@@ -319,7 +325,9 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             cache.set(key, result);
 
             if (resolvedStorage) {
-              Promise.resolve(resolvedStorage.set(key, result)).catch(() => {});
+              try {
+                Promise.resolve(resolvedStorage.set(key, result)).catch(() => {});
+              } catch {}
             }
           } catch (error) {
             // Wrap a sync error in a function then cache it
@@ -330,8 +338,10 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             errorFunc.isError = true;
             cache.set(key, errorFunc);
 
-            if (resolvedStorage) {
-              Promise.resolve(resolvedStorage.set(key, errorFunc as unknown as TReturn)).catch(() => {});
+            if (resolvedStorage && isCacheErrors) {
+              try {
+                Promise.resolve(resolvedStorage.set(key, errorFunc as unknown as TReturn)).catch(() => {});
+              } catch {}
             }
           }
         }
