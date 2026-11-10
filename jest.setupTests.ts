@@ -75,7 +75,6 @@ jest.mock('@patternfly/patternfly-component-schemas/json', () => ({
 const originalStdoutWrite = process.stdout.write.bind(process.stdout);
 
 beforeEach(() => {
-  /*
   process.stdout.write = jest.fn().mockImplementation((chunk: string | Uint8Array, encoding?: unknown, callback?: unknown) => {
     if (typeof encoding === 'function') {
       encoding();
@@ -85,9 +84,8 @@ beforeEach(() => {
 
     return true;
   }) as unknown as typeof process.stdout.write;
-  */
 });
 
 afterEach(() => {
-  // process.stdout.write = originalStdoutWrite;
+  process.stdout.write = originalStdoutWrite;
 });
