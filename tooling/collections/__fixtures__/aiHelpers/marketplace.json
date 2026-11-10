@@ -1,0 +1,20 @@
+{
+  "name": "uxd-ai-helpers",
+  "plugins": [
+    {
+      "name": "patternfly",
+      "source": "./plugins/patternfly",
+      "description": "PatternFly meta plugin"
+    },
+    {
+      "name": "pf-react",
+      "source": "./plugins/patternfly/pf-react",
+      "description": "PatternFly React skills"
+    },
+    {
+      "name": "uxd-assist",
+      "source": "./plugins/uxd-assist",
+      "description": "UXD assist skills"
+    }
+  ]
+}
