@@ -280,29 +280,6 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       }
 
       const key = setKey(args);
-      // const isStoragePromise = Boolean(storagePromise);
-
-      /*
-      const resolveFromStore = (activeStore: MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>) => {
-        const stored = activeStore.get(key);
-
-        const handleStored = (val: unknown) => {
-          if (val !== undefined) {
-            cache.set(key, val as MemoCacheEntry<TReturn>);
-
-            return val as TReturn;
-          }
-
-          return invokeAndCache();
-        };
-
-        if (isPromise(stored)) {
-          return (stored as Promise<unknown>).then(handleStored);
-        }
-
-        return handleStored(stored);
-      };
-       */
 
       // Parse, memoize and return the original value
       if (!cache.has(key)) {
