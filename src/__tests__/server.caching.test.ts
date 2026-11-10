@@ -1,4 +1,4 @@
-import { memo, normalizeMemoCache } from '../server.caching';
+import { memo, memoUnwrapAdapter, normalizeMapLike, normalizeMemoCache } from '../server.caching';
 
 describe('memo', () => {
   beforeEach(() => {
@@ -488,6 +488,105 @@ describe('memo', () => {
     expect(factory).toHaveBeenCalledTimes(1);
     expect(factory).toHaveBeenCalledWith({ isFuncPromise: true, cacheErrors: false, cacheLimit: 3, expire: undefined });
   });
+
+  it('should catch and log errors thrown or rejected by cache change handlers without propagating', async () => {
+    const syncHandler = () => {
+      throw new Error('sync handler error');
+    };
+    const asyncHandler = async () => {
+      throw new Error('async handler error');
+    };
+
+    const memoSync = memo((val: number) => val * 2, { onCacheClear: syncHandler });
+    const memoAsync = memo((val: number) => val * 2, { onCacheClear: asyncHandler });
+
+    memoSync(1);
+    expect(() => memoSync.clear()).not.toThrow();
+
+    memoAsync(2);
+    expect(() => memoAsync.clear()).not.toThrow();
+    await Promise.resolve();
+  });
+
+  it('should break early during cacheLimit eviction if keys iterator finishes early', () => {
+    const cache = {
+      has: () => false,
+      get: () => 'val',
+      set: jest.fn(),
+      delete: jest.fn(),
+      keys: () => [][Symbol.iterator](),
+      get size() {
+        return 5;
+      }
+    };
+
+    const memoized = memo((val: number) => val, { cache, cacheLimit: 1 });
+
+    expect(memoized(1)).toBe('val');
+    expect(cache.delete).not.toHaveBeenCalled();
+  });
+});
+
+describe('normalizeMapLike', () => {
+  it('should return a native Map instance as-is', () => {
+    const map = new Map();
+
+    expect(normalizeMapLike(map)).toBe(map);
+  });
+
+  it('should normalize a minimal map-like object with default fallbacks', () => {
+    const minimalCache = {
+      has: jest.fn(() => true),
+      get: jest.fn(() => 'value'),
+      set: jest.fn()
+    };
+
+    const result = normalizeMapLike(minimalCache);
+
+    expect(result.has('k')).toBe(true);
+    expect(minimalCache.has).toHaveBeenCalledWith('k');
+
+    expect(result.get('k')).toBe('value');
+    expect(minimalCache.get).toHaveBeenCalledWith('k');
+
+    result.set('k', 'v');
+    expect(minimalCache.set).toHaveBeenCalledWith('k', 'v');
+
+    expect(result.clear()).toBeUndefined();
+    expect(result.delete('k')).toBeUndefined();
+    expect(Array.from(result.keys())).toEqual([]);
+    expect(Array.from(result.entries())).toEqual([]);
+    expect(result.size).toBeUndefined();
+  });
+
+  it('should delegate optional methods and expose size when size, keys, and delete are present', () => {
+    const fullCache = {
+      has: jest.fn(() => false),
+      get: jest.fn(),
+      set: jest.fn(),
+      clear: jest.fn(),
+      delete: jest.fn(() => true),
+      keys: jest.fn(() => ['k1'][Symbol.iterator]()),
+      entries: jest.fn(() => [['k1', 'v1'] as [unknown, unknown]][Symbol.iterator]()),
+      size: 1
+    };
+
+    const result = normalizeMapLike(fullCache);
+
+    result.clear();
+    expect(fullCache.clear).toHaveBeenCalledTimes(1);
+
+    expect(result.delete('k1')).toBe(true);
+    expect(fullCache.delete).toHaveBeenCalledWith('k1');
+
+    expect(Array.from(result.keys())).toEqual(['k1']);
+    expect(fullCache.keys).toHaveBeenCalledTimes(1);
+
+    expect(Array.from(result.entries())).toEqual([['k1', 'v1']]);
+    expect(fullCache.entries).toHaveBeenCalledTimes(1);
+
+    expect(result.size).toBe(1);
+  });
 });
 
 describe('normalizeMemoCache', () => {
@@ -504,15 +603,6 @@ describe('normalizeMemoCache', () => {
     const cache = { has: jest.fn(), get: jest.fn(), set: jest.fn() };
 
     const result = normalizeMemoCache(cache, { cacheContext: ctx });
-
-    result.has('lorem');
-    expect(cache.has).toHaveBeenCalledWith('lorem');
-
-    result.get('ipsum');
-    expect(cache.get).toHaveBeenCalledWith('ipsum');
-
-    result.set('dolor', 'sit');
-    expect(cache.set).toHaveBeenCalledWith('dolor', 'sit');
 
     expect(result).toMatchSnapshot('normalized');
   });
@@ -537,8 +627,179 @@ describe('normalizeMemoCache', () => {
 
     expect(normalizeMemoCache(async () => new Map(), { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
     expect(normalizeMemoCache('nope', { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
+    expect(normalizeMemoCache('nope')).toBeInstanceOf(Map);
 
     expect(mockDebug).toHaveBeenCalledTimes(3);
     expect(mockDebug).toHaveBeenCalledWith(expect.objectContaining({ type: 'memo cache error' }));
+  });
+});
+
+describe('memoUnwrapAdapter', () => {
+  it.each([
+    {
+      description: 'concrete value',
+      value: 'sync-val',
+      expected: 'sync-val'
+    },
+    {
+      description: 'resolved promise value',
+      value: Promise.resolve('async-val'),
+      expected: 'async-val'
+    },
+    {
+      description: 'undefined value',
+      value: Promise.resolve(undefined),
+      expected: undefined
+    },
+    {
+      description: 'falsy empty string',
+      value: '',
+      expected: ''
+    }
+  ])('should unwrap and persist $description to targetStore', async ({ value, expected }) => {
+    const targetStore = new Map();
+    const cache = memoUnwrapAdapter(targetStore)();
+
+    cache.set('key', value);
+
+    if (value instanceof Promise) {
+      expect(cache.get('key')).toBe(value);
+      await value;
+    }
+
+    expect(targetStore.has('key')).toBe(true);
+    expect(targetStore.get('key')).toBe(expected);
+    expect(cache.get('key')).toBe(expected);
+  });
+
+  it.each([
+    {
+      description: 'persist error when cacheErrors is true',
+      cacheErrors: true,
+      expectedHas: true
+    },
+    {
+      description: 'delete entry when cacheErrors is false',
+      cacheErrors: false,
+      expectedHas: false
+    }
+  ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
+    const targetStore = new Map([['key', 'stale-val']]);
+    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
+    const error = new Error('boom');
+    const rejectingPromise = Promise.reject(error);
+
+    cache.set('key', rejectingPromise);
+    expect(cache.has('key')).toBe(true);
+    expect(cache.get('key')).toBe(rejectingPromise);
+
+    await expect(rejectingPromise).rejects.toThrow('boom');
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(targetStore.has('key')).toBe(expectedHas);
+    if (cacheErrors) {
+      expect(targetStore.get('key')).toBe(error);
+    }
+  });
+
+  it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
+    const targetStore = new Map([
+      ['k1', 'v1'],
+      ['k2', 'v2']
+    ]);
+    const cache = memoUnwrapAdapter(targetStore)();
+
+    // Before hydration, readCache window is empty even though targetStore has entries
+    expect(cache.size).toBe(0);
+    expect(cache.has('k1')).toBe(true);
+    expect(cache.has('missing')).toBe(false);
+    expect(cache.get('missing')).toBeUndefined();
+
+    // Accessing k1 hydrates only k1 into the readCache window
+    expect(cache.get('k1')).toBe('v1');
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['k1']);
+    expect(Array.from(cache.entries?.() || [])).toEqual([['k1', 'v1']]);
+  });
+
+  it('should surgically evict keys from readCache on set and delete, and clear all tiers on clear', () => {
+    const targetStore = new Map([
+      ['k1', 'v1'],
+      ['k2', 'v2']
+    ]);
+    const cache = memoUnwrapAdapter(targetStore)();
+
+    // Hydrate both keys into readCache
+    expect(cache.get('k1')).toBe('v1');
+    expect(cache.get('k2')).toBe('v2');
+    expect(cache.size).toBe(2);
+
+    // Updating k1 evicts k1 from readCache without disturbing k2, and updates targetStore
+    cache.set('k1', 'v1-updated');
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
+    expect(targetStore.get('k1')).toBe('v1-updated');
+
+    // Deleting k2 removes it from readCache and targetStore
+    expect(cache.delete?.('k2')).toBe(true);
+    expect(cache.has('k2')).toBe(false);
+    expect(targetStore.has('k2')).toBe(false);
+
+    // Clearing empties inFlight, readCache, and targetStore
+    expect(cache.get('k1')).toBe('v1-updated');
+    expect(cache.size).toBe(1);
+    cache.clear?.();
+    expect(cache.size).toBe(0);
+    expect(targetStore.size).toBe(0);
+  });
+
+  it('should queue writes for a pending Promise targetStore and flush once resolved', async () => {
+    let resolveStore: ((store: Map<unknown, unknown>) => void) | undefined;
+    const targetStore = new Map([['existing', 'val']]);
+    const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
+      resolveStore = resolve;
+    });
+
+    const cache = memoUnwrapAdapter(storePromise)();
+
+    cache.set('queued-set', 'queued-val');
+    cache.delete?.('existing');
+
+    resolveStore?.(targetStore);
+    await storePromise;
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(targetStore.get('queued-set')).toBe('queued-val');
+    expect(targetStore.has('existing')).toBe(false);
+  });
+
+  it('should gracefully handle a rejecting Promise targetStore and faulty store methods', async () => {
+    const rejectingStore = Promise.reject(new Error('store init failed'));
+    const asyncCache = memoUnwrapAdapter(rejectingStore)({});
+
+    asyncCache.set('k', 'v');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(asyncCache.get('k')).toBeUndefined();
+
+    const faultyStore = {
+      has: () => true,
+      get: () => {
+        throw new Error('sync get error');
+      },
+      set: () => Promise.reject(new Error('async set error')),
+      delete: () => {
+        throw new Error('sync delete error');
+      },
+      clear: () => {
+        throw new Error('sync clear error');
+      }
+    };
+
+    const faultyCache = memoUnwrapAdapter(faultyStore)();
+
+    expect(faultyCache.get('k')).toBeUndefined();
+    expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
+    expect(() => faultyCache.delete?.('k')).not.toThrow();
+    expect(faultyCache.clear?.()).toBeUndefined();
   });
 });

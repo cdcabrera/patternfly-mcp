@@ -25,11 +25,11 @@ interface MemoCacheContext {
  *
  * @template TReturn Return type stored in each memo cache entry.
  *
- * @param {MemoCacheContext} context - Memo context associated with the current operation.
+ * @param {MemoCacheContext} [context] - Memo context associated with the current operation.
  * @returns {MemoMapLike<unknown, MemoCacheEntry<TReturn>>} A map-like cache containing memo entries for the return type.
  */
 type MemoCacheCallback<TReturn> =
-  (context: MemoCacheContext) => MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
+  (context?: MemoCacheContext) => MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
 
 /**
  * Map-like interface consumed by `memo`.
@@ -306,7 +306,7 @@ const normalizeMemoCache = <TReturn>(
  * @template TReturn Return type of the provided/memoized function.
  *
  * @param {(...args: TArgs) => TReturn} func The function, or async function, to memoize
- * @param {MemoOptions<TArgs, TReturn>} [options={}] Configuration options.
+ * @param {MemoOptions<TArgs, TReturn>} [options] Configuration options. See {@link MemoOptions}.
  * @returns Memoized function
  *
  * @throws {Error} If an error occurs during function execution and `cacheErrors` is set to `false`,
@@ -581,13 +581,283 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
   return ized();
 };
 
+/**
+ * Configuration options for `memoUnwrapAdapter`.
+ *
+ * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store (default: true).
+ * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache window (default: 500).
+ * @property [expire] Sliding TTL in milliseconds for entries in the in-memory read cache (default: 5 minutes).
+ */
+interface MemoUnwrapAdapterOptions {
+  cacheErrors?: boolean | undefined;
+  cacheLimit?: number | undefined;
+  expire?: number | undefined;
+}
+
+/**
+ * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to unwrap promises
+ * produced by async `memo` functions before persisting to the underlying store.
+ *
+ * @note Review using `Promise.try` in the future.
+ *
+ * @template K Key type.
+ * @template V Value type.
+ *
+ * @param targetStore - Underlying storage backend or a Promise resolving to one.
+ * @param [settings] - Configuration options, default fallbacks.
+ * @param [settings.cacheErrors] - Persist errors/rejections to the target store. Inherited `memo` context takes
+ *     precedence and falls back to the setting's default.
+ * @param [settings.cacheLimit] - Max entries in the in-memory read window. Inherited `memo` context takes
+ *     precedence and falls back to the setting's default.
+ * @param [settings.expire] - Sliding expiration in milliseconds. Inherited `memo` context takes precedence
+ *     and falls back to the setting's default.
+ * @returns A cache factory callback accepting MemoCacheContext and returning a MemoMapLike adapter.
+ */
+const memoUnwrapAdapter = <K = unknown, V = unknown>(
+  targetStore:
+    MemoMapLike<K, V> |
+    Map<K, V> |
+    Promise<MemoMapLike<K, V> | Map<K, V>> |
+    MemoCacheCallback<V>,
+  {
+    cacheErrors: settingsCacheErrors = false,
+    cacheLimit: settingsCacheLimit = 500,
+    expire: settingsExpire = 5 * 60 * 1000
+  }: MemoUnwrapAdapterOptions = {}
+): MemoCacheCallback<V> => {
+  let resolvedStore: MemoMapLike<K, V> | undefined;
+
+  const normalizedStore = (rawStore: unknown): MemoMapLike<K, V> =>
+    normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, V>;
+
+  if (isPromise(targetStore)) {
+    Promise.resolve(targetStore)
+      .then(store => {
+        resolvedStore = normalizedStore(store);
+      })
+      .catch(() => {});
+  } else {
+    resolvedStore = normalizedStore(targetStore);
+  }
+
+  /**
+   * Get the memo cache store.
+   */
+  const getStore = async (): Promise<MemoMapLike<K, V> | undefined> => {
+    if (resolvedStore) {
+      return resolvedStore;
+    }
+
+    if (isPromise(targetStore)) {
+      try {
+        resolvedStore = normalizedStore(await targetStore);
+
+        return resolvedStore;
+      } catch {}
+    }
+
+    return undefined;
+  };
+
+  /**
+   * Update the store either by setting a value or deleting the entry.
+   *
+   * @param key - Key to update.
+   * @param val - Value to store.
+   * @param options - Optional configuration.
+   * @param options.isDelete - Whether to delete the entry.
+   * @param options._resolved - Internal. Has the store resolved? Break the resolve loop.
+   * @returns void
+   */
+  const updateStore = (key: K, val: unknown, { isDelete = false, _resolved = false }: { isDelete?: boolean; _resolved?: boolean } = {}): void => {
+    const update = (action: () => unknown) => {
+      try {
+        Promise.resolve(action()).catch(() => {});
+      } catch {}
+    };
+
+    if (resolvedStore) {
+      if (isDelete) {
+        update(() => resolvedStore?.delete?.(key));
+      } else {
+        update(() => resolvedStore?.set(key, val as V));
+      }
+
+      return;
+    }
+
+    if (!_resolved) {
+      getStore()
+        .then(() => updateStore(key, val, { isDelete, _resolved: true }))
+        .catch(() => {});
+    }
+  };
+
+  /**
+   * Set defaults, return an object with map-like methods.
+   *
+   * @internal
+   * @param {MemoCacheContext} context - memo cache context.
+   * @returns Object with map-like methods.
+   */
+  return (context: MemoCacheContext = {}): MemoMapLike<unknown, MemoCacheEntry<V>> => {
+    const cacheErrors = context.cacheErrors || settingsCacheErrors;
+    const cacheLimit = context.cacheLimit ?? settingsCacheLimit;
+    const expire = context.expire ?? settingsExpire;
+
+    const inFlight = new Map<K, Promise<V>>();
+    const readCache = new Map<unknown, MemoCacheEntry<V>>();
+
+    const memoizedGet = memo(
+      (key: K): V | undefined => {
+        try {
+          return resolvedStore?.get(key) as V;
+        } catch {}
+
+        return undefined;
+      },
+      {
+        cache: readCache,
+        cacheLimit,
+        expire,
+        keyHash: args => args[0] as string
+      }
+    );
+
+    return {
+
+      /**
+       * Clear the cache.
+       *
+       * @return Confirm the cache was cleared.
+       */
+      clear(): unknown {
+        inFlight.clear();
+        memoizedGet.clear();
+
+        try {
+          return resolvedStore?.clear?.();
+        } catch {
+          return undefined;
+        }
+      },
+
+      /**
+       * Delete an entry from the cache.
+       *
+       * @param key Entry key to delete.
+       * @return Confirm the entry was deleted.
+       */
+      delete(key: K): boolean {
+        const existed = inFlight.delete(key) || readCache.delete(key) || Boolean(resolvedStore?.has(key));
+
+        inFlight.delete(key);
+        readCache.delete(key);
+
+        updateStore(key, undefined, { isDelete: true });
+
+        return existed;
+      },
+
+      /**
+       * Return an iterator of entries in the cache.
+       *
+       * @return An iterable iterator of tuples containing each cache key and value.
+       */
+      entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
+        return (readCache as Map<K, MemoCacheEntry<V>>).entries();
+      },
+
+      /**
+       * Retrieve a cache entry.
+       *
+       * @param key The key used to look up the memoized cache entry.
+       * @return The matching memoized cache entry, or `undefined` if no entry exists.
+       */
+      get(key: K): MemoCacheEntry<V> | undefined {
+        if (inFlight.has(key)) {
+          return inFlight.get(key);
+        }
+
+        if (readCache.has(key) || resolvedStore?.has(key)) {
+          return memoizedGet(key);
+        }
+
+        return undefined;
+      },
+
+      /**
+       * Does the key exist?
+       *
+       * @param key Entry key to check.
+       * @return True if the key exists.
+       */
+      has(key: K): boolean {
+        return inFlight.has(key) || readCache.has(key) || Boolean(resolvedStore?.has(key));
+      },
+
+      /**
+       * Return an iterator of keys in the cache.
+       *
+       * @return An iterable iterator of keys.
+       */
+      keys(): IterableIterator<K> {
+        return (readCache as Map<K, MemoCacheEntry<V>>).keys();
+      },
+
+      /**
+       * Set an entry in the cache.
+       *
+       * @param key Entry key to set.
+       * @param value Entry value to set.
+       * @return The current cache instance.
+       */
+      set(key: K, value: MemoCacheEntry<V>): unknown {
+        readCache.delete(key);
+
+        if (isPromise(value)) {
+          inFlight.set(key, value as Promise<V>);
+
+          Promise.resolve(value)
+            .then(resolvedValue => {
+              inFlight.delete(key);
+              updateStore(key, resolvedValue);
+            })
+            .catch(error => {
+              const wasInFlight = inFlight.delete(key);
+
+              if (cacheErrors) {
+                updateStore(key, error);
+              } else if (wasInFlight) {
+                updateStore(key, undefined, { isDelete: true });
+              }
+            });
+        } else {
+          updateStore(key, value);
+        }
+
+        return this;
+      },
+
+      /**
+       * Returns the number of entries in the cache.
+       */
+      get size(): number {
+        return readCache.size;
+      }
+    } as unknown as MemoMapLike<unknown, MemoCacheEntry<V>>;
+  };
+};
+
 export {
   isMapLike,
   memo,
+  memoUnwrapAdapter,
   normalizeMemoCache,
   normalizeMapLike,
   type MemoCacheCallback,
   type MemoCacheContext,
+  type MemoUnwrapAdapterOptions,
   type MemoMapLike,
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
