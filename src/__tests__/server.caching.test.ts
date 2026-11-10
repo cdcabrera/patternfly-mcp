@@ -194,19 +194,19 @@ describe('memo', () => {
         let updatedRemaining: any[] = [];
         let updatedRemoved: any[] = [];
 
-        updatedAll = await Promise.allSettled(all);
-        updatedRemoved = await Promise.allSettled(removed);
-        updatedRemaining = await Promise.allSettled(remaining);
+        updatedAll = await Promise.allSettled(all.values());
+        updatedRemoved = await Promise.allSettled(removed.values());
+        updatedRemaining = await Promise.allSettled(remaining.values());
 
         if (updatedAll) {
-          sanitized.all.push(...updatedAll);
+          sanitized.all.push(...updatedAll.reverse());
         }
 
         if (updatedRemoved) {
-          sanitized.removed.push(...updatedRemoved);
+          sanitized.removed.push(...updatedRemoved.reverse());
         }
         if (updatedRemaining) {
-          sanitized.remaining.push(...updatedRemaining);
+          sanitized.remaining.push(...updatedRemaining.reverse());
         }
         sanitizedLog.push(sanitized);
       }
@@ -306,14 +306,14 @@ describe('memo', () => {
         let updatedRemaining: any[] = [];
         let updatedRemoved: any[] = [];
 
-        updatedRemoved = await Promise.allSettled(removed);
-        updatedRemaining = await Promise.allSettled(remaining);
+        updatedRemoved = await Promise.allSettled(removed.values());
+        updatedRemaining = await Promise.allSettled(remaining.values());
 
         if (updatedRemoved) {
-          sanitized.removed.push(...updatedRemoved);
+          sanitized.removed.push(...updatedRemoved.reverse());
         }
         if (updatedRemaining) {
-          sanitized.remaining.push(...updatedRemaining);
+          sanitized.remaining.push(...updatedRemaining.reverse());
         }
         sanitizedLog.push(sanitized);
       }
