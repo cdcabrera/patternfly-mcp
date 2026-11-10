@@ -127,7 +127,7 @@ type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...a
  * @template TReturn Return type of the provided/memoized function.
  *
  * @param {(...args: TArgs) => TReturn} func The function or promise/promise-like function to memoize
- * @param {MemoOptions<TReturn>} [options={}] Configuration options.
+ * @param {MemoOptions<TArgs, TReturn>} [options={}] Configuration options.
  * @returns Memoized function
  *
  * @throws {Error} If an error occurs during function execution and `cacheErrors` is set to `false`,
