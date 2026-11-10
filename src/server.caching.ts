@@ -1,27 +1,42 @@
-import { generateHash, isPromise } from './server.helpers';
+import {
+  generateHash,
+  isPromise,
+  isReferenceLike
+} from './server.helpers';
 import { log } from './logger';
 
 /**
- * Memo cache store.
- *
- * @template TReturn Array of cache entries.
+ * Error wrapper for memoized synchronous errors.
  */
-// type MemoCache<TReturn> = Array<TReturn | Promise<TReturn> | { (): never; isError: boolean } | any>;
-type MemoCache<TReturn = unknown> = Map<unknown, TReturn | Promise<TReturn> | { (): never; isError: boolean }>;
+type MemoErrorFunction = (() => never) & { isError: boolean };
+
+/**
+ * Union of possible cache entry values stored in a memo cache.
+ *
+ * @template TReturn Return type of the memoized function.
+ */
+type MemoCacheEntry<TReturn = unknown> = TReturn | Promise<TReturn> | MemoErrorFunction;
+
+/**
+ * Memo cache store map.
+ *
+ * @template TReturn Return type of the memoized function.
+ */
+type MemoCache<TReturn = unknown> = Map<unknown, MemoCacheEntry<TReturn>>;
 
 /**
  * Memo cache handler response parameters.
  *
  * @template TReturn Return type of the memoized function.
  *
- * @property {MemoCache<TReturn>} remaining Array of values that were NOT removed from the cache due to cache limit.
- * @property {MemoCache<TReturn>} removed Array of values that were removed from the cache due to cache limit.
- * @property {MemoCache<TReturn>} all Array of all values in the cache, including removed values.
+ * @property {MemoCache<TReturn>} remaining Map of cache entries that were NOT removed from the cache due to cache limit.
+ * @property {MemoCache<TReturn>} removed Map of cache entries that were removed from the cache due to cache limit.
+ * @property {MemoCache<TReturn>} all Map of all cache entries, including removed entries.
  */
 type MemoCacheHandlerResponse<TReturn = unknown> = {
   remaining: MemoCache<TReturn>;
   removed: MemoCache<TReturn>;
-  all: MemoCache<TReturn>
+  all: MemoCache<TReturn>;
 };
 
 /**
@@ -43,7 +58,7 @@ type OnMemoCacheHandler<TReturn = unknown> = (cache: MemoCacheHandlerResponse<TR
  * @param info - Object containing debugging information.
  * @param info.type - Information debugging category.
  * @param info.value - Value associated with the debug operation.
- * @param {MemoCache<TReturn>} info.cache - MemoCache array
+ * @param {MemoCache<TReturn>} info.cache - MemoCache Map
  */
 type MemoDebugHandler<TReturn = unknown> = (info: { type: string; value: unknown; cache: MemoCache<TReturn> }) => void;
 
@@ -180,6 +195,18 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
   };
 
   /**
+   * Confirm the value has a memo error marker.
+   *
+   * @param value - The value to inspect.
+   * @returns `true` when the value is a memo error marker; otherwise, `false`.
+   */
+  const isMemoError = (value: unknown): value is { isError: true } & (MemoErrorFunction | Record<string, unknown>) => (
+    (typeof value === 'function' || isReferenceLike(value)) &&
+    'isError' in value &&
+    (value as { isError: unknown }).isError === true
+  );
+
+  /**
    * Memoized function.
    */
   const ized = function () {
@@ -291,9 +318,9 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       }
 
       // Return memoized value
-      const cachedValue: any = cache.get(key);
+      const cachedValue = cache.get(key);
 
-      if (cachedValue?.isError === true) {
+      if (isMemoError(cachedValue)) {
         if (isCacheErrors === false) {
           cache.delete(key);
         }
@@ -313,7 +340,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
         cache: new Map(cache)
       });
 
-      return cachedValue;
+      return cachedValue as TReturn;
     };
 
     /**
@@ -362,6 +389,7 @@ export {
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
   type MemoCache,
+  type MemoCacheEntry,
   type MemoNotifyCacheChangeOptions,
   type MemoOptions,
   type MemoReturn,
