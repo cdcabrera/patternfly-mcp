@@ -504,6 +504,7 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
   const componentSchemas = patternFlyRecordsRegistry.get('patternfly-component-schemas');
   const apiCollection = patternFlyRecordsRegistry.get('patternfly-api');
   const aiHandbook = patternFlyRecordsRegistry.get('ai-handbook');
+  const aiHelpers = patternFlyRecordsRegistry.get('ai-helpers');
 
   const availableCollections = new Map<string, string>();
 
@@ -521,7 +522,8 @@ const getPatternFlyMcpResources = async (contextPathOverride?: string): Promise<
     ...setCollectionName('patternfly-docs', originalDocs),
     ...setCollectionName('patternfly-component-schemas', componentSchemas),
     ...setCollectionName('patternfly-api', apiCollection),
-    ...setCollectionName('ai-handbook', aiHandbook)
+    ...setCollectionName('ai-handbook', aiHandbook),
+    ...setCollectionName('ai-helpers', aiHelpers)
   ];
 
   const availableCollectionVersionsSet = new Set<string>();

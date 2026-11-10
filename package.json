@@ -6,6 +6,7 @@
   "type": "module",
   "imports": {
     "~apiCatalog": "./src/collection.patternFlyApi.json",
+    "~aiHelpersCatalog": "./src/collection.aiHelpers.json",
     "~docsCatalog": "./src/docs.json",
     "#toolsHost": "./dist/server.toolsHost.js",
     "#workerEntry": "./dist/server.workerEntry.js",

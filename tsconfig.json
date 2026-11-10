@@ -24,6 +24,7 @@
     "rootDirs": ["./src", "./scripts", "./tooling", "./tests/e2e", "./tests/audit"],
     "paths": {
       "#apiCatalog": ["./src/collection.patternFlyApi.json"],
+      "#aiHelpersCatalog": ["./src/collection.aiHelpers.json"],
       "#docsCatalog": ["./src/docs.json"],
       "#toolsHost": ["./src/server.toolsHost.ts"],
       "#workerEntry": ["./src/server.workerEntry.ts"],

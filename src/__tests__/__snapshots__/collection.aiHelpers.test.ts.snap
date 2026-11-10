@@ -1,0 +1,54 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`collectionCallback should match snapshot for collection result 1`] = `
+{
+  "recordSummaries": [
+    {
+      "entryCount": 6,
+      "firstEntry": {
+        "category": "reference",
+        "collection": "ai-helpers",
+        "description": "Public ai-helpers overview: CONTRIBUTING.",
+        "displayName": "CONTRIBUTING",
+        "family": "uxd",
+        "kind": "overview",
+        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/1426ddfb9a37a9b3411dd661d9c5de1127e0e655/CONTRIBUTING.md",
+        "pathSlug": "uxd-ai-helpers-contributing",
+        "plugin": "repository-root",
+        "section": "overview",
+        "source": "rh-uxd/ai-helpers",
+        "sourceBlobSha": "6f0e83bb935d112809ece605f49de646d19850e4",
+        "sourceContentHash": "34b58913022ff6f2ca439ab62ea1a04b6197115c54d81e1f4415894658bce0ca",
+        "sourcePath": "CONTRIBUTING.md",
+        "version": "main",
+      },
+      "id": "docs::ai-helpers::overview",
+      "sourceId": "overview",
+      "sourceType": "local",
+    },
+    {
+      "entryCount": 72,
+      "firstEntry": {
+        "category": "patternfly",
+        "collection": "ai-helpers",
+        "description": "Audit PatternFly components and pages against WCAG and ARIA best practices. Use when reviewing accessibility, fixing screen reader issues, or validating ARIA usage in PatternFly-based applications.",
+        "displayName": "pf-a11y-audit",
+        "family": "patternfly",
+        "kind": "skill",
+        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/1426ddfb9a37a9b3411dd661d9c5de1127e0e655/plugins/patternfly/pf-a11y/skills/pf-a11y-audit/SKILL.md",
+        "pathSlug": "ai-helpers-skill-pf-a11y-audit",
+        "plugin": "pf-a11y",
+        "section": "skills",
+        "source": "rh-uxd/ai-helpers",
+        "sourceBlobSha": "d2f9e96eb934c7a9497c6b1d7566cfe3401fdbd5",
+        "sourceContentHash": "5713d11cfc1ce52304028eff0c160126d5ce34456265ef717d0aeb6dd7f87abf",
+        "sourcePath": "plugins/patternfly/pf-a11y/skills/pf-a11y-audit/SKILL.md",
+        "version": "main",
+      },
+      "id": "docs::ai-helpers::skills",
+      "sourceId": "skills",
+      "sourceType": "local",
+    },
+  ],
+}
+`;

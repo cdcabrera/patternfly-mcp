@@ -13,6 +13,7 @@ import { patternFlyDocsCollection } from './collection.patternFlyDocs';
 import { patternFlySchemasCollection } from './collection.patternFlySchemas';
 import { patternFlyApiCollection } from './collection.patternFlyApi';
 import { aiHandbookCollection } from './collection.aiHandbook';
+import { aiHelpersCollection } from './collection.aiHelpers';
 
 /**
  * Built-in tools.
@@ -48,7 +49,8 @@ const builtinCollections: McpCollectionCreator[] = [
   patternFlyDocsCollection,
   patternFlySchemasCollection,
   patternFlyApiCollection,
-  aiHandbookCollection
+  aiHandbookCollection,
+  aiHelpersCollection
 ];
 
 export { builtinCollections, builtinResources, builtinTools };

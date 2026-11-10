@@ -31,10 +31,10 @@ Use these parameters to filter the documentation index.
 
 | Parameter | Valid Values | Description |
 | :--- | :--- | :--- |
-| \`category\` | \`about\`, \`about-rapid-prototyping\`, \`accessibility\`, \`analytics\`, \`chat-bot\`, \`css\`, \`customizing%20messages\`, \`dark-theme-handbook\`, \`demo\`, \`demo-demos\`, \`design-guidelines\`, \`design-tokens\`, \`development-guide\`, \`development-guidelines\`, \`enhancing-existing-projects\`, \`general\`, \`glass-mode-handbook\`, \`grammar\`, \`high-contrast-handbook\`, \`html\`, \`new-prototypes\`, \`org-demos\`, \`overview\`, \`react\`, \`release-notes\`, \`text\`, \`text-demos\`, \`text-deprecated\`, \`tree-shaking\`, \`upgrade-guide\`, \`writing-guidelines\`, \`writing-guides\` | Filter by category |
-| \`collection\` | \`patternfly-api\`, \`patternfly-component-schemas\`, \`patternfly-docs\` | Filter by collection |
-| \`section\` | \`accessibility\`, \`ai\`, \`charts\`, \`components\`, \`content-design\`, \`developer-guides\`, \`extensions\`, \`foundations-and-styles\`, \`get-help\`, \`get-involved\`, \`get-started\`, \`layouts\`, \`patterns\`, \`releases\`, \`upgrade\` | Filter by section |
-| \`version\` | \`v4\`, \`v5\`, \`v6\` | Filter by version |
+| \`category\` | \`about\`, \`about-rapid-prototyping\`, \`accessibility\`, \`analytics\`, \`chat-bot\`, \`css\`, \`customizing%20messages\`, \`dark-theme-handbook\`, \`demo\`, \`demo-demos\`, \`design-guidelines\`, \`design-tokens\`, \`development-guide\`, \`development-guidelines\`, \`enhancing-existing-projects\`, \`general\`, \`glass-mode-handbook\`, \`grammar\`, \`high-contrast-handbook\`, \`html\`, \`new-prototypes\`, \`org-demos\`, \`overview\`, \`patternfly\`, \`react\`, \`reference\`, \`release-notes\`, \`text\`, \`text-demos\`, \`text-deprecated\`, \`tree-shaking\`, \`upgrade-guide\`, \`uxd\`, \`writing-guidelines\`, \`writing-guides\` | Filter by category |
+| \`collection\` | \`ai-helpers\`, \`patternfly-api\`, \`patternfly-component-schemas\`, \`patternfly-docs\` | Filter by collection |
+| \`section\` | \`accessibility\`, \`ai\`, \`charts\`, \`components\`, \`content-design\`, \`developer-guides\`, \`extensions\`, \`foundations-and-styles\`, \`get-help\`, \`get-involved\`, \`get-started\`, \`layouts\`, \`overview\`, \`patterns\`, \`releases\`, \`skills\`, \`upgrade\` | Filter by section |
+| \`version\` | \`main\`, \`v4\`, \`v5\`, \`v6\` | Filter by version |
 
 ## Available Patterns
 - **Base View**: \`patternfly://docs/index\`
@@ -194,6 +194,8 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
 ",
   "[INFO]: Registered collection: ai-handbook
 ",
+  "[INFO]: Registered collection: ai-helpers
+",
   "[WARN]: Network access blocked for https://raw.githubusercontent.com/rh-uxd/ai-handbook/refs/heads/main/docs.json: server is in 'test' mode and 'modeOptions.test.baseUrl' is not configured.	:Configure 'modeOptions.test.baseUrl' to allow outbound fetches.
 ",
   "[INFO]: Update collection: patternfly-component-schemas
@@ -201,6 +203,8 @@ exports[`Logging should allow setting logging options, stderr 1`] = `
   "[INFO]: Update collection: patternfly-docs
 ",
   "[INFO]: Update collection: patternfly-api
+",
+  "[INFO]: Update collection: ai-helpers
 ",
   "[INFO]: Update collection: ai-handbook
 ",

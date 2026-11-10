@@ -4,6 +4,7 @@ import {
   getPatternFlyComponentNames,
   mutateKeyWordsMap,
   getPatternFlyMcpResources,
+  getPatternFlyCollection,
   setPatternFlyCollection
 } from '../patternFly.getResources';
 
@@ -368,5 +369,71 @@ describe('getPatternFlyMcpResources', () => {
 
     // Confirm that all pathless entries have unique IDs.
     expect(pathlessEntryIds.size).toBe(pathlessEntries.length);
+  });
+});
+
+describe('getPatternFlyMcpResources ai-helpers collection', () => {
+  const PINNED_SHA = '1426ddfb9a37a9b3411dd661d9c5de1127e0e655';
+
+  beforeAll(async () => {
+    await setPatternFlyCollection('patternfly-docs', {
+      config: { title: 'PatternFly Docs' },
+      response: { records: [] }
+    });
+
+    await setPatternFlyCollection('ai-helpers', {
+      config: { title: 'AI Helpers' },
+      response: {
+        records: [
+          {
+            id: 'docs::ai-helpers::skills',
+            sourceId: 'skills',
+            sourceType: 'local',
+            data: {
+              skills: [
+                {
+                  displayName: 'PF Chart Gen',
+                  description: 'PatternFly skill: pf-chart-gen.',
+                  pathSlug: 'ai-helpers-skill-pf-chart-gen',
+                  section: 'skills',
+                  category: 'reference',
+                  source: 'rh-uxd/ai-helpers',
+                  path: `https://raw.githubusercontent.com/rh-uxd/ai-helpers/${PINNED_SHA}/plugins/patternfly/pf-react/skills/pf-chart-gen/SKILL.md`,
+                  version: 'main',
+                  collection: 'ai-helpers'
+                }
+              ]
+            }
+          }
+        ]
+      }
+    });
+  });
+
+  afterAll(() => {
+    setPatternFlyCollection.clear();
+  });
+
+  it('should register ai-helpers and index collection-filtered resources', async () => {
+    const registered = getPatternFlyCollection('ai-helpers');
+
+    expect(registered?.name).toBe('ai-helpers');
+    expect(registered?.config).toMatchObject({ title: 'AI Helpers' });
+
+    const result = await getPatternFlyMcpResources();
+
+    expect(result.collections).toContain('ai-helpers');
+
+    const helpersEntries = result.byCollection['ai-helpers'] ?? [];
+
+    expect(helpersEntries).toHaveLength(1);
+    expect(helpersEntries[0]?.collection).toBe('ai-helpers');
+    expect(helpersEntries[0]?.displayCollection).toBe('AI Helpers');
+    expect(helpersEntries[0]?.pathSlug).toBe('ai-helpers-skill-pf-chart-gen');
+
+    const skillsResource = result.resources.get('skills');
+
+    expect(skillsResource?.entries).toHaveLength(1);
+    expect(skillsResource?.entries[0]?.uri).toMatch(/^patternfly:\/\/docs\/skills/);
   });
 });
