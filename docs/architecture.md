@@ -1,5 +1,7 @@
 # Architecture & roadmap
 
+<!-- cspell:words Puzzo jpuzz -->
+
 ## Design and core concepts
 
 The PatternFly MCP server is centered around the concept of a library for all things PatternFly. It is intended to be extensible to meet the needs of different teams and projects, from simple to complex, from design to development.
@@ -28,13 +30,14 @@ First and foremost, the MCP server is an application. Collections are aggregated
 
 #### Primary collections
 
-- **`patternfly-docs`**: Curated Markdown documentation and guidelines catalog (`src/docs.json`) aggregating pinned upstream repositories (`patternfly-org`, `patternfly-react`, `uxd-ai-helpers`, `patternfly-cli`, `patternfly-elements`, `patternfly-mcp`, and `pf-codemods`)
+- **`patternfly-docs`**: Curated Markdown documentation and guidelines catalog (`src/docs.json`) aggregating pinned upstream repositories (`patternfly-org`, `patternfly-react`, `patternfly-cli`, `patternfly-elements`, `patternfly-mcp`, and `pf-codemods`)
 - **`patternfly-component-schemas`**: Machine-readable component JSON schemas (`@patternfly/patternfly-component-schemas`) providing runtime prop definitions and validation rules.
 - **`patternfly-api`**: Live-crawled and pre-built component API specifications from PatternFly documentation endpoints.
 
 #### Support collections
 
 - **`ai-handbook`**: Specialized Red Hat Unified Intelligence Engineering (UIE) AI Experience (AIX) Standards for designing AI experiences, fetched dynamically from [`rh-uxd/ai-handbook`](https://github.com/rh-uxd/ai-handbook). Read the [Getting started for designers guide](https://github.com/rh-uxd/ai-handbook/blob/main/docs/getting-started-for-designers/getting-started-for-designers.md) for prompting best practices.
+- **`ai-helpers`**: Skill and overview Markdown from [`rh-uxd/ai-helpers`](https://github.com/rh-uxd/ai-helpers), shipped as an embedded, checked-in seed at `src/collection.aiHelpers.json`. At reseed time the build resolves the requested source ref to an immutable commit SHA and writes source, repository, ref, SHA, license, and attribution metadata into the seed. Records participate in the global PatternFly docs lookup as collection `ai-helpers` (search, `usePatternFlyDocs`, and `patternfly://docs` with a collection filter). Unlike `ai-handbook`, **`ai-helpers` performs no runtime GitHub crawl or fetch** and introduces **no** standalone MCP resource, prompt, or tool. Historical exploration by Jeff Puzzo ([@jpuzz0](https://github.com/jpuzz0)) informed this work; see [patternfly-mcp#187](https://github.com/patternfly/patternfly-mcp/pull/187) and [ai-helpers#72](https://github.com/rh-uxd/ai-helpers/pull/72) for context only—not as live implementation dependencies.
 
 #### Collection architecture
 
@@ -100,7 +103,7 @@ Our roadmap focuses on expanding the server's reach and providing a more integra
 - **Resource-Tool integration**: Moving experimental MCP resources used under `experimental-context-management` into stable tooling; converting two MCP tools into a single MCP tool.
 - **Collection indexing**: Indexing collections, record quality filtering, and incremental indexing.
 - **Focused MCP resources**: Moving the current MCP resources to two primary resources: collections and records.
-- **Skills-as-Tools (On Track)**: Expand MCP functionality with agent skills using common Markdown. This provides consumers with significant customization without modifying the PatternFly MCP server core. You can start contributing to the MCP now by adding skills through our [AI Plugin Marketplace](https://github.com/rh-uxd/ai-helpers).
+- **Skills-as-Tools (On Track)**: Future capability to expose agent skills as dynamic MCP prompts and tools with explicit invocation and permission boundaries. The embedded **`ai-helpers`** collection makes skill Markdown **discoverable** today via search and docs resources; it does **not** execute skills inside the server. Contribute skills through the [AI Plugin Marketplace](https://github.com/rh-uxd/ai-helpers); a separately designed layer will be required for agent-run skill execution.
 - **Environment & analysis tooling**: A built-in tool falling under "use PatternFly", focused on environment snapshots, code analysis, and whitelisted resource access for local project analysis.
 - **Resource and helper sharing**: Mechanisms to share resources and helper functions across external tool plugins.
 

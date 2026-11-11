@@ -25,7 +25,7 @@ Use this to search for PatternFly documentation URLs, `patternfly://` resource U
 
 **Parameters:**
 - `searchQuery`: `string` (required) - Case-insensitive query for keywords, component names, or versions (e.g., `"button"`, `"card v6"`, `"react"`, `"*"`)
-- `collection`: `string` (optional) - Filter results by a specific collection (e.g., `"patternfly-docs"`, `"patternfly-component-schemas"`, `"patternfly-api"`, `"ai-handbook"`). Note that additional specialized or experimental collections outside the primary core set may also be available or shift across releases.
+- `collection`: `string` (optional) - Filter results by a specific collection (e.g., `"patternfly-docs"`, `"patternfly-component-schemas"`, `"patternfly-api"`, `"ai-handbook"`, `"ai-helpers"`). Note that additional specialized or experimental collections outside the primary core set may also be available or shift across releases.
 
 **Examples:**
 
@@ -41,6 +41,14 @@ Search filtered by collection:
 {
   "searchQuery": "button",
   "collection": "patternfly-docs"
+}
+```
+
+Search the embedded AI Helpers collection:
+```json
+{
+  "searchQuery": "plugin",
+  "collection": "ai-helpers"
 }
 ```
 
@@ -85,7 +93,7 @@ Fetch full documentation and component JSON schemas for specific PatternFly URLs
 
 The server exposes a resource-centric architecture via the `patternfly://` URI scheme. MCP clients can use these resources directly. [Review the roadmap for future resource updates](./architecture.md#roadmap).
 
-> **Note on AI content**: Specialized AI guidance and engineering patterns are sourced from support collections like [rh-uxd/ai-handbook](https://github.com/rh-uxd/ai-handbook). [See Collections and data sources in architecture](./architecture.md#collections-and-data-sources).
+> **Note on AI content**: Support collections supply AI-related guidance through the same search and `patternfly://docs` resources. **`ai-handbook`** is fetched dynamically at runtime from [rh-uxd/ai-handbook](https://github.com/rh-uxd/ai-handbook). **`ai-helpers`** is an embedded, checked-in seed (no runtime GitHub fetch): filter with `"collection": "ai-helpers"` in `searchPatternFlyDocs` or docs index URIs. There is no separate MCP resource, prompt, or executable skill tool for AI Helpers—only catalog discovery. [See Collections and data sources in architecture](./architecture.md#collections-and-data-sources).
 
 ### Discovery resources
 

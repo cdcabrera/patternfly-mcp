@@ -548,6 +548,7 @@ When PatternFly releases new documentation or component features, reseed the emb
 - `npm run build:collections`: Runs reseeding for all collections and collection tests.
 - `npm run build:collections-api`: Updates `src/collection.patternFlyApi.json` and outputs CSV diffs to `reports/`.
 - `npm run build:collections-docs`: Updates `src/docs.json` with latest repository hashes.
+- `npm run build:collections-ai-helpers`: Updates `src/collection.aiHelpers.json` from [`rh-uxd/ai-helpers`](https://github.com/rh-uxd/ai-helpers).
 
 #### Unique collections
 
@@ -610,6 +611,28 @@ Collection of specialized guides and AI patterns that are fetched dynamically at
 
 - **Update workflow**: Synchronized on runtime from the [Red Hat AI Handbook repo](https://github.com/rh-uxd/ai-handbook).
 - **Validation**: Verified through automated unit tests.
+
+##### 5. Embedded AI Helpers (`src/collection.aiHelpers.json`)
+
+<!-- cspell:words Puzzo jpuzz evals -->
+
+> The AI Helpers collection embeds marketplace skill Markdown and public overview docs from [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers). The server reads the committed seed at startup; it does not fetch GitHub at runtime.
+
+- **Update commands**:
+  ```bash
+  # Reseed the AI Helpers collection
+  npm run build:collections-ai-helpers
+
+  # Run collection test suites only
+  npm run test:collections
+
+  # Run collection test suites in watch mode
+  npm run test:collections-dev
+  ```
+- **Reseed contract**: GitHub Git tree and blob reads run **only** in `tooling/collections/update.aiHelpers.ts`. The default ref (`main`) is resolved to a pinned 40-character commit SHA. The written seed records `source`, `sourceRepository`, `requestedRef`, `resolvedCommitSha`, license, and attribution. The crawler includes supported repository-root overview Markdown and marketplace-backed `SKILL.md` paths; blocked segments (for example `.github`, `scripts`, `evals`) and unsafe or agent-instruction paths are excluded.
+- **Output**: The command prints a console diff and writes an ignored audit report at `reports/YYYYMMDD-collection.aiHelpers.report.csv`. Review the seed diff and CSV before committing; do not hand-edit generated seed output.
+- **When to run**: When [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers) publishes new skills or overview changes, or as part of `npm run build:collections`.
+- **Attribution**: Seed metadata credits Jeff Puzzo ([@jpuzz0](https://github.com/jpuzz0)). [patternfly-mcp#187](https://github.com/patternfly/patternfly-mcp/pull/187) and [ai-helpers#72](https://github.com/rh-uxd/ai-helpers/pull/72) are historical references only.
 
 ## In-progress and future work
 
