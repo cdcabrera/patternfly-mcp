@@ -74,7 +74,6 @@ describe('docs.json', () => {
      *
      * | Repository | Hash / Branch | Count | Type |
      * |---|---|---|---|
-     * | uxd-ai-helpers | e8cca17430a8ccb062ed1878073165417a081b34 | 6 | One-off |
      * | patternfly-cli | ce032cd16ddb90c540cb4f18c6830e190cd9e3e9 | 1 | One-off |
      * | patternfly-elements | 402b3b0e7ed73cb2aa21531e0eab4216c2211212 | 1 | One-off |
      * | patternfly-mcp | 4e1cd7c636f6ac17c851f54a920549e5377f3809 | 5 | One-off |
@@ -83,9 +82,9 @@ describe('docs.json', () => {
      * | patternfly-org | v5 | 1 | One-off |
      * | patternfly-react | 6f2385bbcc03de22a7ae8be506481e1b4d653200 | 100 | **Primary** |
      * | pf-codemods | 63df51df5cc6af2f3d83de4c0991c9e65625675f | 3 | One-off |
-     * | **Total** | **9 unique refs** | **321** | |
+     * | **Total** | **8 unique refs** | **315** | |
      */
-    expect(baseHashes.size).toBe(9);
+    expect(baseHashes.size).toBe(8);
 
     /**
      * Confirm total docs count matches metadata
@@ -101,6 +100,35 @@ describe('docs.json', () => {
     const docsWithPath = Object.values(docsJson.docs).flat().filter(entry => entry.path).length;
 
     expect(allLinks.size).toBe(docsWithPath);
+  });
+
+  it('should retain the PatternFly.org AI Helpers marketplace entry without legacy rh-uxd overview rows', () => {
+    const aiHelpers = docsJson.docs.AIHelpers ?? [];
+    const pathSlugs = aiHelpers.map(entry => entry.pathSlug);
+
+    expect(aiHelpers).toHaveLength(1);
+    expect(pathSlugs).toContain('ai-helpers-about');
+    expect(pathSlugs).not.toContain('uxd-ai-helpers-readme');
+    expect(pathSlugs).not.toContain('uxd-ai-helpers-contributing-skills');
+    expect(pathSlugs).not.toContain('uxd-ai-helpers-contributing');
+    expect(pathSlugs).not.toContain('uxd-ai-helpers-faq');
+    expect(pathSlugs).not.toContain('uxd-ai-helpers-plugins');
+    expect(pathSlugs).not.toContain('uxd-ai-helpers-quickstart');
+
+    const allSlugs = Object.values(docsJson.docs)
+      .flat()
+      .map(entry => entry.pathSlug);
+
+    for (const migratedSlug of [
+      'uxd-ai-helpers-readme',
+      'uxd-ai-helpers-contributing-skills',
+      'uxd-ai-helpers-contributing',
+      'uxd-ai-helpers-faq',
+      'uxd-ai-helpers-plugins',
+      'uxd-ai-helpers-quickstart'
+    ]) {
+      expect(allSlugs).not.toContain(migratedSlug);
+    }
   });
 });
 

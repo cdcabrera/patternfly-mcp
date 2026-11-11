@@ -1,9 +1,9 @@
 {
   "version": "1",
-  "generated": "2026-10-05T16:07:16.920Z",
+  "generated": "2026-11-10T23:58:00.000Z",
   "meta": {
     "totalEntries": 135,
-    "totalDocs": 321,
+    "totalDocs": 315,
     "source": "patternfly-mcp-internal"
   },
   "docs": {
@@ -118,66 +118,6 @@
         "category": "development-guidelines",
         "source": "github",
         "path": "https://raw.githubusercontent.com/patternfly/patternfly-org/957756128e8ddfc4be5db49e72312a2c43b9d220/packages/documentation-site/patternfly-docs/content/AI/marketplace/marketplace.md",
-        "version": "v6"
-      },
-      {
-        "displayName": "AI skills for PatternFly and UXD teams",
-        "description": "The official PatternFly and UXD AI Helpers repository, an agent marketplace. Find agent skills and plugins.",
-        "pathSlug": "uxd-ai-helpers-readme",
-        "section": "components",
-        "category": "design-guidelines",
-        "source": "github",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/README.md",
-        "version": "v6"
-      },
-      {
-        "displayName": "UXD AI Helpers contributing skills",
-        "description": "How to propose and land agent skills in the UXD and PatternFly AI Helpers repository (structure, review, and conventions).",
-        "pathSlug": "uxd-ai-helpers-contributing-skills",
-        "section": "components",
-        "category": "design-guidelines",
-        "source": "github",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/CONTRIBUTING-SKILLS.md",
-        "version": "v6"
-      },
-      {
-        "displayName": "UXD AI Helpers contributing",
-        "description": "General contribution guide for UXD and PatternFly AI Helpers repository (issues, PRs, and repo workflow).",
-        "pathSlug": "uxd-ai-helpers-contributing",
-        "section": "components",
-        "category": "design-guidelines",
-        "source": "github",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/CONTRIBUTING.md",
-        "version": "v6"
-      },
-      {
-        "displayName": "UXD AI Helpers FAQ",
-        "description": "Frequently asked questions (FAQ) about the UXD and PatternFly AI Helpers repository.",
-        "pathSlug": "uxd-ai-helpers-faq",
-        "section": "components",
-        "category": "design-guidelines",
-        "source": "github",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/FAQ.md",
-        "version": "v6"
-      },
-      {
-        "displayName": "UXD AI Helpers Plugins",
-        "description": "An auto-generated list of plugins available in the UXD and PatternFly AI Helpers repository.",
-        "pathSlug": "uxd-ai-helpers-plugins",
-        "section": "components",
-        "category": "design-guidelines",
-        "source": "github",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/PLUGINS.md",
-        "version": "v6"
-      },
-      {
-        "displayName": "UXD AI Helpers Quickstart",
-        "description": "A guide for contributors who aren't developers but want to create AI skills.",
-        "pathSlug": "uxd-ai-helpers-quickstart",
-        "section": "components",
-        "category": "design-guidelines",
-        "source": "github",
-        "path": "https://raw.githubusercontent.com/rh-uxd/ai-helpers/e8cca17430a8ccb062ed1878073165417a081b34/QUICKSTART.md",
         "version": "v6"
       }
     ],
