@@ -93,7 +93,7 @@ Fetch full documentation and component JSON schemas for specific PatternFly URLs
 
 The server exposes a resource-centric architecture via the `patternfly://` URI scheme. MCP clients can use these resources directly. [Review the roadmap for future resource updates](./architecture.md#roadmap).
 
-> **Note on AI content**: Support collections supply AI-related guidance through the same search and `patternfly://docs` resources. **`ai-handbook`** is fetched dynamically at runtime from [rh-uxd/ai-handbook](https://github.com/rh-uxd/ai-handbook). **`ai-helpers`** is an embedded, checked-in seed (no runtime GitHub fetch): filter with `"collection": "ai-helpers"` in `searchPatternFlyDocs` or docs index URIs. There is no separate MCP resource, prompt, or executable skill tool for AI Helpers—only catalog discovery. [See Collections and data sources in architecture](./architecture.md#collections-and-data-sources).
+> **Note on AI content**: Support collections supply AI-related guidance through the same search and `patternfly://docs` resources. **`ai-handbook`** is synchronized dynamically at runtime from [rh-uxd/ai-handbook](https://github.com/rh-uxd/ai-handbook). **`ai-helpers`** uses an embedded, checked-in catalog (no runtime reseed or upstream tree crawl): filter with `"collection": "ai-helpers"` in `searchPatternFlyDocs` or docs index URIs. Opening a specific record may still retrieve pinned raw Markdown via the standard docs tools—same as other seeded collections. There is no separate MCP resource, prompt, or executable skill tool for AI Helpers. [See Collections and data sources in architecture](./architecture.md#collections-and-data-sources).
 
 ### Discovery resources
 

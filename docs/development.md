@@ -616,7 +616,7 @@ Collection of specialized guides and AI patterns that are fetched dynamically at
 
 <!-- cspell:words Puzzo jpuzz evals -->
 
-> The AI Helpers collection embeds marketplace skill Markdown and public overview docs from [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers). The server reads the committed seed at startup; it does not fetch GitHub at runtime.
+> The AI Helpers collection embeds marketplace skill Markdown and public overview docs from [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers). The server hydrates the committed catalog locally at startup (no runtime reseed or source-tree crawl). Reading a record may still fetch its pinned raw GitHub URL through the normal docs pipeline.
 
 - **Update commands**:
   ```bash
@@ -630,9 +630,9 @@ Collection of specialized guides and AI patterns that are fetched dynamically at
   npm run test:collections-dev
   ```
 - **Reseed contract**: GitHub Git tree and blob reads run **only** in `tooling/collections/update.aiHelpers.ts`. The default ref (`main`) is resolved to a pinned 40-character commit SHA. The written seed records `source`, `sourceRepository`, `requestedRef`, `resolvedCommitSha`, license, and attribution. The crawler includes supported repository-root overview Markdown and marketplace-backed `SKILL.md` paths; blocked segments (for example `.github`, `scripts`, `evals`) and unsafe or agent-instruction paths are excluded.
-- **Output**: The command prints a console diff and writes an ignored audit report at `reports/YYYYMMDD-collection.aiHelpers.report.csv`. Review the seed diff and CSV before committing; do not hand-edit generated seed output.
+- **Output**: The command prints a console summary (no-op or diff). When catalog changes are emitted, it also writes an ignored audit report at `reports/YYYYMMDD-collection.aiHelpers.report.csv`. Review the seed diff and any CSV produced before committing; do not hand-edit generated seed output.
 - **When to run**: When [rh-uxd/ai-helpers](https://github.com/rh-uxd/ai-helpers) publishes new skills or overview changes, or as part of `npm run build:collections`.
-- **Attribution**: Seed metadata credits Jeff Puzzo ([@jpuzz0](https://github.com/jpuzz0)). [patternfly-mcp#187](https://github.com/patternfly/patternfly-mcp/pull/187) and [ai-helpers#72](https://github.com/rh-uxd/ai-helpers/pull/72) are historical references only.
+- **Attribution**: Seed metadata credits Jeff Puzzo ([@jpuzz0](https://github.com/jpuzz0)). [patternfly-mcp#187](https://github.com/patternfly/patternfly-mcp/pull/187) and [patternfly/ai-helpers#72](https://github.com/patternfly/ai-helpers/pull/72) are historical references only.
 
 ## In-progress and future work
 
