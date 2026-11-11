@@ -1,4 +1,4 @@
-import { memo } from '../server.caching';
+import { memo, type MemoMapLike } from '../server.caching';
 
 describe('memo', () => {
   beforeEach(() => {
@@ -438,5 +438,139 @@ describe('memo', () => {
     jest.advanceTimersByTime(100);
     expect(mockOnCacheClear).toHaveBeenCalledTimes(1);
     expect(mockOnCacheExpire).not.toHaveBeenCalled();
+  });
+
+  const createMockStorage = (backingStore = new Map<unknown, unknown>()): MemoMapLike<unknown, unknown> & { backingStore: Map<unknown, unknown> } => ({
+    backingStore,
+    get: jest.fn((key: unknown) => backingStore.get(key)),
+    set: jest.fn((key: unknown, value: unknown) => backingStore.set(key, value)),
+    has: jest.fn((key: unknown) => backingStore.has(key)),
+    delete: jest.fn((key: unknown) => backingStore.delete(key)),
+    clear: jest.fn(() => backingStore.clear())
+  });
+
+  it.each([
+    {
+      description: 'sync function',
+      isAsync: false,
+      input: 42,
+      expected: 'val-42'
+    },
+    {
+      description: 'async function',
+      isAsync: true,
+      input: 99,
+      expected: 'async-val-99'
+    }
+  ])('should write resolved values to synchronous MemoMapLike storage, $description', async ({ isAsync, input, expected }) => {
+    const storage = createMockStorage();
+    const fn = isAsync
+      ? async (val: number) => `async-val-${val}`
+      : (val: number) => `val-${val}`;
+
+    const memoized = memo(fn, { storage });
+    const result = await memoized(input);
+
+    expect(result).toBe(expected);
+    expect(storage.set).toHaveBeenCalledTimes(1);
+    expect(storage.set).toHaveBeenCalledWith(expect.anything(), expected);
+  });
+
+  it('should write resolved values to storage when storage is provided as a Promise', async () => {
+    const storage = createMockStorage();
+    const storagePromise = Promise.resolve(storage);
+    const memoized = memo((val: number) => `res-${val}`, { storage: storagePromise });
+
+    await storagePromise;
+    memoized(10);
+
+    await Promise.resolve();
+    expect(storage.set).toHaveBeenCalledTimes(1);
+    expect(storage.set).toHaveBeenCalledWith(expect.anything(), 'res-10');
+  });
+
+  it.each([
+    {
+      description: 'sync throwing storage.set',
+      isAsync: false,
+      storageError: () => {
+        throw new Error('store write failed');
+      },
+      input: 5,
+      expected: 10
+    },
+    {
+      description: 'async rejecting storage.set',
+      isAsync: true,
+      storageError: () => Promise.reject(new Error('async store write failed')),
+      input: 5,
+      expected: 15
+    }
+  ])('should not throw if storage.set throws or rejects, $description', async ({ isAsync, storageError, input, expected }) => {
+    const storage: MemoMapLike<unknown, unknown> = {
+      get: jest.fn(),
+      has: jest.fn(() => false),
+      set: jest.fn(storageError)
+    };
+
+    const fn = isAsync
+      ? async (val: number) => val * 3
+      : (val: number) => val * 2;
+
+    const memoized = memo(fn, { storage });
+
+    if (isAsync) {
+      await expect(memoized(input)).resolves.toBe(expected);
+    } else {
+      expect(() => memoized(input)).not.toThrow();
+      expect(memoized(input)).toBe(expected);
+    }
+  });
+
+  it.each([
+    {
+      description: 'sync error',
+      isAsync: false,
+      expectedProperty: 'isError'
+    },
+    {
+      description: 'async error',
+      isAsync: true,
+      expectedProperty: 'message'
+    }
+  ])('should write errors to storage when cacheErrors is true, $description', async ({ isAsync, expectedProperty }) => {
+    const storage = createMockStorage();
+    const fn = isAsync
+      ? async () => {
+        throw new Error('failure');
+      }
+      : () => {
+        throw new Error('failure');
+      };
+
+    const memoized = memo(fn, { storage, cacheErrors: true });
+
+    if (isAsync) {
+      await expect(memoized()).rejects.toThrow('failure');
+    } else {
+      expect(() => memoized()).toThrow('failure');
+    }
+
+    expect(storage.set).toHaveBeenCalledTimes(1);
+    expect((storage.set as jest.Mock).mock.calls[0][1]).toHaveProperty(expectedProperty);
+  });
+
+  it('should call storage.delete when async function rejects and cacheErrors is false', async () => {
+    const storage = createMockStorage();
+    const memoized = memo(
+      async () => {
+        throw new Error('uncached failure');
+      },
+      { storage, cacheErrors: false }
+    );
+
+    await expect(memoized()).rejects.toThrow('uncached failure');
+    expect(storage.delete).toHaveBeenCalledTimes(1);
+    expect(storage.delete).toHaveBeenCalledWith(expect.anything());
   });
 });
