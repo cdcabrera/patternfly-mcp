@@ -124,7 +124,6 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   onCacheExpire?: OnMemoCacheHandler<TReturn>;
   onCacheRollout?: OnMemoCacheHandler<TReturn>;
   cache?: Map<unknown, MemoCacheEntry<TReturn>> | MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
-  // cache?: Map<unknown, TReturn> | MemoMapLike<unknown, TReturn> | Promise<Map<unknown, TReturn> | MemoMapLike<unknown, TReturn>>;
 }
 
 /**
