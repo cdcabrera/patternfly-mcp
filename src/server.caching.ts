@@ -440,6 +440,8 @@ interface MemoUnwrapAdapterOptions {
  * Keeps active in-flight promises in memory so concurrent callers coalesce on the running task,
  * and writes resolved concrete values to the target store upon settlement.
  *
+ * @note Review using `Promise.try` in the future.
+ *
  * @template K Key type.
  * @template V Value type.
  *
@@ -455,6 +457,41 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
   const inMemory = new Map<K, MemoCacheEntry<V>>();
   let resolvedStore: MemoMapLike<K, V> | Map<K, V> | undefined;
 
+  /*
+  const useTargetStore = (targ: any) => {
+    const update = async () => {
+      let res;
+
+      if (isPromise(targ)) {
+        await Promise.resolve(targ)
+          .then(store => {
+            res = store;
+          })
+          .catch(() => {});
+      } else {
+        res = targ as MemoMapLike<K, V> | Map<K, V>;
+      }
+
+      return res;
+    };
+
+    return update();
+  };
+  */
+
+  /*
+  const useTargetStore = async (targ: any) => {
+    const updatedTarg = isPromise(targ) ? Promise.resolve(targ) : targ;
+    let res;
+
+    try {
+      res = await Promise.resolve(updatedTarg);
+    } catch {}
+
+    return res;
+  };
+   */
+
   if (isPromise(targetStore)) {
     Promise.resolve(targetStore)
       .then(store => {
@@ -469,6 +506,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     if (resolvedStore) {
       return resolvedStore;
     }
+
     if (isPromise(targetStore)) {
       try {
         resolvedStore = await targetStore;
@@ -484,11 +522,9 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     clear(): unknown | Promise<unknown> {
       inMemory.clear();
 
-      if (resolvedStore?.clear) {
-        try {
-          return resolvedStore.clear();
-        } catch {}
-      }
+      try {
+        return resolvedStore?.clear?.();
+      } catch {}
 
       return undefined;
     },
@@ -496,11 +532,9 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     delete(key: K): unknown | Promise<unknown> {
       inMemory.delete(key);
 
-      if (resolvedStore?.delete) {
-        try {
-          return resolvedStore.delete(key);
-        } catch {}
-      }
+      try {
+        return resolvedStore?.delete?.(key);
+      } catch {}
 
       return undefined;
     },
@@ -514,21 +548,17 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         return inMemory.get(key);
       }
 
-      if (resolvedStore) {
-        try {
-          const hasKey = resolvedStore.has(key);
+      try {
+        if (resolvedStore?.has?.(key) === true) {
+          const stored = resolvedStore?.get?.(key);
 
-          if (hasKey === true) {
-            const stored = resolvedStore.get(key);
+          if (!isPromise(stored)) {
+            inMemory.set(key, stored as V);
 
-            if (!isPromise(stored)) {
-              inMemory.set(key, stored as V);
-
-              return stored as V;
-            }
+            return stored as V;
           }
-        } catch {}
-      }
+        }
+      } catch {}
 
       return undefined;
     },
@@ -538,15 +568,13 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         return true;
       }
 
-      if (resolvedStore) {
-        try {
-          const hasKey = resolvedStore.has(key);
+      try {
+        const hasKey = resolvedStore?.has?.(key);
 
-          if (hasKey === true) {
-            return true;
-          }
-        } catch {}
-      }
+        if (hasKey === true) {
+          return true;
+        }
+      } catch {}
 
       return false;
     },
