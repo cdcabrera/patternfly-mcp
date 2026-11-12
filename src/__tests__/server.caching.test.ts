@@ -705,6 +705,11 @@ describe('Adapter', () => {
 
     cache.set('k2', 'v2');
 
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
+
+    // Hydrating k1 from targetStore pulls it into the active in-memory cache window
+    expect(cache.get('k1')).toBe('v1');
     expect(cache.size).toBe(2);
     expect(Array.from(cache.keys?.() || [])).toEqual(expect.arrayContaining(['k1', 'k2']));
     expect(Array.from(cache.entries?.() || [])).toEqual(expect.arrayContaining([

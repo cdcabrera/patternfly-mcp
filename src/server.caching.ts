@@ -506,25 +506,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
-      const seen = new Set<K>();
-      let storeEntries: Iterable<[K, V]> = [];
-
-      if (resolvedStore && typeof (resolvedStore as { entries?: () => Iterable<[K, V]> }).entries === 'function') {
-        try {
-          storeEntries = (resolvedStore as { entries: () => Iterable<[K, V]> }).entries() ?? [];
-        } catch {}
-      }
-
-      return Iterator.from([inMemory.entries(), storeEntries as Iterable<[K, MemoCacheEntry<V>]>])
-        .flatMap(iterable => iterable)
-        .filter(([key]) => {
-          if (seen.has(key)) {
-            return false;
-          }
-          seen.add(key);
-
-          return true;
-        });
+      return inMemory.entries();
     },
 
     get(key: K): MemoCacheEntry<V> | undefined {
@@ -570,25 +552,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     keys(): IterableIterator<K> {
-      const seen = new Set<K>();
-      let storeKeys: Iterable<K> = [];
-
-      if (resolvedStore && typeof (resolvedStore as { keys?: () => Iterable<K> }).keys === 'function') {
-        try {
-          storeKeys = (resolvedStore as { keys: () => Iterable<K> }).keys() ?? [];
-        } catch {}
-      }
-
-      return Iterator.from([inMemory.keys(), storeKeys])
-        .flatMap(iterable => iterable)
-        .filter(key => {
-          if (seen.has(key)) {
-            return false;
-          }
-          seen.add(key);
-
-          return true;
-        });
+      return inMemory.keys();
     },
 
     set(key: K, value: MemoCacheEntry<V>): unknown {
@@ -648,26 +612,6 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     get size(): number {
-      if (resolvedStore && typeof resolvedStore.size === 'number') {
-        let count = inMemory.size;
-
-        if (typeof (resolvedStore as { keys?: () => Iterable<K> }).keys === 'function') {
-          const seen = new Set(inMemory.keys());
-
-          try {
-            for (const k of (resolvedStore as { keys: () => Iterable<K> }).keys()) {
-              if (!seen.has(k)) {
-                count += 1;
-              }
-            }
-          } catch {}
-
-          return count;
-        }
-
-        return Math.max(inMemory.size, resolvedStore.size);
-      }
-
       return inMemory.size;
     }
   };
