@@ -440,7 +440,7 @@ describe('memo', () => {
     expect(mockOnCacheExpire).not.toHaveBeenCalled();
   });
 
-  it('should support passing custom cache store via cache option', async () => {
+  it('should support passing custom cache store', async () => {
     const cache = new Map();
     const fn = jest.fn((val: number) => val * 2);
     const memoized = memo(fn, { cache });
