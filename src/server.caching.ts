@@ -234,6 +234,19 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     const cache = (customCache || new Map()) as MemoCache<TReturn>;
     let timeout: NodeJS.Timeout | undefined;
 
+    // Take into account map-like objects with partial props
+    const getCacheSnapshot = (passed = cache): MemoCache<TReturn> => {
+      if (passed instanceof Map) {
+        return new Map(passed);
+      }
+
+      if (passed && typeof (passed as { entries?: () => Iterable<[unknown, MemoCacheEntry<TReturn>]> }).entries === 'function') {
+        return new Map((passed as { entries: () => Iterable<[unknown, MemoCacheEntry<TReturn>]> }).entries());
+      }
+
+      return new Map();
+    };
+
     const memoized = (...args: TArgs): TReturn => {
       const isMemo = cacheLimit > 0;
 
@@ -242,7 +255,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
         timeout = setTimeout(() => {
           if (isOnCacheExpire) {
-            const allCacheEntries: MemoCache<TReturn> = new Map(cache);
+            const allCacheEntries: MemoCache<TReturn> = getCacheSnapshot();
 
             notifyCacheChange({
               all: allCacheEntries,
@@ -309,7 +322,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
         // Run callback and cache trim after cache update.
         if (isMemo) {
           if (isOnCacheRollout && cache?.size > cacheLimit) {
-            const allCacheEntries: MemoCache<TReturn> = new Map(cache);
+            const allCacheEntries: MemoCache<TReturn> = getCacheSnapshot();
 
             const temp = Array.from(allCacheEntries.entries());
             const remaining = allCacheEntries.size - cacheLimit;
@@ -334,6 +347,10 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             while (cache.size > cacheLimit) {
               const oldestKey = cache.keys().next().value;
 
+              if (oldestKey === undefined) {
+                break;
+              }
+
               cache.delete(oldestKey);
             }
           }
@@ -351,7 +368,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
         debug({
           type: 'memo error',
           value: cachedValue,
-          cache: new Map(cache)
+          cache: getCacheSnapshot()
         });
 
         return typeof cachedValue === 'function' ? cachedValue() : cachedValue;
@@ -360,7 +377,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       debug({
         type: `memo${(isFuncPromise && ' promise') || ''}`,
         value: () => cachedValue,
-        cache: new Map(cache)
+        cache: getCacheSnapshot()
       });
 
       return cachedValue as TReturn;
@@ -372,13 +389,13 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
      * @returns A `boolean` indicating if the cache was cleared.
      */
     memoized.clear = () => {
-      const allBefore = new Map(cache);
+      const allBefore = getCacheSnapshot();
 
       if (allBefore.size === 0) {
         return false;
       }
 
-      const allCacheEntries: MemoCache<TReturn> = new Map(cache);
+      const allCacheEntries: MemoCache<TReturn> = new Map(allBefore);
 
       clearTimeout(timeout);
       timeout = undefined;
@@ -387,7 +404,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       debug({
         type: 'memo clear',
         value: undefined,
-        cache: new Map(cache)
+        cache: getCacheSnapshot()
       });
 
       notifyCacheChange({
