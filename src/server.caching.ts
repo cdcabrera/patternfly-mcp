@@ -12,11 +12,14 @@ import { log } from './logger';
  * @template V Value type.
  */
 interface MemoMapLike<K, V> {
-  get(key: K): V | undefined | Promise<V | undefined>;
-  set(key: K, value: V): unknown | Promise<unknown>;
-  has(key: K): boolean | Promise<boolean>;
-  delete?(key: K): unknown | Promise<unknown>;
   clear?(): unknown | Promise<unknown>;
+  delete?(key: K): unknown | Promise<unknown>;
+  entries?(): IterableIterator<[K, V]>;
+  get(key: K): V | undefined | Promise<V | undefined>;
+  has(key: K): boolean | Promise<boolean>;
+  keys?(): IterableIterator<K>;
+  set(key: K, value: V): unknown | Promise<unknown>;
+  readonly size?: number;
 }
 
 /**
@@ -109,7 +112,7 @@ type MemoNotifyCacheChangeOptions<TReturn = unknown> = {
  * @property {OnMemoCacheHandler<TReturn>} [onCacheClear] Callback when cache entries are cleared.
  * @property {OnMemoCacheHandler<TReturn>} [onCacheExpire] Callback when cache expires. Only fires when the `expire` option is set.
  * @property {OnMemoCacheHandler<TReturn>} [onCacheRollout] Callback when cache entries are rolled off due to cache limit.
- * @property [storage] External storage backing (Map or MapLike).
+ * @property {Map<unknown, MemoCacheEntry<TReturn>> | MemoMapLike<unknown, MemoCacheEntry<TReturn>>} [cache] Custom Map or MapLike cache store. Defaults to an internal Map.
  */
 interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   cacheErrors?: boolean;
@@ -120,7 +123,8 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   onCacheClear?: OnMemoCacheHandler<TReturn>;
   onCacheExpire?: OnMemoCacheHandler<TReturn>;
   onCacheRollout?: OnMemoCacheHandler<TReturn>;
-  storage?: Map<unknown, TReturn> | MemoMapLike<unknown, TReturn> | Promise<Map<unknown, TReturn> | MemoMapLike<unknown, TReturn>>;
+  cache?: Map<unknown, MemoCacheEntry<TReturn>> | MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
+  // cache?: Map<unknown, TReturn> | MemoMapLike<unknown, TReturn> | Promise<Map<unknown, TReturn> | MemoMapLike<unknown, TReturn>>;
 }
 
 /**
@@ -161,7 +165,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
     onCacheClear,
     onCacheExpire,
     onCacheRollout,
-    storage
+    cache: customCache
   }: MemoOptions<TArgs, TReturn> = {}
 ): MemoReturn<TArgs, TReturn> => {
   const isCacheErrors = Boolean(cacheErrors);
@@ -227,19 +231,8 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
    * Memoized function.
    */
   const ized = function () {
-    const cache: MemoCache<TReturn> = new Map();
+    const cache = (customCache || new Map()) as MemoCache<TReturn>;
     let timeout: NodeJS.Timeout | undefined;
-    let resolvedStorage: MemoMapLike<unknown, TReturn> | Map<unknown, TReturn> | undefined;
-
-    if (isPromise(storage)) {
-      Promise.resolve(storage)
-        .then(store => {
-          resolvedStorage = store as MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>;
-        })
-        .catch(() => {});
-    } else if (storage) {
-      resolvedStorage = storage as MemoMapLike<unknown, TReturn> | Map<unknown, TReturn>;
-    }
 
     const memoized = (...args: TArgs): TReturn => {
       const isMemo = cacheLimit > 0;
@@ -260,7 +253,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             });
           }
 
-          cache.clear();
+          cache?.clear();
         }, updatedExpire);
 
         // Allow the process to exit
@@ -269,7 +262,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
       // Zero cacheLimit, reset and bypass memoization
       if (isMemo === false) {
-        cache.clear();
+        cache?.clear();
         const bypassValue = func.call(null, ...args);
 
         debug({
@@ -288,29 +281,10 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
         if (isFuncPromise) {
           const promiseResolve = Promise
             .resolve(func.call(null, ...args))
-            .then((result: unknown) => {
-              if (resolvedStorage) {
-                try {
-                  Promise.resolve(resolvedStorage.set(key, result as TReturn)).catch(() => {});
-                } catch {}
-              }
-
-              return result as TReturn;
-            })
             .catch((error: unknown) => {
               // Remove the promise
               if (isCacheErrors === false) {
-                cache.delete(key);
-
-                if (resolvedStorage?.delete) {
-                  try {
-                    Promise.resolve(resolvedStorage.delete(key)).catch(() => {});
-                  } catch {}
-                }
-              } else if (resolvedStorage) {
-                try {
-                  Promise.resolve(resolvedStorage.set(key, error as unknown as TReturn)).catch(() => {});
-                } catch {}
+                cache?.delete(key);
               }
 
               return Promise.reject(error);
@@ -320,15 +294,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
           cache.set(key, promiseResolve);
         } else {
           try {
-            const result = func.call(null, ...args);
-
-            cache.set(key, result);
-
-            if (resolvedStorage) {
-              try {
-                Promise.resolve(resolvedStorage.set(key, result)).catch(() => {});
-              } catch {}
-            }
+            cache.set(key, func.call(null, ...args));
           } catch (error) {
             // Wrap a sync error in a function then cache it
             const errorFunc = () => {
@@ -337,18 +303,12 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
             errorFunc.isError = true;
             cache.set(key, errorFunc);
-
-            if (resolvedStorage && isCacheErrors) {
-              try {
-                Promise.resolve(resolvedStorage.set(key, errorFunc as unknown as TReturn)).catch(() => {});
-              } catch {}
-            }
           }
         }
 
         // Run callback and cache trim after cache update.
         if (isMemo) {
-          if (isOnCacheRollout && cache.size > cacheLimit) {
+          if (isOnCacheRollout && cache?.size > cacheLimit) {
             const allCacheEntries: MemoCache<TReturn> = new Map(cache);
 
             const temp = Array.from(allCacheEntries.entries());
@@ -370,10 +330,12 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
             }
           }
 
-          while (cache.size > cacheLimit) {
-            const oldestKey = cache.keys().next().value;
+          if (typeof cache.size === 'number') {
+            while (cache.size > cacheLimit) {
+              const oldestKey = cache.keys().next().value;
 
-            cache.delete(oldestKey);
+              cache.delete(oldestKey);
+            }
           }
         }
       }
@@ -383,7 +345,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
       if (isMemoError(cachedValue)) {
         if (isCacheErrors === false) {
-          cache.delete(key);
+          cache?.delete(key);
         }
 
         debug({
@@ -420,7 +382,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
       clearTimeout(timeout);
       timeout = undefined;
-      cache.clear();
+      cache?.clear();
 
       debug({
         type: 'memo clear',
