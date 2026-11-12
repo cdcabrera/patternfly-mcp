@@ -424,8 +424,259 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
   return ized();
 };
 
+/**
+ * Configuration options for `memoUnwrapAdapter`.
+ *
+ * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store (default: true).
+ */
+interface MemoUnwrapAdapterOptions {
+  cacheErrors?: boolean;
+}
+
+/**
+ * Adapter that wraps a storage backend (Map or MemoMapLike) to unwrap promises
+ * produced by asynchronous memoized functions before persisting to the underlying store.
+ *
+ * Keeps active in-flight promises in memory so concurrent callers coalesce on the running task,
+ * and writes resolved concrete values to the target store upon settlement.
+ *
+ * @template K Key type.
+ * @template V Value type.
+ *
+ * @param targetStore Underlying storage backend or a Promise resolving to one.
+ * @param [options={}] Configuration options.
+ * @param options.cacheErrors
+ * @returns Map-like storage adapter implementing MemoMapLike.
+ */
+const memoUnwrapAdapter = <K = unknown, V = unknown>(
+  targetStore: MemoMapLike<K, V> | Map<K, V> | Promise<MemoMapLike<K, V> | Map<K, V>>,
+  { cacheErrors = true }: MemoUnwrapAdapterOptions = {}
+): MemoMapLike<K, MemoCacheEntry<V>> => {
+  const inMemory = new Map<K, MemoCacheEntry<V>>();
+  let resolvedStore: MemoMapLike<K, V> | Map<K, V> | undefined;
+
+  if (isPromise(targetStore)) {
+    Promise.resolve(targetStore)
+      .then(store => {
+        resolvedStore = store;
+      })
+      .catch(() => {});
+  } else {
+    resolvedStore = targetStore as MemoMapLike<K, V> | Map<K, V>;
+  }
+
+  const getStore = async (): Promise<MemoMapLike<K, V> | Map<K, V> | undefined> => {
+    if (resolvedStore) {
+      return resolvedStore;
+    }
+    if (isPromise(targetStore)) {
+      try {
+        resolvedStore = await targetStore;
+
+        return resolvedStore;
+      } catch {}
+    }
+
+    return undefined;
+  };
+
+  return {
+    clear(): unknown | Promise<unknown> {
+      inMemory.clear();
+
+      if (resolvedStore?.clear) {
+        try {
+          return resolvedStore.clear();
+        } catch {}
+      }
+
+      return undefined;
+    },
+
+    delete(key: K): unknown | Promise<unknown> {
+      inMemory.delete(key);
+
+      if (resolvedStore?.delete) {
+        try {
+          return resolvedStore.delete(key);
+        } catch {}
+      }
+
+      return undefined;
+    },
+
+    entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
+      const seen = new Set<K>();
+      let storeEntries: Iterable<[K, V]> = [];
+
+      if (resolvedStore && typeof (resolvedStore as { entries?: () => Iterable<[K, V]> }).entries === 'function') {
+        try {
+          storeEntries = (resolvedStore as { entries: () => Iterable<[K, V]> }).entries() ?? [];
+        } catch {}
+      }
+
+      return Iterator.from([inMemory.entries(), storeEntries as Iterable<[K, MemoCacheEntry<V>]>])
+        .flatMap(iterable => iterable)
+        .filter(([key]) => {
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+
+          return true;
+        });
+    },
+
+    get(key: K): MemoCacheEntry<V> | undefined {
+      if (inMemory.has(key)) {
+        return inMemory.get(key);
+      }
+
+      if (resolvedStore) {
+        try {
+          const hasKey = resolvedStore.has(key);
+
+          if (hasKey === true) {
+            const stored = resolvedStore.get(key);
+
+            if (!isPromise(stored)) {
+              inMemory.set(key, stored as V);
+
+              return stored as V;
+            }
+          }
+        } catch {}
+      }
+
+      return undefined;
+    },
+
+    has(key: K): boolean {
+      if (inMemory.has(key)) {
+        return true;
+      }
+
+      if (resolvedStore) {
+        try {
+          const hasKey = resolvedStore.has(key);
+
+          if (hasKey === true) {
+            return true;
+          }
+        } catch {}
+      }
+
+      return false;
+    },
+
+    keys(): IterableIterator<K> {
+      const seen = new Set<K>();
+      let storeKeys: Iterable<K> = [];
+
+      if (resolvedStore && typeof (resolvedStore as { keys?: () => Iterable<K> }).keys === 'function') {
+        try {
+          storeKeys = (resolvedStore as { keys: () => Iterable<K> }).keys() ?? [];
+        } catch {}
+      }
+
+      return Iterator.from([inMemory.keys(), storeKeys])
+        .flatMap(iterable => iterable)
+        .filter(key => {
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+
+          return true;
+        });
+    },
+
+    set(key: K, value: MemoCacheEntry<V>): unknown {
+      inMemory.set(key, value);
+
+      if (isPromise(value)) {
+        Promise.resolve(value)
+          .then(async resolvedValue => {
+            inMemory.set(key, resolvedValue);
+
+            const store = resolvedStore || await getStore();
+
+            if (store) {
+              try {
+                Promise.resolve(store.set(key, resolvedValue as V)).catch(() => {});
+              } catch {}
+            }
+          })
+          .catch(async error => {
+            const store = resolvedStore || await getStore();
+
+            if (cacheErrors) {
+              if (store) {
+                try {
+                  Promise.resolve(store.set(key, error as V)).catch(() => {});
+                } catch {}
+              }
+            } else if (inMemory.has(key)) {
+              inMemory.delete(key);
+
+              if (store?.delete) {
+                try {
+                  Promise.resolve(store.delete(key)).catch(() => {});
+                } catch {}
+              }
+            }
+          });
+      } else {
+        if (resolvedStore) {
+          try {
+            Promise.resolve(resolvedStore.set(key, value as V)).catch(() => {});
+          } catch {}
+        } else if (isPromise(targetStore)) {
+          getStore()
+            .then(store => {
+              if (store) {
+                try {
+                  Promise.resolve(store.set(key, value as V)).catch(() => {});
+                } catch {}
+              }
+            })
+            .catch(() => {});
+        }
+      }
+
+      return this;
+    },
+
+    get size(): number {
+      if (resolvedStore && typeof resolvedStore.size === 'number') {
+        let count = inMemory.size;
+
+        if (typeof (resolvedStore as { keys?: () => Iterable<K> }).keys === 'function') {
+          const seen = new Set(inMemory.keys());
+
+          try {
+            for (const k of (resolvedStore as { keys: () => Iterable<K> }).keys()) {
+              if (!seen.has(k)) {
+                count += 1;
+              }
+            }
+          } catch {}
+
+          return count;
+        }
+
+        return Math.max(inMemory.size, resolvedStore.size);
+      }
+
+      return inMemory.size;
+    }
+  };
+};
+
 export {
   memo,
+  memoUnwrapAdapter,
+  type MemoUnwrapAdapterOptions,
   type MemoMapLike,
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
