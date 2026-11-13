@@ -6,6 +6,27 @@ import {
 import { log } from './logger';
 
 /**
+ * Read-only facts about the memo instance, handed to a cache factory.
+ *
+ * @property isFuncPromise - `true` when the memoized function is async / returns a Promise-like.
+ * @property cacheErrors - Mirrors the `cacheErrors` option.
+ * @property cacheLimit - Mirrors the `cacheLimit` option.
+ * @property expire - Mirrors the (parsed) `expire` option, `undefined` when not set.
+ */
+interface MemoCacheContext {
+  readonly isFuncPromise: boolean;
+  readonly cacheErrors: boolean;
+  readonly cacheLimit: number;
+  readonly expire: number | undefined;
+}
+
+/**
+ *
+ */
+type MemoCacheCallback<TReturn> =
+  (context: MemoCacheContext) => MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
+
+/**
  * Map-like interface consumed by `memo`.
  *
  * - Write methods (`set`, `delete`, `clear`) may be asynchronous; their return values are ignored.
@@ -142,7 +163,9 @@ type MemoNotifyCacheChangeOptions<TReturn = unknown> = {
  * @property {OnMemoCacheHandler<TReturn>} [onCacheClear] Callback when cache entries are cleared.
  * @property {OnMemoCacheHandler<TReturn>} [onCacheExpire] Callback when cache expires. Only fires when the `expire` option is set.
  * @property {OnMemoCacheHandler<TReturn>} [onCacheRollout] Callback when cache entries are rolled off due to cache limit.
- * @property {Map<unknown, MemoCacheEntry<TReturn>> | MemoMapLike<unknown, MemoCacheEntry<TReturn>>} [cache] Custom Map or MapLike cache store. Defaults to an internal Map.
+ * @property {Map<unknown, MemoCacheEntry<TReturn>> |
+ *     MemoMapLike<unknown, MemoCacheEntry<TReturn>> |
+ *     MemoCacheCallback<TReturn>} [cache] Custom Map or MapLike cache store. Defaults to an internal Map.
  */
 interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   cacheErrors?: boolean;
@@ -153,7 +176,7 @@ interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   onCacheClear?: OnMemoCacheHandler<TReturn>;
   onCacheExpire?: OnMemoCacheHandler<TReturn>;
   onCacheRollout?: OnMemoCacheHandler<TReturn>;
-  cache?: Map<unknown, MemoCacheEntry<TReturn>> | MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
+  cache?: Map<unknown, MemoCacheEntry<TReturn>> | MemoMapLike<unknown, MemoCacheEntry<TReturn>> | MemoCacheCallback<TReturn>;
 }
 
 /**
@@ -261,7 +284,32 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
    * Memoized function.
    */
   const ized = function () {
-    const cache: MemoMapLike<unknown, MemoCacheEntry<TReturn>> = customCache || new Map();
+    const cacheContext: MemoCacheContext = Object.freeze({
+      isFuncPromise,
+      cacheErrors: isCacheErrors,
+      cacheLimit,
+      expire: updatedExpire
+    });
+
+    let updatedCustomCache = customCache || new Map();
+
+    if (typeof customCache === 'function') {
+      try {
+        updatedCustomCache = customCache(cacheContext);
+      } catch (error) {
+        log.error(`Memoized cache callback error. Using internal fallback Map.`, error);
+
+        debug({
+          type: 'memo cache callback error',
+          value: error,
+          cache: new Map()
+        });
+
+        updatedCustomCache = new Map();
+      }
+    }
+
+    const cache = updatedCustomCache as MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
     let timeout: NodeJS.Timeout | undefined;
 
     // Take into account map-like objects with partial props
