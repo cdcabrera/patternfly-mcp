@@ -21,7 +21,12 @@ interface MemoCacheContext {
 }
 
 /**
+ * Alternative callback used to return a map-like cache for memo entries.
  *
+ * @template TReturn Return type stored in each memo cache entry.
+ *
+ * @param {MemoCacheContext} context - Memo context associated with the current operation.
+ * @returns {MemoMapLike<unknown, MemoCacheEntry<TReturn>>} A map-like cache containing memo entries for the return type.
  */
 type MemoCacheCallback<TReturn> =
   (context: MemoCacheContext) => MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
@@ -189,7 +194,7 @@ type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...a
 };
 
 /**
- * Normalizes a memo cache into a usable map-like cache.
+ * Helper for normalizing a memo cache into a usable map-like cache.
  *
  * @template TReturn Memoized function return type stored in cache entries.
  *
@@ -238,29 +243,6 @@ const normalizeMemoCache = <TReturn>(
       logErrors(error);
     }
   }
-
-  /*
-  let updatedCache: Map<unknown, unknown> | unknown = new Map();
-
-  if (cache) {
-    try {
-      if (typeof cache === 'function') {
-        updatedCache = cache(cacheContext);
-      }
-
-      updatedCache = cache;
-
-    } catch (error) {
-      logErrors(error);
-    }
-
-    if (isMapLike(updatedCache)) {
-      return updatedCache;
-    }
-
-    logErrors(new Error('Cache is not a Map'));
-  }
-   */
 
   return new Map();
 };
@@ -558,6 +540,8 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 export {
   memo,
   normalizeMemoCache,
+  type MemoCacheCallback,
+  type MemoCacheContext,
   type MemoMapLike,
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
