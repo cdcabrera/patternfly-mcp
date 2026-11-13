@@ -194,11 +194,22 @@ type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...a
 };
 
 /**
+ * Helper for checking if a value is a map-like cache.
+ *
+ * @param value - Value to check.
+ */
+const isMapLike = <TReturn>(value: unknown): value is MemoMapLike<unknown, MemoCacheEntry<TReturn>> =>
+  isReferenceLike(value) &&
+  typeof (value as MemoMapLike<unknown, unknown>).has === 'function' &&
+  typeof (value as MemoMapLike<unknown, unknown>).get === 'function' &&
+  typeof (value as MemoMapLike<unknown, unknown>).set === 'function';
+
+/**
  * Helper for normalizing a memo cache into a usable map-like cache.
  *
  * @template TReturn Memoized function return type stored in cache entries.
  *
- * @param cache - Cache to normalize.
+ * @param cache - Cache to normalize. Falsey values return the default map.
  * @param [options] - Optional normalization settings.
  * @param [options.cacheContext] - Context passed to a cache factory when `cache` is a function.
  * @param [options.debug] - Debug handler. Notified when cache normalization falls back because of an error.
@@ -209,12 +220,6 @@ const normalizeMemoCache = <TReturn>(
   { cacheContext = {}, debug }: { cacheContext?: MemoCacheContext | undefined; debug?: MemoDebugHandler<TReturn> | undefined } = {}
 ): MemoMapLike<unknown, MemoCacheEntry<TReturn>> => {
   const updatedDebug = typeof debug === 'function' ? debug : () => {};
-
-  const isMapLike = (value: unknown): value is MemoMapLike<unknown, MemoCacheEntry<TReturn>> =>
-    isReferenceLike(value) &&
-    typeof (value as MemoMapLike<unknown, unknown>).has === 'function' &&
-    typeof (value as MemoMapLike<unknown, unknown>).get === 'function' &&
-    typeof (value as MemoMapLike<unknown, unknown>).set === 'function';
 
   const logErrors = (error: unknown) => {
     log.error('Memoized cache error. Using internal fallback Map.', error);
@@ -231,10 +236,10 @@ const normalizeMemoCache = <TReturn>(
       if (typeof cache === 'function') {
         const created: unknown = cache(cacheContext);
 
-        if (isMapLike(created)) {
+        if (isMapLike<TReturn>(created)) {
           return created;
         }
-      } else if (isMapLike(cache)) {
+      } else if (isMapLike<TReturn>(cache)) {
         return cache;
       }
 
@@ -538,6 +543,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 };
 
 export {
+  isMapLike,
   memo,
   normalizeMemoCache,
   type MemoCacheCallback,
