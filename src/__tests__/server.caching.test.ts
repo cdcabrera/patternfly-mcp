@@ -1,4 +1,4 @@
-import { memo } from '../server.caching';
+import { memo, normalizeMemoCache } from '../server.caching';
 
 describe('memo', () => {
   beforeEach(() => {
@@ -398,7 +398,7 @@ describe('memo', () => {
     expect(mockOnCacheExpire).not.toHaveBeenCalled();
   });
 
-  it('should support passing custom cache store', async () => {
+  it('should support passing custom cache', async () => {
     const cache = new Map();
     const fn = jest.fn((val: number) => val * 2);
     const memoized = memo(fn, { cache });
@@ -409,7 +409,7 @@ describe('memo', () => {
     expect(cache.size).toBe(1);
   });
 
-  it('should support a minimal map-like store without optional members', async () => {
+  it('should support a minimal map-like cache without optional members', async () => {
     const backing = new Map<unknown, unknown>();
     const minimal = {
       has: (key: unknown) => backing.has(key),
@@ -446,28 +446,28 @@ describe('memo', () => {
     expect(expiring.clear()).toBe(false);
   });
 
-  it('should clear a store that implements clear() but not entries()', () => {
+  it('should clear a cache that implements clear() but not entries()', () => {
     const backing = new Map<unknown, unknown>();
     const mockOnCacheClear = jest.fn();
-    const store = {
+    const cache = {
       has: (key: unknown) => backing.has(key),
       get: (key: unknown) => backing.get(key),
       set: (key: unknown, value: unknown) => backing.set(key, value),
       clear: jest.fn(() => backing.clear())
     };
-    const memoized = memo((val: number) => val * 2, { cache: store, onCacheClear: mockOnCacheClear });
+    const memoized = memo((val: number) => val * 2, { cache, onCacheClear: mockOnCacheClear });
 
     expect(memoized(5)).toBe(10);
     expect(backing.size).toBe(1);
 
     memoized.clear();
 
-    expect(store.clear).toHaveBeenCalledTimes(1);
+    expect(cache.clear).toHaveBeenCalledTimes(1);
     expect(backing.size).toBe(0);
     expect(mockOnCacheClear).toHaveBeenCalledTimes(1);
   });
 
-  it('should return a stored promise from a custom store without awaiting it', async () => {
+  it('should return a stored promise from a custom cache without awaiting it', async () => {
     const cache = new Map();
     const fn = jest.fn(async (val: number) => val * 2);
     const memoized = memo(fn, { cache });
@@ -478,5 +478,56 @@ describe('memo', () => {
     expect(memoized(6)).toBe(first);
     await expect(first).resolves.toBe(12);
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('should hand memo context to a cache factory', async () => {
+    const factory = jest.fn(() => new Map());
+    const memoized = memo(async (val: number) => val, { cache: factory, cacheErrors: false, cacheLimit: 3 });
+
+    await memoized(1);
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(factory).toHaveBeenCalledWith({ isFuncPromise: true, cacheErrors: false, cacheLimit: 3, expire: undefined });
+  });
+});
+
+describe('normalizeMemoCache', () => {
+  it('should return a Map by default without reporting an error', () => {
+    const ctx = { isFuncPromise: false, cacheErrors: true, cacheLimit: 1, expire: undefined };
+    const mockDebug = jest.fn();
+
+    expect(normalizeMemoCache(undefined, { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
+    expect(mockDebug).not.toHaveBeenCalled();
+  });
+
+  it('should pass through a map-like object', () => {
+    const ctx = { isFuncPromise: false, cacheErrors: true, cacheLimit: 1, expire: undefined };
+    const cache = { has: jest.fn(), get: jest.fn(), set: jest.fn() };
+
+    expect(normalizeMemoCache(cache, { cacheContext: ctx })).toBe(cache);
+  });
+
+  it('should call a factory once with context and use its result', () => {
+    const ctx = { isFuncPromise: false, cacheErrors: true, cacheLimit: 1, expire: undefined };
+    const cache = new Map();
+    const factory = jest.fn(() => cache);
+
+    expect(normalizeMemoCache(factory, { cacheContext: ctx })).toBe(cache);
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(factory).toHaveBeenCalledWith(ctx);
+  });
+
+  it('should fall back to a Map when the factory throws or the value is not map-like', () => {
+    const ctx = { isFuncPromise: false, cacheErrors: true, cacheLimit: 1, expire: undefined };
+    const mockDebug = jest.fn();
+
+    expect(normalizeMemoCache(() => {
+      throw new Error('boom');
+    }, { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
+
+    expect(normalizeMemoCache(async () => new Map(), { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
+    expect(normalizeMemoCache('nope', { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
+
+    expect(mockDebug).toHaveBeenCalledTimes(3);
+    expect(mockDebug).toHaveBeenCalledWith(expect.objectContaining({ type: 'memo cache error' }));
   });
 });

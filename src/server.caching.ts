@@ -221,21 +221,46 @@ const normalizeMemoCache = <TReturn>(
     });
   };
 
-  try {
-    if (typeof cache === 'function') {
-      const created: unknown = cache(cacheContext);
+  if (cache) {
+    try {
+      if (typeof cache === 'function') {
+        const created: unknown = cache(cacheContext);
 
-      if (isMapLike(created)) {
-        return created;
+        if (isMapLike(created)) {
+          return created;
+        }
+      } else if (isMapLike(cache)) {
+        return cache;
       }
-    } else if (isMapLike(cache)) {
-      return cache;
+
+      throw new TypeError('Cache must be a map-like object with has/get/set, or a callback that returns one.');
+    } catch (error) {
+      logErrors(error);
+    }
+  }
+
+  /*
+  let updatedCache: Map<unknown, unknown> | unknown = new Map();
+
+  if (cache) {
+    try {
+      if (typeof cache === 'function') {
+        updatedCache = cache(cacheContext);
+      }
+
+      updatedCache = cache;
+
+    } catch (error) {
+      logErrors(error);
     }
 
-    throw new TypeError('Cache must be a map-like object with has/get/set, or a callback that returns one.');
-  } catch (error) {
-    logErrors(error);
+    if (isMapLike(updatedCache)) {
+      return updatedCache;
+    }
+
+    logErrors(new Error('Cache is not a Map'));
   }
+   */
 
   return new Map();
 };
