@@ -14,10 +14,10 @@ import { log } from './logger';
  * @property expire - Mirrors the (parsed) `expire` option, `undefined` when not set.
  */
 interface MemoCacheContext {
-  readonly isFuncPromise: boolean;
-  readonly cacheErrors: boolean;
-  readonly cacheLimit: number;
-  readonly expire: number | undefined;
+  readonly isFuncPromise?: boolean | undefined;
+  readonly cacheErrors?: boolean | undefined;
+  readonly cacheLimit?: number | undefined;
+  readonly expire?: number | undefined;
 }
 
 /**
@@ -189,6 +189,66 @@ type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...a
 };
 
 /**
+ * Normalizes a memoization cache store into a usable map-like cache.
+ *
+ * @template TReturn Memoized function return type stored in cache entries.
+ *
+ * @param cache - Cache store to normalize.
+ * @param [options] - Optional normalization settings.
+ * @param [options.cacheContext] - Context passed to a cache factory when `cache` is a function.
+ * @param [options.debug] - Debug handler. Notified when cache normalization falls back because of an error.
+ * @returns A map-like cache suitable for storing memoization entries.
+ */
+const normalizeMemoCache = <TReturn>(
+  cache: unknown,
+  { cacheContext = {}, debug }: { cacheContext?: MemoCacheContext | undefined; debug?: MemoDebugHandler<TReturn> | undefined } = {}
+): MemoMapLike<unknown, MemoCacheEntry<TReturn>> => {
+  const updatedDebug = typeof debug === 'function' ? debug : () => {};
+
+  const isMapLike = (value: unknown): value is MemoMapLike<unknown, MemoCacheEntry<TReturn>> =>
+    isReferenceLike(value) &&
+    typeof (value as MemoMapLike<unknown, unknown>).has === 'function' &&
+    typeof (value as MemoMapLike<unknown, unknown>).get === 'function' &&
+    typeof (value as MemoMapLike<unknown, unknown>).set === 'function';
+
+  if (typeof cache === 'function') {
+    try {
+      const created: unknown = cache(cacheContext);
+
+      if (!isMapLike(created)) {
+        throw new TypeError('Cache must be a map-like object with has/get/set, or a callback that returns one.');
+      }
+
+      return created;
+    } catch (error) {
+      log.error('Memoized cache error. Using internal fallback Map.', error);
+
+      updatedDebug({
+        type: 'memo cache error',
+        value: error,
+        cache: new Map()
+      });
+    }
+  } else if (cache) {
+    if (isMapLike(cache)) {
+      return cache;
+    }
+
+    const err = new Error('Cache callback must synchronously return a map-like object with has/get/set');
+
+    log.error('Memoized cache callback error. Using internal fallback Map.', err);
+
+    updatedDebug({
+      type: 'memo cache callback error',
+      value: err,
+      cache: new Map()
+    });
+  }
+
+  return new Map();
+};
+
+/**
  * Simple argument-based memoize with adjustable cache limit, and extendable cache expire.
  * apidoc-mock: https://github.com/cdcabrera/apidoc-mock.git
  *
@@ -291,25 +351,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       expire: updatedExpire
     });
 
-    let updatedCustomCache = customCache || new Map();
-
-    if (typeof customCache === 'function') {
-      try {
-        updatedCustomCache = customCache(cacheContext);
-      } catch (error) {
-        log.error(`Memoized cache callback error. Using internal fallback Map.`, error);
-
-        debug({
-          type: 'memo cache callback error',
-          value: error,
-          cache: new Map()
-        });
-
-        updatedCustomCache = new Map();
-      }
-    }
-
-    const cache = updatedCustomCache as MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
+    const cache = normalizeMemoCache<TReturn>(customCache, { cacheContext, debug });
     let timeout: NodeJS.Timeout | undefined;
 
     // Take into account map-like objects with partial props
@@ -498,6 +540,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
 export {
   memo,
+  normalizeMemoCache,
   type MemoMapLike,
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
