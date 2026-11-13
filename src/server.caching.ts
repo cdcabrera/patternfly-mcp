@@ -36,15 +36,15 @@ type MemoCacheCallback<TReturn> =
  *   - `entries`: used to build `onCacheExpire`/`onCacheRollout`/`onCacheClear` payloads and `debug`
  *       snapshots. When omitted, payload maps are empty.
  *   - `clear`: used by `expire`, `cacheLimit <= 0`, and `memoized.clear()`. When omitted, those paths
- *       are no-ops for the store.
+ *       are no-ops for the cache.
  *
  * @note
- * **Map-like store adapters**
+ * **Map-like cache adapters**
  * Creating an adapter should follow basic rules around `memo`'s architecture:
  * - `memo` directly returns `get` without "await"
  * - `memo` can cache and return Promises
  *
- * If the adapter is bridging a persistent, or async store, values would normally be resolved
+ * If the adapter is bridging a persistent, or async cache, values would normally be resolved
  * before reaching the caller. But an adapter could also return a JS Promise if it was known
  * that the memo implementation was async.
  *
@@ -52,7 +52,7 @@ type MemoCacheCallback<TReturn> =
  * @template V Value type.
  *
  * @property [clear] - Can be async, the return value is ignored. Used by `expire`, `cacheLimit <= 0`, and `memoized.clear()`.
- *     When omitted, those paths are no-ops for the store.
+ *     When omitted, those paths are no-ops for the cache.
  * @property [delete] - Can be async, the return value is ignored.
  * @property [entries] - Used to build `onCacheExpire`/`onCacheRollout`/`onCacheClear` payloads and `debug` snapshots.
  *     When omitted, payload maps are empty.
@@ -86,7 +86,7 @@ type MemoErrorFunction = (() => never) & { isError: boolean };
 type MemoCacheEntry<TReturn = unknown> = TReturn | Promise<TReturn> | MemoErrorFunction;
 
 /**
- * Memo cache store map.
+ * Memo cache map.
  *
  * @template TReturn Return type of the memoized function.
  */
@@ -165,7 +165,7 @@ type MemoNotifyCacheChangeOptions<TReturn = unknown> = {
  * @property {OnMemoCacheHandler<TReturn>} [onCacheRollout] Callback when cache entries are rolled off due to cache limit.
  * @property {Map<unknown, MemoCacheEntry<TReturn>> |
  *     MemoMapLike<unknown, MemoCacheEntry<TReturn>> |
- *     MemoCacheCallback<TReturn>} [cache] Custom Map or MapLike cache store. Defaults to an internal Map.
+ *     MemoCacheCallback<TReturn>} [cache] Custom Map or MapLike cache. Defaults to an internal Map.
  */
 interface MemoOptions<TArgs extends unknown[] = unknown[], TReturn = unknown> {
   cacheErrors?: boolean;
@@ -189,11 +189,11 @@ type MemoReturn<TArgs extends unknown[] = unknown[], TReturn = unknown> = ((...a
 };
 
 /**
- * Normalizes a memoization cache store into a usable map-like cache.
+ * Normalizes a memo cache into a usable map-like cache.
  *
  * @template TReturn Memoized function return type stored in cache entries.
  *
- * @param cache - Cache store to normalize.
+ * @param cache - Cache to normalize.
  * @param [options] - Optional normalization settings.
  * @param [options.cacheContext] - Context passed to a cache factory when `cache` is a function.
  * @param [options.debug] - Debug handler. Notified when cache normalization falls back because of an error.
@@ -211,38 +211,30 @@ const normalizeMemoCache = <TReturn>(
     typeof (value as MemoMapLike<unknown, unknown>).get === 'function' &&
     typeof (value as MemoMapLike<unknown, unknown>).set === 'function';
 
-  if (typeof cache === 'function') {
-    try {
+  const logErrors = (error: unknown) => {
+    log.error('Memoized cache error. Using internal fallback Map.', error);
+
+    updatedDebug({
+      type: 'memo cache error',
+      value: error,
+      cache: new Map()
+    });
+  };
+
+  try {
+    if (typeof cache === 'function') {
       const created: unknown = cache(cacheContext);
 
-      if (!isMapLike(created)) {
-        throw new TypeError('Cache must be a map-like object with has/get/set, or a callback that returns one.');
+      if (isMapLike(created)) {
+        return created;
       }
-
-      return created;
-    } catch (error) {
-      log.error('Memoized cache error. Using internal fallback Map.', error);
-
-      updatedDebug({
-        type: 'memo cache error',
-        value: error,
-        cache: new Map()
-      });
-    }
-  } else if (cache) {
-    if (isMapLike(cache)) {
+    } else if (isMapLike(cache)) {
       return cache;
     }
 
-    const err = new Error('Cache callback must synchronously return a map-like object with has/get/set');
-
-    log.error('Memoized cache callback error. Using internal fallback Map.', err);
-
-    updatedDebug({
-      type: 'memo cache callback error',
-      value: err,
-      cache: new Map()
-    });
+    throw new TypeError('Cache must be a map-like object with has/get/set, or a callback that returns one.');
+  } catch (error) {
+    logErrors(error);
   }
 
   return new Map();
