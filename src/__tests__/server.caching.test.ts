@@ -408,4 +408,75 @@ describe('memo', () => {
     expect(fn).toHaveBeenCalledTimes(1);
     expect(cache.size).toBe(1);
   });
+
+  it('should support a minimal map-like store without optional members', async () => {
+    const backing = new Map<unknown, unknown>();
+    const minimal = {
+      has: (key: unknown) => backing.has(key),
+      get: (key: unknown) => backing.get(key),
+      set: (key: unknown, value: unknown) => backing.set(key, value)
+    };
+
+    // cacheLimit <= 0 calls clear() on every invocation
+    const bypass = memo((val: number) => val * 2, { cache: minimal, cacheLimit: 0 });
+
+    expect(() => bypass(1)).not.toThrow();
+    expect(bypass(1)).toBe(2);
+
+    // expire calls clear() from the timeout
+    const expiring = memo((val: number) => val * 2, { cache: minimal, expire: 10 });
+
+    expect(expiring(2)).toBe(4);
+    expect(() => jest.advanceTimersByTime(20)).not.toThrow();
+
+    // cacheErrors: false calls delete() on sync and async errors; the original error must surface
+    const syncError = memo((_val: number): number => {
+      throw new Error('sync boom');
+    }, { cache: minimal, cacheErrors: false });
+
+    expect(() => syncError(3)).toThrow('sync boom');
+
+    const asyncError = memo(async (_val: number): Promise<number> => {
+      throw new Error('async boom');
+    }, { cache: minimal, cacheErrors: false });
+
+    await expect(asyncError(4)).rejects.toThrow('async boom');
+
+    // memoized.clear() reports false (nothing observable) but does not throw
+    expect(expiring.clear()).toBe(false);
+  });
+
+  it('should clear a store that implements clear() but not entries()', () => {
+    const backing = new Map<unknown, unknown>();
+    const mockOnCacheClear = jest.fn();
+    const store = {
+      has: (key: unknown) => backing.has(key),
+      get: (key: unknown) => backing.get(key),
+      set: (key: unknown, value: unknown) => backing.set(key, value),
+      clear: jest.fn(() => backing.clear())
+    };
+    const memoized = memo((val: number) => val * 2, { cache: store, onCacheClear: mockOnCacheClear });
+
+    expect(memoized(5)).toBe(10);
+    expect(backing.size).toBe(1);
+
+    memoized.clear();
+
+    expect(store.clear).toHaveBeenCalledTimes(1);
+    expect(backing.size).toBe(0);
+    expect(mockOnCacheClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return a stored promise from a custom store without awaiting it', async () => {
+    const cache = new Map();
+    const fn = jest.fn(async (val: number) => val * 2);
+    const memoized = memo(fn, { cache });
+
+    const first = memoized(6);
+
+    expect(first).toBeInstanceOf(Promise);
+    expect(memoized(6)).toBe(first);
+    await expect(first).resolves.toBe(12);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 });
