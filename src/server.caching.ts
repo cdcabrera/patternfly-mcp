@@ -661,7 +661,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
   const updateStore = (key: K, val: unknown, { isDelete = false, resolved = false }: { isDelete?: boolean; resolved?: boolean } = {}): void => {
     const update = (action: unknown) => {
       try {
-        Promise.resolve(action).then(() => {});
+        Promise.resolve(action).then(() => {}).catch(() => {});
       } catch {}
     };
 
@@ -686,12 +686,6 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     const cacheErrors = settingsCacheErrors || context.cacheErrors || false;
     const cacheLimit = settingsCacheLimit ?? context.cacheLimit ?? 500;
     const expire = settingsExpire ?? context.expire ?? 5 * 60 * 1000;
-    const isFuncPromise = context.isFuncPromise || false;
-
-    // Synchronous bypass: if the target function is synchronous, unwrap logic is unneeded
-    if (isFuncPromise === false && resolvedStore) {
-      return resolvedStore as unknown as MemoMapLike<unknown, MemoCacheEntry<V>>;
-    }
 
     const inFlight = new Map<K, Promise<V>>();
     const readCache = new Map<unknown, MemoCacheEntry<V>>();
@@ -707,8 +701,8 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       {
         cache: readCache,
         cacheLimit,
-        expire
-        // keyHash: args => args[0] as string
+        expire,
+        keyHash: args => args[0] as string
       }
     );
 
@@ -762,7 +756,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       set(key: K, value: MemoCacheEntry<V>): unknown {
         readCache.delete(key);
 
-        if (isFuncPromise || isPromise(value)) {
+        if (isPromise(value)) {
           inFlight.set(key, value as Promise<V>);
 
           Promise.resolve(value)
