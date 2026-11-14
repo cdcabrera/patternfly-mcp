@@ -659,17 +659,17 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
   };
 
   const updateStore = (key: K, val: unknown, { isDelete = false, resolved = false }: { isDelete?: boolean; resolved?: boolean } = {}): void => {
-    const update = (action: unknown) => {
+    const update = (action: () => unknown) => {
       try {
-        Promise.resolve(action).then(() => {}).catch(() => {});
+        Promise.resolve(action()).catch(() => {});
       } catch {}
     };
 
     if (resolvedStore) {
       if (isDelete) {
-        update(resolvedStore.delete?.(key));
+        update(() => resolvedStore?.delete?.(key));
       } else {
-        update(resolvedStore.set(key, val as V));
+        update(() => resolvedStore?.set(key, val as V));
       }
 
       return;
