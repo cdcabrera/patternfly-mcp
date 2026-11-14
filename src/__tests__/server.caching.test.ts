@@ -785,9 +785,9 @@ describe('memoUnwrapAdapter', () => {
       }
     };
 
-    const cache = memoUnwrapAdapter(minimalStore as any);
+    const cache = memoUnwrapAdapter(minimalStore as any)({ isFuncPromise: true });
 
-    cache.set('norm-k', 'norm-v');
+    await cache.set('norm-k', 'norm-v');
     expect(cache.get('norm-k')).toBe('norm-v');
     expect(cache.has('norm-k')).toBe(true);
   });
@@ -796,7 +796,7 @@ describe('memoUnwrapAdapter', () => {
     const targetStore = createMockStorage();
 
     targetStore.backingStore.set('del-key', 'del-val');
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
 
     expect(cache.get('del-key')).toBe('del-val');
     expect(cache.has('del-key')).toBe(true);
@@ -815,7 +815,7 @@ describe('memoUnwrapAdapter', () => {
     const targetStore = createMockStorage();
 
     targetStore.backingStore.set('k1', 'v1');
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
 
     cache.set('k2', 'v2');
 
@@ -839,7 +839,7 @@ describe('memoUnwrapAdapter', () => {
 
     targetStore.backingStore.set('key-a', 'val-a');
     targetStore.backingStore.set('key-b', 'val-b');
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
 
     // Warm both keys into the memoized read cache
     expect(cache.get('key-a')).toBe('val-a');
@@ -863,7 +863,7 @@ describe('memoUnwrapAdapter', () => {
 
   it('should preserve falsy values and undefined in targetStore and inMemory', async () => {
     const targetStore = createMockStorage();
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: true });
 
     const fnUndefined = jest.fn(async () => undefined);
     const memoUndefined = memo(fnUndefined, { cache });
