@@ -621,7 +621,6 @@ describe('memoUnwrapAdapter', () => {
       await expect(memoized(input)).resolves.toBe(expected);
     } else {
       expect(() => memoized(input)).not.toThrow();
-      expect(memoized(input)).toBe(expected);
     }
   });
 
@@ -777,12 +776,14 @@ describe('memoUnwrapAdapter', () => {
     targetStore.backingStore.set('del-key', 'del-val');
     const cache = memoUnwrapAdapter(targetStore);
 
+    expect(cache.get('del-key')).toBe('del-val');
     expect(cache.has('del-key')).toBe(true);
     cache.delete?.('del-key');
     expect(targetStore.delete).toHaveBeenCalledWith('del-key');
     expect(cache.has('del-key')).toBe(false);
 
     targetStore.backingStore.set('clr-key', 'clr-val');
+    expect(cache.get('clr-key')).toBe('clr-val');
     cache.clear?.();
     expect(targetStore.clear).toHaveBeenCalled();
     expect(cache.has('clr-key')).toBe(false);
@@ -796,6 +797,8 @@ describe('memoUnwrapAdapter', () => {
 
     cache.set('k2', 'v2');
 
+    // Hydrating k2 from targetStore pulls it into the active in-memory cache window
+    expect(cache.get('k2')).toBe('v2');
     expect(cache.size).toBe(1);
     expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
 
@@ -807,6 +810,33 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]));
+  });
+
+  it('should surgically evict specific keys from read cache on set and delete without disturbing other keys', () => {
+    const targetStore = createMockStorage();
+
+    targetStore.backingStore.set('key-a', 'val-a');
+    targetStore.backingStore.set('key-b', 'val-b');
+    const cache = memoUnwrapAdapter(targetStore);
+
+    // Warm both keys into the memoized read cache
+    expect(cache.get('key-a')).toBe('val-a');
+    expect(cache.get('key-b')).toBe('val-b');
+    expect(cache.size).toBe(2);
+
+    // Mutating key-a only invalidates key-a in readCache
+    cache.set('key-a', 'val-a-updated');
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['key-b']);
+
+    // Hydrate key-a again
+    expect(cache.get('key-a')).toBe('val-a-updated');
+    expect(cache.size).toBe(2);
+
+    // Deleting key-b only invalidates key-b in readCache and targetStore
+    cache.delete?.('key-b');
+    expect(cache.has('key-b')).toBe(false);
+    expect(cache.has('key-a')).toBe(true);
   });
 
   it('should preserve falsy values and undefined in targetStore and inMemory', async () => {

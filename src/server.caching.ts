@@ -585,9 +585,13 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
  * Configuration options for `memoUnwrapAdapter`.
  *
  * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store (default: true).
+ * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache window (default: 500).
+ * @property [expire] Sliding TTL in milliseconds for entries in the in-memory read cache (default: 5 minutes).
  */
 interface MemoUnwrapAdapterOptions {
   cacheErrors?: boolean;
+  cacheLimit?: number;
+  expire?: number;
 }
 
 /**
@@ -605,13 +609,16 @@ interface MemoUnwrapAdapterOptions {
  * @param targetStore Underlying storage backend or a Promise resolving to one.
  * @param [options={}] Configuration options.
  * @param options.cacheErrors
+ * @param options.cacheLimit
+ * @param options.expire
  * @returns Map-like storage adapter implementing MemoMapLike.
  */
 const memoUnwrapAdapter = <K = unknown, V = unknown>(
   targetStore: MemoMapLike<K, V> | Map<K, V> | Promise<MemoMapLike<K, V> | Map<K, V>>,
-  { cacheErrors = true }: MemoUnwrapAdapterOptions = {}
+  { cacheErrors = true, cacheLimit = 500, expire = 5 * 60 * 1000 }: MemoUnwrapAdapterOptions = {}
 ): MemoMapLike<K, MemoCacheEntry<V>> => {
-  const inMemory = new Map<K, MemoCacheEntry<V>>();
+  const inFlight = new Map<K, Promise<V>>();
+  const readCache = new Map<unknown, MemoCacheEntry<V>>();
   let resolvedStore: MemoMapLike<K, V> | Map<K, V> | undefined;
 
   if (isPromise(targetStore)) {
@@ -640,9 +647,32 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     return undefined;
   };
 
+  const memoizedGet = memo(
+    (key: K): V | undefined => {
+      try {
+        if (resolvedStore?.has?.(key) === true) {
+          const stored = resolvedStore?.get?.(key);
+
+          if (!isPromise(stored)) {
+            return stored as V;
+          }
+        }
+      } catch {}
+
+      return undefined;
+    },
+    {
+      cache: readCache,
+      cacheLimit,
+      expire,
+      keyHash: args => args[0] as string
+    }
+  );
+
   return {
     clear(): unknown | Promise<unknown> {
-      inMemory.clear();
+      inFlight.clear();
+      memoizedGet.clear();
 
       try {
         return resolvedStore?.clear?.();
@@ -652,7 +682,8 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     delete(key: K): unknown | Promise<unknown> {
-      inMemory.delete(key);
+      inFlight.delete(key);
+      readCache.delete(key);
 
       try {
         return resolvedStore?.delete?.(key);
@@ -662,31 +693,19 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
-      return inMemory.entries();
+      return (readCache as Map<K, MemoCacheEntry<V>>).entries();
     },
 
     get(key: K): MemoCacheEntry<V> | undefined {
-      if (inMemory.has(key)) {
-        return inMemory.get(key);
+      if (inFlight.has(key)) {
+        return inFlight.get(key);
       }
 
-      try {
-        if (resolvedStore?.has?.(key) === true) {
-          const stored = resolvedStore?.get?.(key);
-
-          if (!isPromise(stored)) {
-            inMemory.set(key, stored as V);
-
-            return stored as V;
-          }
-        }
-      } catch {}
-
-      return undefined;
+      return memoizedGet(key);
     },
 
     has(key: K): boolean {
-      if (inMemory.has(key)) {
+      if (inFlight.has(key) || readCache.has(key)) {
         return true;
       }
 
@@ -702,16 +721,18 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     keys(): IterableIterator<K> {
-      return inMemory.keys();
+      return (readCache as Map<K, MemoCacheEntry<V>>).keys();
     },
 
     set(key: K, value: MemoCacheEntry<V>): unknown {
-      inMemory.set(key, value);
+      readCache.delete(key);
 
       if (isPromise(value)) {
+        inFlight.set(key, value as Promise<V>);
+
         Promise.resolve(value)
           .then(async resolvedValue => {
-            inMemory.set(key, resolvedValue);
+            inFlight.delete(key);
 
             const store = resolvedStore || await getStore();
 
@@ -722,6 +743,8 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
             }
           })
           .catch(async error => {
+            const wasInFlight = inFlight.delete(key);
+
             const store = resolvedStore || await getStore();
 
             if (cacheErrors) {
@@ -730,14 +753,10 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
                   Promise.resolve(store.set(key, error as V)).catch(() => {});
                 } catch {}
               }
-            } else if (inMemory.has(key)) {
-              inMemory.delete(key);
-
-              if (store?.delete) {
-                try {
-                  Promise.resolve(store.delete(key)).catch(() => {});
-                } catch {}
-              }
+            } else if (wasInFlight && store?.delete) {
+              try {
+                Promise.resolve(store.delete(key)).catch(() => {});
+              } catch {}
             }
           });
       } else {
@@ -762,7 +781,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     },
 
     get size(): number {
-      return inMemory.size;
+      return readCache.size;
     }
   };
 };
