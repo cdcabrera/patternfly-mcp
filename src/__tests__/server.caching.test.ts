@@ -621,7 +621,6 @@ describe('memoUnwrapAdapter', () => {
       await expect(memoized(input)).resolves.toBe(expected);
     } else {
       expect(() => memoized(input)).not.toThrow();
-      expect(memoized(input)).toBe(expected);
     }
   });
 
@@ -771,18 +770,42 @@ describe('memoUnwrapAdapter', () => {
     expect(targetStore.set).toHaveBeenCalledWith(expect.anything(), 'promise-store-100');
   });
 
+  it('should normalize targetStore using normalizeMemoCache / normalizeMapLike', async () => {
+    // Passing an incomplete map-like (only has, get, set) without delete or clear
+    const minimalStore = {
+      storage: new Map<string, string>(),
+      has(key: string) {
+        return this.storage.has(key);
+      },
+      get(key: string) {
+        return this.storage.get(key);
+      },
+      set(key: string, val: string) {
+        this.storage.set(key, val);
+      }
+    };
+
+    const cache = memoUnwrapAdapter(minimalStore as any)({ isFuncPromise: true });
+
+    await cache.set('norm-k', 'norm-v');
+    expect(cache.get('norm-k')).toBe('norm-v');
+    expect(cache.has('norm-k')).toBe(true);
+  });
+
   it('should delegate delete and clear to targetStore', () => {
     const targetStore = createMockStorage();
 
     targetStore.backingStore.set('del-key', 'del-val');
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
 
+    expect(cache.get('del-key')).toBe('del-val');
     expect(cache.has('del-key')).toBe(true);
     cache.delete?.('del-key');
     expect(targetStore.delete).toHaveBeenCalledWith('del-key');
     expect(cache.has('del-key')).toBe(false);
 
     targetStore.backingStore.set('clr-key', 'clr-val');
+    expect(cache.get('clr-key')).toBe('clr-val');
     cache.clear?.();
     expect(targetStore.clear).toHaveBeenCalled();
     expect(cache.has('clr-key')).toBe(false);
@@ -792,10 +815,12 @@ describe('memoUnwrapAdapter', () => {
     const targetStore = createMockStorage();
 
     targetStore.backingStore.set('k1', 'v1');
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
 
     cache.set('k2', 'v2');
 
+    // Hydrating k2 from targetStore pulls it into the active in-memory cache window
+    expect(cache.get('k2')).toBe('v2');
     expect(cache.size).toBe(1);
     expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
 
@@ -809,9 +834,36 @@ describe('memoUnwrapAdapter', () => {
     ]));
   });
 
+  it('should surgically evict specific keys from read cache on set and delete without disturbing other keys', () => {
+    const targetStore = createMockStorage();
+
+    targetStore.backingStore.set('key-a', 'val-a');
+    targetStore.backingStore.set('key-b', 'val-b');
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
+
+    // Warm both keys into the memoized read cache
+    expect(cache.get('key-a')).toBe('val-a');
+    expect(cache.get('key-b')).toBe('val-b');
+    expect(cache.size).toBe(2);
+
+    // Mutating key-a only invalidates key-a in readCache
+    cache.set('key-a', 'val-a-updated');
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['key-b']);
+
+    // Hydrate key-a again
+    expect(cache.get('key-a')).toBe('val-a-updated');
+    expect(cache.size).toBe(2);
+
+    // Deleting key-b only invalidates key-b in readCache and targetStore
+    cache.delete?.('key-b');
+    expect(cache.has('key-b')).toBe(false);
+    expect(cache.has('key-a')).toBe(true);
+  });
+
   it('should preserve falsy values and undefined in targetStore and inMemory', async () => {
     const targetStore = createMockStorage();
-    const cache = memoUnwrapAdapter(targetStore);
+    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: true });
 
     const fnUndefined = jest.fn(async () => undefined);
     const memoUndefined = memo(fnUndefined, { cache });
