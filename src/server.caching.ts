@@ -614,31 +614,38 @@ interface MemoUnwrapAdapterOptions {
  * @returns Map-like storage adapter implementing MemoMapLike.
  */
 const memoUnwrapAdapter = <K = unknown, V = unknown>(
-  targetStore: MemoMapLike<K, V> | Map<K, V> | Promise<MemoMapLike<K, V> | Map<K, V>>,
+  targetStore:
+    MemoMapLike<K, V> |
+    Map<K, V> |
+    Promise<MemoMapLike<K, V> | Map<K, V>> |
+    MemoCacheCallback<V>,
   { cacheErrors = true, cacheLimit = 500, expire = 5 * 60 * 1000 }: MemoUnwrapAdapterOptions = {}
 ): MemoMapLike<K, MemoCacheEntry<V>> => {
   const inFlight = new Map<K, Promise<V>>();
   const readCache = new Map<unknown, MemoCacheEntry<V>>();
-  let resolvedStore: MemoMapLike<K, V> | Map<K, V> | undefined;
+  let resolvedStore: MemoMapLike<K, V> | undefined;
+
+  const toNormalizedStore = (rawStore: unknown): MemoMapLike<K, V> =>
+    normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, V>;
 
   if (isPromise(targetStore)) {
     Promise.resolve(targetStore)
       .then(store => {
-        resolvedStore = store;
+        resolvedStore = toNormalizedStore(store);
       })
       .catch(() => {});
   } else {
-    resolvedStore = targetStore as MemoMapLike<K, V> | Map<K, V>;
+    resolvedStore = toNormalizedStore(targetStore);
   }
 
-  const getStore = async (): Promise<MemoMapLike<K, V> | Map<K, V> | undefined> => {
+  const getStore = async (): Promise<MemoMapLike<K, V> | undefined> => {
     if (resolvedStore) {
       return resolvedStore;
     }
 
     if (isPromise(targetStore)) {
       try {
-        resolvedStore = await targetStore;
+        resolvedStore = toNormalizedStore(await targetStore);
 
         return resolvedStore;
       } catch {}
@@ -650,8 +657,8 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
   const memoizedGet = memo(
     (key: K): V | undefined => {
       try {
-        if (resolvedStore?.has?.(key) === true) {
-          const stored = resolvedStore?.get?.(key);
+        if (resolvedStore?.has(key)) {
+          const stored = resolvedStore.get(key);
 
           if (!isPromise(stored)) {
             return stored as V;
@@ -674,22 +681,14 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       inFlight.clear();
       memoizedGet.clear();
 
-      try {
-        return resolvedStore?.clear?.();
-      } catch {}
-
-      return undefined;
+      return resolvedStore?.clear?.();
     },
 
     delete(key: K): unknown | Promise<unknown> {
       inFlight.delete(key);
       readCache.delete(key);
 
-      try {
-        return resolvedStore?.delete?.(key);
-      } catch {}
-
-      return undefined;
+      return resolvedStore?.delete?.(key);
     },
 
     entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
@@ -709,15 +708,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         return true;
       }
 
-      try {
-        const hasKey = resolvedStore?.has?.(key);
-
-        if (hasKey === true) {
-          return true;
-        }
-      } catch {}
-
-      return false;
+      return Boolean(resolvedStore?.has(key));
     },
 
     keys(): IterableIterator<K> {

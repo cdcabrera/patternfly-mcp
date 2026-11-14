@@ -770,6 +770,28 @@ describe('memoUnwrapAdapter', () => {
     expect(targetStore.set).toHaveBeenCalledWith(expect.anything(), 'promise-store-100');
   });
 
+  it('should normalize targetStore using normalizeMemoCache / normalizeMapLike', async () => {
+    // Passing an incomplete map-like (only has, get, set) without delete or clear
+    const minimalStore = {
+      storage: new Map<string, string>(),
+      has(key: string) {
+        return this.storage.has(key);
+      },
+      get(key: string) {
+        return this.storage.get(key);
+      },
+      set(key: string, val: string) {
+        this.storage.set(key, val);
+      }
+    };
+
+    const cache = memoUnwrapAdapter(minimalStore as any);
+
+    cache.set('norm-k', 'norm-v');
+    expect(cache.get('norm-k')).toBe('norm-v');
+    expect(cache.has('norm-k')).toBe(true);
+  });
+
   it('should delegate delete and clear to targetStore', () => {
     const targetStore = createMockStorage();
 
