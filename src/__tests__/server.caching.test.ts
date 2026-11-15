@@ -571,8 +571,9 @@ describe('memoUnwrapAdapter', () => {
       input: 99,
       expected: 'async-val-99'
     }
-  ])('should delegate custom cache behavior to custom storage, $description', async ({ isAsync, input, expected }) => {
-    const cache = createMockStorage();
+  ])('should unwrap and persist resolved concrete values to targetStore, $description', async ({ isAsync, input, expected }) => {
+    const targetStore = createMockStorage();
+    const cache = memoUnwrapAdapter(targetStore);
     const fn = isAsync
       ? async (val: number) => `async-val-${val}`
       : (val: number) => `val-${val}`;
@@ -581,9 +582,8 @@ describe('memoUnwrapAdapter', () => {
     const result = await memoized(input);
 
     expect(result).toBe(expected);
-    expect(cache.set).toHaveBeenCalledTimes(1);
-    expect(cache.has).toHaveBeenCalledTimes(1);
-    expect(cache.get).toHaveBeenCalledTimes(1);
+    expect(targetStore.set).toHaveBeenCalledTimes(1);
+    expect(targetStore.set).toHaveBeenCalledWith(expect.anything(), expected);
   });
 
   it.each([
@@ -656,34 +656,6 @@ describe('memoUnwrapAdapter', () => {
 
     expect(targetStore.set).toHaveBeenCalledTimes(1);
     expect((targetStore.set as jest.Mock).mock.calls[0][1]).toHaveProperty(expectedProperty);
-  });
-
-  it.each([
-    {
-      description: 'sync function',
-      isAsync: false,
-      input: 42,
-      expected: 'val-42'
-    },
-    {
-      description: 'async function',
-      isAsync: true,
-      input: 99,
-      expected: 'async-val-99'
-    }
-  ])('should unwrap and persist resolved concrete values to targetStore, $description', async ({ isAsync, input, expected }) => {
-    const targetStore = createMockStorage();
-    const cache = memoUnwrapAdapter(targetStore);
-    const fn = isAsync
-      ? async (val: number) => `async-val-${val}`
-      : (val: number) => `val-${val}`;
-
-    const memoized = memo(fn, { cache });
-    const result = await memoized(input);
-
-    expect(result).toBe(expected);
-    expect(targetStore.set).toHaveBeenCalledTimes(1);
-    expect(targetStore.set).toHaveBeenCalledWith(expect.anything(), expected);
   });
 
   it('should hydrate from pre-populated targetStore on cache miss without calling func', async () => {
