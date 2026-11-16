@@ -798,6 +798,84 @@ describe('memoUnwrapAdapter', () => {
     expect(cache.get('key')).toBe('newer');
   });
 
+  it('should report existence from any tier on delete and ignore a deleted in-flight promise on settlement', async () => {
+    const targetStore = new Map([['l2-only', 'persisted']]);
+    const cache = memoUnwrapAdapter(targetStore)();
+
+    // Unknown key, nothing observable
+    expect(cache.delete?.('missing')).toBe(false);
+
+    // L2 only (never hydrated into readCache)
+    expect(cache.delete?.('l2-only')).toBe(true);
+    expect(cache.has('l2-only')).toBe(false);
+    expect(targetStore.has('l2-only')).toBe(false);
+
+    // L1 hydrated
+    targetStore.set('hydrated', 'val');
+    expect(cache.get('hydrated')).toBe('val');
+    expect(cache.size).toBe(1);
+    expect(cache.delete?.('hydrated')).toBe(true);
+    expect(cache.size).toBe(0);
+    expect(targetStore.has('hydrated')).toBe(false);
+
+    // L0 in-flight: delete returns true and the late settlement must not resurrect the entry
+    let resolvePending: (value: string) => void = () => {};
+    const pending = new Promise<string>(resolve => {
+      resolvePending = resolve;
+    });
+
+    cache.set('in-flight', pending);
+    expect(cache.delete?.('in-flight')).toBe(true);
+    expect(cache.has('in-flight')).toBe(false);
+
+    resolvePending('late');
+    await pending;
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(targetStore.has('in-flight')).toBe(false);
+    expect(cache.has('in-flight')).toBe(false);
+  });
+
+  it('should return false from delete while the targetStore is pending but still queue the delete', async () => {
+    let resolveStore: ((store: Map<unknown, unknown>) => void) | undefined;
+    const targetStore = new Map([['existing', 'val']]);
+    const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
+      resolveStore = resolve;
+    });
+    const cache = memoUnwrapAdapter(storePromise)();
+
+    // L2 is not observable yet, consistent with has()
+    expect(cache.has('existing')).toBe(false);
+    expect(cache.delete?.('existing')).toBe(false);
+
+    resolveStore?.(targetStore);
+    await storePromise;
+    await jest.advanceTimersByTimeAsync(0);
+
+    // ...but the delete was queued and applied once the store resolved
+    expect(targetStore.has('existing')).toBe(false);
+  });
+
+  it('should not throw from delete, has, or get when the targetStore has method faults', () => {
+    const faultyStore = {
+      has: () => {
+        throw new Error('has failed');
+      },
+      get: () => undefined,
+      set: () => undefined,
+      delete: () => true,
+      clear: () => undefined
+    };
+    const cache = memoUnwrapAdapter(faultyStore as never)();
+
+    expect(() => cache.has('key')).not.toThrow();
+    expect(cache.has('key')).toBe(false);
+    expect(() => cache.get('key')).not.toThrow();
+    expect(cache.get('key')).toBeUndefined();
+    expect(() => cache.delete?.('key')).not.toThrow();
+    expect(cache.delete?.('key')).toBe(false);
+  });
+
   it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
     const targetStore = new Map([
       ['k1', 'v1'],
