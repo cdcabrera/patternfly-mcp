@@ -732,6 +732,26 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     const inFlight = new Map<K, Promise<V>>();
     const readCache = new Map<unknown, MemoCacheEntry<V>>();
 
+    /**
+     * Does the key exist? Faults and pending are considered `false`.
+     *
+     * @param key Entry key to check.
+     * @return True if the resolved store has the key.
+     */
+    const storeHas = (key: K): boolean => {
+      try {
+        return Boolean(resolvedStore?.has(key));
+      } catch {}
+
+      return false;
+    };
+
+    /**
+     * Get a value from the resolved store.
+     *
+     * @param key Entry key to get.
+     * @return Value from the resolved store.
+     */
     const memoizedGet = memo(
       (key: K): V | undefined => {
         try {
@@ -765,11 +785,15 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       /**
        * Delete an entry from the cache.
        *
+       * @note Returned boolean reflects what was observable at call time. In-flight promises
+       *     and the resolved target store. A pending target store has no observable entries,
+       *     ergo `false` is returned.
+       *
        * @param key Entry key to delete.
        * @return Confirm the entry was deleted.
        */
       delete(key: K): boolean {
-        const existed = inFlight.delete(key) || readCache.delete(key) || Boolean(resolvedStore?.has(key));
+        const existed = inFlight.has(key) || readCache.has(key) || storeHas(key);
 
         inFlight.delete(key);
         readCache.delete(key);
@@ -799,7 +823,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
           return inFlight.get(key);
         }
 
-        if (readCache.has(key) || resolvedStore?.has(key)) {
+        if (readCache.has(key) || storeHas(key)) {
           return memoizedGet(key);
         }
 
@@ -813,7 +837,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
        * @return True if the key exists.
        */
       has(key: K): boolean {
-        return inFlight.has(key) || readCache.has(key) || Boolean(resolvedStore?.has(key));
+        return inFlight.has(key) || readCache.has(key) || storeHas(key);
       },
 
       /**
