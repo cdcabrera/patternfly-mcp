@@ -488,6 +488,43 @@ describe('memo', () => {
     expect(factory).toHaveBeenCalledTimes(1);
     expect(factory).toHaveBeenCalledWith({ isFuncPromise: true, cacheErrors: false, cacheLimit: 3, expire: undefined });
   });
+
+  it('should catch and log errors thrown or rejected by cache change handlers without propagating', async () => {
+    const syncHandler = () => {
+      throw new Error('sync handler error');
+    };
+    const asyncHandler = async () => {
+      throw new Error('async handler error');
+    };
+
+    const memoSync = memo((val: number) => val * 2, { onCacheClear: syncHandler });
+    const memoAsync = memo((val: number) => val * 2, { onCacheClear: asyncHandler });
+
+    memoSync(1);
+    expect(() => memoSync.clear()).not.toThrow();
+
+    memoAsync(2);
+    expect(() => memoAsync.clear()).not.toThrow();
+    await Promise.resolve();
+  });
+
+  it('should break early during cacheLimit eviction if keys iterator finishes early', () => {
+    const cache = {
+      has: () => false,
+      get: () => 'val',
+      set: jest.fn(),
+      delete: jest.fn(),
+      keys: () => [][Symbol.iterator](),
+      get size() {
+        return 5;
+      }
+    };
+
+    const memoized = memo((val: number) => val, { cache, cacheLimit: 1 });
+
+    expect(memoized(1)).toBe('val');
+    expect(cache.delete).not.toHaveBeenCalled();
+  });
 });
 
 describe('normalizeMemoCache', () => {
@@ -514,6 +551,9 @@ describe('normalizeMemoCache', () => {
     result.set('dolor', 'sit');
     expect(cache.set).toHaveBeenCalledWith('dolor', 'sit');
 
+    expect(Array.from(result.keys())).toEqual([]);
+    expect(Array.from(result.entries())).toEqual([]);
+
     expect(result).toMatchSnapshot('normalized');
   });
 
@@ -537,6 +577,7 @@ describe('normalizeMemoCache', () => {
 
     expect(normalizeMemoCache(async () => new Map(), { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
     expect(normalizeMemoCache('nope', { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
+    expect(normalizeMemoCache('nope')).toBeInstanceOf(Map);
 
     expect(mockDebug).toHaveBeenCalledTimes(3);
     expect(mockDebug).toHaveBeenCalledWith(expect.objectContaining({ type: 'memo cache error' }));
