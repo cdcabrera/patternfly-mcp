@@ -306,7 +306,7 @@ const normalizeMemoCache = <TReturn>(
  * @template TReturn Return type of the provided/memoized function.
  *
  * @param {(...args: TArgs) => TReturn} func The function, or async function, to memoize
- * @param {MemoOptions<TArgs, TReturn>} [options={}] Configuration options.
+ * @param {MemoOptions<TArgs, TReturn>} [options] Configuration options. See {@link MemoOptions}.
  * @returns Memoized function
  *
  * @throws {Error} If an error occurs during function execution and `cacheErrors` is set to `false`,
@@ -605,11 +605,12 @@ interface MemoUnwrapAdapterOptions {
  *
  * @param targetStore - Underlying storage backend or a Promise resolving to one.
  * @param [settings] - Configuration options, default fallbacks.
- * @param [settings.cacheErrors] - Persist errors/rejections to the target store. Falls back to the `memo`
- *     context, then `false`.
- * @param [settings.cacheLimit] - Max entries in the in-memory read window. Falls back to the `memo` context,
- *     then `500`.
- * @param [settings.expire] - Sliding expiration in milliseconds. Falls back to the `memo` context, then 5 min.
+ * @param [settings.cacheErrors] - Persist errors/rejections to the target store. Inherited `memo` context takes
+ *     precedence and falls back to the setting's default.
+ * @param [settings.cacheLimit] - Max entries in the in-memory read window. Inherited `memo` context takes
+ *     precedence and falls back to the setting's default.
+ * @param [settings.expire] - Sliding expiration in milliseconds. Inherited `memo` context takes precedence
+ *     and falls back to the setting's default.
  * @returns A cache factory callback accepting MemoCacheContext and returning a MemoMapLike adapter.
  */
 const memoUnwrapAdapter = <K = unknown, V = unknown>(
@@ -700,9 +701,9 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
    * @returns Object with map-like methods.
    */
   return (context: MemoCacheContext = {}): MemoMapLike<unknown, MemoCacheEntry<V>> => {
-    const cacheErrors = settingsCacheErrors ?? context.cacheErrors ?? false;
-    const cacheLimit = settingsCacheLimit ?? context.cacheLimit ?? 500;
-    const expire = settingsExpire ?? context.expire ?? 5 * 60 * 1000;
+    const cacheErrors = context.cacheErrors || settingsCacheErrors;
+    const cacheLimit = context.cacheLimit ?? settingsCacheLimit;
+    const expire = context.expire ?? settingsExpire;
 
     const inFlight = new Map<K, Promise<V>>();
     const readCache = new Map<unknown, MemoCacheEntry<V>>();
