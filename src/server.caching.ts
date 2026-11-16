@@ -598,9 +598,15 @@ interface MemoUnwrapAdapterOptions {
  * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to unwrap promises
  * produced by async `memo` functions before persisting to the underlying store.
  *
- * @note **Important**: Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection
+ * @note **Important**:
+ * - Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection
  * reasons. Rejection reasons are persisted as plain values and become indistinguishable from resolved values
- * on read-back, similar to a function that resolves with an Error.
+ * on read-back, similar to a function that resolves with an Error. **It's on the consumer to handle
+ * consuming these values.**
+ *
+ * - Memoized `undefined` values have a similar behavior to storing errors. Undefined, to some degree, is
+ * indistinguishable from missing Map values. We attempt to use a `has` check to distinguish between the
+ * two. **It's on the consumer to handle consuming these values.**
  *
  * @note Review using `Promise.try` in the future.
  *
@@ -610,7 +616,7 @@ interface MemoUnwrapAdapterOptions {
  * @param targetStore - Underlying storage backend or a Promise resolving to one.
  * @param [settings] - Configuration options, default fallbacks.
  * @param [settings.cacheErrors] - Persist errors/rejections to the target store. Inherited `memo` context takes
- *     precedence and falls back to the setting's default.
+ *     precedence when `true`, otherwise falls back to this setting's default.
  * @param [settings.cacheLimit] - Max entries in the in-memory read window. Inherited `memo` context takes
  *     precedence and falls back to the setting's default.
  * @param [settings.expire] - Sliding expiration in milliseconds. Inherited `memo` context takes precedence
