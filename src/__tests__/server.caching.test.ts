@@ -678,7 +678,7 @@ describe('memoUnwrapAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('key')).toBe(true);
-    expect(targetStore.get('key')).toBe(expected);
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: expected });
     expect(cache.get('key')).toBe(expected);
   });
 
@@ -695,7 +695,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
+    const cache = memoUnwrapAdapter(targetStore as never, { cacheErrors })();
     const error = new Error('boom');
     const rejectingPromise = Promise.reject(error);
 
@@ -708,7 +708,7 @@ describe('memoUnwrapAdapter', () => {
 
     expect(targetStore.has('key')).toBe(expectedHas);
     if (cacheErrors) {
-      expect(targetStore.get('key')).toBe(error);
+      expect(targetStore.get('key')).toEqual({ status: 'rejected', reason: error });
     }
   });
 
@@ -730,14 +730,14 @@ describe('memoUnwrapAdapter', () => {
     // L0 now holds the newer value; visible to reads immediately, persisted to L2 after settlement
     expect(cache.get('key')).toBe('newer');
     await jest.advanceTimersByTimeAsync(0);
-    expect(targetStore.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
     // Late settlement of the superseded promise must NOT clobber the newer value
     resolveOld('older');
     await oldPromise;
     await jest.advanceTimersByTimeAsync(0);
 
-    expect(targetStore.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
     expect(cache.get('key')).toBe('newer');
   });
 
@@ -764,7 +764,7 @@ describe('memoUnwrapAdapter', () => {
 
     expect(cache.get('key')).toBe('newer');
     await jest.advanceTimersByTimeAsync(0);
-    expect(targetStore.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
     rejectOld(new Error('boom'));
     await expect(oldPromise).rejects.toThrow('boom');
@@ -772,7 +772,7 @@ describe('memoUnwrapAdapter', () => {
 
     // Neither the isDelete branch nor the error-persist branch may fire for a superseded promise
     expect(targetStore.has('key')).toBe(true);
-    expect(targetStore.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
     expect(cache.get('key')).toBe('newer');
   });
 
@@ -792,19 +792,19 @@ describe('memoUnwrapAdapter', () => {
 
     await newPromise;
     await jest.advanceTimersByTimeAsync(0);
-    expect(targetStore.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
     resolveOld('older');
     await oldPromise;
     await jest.advanceTimersByTimeAsync(0);
 
-    expect(targetStore.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
     expect(cache.get('key')).toBe('newer');
   });
 
   it('should report existence from any tier on delete and ignore a deleted in-flight promise on settlement', async () => {
     const targetStore = new Map([['l2-only', 'persisted']]);
-    const cache = memoUnwrapAdapter(targetStore)();
+    const cache = memoUnwrapAdapter(targetStore as never)();
 
     // Unknown key, nothing observable
     expect(cache.delete?.('missing')).toBe(false);
@@ -846,7 +846,7 @@ describe('memoUnwrapAdapter', () => {
     const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
       resolveStore = resolve;
     });
-    const cache = memoUnwrapAdapter(storePromise)();
+    const cache = memoUnwrapAdapter(storePromise as never)();
 
     // L2 is not observable yet, consistent with has()
     expect(cache.has('existing')).toBe(false);
@@ -893,7 +893,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should $description for a memo sync-error wrapper, matching rejections', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
+    const cache = memoUnwrapAdapter(targetStore as never, { cacheErrors })();
     const error = new Error('sync boom');
     const errorFunc = Object.assign(() => {
       throw error;
@@ -910,7 +910,7 @@ describe('memoUnwrapAdapter', () => {
     expect(targetStore.has('key')).toBe(expectedHas);
     expect(typeof targetStore.get('key')).not.toBe('function');
     if (cacheErrors) {
-      expect(targetStore.get('key')).toBe(error);
+      expect(targetStore.get('key')).toEqual({ status: 'rejected', reason: error });
     }
   });
 
@@ -920,7 +920,7 @@ describe('memoUnwrapAdapter', () => {
       resolveStore = resolve;
     });
     const mockFunc = jest.fn((val: number) => val * 2);
-    const memoized = memo(mockFunc, { cache: memoUnwrapAdapter(storePromise) });
+    const memoized = memo(mockFunc, { cache: memoUnwrapAdapter(storePromise as never) });
 
     // Fails on HEAD: the concrete write bypassed L0, so memo's immediate get() returned undefined
     expect(memoized(2)).toBe(4);
@@ -934,7 +934,7 @@ describe('memoUnwrapAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
 
     // Queued write landed once the store resolved
-    expect(Array.from(store.values())).toEqual([4]);
+    expect(Array.from(store.values())).toEqual([{ status: 'fulfilled', value: 4 }]);
     expect(memoized(2)).toBe(4);
 
     // A rejected store never resolves, but the sync value is still returned
@@ -952,7 +952,7 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoUnwrapAdapter(targetStore)();
+    const cache = memoUnwrapAdapter(targetStore as never)();
 
     // Before hydration, readCache window is empty even though targetStore has entries
     expect(cache.size).toBe(0);
@@ -972,7 +972,7 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoUnwrapAdapter(targetStore)();
+    const cache = memoUnwrapAdapter(targetStore as never)();
 
     // Hydrate both keys into readCache
     expect(cache.get('k1')).toBe('v1');
@@ -984,7 +984,7 @@ describe('memoUnwrapAdapter', () => {
     expect(cache.size).toBe(1);
     expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
     await jest.advanceTimersByTimeAsync(0);
-    expect(targetStore.get('k1')).toBe('v1-updated');
+    expect(targetStore.get('k1')).toEqual({ status: 'fulfilled', value: 'v1-updated' });
 
     // Deleting k2 removes it from readCache and targetStore
     expect(cache.delete?.('k2')).toBe(true);
@@ -1018,7 +1018,7 @@ describe('memoUnwrapAdapter', () => {
       resolveStore = resolve;
     });
 
-    const cache = memoUnwrapAdapter(storePromise)();
+    const cache = memoUnwrapAdapter(storePromise as never)();
 
     cache.set('cleared-key', 'stale-val');
     cache.clear?.();
@@ -1031,7 +1031,7 @@ describe('memoUnwrapAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('cleared-key')).toBe(false);
-    expect(targetStore.get('queued-set')).toBe('queued-val');
+    expect(targetStore.get('queued-set')).toEqual({ status: 'fulfilled', value: 'queued-val' });
     expect(targetStore.has('existing')).toBe(false);
   });
 
@@ -1069,58 +1069,74 @@ describe('memoUnwrapAdapter', () => {
     {
       description: 'resolved Error value',
       func: async () => new Error('lorem ipsum'),
-      firstCallRejects: false
+      rejects: false
     },
     {
       description: 'rejected Error reason',
       func: async () => {
         throw new Error('lorem ipsum');
       },
-      firstCallRejects: true
+      rejects: true
     }
-  ])('should hand back a persisted $description as a value on hydrated reads', async ({ func, firstCallRejects }) => {
+  ])('should persist a $description as a settled record and rehydrate it faithfully', async ({ func, rejects }) => {
     const targetStore = new Map();
     const mockFunc = jest.fn(func);
     const myMemoFunc = memo(mockFunc, { cache: memoUnwrapAdapter(targetStore, { cacheErrors: true }) });
 
+    const call = async () => {
+      try {
+        return { value: await myMemoFunc(), caught: undefined };
+      } catch (caught) {
+        return { value: undefined, caught };
+      }
+    };
+
     // First call, in-flight: memo's own semantics apply (resolve vs. reject).
-    let firstDolor: unknown;
-    let firstErr: unknown;
+    const first = await call();
 
-    try {
-      firstDolor = await myMemoFunc();
-    } catch (err) {
-      firstErr = err;
-    }
+    expect(first.caught instanceof Error).toBe(rejects);
+    expect(first.value instanceof Error).toBe(!rejects);
 
-    if (firstCallRejects) {
-      expect(firstErr).toBeInstanceOf(Error);
-      expect(firstDolor).toBeUndefined();
-    } else {
-      expect(firstErr).toBeUndefined();
-      expect(firstDolor).toBeInstanceOf(Error);
-    }
-
-    // Allow the adapter's then/catch to unwrap and persist to targetStore.
+    // The store receives a settled record; only status distinguishes the two.
     await jest.advanceTimersByTimeAsync(0);
     expect(targetStore.size).toBe(1);
-    expect(Array.from(targetStore.values())[0]).toBeInstanceOf(Error);
+    const [record] = Array.from(targetStore.values()) as PromiseSettledResult<unknown>[];
 
-    // Second call, hydrated from targetStore: both variants resolve with an Error value.
-    let dolor: unknown;
-    let caught: unknown;
+    expect(record?.status).toBe(rejects ? 'rejected' : 'fulfilled');
+    expect(record?.status === 'rejected' ? record.reason : record?.value).toBeInstanceOf(Error);
 
-    try {
-      dolor = await myMemoFunc();
-    } catch (err) {
-      caught = err;
-    }
+    // Second call, hydrated from targetStore: a rejection is still a rejection, a value is still a value.
+    const second = await call();
 
-    expect(caught).toBeUndefined();
-    expect(dolor).toBeInstanceOf(Error);
-    expect((dolor as Error).message).toBe('lorem ipsum');
+    expect(second.caught instanceof Error).toBe(rejects);
+    expect(second.value instanceof Error).toBe(!rejects);
+    expect(((second.caught ?? second.value) as Error).message).toBe('lorem ipsum');
 
     // The underlying function was NOT re-invoked; the value came from the store.
     expect(mockFunc).toHaveBeenCalledTimes(1);
+  });
+
+  it('should rehydrate a persisted rejection as an isError wrapper for a sync memo function', () => {
+    const error = new Error('sync boom');
+    const targetStore = new Map([['key', { status: 'rejected', reason: error }]]);
+    const cache = memoUnwrapAdapter(targetStore as never)({ isFuncPromise: false });
+
+    const entry = cache.get('key') as { isError?: boolean } & (() => unknown);
+
+    expect(typeof entry).toBe('function');
+    expect(entry.isError).toBe(true);
+    expect(() => entry()).toThrow('sync boom');
+  });
+
+  it('should pass through non-envelope entries from a pre-seeded store as fulfilled values', () => {
+    const targetStore = new Map<string, unknown>([
+      ['raw', 'legacy'],
+      ['wrapped', { status: 'fulfilled', value: 'new' }]
+    ]);
+    const cache = memoUnwrapAdapter(targetStore as never)();
+
+    expect(cache.get('raw')).toBe('legacy');
+    expect(cache.get('wrapped')).toBe('new');
+    expect(Array.from(cache.entries?.() || [])).toEqual([['raw', 'legacy'], ['wrapped', 'new']]);
   });
 });

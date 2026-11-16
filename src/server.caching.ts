@@ -595,20 +595,30 @@ interface MemoUnwrapAdapterOptions {
 }
 
 /**
- * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to unwrap promises
- * produced by async `memo` functions before persisting to the underlying store.
+ * Shape persisted to the target store by {@link memoUnwrapAdapter}. Mirrors `Promise.allSettled`.
+ *
+ * @template V Value type.
+ */
+type MemoSettled<V> = PromiseSettledResult<V>;
+
+/**
+ * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to settle values produced by
+ * `memo` functions before persisting them to the underlying store as {@link MemoSettled} records.
  *
  * Every value passed to `set()` takes the same path regardless of type: it is staged in-memory as-is,
- * then settled as a promise and persisted to the target store. Concrete values therefore reach the
- * store one microtask after `set()`; adapter `has()`/`get()` observe them immediately via the staged
+ * then settled as a promise and persisted to the target store in `Promise.allSettled` form:
+ * `{ status: 'fulfilled', value }` or `{ status: 'rejected', reason }`. Concrete values therefore reach
+ * the store one microtask after `set()`; adapter `has()`/`get()` observe them immediately via the staged
  * tier. `memo` sync-error wrappers (`isError`) settle as rejections so sync and async errors persist
- * identically under `cacheErrors`.
+ * identically. On hydrated reads the envelope is unwrapped: fulfilled values are returned as-is,
+ * rejected entries are rehydrated as a rejecting Promise (async `memo`) or an `isError` wrapper (sync
+ * `memo`) so `memo` re-throws them the same way it would in-process.
  *
  * @note **Important**:
- * - Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection reasons.
- *   Rejection reasons are persisted as plain values and become indistinguishable from resolved values
- *   on read-back, similar to a function that resolves with an Error. **It's on the consumer to handle
- *   consuming these values.**
+ * - The adapter owns the **envelope**, not its contents. Only `status` is ever inspected; `value` and
+ *   `reason` are persisted and returned untouched. How a store serializes them (e.g. an `Error` reason)
+ *   is the store's responsibility. Entries that are not an envelope (pre-seeded or foreign stores) are
+ *   treated as fulfilled raw values.
  *
  * - Persisted `undefined` values at the Map level are indistinguishable from missing entries. A `has`
  *   check is used to distinguish the two. The value is never interpreted by design. **It's on the
@@ -631,9 +641,9 @@ interface MemoUnwrapAdapterOptions {
  */
 const memoUnwrapAdapter = <K = unknown, V = unknown>(
   targetStore:
-    MemoMapLike<K, V> |
-    Map<K, V> |
-    Promise<MemoMapLike<K, V> | Map<K, V>> |
+    MemoMapLike<K, MemoSettled<V>> |
+    Map<K, MemoSettled<V>> |
+    Promise<MemoMapLike<K, MemoSettled<V>> | Map<K, MemoSettled<V>>> |
     MemoCacheCallback<V>,
   {
     cacheErrors: settingsCacheErrors = false,
@@ -641,25 +651,27 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     expire: settingsExpire = 5 * 60 * 1000
   }: MemoUnwrapAdapterOptions = {}
 ): MemoCacheCallback<V> => {
-  let resolvedStore: MemoMapLike<K, V> | undefined;
+  let resolvedStore: MemoMapLike<K, MemoSettled<V>> | undefined;
 
-  const normalizedStore = (rawStore: unknown): MemoMapLike<K, V> =>
-    normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, V>;
+  const normalizedStore = (rawStore: unknown): MemoMapLike<K, MemoSettled<V>> =>
+    normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, MemoSettled<V>>;
 
-  if (isPromise(targetStore)) {
-    Promise.resolve(targetStore)
+  let storeQueue: Promise<unknown> | undefined = isPromise(targetStore)
+    ? Promise.resolve(targetStore)
       .then(store => {
         resolvedStore = normalizedStore(store);
       })
-      .catch(() => {});
-  } else {
+      .catch(() => {})
+    : undefined;
+
+  if (!isPromise(targetStore)) {
     resolvedStore = normalizedStore(targetStore);
   }
 
   /**
    * Get the memo cache store.
    */
-  const getStore = async (): Promise<MemoMapLike<K, V> | undefined> => {
+  const getStore = async (): Promise<MemoMapLike<K, MemoSettled<V>> | undefined> => {
     if (resolvedStore) {
       return resolvedStore;
     }
@@ -708,7 +720,11 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       return undefined;
     };
 
-    if (resolvedStore) {
+    const applyUpdate = () => {
+      if (!resolvedStore) {
+        return undefined;
+      }
+
       if (isClear) {
         return update(() => resolvedStore?.clear?.());
       }
@@ -717,7 +733,17 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         return update(() => resolvedStore?.delete?.(key as K));
       }
 
-      return update(() => resolvedStore?.set(key as K, val as V));
+      return update(() => resolvedStore?.set(key as K, val as MemoSettled<V>));
+    };
+
+    if (storeQueue) {
+      storeQueue = storeQueue.then(applyUpdate).catch(() => {});
+
+      return undefined;
+    }
+
+    if (resolvedStore) {
+      return applyUpdate();
     }
 
     if (!_resolved) {
@@ -743,7 +769,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
 
     // L0: the most recent raw value passed to `set()`, promise or not, until it settles and persists.
     const staged = new Map<K, MemoCacheEntry<V>>();
-    const readCache = new Map<unknown, MemoCacheEntry<V>>();
+    const readCache = new Map<unknown, MemoSettled<V> | V | undefined>();
 
     /**
      * Normalize any cache entry into a promise so every `set()` shares one settle/persist path.
@@ -753,13 +779,58 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
      * @return Promise settling with the unwrapped value, or rejecting with the thrown/rejected reason.
      */
     const settle = (value: MemoCacheEntry<V>): Promise<unknown> => {
-      if (typeof value === 'function' && (value as { isError?: unknown }).isError === true) {
+      if (isReferenceLike(value) && 'isError' in value && value.isError === true) {
         return new Promise(resolve => {
           resolve((value as () => unknown)());
         });
       }
 
       return Promise.resolve(value);
+    };
+
+    /**
+     * Is the entry an adapter envelope? Only `status` is checked, never the payload.
+     *
+     * @param entry Entry read from the store.
+     * @return True if the entry is a `PromiseSettledResult`.
+     */
+    const isSettled = (entry: unknown): entry is MemoSettled<V> =>
+      isReferenceLike(entry) &&
+      'status' in entry &&
+      ((entry as { status: unknown }).status === 'fulfilled' || (entry as { status: unknown }).status === 'rejected');
+
+    /**
+     * Unwrap a stored entry into the form `memo` expects. Non-envelope entries are returned as-is.
+     * Rejections are rehydrated per `context.isFuncPromise` so `memo` re-throws them normally.
+     *
+     * @param entry Entry read from the store or read window.
+     * @return A memo cache entry.
+     */
+    const unwrap = (entry: unknown): MemoCacheEntry<V> | undefined => {
+      if (!isSettled(entry)) {
+        return entry as MemoCacheEntry<V>;
+      }
+
+      if (entry.status === 'fulfilled') {
+        return entry.value;
+      }
+
+      if (context.isFuncPromise) {
+        const rejected = Promise.reject(entry.reason);
+
+        // Suppress unhandled-rejection noise until memo hands it to the caller.
+        rejected.catch(() => {});
+
+        return rejected as MemoCacheEntry<V>;
+      }
+
+      const errorFunc = () => {
+        throw entry.reason;
+      };
+
+      errorFunc.isError = true;
+
+      return errorFunc as unknown as MemoCacheEntry<V>;
     };
 
     /**
@@ -777,15 +848,15 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     };
 
     /**
-     * Get a value from the resolved store.
+     * Get a raw (still enveloped) entry from the resolved store.
      *
      * @param key Entry key to get.
-     * @return Value from the resolved store.
+     * @return Entry from the resolved store.
      */
     const memoizedGet = memo(
-      (key: K): V | undefined => {
+      (key: K): MemoSettled<V> | V | undefined => {
         try {
-          return resolvedStore?.get(key) as V;
+          return resolvedStore?.get(key) as MemoSettled<V> | V | undefined;
         } catch {}
 
         return undefined;
@@ -836,10 +907,14 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       /**
        * Return an iterator of entries in the cache.
        *
+       * @note Entries are unwrapped; the read window itself holds the persisted envelopes.
+       *
        * @return An iterable iterator of tuples containing each cache key and value.
        */
       entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
-        return (readCache as Map<K, MemoCacheEntry<V>>).entries();
+        return Array.from((readCache as Map<K, unknown>).entries())
+          .map(([key, entry]) => [key, unwrap(entry)] as [K, MemoCacheEntry<V>])
+          .values();
       },
 
       /**
@@ -854,7 +929,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         }
 
         if (readCache.has(key) || storeHas(key)) {
-          return memoizedGet(key);
+          return unwrap(memoizedGet(key));
         }
 
         return undefined;
@@ -886,8 +961,9 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
        *     `memo` determines the `has()` check, this adapter **SHOULD NOT** add its own.
        *
        * @note All values take the same path: staged as-is so `get()` returns exactly what was set,
-       *     then settled and persisted asynchronously. Concrete values reach the target store one
-       *     microtask after `set()`. A superseded entry's late settlement is ignored.
+       *     then settled and persisted asynchronously as a `PromiseSettledResult`. Concrete values
+       *     reach the target store one microtask after `set()`. A superseded entry's late settlement
+       *     is ignored. Rejections are persisted only when `cacheErrors` is enabled, otherwise deleted.
        *
        * @param key Entry key to set.
        * @param value Entry value to set.
@@ -898,21 +974,21 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         staged.set(key, value);
 
         settle(value)
-          .then(resolvedValue => {
-            if (staged.get(key) === value) {
-              staged.delete(key);
-              updateStore(key, resolvedValue);
+          .then(
+            (resolvedValue): MemoSettled<V> => ({ status: 'fulfilled', value: resolvedValue as V }),
+            (reason: unknown): MemoSettled<V> => ({ status: 'rejected', reason })
+          )
+          .then(settled => {
+            if (staged.get(key) !== value) {
+              return;
             }
-          })
-          .catch(error => {
-            if (staged.get(key) === value) {
-              staged.delete(key);
 
-              if (cacheErrors) {
-                updateStore(key, error);
-              } else {
-                updateStore(key, undefined, { isDelete: true });
-              }
+            staged.delete(key);
+
+            if (settled.status === 'rejected' && !cacheErrors) {
+              updateStore(key, undefined, { isDelete: true });
+            } else {
+              updateStore(key, settled);
             }
           });
 
