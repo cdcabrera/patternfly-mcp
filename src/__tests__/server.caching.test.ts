@@ -1,4 +1,4 @@
-import { memo, memoUnwrapAdapter, normalizeMapLike, normalizeMemoCache } from '../server.caching';
+import { memo, memoSettledAdapter, normalizeMapLike, normalizeMemoCache } from '../server.caching';
 
 describe('memo', () => {
   beforeEach(() => {
@@ -634,7 +634,7 @@ describe('normalizeMemoCache', () => {
   });
 });
 
-describe('memoUnwrapAdapter', () => {
+describe('memoSettledAdapter', () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -666,7 +666,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should unwrap and persist $description to targetStore', async ({ value, expected }) => {
     const targetStore = new Map();
-    const cache = memoUnwrapAdapter(targetStore)();
+    const cache = memoSettledAdapter(targetStore)();
 
     cache.set('key', value);
     // L0 hands back exactly what was set, promise or not
@@ -695,7 +695,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoUnwrapAdapter(targetStore as never, { cacheErrors })();
+    const cache = memoSettledAdapter(targetStore as never, { cacheErrors })();
     const error = new Error('boom');
     const rejectingPromise = Promise.reject(error);
 
@@ -714,7 +714,7 @@ describe('memoUnwrapAdapter', () => {
 
   it('should ignore a superseded in-flight promise when a concrete value replaces the same key', async () => {
     const targetStore = new Map();
-    const cache = memoUnwrapAdapter(targetStore)();
+    const cache = memoSettledAdapter(targetStore)();
 
     let resolveOld: (value: string) => void = () => {};
     const oldPromise = new Promise<string>(resolve => {
@@ -752,7 +752,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should $description if a superseded in-flight promise rejects', async ({ cacheErrors }) => {
     const targetStore = new Map();
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
+    const cache = memoSettledAdapter(targetStore, { cacheErrors })();
 
     let rejectOld: (reason: unknown) => void = () => {};
     const oldPromise = new Promise<string>((_resolve, reject) => {
@@ -778,7 +778,7 @@ describe('memoUnwrapAdapter', () => {
 
   it('should ignore a superseded in-flight promise when a newer promise replaces the same key', async () => {
     const targetStore = new Map();
-    const cache = memoUnwrapAdapter(targetStore)();
+    const cache = memoSettledAdapter(targetStore)();
 
     let resolveOld: (value: string) => void = () => {};
     const oldPromise = new Promise<string>(resolve => {
@@ -804,7 +804,7 @@ describe('memoUnwrapAdapter', () => {
 
   it('should report existence from any tier on delete and ignore a deleted in-flight promise on settlement', async () => {
     const targetStore = new Map([['l2-only', 'persisted']]);
-    const cache = memoUnwrapAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as never)();
 
     // Unknown key, nothing observable
     expect(cache.delete?.('missing')).toBe(false);
@@ -846,7 +846,7 @@ describe('memoUnwrapAdapter', () => {
     const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
       resolveStore = resolve;
     });
-    const cache = memoUnwrapAdapter(storePromise as never)();
+    const cache = memoSettledAdapter(storePromise as never)();
 
     // L2 is not observable yet, consistent with has()
     expect(cache.has('existing')).toBe(false);
@@ -870,7 +870,7 @@ describe('memoUnwrapAdapter', () => {
       delete: () => true,
       clear: () => undefined
     };
-    const cache = memoUnwrapAdapter(faultyStore as never)();
+    const cache = memoSettledAdapter(faultyStore as never)();
 
     expect(() => cache.has('key')).not.toThrow();
     expect(cache.has('key')).toBe(false);
@@ -893,7 +893,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should $description for a memo sync-error wrapper, matching rejections', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoUnwrapAdapter(targetStore as never, { cacheErrors })();
+    const cache = memoSettledAdapter(targetStore as never, { cacheErrors })();
     const error = new Error('sync boom');
     const errorFunc = Object.assign(() => {
       throw error;
@@ -920,7 +920,7 @@ describe('memoUnwrapAdapter', () => {
       resolveStore = resolve;
     });
     const mockFunc = jest.fn((val: number) => val * 2);
-    const memoized = memo(mockFunc, { cache: memoUnwrapAdapter(storePromise as never) });
+    const memoized = memo(mockFunc, { cache: memoSettledAdapter(storePromise as never) });
 
     // Fails on HEAD: the concrete write bypassed L0, so memo's immediate get() returned undefined
     expect(memoized(2)).toBe(4);
@@ -939,7 +939,7 @@ describe('memoUnwrapAdapter', () => {
 
     // A rejected store never resolves, but the sync value is still returned
     const rejected = Promise.reject(new Error('no db'));
-    const failed = memo((val: number) => val + 1, { cache: memoUnwrapAdapter(rejected) });
+    const failed = memo((val: number) => val + 1, { cache: memoSettledAdapter(rejected) });
 
     await expect(rejected).rejects.toThrow('no db');
     await jest.advanceTimersByTimeAsync(0);
@@ -952,7 +952,7 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoUnwrapAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as never)();
 
     // Before hydration, readCache window is empty even though targetStore has entries
     expect(cache.size).toBe(0);
@@ -972,7 +972,7 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoUnwrapAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as never)();
 
     // Hydrate both keys into readCache
     expect(cache.get('k1')).toBe('v1');
@@ -1018,7 +1018,7 @@ describe('memoUnwrapAdapter', () => {
       resolveStore = resolve;
     });
 
-    const cache = memoUnwrapAdapter(storePromise as never)();
+    const cache = memoSettledAdapter(storePromise as never)();
 
     cache.set('cleared-key', 'stale-val');
     cache.clear?.();
@@ -1037,7 +1037,7 @@ describe('memoUnwrapAdapter', () => {
 
   it('should gracefully handle a rejecting Promise targetStore and faulty store methods', async () => {
     const rejectingStore = Promise.reject(new Error('store init failed'));
-    const asyncCache = memoUnwrapAdapter(rejectingStore)({});
+    const asyncCache = memoSettledAdapter(rejectingStore)({});
 
     asyncCache.set('k', 'v');
     await jest.advanceTimersByTimeAsync(0);
@@ -1057,7 +1057,7 @@ describe('memoUnwrapAdapter', () => {
       }
     };
 
-    const faultyCache = memoUnwrapAdapter(faultyStore)();
+    const faultyCache = memoSettledAdapter(faultyStore)();
 
     expect(faultyCache.get('k')).toBeUndefined();
     expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
@@ -1081,7 +1081,7 @@ describe('memoUnwrapAdapter', () => {
   ])('should persist a $description as a settled record and rehydrate it faithfully', async ({ func, rejects }) => {
     const targetStore = new Map();
     const mockFunc = jest.fn(func);
-    const myMemoFunc = memo(mockFunc, { cache: memoUnwrapAdapter(targetStore, { cacheErrors: true }) });
+    const myMemoFunc = memo(mockFunc, { cache: memoSettledAdapter(targetStore, { cacheErrors: true }) });
 
     const call = async () => {
       try {
@@ -1119,7 +1119,7 @@ describe('memoUnwrapAdapter', () => {
   it('should rehydrate a persisted rejection as an isError wrapper for a sync memo function', () => {
     const error = new Error('sync boom');
     const targetStore = new Map([['key', { status: 'rejected', reason: error }]]);
-    const cache = memoUnwrapAdapter(targetStore as never)({ isFuncPromise: false });
+    const cache = memoSettledAdapter(targetStore as never)({ isFuncPromise: false });
 
     const entry = cache.get('key') as { isError?: boolean } & (() => unknown);
 
@@ -1133,7 +1133,7 @@ describe('memoUnwrapAdapter', () => {
       ['raw', 'legacy'],
       ['wrapped', { status: 'fulfilled', value: 'new' }]
     ]);
-    const cache = memoUnwrapAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as never)();
 
     expect(cache.get('raw')).toBe('legacy');
     expect(cache.get('wrapped')).toBe('new');

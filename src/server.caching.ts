@@ -585,7 +585,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
  * Configuration options for `memoUnwrapAdapter`.
  *
  * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store.
- * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache window.
+ * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache.
  * @property [expire] Sliding TTL in milliseconds for entries in the in-memory read cache.
  */
 interface MemoUnwrapAdapterOptions {
@@ -595,34 +595,33 @@ interface MemoUnwrapAdapterOptions {
 }
 
 /**
- * Shape persisted to the target store by {@link memoUnwrapAdapter}. Mirrors `Promise.allSettled`.
+ * Shape submitted to the target store by {@link memoSettledAdapter}. Parallel to `Promise.allSettled` responses.
  *
  * @template V Value type.
  */
 type MemoSettled<V> = PromiseSettledResult<V>;
 
 /**
- * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to settle values produced by
- * `memo` functions before persisting them to the underlying store as {@link MemoSettled} records.
+ * `memo` cache adapter for settling values before being passed to an external store (Map or {@link MemoMapLike}).
  *
- * Every value passed to `set()` takes the same path regardless of type: it is staged in-memory as-is,
- * then settled as a promise and persisted to the target store in `Promise.allSettled` form:
- * `{ status: 'fulfilled', value }` or `{ status: 'rejected', reason }`. Concrete values therefore reach
- * the store one microtask after `set()`; adapter `has()`/`get()` observe them immediately via the staged
- * tier. `memo` sync-error wrappers (`isError`) settle as rejections so sync and async errors persist
- * identically. On hydrated reads the envelope is unwrapped: fulfilled values are returned as-is,
- * rejected entries are rehydrated as a rejecting Promise (async `memo`) or an `isError` wrapper (sync
- * `memo`) so `memo` re-throws them the same way it would in-process.
+ * @note **Behavior**
+ * - The adapter is a pass-through for memoized content. It leverages the format used by `Promise.allSettled`
+ *   responses to allow storing of both errors and fulfillment in a standard way.
  *
- * @note **Important**:
- * - The adapter owns the **envelope**, not its contents. Only `status` is ever inspected; `value` and
- *   `reason` are persisted and returned untouched. How a store serializes them (e.g. an `Error` reason)
- *   is the store's responsibility. Entries that are not an envelope (pre-seeded or foreign stores) are
- *   treated as fulfilled raw values.
+ * - Entries that are not Promises are normalized and treated as "settled" fulfilled, or rejected, raw values.
+ *
+ * - On hydrated reads back to memo, the "settled" wrapper is unwrapped.
+ *     - Fulfilled values are returned as-is,
+ *     - Rejected values are rehydrated as either a rejecting Promise (async `memo`) or as an `isError` wrapper
+ *       (sync `memo`) so `memo` re-throws them the same way it would in-process.
+ *
+ * **Important**:
+ * - The "settled" `status` is the only property inspected. How a store serializes the "settled" results
+ *   is the store's responsibility.
  *
  * - Persisted `undefined` values at the Map level are indistinguishable from missing entries. A `has`
  *   check is used to distinguish the two. The value is never interpreted by design. **It's on the
- *   consumer to handle consuming these values.**
+ *   consumer to handle consuming values passed by their own memoized functionality.**
  *
  * @note Review using `Promise.try` in `settle` once the Node floor is >= 23.
  *
@@ -633,13 +632,13 @@ type MemoSettled<V> = PromiseSettledResult<V>;
  * @param [settings] - Configuration options, default fallbacks.
  * @param [settings.cacheErrors] - Persist errors/rejections to the target store. Inherited `memo` context takes
  *     precedence when `true`, otherwise falls back to this setting's default.
- * @param [settings.cacheLimit] - Max entries in the in-memory read window. Inherited `memo` context takes
+ * @param [settings.cacheLimit] - Max entries in the in-memory read cache. Inherited `memo` context takes
  *     precedence and falls back to the setting's default.
  * @param [settings.expire] - Sliding expiration in milliseconds. Inherited `memo` context takes precedence
  *     and falls back to the setting's default.
  * @returns A cache factory callback accepting MemoCacheContext and returning a MemoMapLike adapter.
  */
-const memoUnwrapAdapter = <K = unknown, V = unknown>(
+const memoSettledAdapter = <K = unknown, V = unknown>(
   targetStore:
     MemoMapLike<K, MemoSettled<V>> |
     Map<K, MemoSettled<V>> |
@@ -767,12 +766,12 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     const cacheLimit = context.cacheLimit ?? settingsCacheLimit;
     const expire = context.expire ?? settingsExpire;
 
-    // L0: the most recent raw value passed to `set()`, promise or not, until it settles and persists.
+    // The most recent value passed to `set()`, promise or other, until it settles and persists.
     const staged = new Map<K, MemoCacheEntry<V>>();
     const readCache = new Map<unknown, MemoSettled<V> | V | undefined>();
 
     /**
-     * Normalize any cache entry into a promise so every `set()` shares one settle/persist path.
+     * Normalize every cache entry into a promise so every `set()` shares one settle path.
      * `memo` sync-error wrappers (`isError`) are invoked so they settle as rejections.
      *
      * @param value Entry value to settle.
@@ -800,13 +799,15 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       ((entry as { status: unknown }).status === 'fulfilled' || (entry as { status: unknown }).status === 'rejected');
 
     /**
-     * Unwrap a stored entry into the form `memo` expects. Non-envelope entries are returned as-is.
-     * Rejections are rehydrated per `context.isFuncPromise` so `memo` re-throws them normally.
+     * Hydrate a stored entry into the `memo` format.
      *
-     * @param entry Entry read from the store or read window.
+     * - Entries without wrappers are returned as-is.
+     * - Rejections are rehydrated per `context.isFuncPromise` so `memo` re-throws normally.
+     *
+     * @param entry Entry to hydrate.
      * @return A memo cache entry.
      */
-    const unwrap = (entry: unknown): MemoCacheEntry<V> | undefined => {
+    const hydrateMemo = (entry: unknown): MemoCacheEntry<V> | undefined => {
       if (!isSettled(entry)) {
         return entry as MemoCacheEntry<V>;
       }
@@ -848,7 +849,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     };
 
     /**
-     * Get a raw (still enveloped) entry from the resolved store.
+     * Get an entry from the resolved store.
      *
      * @param key Entry key to get.
      * @return Entry from the resolved store.
@@ -887,7 +888,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
        * Delete an entry from the cache.
        *
        * @note Returned boolean reflects what was observable at call time. Staged entries, the read
-       *     window, and the resolved target store. A pending target store has no observable entries,
+       *     cache, and the resolved target store. A pending target store has no observable entries,
        *     ergo `false` is returned.
        *
        * @param key Entry key to delete.
@@ -907,13 +908,13 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       /**
        * Return an iterator of entries in the cache.
        *
-       * @note Entries are unwrapped; the read window itself holds the persisted envelopes.
+       * @note Entries are unwrapped; the read cache itself holds the persisted envelopes.
        *
        * @return An iterable iterator of tuples containing each cache key and value.
        */
       entries(): IterableIterator<[K, MemoCacheEntry<V>]> {
         return Array.from((readCache as Map<K, unknown>).entries())
-          .map(([key, entry]) => [key, unwrap(entry)] as [K, MemoCacheEntry<V>])
+          .map(([key, entry]) => [key, hydrateMemo(entry)] as [K, MemoCacheEntry<V>])
           .values();
       },
 
@@ -929,7 +930,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         }
 
         if (readCache.has(key) || storeHas(key)) {
-          return unwrap(memoizedGet(key));
+          return hydrateMemo(memoizedGet(key));
         }
 
         return undefined;
@@ -1008,7 +1009,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
 export {
   isMapLike,
   memo,
-  memoUnwrapAdapter,
+  memoSettledAdapter,
   normalizeMemoCache,
   normalizeMapLike,
   type MemoCacheCallback,
@@ -1022,5 +1023,6 @@ export {
   type MemoNotifyCacheChangeOptions,
   type MemoOptions,
   type MemoReturn,
+  type MemoSettled,
   type OnMemoCacheHandler
 };
