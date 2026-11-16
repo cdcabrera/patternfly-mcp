@@ -722,7 +722,7 @@ describe('memoUnwrapAdapter', () => {
     expect(Array.from(cache.entries?.() || [])).toEqual([['k1', 'v1']]);
   });
 
-  it('should surgically evict keys from readCache on set and delete, and clear all tiers on clear', () => {
+  it('should surgically evict keys from readCache on set and delete, and clear all tiers on clear', async () => {
     const targetStore = new Map([
       ['k1', 'v1'],
       ['k2', 'v2']
@@ -751,6 +751,18 @@ describe('memoUnwrapAdapter', () => {
     cache.clear?.();
     expect(cache.size).toBe(0);
     expect(targetStore.size).toBe(0);
+
+    // In-flight promises cleared before settling do not persist stale values
+    let resolveStale: ((val: string) => void) | undefined;
+    const stalePromise = new Promise<string>(resolve => {
+      resolveStale = resolve;
+    });
+
+    cache.set('stale-in-flight', stalePromise);
+    cache.clear?.();
+    resolveStale?.('stale-val');
+    await stalePromise;
+    expect(targetStore.has('stale-in-flight')).toBe(false);
   });
 
   it('should queue writes for a pending Promise targetStore and flush once resolved', async () => {
@@ -762,6 +774,9 @@ describe('memoUnwrapAdapter', () => {
 
     const cache = memoUnwrapAdapter(storePromise)();
 
+    cache.set('cleared-key', 'stale-val');
+    cache.clear?.();
+    cache.set('existing', 'restored-val');
     cache.set('queued-set', 'queued-val');
     cache.delete?.('existing');
 
@@ -769,6 +784,7 @@ describe('memoUnwrapAdapter', () => {
     await storePromise;
     await new Promise(resolve => setTimeout(resolve, 0));
 
+    expect(targetStore.has('cleared-key')).toBe(false);
     expect(targetStore.get('queued-set')).toBe('queued-val');
     expect(targetStore.has('existing')).toBe(false);
   });

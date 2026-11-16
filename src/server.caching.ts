@@ -660,37 +660,57 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
   };
 
   /**
-   * Update the store either by setting a value or deleting the entry.
+   * Update the store either by setting a value, deleting an entry, or clearing the store.
    *
    * @param key - Key to update.
    * @param val - Value to store.
    * @param options - Optional configuration.
+   * @param options.isClear - Whether to clear the store.
    * @param options.isDelete - Whether to delete the entry.
    * @param options._resolved - Internal. Has the store resolved? Break the resolve loop.
-   * @returns void
+   * @returns Store update result if synchronous, otherwise undefined.
    */
-  const updateStore = (key: K, val: unknown, { isDelete = false, _resolved = false }: { isDelete?: boolean; _resolved?: boolean } = {}): void => {
+  const updateStore = (
+    key?: K, val?: unknown,
+    {
+      isClear = false,
+      isDelete = false,
+      _resolved = false
+    }: { isClear?: boolean; isDelete?: boolean; _resolved?: boolean } = {}
+  ): unknown => {
     const update = (action: () => unknown) => {
       try {
-        Promise.resolve(action()).catch(() => {});
+        const result = action();
+
+        if (isPromise(result)) {
+          (result as Promise<unknown>).catch(() => {});
+        }
+
+        return result;
       } catch {}
+
+      return undefined;
     };
 
     if (resolvedStore) {
-      if (isDelete) {
-        update(() => resolvedStore?.delete?.(key));
-      } else {
-        update(() => resolvedStore?.set(key, val as V));
+      if (isClear) {
+        return update(() => resolvedStore?.clear?.());
       }
 
-      return;
+      if (isDelete) {
+        return update(() => resolvedStore?.delete?.(key as K));
+      }
+
+      return update(() => resolvedStore?.set(key as K, val as V));
     }
 
     if (!_resolved) {
       getStore()
-        .then(() => updateStore(key, val, { isDelete, _resolved: true }))
+        .then(() => updateStore(key, val, { isClear, isDelete, _resolved: true }))
         .catch(() => {});
     }
+
+    return undefined;
   };
 
   /**
@@ -735,11 +755,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
         inFlight.clear();
         memoizedGet.clear();
 
-        try {
-          return resolvedStore?.clear?.();
-        } catch {
-          return undefined;
-        }
+        return updateStore(undefined, undefined, { isClear: true });
       },
 
       /**
@@ -820,16 +836,20 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
 
           Promise.resolve(value)
             .then(resolvedValue => {
-              inFlight.delete(key);
-              updateStore(key, resolvedValue);
+              if (inFlight.get(key) === value) {
+                inFlight.delete(key);
+                updateStore(key, resolvedValue);
+              }
             })
             .catch(error => {
-              const wasInFlight = inFlight.delete(key);
+              if (inFlight.get(key) === value) {
+                inFlight.delete(key);
 
-              if (cacheErrors) {
-                updateStore(key, error);
-              } else if (wasInFlight) {
-                updateStore(key, undefined, { isDelete: true });
+                if (cacheErrors) {
+                  updateStore(key, error);
+                } else {
+                  updateStore(key, undefined, { isDelete: true });
+                }
               }
             });
         } else {
