@@ -25,7 +25,7 @@ import {
  * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache.
  * @property [expire] Sliding TTL in milliseconds for entries in the in-memory read cache.
  */
-interface MemoUnwrapAdapterOptions {
+interface MemoSettledAdapterOptions {
   cacheErrors?: boolean | undefined;
   cacheLimit?: number | undefined;
   expire?: number | undefined;
@@ -85,7 +85,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     cacheErrors: settingsCacheErrors = false,
     cacheLimit: settingsCacheLimit = 500,
     expire: settingsExpire = 5 * 60 * 1000
-  }: MemoUnwrapAdapterOptions = {}
+  }: MemoSettledAdapterOptions = {}
 ): MemoCacheCallback<V> => {
   let resolvedStore: MemoMapLike<K, MemoSettled<V>> | undefined;
 
@@ -449,7 +449,7 @@ export {
   normalizeMemoCache,
   type MemoCacheCallback,
   type MemoCacheContext,
-  type MemoUnwrapAdapterOptions,
+  type MemoSettledAdapterOptions,
   type MemoMapLike,
   type MemoCacheHandlerResponse,
   type MemoDebugHandler,
