@@ -599,14 +599,14 @@ interface MemoUnwrapAdapterOptions {
  * produced by async `memo` functions before persisting to the underlying store.
  *
  * @note **Important**:
- * - Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection
- * reasons. Rejection reasons are persisted as plain values and become indistinguishable from resolved values
- * on read-back, similar to a function that resolves with an Error. **It's on the consumer to handle
- * consuming these values.**
+ * - Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection reasons.
+ *   Rejection reasons are persisted as plain values and become indistinguishable from resolved values
+ *   on read-back, similar to a function that resolves with an Error. **It's on the consumer to handle
+ *   consuming these values.**
  *
- * - Memoized `undefined` values have a similar behavior to storing errors. Undefined, to some degree, is
- * indistinguishable from missing Map values. We attempt to use a `has` check to distinguish between the
- * two. **It's on the consumer to handle consuming these values.**
+ * - Persisted `undefined` values at the Map level are indistinguishable from missing entries. A `has`
+ *   check is used to distinguish the two. The value is never interpreted by design. **It's on the
+ *   consumer to handle consuming these values.**
  *
  * @note Review using `Promise.try` in the future.
  *
