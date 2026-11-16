@@ -25,11 +25,11 @@ interface MemoCacheContext {
  *
  * @template TReturn Return type stored in each memo cache entry.
  *
- * @param {MemoCacheContext} context - Memo context associated with the current operation.
+ * @param {MemoCacheContext} [context] - Memo context associated with the current operation.
  * @returns {MemoMapLike<unknown, MemoCacheEntry<TReturn>>} A map-like cache containing memo entries for the return type.
  */
 type MemoCacheCallback<TReturn> =
-  (context: MemoCacheContext) => MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
+  (context?: MemoCacheContext) => MemoMapLike<unknown, MemoCacheEntry<TReturn>>;
 
 /**
  * Map-like interface consumed by `memo`.

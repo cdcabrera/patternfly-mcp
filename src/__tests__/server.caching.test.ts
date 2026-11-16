@@ -658,7 +658,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should unwrap and persist $description to targetStore', async ({ value, expected }) => {
     const targetStore = new Map();
-    const cache = memoUnwrapAdapter(targetStore)({});
+    const cache = memoUnwrapAdapter(targetStore)();
 
     cache.set('key', value);
 
@@ -685,7 +685,7 @@ describe('memoUnwrapAdapter', () => {
     }
   ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })({});
+    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
     const error = new Error('boom');
     const rejectingPromise = Promise.reject(error);
 
@@ -707,7 +707,7 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoUnwrapAdapter(targetStore)({});
+    const cache = memoUnwrapAdapter(targetStore)();
 
     // Before hydration, readCache window is empty even though targetStore has entries
     expect(cache.size).toBe(0);
@@ -727,7 +727,7 @@ describe('memoUnwrapAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoUnwrapAdapter(targetStore)({});
+    const cache = memoUnwrapAdapter(targetStore)();
 
     // Hydrate both keys into readCache
     expect(cache.get('k1')).toBe('v1');
@@ -760,7 +760,7 @@ describe('memoUnwrapAdapter', () => {
       resolveStore = resolve;
     });
 
-    const cache = memoUnwrapAdapter(storePromise)({});
+    const cache = memoUnwrapAdapter(storePromise)();
 
     cache.set('queued-set', 'queued-val');
     cache.delete?.('existing');
@@ -795,7 +795,7 @@ describe('memoUnwrapAdapter', () => {
       }
     };
 
-    const faultyCache = memoUnwrapAdapter(faultyStore)({});
+    const faultyCache = memoUnwrapAdapter(faultyStore)();
 
     expect(faultyCache.get('k')).toBeUndefined();
     expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
