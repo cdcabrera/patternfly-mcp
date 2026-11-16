@@ -62,7 +62,7 @@ describe('memoSettledAdapter', () => {
     }
   ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoSettledAdapter(targetStore as never, { cacheErrors })();
+    const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
     const error = new Error('boom');
     const rejectingPromise = Promise.reject(error);
 
@@ -171,7 +171,7 @@ describe('memoSettledAdapter', () => {
 
   it('should report existence from any tier on delete and ignore a deleted in-flight promise on settlement', async () => {
     const targetStore = new Map([['l2-only', 'persisted']]);
-    const cache = memoSettledAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as any)();
 
     // Unknown key, nothing observable
     expect(cache.delete?.('missing')).toBe(false);
@@ -213,7 +213,7 @@ describe('memoSettledAdapter', () => {
     const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
       resolveStore = resolve;
     });
-    const cache = memoSettledAdapter(storePromise as never)();
+    const cache = memoSettledAdapter(storePromise as any)();
 
     // Store is not observable while pending
     expect(cache.has('existing')).toBe(false);
@@ -237,7 +237,7 @@ describe('memoSettledAdapter', () => {
       delete: () => true,
       clear: () => undefined
     };
-    const cache = memoSettledAdapter(faultyStore as never)();
+    const cache = memoSettledAdapter(faultyStore as any)();
 
     expect(() => cache.has('key')).not.toThrow();
     expect(cache.has('key')).toBe(false);
@@ -260,7 +260,7 @@ describe('memoSettledAdapter', () => {
     }
   ])('should $description for a memo sync-error wrapper, matching rejections', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoSettledAdapter(targetStore as never, { cacheErrors })();
+    const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
     const error = new Error('sync boom');
     const errorFunc = Object.assign(() => {
       throw error;
@@ -302,7 +302,7 @@ describe('memoSettledAdapter', () => {
       resolveStore = resolve;
     });
     const mockFunc = jest.fn((val: number) => val * 2);
-    const memoized = memo(mockFunc, { cache: memoSettledAdapter(storePromise as never) });
+    const memoized = memo(mockFunc, { cache: memoSettledAdapter(storePromise as any) });
 
     // Returns the memoized value while the store is pending
     expect(memoized(2)).toBe(4);
@@ -345,7 +345,7 @@ describe('memoSettledAdapter', () => {
       fulfilledCalls += 1;
 
       return 'fallback';
-    }, { cache: memoSettledAdapter(fulfilledStore as never) });
+    }, { cache: memoSettledAdapter(fulfilledStore as any) });
 
     await expect(fulfilledMemo()).resolves.toBe('stored');
     expect(fulfilledCalls).toBe(0);
@@ -361,7 +361,7 @@ describe('memoSettledAdapter', () => {
       rejectedCalls += 1;
 
       return 'fallback';
-    }, { cache: memoSettledAdapter(rejectedStore as never) });
+    }, { cache: memoSettledAdapter(rejectedStore as any) });
 
     await expect(rejectedMemo()).rejects.toThrow('stored rejection');
     expect(rejectedCalls).toBe(0);
@@ -402,7 +402,7 @@ describe('memoSettledAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoSettledAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as any)();
 
     // Before hydration, readCache window is empty even though targetStore has entries
     expect(cache.size).toBe(0);
@@ -422,7 +422,7 @@ describe('memoSettledAdapter', () => {
       ['k1', 'v1'],
       ['k2', 'v2']
     ]);
-    const cache = memoSettledAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as any)();
 
     // Hydrate both keys into readCache
     expect(cache.get('k1')).toBe('v1');
@@ -468,7 +468,7 @@ describe('memoSettledAdapter', () => {
       resolveStore = resolve;
     });
 
-    const cache = memoSettledAdapter(storePromise as never)();
+    const cache = memoSettledAdapter(storePromise as any)();
 
     cache.set('cleared-key', 'stale-val');
     cache.clear?.();
@@ -569,7 +569,7 @@ describe('memoSettledAdapter', () => {
   it('should rehydrate a persisted rejection as an isError wrapper for a sync memo function', () => {
     const error = new Error('sync boom');
     const targetStore = new Map([['key', { status: 'rejected', reason: error }]]);
-    const cache = memoSettledAdapter(targetStore as never)({ isFuncPromise: false });
+    const cache = memoSettledAdapter(targetStore as any)({ isFuncPromise: false });
 
     const entry = cache.get('key') as { isError?: boolean } & (() => unknown);
 
@@ -578,22 +578,37 @@ describe('memoSettledAdapter', () => {
     expect(() => entry()).toThrow('sync boom');
   });
 
-  it('should pass through non-wrapped entries from a pre-seeded store as fulfilled values', () => {
-    const asyncValue = async () => 'lorem ipsum';
-    const targetStore = new Map<string, unknown>([
-      ['dolor', 'sit'],
-      ['wrapped', { status: 'fulfilled', value: 'new' }],
-      ['async', asyncValue]
-    ]);
+  it.each([
+    {
+      description: 'plain string value',
+      stored: 'sit',
+      expected: 'sit'
+    },
+    {
+      description: 'fulfilled settled envelope',
+      stored: { status: 'fulfilled', value: 'new' },
+      expected: 'new'
+    },
+    {
+      description: 'non-settled object with a status property',
+      stored: { status: 'custom', value: 'raw' },
+      expected: { status: 'custom', value: 'raw' }
+    },
+    {
+      description: 'sync function value',
+      stored: () => 'lorem ipsum',
+      expected: expect.any(Function)
+    },
+    {
+      description: 'async function value',
+      stored: async () => 'lorem ipsum',
+      expected: expect.any(Function)
+    }
+  ])('should hydrate a pre-seeded $description from targetStore', ({ stored, expected }) => {
+    const targetStore = new Map<string, unknown>([['key', stored]]);
     const cache = memoSettledAdapter(targetStore as any)();
 
-    expect(cache.get('dolor')).toBe('sit');
-    expect(cache.get('wrapped')).toBe('new');
-    expect(cache.get('async')).toBe(asyncValue);
-    expect(Array.from(cache.entries?.() || [])).toEqual([
-      ['dolor', 'sit'],
-      ['wrapped', 'new'],
-      ['async', asyncValue]
-    ]);
+    expect(cache.get('key')).toEqual(expected);
+    expect(Array.from(cache.entries?.() || [])).toEqual([['key', expected]]);
   });
 });
