@@ -314,16 +314,34 @@ describe('memoSettledAdapter', () => {
     expect(failed(1)).toBe(2);
   });
 
-  it('should not persist an undefined result after memo clears before settlement', async () => {
-    const targetStore = new Map();
-    const memoized = memo(() => undefined, { cache: memoSettledAdapter(targetStore) });
+  it.each([
+    { description: 'undefined', value: undefined },
+    { description: 'NaN', value: Number.NaN },
+    { description: 'null', value: null },
+    { description: 'false', value: false },
+    { description: 'zero', value: 0 },
+    { description: 'negative zero', value: -0 },
+    { description: 'empty string', value: '' },
+    { description: 'symbol', value: Symbol('unique') }
+  ])('should persist $description on settlement, and not persist if memo clears before settlement', async ({ value }) => {
+    const clearedStore = new Map();
+    const clearedMemo = memo(() => value, { cache: memoSettledAdapter(clearedStore) });
 
-    expect(memoized()).toBeUndefined();
-    memoized.clear();
+    expect(Object.is(clearedMemo(), value)).toBe(true);
+    clearedMemo.clear();
 
     await jest.advanceTimersByTimeAsync(0);
 
-    expect(targetStore.size).toBe(0);
+    expect(clearedStore.size).toBe(0);
+
+    const settledStore = new Map();
+    const settledMemo = memo(() => value, { cache: memoSettledAdapter(settledStore) });
+
+    expect(Object.is(settledMemo(), value)).toBe(true);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(settledStore.size).toBe(1);
+    expect(Array.from(settledStore.values())).toEqual([{ status: 'fulfilled', value }]);
   });
 
   it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
