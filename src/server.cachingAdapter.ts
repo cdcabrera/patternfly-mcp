@@ -203,8 +203,8 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     const cacheLimit = context.cacheLimit ?? settingsCacheLimit;
     const expire = context.expire ?? settingsExpire;
 
-    // The most recent value passed to `set()`, promise or other, until it settles and persists.
-    const staged = new Map<K, MemoCacheEntry<V>>();
+    // The most recent value passed to `set()`, paired with its write token until it settles and persists.
+    const staged = new Map<K, { token: symbol; value: MemoCacheEntry<V> }>();
     const readCache = new Map<unknown, MemoSettled<V> | V | undefined>();
 
     /**
@@ -362,8 +362,10 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        * @return The matching memoized cache entry, or `undefined` if no entry exists.
        */
       get(key: K): MemoCacheEntry<V> | undefined {
-        if (staged.has(key)) {
-          return staged.get(key);
+        const stagedEntry = staged.get(key);
+
+        if (stagedEntry) {
+          return stagedEntry.value;
         }
 
         if (readCache.has(key) || storeHas(key)) {
@@ -408,8 +410,10 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        * @return The current cache instance.
        */
       set(key: K, value: MemoCacheEntry<V>): unknown {
+        const token = Symbol();
+
         readCache.delete(key);
-        staged.set(key, value);
+        staged.set(key, { token, value });
 
         settle(value)
           .then(
@@ -417,7 +421,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
             (reason: unknown): MemoSettled<V> => ({ status: 'rejected', reason })
           )
           .then(settled => {
-            if (staged.get(key) !== value) {
+            if (staged.get(key)?.token !== token) {
               return;
             }
 

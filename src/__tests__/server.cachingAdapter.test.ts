@@ -314,6 +314,18 @@ describe('memoSettledAdapter', () => {
     expect(failed(1)).toBe(2);
   });
 
+  it('should not persist an undefined result after memo clears before settlement', async () => {
+    const targetStore = new Map();
+    const memoized = memo(() => undefined, { cache: memoSettledAdapter(targetStore) });
+
+    expect(memoized()).toBeUndefined();
+    memoized.clear();
+
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(targetStore.size).toBe(0);
+  });
+
   it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
     const targetStore = new Map([
       ['k1', 'v1'],
