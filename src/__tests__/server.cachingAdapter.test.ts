@@ -36,7 +36,7 @@ describe('memoSettledAdapter', () => {
     const cache = memoSettledAdapter(targetStore)();
 
     cache.set('key', value);
-    // L0 hands back exactly what was set, promise or not
+    // Immediate read returns the staged entry as-is
     expect(cache.get('key')).toBe(value);
 
     if (value instanceof Promise) {
@@ -94,12 +94,12 @@ describe('memoSettledAdapter', () => {
 
     cache.set('key', 'newer');
 
-    // L0 now holds the newer value; visible to reads immediately, persisted to L2 after settlement
+    // Newer value is immediately visible and persists after settlement
     expect(cache.get('key')).toBe('newer');
     await jest.advanceTimersByTimeAsync(0);
     expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
-    // Late settlement of the superseded promise must NOT clobber the newer value
+    // Late settlement of the superseded promise must NOT "clobber" the newer value
     resolveOld('older');
     await oldPromise;
     await jest.advanceTimersByTimeAsync(0);
@@ -137,7 +137,7 @@ describe('memoSettledAdapter', () => {
     await expect(oldPromise).rejects.toThrow('boom');
     await jest.advanceTimersByTimeAsync(0);
 
-    // Neither the isDelete branch nor the error-persist branch may fire for a superseded promise
+    // Superseded rejection must not delete or overwrite the newer entry
     expect(targetStore.has('key')).toBe(true);
     expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
     expect(cache.get('key')).toBe('newer');
@@ -176,12 +176,12 @@ describe('memoSettledAdapter', () => {
     // Unknown key, nothing observable
     expect(cache.delete?.('missing')).toBe(false);
 
-    // L2 only (never hydrated into readCache)
+    // Entry only in target store
     expect(cache.delete?.('l2-only')).toBe(true);
     expect(cache.has('l2-only')).toBe(false);
     expect(targetStore.has('l2-only')).toBe(false);
 
-    // L1 hydrated
+    // Hydrated entry
     targetStore.set('hydrated', 'val');
     expect(cache.get('hydrated')).toBe('val');
     expect(cache.size).toBe(1);
@@ -189,7 +189,7 @@ describe('memoSettledAdapter', () => {
     expect(cache.size).toBe(0);
     expect(targetStore.has('hydrated')).toBe(false);
 
-    // L0 in-flight: delete returns true and the late settlement must not resurrect the entry
+    // Staged entry: delete returns true and late settlement does not restore it
     let resolvePending: (value: string) => void = () => {};
     const pending = new Promise<string>(resolve => {
       resolvePending = resolve;
@@ -215,7 +215,7 @@ describe('memoSettledAdapter', () => {
     });
     const cache = memoSettledAdapter(storePromise as never)();
 
-    // L2 is not observable yet, consistent with has()
+    // Store is not observable while pending
     expect(cache.has('existing')).toBe(false);
     expect(cache.delete?.('existing')).toBe(false);
 
@@ -223,7 +223,7 @@ describe('memoSettledAdapter', () => {
     await storePromise;
     await jest.advanceTimersByTimeAsync(0);
 
-    // ...but the delete was queued and applied once the store resolved
+    // Queued delete is applied once the store resolves
     expect(targetStore.has('existing')).toBe(false);
   });
 
@@ -268,12 +268,12 @@ describe('memoSettledAdapter', () => {
 
     cache.set('key', errorFunc);
 
-    // L0 hands back exactly what memo set, so memo's own isMemoError handling still works
+    // Immediate read returns the error wrapper as-is
     expect(cache.get('key')).toBe(errorFunc);
 
     await jest.advanceTimersByTimeAsync(0);
 
-    // The wrapper closure itself must never reach L2
+    // The wrapper function itself is not persisted to the store
     expect(targetStore.has('key')).toBe(expectedHas);
     expect(typeof targetStore.get('key')).not.toBe('function');
     if (cacheErrors) {
@@ -289,7 +289,7 @@ describe('memoSettledAdapter', () => {
     const mockFunc = jest.fn((val: number) => val * 2);
     const memoized = memo(mockFunc, { cache: memoSettledAdapter(storePromise as never) });
 
-    // Fails on HEAD: the concrete write bypassed L0, so memo's immediate get() returned undefined
+    // Returns the memoized value while the store is pending
     expect(memoized(2)).toBe(4);
     expect(memoized(2)).toBe(4);
     expect(mockFunc).toHaveBeenCalledTimes(1);
@@ -388,7 +388,7 @@ describe('memoSettledAdapter', () => {
     expect(cache.has('k2')).toBe(false);
     expect(targetStore.has('k2')).toBe(false);
 
-    // Clearing empties inFlight, readCache, and targetStore
+    // Clearing empties all cache layers and target store
     expect(cache.get('k1')).toBe('v1-updated');
     expect(cache.size).toBe(1);
     cache.clear?.();

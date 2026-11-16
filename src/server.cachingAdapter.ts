@@ -19,7 +19,7 @@ import {
 } from './server.caching';
 
 /**
- * Configuration options for `memoUnwrapAdapter`.
+ * Configuration options for {@link memoSettledAdapter}.
  *
  * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store.
  * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache.
@@ -203,7 +203,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     const cacheLimit = context.cacheLimit ?? settingsCacheLimit;
     const expire = context.expire ?? settingsExpire;
 
-    // The most recent value passed to `set()`, paired with its write token until it settles and persists.
+    // Most recent value passed to `set()`, paired with a write-token until it settles and persists.
     const staged = new Map<K, { token: symbol; value: MemoCacheEntry<V> }>();
     const readCache = new Map<unknown, MemoSettled<V> | V | undefined>();
 
