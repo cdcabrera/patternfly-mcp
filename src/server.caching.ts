@@ -584,9 +584,9 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 /**
  * Configuration options for `memoUnwrapAdapter`.
  *
- * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store (default: true).
- * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache window (default: 500).
- * @property [expire] Sliding TTL in milliseconds for entries in the in-memory read cache (default: 5 minutes).
+ * @property [cacheErrors] Whether to persist error values/rejections to the underlying target store.
+ * @property [cacheLimit] Maximum number of entries retained in the in-memory read cache window.
+ * @property [expire] Sliding TTL in milliseconds for entries in the in-memory read cache.
  */
 interface MemoUnwrapAdapterOptions {
   cacheErrors?: boolean | undefined;
