@@ -828,11 +828,17 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       /**
        * Set an entry in the cache.
        *
+       * @note Mirrors `Map.set` used by `memo`. Every set overwrites the current entry for `key`,
+       *     including a pending in-flight promise. `memo` determines the `has()` check,
+       *     this adapter **SHOULD NOT** add its own. A superseded promise's late settlement is
+       *     ignored.
+       *
        * @param key Entry key to set.
        * @param value Entry value to set.
        * @return The current cache instance.
        */
       set(key: K, value: MemoCacheEntry<V>): unknown {
+        inFlight.delete(key);
         readCache.delete(key);
 
         if (isPromise(value)) {

@@ -710,6 +710,94 @@ describe('memoUnwrapAdapter', () => {
     }
   });
 
+  it('should ignore a superseded in-flight promise when a concrete value replaces the same key', async () => {
+    const targetStore = new Map();
+    const cache = memoUnwrapAdapter(targetStore)();
+
+    let resolveOld: (value: string) => void = () => {};
+    const oldPromise = new Promise<string>(resolve => {
+      resolveOld = resolve;
+    });
+
+    // Pending promise, then a concrete write to the same key
+    cache.set('key', oldPromise);
+    expect(cache.get('key')).toBe(oldPromise);
+
+    cache.set('key', 'newer');
+
+    // L0 is invalidated immediately; the newer value is visible to reads and persisted to L2
+    expect(cache.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toBe('newer');
+
+    // Late settlement of the superseded promise must NOT clobber the newer value
+    resolveOld('older');
+    await oldPromise;
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(targetStore.get('key')).toBe('newer');
+    expect(cache.get('key')).toBe('newer');
+  });
+
+  it.each([
+    {
+      description: 'not delete the newer value when cacheErrors is false',
+      cacheErrors: false
+    },
+    {
+      description: 'not overwrite the newer value with the error when cacheErrors is true',
+      cacheErrors: true
+    }
+  ])('should $description if a superseded in-flight promise rejects', async ({ cacheErrors }) => {
+    const targetStore = new Map();
+    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
+
+    let rejectOld: (reason: unknown) => void = () => {};
+    const oldPromise = new Promise<string>((_resolve, reject) => {
+      rejectOld = reject;
+    });
+
+    cache.set('key', oldPromise);
+    cache.set('key', 'newer');
+
+    expect(cache.get('key')).toBe('newer');
+    expect(targetStore.get('key')).toBe('newer');
+
+    rejectOld(new Error('boom'));
+    await expect(oldPromise).rejects.toThrow('boom');
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Neither the isDelete branch nor the error-persist branch may fire for a superseded promise
+    expect(targetStore.has('key')).toBe(true);
+    expect(targetStore.get('key')).toBe('newer');
+    expect(cache.get('key')).toBe('newer');
+  });
+
+  it('should ignore a superseded in-flight promise when a newer promise replaces the same key', async () => {
+    const targetStore = new Map();
+    const cache = memoUnwrapAdapter(targetStore)();
+
+    let resolveOld: (value: string) => void = () => {};
+    const oldPromise = new Promise<string>(resolve => {
+      resolveOld = resolve;
+    });
+    const newPromise = Promise.resolve('newer');
+
+    cache.set('key', oldPromise);
+    cache.set('key', newPromise);
+    expect(cache.get('key')).toBe(newPromise);
+
+    await newPromise;
+    await jest.advanceTimersByTimeAsync(0);
+    expect(targetStore.get('key')).toBe('newer');
+
+    resolveOld('older');
+    await oldPromise;
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(targetStore.get('key')).toBe('newer');
+    expect(cache.get('key')).toBe('newer');
+  });
+
   it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
     const targetStore = new Map([
       ['k1', 'v1'],
