@@ -284,6 +284,18 @@ const normalizeMemoCache = <TReturn>(
 };
 
 /**
+ * Confirm the value has a memo error marker.
+ *
+ * @param value - The value to inspect.
+ * @returns `true` when the value is a memo error marker; otherwise, `false`.
+ */
+const isMemoError = (value: unknown): value is { isError: true } & (MemoErrorFunction | Record<string, unknown>) => (
+  (typeof value === 'function' || isReferenceLike(value)) &&
+  'isError' in value &&
+  (value as { isError: unknown }).isError === true
+);
+
+/**
  * Simple argument-based memoize with adjustable cache limit, and extendable cache expire.
  * apidoc-mock: https://github.com/cdcabrera/apidoc-mock.git
  *
@@ -373,18 +385,6 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
       }
     }
   };
-
-  /**
-   * Confirm the value has a memo error marker.
-   *
-   * @param value - The value to inspect.
-   * @returns `true` when the value is a memo error marker; otherwise, `false`.
-   */
-  const isMemoError = (value: unknown): value is { isError: true } & (MemoErrorFunction | Record<string, unknown>) => (
-    (typeof value === 'function' || isReferenceLike(value)) &&
-    'isError' in value &&
-    (value as { isError: unknown }).isError === true
-  );
 
   /**
    * Memoized function.
@@ -583,6 +583,7 @@ const memo = <TArgs extends unknown[], TReturn = unknown>(
 
 export {
   isMapLike,
+  isMemoError,
   memo,
   normalizeMemoCache,
   normalizeMapLike,

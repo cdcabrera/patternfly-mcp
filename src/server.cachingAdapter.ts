@@ -3,6 +3,7 @@ import {
   isReferenceLike
 } from './server.helpers';
 import {
+  isMemoError,
   memo,
   normalizeMemoCache,
   type MemoCacheCallback,
@@ -215,7 +216,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
      * @return Promise settling with the unwrapped value, or rejecting with the thrown/rejected reason.
      */
     const settle = (value: MemoCacheEntry<V>): Promise<unknown> => {
-      if (isReferenceLike(value) && 'isError' in value && value.isError === true) {
+      if (isMemoError(value)) {
         return new Promise(resolve => {
           resolve((value as () => unknown)());
         });
