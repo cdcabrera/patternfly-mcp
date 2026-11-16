@@ -598,6 +598,10 @@ interface MemoUnwrapAdapterOptions {
  * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to unwrap promises
  * produced by async `memo` functions before persisting to the underlying store.
  *
+ * @note **Important**: Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection
+ * reasons. Rejection reasons are persisted as plain values and become indistinguishable from resolved values
+ * on read-back, similar to a function that resolves with an Error.
+ *
  * @note Review using `Promise.try` in the future.
  *
  * @template K Key type.

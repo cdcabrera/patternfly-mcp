@@ -635,6 +635,14 @@ describe('normalizeMemoCache', () => {
 });
 
 describe('memoUnwrapAdapter', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it.each([
     {
       description: 'concrete value',
@@ -694,7 +702,7 @@ describe('memoUnwrapAdapter', () => {
     expect(cache.get('key')).toBe(rejectingPromise);
 
     await expect(rejectingPromise).rejects.toThrow('boom');
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('key')).toBe(expectedHas);
     if (cacheErrors) {
@@ -782,7 +790,7 @@ describe('memoUnwrapAdapter', () => {
 
     resolveStore?.(targetStore);
     await storePromise;
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('cleared-key')).toBe(false);
     expect(targetStore.get('queued-set')).toBe('queued-val');
@@ -794,7 +802,7 @@ describe('memoUnwrapAdapter', () => {
     const asyncCache = memoUnwrapAdapter(rejectingStore)({});
 
     asyncCache.set('k', 'v');
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await jest.advanceTimersByTimeAsync(0);
     expect(asyncCache.get('k')).toBeUndefined();
 
     const faultyStore = {
@@ -817,5 +825,64 @@ describe('memoUnwrapAdapter', () => {
     expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
     expect(() => faultyCache.delete?.('k')).not.toThrow();
     expect(faultyCache.clear?.()).toBeUndefined();
+  });
+
+  it.each([
+    {
+      description: 'resolved Error value',
+      func: async () => new Error('lorem ipsum'),
+      firstCallRejects: false
+    },
+    {
+      description: 'rejected Error reason',
+      func: async () => {
+        throw new Error('lorem ipsum');
+      },
+      firstCallRejects: true
+    }
+  ])('should hand back a persisted $description as a value on hydrated reads', async ({ func, firstCallRejects }) => {
+    const targetStore = new Map();
+    const mockFunc = jest.fn(func);
+    const myMemoFunc = memo(mockFunc, { cache: memoUnwrapAdapter(targetStore, { cacheErrors: true }) });
+
+    // First call, in-flight: memo's own semantics apply (resolve vs. reject).
+    let firstDolor: unknown;
+    let firstErr: unknown;
+
+    try {
+      firstDolor = await myMemoFunc();
+    } catch (err) {
+      firstErr = err;
+    }
+
+    if (firstCallRejects) {
+      expect(firstErr).toBeInstanceOf(Error);
+      expect(firstDolor).toBeUndefined();
+    } else {
+      expect(firstErr).toBeUndefined();
+      expect(firstDolor).toBeInstanceOf(Error);
+    }
+
+    // Allow the adapter's then/catch to unwrap and persist to targetStore.
+    await jest.advanceTimersByTimeAsync(0);
+    expect(targetStore.size).toBe(1);
+    expect(Array.from(targetStore.values())[0]).toBeInstanceOf(Error);
+
+    // Second call, hydrated from targetStore: both variants resolve with an Error value.
+    let dolor: unknown;
+    let caught: unknown;
+
+    try {
+      dolor = await myMemoFunc();
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeUndefined();
+    expect(dolor).toBeInstanceOf(Error);
+    expect((dolor as Error).message).toBe('lorem ipsum');
+
+    // The underlying function was NOT re-invoked; the value came from the store.
+    expect(mockFunc).toHaveBeenCalledTimes(1);
   });
 });
