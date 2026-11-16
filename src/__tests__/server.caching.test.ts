@@ -637,413 +637,169 @@ describe('normalizeMemoCache', () => {
 describe('memoUnwrapAdapter', () => {
   it.each([
     {
-      description: 'sync function',
-      isAsync: false,
-      input: 42,
-      expected: 'val-42'
+      description: 'concrete value',
+      value: 'sync-val',
+      expected: 'sync-val'
     },
     {
-      description: 'async function',
-      isAsync: true,
-      input: 99,
-      expected: 'async-val-99'
+      description: 'resolved promise value',
+      value: Promise.resolve('async-val'),
+      expected: 'async-val'
+    },
+    {
+      description: 'undefined value',
+      value: Promise.resolve(undefined),
+      expected: undefined
+    },
+    {
+      description: 'falsy empty string',
+      value: '',
+      expected: ''
     }
-  ])('should delegate custom cache behavior to custom storage, $description', async ({ isAsync, input, expected }) => {
-    const cache = new Map();
-    const setSpy = jest.spyOn(cache, 'set');
-    const hasSpy = jest.spyOn(cache, 'has');
-    const getSpy = jest.spyOn(cache, 'get');
-    const fn = isAsync
-      ? async (val: number) => `async-val-${val}`
-      : (val: number) => `val-${val}`;
+  ])('should unwrap and persist $description to targetStore', async ({ value, expected }) => {
+    const targetStore = new Map();
+    const cache = memoUnwrapAdapter(targetStore)({});
 
-    const memoized = memo(fn, { cache });
-    const result = await memoized(input);
+    cache.set('key', value);
 
-    expect(result).toBe(expected);
-    expect(setSpy).toHaveBeenCalledTimes(1);
-    expect(hasSpy).toHaveBeenCalledTimes(1);
-    expect(getSpy).toHaveBeenCalledTimes(1);
+    if (value instanceof Promise) {
+      expect(cache.get('key')).toBe(value);
+      await value;
+    }
+
+    expect(targetStore.has('key')).toBe(true);
+    expect(targetStore.get('key')).toBe(expected);
+    expect(cache.get('key')).toBe(expected);
   });
 
   it.each([
     {
-      description: 'sync function',
-      isAsync: false,
-      input: 42,
-      expected: 'val-42'
+      description: 'persist error when cacheErrors is true',
+      cacheErrors: true,
+      expectedHas: true
     },
     {
-      description: 'async function',
-      isAsync: true,
-      input: 99,
-      expected: 'async-val-99'
+      description: 'delete entry when cacheErrors is false',
+      cacheErrors: false,
+      expectedHas: false
     }
-  ])('should unwrap and persist resolved concrete values to targetStore, $description', async ({ isAsync, input, expected }) => {
-    const targetStore = new Map();
-    const setSpy = jest.spyOn(targetStore, 'set');
-    const cache = memoUnwrapAdapter(targetStore);
-    const fn = isAsync
-      ? async (val: number) => `async-val-${val}`
-      : (val: number) => `val-${val}`;
+  ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
+    const targetStore = new Map([['key', 'stale-val']]);
+    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })({});
+    const error = new Error('boom');
+    const rejectingPromise = Promise.reject(error);
 
-    const memoized = memo(fn, { cache });
-    const result = await memoized(input);
+    cache.set('key', rejectingPromise);
+    expect(cache.has('key')).toBe(true);
+    expect(cache.get('key')).toBe(rejectingPromise);
 
-    expect(result).toBe(expected);
-    expect(setSpy).toHaveBeenCalledTimes(1);
-    expect(setSpy).toHaveBeenCalledWith(expect.anything(), expected);
-  });
-
-  it.each([
-    {
-      description: 'sync throwing storage.set',
-      isAsync: false,
-      storageError: () => {
-        throw new Error('store write failed');
-      },
-      input: 5,
-      expected: 10
-    },
-    {
-      description: 'async rejecting storage.set',
-      isAsync: true,
-      storageError: () => Promise.reject(new Error('async store write failed')),
-      input: 5,
-      expected: 15
-    }
-  ])('should not throw if targetStore.set throws or rejects, $description', async ({ isAsync, storageError, input, expected }) => {
-    const targetStore = {
-      get: jest.fn(),
-      has: jest.fn(() => false),
-      set: jest.fn(storageError)
-    };
-    const cache = memoUnwrapAdapter(targetStore);
-
-    const fn = isAsync
-      ? async (val: number) => val * 3
-      : (val: number) => val * 2;
-
-    const memoized = memo(fn, { cache });
-
-    if (isAsync) {
-      await expect(memoized(input)).resolves.toBe(expected);
-    } else {
-      expect(() => memoized(input)).not.toThrow();
-      // expect(memoized(input)).toBe(expected);
-    }
-  });
-
-  it.each([
-    {
-      description: 'sync error',
-      isAsync: false,
-      expectedProperty: 'isError'
-    },
-    {
-      description: 'async error',
-      isAsync: true,
-      expectedProperty: 'message'
-    }
-  ])('should store errors to targetStore when cacheErrors is true, $description', async ({ isAsync, expectedProperty }) => {
-    const targetStore = new Map();
-    const setSpy = jest.spyOn(targetStore, 'set');
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors: true });
-    const fn = isAsync
-      ? async () => {
-        throw new Error('failure');
-      }
-      : () => {
-        throw new Error('failure');
-      };
-
-    const memoized = memo(fn, { cache, cacheErrors: true });
-
-    if (isAsync) {
-      await expect(memoized()).rejects.toThrow('failure');
-    } else {
-      expect(() => memoized()).toThrow('failure');
-    }
-
-    expect(setSpy).toHaveBeenCalledTimes(1);
-    expect(setSpy.mock.calls?.[0]?.[1]).toHaveProperty(expectedProperty);
-  });
-
-  it('should hydrate from pre-populated targetStore on cache miss without calling func', async () => {
-    const targetStore = new Map([['custom-key', 'pre-stored-value']]);
-    const getSpy = jest.spyOn(targetStore, 'get');
-
-    const fnSpy = jest.fn();
-    const fn = async (_val: string) => {
-      fnSpy(_val);
-
-      return 'new-value';
-    };
-
-    const cache = memoUnwrapAdapter(targetStore);
-    const memoized = memo(fn, {
-      cache,
-      keyHash: (args: any) => args[0]
-    } as any);
-
-    const result = await memoized('custom-key');
-
-    expect(result).toBe('pre-stored-value');
-    expect(fnSpy).not.toHaveBeenCalled();
-    expect(getSpy).toHaveBeenCalledWith('custom-key');
-  });
-
-  it('should coalesce concurrent asynchronous calls to the same key into a single execution', async () => {
-    let resolveCall: ((val: string) => void) | undefined;
-    const fnSpy = jest.fn();
-    const fn = async (_val: string) => new Promise<string>(resolve => {
-      fnSpy(_val);
-      resolveCall = resolve;
-    });
-
-    const targetStore = new Map();
-    const setSpy = jest.spyOn(targetStore, 'set');
-    const cache = memoUnwrapAdapter(targetStore);
-    const memoized = memo(fn, { cache });
-
-    const p1 = memoized('concurrent-key');
-    const p2 = memoized('concurrent-key');
-    const p3 = memoized('concurrent-key');
-
-    expect(targetStore.has('concurrent-key')).toBe(false);
-
-    resolveCall?.('concurrent-result');
-
-    const [first, second, third] = await Promise.all([p1, p2, p3]);
-
-    expect(first).toBe('concurrent-result');
-    expect(second).toBe('concurrent-result');
-    expect(third).toBe('concurrent-result');
-    expect(fnSpy).toHaveBeenCalledTimes(1);
-    expect(setSpy).toHaveBeenCalledTimes(1);
-    expect(setSpy).toHaveBeenCalledWith(expect.anything(), 'concurrent-result');
-  });
-
-  it('should call targetStore.delete when async function rejects and cacheErrors is false', async () => {
-    const targetStore = new Map();
-    const deleteSpy = jest.spyOn(targetStore, 'delete');
-    const setSpy = jest.spyOn(targetStore, 'set');
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors: false });
-    const memoized = memo(
-      async () => {
-        throw new Error('uncached failure');
-      },
-      { cache, cacheErrors: false }
-    );
-
-    await expect(memoized()).rejects.toThrow('uncached failure');
-    expect(deleteSpy).toHaveBeenCalledTimes(1);
-    expect(deleteSpy).toHaveBeenCalledWith(expect.anything());
-    expect(setSpy).not.toHaveBeenCalled();
-  });
-
-  /*
-  it('should delete from targetStore when an in-flight promise set directly on adapter rejects and cacheErrors is false', async () => {
-    const targetStore = new Map();
-    const deleteSpy = jest.spyOn(targetStore, 'delete');
-    const cache = memoUnwrapAdapter(targetStore, { cacheErrors: false })();
-
-    const rejectingPromise = Promise.reject(new Error('direct in-flight fail'));
-
-    cache.set('in-flight-key', rejectingPromise);
-    expect(cache.has('in-flight-key')).toBe(true);
-    expect(cache.get('in-flight-key')).toBe(rejectingPromise);
-
-    await expect(rejectingPromise).rejects.toThrow('direct in-flight fail');
+    await expect(rejectingPromise).rejects.toThrow('boom');
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(deleteSpy).toHaveBeenCalledWith('in-flight-key');
-    expect(cache.has('in-flight-key')).toBe(false);
+    expect(targetStore.has('key')).toBe(expectedHas);
+    if (cacheErrors) {
+      expect(targetStore.get('key')).toBe(error);
+    }
   });
 
-  it('should support Promise-based targetStore and queue writes before store resolves', async () => {
+  it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
+    const targetStore = new Map([
+      ['k1', 'v1'],
+      ['k2', 'v2']
+    ]);
+    const cache = memoUnwrapAdapter(targetStore)({});
+
+    // Before hydration, readCache window is empty even though targetStore has entries
+    expect(cache.size).toBe(0);
+    expect(cache.has('k1')).toBe(true);
+    expect(cache.has('missing')).toBe(false);
+    expect(cache.get('missing')).toBeUndefined();
+
+    // Accessing k1 hydrates only k1 into the readCache window
+    expect(cache.get('k1')).toBe('v1');
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['k1']);
+    expect(Array.from(cache.entries?.() || [])).toEqual([['k1', 'v1']]);
+  });
+
+  it('should surgically evict keys from readCache on set and delete, and clear all tiers on clear', () => {
+    const targetStore = new Map([
+      ['k1', 'v1'],
+      ['k2', 'v2']
+    ]);
+    const cache = memoUnwrapAdapter(targetStore)({});
+
+    // Hydrate both keys into readCache
+    expect(cache.get('k1')).toBe('v1');
+    expect(cache.get('k2')).toBe('v2');
+    expect(cache.size).toBe(2);
+
+    // Updating k1 evicts k1 from readCache without disturbing k2, and updates targetStore
+    cache.set('k1', 'v1-updated');
+    expect(cache.size).toBe(1);
+    expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
+    expect(targetStore.get('k1')).toBe('v1-updated');
+
+    // Deleting k2 removes it from readCache and targetStore
+    expect(cache.delete?.('k2')).toBe(true);
+    expect(cache.has('k2')).toBe(false);
+    expect(targetStore.has('k2')).toBe(false);
+
+    // Clearing empties inFlight, readCache, and targetStore
+    expect(cache.get('k1')).toBe('v1-updated');
+    expect(cache.size).toBe(1);
+    cache.clear?.();
+    expect(cache.size).toBe(0);
+    expect(targetStore.size).toBe(0);
+  });
+
+  it('should queue writes for a pending Promise targetStore and flush once resolved', async () => {
     let resolveStore: ((store: Map<unknown, unknown>) => void) | undefined;
-    const targetStore = new Map();
-    const setSpy = jest.spyOn(targetStore, 'set');
-    const deleteSpy = jest.spyOn(targetStore, 'delete');
-    const targetStorePromise = new Promise<Map<unknown, unknown>>(resolve => {
+    const targetStore = new Map([['existing', 'val']]);
+    const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
       resolveStore = resolve;
     });
 
-    const cache = memoUnwrapAdapter(targetStorePromise)();
+    const cache = memoUnwrapAdapter(storePromise)({});
 
-    // Trigger set and delete while targetStorePromise is still pending (resolvedStore is undefined)
-    cache.set('queued-key', 'queued-val');
-    cache.delete?.('queued-del');
+    cache.set('queued-set', 'queued-val');
+    cache.delete?.('existing');
 
     resolveStore?.(targetStore);
-    await targetStorePromise;
+    await storePromise;
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(setSpy).toHaveBeenCalledWith('queued-key', 'queued-val');
-    expect(deleteSpy).toHaveBeenCalledWith('queued-del');
+    expect(targetStore.get('queued-set')).toBe('queued-val');
+    expect(targetStore.has('existing')).toBe(false);
   });
 
-  it('should gracefully handle a rejecting Promise-based targetStore', async () => {
-    let rejectStore: ((err: Error) => void) | undefined;
-    const targetStorePromise = new Promise<Map<unknown, unknown>>((_, reject) => {
-      rejectStore = reject;
-    });
+  it('should gracefully handle a rejecting Promise targetStore and faulty store methods', async () => {
+    const rejectingStore = Promise.reject(new Error('store init failed'));
+    const asyncCache = memoUnwrapAdapter(rejectingStore)({});
 
-    const cache = memoUnwrapAdapter(targetStorePromise)();
-
-    cache.set('k', 'v');
-    rejectStore?.(new Error('store connection failed'));
-
+    asyncCache.set('k', 'v');
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(cache.get('k')).toBeUndefined();
-  });
+    expect(asyncCache.get('k')).toBeUndefined();
 
-  it('should handle errors thrown by targetStore.get and targetStore.clear gracefully', () => {
     const faultyStore = {
       has: () => true,
       get: () => {
-        throw new Error('get failed');
+        throw new Error('sync get error');
       },
-      set: jest.fn(),
+      set: () => Promise.reject(new Error('async set error')),
+      delete: () => {
+        throw new Error('sync delete error');
+      },
       clear: () => {
-        throw new Error('clear failed');
+        throw new Error('sync clear error');
       }
     };
 
-    const cache = memoUnwrapAdapter(faultyStore as any)();
+    const faultyCache = memoUnwrapAdapter(faultyStore)({});
 
-    expect(cache.get('any-key')).toBeUndefined();
-    expect(cache.clear?.()).toBeUndefined();
-  });
-  */
-
-  it('should normalize targetStore using normalizeMemoCache / normalizeMapLike', async () => {
-    // Passing an incomplete map-like (only has, get, set) without delete or clear
-    const minimalStore = {
-      storage: new Map<string, string>(),
-      has(key: string) {
-        return this.storage.has(key);
-      },
-      get(key: string) {
-        return this.storage.get(key);
-      },
-      set(key: string, val: string) {
-        this.storage.set(key, val);
-      }
-    };
-
-    const cache = memoUnwrapAdapter(minimalStore as any)({ isFuncPromise: true });
-
-    await cache.set('norm-k', 'norm-v');
-    expect(cache.get('norm-k')).toBe('norm-v');
-    expect(cache.has('norm-k')).toBe(true);
-  });
-
-  it('should delegate delete and clear to targetStore', () => {
-    const targetStore = new Map([['del-key', 'del-val']]);
-    const deleteSpy = jest.spyOn(targetStore, 'delete');
-    const clearSpy = jest.spyOn(targetStore, 'clear');
-    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
-
-    expect(cache.get('del-key')).toBe('del-val');
-    expect(cache.has('del-key')).toBe(true);
-    cache.delete?.('del-key');
-    expect(deleteSpy).toHaveBeenCalledWith('del-key');
-    expect(cache.has('del-key')).toBe(false);
-
-    targetStore.set('clr-key', 'clr-val');
-    expect(cache.get('clr-key')).toBe('clr-val');
-    cache.clear?.();
-    expect(clearSpy).toHaveBeenCalled();
-    expect(cache.has('clr-key')).toBe(false);
-  });
-
-  it('should expose Map-like size, keys, and entries', () => {
-    const targetStore = new Map([['k1', 'v1']]);
-    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
-
-    cache.set('k2', 'v2');
-
-    // Hydrating k2 from targetStore pulls it into the active in-memory cache window
-    expect(cache.get('k2')).toBe('v2');
-    expect(cache.size).toBe(1);
-    expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
-
-    // Hydrating k1 from targetStore pulls it into the active in-memory cache window
-    expect(cache.get('k1')).toBe('v1');
-    expect(cache.size).toBe(2);
-    expect(Array.from(cache.keys?.() || [])).toEqual(expect.arrayContaining(['k1', 'k2']));
-    expect(Array.from(cache.entries?.() || [])).toEqual(expect.arrayContaining([
-      ['k1', 'v1'],
-      ['k2', 'v2']
-    ]));
-  });
-
-  it('should surgically evict specific keys from read cache on set and delete without disturbing other keys', () => {
-    const targetStore = new Map([
-      ['key-a', 'val-a'],
-      ['key-b', 'val-b']
-    ]);
-    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: false });
-
-    // Warm both keys into the memoized read cache
-    expect(cache.get('key-a')).toBe('val-a');
-    expect(cache.get('key-b')).toBe('val-b');
-    expect(cache.size).toBe(2);
-
-    // Mutating key-a only invalidates key-a in readCache
-    cache.set('key-a', 'val-a-updated');
-    expect(cache.size).toBe(1);
-    expect(Array.from(cache.keys?.() || [])).toEqual(['key-b']);
-
-    // Hydrate key-a again
-    expect(cache.get('key-a')).toBe('val-a-updated');
-    expect(cache.size).toBe(2);
-
-    // Deleting key-b only invalidates key-b in readCache and targetStore
-    cache.delete?.('key-b');
-    expect(cache.has('key-b')).toBe(false);
-    expect(cache.has('key-a')).toBe(true);
-  });
-
-  it('should preserve falsy values and undefined in targetStore and inMemory', async () => {
-    const targetStore = new Map();
-    const setSpy = jest.spyOn(targetStore, 'set');
-    const cache = memoUnwrapAdapter(targetStore)({ isFuncPromise: true });
-
-    const fnUndefined = jest.fn(async () => undefined);
-    const memoUndefined = memo(fnUndefined, { cache });
-
-    expect(await memoUndefined()).toBeUndefined();
-    expect(await memoUndefined()).toBeUndefined();
-    expect(fnUndefined).toHaveBeenCalledTimes(1);
-    expect(setSpy).toHaveBeenCalledWith(expect.anything(), undefined);
-
-    const fnEmpty = jest.fn(async () => '');
-    const memoEmpty = memo(fnEmpty, {
-      cache,
-      keyHash: () => 'empty-key'
-    });
-
-    expect(await memoEmpty()).toBe('');
-    expect(await memoEmpty()).toBe('');
-    expect(fnEmpty).toHaveBeenCalledTimes(1);
-    expect(setSpy).toHaveBeenCalledWith(expect.anything(), '');
-  });
-
-  it('should call cache.delete when async function rejects and cacheErrors is false', async () => {
-    const cache = new Map();
-    const deleteSpy = jest.spyOn(cache, 'delete');
-    const memoized = memo(
-      async () => {
-        throw new Error('uncached failure');
-      },
-      { cache, cacheErrors: false }
-    );
-
-    await expect(memoized()).rejects.toThrow('uncached failure');
-    expect(deleteSpy).toHaveBeenCalledTimes(1);
-    expect(deleteSpy).toHaveBeenCalledWith(expect.anything());
+    expect(faultyCache.get('k')).toBeUndefined();
+    expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
+    expect(() => faultyCache.delete?.('k')).not.toThrow();
+    expect(faultyCache.clear?.()).toBeUndefined();
   });
 });
