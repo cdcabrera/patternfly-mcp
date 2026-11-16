@@ -3,6 +3,7 @@ import {
   isReferenceLike
 } from './server.helpers';
 import {
+  isMemoError,
   memo,
   normalizeMemoCache,
   type MemoCacheCallback,
@@ -105,90 +106,68 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
   }
 
   /**
-   * Get the memo cache store.
-   */
-  const getStore = async (): Promise<MemoMapLike<K, MemoSettled<V>> | undefined> => {
-    if (resolvedStore) {
-      return resolvedStore;
-    }
-
-    if (isPromise(targetStore)) {
-      try {
-        resolvedStore = normalizedStore(await targetStore);
-
-        return resolvedStore;
-      } catch {}
-    }
-
-    return undefined;
-  };
-
-  /**
-   * Update the store either by setting a value, deleting an entry, or clearing the store.
+   * Apply a store immediately or set up a queue until the target resolves.
    *
-   * @param key - Key to update.
-   * @param val - Value to store.
-   * @param options - Optional configuration.
-   * @param options.isClear - Whether to clear the store.
-   * @param options.isDelete - Whether to delete the entry.
-   * @param options._resolved - Internal. Has the store resolved? Break the resolve loop.
-   * @returns Store update result if synchronous, otherwise undefined.
+   * @param callback - Update to apply to the resolved target store.
+   * @param [onComplete] - Applied after callback runs or the target fails to resolve.
+   * @returns Store result when run synchronously or `undefined`.
    */
-  const updateStore = (
-    key?: K, val?: unknown,
-    {
-      isClear = false,
-      isDelete = false,
-      _resolved = false
-    }: { isClear?: boolean; isDelete?: boolean; _resolved?: boolean } = {}
+  const storeUpdate = (
+    callback: (store: MemoMapLike<K, MemoSettled<V>>) => unknown,
+    onComplete?: (() => void) | undefined
   ): unknown => {
-    const update = (action: () => unknown) => {
+    let isApplied = false;
+    const complete = () => {
+      if (isApplied) {
+        return;
+      }
+
+      isApplied = true;
+
       try {
-        const result = action();
-
-        if (isPromise(result)) {
-          (result as Promise<unknown>).catch(() => {});
-        }
-
-        return result;
+        onComplete?.();
       } catch {}
-
-      return undefined;
     };
 
-    const applyUpdate = () => {
+    const run = () => {
       if (!resolvedStore) {
+        complete();
+
         return undefined;
       }
 
-      if (isClear) {
-        return update(() => resolvedStore?.clear?.());
-      }
+      try {
+        const result = callback(resolvedStore);
 
-      if (isDelete) {
-        return update(() => resolvedStore?.delete?.(key as K));
-      }
+        if (isPromise(result)) {
+          return (result as Promise<unknown>)
+            .then(value => {
+              complete();
 
-      return update(() => resolvedStore?.set(key as K, val as MemoSettled<V>));
+              return value;
+            })
+            .catch(() => {
+              complete();
+            });
+        }
+
+        complete();
+
+        return result;
+      } catch {
+        complete();
+
+        return undefined;
+      }
     };
 
     if (storeQueue) {
-      storeQueue = storeQueue.then(applyUpdate).catch(() => {});
+      storeQueue = storeQueue.then(run).catch(complete);
 
       return undefined;
     }
 
-    if (resolvedStore) {
-      return applyUpdate();
-    }
-
-    if (!_resolved) {
-      getStore()
-        .then(() => updateStore(key, val, { isClear, isDelete, _resolved: true }))
-        .catch(() => {});
-    }
-
-    return undefined;
+    return run();
   };
 
   /**
@@ -215,9 +194,9 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
      * @return Promise settling with the unwrapped value, or rejecting with the thrown/rejected reason.
      */
     const settle = (value: MemoCacheEntry<V>): Promise<unknown> => {
-      if (isReferenceLike(value) && 'isError' in value && value.isError === true) {
+      if (isMemoError(value) && typeof value === 'function') {
         return new Promise(resolve => {
-          resolve((value as () => unknown)());
+          resolve(value());
         });
       }
 
@@ -245,6 +224,15 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
      * @return A memo cache entry.
      */
     const hydrateMemo = (entry: unknown): MemoCacheEntry<V> | undefined => {
+      if (typeof entry !== 'function' && isPromise(entry)) {
+        const hydrated = Promise.resolve(entry).then(hydrateMemo);
+
+        // Suppress unhandled-rejection noise until memo hands the value to the caller.
+        hydrated.catch(() => {});
+
+        return hydrated as unknown as MemoCacheEntry<V>;
+      }
+
       if (!isSettled(entry)) {
         return entry as MemoCacheEntry<V>;
       }
@@ -318,7 +306,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
         staged.clear();
         memoizedGet.clear();
 
-        return updateStore(undefined, undefined, { isClear: true });
+        return storeUpdate(store => store.clear?.());
       },
 
       /**
@@ -337,7 +325,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
         staged.delete(key);
         readCache.delete(key);
 
-        updateStore(key, undefined, { isDelete: true });
+        storeUpdate(store => store.delete?.(key));
 
         return existed;
       },
@@ -402,7 +390,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        *
        * @note All values take the same path: staged as-is so `get()` returns exactly what was set,
        *     then settled and persisted asynchronously as a `PromiseSettledResult`. Concrete values
-       *     reach the target store one microtask after `set()`. A superseded entry's late settlement
+       *     reach a resolved target store one microtask after `set()`. A superseded entry's late settlement
        *     is ignored. Rejections are persisted only when `cacheErrors` is enabled, otherwise deleted.
        *
        * @param key Entry key to set.
@@ -425,13 +413,18 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
               return;
             }
 
-            staged.delete(key);
+            const clearStaged = () => {
+              if (staged.get(key)?.token === token) {
+                staged.delete(key);
+              }
+            };
 
-            if (settled.status === 'rejected' && !cacheErrors) {
-              updateStore(key, undefined, { isDelete: true });
-            } else {
-              updateStore(key, settled);
-            }
+            storeUpdate(
+              store => (settled.status === 'rejected' && !cacheErrors
+                ? store.delete?.(key)
+                : store.set(key, settled)),
+              clearStaged
+            );
           });
 
         return this;

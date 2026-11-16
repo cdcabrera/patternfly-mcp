@@ -281,6 +281,21 @@ describe('memoSettledAdapter', () => {
     }
   });
 
+  it('should persist a non-callable isError value as fulfilled data', async () => {
+    const targetStore = new Map();
+    const value = { isError: true, data: 'valid-value' };
+    const mockFunc = jest.fn(() => value);
+    const memoized = memo(mockFunc, { cache: memoSettledAdapter(targetStore) });
+
+    expect(memoized()).toBe(value);
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(targetStore.size).toBe(1);
+    expect(Array.from(targetStore.values())).toEqual([{ status: 'fulfilled', value }]);
+    expect(memoized()).toBe(value);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+  });
+
   it('should return a sync memoized value while the targetStore is pending and persist once resolved', async () => {
     let resolveStore: ((store: Map<unknown, unknown>) => void) | undefined;
     const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
@@ -291,6 +306,11 @@ describe('memoSettledAdapter', () => {
 
     // Returns the memoized value while the store is pending
     expect(memoized(2)).toBe(4);
+    expect(memoized(2)).toBe(4);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+
+    // A settled staged value remains readable until the queued write reaches the store.
+    await jest.advanceTimersByTimeAsync(0);
     expect(memoized(2)).toBe(4);
     expect(mockFunc).toHaveBeenCalledTimes(1);
 
@@ -312,6 +332,39 @@ describe('memoSettledAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
 
     expect(failed(1)).toBe(2);
+  });
+
+  it('should hydrate fulfilled and rejected Promise-returning target-store reads', async () => {
+    const fulfilledStore = {
+      has: () => true,
+      get: () => Promise.resolve({ status: 'fulfilled' as const, value: 'stored' }),
+      set: () => undefined
+    };
+    let fulfilledCalls = 0;
+    const fulfilledMemo = memo(async () => {
+      fulfilledCalls += 1;
+
+      return 'fallback';
+    }, { cache: memoSettledAdapter(fulfilledStore as never) });
+
+    await expect(fulfilledMemo()).resolves.toBe('stored');
+    expect(fulfilledCalls).toBe(0);
+
+    const error = new Error('stored rejection');
+    const rejectedStore = {
+      has: () => true,
+      get: () => Promise.resolve({ status: 'rejected' as const, reason: error }),
+      set: () => undefined
+    };
+    let rejectedCalls = 0;
+    const rejectedMemo = memo(async () => {
+      rejectedCalls += 1;
+
+      return 'fallback';
+    }, { cache: memoSettledAdapter(rejectedStore as never) });
+
+    await expect(rejectedMemo()).rejects.toThrow('stored rejection');
+    expect(rejectedCalls).toBe(0);
   });
 
   it.each([
@@ -525,15 +578,22 @@ describe('memoSettledAdapter', () => {
     expect(() => entry()).toThrow('sync boom');
   });
 
-  it('should pass through non-envelope entries from a pre-seeded store as fulfilled values', () => {
+  it('should pass through non-wrapped entries from a pre-seeded store as fulfilled values', () => {
+    const asyncValue = async () => 'lorem ipsum';
     const targetStore = new Map<string, unknown>([
-      ['raw', 'legacy'],
-      ['wrapped', { status: 'fulfilled', value: 'new' }]
+      ['dolor', 'sit'],
+      ['wrapped', { status: 'fulfilled', value: 'new' }],
+      ['async', asyncValue]
     ]);
-    const cache = memoSettledAdapter(targetStore as never)();
+    const cache = memoSettledAdapter(targetStore as any)();
 
-    expect(cache.get('raw')).toBe('legacy');
+    expect(cache.get('dolor')).toBe('sit');
     expect(cache.get('wrapped')).toBe('new');
-    expect(Array.from(cache.entries?.() || [])).toEqual([['raw', 'legacy'], ['wrapped', 'new']]);
+    expect(cache.get('async')).toBe(asyncValue);
+    expect(Array.from(cache.entries?.() || [])).toEqual([
+      ['dolor', 'sit'],
+      ['wrapped', 'new'],
+      ['async', asyncValue]
+    ]);
   });
 });
