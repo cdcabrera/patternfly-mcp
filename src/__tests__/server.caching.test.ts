@@ -669,11 +669,13 @@ describe('memoUnwrapAdapter', () => {
     const cache = memoUnwrapAdapter(targetStore)();
 
     cache.set('key', value);
+    // L0 hands back exactly what was set, promise or not
+    expect(cache.get('key')).toBe(value);
 
     if (value instanceof Promise) {
-      expect(cache.get('key')).toBe(value);
       await value;
     }
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('key')).toBe(true);
     expect(targetStore.get('key')).toBe(expected);
@@ -725,8 +727,9 @@ describe('memoUnwrapAdapter', () => {
 
     cache.set('key', 'newer');
 
-    // L0 is invalidated immediately; the newer value is visible to reads and persisted to L2
+    // L0 now holds the newer value; visible to reads immediately, persisted to L2 after settlement
     expect(cache.get('key')).toBe('newer');
+    await jest.advanceTimersByTimeAsync(0);
     expect(targetStore.get('key')).toBe('newer');
 
     // Late settlement of the superseded promise must NOT clobber the newer value
@@ -760,6 +763,7 @@ describe('memoUnwrapAdapter', () => {
     cache.set('key', 'newer');
 
     expect(cache.get('key')).toBe('newer');
+    await jest.advanceTimersByTimeAsync(0);
     expect(targetStore.get('key')).toBe('newer');
 
     rejectOld(new Error('boom'));
@@ -876,6 +880,73 @@ describe('memoUnwrapAdapter', () => {
     expect(cache.delete?.('key')).toBe(false);
   });
 
+  it.each([
+    {
+      description: 'persist the thrown reason when cacheErrors is true',
+      cacheErrors: true,
+      expectedHas: true
+    },
+    {
+      description: 'delete the entry when cacheErrors is false',
+      cacheErrors: false,
+      expectedHas: false
+    }
+  ])('should $description for a memo sync-error wrapper, matching rejections', async ({ cacheErrors, expectedHas }) => {
+    const targetStore = new Map([['key', 'stale-val']]);
+    const cache = memoUnwrapAdapter(targetStore, { cacheErrors })();
+    const error = new Error('sync boom');
+    const errorFunc = Object.assign(() => {
+      throw error;
+    }, { isError: true });
+
+    cache.set('key', errorFunc);
+
+    // L0 hands back exactly what memo set, so memo's own isMemoError handling still works
+    expect(cache.get('key')).toBe(errorFunc);
+
+    await jest.advanceTimersByTimeAsync(0);
+
+    // The wrapper closure itself must never reach L2
+    expect(targetStore.has('key')).toBe(expectedHas);
+    expect(typeof targetStore.get('key')).not.toBe('function');
+    if (cacheErrors) {
+      expect(targetStore.get('key')).toBe(error);
+    }
+  });
+
+  it('should return a sync memoized value while the targetStore is pending and persist once resolved', async () => {
+    let resolveStore: ((store: Map<unknown, unknown>) => void) | undefined;
+    const storePromise = new Promise<Map<unknown, unknown>>(resolve => {
+      resolveStore = resolve;
+    });
+    const mockFunc = jest.fn((val: number) => val * 2);
+    const memoized = memo(mockFunc, { cache: memoUnwrapAdapter(storePromise) });
+
+    // Fails on HEAD: the concrete write bypassed L0, so memo's immediate get() returned undefined
+    expect(memoized(2)).toBe(4);
+    expect(memoized(2)).toBe(4);
+    expect(mockFunc).toHaveBeenCalledTimes(1);
+
+    const store = new Map();
+
+    resolveStore?.(store);
+    await storePromise;
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Queued write landed once the store resolved
+    expect(Array.from(store.values())).toEqual([4]);
+    expect(memoized(2)).toBe(4);
+
+    // A rejected store never resolves, but the sync value is still returned
+    const rejected = Promise.reject(new Error('no db'));
+    const failed = memo((val: number) => val + 1, { cache: memoUnwrapAdapter(rejected) });
+
+    await expect(rejected).rejects.toThrow('no db');
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(failed(1)).toBe(2);
+  });
+
   it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {
     const targetStore = new Map([
       ['k1', 'v1'],
@@ -912,6 +983,7 @@ describe('memoUnwrapAdapter', () => {
     cache.set('k1', 'v1-updated');
     expect(cache.size).toBe(1);
     expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
+    await jest.advanceTimersByTimeAsync(0);
     expect(targetStore.get('k1')).toBe('v1-updated');
 
     // Deleting k2 removes it from readCache and targetStore

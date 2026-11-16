@@ -598,6 +598,12 @@ interface MemoUnwrapAdapterOptions {
  * Adapter for wrapping a storage backend (Map or {@link MemoMapLike}) to unwrap promises
  * produced by async `memo` functions before persisting to the underlying store.
  *
+ * Every value passed to `set()` takes the same path regardless of type: it is staged in-memory as-is,
+ * then settled as a promise and persisted to the target store. Concrete values therefore reach the
+ * store one microtask after `set()`; adapter `has()`/`get()` observe them immediately via the staged
+ * tier. `memo` sync-error wrappers (`isError`) settle as rejections so sync and async errors persist
+ * identically under `cacheErrors`.
+ *
  * @note **Important**:
  * - Using `cacheErrors` comes with subtle behavior around unwrapping Promise rejection reasons.
  *   Rejection reasons are persisted as plain values and become indistinguishable from resolved values
@@ -608,7 +614,7 @@ interface MemoUnwrapAdapterOptions {
  *   check is used to distinguish the two. The value is never interpreted by design. **It's on the
  *   consumer to handle consuming these values.**
  *
- * @note Review using `Promise.try` in the future.
+ * @note Review using `Promise.try` in `settle` once the Node floor is >= 23.
  *
  * @template K Key type.
  * @template V Value type.
@@ -735,8 +741,26 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
     const cacheLimit = context.cacheLimit ?? settingsCacheLimit;
     const expire = context.expire ?? settingsExpire;
 
-    const inFlight = new Map<K, Promise<V>>();
+    // L0: the most recent raw value passed to `set()`, promise or not, until it settles and persists.
+    const staged = new Map<K, MemoCacheEntry<V>>();
     const readCache = new Map<unknown, MemoCacheEntry<V>>();
+
+    /**
+     * Normalize any cache entry into a promise so every `set()` shares one settle/persist path.
+     * `memo` sync-error wrappers (`isError`) are invoked so they settle as rejections.
+     *
+     * @param value Entry value to settle.
+     * @return Promise settling with the unwrapped value, or rejecting with the thrown/rejected reason.
+     */
+    const settle = (value: MemoCacheEntry<V>): Promise<unknown> => {
+      if (typeof value === 'function' && (value as { isError?: unknown }).isError === true) {
+        return new Promise(resolve => {
+          resolve((value as () => unknown)());
+        });
+      }
+
+      return Promise.resolve(value);
+    };
 
     /**
      * Does the key exist? Faults and pending are considered `false`.
@@ -782,7 +806,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
        * @return Confirm the cache was cleared.
        */
       clear(): unknown {
-        inFlight.clear();
+        staged.clear();
         memoizedGet.clear();
 
         return updateStore(undefined, undefined, { isClear: true });
@@ -791,17 +815,17 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       /**
        * Delete an entry from the cache.
        *
-       * @note Returned boolean reflects what was observable at call time. In-flight promises
-       *     and the resolved target store. A pending target store has no observable entries,
+       * @note Returned boolean reflects what was observable at call time. Staged entries, the read
+       *     window, and the resolved target store. A pending target store has no observable entries,
        *     ergo `false` is returned.
        *
        * @param key Entry key to delete.
        * @return Confirm the entry was deleted.
        */
       delete(key: K): boolean {
-        const existed = inFlight.has(key) || readCache.has(key) || storeHas(key);
+        const existed = staged.has(key) || readCache.has(key) || storeHas(key);
 
-        inFlight.delete(key);
+        staged.delete(key);
         readCache.delete(key);
 
         updateStore(key, undefined, { isDelete: true });
@@ -825,8 +849,8 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
        * @return The matching memoized cache entry, or `undefined` if no entry exists.
        */
       get(key: K): MemoCacheEntry<V> | undefined {
-        if (inFlight.has(key)) {
-          return inFlight.get(key);
+        if (staged.has(key)) {
+          return staged.get(key);
         }
 
         if (readCache.has(key) || storeHas(key)) {
@@ -843,7 +867,7 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
        * @return True if the key exists.
        */
       has(key: K): boolean {
-        return inFlight.has(key) || readCache.has(key) || storeHas(key);
+        return staged.has(key) || readCache.has(key) || storeHas(key);
       },
 
       /**
@@ -858,43 +882,39 @@ const memoUnwrapAdapter = <K = unknown, V = unknown>(
       /**
        * Set an entry in the cache.
        *
-       * @note Mirrors `Map.set` used by `memo`. Every set overwrites the current entry for `key`,
-       *     including a pending in-flight promise. `memo` determines the `has()` check,
-       *     this adapter **SHOULD NOT** add its own. A superseded promise's late settlement is
-       *     ignored.
+       * @note Mirrors `Map.set` used by `memo`. Every set overwrites the current entry for `key`.
+       *     `memo` determines the `has()` check, this adapter **SHOULD NOT** add its own.
+       *
+       * @note All values take the same path: staged as-is so `get()` returns exactly what was set,
+       *     then settled and persisted asynchronously. Concrete values reach the target store one
+       *     microtask after `set()`. A superseded entry's late settlement is ignored.
        *
        * @param key Entry key to set.
        * @param value Entry value to set.
        * @return The current cache instance.
        */
       set(key: K, value: MemoCacheEntry<V>): unknown {
-        inFlight.delete(key);
         readCache.delete(key);
+        staged.set(key, value);
 
-        if (isPromise(value)) {
-          inFlight.set(key, value as Promise<V>);
+        settle(value)
+          .then(resolvedValue => {
+            if (staged.get(key) === value) {
+              staged.delete(key);
+              updateStore(key, resolvedValue);
+            }
+          })
+          .catch(error => {
+            if (staged.get(key) === value) {
+              staged.delete(key);
 
-          Promise.resolve(value)
-            .then(resolvedValue => {
-              if (inFlight.get(key) === value) {
-                inFlight.delete(key);
-                updateStore(key, resolvedValue);
+              if (cacheErrors) {
+                updateStore(key, error);
+              } else {
+                updateStore(key, undefined, { isDelete: true });
               }
-            })
-            .catch(error => {
-              if (inFlight.get(key) === value) {
-                inFlight.delete(key);
-
-                if (cacheErrors) {
-                  updateStore(key, error);
-                } else {
-                  updateStore(key, undefined, { isDelete: true });
-                }
-              }
-            });
-        } else {
-          updateStore(key, value);
-        }
+            }
+          });
 
         return this;
       },
