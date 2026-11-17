@@ -431,16 +431,16 @@ describe('memo', () => {
 
     // cacheErrors: false calls delete() on sync and async errors; the original error must surface
     const syncError = memo((_val: number): number => {
-      throw new Error('sync boom');
+      throw new Error('sync lorem ipsum');
     }, { cache: minimal, cacheErrors: false });
 
-    expect(() => syncError(3)).toThrow('sync boom');
+    expect(() => syncError(3)).toThrow('sync lorem ipsum');
 
     const asyncError = memo(async (_val: number): Promise<number> => {
-      throw new Error('async boom');
+      throw new Error('async dolor sit');
     }, { cache: minimal, cacheErrors: false });
 
-    await expect(asyncError(4)).rejects.toThrow('async boom');
+    await expect(asyncError(4)).rejects.toThrow('async dolor sit');
 
     // memoized.clear() reports false (nothing observable) but does not throw
     expect(expiring.clear()).toBe(false);
@@ -622,7 +622,7 @@ describe('normalizeMemoCache', () => {
     const mockDebug = jest.fn();
 
     expect(normalizeMemoCache(() => {
-      throw new Error('boom');
+      throw new Error('lorem ipsum');
     }, { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
 
     expect(normalizeMemoCache(async () => new Map(), { cacheContext: ctx, debug: mockDebug })).toBeInstanceOf(Map);
