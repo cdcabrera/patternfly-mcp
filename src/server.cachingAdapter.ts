@@ -90,6 +90,18 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
 ): MemoCacheCallback<V> => {
   let resolvedStore: MemoMapLike<K, MemoSettled<V>> | undefined;
 
+  /**
+   * Converts an unknown raw store value into a normalized memoization cache store.
+   *
+   * @note `memo` context NOT being passed to `targetStore` is by design and is
+   * intended for the adapter only.
+   *
+   * @template K
+   * @template V
+   *
+   * @param rawStore - The raw store value to normalize.
+   * @returns A normalized memo map containing settled memoized values.
+   */
   const normalizedStore = (rawStore: unknown): MemoMapLike<K, MemoSettled<V>> =>
     normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, MemoSettled<V>>;
 
