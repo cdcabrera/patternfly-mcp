@@ -566,16 +566,41 @@ describe('memoSettledAdapter', () => {
     expect(mockFunc).toHaveBeenCalledTimes(1);
   });
 
-  it('should rehydrate a persisted rejection as an isError wrapper for a sync memo function', () => {
-    const error = new Error('sync lorem ipsum');
-    const targetStore = new Map([['key', { status: 'rejected', reason: error }]]);
+  it.each([
+    {
+      description: 'Error instance',
+      stored: { status: 'rejected', reason: new Error('sync lorem ipsum') },
+      expected: expect.any(Function),
+      errorMessage: 'sync lorem ipsum'
+    },
+    {
+      description: 'string reason',
+      stored: { status: 'rejected', reason: 'sync string failure' },
+      expected: expect.any(Function),
+      errorMessage: 'sync string failure'
+    },
+    {
+      description: 'plain object reason',
+      stored: { status: 'rejected', reason: { code: 500, message: 'fail' } },
+      expected: expect.any(Function),
+      errorMessage: undefined
+    },
+    {
+      description: 'undefined reason',
+      stored: { status: 'rejected', reason: undefined },
+      expected: expect.any(Function),
+      errorMessage: undefined
+    }
+  ])('should hydrate a pre-seeded rejection from targetStore, $description', ({ stored, expected, errorMessage }) => {
+    const targetStore = new Map<string, unknown>([['key', stored]]);
     const cache = memoSettledAdapter(targetStore as any)({ isFuncPromise: false });
+    const entry = cache.get('key') as any;
 
-    const entry = cache.get('key') as { isError?: boolean } & (() => unknown);
-
+    expect(entry).toEqual(expected);
+    expect(Array.from(cache.entries?.() || [])).toEqual([['key', expected]]);
     expect(typeof entry).toBe('function');
     expect(entry.isError).toBe(true);
-    expect(() => entry()).toThrow('sync lorem ipsum');
+    expect(() => entry()).toThrow(errorMessage);
   });
 
   it.each([
@@ -588,11 +613,6 @@ describe('memoSettledAdapter', () => {
       description: 'fulfilled settled envelope',
       stored: { status: 'fulfilled', value: 'new' },
       expected: 'new'
-    },
-    {
-      description: 'rejected settled envelope',
-      stored: { status: 'rejected', reason: new Error('lorem ipsum') },
-      expected: expect.any(Function)
     },
     {
       description: 'non-settled object with a status property',
@@ -609,7 +629,7 @@ describe('memoSettledAdapter', () => {
       stored: async () => 'lorem ipsum',
       expected: expect.any(Function)
     }
-  ])('should hydrate a pre-seeded $description from targetStore', ({ stored, expected }) => {
+  ])('should hydrate a pre-seeded fulfillment from targetStore, $description', ({ stored, expected }) => {
     const targetStore = new Map<string, unknown>([['key', stored]]);
     const cache = memoSettledAdapter(targetStore as any)();
 
