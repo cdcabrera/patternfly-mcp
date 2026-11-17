@@ -53,9 +53,24 @@ type MemoSettled<V> = PromiseSettledResult<V>;
  *     - Rejected values are rehydrated as either a rejecting Promise (async `memo`) or as an `isError` wrapper
  *       (sync `memo`) so `memo` re-throws them the same way it would in-process.
  *
+ * - Memo interface: `memo` only inspects read queries (`has`, `get`, `size`, `keys`, `entries`) and relies
+ *   on them responding synchronously. Mutating operations `set`, `delete`, and `clear` are fire-and-forget.
+ *   'Memo' ignores their return values.
+ *
+ * - Backend persistence: The adapter updates its in-memory cache immediately so `memo` stays synchronous,
+ *   then queues and writes to the `targetStore` in call order in the background. Serialization
+ *   is the responsibility of the `targetStore`.
+ *
+ * - Technical behavior: `get`, `has`, `delete`, `clear`, and `size` update and answer
+ *   immediately using in-memory state. Writes to the underlying `targetStore` (`set`, `delete`, `clear`)
+ *   run in the background in call order. Return values report immediate in-memory status, not backend
+ *   persistence confirmation.
+ *
+ *
+ *
  * **Important**:
- * - The "settled" `status` is the only property inspected. How a store serializes the "settled" results
- *   is the store's responsibility.
+ * - The "settled" `status` is the only property inspected by this adapter. How a store serializes the
+ *   "settled" results is the `targetStore`'s responsibility.
  *
  * - Persisted `undefined` values at the Map level are indistinguishable from missing entries. A `has`
  *   check is used to distinguish the two. The value is never interpreted by design. **It's on the
@@ -105,7 +120,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
   const normalizedStore = (rawStore: unknown): MemoMapLike<K, MemoSettled<V>> =>
     normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, MemoSettled<V>>;
 
-  // Every store op is chained off of this queue so `set`/`delete`/`clear` reach the target in call order
+  // Single queue for all target store ops. Guarantees call order even when the store's methods are async.
   let storeQueue: Promise<unknown> = isPromise(targetStore)
     ? Promise.resolve(targetStore)
       .then(store => {
@@ -119,16 +134,15 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
   }
 
   /**
-   * Queue a store update. Runs once the target has resolved.
+   * Queue a target store update. Runs asynchronously once the target has resolved.
    *
    * @param callback - Update to apply to the resolved target store.
-   * @param [onComplete] - Applied after callback runs or the target fails to resolve.
-   * @returns Always `undefined`, store ops are queued.
+   * @param [onComplete] - Applied after callback settles, or the target fails to resolve.
    */
   const storeUpdate = (
     callback: (store: MemoMapLike<K, MemoSettled<V>>) => unknown,
     onComplete?: (() => void) | undefined
-  ): unknown => {
+  ): void => {
     let isApplied = false;
     const complete = () => {
       if (isApplied) {
@@ -175,8 +189,6 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     };
 
     storeQueue = storeQueue.then(run).catch(complete);
-
-    return undefined;
   };
 
   /**
@@ -269,10 +281,10 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     };
 
     /**
-     * Does the key exist? Faults and pending are considered `false`.
+     * Does the key exist in the target store? Faults and an unresolved target are `false`.
      *
      * @param key Entry key to check.
-     * @return True if the resolved store has the key.
+     * @return True if the resolved target store has the key.
      */
     const storeHas = (key: K): boolean => {
       try {
@@ -307,26 +319,23 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     return {
 
       /**
-       * Clear the cache.
-       *
-       * @return Confirm the cache was cleared.
+       * Clear the cache. Adapter tiers clear synchronously, the target store clear is queued.
        */
-      clear(): unknown {
+      clear(): void {
         staged.clear();
         memoizedGet.clear();
 
-        return storeUpdate(store => store.clear?.());
+        storeUpdate(store => store.clear?.());
       },
 
       /**
        * Delete an entry from the cache.
        *
-       * @note Returned boolean reflects what was observable at call time. Staged entries, the read
-       *     cache, and the resolved target store. A pending target store has no observable entries,
-       *     ergo `false` is returned.
+       * @note Returns `true` if the key existed in the adapter at the time of the call, then queues
+       *     the deletion in the underlying store. If the target store is still resolving, returns `false`.
        *
        * @param key Entry key to delete.
-       * @return Confirm the entry was deleted.
+       * @return True if the key was found and removed from the adapter.
        */
       delete(key: K): boolean {
         const existed = staged.has(key) || readCache.has(key) || storeHas(key);
@@ -397,10 +406,10 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        * @note Mirrors `Map.set` used by `memo`. Every set overwrites the current entry for `key`.
        *     `memo` determines the `has()` check, this adapter **SHOULD NOT** add its own.
        *
-       * @note All values take the same path: staged as-is so `get()` returns exactly what was set,
-       *     then settled and persisted asynchronously as a `PromiseSettledResult`. Concrete values
-       *     reach a resolved target store after `set()`. A superseded entry's late settlement is
-       *     ignored. Rejections are persisted only when `cacheErrors` is enabled, otherwise deleted.
+       * @note All values take the same path: staged synchronously so `get()` returns exactly what was
+       *     set, then settled and queued to the target store as a `PromiseSettledResult`. A superseded
+       *     entry's late settlement is ignored. Rejections are persisted only when `cacheErrors` is
+       *     enabled, otherwise the key is deleted from the target store.
        *
        * @param key Entry key to set.
        * @param value Entry value to set.
@@ -429,9 +438,13 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
             };
 
             storeUpdate(
-              store => (settled.status === 'rejected' && !cacheErrors
-                ? store.delete?.(key)
-                : store.set(key, settled)),
+              store => {
+                if (settled.status === 'rejected' && !cacheErrors) {
+                  store.delete?.(key);
+                } else {
+                  store.set(key, settled);
+                }
+              },
               clearStaged
             );
           });
