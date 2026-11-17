@@ -492,22 +492,20 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
               return;
             }
 
-            const clearStaged = () => {
-              if (staged.get(key)?.token === token) {
-                staged.delete(key);
-              }
-              completeAction(token);
-            };
-
             storeUpdate(
               store => {
                 if (settled.status === 'rejected' && !cacheErrors) {
-                  store.delete?.(key);
+                  return store.delete?.(key);
                 } else {
-                  store.set(key, settled);
+                  return store.set(key, settled);
                 }
               },
-              clearStaged
+              () => {
+                if (staged.get(key)?.token === token) {
+                  staged.delete(key);
+                }
+                completeAction(token);
+              }
             );
           });
 

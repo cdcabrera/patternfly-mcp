@@ -6,7 +6,9 @@ describe('memoSettledAdapter', () => {
     jest.useFakeTimers();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await jest.runOnlyPendingTimersAsync();
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
@@ -534,6 +536,7 @@ describe('memoSettledAdapter', () => {
     expect(() => faultyCache.delete?.('k')).not.toThrow();
     expect(faultyCache.delete?.('k')).toBe(false);
     expect(faultyCache.clear?.()).toBeUndefined();
+    expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
   });
 
   it.each([
