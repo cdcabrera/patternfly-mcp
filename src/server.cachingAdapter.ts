@@ -105,24 +105,25 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
   const normalizedStore = (rawStore: unknown): MemoMapLike<K, MemoSettled<V>> =>
     normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, MemoSettled<V>>;
 
-  let storeQueue: Promise<unknown> | undefined = isPromise(targetStore)
+  // Every store op is chained off of this queue so `set`/`delete`/`clear` reach the target in call order
+  let storeQueue: Promise<unknown> = isPromise(targetStore)
     ? Promise.resolve(targetStore)
       .then(store => {
         resolvedStore = normalizedStore(store);
       })
       .catch(() => {})
-    : undefined;
+    : Promise.resolve();
 
   if (!isPromise(targetStore)) {
     resolvedStore = normalizedStore(targetStore);
   }
 
   /**
-   * Apply a store immediately or set up a queue until the target resolves.
+   * Queue a store update. Runs once the target has resolved.
    *
    * @param callback - Update to apply to the resolved target store.
    * @param [onComplete] - Applied after callback runs or the target fails to resolve.
-   * @returns Store result when run synchronously or `undefined`.
+   * @returns Always `undefined`, store ops are queued.
    */
   const storeUpdate = (
     callback: (store: MemoMapLike<K, MemoSettled<V>>) => unknown,
@@ -173,13 +174,9 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
       }
     };
 
-    if (storeQueue) {
-      storeQueue = storeQueue.then(run).catch(complete);
+    storeQueue = storeQueue.then(run).catch(complete);
 
-      return undefined;
-    }
-
-    return run();
+    return undefined;
   };
 
   /**
@@ -402,8 +399,8 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        *
        * @note All values take the same path: staged as-is so `get()` returns exactly what was set,
        *     then settled and persisted asynchronously as a `PromiseSettledResult`. Concrete values
-       *     reach a resolved target store one microtask after `set()`. A superseded entry's late settlement
-       *     is ignored. Rejections are persisted only when `cacheErrors` is enabled, otherwise deleted.
+       *     reach a resolved target store after `set()`. A superseded entry's late settlement is
+       *     ignored. Rejections are persisted only when `cacheErrors` is enabled, otherwise deleted.
        *
        * @param key Entry key to set.
        * @param value Entry value to set.

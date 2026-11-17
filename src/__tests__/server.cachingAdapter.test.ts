@@ -172,7 +172,9 @@ describe('memoSettledAdapter', () => {
 
     // Newer value is immediately visible and persists after settlement
     expect(cache.get('key')).toBe('newer');
+
     await jest.advanceTimersByTimeAsync(0);
+
     expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
     // Late settlement of the superseded promise must NOT "clobber" the newer value
@@ -206,11 +208,14 @@ describe('memoSettledAdapter', () => {
     cache.set('key', 'newer');
 
     expect(cache.get('key')).toBe('newer');
+
     await jest.advanceTimersByTimeAsync(0);
+
     expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
     rejectOld(new Error('dolor sit'));
     await expect(oldPromise).rejects.toThrow('dolor sit');
+
     await jest.advanceTimersByTimeAsync(0);
 
     // Superseded rejection must not delete or overwrite the newer entry
@@ -228,6 +233,9 @@ describe('memoSettledAdapter', () => {
 
     // Entry only in target store
     expect(cache.delete?.('l2-only')).toBe(true);
+
+    await jest.advanceTimersByTimeAsync(0);
+
     expect(cache.has('l2-only')).toBe(false);
     expect(targetStore.has('l2-only')).toBe(false);
 
@@ -237,6 +245,9 @@ describe('memoSettledAdapter', () => {
     expect(cache.size).toBe(1);
     expect(cache.delete?.('hydrated')).toBe(true);
     expect(cache.size).toBe(0);
+
+    await jest.advanceTimersByTimeAsync(0);
+
     expect(targetStore.has('hydrated')).toBe(false);
 
     // Staged entry: delete returns true and late settlement does not restore it
@@ -292,6 +303,7 @@ describe('memoSettledAdapter', () => {
 
     // A settled staged value remains readable until the queued write reaches the store.
     await jest.advanceTimersByTimeAsync(0);
+
     expect(memoized(2)).toBe(4);
     expect(mockFunc).toHaveBeenCalledTimes(1);
 
@@ -310,6 +322,7 @@ describe('memoSettledAdapter', () => {
     const failed = memo((val: number) => val + 1, { cache: memoSettledAdapter(rejected) });
 
     await expect(rejected).rejects.toThrow('no db');
+
     await jest.advanceTimersByTimeAsync(0);
 
     expect(failed(1)).toBe(2);
@@ -372,6 +385,7 @@ describe('memoSettledAdapter', () => {
     const settledMemo = memo(() => value, { cache: memoSettledAdapter(settledStore) });
 
     expect(Object.is(settledMemo(), value)).toBe(true);
+
     await jest.advanceTimersByTimeAsync(0);
 
     expect(settledStore.size).toBe(1);
@@ -414,11 +428,16 @@ describe('memoSettledAdapter', () => {
     cache.set('k1', 'v1-updated');
     expect(cache.size).toBe(1);
     expect(Array.from(cache.keys?.() || [])).toEqual(['k2']);
+
     await jest.advanceTimersByTimeAsync(0);
+
     expect(targetStore.get('k1')).toEqual({ status: 'fulfilled', value: 'v1-updated' });
 
     // Deleting k2 removes it from readCache and targetStore
     expect(cache.delete?.('k2')).toBe(true);
+
+    await jest.advanceTimersByTimeAsync(0);
+
     expect(cache.has('k2')).toBe(false);
     expect(targetStore.has('k2')).toBe(false);
 
@@ -426,6 +445,9 @@ describe('memoSettledAdapter', () => {
     expect(cache.get('k1')).toBe('v1-updated');
     expect(cache.size).toBe(1);
     cache.clear?.();
+
+    await jest.advanceTimersByTimeAsync(0);
+
     expect(cache.size).toBe(0);
     expect(targetStore.size).toBe(0);
 
@@ -439,6 +461,9 @@ describe('memoSettledAdapter', () => {
     cache.clear?.();
     resolveStale?.('stale-val');
     await stalePromise;
+
+    await jest.advanceTimersByTimeAsync(0);
+
     expect(targetStore.has('stale-in-flight')).toBe(false);
   });
 
@@ -471,7 +496,9 @@ describe('memoSettledAdapter', () => {
     const asyncCache = memoSettledAdapter(rejectingStore)({});
 
     asyncCache.set('k', 'v');
+
     await jest.advanceTimersByTimeAsync(0);
+
     expect(asyncCache.get('k')).toBeUndefined();
 
     const faultyStore = {
@@ -535,6 +562,7 @@ describe('memoSettledAdapter', () => {
 
     // The store receives a settled record; only status distinguishes the two.
     await jest.advanceTimersByTimeAsync(0);
+
     expect(targetStore.size).toBe(1);
     const [record] = Array.from(targetStore.values()) as PromiseSettledResult<unknown>[];
 
