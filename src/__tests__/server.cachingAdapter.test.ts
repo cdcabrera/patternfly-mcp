@@ -1,4 +1,4 @@
-import { memo, type MemoMapLike } from '../server.caching';
+import { memo } from '../server.caching';
 import { memoSettledAdapter } from '../server.cachingAdapter';
 
 describe('memoSettledAdapter', () => {
@@ -13,7 +13,7 @@ describe('memoSettledAdapter', () => {
   it.each([
     {
       method: 'set',
-      run: (cache: MemoMapLike) => cache.set('k2', 'v2'),
+      run: (cache: any) => cache.set('k2', 'v2'),
       expected: expect.objectContaining({
         clear: expect.any(Function),
         delete: expect.any(Function),
@@ -26,17 +26,17 @@ describe('memoSettledAdapter', () => {
     },
     {
       method: 'has',
-      run: (cache: MemoMapLike) => cache.has('k1'),
+      run: (cache: any) => cache.has('k1'),
       expected: true
     },
     {
       method: 'get',
-      run: (cache: MemoMapLike) => cache.get('k1'),
+      run: (cache: any) => cache.get('k1'),
       expected: 'v1'
     },
     {
       method: 'size',
-      run: (cache: MemoMapLike) => {
+      run: (cache: any) => {
         cache.get('k1');
 
         return cache.size;
@@ -45,7 +45,7 @@ describe('memoSettledAdapter', () => {
     },
     {
       method: 'keys',
-      run: (cache: MemoMapLike) => {
+      run: (cache: any) => {
         cache.get('k1');
 
         return Array.from(cache.keys?.() || []);
@@ -54,7 +54,7 @@ describe('memoSettledAdapter', () => {
     },
     {
       method: 'entries',
-      run: (cache: MemoMapLike) => {
+      run: (cache: any) => {
         cache.get('k1');
 
         return Array.from(cache.entries?.() || []);
@@ -63,12 +63,12 @@ describe('memoSettledAdapter', () => {
     },
     {
       method: 'delete',
-      run: (cache: MemoMapLike) => cache.delete?.('k1'),
+      run: (cache: any) => cache.delete?.('k1'),
       expected: true
     },
     {
       method: 'clear',
-      run: (cache: MemoMapLike) => cache.clear?.(),
+      run: (cache: any) => cache.clear?.(),
       expected: undefined
     }
   ])('should expose working map-like member, $method', ({ run, expected }) => {
