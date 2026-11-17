@@ -94,7 +94,7 @@ describe('memoSettledAdapter', () => {
       value: { isError: true, data: 'valid-value' },
       expected: { isError: true, data: 'valid-value' }
     }
-  ])('should unwrap and persist $description to targetStore', async ({ value, expected }) => {
+  ])('should unwrap and persist to targetStore, $description', async ({ value, expected }) => {
     const targetStore = new Map();
     const cache = memoSettledAdapter(targetStore)();
 
@@ -138,7 +138,7 @@ describe('memoSettledAdapter', () => {
       cacheErrors: false,
       expectedHas: false
     }
-  ])('should $description', async ({ createErrorEntry, cacheErrors, expectedHas }) => {
+  ])('should handle cacheErrors, $description', async ({ createErrorEntry, cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
     const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
     const error = new Error('lorem ipsum');
@@ -186,14 +186,14 @@ describe('memoSettledAdapter', () => {
 
   it.each([
     {
-      description: 'not delete the newer value when cacheErrors is false',
+      description: 'not deleting the newer value when cacheErrors is false',
       cacheErrors: false
     },
     {
-      description: 'not overwrite the newer value with the error when cacheErrors is true',
+      description: 'not overwriting the newer value with the error when cacheErrors is true',
       cacheErrors: true
     }
-  ])('should $description if a superseded in-flight promise rejects', async ({ cacheErrors }) => {
+  ])('should handle superseded in-flight promise rejects by $description', async ({ cacheErrors }) => {
     const targetStore = new Map();
     const cache = memoSettledAdapter(targetStore, { cacheErrors })();
 
@@ -357,7 +357,7 @@ describe('memoSettledAdapter', () => {
     { description: 'negative zero', value: -0 },
     { description: 'empty string', value: '' },
     { description: 'symbol', value: Symbol('unique') }
-  ])('should persist $description on settlement, and not persist if memo clears before settlement', async ({ value }) => {
+  ])('should persist values on settlement, and not persist if memo clears before settlement, $description', async ({ value }) => {
     const clearedStore = new Map();
     const clearedMemo = memo(() => value, { cache: memoSettledAdapter(clearedStore) });
 
@@ -514,7 +514,7 @@ describe('memoSettledAdapter', () => {
       },
       rejects: true
     }
-  ])('should persist a $description as a settled record and rehydrate it faithfully', async ({ func, rejects }) => {
+  ])('should persist as a settled record and rehydrate it, $description', async ({ func, rejects }) => {
     const targetStore = new Map();
     const mockFunc = jest.fn(func);
     const myMemoFunc = memo(mockFunc, { cache: memoSettledAdapter(targetStore, { cacheErrors: true }) });
