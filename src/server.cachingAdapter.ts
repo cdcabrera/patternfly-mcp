@@ -342,7 +342,10 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
       for (let i = actionLog.length - 1; i >= 0; i--) {
         const entry = actionLog[i]!;
 
-        if (entry.action === 'clear' || (entry.action === 'delete' && Object.is(entry.key, key))) {
+        if (
+          entry.action === 'clear' ||
+          (entry.action === 'delete' && (entry.key === key || Object.is(entry.key, key)))
+        ) {
           return false;
         }
       }
