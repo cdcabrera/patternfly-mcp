@@ -1,4 +1,5 @@
 import {
+  isAsync,
   isPromise,
   isReferenceLike
 } from './server.helpers';
@@ -36,8 +37,11 @@ interface MemoSettledAdapterOptions {
  * Shape submitted to the target store by {@link memoSettledAdapter}. Parallel to `Promise.allSettled` responses.
  *
  * @template V Value type.
+ * @property [isPromise] True when the original cached entry was a Promise.
  */
-type MemoSettled<V> = PromiseSettledResult<V>;
+type MemoSettled<V> = PromiseSettledResult<V> & {
+  isPromise?: boolean | undefined;
+};
 
 /**
  * In-flight adapter record.
@@ -59,10 +63,10 @@ interface MemoSettledAdapterActionRecord<K> {
  *
  * - Entries that are not Promises are normalized and treated as "settled" fulfilled, or rejected, raw values.
  *
- * - On hydrated reads back to memo, the "settled" wrapper is unwrapped.
- *     - Fulfilled values are returned as-is,
- *     - Rejected values are rehydrated as either a rejecting Promise (async `memo`) or as an `isError` wrapper
- *       (sync `memo`) so `memo` re-throws them the same way it would in-process.
+ * - On hydrated reads back to memo, the "settled" wrapper is unwrapped:
+ *     - Fulfilled values are returned as-is, or as a resolved Promise when `isPromise` is true.
+ *     - Rejected values are rehydrated as a rejecting Promise when `isPromise` is true, or as an `isError`
+ *       wrapper so `memo` re-throws them the same way it would in-process.
  *
  * - Memo interface: `memo` only inspects read queries (`has`, `get`, `size`, `keys`, `entries`) and relies
  *   on them responding synchronously. Mutating operations `set`, `delete`, and `clear` are fire-and-forget.
@@ -79,8 +83,8 @@ interface MemoSettledAdapterActionRecord<K> {
  *
  *
  * **Important**:
- * - The "settled" `status` is the only property inspected by this adapter. How a store serializes the
- *   "settled" results is the `targetStore`'s responsibility.
+ * - The "settled" envelope properties (`status`, `value`, `reason`, `isPromise`) are the only properties
+ *   inspected by this adapter. How a store serializes the "settled" results is the `targetStore`'s responsibility.
  *
  * - Persisted `undefined` values at the Map level are indistinguishable from missing entries. A `has`
  *   check is used to distinguish the two. The value is never interpreted by design. **It's on the
@@ -281,13 +285,14 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
      * Hydrate a stored entry into the `memo` format.
      *
      * - Entries without wrappers are returned as-is.
-     * - Rejections are rehydrated per `context.isFuncPromise` so `memo` re-throws normally.
+     * - Settled entries with `isPromise` are rehydrated as Promises, otherwise fulfilled values
+     *   are returned directly and rejections are wrapped as `isError` functions.
      *
      * @param entry Entry to hydrate.
      * @return A memo cache entry.
      */
     const hydrateMemo = (entry: unknown): MemoCacheEntry<V> | undefined => {
-      if (typeof entry !== 'function' && isPromise(entry)) {
+      if (!isAsync(entry) && isPromise(entry)) {
         const hydrated = Promise.resolve(entry).then(hydrateMemo);
 
         // Suppress unhandled-rejection noise until memo hands the value to the caller.
@@ -301,10 +306,12 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
       }
 
       if (entry.status === 'fulfilled') {
-        return entry.value;
+        return (
+          entry.isPromise ? Promise.resolve(entry.value) : entry.value
+        ) as MemoCacheEntry<V>;
       }
 
-      if (context.isFuncPromise) {
+      if (entry.isPromise) {
         const rejected = Promise.reject(entry.reason);
 
         // Suppress unhandled-rejection noise until memo hands it to the caller.
@@ -476,14 +483,23 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        */
       set(key: K, value: MemoCacheEntry<V>): unknown {
         const token = recordAction('set', key);
+        const isValuePromise = !isAsync(value) && isPromise(value);
 
         readCache.delete(key);
         staged.set(key, { token, value });
 
         settle(value)
           .then(
-            (resolvedValue): MemoSettled<V> => ({ status: 'fulfilled', value: resolvedValue as V }),
-            (reason: unknown): MemoSettled<V> => ({ status: 'rejected', reason })
+            (resolvedValue): MemoSettled<V> => ({
+              status: 'fulfilled',
+              value: resolvedValue as V,
+              ...(isValuePromise ? { isPromise: true } : {})
+            }),
+            (reason: unknown): MemoSettled<V> => ({
+              status: 'rejected',
+              reason,
+              ...(isValuePromise ? { isPromise: true } : {})
+            })
           )
           .then(settled => {
             if (staged.get(key)?.token !== token) {

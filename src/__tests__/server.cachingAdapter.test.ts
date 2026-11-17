@@ -84,19 +84,22 @@ describe('memoSettledAdapter', () => {
     {
       description: 'concrete value',
       value: 'sync-val',
-      expected: 'sync-val'
+      expected: 'sync-val',
+      expectedStored: { status: 'fulfilled', value: 'sync-val' }
     },
     {
       description: 'resolved promise value',
       value: Promise.resolve('async-val'),
-      expected: 'async-val'
+      expected: Promise.resolve('async-val'),
+      expectedStored: { isPromise: true, status: 'fulfilled', value: 'async-val' }
     },
     {
       description: 'non-callable isError object',
       value: { isError: true, data: 'valid-value' },
-      expected: { isError: true, data: 'valid-value' }
+      expected: { isError: true, data: 'valid-value' },
+      expectedStored: { status: 'fulfilled', value: { isError: true, data: 'valid-value' } }
     }
-  ])('should unwrap and persist to targetStore, $description', async ({ value, expected }) => {
+  ])('should unwrap and persist to targetStore, $description', async ({ value, expected, expectedStored }) => {
     const targetStore = new Map();
     const cache = memoSettledAdapter(targetStore)();
 
@@ -107,8 +110,9 @@ describe('memoSettledAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('key')).toBe(true);
-    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: expected });
+    expect(targetStore.get('key')).toEqual(expectedStored);
     expect(cache.get('key')).toEqual(expected);
+    await expect(Promise.resolve(cache.get('key'))).resolves.toEqual(expectedStored.value);
   });
 
   it.each([
@@ -351,7 +355,7 @@ describe('memoSettledAdapter', () => {
     const error = new Error('stored rejection');
     const rejectedStore = {
       has: () => true,
-      get: () => Promise.resolve({ status: 'rejected' as const, reason: error }),
+      get: () => Promise.resolve({ isPromise: true, status: 'rejected' as const, reason: error }),
       set: () => undefined
     };
     let rejectedCalls = 0;
@@ -575,9 +579,10 @@ describe('memoSettledAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.size).toBe(1);
-    const [record] = Array.from(targetStore.values()) as PromiseSettledResult<unknown>[];
+    const [record] = Array.from(targetStore.values());
 
     expect(record?.status).toBe(rejects ? 'rejected' : 'fulfilled');
+    expect(record?.isPromise).toBe(true);
     expect(record?.status === 'rejected' ? record.reason : record?.value).toBeInstanceOf(Error);
 
     // Second call, hydrated from targetStore: a rejection is still a rejection, a value is still a value.
@@ -618,7 +623,7 @@ describe('memoSettledAdapter', () => {
     }
   ])('should hydrate a pre-seeded rejection from targetStore, $description', ({ stored, expected, errorMessage }) => {
     const targetStore = new Map<string, unknown>([['key', stored]]);
-    const cache = memoSettledAdapter(targetStore as any)({ isFuncPromise: false });
+    const cache = memoSettledAdapter(targetStore as any)();
     const entry = cache.get('key') as any;
 
     expect(entry).toEqual(expected);

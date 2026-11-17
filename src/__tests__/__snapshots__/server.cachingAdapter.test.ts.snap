@@ -6,6 +6,7 @@ exports[`memoSettledAdapter should handle cacheErrors, delete sync-error wrapper
 
 exports[`memoSettledAdapter should handle cacheErrors, persist rejected promise when cacheErrors is true 1`] = `
 {
+  "isPromise": true,
   "reason": [Error: lorem ipsum],
   "status": "rejected",
 }
