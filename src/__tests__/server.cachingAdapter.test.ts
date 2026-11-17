@@ -63,14 +63,14 @@ describe('memoSettledAdapter', () => {
   ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
     const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
-    const error = new Error('boom');
+    const error = new Error('lorem ipsum');
     const rejectingPromise = Promise.reject(error);
 
     cache.set('key', rejectingPromise);
     expect(cache.has('key')).toBe(true);
     expect(cache.get('key')).toBe(rejectingPromise);
 
-    await expect(rejectingPromise).rejects.toThrow('boom');
+    await expect(rejectingPromise).rejects.toThrow('lorem ipsum');
     await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('key')).toBe(expectedHas);
@@ -133,8 +133,8 @@ describe('memoSettledAdapter', () => {
     await jest.advanceTimersByTimeAsync(0);
     expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
 
-    rejectOld(new Error('boom'));
-    await expect(oldPromise).rejects.toThrow('boom');
+    rejectOld(new Error('dolor sit'));
+    await expect(oldPromise).rejects.toThrow('dolor sit');
     await jest.advanceTimersByTimeAsync(0);
 
     // Superseded rejection must not delete or overwrite the newer entry
@@ -261,7 +261,7 @@ describe('memoSettledAdapter', () => {
   ])('should $description for a memo sync-error wrapper, matching rejections', async ({ cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
     const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
-    const error = new Error('sync boom');
+    const error = new Error('sync lorem ipsum');
     const errorFunc = Object.assign(() => {
       throw error;
     }, { isError: true });
@@ -567,7 +567,7 @@ describe('memoSettledAdapter', () => {
   });
 
   it('should rehydrate a persisted rejection as an isError wrapper for a sync memo function', () => {
-    const error = new Error('sync boom');
+    const error = new Error('sync lorem ipsum');
     const targetStore = new Map([['key', { status: 'rejected', reason: error }]]);
     const cache = memoSettledAdapter(targetStore as any)({ isFuncPromise: false });
 
@@ -575,7 +575,7 @@ describe('memoSettledAdapter', () => {
 
     expect(typeof entry).toBe('function');
     expect(entry.isError).toBe(true);
-    expect(() => entry()).toThrow('sync boom');
+    expect(() => entry()).toThrow('sync lorem ipsum');
   });
 
   it.each([
@@ -588,6 +588,11 @@ describe('memoSettledAdapter', () => {
       description: 'fulfilled settled envelope',
       stored: { status: 'fulfilled', value: 'new' },
       expected: 'new'
+    },
+    {
+      description: 'rejected settled envelope',
+      stored: { status: 'rejected', reason: new Error('lorem ipsum') },
+      expected: expect.any(Function)
     },
     {
       description: 'non-settled object with a status property',
