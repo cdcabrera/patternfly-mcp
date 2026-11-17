@@ -233,6 +233,8 @@ describe('memoSettledAdapter', () => {
 
     // Entry only in target store
     expect(cache.delete?.('l2-only')).toBe(true);
+    expect(cache.has('l2-only')).toBe(false);
+    expect(targetStore.has('l2-only')).toBe(true);
 
     await jest.advanceTimersByTimeAsync(0);
 
@@ -382,7 +384,8 @@ describe('memoSettledAdapter', () => {
     expect(clearedStore.size).toBe(0);
 
     const settledStore = new Map();
-    const settledMemo = memo(() => value, { cache: memoSettledAdapter(settledStore) });
+    const settledFn = jest.fn(() => value);
+    const settledMemo = memo(settledFn, { cache: memoSettledAdapter(settledStore) });
 
     expect(Object.is(settledMemo(), value)).toBe(true);
 
@@ -390,6 +393,11 @@ describe('memoSettledAdapter', () => {
 
     expect(settledStore.size).toBe(1);
     expect(Array.from(settledStore.values())).toEqual([{ status: 'fulfilled', value }]);
+
+    // Immediate call after clear does not rehydrate the not-yet-cleared targetStore entry
+    settledMemo.clear();
+    expect(Object.is(settledMemo(), value)).toBe(true);
+    expect(settledFn).toHaveBeenCalledTimes(2);
   });
 
   it('should hydrate readCache from targetStore on get and expose active window via size, keys, and entries', () => {

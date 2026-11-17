@@ -40,6 +40,17 @@ interface MemoSettledAdapterOptions {
 type MemoSettled<V> = PromiseSettledResult<V>;
 
 /**
+ * In-flight adapter record.
+ *
+ * @template K Key type.
+ */
+interface MemoSettledAdapterActionRecord<K> {
+  readonly token: symbol;
+  readonly action: 'set' | 'delete' | 'clear';
+  readonly key?: K | undefined;
+}
+
+/**
  * `memo` cache adapter for settling values before being passed to an external store (Map or {@link MemoMapLike}).
  *
  * @note **Behavior**
@@ -58,13 +69,12 @@ type MemoSettled<V> = PromiseSettledResult<V>;
  *   'Memo' ignores their return values.
  *
  * - Backend persistence: The adapter updates its in-memory cache immediately so `memo` stays synchronous,
- *   then queues and writes to the `targetStore` in call order in the background. Serialization
- *   is the responsibility of the `targetStore`.
+ *   then queues writes to the `targetStore` in the background. Serialization is the responsibility of the
+ *   `targetStore`.
  *
  * - Technical behavior: `get`, `has`, `delete`, `clear`, and `size` update and answer
  *   immediately using in-memory state. Writes to the underlying `targetStore` (`set`, `delete`, `clear`)
- *   run in the background in call order. Return values report immediate in-memory status, not backend
- *   persistence confirmation.
+ *   are queued in the background. Return values report immediate in-memory status, not backend confirmation.
  *
  *
  *
@@ -120,7 +130,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
   const normalizedStore = (rawStore: unknown): MemoMapLike<K, MemoSettled<V>> =>
     normalizeMemoCache<V>(rawStore) as unknown as MemoMapLike<K, MemoSettled<V>>;
 
-  // Single queue for all target store ops. Guarantees call order even when the store's methods are async.
+  // Single queue for target store updates.
   let storeQueue: Promise<unknown> = isPromise(targetStore)
     ? Promise.resolve(targetStore)
       .then(store => {
@@ -205,7 +215,39 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
 
     // Most recent value passed to `set()`, paired with a write-token until it settles and persists.
     const staged = new Map<K, { token: symbol; value: MemoCacheEntry<V> }>();
+    const actionLog: MemoSettledAdapterActionRecord<K>[] = [];
     const readCache = new Map<unknown, MemoSettled<V> | V | undefined>();
+
+    /**
+     * Append an in-flight update, with its unique `token`, to the transaction log.
+     *
+     * @param action Action type.
+     * @param [key] Target key for `set` and `delete`.
+     * @param [token] Unique symbol identifying this action.
+     * @return The unique token for this transaction.
+     */
+    const recordAction = (
+      action: MemoSettledAdapterActionRecord<K>['action'],
+      key?: K,
+      token: symbol = Symbol()
+    ): symbol => {
+      actionLog.push({ token, action, key });
+
+      return token;
+    };
+
+    /**
+     * Remove the completed transaction from the in-flight log by its `token`.
+     *
+     * @param token Transaction token to remove.
+     */
+    const completeAction = (token: symbol): void => {
+      const index = actionLog.findIndex(entry => entry.token === token);
+
+      if (index !== -1) {
+        actionLog.splice(index, 1);
+      }
+    };
 
     /**
      * Normalize every cache entry into a promise so every `set()` shares one settle path.
@@ -287,6 +329,14 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
      * @return True if the resolved target store has the key.
      */
     const storeHas = (key: K): boolean => {
+      for (let i = actionLog.length - 1; i >= 0; i--) {
+        const entry = actionLog[i]!;
+
+        if (entry.action === 'clear' || (entry.action === 'delete' && entry.key === key)) {
+          return false;
+        }
+      }
+
       try {
         return Boolean(resolvedStore?.has(key));
       } catch {}
@@ -322,10 +372,15 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        * Clear the cache. Adapter tiers clear synchronously, the target store clear is queued.
        */
       clear(): void {
+        const token = recordAction('clear');
+
         staged.clear();
         memoizedGet.clear();
 
-        storeUpdate(store => store.clear?.());
+        storeUpdate(
+          store => store.clear?.(),
+          () => completeAction(token)
+        );
       },
 
       /**
@@ -339,11 +394,15 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        */
       delete(key: K): boolean {
         const existed = staged.has(key) || readCache.has(key) || storeHas(key);
+        const token = recordAction('delete', key);
 
         staged.delete(key);
         readCache.delete(key);
 
-        storeUpdate(store => store.delete?.(key));
+        storeUpdate(
+          store => store.delete?.(key),
+          () => completeAction(token)
+        );
 
         return existed;
       },
@@ -416,7 +475,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        * @return The current cache instance.
        */
       set(key: K, value: MemoCacheEntry<V>): unknown {
-        const token = Symbol();
+        const token = recordAction('set', key);
 
         readCache.delete(key);
         staged.set(key, { token, value });
@@ -428,6 +487,8 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
           )
           .then(settled => {
             if (staged.get(key)?.token !== token) {
+              completeAction(token);
+
               return;
             }
 
@@ -435,6 +496,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
               if (staged.get(key)?.token === token) {
                 staged.delete(key);
               }
+              completeAction(token);
             };
 
             storeUpdate(
