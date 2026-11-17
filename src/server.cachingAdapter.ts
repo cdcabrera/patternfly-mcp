@@ -36,8 +36,11 @@ interface MemoSettledAdapterOptions {
 /**
  * Shape submitted to the target store by {@link memoSettledAdapter}. Parallel to `Promise.allSettled` responses.
  *
+ * @note The isPromise property is intended to work specifically with `memo` as a best-effort mechanism. A
+ * targetStore that contains values where isPromise is omitted indicates a synchronous entry.
+ *
  * @template V Value type.
- * @property [isPromise] True when the original cached entry was a Promise.
+ * @property [isPromise] True when the cached entry is a Promise. Property is omitted for synchronous entries.
  */
 type MemoSettled<V> = PromiseSettledResult<V> & {
   isPromise?: boolean | undefined;
@@ -339,7 +342,7 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
       for (let i = actionLog.length - 1; i >= 0; i--) {
         const entry = actionLog[i]!;
 
-        if (entry.action === 'clear' || (entry.action === 'delete' && entry.key === key)) {
+        if (entry.action === 'clear' || (entry.action === 'delete' && Object.is(entry.key, key))) {
           return false;
         }
       }
