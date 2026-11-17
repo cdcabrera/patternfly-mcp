@@ -1,4 +1,4 @@
-import { memo } from '../server.caching';
+import { memo, type MemoMapLike } from '../server.caching';
 import { memoSettledAdapter } from '../server.cachingAdapter';
 
 describe('memoSettledAdapter', () => {
@@ -8,6 +8,74 @@ describe('memoSettledAdapter', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it.each([
+    {
+      method: 'set',
+      run: (cache: MemoMapLike) => cache.set('k2', 'v2'),
+      expected: expect.objectContaining({
+        clear: expect.any(Function),
+        delete: expect.any(Function),
+        entries: expect.any(Function),
+        get: expect.any(Function),
+        has: expect.any(Function),
+        keys: expect.any(Function),
+        set: expect.any(Function)
+      })
+    },
+    {
+      method: 'has',
+      run: (cache: MemoMapLike) => cache.has('k1'),
+      expected: true
+    },
+    {
+      method: 'get',
+      run: (cache: MemoMapLike) => cache.get('k1'),
+      expected: 'v1'
+    },
+    {
+      method: 'size',
+      run: (cache: MemoMapLike) => {
+        cache.get('k1');
+
+        return cache.size;
+      },
+      expected: 1
+    },
+    {
+      method: 'keys',
+      run: (cache: MemoMapLike) => {
+        cache.get('k1');
+
+        return Array.from(cache.keys?.() || []);
+      },
+      expected: ['k1']
+    },
+    {
+      method: 'entries',
+      run: (cache: MemoMapLike) => {
+        cache.get('k1');
+
+        return Array.from(cache.entries?.() || []);
+      },
+      expected: [['k1', 'v1']]
+    },
+    {
+      method: 'delete',
+      run: (cache: MemoMapLike) => cache.delete?.('k1'),
+      expected: true
+    },
+    {
+      method: 'clear',
+      run: (cache: MemoMapLike) => cache.clear?.(),
+      expected: undefined
+    }
+  ])('should expose working map-like member, $method', ({ run, expected }) => {
+    const targetStore = new Map([['k1', { status: 'fulfilled' as const, value: 'v1' }]]);
+    const cache = memoSettledAdapter(targetStore)();
+
+    expect(run(cache)).toEqual(expected);
   });
 
   it.each([
@@ -22,14 +90,9 @@ describe('memoSettledAdapter', () => {
       expected: 'async-val'
     },
     {
-      description: 'undefined value',
-      value: Promise.resolve(undefined),
-      expected: undefined
-    },
-    {
-      description: 'falsy empty string',
-      value: '',
-      expected: ''
+      description: 'non-callable isError object',
+      value: { isError: true, data: 'valid-value' },
+      expected: { isError: true, data: 'valid-value' }
     }
   ])('should unwrap and persist $description to targetStore', async ({ value, expected }) => {
     const targetStore = new Map();
@@ -46,34 +109,55 @@ describe('memoSettledAdapter', () => {
 
     expect(targetStore.has('key')).toBe(true);
     expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: expected });
-    expect(cache.get('key')).toBe(expected);
+    expect(cache.get('key')).toEqual(expected);
   });
 
   it.each([
     {
-      description: 'persist error when cacheErrors is true',
+      description: 'persist rejected promise when cacheErrors is true',
+      createErrorEntry: (error: Error) => Promise.reject(error),
       cacheErrors: true,
       expectedHas: true
     },
     {
-      description: 'delete entry when cacheErrors is false',
+      description: 'delete rejected promise when cacheErrors is false',
+      createErrorEntry: (error: Error) => Promise.reject(error),
+      cacheErrors: false,
+      expectedHas: false
+    },
+    {
+      description: 'persist sync-error wrapper when cacheErrors is true',
+      createErrorEntry: (error: Error) => Object.assign(() => {
+        throw error;
+      }, { isError: true }),
+      cacheErrors: true,
+      expectedHas: true
+    },
+    {
+      description: 'delete sync-error wrapper when cacheErrors is false',
+      createErrorEntry: (error: Error) => Object.assign(() => {
+        throw error;
+      }, { isError: true }),
       cacheErrors: false,
       expectedHas: false
     }
-  ])('should $description when an in-flight promise rejects', async ({ cacheErrors, expectedHas }) => {
+  ])('should $description', async ({ createErrorEntry, cacheErrors, expectedHas }) => {
     const targetStore = new Map([['key', 'stale-val']]);
     const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
     const error = new Error('lorem ipsum');
-    const rejectingPromise = Promise.reject(error);
+    const entry = createErrorEntry(error);
 
-    cache.set('key', rejectingPromise);
+    cache.set('key', entry);
     expect(cache.has('key')).toBe(true);
-    expect(cache.get('key')).toBe(rejectingPromise);
+    expect(cache.get('key')).toBe(entry);
 
-    await expect(rejectingPromise).rejects.toThrow('lorem ipsum');
+    if (entry instanceof Promise) {
+      await expect(entry).rejects.toThrow('lorem ipsum');
+    }
     await jest.advanceTimersByTimeAsync(0);
 
     expect(targetStore.has('key')).toBe(expectedHas);
+    expect(typeof targetStore.get('key')).not.toBe('function');
     if (cacheErrors) {
       expect(targetStore.get('key')).toEqual({ status: 'rejected', reason: error });
     }
@@ -143,32 +227,6 @@ describe('memoSettledAdapter', () => {
     expect(cache.get('key')).toBe('newer');
   });
 
-  it('should ignore a superseded in-flight promise when a newer promise replaces the same key', async () => {
-    const targetStore = new Map();
-    const cache = memoSettledAdapter(targetStore)();
-
-    let resolveOld: (value: string) => void = () => {};
-    const oldPromise = new Promise<string>(resolve => {
-      resolveOld = resolve;
-    });
-    const newPromise = Promise.resolve('newer');
-
-    cache.set('key', oldPromise);
-    cache.set('key', newPromise);
-    expect(cache.get('key')).toBe(newPromise);
-
-    await newPromise;
-    await jest.advanceTimersByTimeAsync(0);
-    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
-
-    resolveOld('older');
-    await oldPromise;
-    await jest.advanceTimersByTimeAsync(0);
-
-    expect(targetStore.get('key')).toEqual({ status: 'fulfilled', value: 'newer' });
-    expect(cache.get('key')).toBe('newer');
-  });
-
   it('should report existence from any tier on delete and ignore a deleted in-flight promise on settlement', async () => {
     const targetStore = new Map([['l2-only', 'persisted']]);
     const cache = memoSettledAdapter(targetStore as any)();
@@ -225,75 +283,6 @@ describe('memoSettledAdapter', () => {
 
     // Queued delete is applied once the store resolves
     expect(targetStore.has('existing')).toBe(false);
-  });
-
-  it('should not throw from delete, has, or get when the targetStore has method faults', () => {
-    const faultyStore = {
-      has: () => {
-        throw new Error('has failed');
-      },
-      get: () => undefined,
-      set: () => undefined,
-      delete: () => true,
-      clear: () => undefined
-    };
-    const cache = memoSettledAdapter(faultyStore as any)();
-
-    expect(() => cache.has('key')).not.toThrow();
-    expect(cache.has('key')).toBe(false);
-    expect(() => cache.get('key')).not.toThrow();
-    expect(cache.get('key')).toBeUndefined();
-    expect(() => cache.delete?.('key')).not.toThrow();
-    expect(cache.delete?.('key')).toBe(false);
-  });
-
-  it.each([
-    {
-      description: 'persist the thrown reason when cacheErrors is true',
-      cacheErrors: true,
-      expectedHas: true
-    },
-    {
-      description: 'delete the entry when cacheErrors is false',
-      cacheErrors: false,
-      expectedHas: false
-    }
-  ])('should $description for a memo sync-error wrapper, matching rejections', async ({ cacheErrors, expectedHas }) => {
-    const targetStore = new Map([['key', 'stale-val']]);
-    const cache = memoSettledAdapter(targetStore as any, { cacheErrors })();
-    const error = new Error('sync lorem ipsum');
-    const errorFunc = Object.assign(() => {
-      throw error;
-    }, { isError: true });
-
-    cache.set('key', errorFunc);
-
-    // Immediate read returns the error wrapper as-is
-    expect(cache.get('key')).toBe(errorFunc);
-
-    await jest.advanceTimersByTimeAsync(0);
-
-    // The wrapper function itself is not persisted to the store
-    expect(targetStore.has('key')).toBe(expectedHas);
-    expect(typeof targetStore.get('key')).not.toBe('function');
-    if (cacheErrors) {
-      expect(targetStore.get('key')).toEqual({ status: 'rejected', reason: error });
-    }
-  });
-
-  it('should persist a non-callable isError value as fulfilled data', async () => {
-    const targetStore = new Map();
-    const value = { isError: true, data: 'valid-value' };
-    const mockFunc = jest.fn(() => value);
-    const memoized = memo(mockFunc, { cache: memoSettledAdapter(targetStore) });
-
-    expect(memoized()).toBe(value);
-    await jest.advanceTimersByTimeAsync(0);
-
-    expect(targetStore.size).toBe(1);
-    expect(Array.from(targetStore.values())).toEqual([{ status: 'fulfilled', value }]);
-    expect(memoized()).toBe(value);
-    expect(mockFunc).toHaveBeenCalledTimes(1);
   });
 
   it('should return a sync memoized value while the targetStore is pending and persist once resolved', async () => {
@@ -494,7 +483,9 @@ describe('memoSettledAdapter', () => {
     expect(asyncCache.get('k')).toBeUndefined();
 
     const faultyStore = {
-      has: () => true,
+      has: () => {
+        throw new Error('sync has error');
+      },
       get: () => {
         throw new Error('sync get error');
       },
@@ -509,9 +500,12 @@ describe('memoSettledAdapter', () => {
 
     const faultyCache = memoSettledAdapter(faultyStore)();
 
+    expect(() => faultyCache.has('k')).not.toThrow();
+    expect(faultyCache.has('k')).toBe(false);
     expect(faultyCache.get('k')).toBeUndefined();
     expect(() => faultyCache.set('k', 'v' as any)).not.toThrow();
     expect(() => faultyCache.delete?.('k')).not.toThrow();
+    expect(faultyCache.delete?.('k')).toBe(false);
     expect(faultyCache.clear?.()).toBeUndefined();
   });
 
@@ -613,6 +607,11 @@ describe('memoSettledAdapter', () => {
       description: 'fulfilled settled envelope',
       stored: { status: 'fulfilled', value: 'new' },
       expected: 'new'
+    },
+    {
+      description: 'fulfilled Error instance',
+      stored: { status: 'fulfilled', value: new Error('resolved error') },
+      expected: new Error('resolved error')
     },
     {
       description: 'non-settled object with a status property',

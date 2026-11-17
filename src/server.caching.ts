@@ -62,7 +62,7 @@ type MemoCacheCallback<TReturn> =
  * @property set - **Required**. Store a value by key.
  * @property [size] - Current entry count.
  */
-interface MemoMapLike<K, V> {
+interface MemoMapLike<K = unknown, V = unknown> {
   clear?(): unknown;
   delete?(key: K): unknown;
   entries?(): IterableIterator<[K, V]>;
