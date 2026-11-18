@@ -382,7 +382,8 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
     return {
 
       /**
-       * Clear the cache. Adapter tiers clear synchronously, the target store clear is queued.
+       * Clear the cache. Adapter tiers clear synchronously, the target store clear is queued
+       * if supported by the `targetStore`.
        */
       clear(): void {
         const token = recordAction('clear');
@@ -400,7 +401,8 @@ const memoSettledAdapter = <K = unknown, V = unknown>(
        * Delete an entry from the cache.
        *
        * @note Returns `true` if the key existed in the adapter at the time of the call, then queues
-       *     the deletion in the underlying store. If the target store is still resolving, returns `false`.
+       *     the deletion in the underlying store if supported. If the target store is still resolving,
+       *     returns `false`.
        *
        * @param key Entry key to delete.
        * @return True if the key was found and removed from the adapter.
