@@ -3,7 +3,7 @@ import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
 import { sanitizeMessage } from './logger.helpers';
-import { memo } from './server.caching';
+import { memo, type MemoReturn } from './server.caching';
 import { assertInputUrlWhiteListed } from './server.assertions';
 import { isUrl } from './server.helpers';
 import { type WhitelistUrl } from './options.defaults';
@@ -96,7 +96,9 @@ interface FetchResponse {
  * @property status - Function to get the status of the fetch request.
  */
 interface SetFetch {
-  get: (url: string, settings?: RequestInit) => Promise<FetchResponse>;
+  get: ((url: string, settings?: RequestInit) => Promise<FetchResponse>) & {
+    memo: MemoReturn<[url: string, settings?: RequestInit], Promise<FetchResponse>>;
+  };
   // post: (url: string, data: unknown) => Promise<FetchResponse>;
   cancel: () => void;
   status: (callback?: (state: FetchState) => void) => FetchState | (() => void);
@@ -696,13 +698,20 @@ const setFetch = (options = getOptions()): SetFetch => {
     }
   };
 
-  return {
-    get: (url: string, settings: RequestInit = {}) => {
-      const updatedSettings = { method: 'GET', ...(settings || {}) };
-      const key = `${updatedSettings.method}:${url}`;
+  const getFetch = (url: string, settings: RequestInit = {}) => {
+    const updatedSettings = { method: 'GET', ...(settings || {}) };
+    const key = `${updatedSettings.method}:${url}`;
 
-      return checkInflight(key, () => executeFetch(url, updatedSettings));
-    },
+    return checkInflight(key, () => executeFetch(url, updatedSettings));
+  };
+
+  getFetch.memo = memo(
+    async (url: string, settings?: RequestInit) => await getFetch(url, settings),
+    options.resourceMemoOptions.fetchUrl
+  );
+
+  return {
+    get: getFetch,
     cancel: () => {
       if (state.phase !== 'loading') {
         return;

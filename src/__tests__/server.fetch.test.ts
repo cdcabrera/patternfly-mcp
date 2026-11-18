@@ -12,6 +12,7 @@ import {
   FetchError
 } from '../server.fetch';
 import { getOptions } from '../options.context';
+import * as serverCaching from '../server.caching';
 import { log } from '../logger';
 
 describe('MIME helpers', () => {
@@ -222,6 +223,19 @@ describe('setFetch', () => {
 
   afterAll(() => {
     jest.restoreAllMocks();
+  });
+
+  it('should expose get, cancel, and status functions with get.memo', () => {
+    const res = setFetch();
+
+    expect(res).toHaveProperty('get');
+    expect(typeof res.get).toBe('function');
+    expect(res.get).toHaveProperty('memo');
+    expect(typeof res.get.memo).toBe('function');
+    expect(res).toHaveProperty('cancel');
+    expect(typeof res.cancel).toBe('function');
+    expect(res).toHaveProperty('status');
+    expect(typeof res.status).toBe('function');
   });
 
   it('should fetch and parse text', async () => {
@@ -709,5 +723,58 @@ describe('setFetch', () => {
     await expect(get('https://patternfly.org/data')).rejects.toMatchObject({
       message: expect.stringContaining(expectedMessage)
     });
+  });
+
+  it('should wire get.memo with options.resourceMemoOptions.fetchUrl and forward arguments to get', async () => {
+    const memoSpy = jest.spyOn(serverCaching, 'memo');
+    const options = getOptions();
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => (name === 'content-type' ? 'text/plain' : null)
+      },
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('hello memo'));
+          controller.close();
+        }
+      })
+    });
+
+    const { get } = setFetch(options);
+
+    expect(memoSpy).toHaveBeenCalledWith(
+      expect.any(Function),
+      options.resourceMemoOptions.fetchUrl
+    );
+
+    const resultA = await get.memo('https://patternfly.org/memo.txt', {
+      headers: { 'X-Custom': '1' }
+    });
+
+    const resultB = await get.memo('https://patternfly.org/memo.txt', {
+      headers: { 'X-Custom': '1' }
+    });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://patternfly.org/memo.txt',
+      expect.objectContaining({
+        method: 'GET',
+        headers: { 'X-Custom': '1' }
+      })
+    );
+
+    expect(memoSpy).toHaveBeenCalledTimes(1);
+    expect(resultA).toBe(resultB);
+    expect(resultA).toEqual(expect.objectContaining({
+      type: 'text',
+      status: 200,
+      data: 'hello memo'
+    }));
+
+    memoSpy.mockRestore();
   });
 });
