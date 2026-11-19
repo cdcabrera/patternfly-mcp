@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
+import { memo } from '../server.caching';
+import { memoSettledAdapter } from '../server.cachingAdapter';
 import {
   createDb,
   quarantineCorruptDb,
@@ -198,5 +200,83 @@ describe('createDb file-backed persistence & self-healing', () => {
     expect(store.get('key')).toEqual({ status: 'fulfilled', value: 'recovered' });
 
     dbInstance.close();
+  });
+});
+
+describe('createDb memoSettledAdapter integration & cold hydration', () => {
+  const testDir = join(tmpdir(), `pf-mcp-db-hydration-test-${Date.now()}`);
+  let dbInstance: DbInstance | undefined;
+
+  beforeEach(() => {
+    mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    dbInstance?.close();
+    dbInstance = undefined;
+    if (existsSync(testDir)) {
+      rmSync(testDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should persist settled entries to SQLite and hydrate on cold restart', async () => {
+    const dbFile = join(testDir, 'cache.db');
+
+    // Session 1: Write and persist to SQLite
+    dbInstance = createDb(dbFile);
+    const store1 = dbInstance.memoStore<string>('fetch_urls');
+    const worker1 = jest.fn(async (url: string) => `content for ${url}`);
+    const memoized1 = memo(worker1, {
+      cache: memoSettledAdapter<unknown, Promise<string>>(store1)
+    });
+
+    const result1 = await memoized1('https://example.com/api/v1');
+
+    expect(result1).toBe('content for https://example.com/api/v1');
+    expect(worker1).toHaveBeenCalledTimes(1);
+
+    // Allow asynchronous storeQueue flush to SQLite
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    // Verify SQLite row was persisted
+    const row = dbInstance.db
+      .prepare('SELECT value, status FROM memo_cache WHERE namespace = ?')
+      .get('fetch_urls') as { value: string; status: string } | undefined;
+
+    expect(row?.status).toBe('fulfilled');
+    dbInstance.close();
+
+    // Session 2: Cold boot restart with separate DB and memo instance
+    const dbInstance2 = createDb(dbFile);
+    const store2 = dbInstance2.memoStore<string>('fetch_urls');
+    const worker2 = jest.fn(async (url: string) => `content for ${url}`);
+    const memoized2 = memo(worker2, {
+      cache: memoSettledAdapter<unknown, Promise<string>>(store2)
+    });
+
+    // Cold hit should rehydrate from SQLite without invoking worker2
+    const result2 = await memoized2('https://example.com/api/v1');
+
+    expect(result2).toBe('content for https://example.com/api/v1');
+    expect(worker2).not.toHaveBeenCalled();
+
+    dbInstance2.close();
+  });
+
+  it('should forward clear housekeeping to SQLite partition through settled adapter', async () => {
+    dbInstance = createDb(':memory:');
+    const store = dbInstance.memoStore<string>('isolated_ns');
+    const memoized = memo(async (id: string) => `data-${id}`, {
+      cache: memoSettledAdapter<unknown, Promise<string>>(store)
+    });
+
+    await memoized('item1');
+    await memoized('item2');
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(store.size).toBe(2);
+
+    memoized.clear();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(store.size).toBe(0);
   });
 });
