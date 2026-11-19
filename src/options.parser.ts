@@ -72,6 +72,7 @@ const parseCliOptions = (
   const result: CliOptions = {
     modeOptions: { ...DEFAULT_OPTIONS.modeOptions },
     logging: { ...DEFAULT_OPTIONS.logging },
+    cacheDb: { ...DEFAULT_OPTIONS.cacheDb },
     client: false,
     isHttp: false,
     toolModules: [],
@@ -230,6 +231,16 @@ const parseCliOptions = (
         break;
       case '--client':
         result.client = true;
+        break;
+      case '--cache-db':
+        if (result.cacheDb) {
+          result.cacheDb ??= {};
+          result.cacheDb.enabled = true;
+
+          if (typeof value === 'string') {
+            result.cacheDb.dbPath = value.trim();
+          }
+        }
         break;
     }
   };

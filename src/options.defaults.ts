@@ -54,6 +54,7 @@ import { getNodeMajorVersion } from './options.helpers';
  * @property xhrFetch - XHR and Fetch options.
  */
 interface DefaultOptions<TLogOptions = LoggingOptions> {
+  cacheDb: CacheDbOptions;
   client: boolean;
   contextManagement: boolean;
   contextPath: string;
@@ -89,6 +90,25 @@ interface DefaultOptions<TLogOptions = LoggingOptions> {
   version: string;
   whitelist: WhitelistOptions;
   xhrFetch: XhrFetchOptions;
+}
+
+/**
+ * Database options.
+ *
+ * See {@link CACHE_DB_OPTIONS} for defaults.
+ *
+ * @interface CacheDbOptions
+ *
+ * @property enabled Enable database functionality.
+ * @property dbPath Full path and filename of the database.
+ * @property dbDefaultFilename Default filename of the database file. Used when not provided via `dbPath`.
+ * @property busyTimeoutMs Busy timeout in milliseconds.
+ */
+interface CacheDbOptions {
+  enabled: boolean;
+  dbPath: string;
+  dbDefaultFilename: string;
+  busyTimeoutMs: number;
 }
 
 /**
@@ -350,6 +370,16 @@ interface XhrFetchOptions {
 }
 
 /**
+ * Cache Database options.
+ */
+const CACHE_DB_OPTIONS: CacheDbOptions = {
+  enabled: false,
+  dbPath: ':memory:',
+  dbDefaultFilename: 'pfmcp.db',
+  busyTimeoutMs: 5000
+};
+
+/**
  * Base logging options.
  */
 const LOGGING_OPTIONS: LoggingOptions = {
@@ -599,6 +629,7 @@ const PLUGIN_ISOLATION: DefaultOptions['pluginIsolation'][] = ['none', 'strict']
  * @type {DefaultOptions} Default options object.
  */
 const DEFAULT_OPTIONS: DefaultOptions = {
+  cacheDb: CACHE_DB_OPTIONS,
   client: false,
   contextManagement: false,
   contextPath: (process.env.NODE_ENV === 'local' && '/') || resolve(process.cwd()),
@@ -637,10 +668,12 @@ const DEFAULT_OPTIONS: DefaultOptions = {
 };
 
 export {
+  CACHE_DB_OPTIONS,
   DEFAULT_OPTIONS,
   CHANNEL_BASENAME,
   MODE_LEVELS,
   PLUGIN_ISOLATION,
+  type CacheDbOptions,
   type DefaultOptions,
   type HttpOptions,
   type LoggingOptions,

@@ -123,6 +123,7 @@ const setOptions = (
 
   assertProtocol(base.whitelist.urls, base.whitelist.protocols);
 
+  const baseCacheDb = isPlainObject(base.cacheDb) ? base.cacheDb : DEFAULT_OPTIONS.cacheDb;
   const baseLogging = isPlainObject(base.logging) ? base.logging : DEFAULT_OPTIONS.logging;
   const basePluginIsolation = PLUGIN_ISOLATION.includes(base.pluginIsolation) ? base.pluginIsolation : DEFAULT_OPTIONS.pluginIsolation;
 
@@ -147,7 +148,8 @@ const setOptions = (
     pluginIsolation: basePluginIsolation,
     resourceMemoOptions: DEFAULT_OPTIONS.resourceMemoOptions,
     toolMemoOptions: DEFAULT_OPTIONS.toolMemoOptions,
-    client: baseMode === 'cli' ? base.client : false
+    client: baseMode === 'cli' ? base.client : false,
+    cacheDb: baseCacheDb
   };
 
   // Avoid cloning toolModules

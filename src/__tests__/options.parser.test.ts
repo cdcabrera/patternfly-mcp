@@ -56,6 +56,13 @@ describe('parseCliOptions', () => {
       })
     },
     {
+      description: 'with bare --cache-db flag when registered as experimental',
+      args: ['node', 'script.js', '--cache-db'],
+      expectedOptions: expect.objectContaining({
+        cacheDb: expect.objectContaining({ enabled: false })
+      })
+    },
+    {
       description: 'with --http and --port',
       args: ['node', 'script.js', '--http', '--port', '6000'],
       expectedOptions: expect.objectContaining({
@@ -228,6 +235,28 @@ describe('parseCliOptions', () => {
       expectedExperimental: ['pluginIsolation']
     },
     {
+      description: 'applies --experimental-cache-db without path argument',
+      args: ['node', 'cli', '--experimental-cache-db'],
+      expectedOptions: expect.objectContaining({
+        cacheDb: expect.objectContaining({
+          enabled: true,
+          dbPath: ':memory:'
+        })
+      }),
+      expectedExperimental: ['cacheDb']
+    },
+    {
+      description: 'applies --experimental-cache-db with custom path argument',
+      args: ['node', 'cli', '--experimental-cache-db', './data/custom.db'],
+      expectedOptions: expect.objectContaining({
+        cacheDb: expect.objectContaining({
+          enabled: true,
+          dbPath: './data/custom.db'
+        })
+      }),
+      expectedExperimental: ['cacheDb']
+    },
+    {
       description: 'dedupes repeated experimental CLI flags',
       args: ['node', 'cli', '--experimental-plugin-isolation', 'none', '--experimental-plugin-isolation', 'strict'],
       experimentalOptions: new Set<any>(['pluginIsolation']),
@@ -305,6 +334,20 @@ describe('parseProgrammaticOptions', () => {
       input: { client: true },
       expectedOptions: expect.not.objectContaining({ client: true }),
       expectedExperimental: []
+    },
+    {
+      description: 'ignores direct cacheDb key registered as experimental',
+      input: { cacheDb: { enabled: true } },
+      expectedOptions: expect.not.objectContaining({ cacheDb: { enabled: true } }),
+      expectedExperimental: []
+    },
+    {
+      description: 'maps experimentalCacheDb programmatic option when registered',
+      input: { experimentalCacheDb: { enabled: true, dbPath: '/custom/pfmcp.db' } },
+      expectedOptions: expect.objectContaining({
+        cacheDb: { enabled: true, dbPath: '/custom/pfmcp.db' }
+      }),
+      expectedExperimental: ['cacheDb']
     },
     {
       description: 'removes experimental-prefixed keys that are not registered',

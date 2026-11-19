@@ -161,52 +161,86 @@ describe('main', () => {
     expect(callOrder).toEqual(expect.arrayContaining(['parse', 'set', 'run']));
   });
 
-  describe('experimental client execution', () => {
-    const originalStdinIsTTY = process.stdin.isTTY;
-    const originalStdoutIsTTY = process.stdout.isTTY;
-
-    beforeEach(() => {
-      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
-      Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
-    });
-
-    afterEach(() => {
-      Object.defineProperty(process.stdin, 'isTTY', { value: originalStdinIsTTY, configurable: true });
-      Object.defineProperty(process.stdout, 'isTTY', { value: originalStdoutIsTTY, configurable: true });
-    });
-
-    it('sanitizes client option when invoked outside CLI mode', async () => {
-      mockSetOptions.mockReturnValueOnce({
-        ...DEFAULT_OPTIONS,
+  it.each([
+    {
+      description: 'sanitizes client option when invoked outside CLI mode',
+      options: {
         client: false,
         mode: 'stdio'
-      } as unknown as GlobalOptions);
+      },
+      expectedServerOptions: {
+        client: false,
+        mode: 'stdio'
+      }
+    },
+    {
+      description: 'allows startup when cacheDb is enabled on Node version >= 24',
+      options: {
+        cacheDb: { ...DEFAULT_OPTIONS.cacheDb, enabled: true },
+        nodeVersion: 24
+      },
+      expectedServerOptions: {
+        cacheDb: expect.objectContaining({ enabled: true })
+      }
+    }
+  ])('should allow startup, $description', async ({ options, expectedServerOptions }) => {
+    mockSetOptions.mockReturnValueOnce({
+      ...DEFAULT_OPTIONS,
+      ...options
+    } as unknown as GlobalOptions);
 
-      const result = await main();
+    const result = await main();
 
-      expect(mockRunServer).toHaveBeenCalledWith(
-        expect.objectContaining({ client: false, mode: 'stdio' }),
-        expect.any(Object)
-      );
-      expect(result).toBe(mockServerInstance);
-    });
+    expect(mockRunServer).toHaveBeenCalledWith(
+      expect.objectContaining(expectedServerOptions),
+      expect.any(Object)
+    );
+    expect(result).toBe(mockServerInstance);
+  });
 
-    it('rejects client when TTY is not available', async () => {
-      Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
-
-      mockSetOptions.mockReturnValueOnce({
-        ...DEFAULT_OPTIONS,
+  it.each([
+    {
+      description: 'client when TTY is not available',
+      setup: () => {
+        Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+      },
+      options: {
         client: true,
         mode: 'cli'
-      } as GlobalOptions);
+      },
+      expectedContextMessage: 'MCP client environment error, failed to start server:',
+      expectedErrorMessage: 'The MCP client option requires an interactive terminal (TTY).'
+    },
+    {
+      description: 'client when combined with HTTP transport',
+      options: {
+        client: true,
+        isHttp: true,
+        mode: 'cli'
+      },
+      expectedContextMessage: 'MCP client environment error, failed to start server:',
+      expectedErrorMessage: 'The MCP client option cannot be combined with HTTP transport.'
+    },
+    {
+      description: 'cacheDb when enabled on Node version < 24',
+      options: {
+        cacheDb: { ...DEFAULT_OPTIONS.cacheDb, enabled: true },
+        nodeVersion: 22
+      },
+      expectedContextMessage: 'Cache DB requires Node.js  >= 24',
+      expectedErrorMessage: 'The MCP cache database option requires Node.js version 24 or higher.'
+    }
+  ])('should handle startup validation errors, $description', async ({ setup, options, expectedContextMessage, expectedErrorMessage }) => {
+    setup?.();
 
-      await expect(main()).rejects.toThrow('The MCP client option requires an interactive terminal (TTY).');
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'MCP client environment error, failed to start server:',
-        expect.any(Error)
-      );
-      expect(processExitSpy).toHaveBeenCalledWith(1);
-    });
+    mockSetOptions.mockReturnValueOnce({
+      ...DEFAULT_OPTIONS,
+      ...options
+    } as GlobalOptions);
+
+    await expect(main()).rejects.toThrow(expectedErrorMessage);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expectedContextMessage, expect.any(Error));
+    expect(processExitSpy).toHaveBeenCalledWith(1);
   });
 });
 

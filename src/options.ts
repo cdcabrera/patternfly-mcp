@@ -88,7 +88,8 @@ const SET_OPTIONS = {
   toolModules: defineOption({ cli: true })<DefaultOptions['toolModules']>(),
   version: defineOption({ cli: false })<string>(),
   client: defineOption({ cli: true, experimental: true })<DefaultOptions['client']>(),
-  contextManagement: defineOption({ cli: true, experimental: true })<DefaultOptions['contextManagement']>()
+  contextManagement: defineOption({ cli: true, experimental: true })<DefaultOptions['contextManagement']>(),
+  cacheDb: defineOption({ cli: true, experimental: true })<Partial<DefaultOptions['cacheDb']>>()
 } as const;
 
 /**

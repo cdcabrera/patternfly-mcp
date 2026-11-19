@@ -11,6 +11,7 @@ import {
   verifyDbIntegrity,
   type DbInstance
 } from '../server.db';
+import { DEFAULT_OPTIONS } from '../options.defaults';
 
 describe('createDb', () => {
   let dbInstance: DbInstance;
@@ -80,19 +81,19 @@ describe('resolveCacheDbPath', () => {
     expect(resolveCacheDbPath('')).toBe(':memory:');
   });
 
-  it('should auto-append pf-mcp.db when path ends in a trailing slash and create directory', () => {
+  it('should auto-append the DB filename when path ends in a trailing slash and create directory', () => {
     const dirWithSlash = join(testDir, 'nested', '');
     const resolved = resolveCacheDbPath(`${dirWithSlash}/`);
 
-    expect(resolved).toBe(join(testDir, 'nested', 'pf-mcp.db'));
+    expect(resolved).toBe(join(testDir, 'nested', DEFAULT_OPTIONS.cacheDb.dbDefaultFilename));
     expect(existsSync(join(testDir, 'nested'))).toBe(true);
   });
 
-  it('should auto-append pf-mcp.db when path resolves to an existing directory', () => {
+  it('should auto-append the DB filename when path resolves to an existing directory', () => {
     mkdirSync(testDir, { recursive: true });
     const resolved = resolveCacheDbPath(testDir);
 
-    expect(resolved).toBe(join(testDir, 'pf-mcp.db'));
+    expect(resolved).toBe(join(testDir, DEFAULT_OPTIONS.cacheDb.dbDefaultFilename));
   });
 
   it('should ensure parent directory exists when given a direct file path', () => {
@@ -101,6 +102,15 @@ describe('resolveCacheDbPath', () => {
 
     expect(resolved).toBe(filePath);
     expect(existsSync(join(testDir, 'subdir'))).toBe(true);
+  });
+
+  it('should respect custom dbDefaultFilename from options', () => {
+    const customOptions = {
+      cacheDb: { ...DEFAULT_OPTIONS.cacheDb, dbDefaultFilename: 'custom-name.db' }
+    } as any;
+    const resolved = resolveCacheDbPath(`${testDir}/`, customOptions);
+
+    expect(resolved).toBe(join(testDir, 'custom-name.db'));
   });
 });
 

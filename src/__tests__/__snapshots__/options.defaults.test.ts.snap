@@ -2,6 +2,12 @@
 
 exports[`options defaults should return specific properties: defaults 1`] = `
 {
+  "cacheDb": {
+    "busyTimeoutMs": 5000,
+    "dbDefaultFilename": "pfmcp.db",
+    "dbPath": ":memory:",
+    "enabled": false,
+  },
   "client": false,
   "contextManagement": false,
   "contextPath": "/",

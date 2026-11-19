@@ -258,15 +258,22 @@ const main = async (
 
     // Confirm client, start the server, apply session values, then apply merged options to ensure stable hashing.
     return await runWithSession(session, async () => {
+      if (mergedOptions.cacheDb.enabled && mergedOptions.nodeVersion < 24) {
+        processExit(
+          'Cache DB requires Node.js  >= 24',
+          new Error('The MCP cache database option requires Node.js version 24 or higher.')
+        );
+      }
+
       if (mergedOptions.client) {
         let clientError: Error | undefined;
 
-        if (mergedOptions.isHttp) {
-          clientError = new Error('The MCP client option cannot be combined with HTTP transport.');
-        }
-
         if (!process.stdin.isTTY || !process.stdout.isTTY) {
           clientError = new Error('The MCP client option requires an interactive terminal (TTY).');
+        }
+
+        if (mergedOptions.isHttp) {
+          clientError = new Error('The MCP client option cannot be combined with HTTP transport.');
         }
 
         if (clientError) {

@@ -25,6 +25,15 @@ describe('setOptions', () => {
     expect(options.experimental).toContain('pluginIsolation');
   });
 
+  it('should populate the experimental array when cacheDb is enabled', () => {
+    const options = setOptions({
+      cacheDb: { ...DEFAULT_OPTIONS.cacheDb, enabled: true },
+      experimental: ['cacheDb']
+    });
+
+    expect(options.experimental).toContain('cacheDb');
+  });
+
   it('should not populate the experimental array when options match defaults', () => {
     const experimentalOptions = new Set<any>(['pluginIsolation']);
     const options = setOptions({
@@ -40,17 +49,19 @@ describe('setOptions', () => {
       logging: 'oops',
       resourceMemoOptions: 'gotcha',
       toolMemoOptions: 'really?',
-      pluginIsolation: 'fun'
+      pluginIsolation: 'fun',
+      cacheDb: 'invalid'
     } as any);
 
     expect(updatedOptions.logging.protocol).toBe(DEFAULT_OPTIONS.logging.protocol);
     expect(updatedOptions.resourceMemoOptions?.readFile?.expire).toBe(DEFAULT_OPTIONS.resourceMemoOptions?.readFile?.expire);
     expect(updatedOptions.toolMemoOptions?.usePatternFlyDocs?.expire).toBe(DEFAULT_OPTIONS.toolMemoOptions?.usePatternFlyDocs?.expire);
     expect(updatedOptions.pluginIsolation).toBe(DEFAULT_OPTIONS.pluginIsolation);
+    expect(updatedOptions.cacheDb).toEqual(DEFAULT_OPTIONS.cacheDb);
   });
 
   it('should ignore null/invalid nested overrides safely', () => {
-    const updatedOptions = setOptions({ logging: null, resourceMemoOptions: null, pluginIsolation: null } as any);
+    const updatedOptions = setOptions({ logging: null, resourceMemoOptions: null, pluginIsolation: null, cacheDb: null } as any);
 
     expect(typeof updatedOptions.logging.protocol).toBe('boolean');
     expect(updatedOptions.logging.protocol).toBe(DEFAULT_OPTIONS.logging.protocol);
@@ -63,6 +74,7 @@ describe('setOptions', () => {
 
     expect(typeof updatedOptions.pluginIsolation).toBe('string');
     expect(updatedOptions.pluginIsolation).toBe(DEFAULT_OPTIONS.pluginIsolation);
+    expect(updatedOptions.cacheDb).toEqual(DEFAULT_OPTIONS.cacheDb);
   });
 });
 
