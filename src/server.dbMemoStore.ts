@@ -6,10 +6,10 @@ import type { MemoSettled } from './server.cachingAdapter';
 /**
  * Options for configuring a specific memo namespace storage partition.
  *
- * @property [ttl] - Time-to-live in milliseconds for entries in this namespace.
+ * @property [expire] - Time-to-live in milliseconds for entries in this namespace.
  */
 interface DbMemoStoreOptions {
-  ttl?: number | undefined;
+  expire?: number | undefined;
 }
 
 /**
@@ -61,7 +61,7 @@ const initMemoCacheTable = (db: DatabaseSync): void => {
  *
  * @param db - DatabaseSync instance.
  * @param namespace - Partition namespace identifier.
- * @param [options] - Partition options such as TTL.
+ * @param [options] - Partition options such as expire.
  * @returns MemoMapLike store compatible with memoSettledAdapter.
  */
 const createDbMemoStore = <V = unknown>(
@@ -71,7 +71,7 @@ const createDbMemoStore = <V = unknown>(
 ): MemoMapLike<unknown, MemoSettled<V>> => {
   initMemoCacheTable(db);
 
-  const { ttl } = options;
+  const { expire } = options;
 
   const stmtHas: StatementSync = db.prepare(`
     SELECT 1 FROM memo_cache
@@ -162,7 +162,7 @@ const createDbMemoStore = <V = unknown>(
     set(key: unknown, value: MemoSettled<V>): void {
       const now = Date.now();
       const keyHash = toKeyHash(key);
-      const expiresAt = ttl ? now + ttl : null;
+      const expiresAt = expire ? now + expire : null;
       const status = value?.status === 'rejected' ? 'rejected' : 'fulfilled';
       const isPromise = value?.isPromise ? 1 : 0;
       const serialized = JSON.stringify(value);

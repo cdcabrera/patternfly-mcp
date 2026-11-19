@@ -112,13 +112,13 @@ describe('createDbMemoStore', () => {
     expect(storeB.size).toBe(1);
   });
 
-  it('should expire entries when ttl has elapsed', () => {
+  it('should expire entries when expire time has elapsed', () => {
     jest.useFakeTimers();
     const now = 100000;
 
     jest.setSystemTime(now);
 
-    const store = createDbMemoStore<string>(db, 'ns_ttl', { ttl: 5000 });
+    const store = createDbMemoStore<string>(db, 'ns_expire', { expire: 5000 });
 
     store.set('temp', { status: 'fulfilled', value: 'expires_soon' });
 
