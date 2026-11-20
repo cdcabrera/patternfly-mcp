@@ -11,7 +11,7 @@ import {
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
-import { createDb } from './server.db';
+import { createDb, type DbInstance } from './server.db';
 import { formatUnknownError, log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { composeTools, sendToolsHostShutdown } from './server.tools';
@@ -359,6 +359,7 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
   let unsubscribeServerLogger: (() => void) | null = null;
   let unsubscribeServerStats: (() => void) | null = null;
   let signalHandler: (() => void) | null = null;
+  let dbInstance: DbInstance | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
   let getStatsSetup: ServerGetStats = () => Promise.resolve({} as ServerStats);
@@ -387,17 +388,28 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         mcpClient = null;
       }
 
+      if (dbInstance) {
+        log.debug('...closing persistent cache database');
+
+        try {
+          dbInstance.close();
+        } catch (error) {
+          log.debug(`Error closing database instance: ${error}`);
+        }
+
+        dbInstance = null;
+      }
+
+      if (options?.cacheDb?.enabled) {
+        createDb?.memo?.clear?.();
+      }
+
       log.debug('...closing Server');
       await server?.close();
       running = false;
 
       await sendToolsHostShutdown();
       await sendWorkerPoolsShutdown();
-
-      if (options?.cacheDb?.enabled) {
-        log.debug('...closing persistent cache database');
-        createDb.memo.clear();
-      }
 
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
@@ -452,6 +464,12 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
     if (options?.experimental?.length) {
       log.warn(`Enabled experimental options! Options are subject to change, use at your own risk!`);
       options.experimental.forEach(option => log.warn(`Enabled experimental option: ${option}`));
+    }
+
+    if (options?.cacheDb?.enabled) {
+      log.info(`Persistent cache enabled (${options.cacheDb.dbPath})`);
+      // Initialize connection handle and verify schema/integrity early on startup
+      dbInstance = createDb?.memo?.(options.cacheDb.dbPath, options);
     }
 
     // Compose collections after logging is set up.

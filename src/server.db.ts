@@ -41,11 +41,12 @@ const DEFAULT_DB = DEFAULT_OPTIONS.cacheDb.dbPath;
  * @returns Resolved filesystem path or {@link DEFAULT_DB}.
  */
 const resolveCacheDbPath = (inputPath: string = DEFAULT_DB, options = getOptions()): string => {
-  if (!inputPath || inputPath === DEFAULT_DB) {
-    return DEFAULT_DB;
+  const { dbPath, dbDefaultFilename } = options.cacheDb;
+
+  if (!inputPath || inputPath === dbPath) {
+    return dbPath;
   }
 
-  const { dbDefaultFilename } = options.cacheDb;
   let resolvedPath = resolve(inputPath);
   const isDirectoryTarget = inputPath.endsWith('/') || inputPath.endsWith('\\');
 
@@ -118,6 +119,8 @@ const quarantineCorruptDb = (filePath: string): string => {
 const openDatabase = (resolvedPath: string, busyTimeout: number): DatabaseSync => {
   const db = new DatabaseSync(resolvedPath);
 
+  log.debug(`Opening SQLite database (${resolvedPath})`);
+
   db.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
@@ -137,7 +140,7 @@ const openDatabase = (resolvedPath: string, busyTimeout: number): DatabaseSync =
  * @returns Configured DbInstance.
  */
 const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()): DbInstance => {
-  const { busyTimeoutMs } = options.cacheDb;
+  const { dbPath, busyTimeoutMs } = options.cacheDb;
   const resolvedPath = resolveCacheDbPath(database);
   let db: DatabaseSync;
 
@@ -145,7 +148,7 @@ const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOpt
     db = openDatabase(resolvedPath, busyTimeoutMs);
     verifyDbIntegrity(db);
   } catch (error) {
-    if (resolvedPath !== DEFAULT_DB && existsSync(resolvedPath)) {
+    if (resolvedPath !== dbPath && existsSync(resolvedPath)) {
       quarantineCorruptDb(resolvedPath);
       db = openDatabase(resolvedPath, busyTimeoutMs);
       verifyDbIntegrity(db);
@@ -181,28 +184,28 @@ const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOpt
 
 /**
  * Memoized instance of createDb.
- * - Returns the identical database connection handle for matching paths
- * - Closes and checkpoints databases when cleared or rolled off
+ *   - Returns the identical database connection handle for matching paths
+ *   - Closes and checkpoints the database when the "database memo" rolls out, not the cached entries themselves
+ *   - Limited to a single active database connection instance
  */
 createDb.memo = memo(
   (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()) => createDb(database, options),
   {
-    ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+    cacheLimit: 1,
     onCacheRollout: async ({ removed }) => {
       const results = await Promise.allSettled(removed.values());
 
       for (const result of results) {
         if (result.status === 'fulfilled') {
-          result.value?.close();
-        }
-      }
-    },
-    onCacheClear: async ({ removed }) => {
-      const results = await Promise.allSettled(removed.values());
-
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          result.value?.close();
+          try {
+            await result.value.close();
+          } catch (error) {
+            // Avoid engaging the contextual log channel on rollout.
+            console.error(`Error stopping database: ${error}`);
+          }
+        } else {
+          // Avoid engaging the contextual log channel on rollout.
+          console.error(`Error cleaning up database: ${result?.reason?.message || result?.reason || 'Unknown error'}`);
         }
       }
     }

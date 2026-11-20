@@ -303,13 +303,22 @@ describe('createDb.memo', () => {
     expect(db1).toBe(db2);
   });
 
-  it('should close databases when createDb.memo.clear() is called', async () => {
+  it('should evict entries from memo cache when clear() is called without forcibly closing open connections', () => {
     const db = createDb.memo(':memory:');
 
     expect(db.db.isOpen).toBe(true);
 
     createDb.memo.clear();
-    await new Promise(resolve => setTimeout(resolve, 20));
-    expect(db.db.isOpen).toBe(false);
+
+    // Existing consumer's instance remains open
+    expect(db.db.isOpen).toBe(true);
+
+    // Subsequent call returns a fresh instance
+    const nextDb = createDb.memo(':memory:');
+
+    expect(nextDb).not.toBe(db);
+
+    db.close();
+    nextDb.close();
   });
 });

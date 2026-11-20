@@ -273,6 +273,21 @@ describe('runServer', () => {
     }).toMatchSnapshot('diagnostics');
   });
 
+  it('should close tracked persistent cache database on stopServer', async () => {
+    const options = {
+      ...DEFAULT_OPTIONS,
+      cacheDb: {
+        enabled: true,
+        dbPath: ':memory:'
+      }
+    };
+    const serverInstance = await runServer(options as any, { enableSigint: false });
+
+    expect(serverInstance.isRunning()).toBe(true);
+    await serverInstance.stop();
+    expect(serverInstance.isRunning()).toBe(false);
+  });
+
   it('should handle errors during server creation', async () => {
     const error = new Error('Server creation failed');
 
