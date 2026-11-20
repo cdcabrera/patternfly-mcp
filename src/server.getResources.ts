@@ -146,7 +146,8 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * is unsupported. See {@link XhrFetchOptions}
  *
  * @note This file and function are scheduled for deprecation soon. We're temporarily
- * activating memo internally to help with activating the experimental cacheDb feature.
+ * activating memo internally to help with activating the experimental cacheDb feature,
+ * see {@link setFetch}.
  *
  * @param url - URL to fetch
  * @param options - Options
@@ -226,6 +227,10 @@ const resolveLocalPathFunction = (path: string, { sep: separator = sep } = {}, o
 /**
  * Mock a given path or URL. Used for testing with fixture servers.
  *
+ * @note This file and function are scheduled for deprecation soon. We're temporarily deactivating
+ * {@link fetchUrlFunction.memo} to help with activating the experimental cacheDb feature,
+ * see {@link setFetch}.
+ *
  * @param pathOrUrl - Input path or URL to be resolved.
  * @param options - Options
  * @returns Resolves to the finalized URL or path as a memoized fetchable resource.
@@ -233,7 +238,8 @@ const resolveLocalPathFunction = (path: string, { sep: separator = sep } = {}, o
  * @throws {Error} Throws an error if the given path cannot be resolved in the specified mode and is neither a valid URL nor fetchable.
  */
 const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) => {
-  const fixtureUrl = options.modeOptions?.test?.baseUrl;
+  const { cacheDb, modeOptions } = options;
+  const fixtureUrl = modeOptions?.test?.baseUrl;
   let updatedPathOrUrl = resolveLocalPathFunction(pathOrUrl);
 
   if (fixtureUrl && !updatedPathOrUrl.startsWith(fixtureUrl)) {
@@ -242,12 +248,18 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
     throw new Error(`Access denied: path ${updatedPathOrUrl} cannot be accessed in ${options.mode} mode`);
   }
 
+  const updatedFetchUrlFunction = cacheDb.enabled ? fetchUrlFunction : fetchUrlFunction.memo;
+
   // In test mode, everything is treated as a fetchable resource to allow mocking
-  return fetchUrlFunction.memo(updatedPathOrUrl);
+  return updatedFetchUrlFunction(updatedPathOrUrl);
 };
 
 /**
  * Load a file from disk or `URL`, depending on the input type.
+ *
+ * @note This file and function are scheduled for deprecation soon. We're temporarily deactivating
+ * {@link fetchUrlFunction.memo} to help with activating the experimental cacheDb feature,
+ * see {@link setFetch}.
  *
  * @param pathOrUrl - Path or URL to load. If it's a URL, it will be fetched with `timeout` and `error` handling.
  * @param options - Options
@@ -256,10 +268,11 @@ const mockPathOrUrlFunction = async (pathOrUrl: string, options = getOptions()) 
  *     properties when available.
  */
 const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
+  const { cacheDb, mode } = options;
   let updatedPathOrUrl = pathOrUrl;
 
   try {
-    if (options.mode === 'test') {
+    if (mode === 'test') {
       const mockContent = await mockPathOrUrlFunction(pathOrUrl);
 
       return { content: mockContent, resolvedPath: updatedPathOrUrl, path: pathOrUrl };
@@ -269,7 +282,9 @@ const loadFileFetch = async (pathOrUrl: string, options = getOptions()) => {
     let content;
 
     if (isUrl(updatedPathOrUrl)) {
-      content = await fetchUrlFunction.memo(updatedPathOrUrl);
+      const updatedFetchUrlFunction = cacheDb.enabled ? fetchUrlFunction : fetchUrlFunction.memo;
+
+      content = await updatedFetchUrlFunction(updatedPathOrUrl);
     } else {
       content = await readLocalFileFunction.memo(updatedPathOrUrl);
     }
