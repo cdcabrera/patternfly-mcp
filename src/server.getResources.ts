@@ -145,13 +145,18 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * @note Minor guard against unexpected binary content. Currently, binary content
  * is unsupported. See {@link XhrFetchOptions}
  *
+ * @note This file and function are scheduled for deprecation soon. We're temporarily
+ * activating memo internally to help with activating the experimental cacheDb feature.
+ *
  * @param url - URL to fetch
  * @param options - Options
  * @returns The fetched content as a string.
  */
 const fetchUrlFunction = async (url: string, options = getOptions()): Promise<string> => {
+  const { cacheDb } = options;
   const { get } = setFetch();
-  const { data, type } = await (options?.cacheDb?.enabled ? get.memo(url) : get(url)); // throws FetchError on any failure
+  const updatedGet = cacheDb?.enabled ? get.memo : get;
+  const { data, type } = await updatedGet(url); // throws FetchError on any failure
 
   if (type === 'binary') {
     throw new FetchError({ message: `Cannot return binary content (${url}).` });
