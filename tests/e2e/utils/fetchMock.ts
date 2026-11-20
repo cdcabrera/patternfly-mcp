@@ -61,9 +61,17 @@ const startHttpFixture = (
               route = {
                 status: regexRoute.status || 200,
                 headers: regexRoute.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
-                body: typeof regexRoute.body === 'string' || regexRoute.body instanceof Buffer
-                  ? regexRoute.body
-                  : '# Mocked Response'
+                body: typeof regexRoute.body === 'function'
+                  ? async (req: http.IncomingMessage, res: http.ServerResponse) => {
+                    const resBody = await ((regexRoute.body as unknown) as (req?: http.IncomingMessage, res?: http.ServerResponse) => unknown)(req, res);
+
+                    if (!res.writableEnded) {
+                      res.end(resBody as string | Buffer);
+                    }
+                  }
+                  : typeof regexRoute.body === 'string' || regexRoute.body instanceof Buffer
+                    ? regexRoute.body
+                    : '# Mocked Response'
               };
               dynamicRoutes[pathname] = route;
               break;
@@ -77,9 +85,17 @@ const startHttpFixture = (
               route = {
                 status: regexRoute.status || 200,
                 headers: regexRoute.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
-                body: typeof regexRoute.body === 'string' || regexRoute.body instanceof Buffer
-                  ? regexRoute.body
-                  : '# Mocked Response'
+                body: typeof regexRoute.body === 'function'
+                  ? async (req: http.IncomingMessage, res: http.ServerResponse) => {
+                    const resBody = await ((regexRoute.body as unknown) as (req?: http.IncomingMessage, res?: http.ServerResponse) => unknown)(req, res);
+
+                    if (!res.writableEnded) {
+                      res.end(resBody as string | Buffer);
+                    }
+                  }
+                  : typeof regexRoute.body === 'string' || regexRoute.body instanceof Buffer
+                    ? regexRoute.body
+                    : '# Mocked Response'
               };
               dynamicRoutes[pathname] = route;
               break;
@@ -229,7 +245,7 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
   // Convert routes to fixture server format
   // For regex patterns, we need to pre-register routes at expected paths
   // For direct paths, register them upfront
-  const fixtureRoutes: Record<string, { status?: number; headers?: Record<string, string>; body?: string | Buffer }> = {};
+  const fixtureRoutes: Record<string, Route> = {};
   const routeMap = new Map<FetchRoute, number>(); // Map routes to their index for reference
   const regexRoutes: FetchRoute[] = []; // Track regex routes for dynamic registration
 
@@ -243,9 +259,17 @@ export const setupFetchMock = async (options: FetchMockSetup = {}): Promise<Fetc
       fixtureRoutes[normalizedPath] = {
         status: route.status || 200,
         headers: route.headers || { 'Content-Type': 'text/plain; charset=utf-8' },
-        body: typeof route.body === 'string' || route.body instanceof Buffer
-          ? route.body
-          : '# Mocked Response'
+        body: typeof route.body === 'function'
+          ? async (req: http.IncomingMessage, res: http.ServerResponse) => {
+            const resBody = await ((route.body as unknown) as (req?: http.IncomingMessage, res?: http.ServerResponse) => unknown)(req, res);
+
+            if (!res.writableEnded) {
+              res.end(resBody as string | Buffer);
+            }
+          }
+          : typeof route.body === 'string' || route.body instanceof Buffer
+            ? route.body
+            : '# Mocked Response'
       };
     } else {
       // For regex/pattern routes, track them for dynamic registration

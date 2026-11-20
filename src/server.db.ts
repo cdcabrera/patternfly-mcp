@@ -41,10 +41,10 @@ const DEFAULT_DB = DEFAULT_OPTIONS.cacheDb.dbPath;
  * @returns Resolved filesystem path or {@link DEFAULT_DB}.
  */
 const resolveCacheDbPath = (inputPath: string = DEFAULT_DB, options = getOptions()): string => {
-  const { dbPath, dbDefaultFilename } = options.cacheDb;
+  const { dbDefaultFilename } = options.cacheDb;
 
-  if (!inputPath || inputPath === dbPath) {
-    return dbPath;
+  if (!inputPath || inputPath === DEFAULT_DB) {
+    return DEFAULT_DB;
   }
 
   let resolvedPath = resolve(inputPath);
@@ -141,7 +141,7 @@ const openDatabase = (resolvedPath: string, busyTimeout: number): DatabaseSync =
  */
 const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()): DbInstance => {
   const { dbPath, busyTimeoutMs } = options.cacheDb;
-  const resolvedPath = resolveCacheDbPath(database);
+  const resolvedPath = resolveCacheDbPath(database, options);
   let db: DatabaseSync;
 
   try {

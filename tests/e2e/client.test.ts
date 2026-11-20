@@ -44,7 +44,7 @@ describe('CLI environment checks and arguments', () => {
       exitError = error;
     }
 
-    expect(exitError?.stderr).not.toContain('The MCP client option requires an interactive terminal (TTY).');
+    expect(exitError?.stderr || '').not.toContain('The MCP client option requires an interactive terminal (TTY).');
   });
 
   it('should sanitize client option when started programmatically', async () => {

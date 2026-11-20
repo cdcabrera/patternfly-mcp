@@ -146,11 +146,12 @@ readLocalFileFunction.memo = memo(readLocalFileFunction, DEFAULT_OPTIONS.resourc
  * is unsupported. See {@link XhrFetchOptions}
  *
  * @param url - URL to fetch
+ * @param options - Options
  * @returns The fetched content as a string.
  */
-const fetchUrlFunction = async (url: string): Promise<string> => {
+const fetchUrlFunction = async (url: string, options = getOptions()): Promise<string> => {
   const { get } = setFetch();
-  const { data, type } = await get(url); // throws FetchError on any failure
+  const { data, type } = await (options?.cacheDb?.enabled ? get.memo(url) : get(url)); // throws FetchError on any failure
 
   if (type === 'binary') {
     throw new FetchError({ message: `Cannot return binary content (${url}).` });
