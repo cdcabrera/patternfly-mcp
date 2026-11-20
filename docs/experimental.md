@@ -22,10 +22,94 @@ Using an experimental flag without the `experimental` prefix (CLI or programmati
 
 ## Index
 
-| Internal name       | CLI flag                            | Programmatic option             | Value type  |
-|---------------------|-------------------------------------|---------------------------------|-------------|
-| `client`            | `--experimental-client`             | `experimentalClient`            | `boolean`   |
-| `contextManagement` | `--experimental-context-management` | `experimentalContextManagement` | `boolean`   |
+| Internal name       | CLI flag                                  | Programmatic option             | Value type                |
+|---------------------|-------------------------------------------|---------------------------------|---------------------------|
+| `cacheDb`           | `--experimental-cache-db [optional path]` | `experimentalCacheDb`           | `Partial<CacheDbOptions>` |
+| `client`            | `--experimental-client`                   | `experimentalClient`            | `boolean`                 |
+| `contextManagement` | `--experimental-context-management`       | `experimentalContextManagement` | `boolean`                 |
+
+---
+
+## cacheDb
+
+Enables disk-backed persistent caching for remote network documentation requests using SQLite. Cold server starts hydrate from local storage to reduce outbound network requests and improve response times.
+
+> **Requirement**: Persistent disk cache requires **Node.js version 24 or higher** (`node:sqlite`). Running on Node.js < 24 will fail startup with a version requirement error.
+
+### Use cases
+
+| Use case                                           | Configuration                                                      | Behavior                                                                                                                                                                                            |
+|----------------------------------------------------|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **All-day desktop workflow** (screen locks)        | `--experimental-cache-db` (defaults to `:memory:`)                 | In-memory SQLite cache. Best for users who leave their IDE and MCP server process running throughout the workday. Screen locks and idle sessions preserve cache hits without writing files to disk. |
+| **Cross-session persistence** (reboots & restarts) | `--experimental-cache-db <path>` (e.g. `~/.cache/patternfly-mcp/`) | File-backed SQLite cache (`pfmcp.db`). Best for users who routinely restart client tools, reboot their machines, or want warm caches across completely separate sessions.                           |
+| **Container & CI environments**                    | `--experimental-cache-db /cache/` with volume mount                | Preserves cache database across container restarts and updates using a mounted volume (e.g., `-v pfmcp-cache:/cache:Z`).                                                                            |
+
+### CLI
+
+`--experimental-cache-db` accepts either a boolean flag (enabling in-memory storage) or an optional path pointing to a directory or a specific database file:
+
+```bash
+# 1. Boolean flag (in-memory cache, non-persistent across restarts)
+npx -y @patternfly/patternfly-mcp@latest --experimental-cache-db
+
+# 2. Path to directory (persistent cache, auto-creates pfmcp.db within directory)
+npx -y @patternfly/patternfly-mcp@latest --experimental-cache-db ~/.cache/patternfly-mcp/
+
+# 3. Path with database filename (persistent cache to an explicit file)
+npx -y @patternfly/patternfly-mcp@latest --experimental-cache-db ~/.cache/patternfly-mcp/custom-cache.db
+```
+
+> **Note on `:memory:`**: If `--experimental-cache-db` is passed without a path argument, it defaults to `:memory:`. In-memory mode utilizes SQLite caching for the active session and will **not** persist cached data once the server process terminates. Specify a file or directory path for cross-session persistence.
+
+### Programmatic
+
+`experimentalCacheDb` accepts a `Partial<CacheDbOptions>` configuration object:
+
+```typescript
+import { start } from '@patternfly/patternfly-mcp';
+
+// Enable with defaults (in-memory SQLite cache)
+const server = await start({
+  experimentalCacheDb: {
+    enabled: true
+  }
+});
+
+// Enable with custom persistent database path and options
+const server = await start({
+  experimentalCacheDb: {
+    enabled: true,
+    dbPath: '/Users/username/.cache/patternfly-mcp/pfmcp.db'
+  }
+});
+```
+
+#### CacheDbOptions
+
+| Option              | Type      | Default      | Description                                                                                                                                                                                     |
+|---------------------|-----------|--------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`           | `boolean` | `false`      | Enable persistent caching. Set to `true` when `--experimental-cache-db` is passed on the CLI or `experimentalCacheDb` is enabled programmatically.                                              |
+| `dbPath`            | `string`  | `':memory:'` | Filesystem path to the database or `':memory:'`. When a directory path is provided (ending in `/` or resolving to an existing folder), the database file is resolved using `dbDefaultFilename`. |
+| `dbDefaultFilename` | `string`  | `'pfmcp.db'` | The filename appended when `dbPath` resolves to a directory rather than a file.                                                                                                                 |
+| `busyTimeoutMs`     | `number`  | `5000`       | Milliseconds to wait during SQLite lock contention before throwing an `SQLITE_BUSY` error.                                                                                                      |
+
+### MCP Client Configuration
+
+```json
+{
+  "mcpServers": {
+    "patternfly-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@patternfly/patternfly-mcp@latest",
+        "--experimental-cache-db",
+        "/Users/username/.cache/patternfly-mcp/pfmcp.db"
+      ]
+    }
+  }
+}
+```
 
 ---
 

@@ -266,6 +266,7 @@ describe('runServer', () => {
     await serverInstance.stop();
 
     expect(processOffSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+    expect(processOffSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
     expect(serverInstance.isRunning()).toBe(false);
     expect({
       events: MockLog.info.mock.calls

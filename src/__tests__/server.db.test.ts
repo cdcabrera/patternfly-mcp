@@ -290,3 +290,26 @@ describe('createDb memoSettledAdapter integration & cold hydration', () => {
     expect(store.size).toBe(0);
   });
 });
+
+describe('createDb.memo', () => {
+  afterEach(() => {
+    createDb.memo.clear();
+  });
+
+  it('should return identical DbInstance for identical database path', () => {
+    const db1 = createDb.memo(':memory:');
+    const db2 = createDb.memo(':memory:');
+
+    expect(db1).toBe(db2);
+  });
+
+  it('should close databases when createDb.memo.clear() is called', async () => {
+    const db = createDb.memo(':memory:');
+
+    expect(db.db.isOpen).toBe(true);
+
+    createDb.memo.clear();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(db.db.isOpen).toBe(false);
+  });
+});

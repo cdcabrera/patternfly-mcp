@@ -3,10 +3,11 @@ import { dirname, join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { log } from './logger';
 import { createDbMemoStore, type DbMemoStoreOptions } from './server.dbMemoStore';
-import { type MemoMapLike } from './server.caching';
+import { memo, type MemoMapLike } from './server.caching';
 import { type MemoSettled } from './server.cachingAdapter';
 import { getOptions } from './options.context';
 import { DEFAULT_OPTIONS } from './options.defaults';
+import { type GlobalOptions } from './options';
 
 /**
  * Options for configuring the SQLite database connection.
@@ -135,7 +136,7 @@ const openDatabase = (resolvedPath: string, busyTimeout: number): DatabaseSync =
  * @param {GlobalOptions}[options] - Optional configuration options for the DB instance.
  * @returns Configured DbInstance.
  */
-const createDb = (database: string = DEFAULT_DB, options = getOptions()): DbInstance => {
+const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()): DbInstance => {
   const { busyTimeoutMs } = options.cacheDb;
   const resolvedPath = resolveCacheDbPath(database);
   let db: DatabaseSync;
@@ -177,6 +178,36 @@ const createDb = (database: string = DEFAULT_DB, options = getOptions()): DbInst
     }
   };
 };
+
+/**
+ * Memoized instance of createDb.
+ * - Returns the identical database connection handle for matching paths
+ * - Closes and checkpoints databases when cleared or rolled off
+ */
+createDb.memo = memo(
+  (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()) => createDb(database, options),
+  {
+    ...DEFAULT_OPTIONS.resourceMemoOptions.default,
+    onCacheRollout: async ({ removed }) => {
+      const results = await Promise.allSettled(removed.values());
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          result.value?.close();
+        }
+      }
+    },
+    onCacheClear: async ({ removed }) => {
+      const results = await Promise.allSettled(removed.values());
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          result.value?.close();
+        }
+      }
+    }
+  }
+);
 
 export {
   createDb,

@@ -479,6 +479,7 @@ const RESOURCE_MEMO_OPTIONS = {
   fetchUrl: {
     cacheLimit: 100,
     expire: 3 * 60 * 1000, // 3 minute sliding cache
+    persistExpire: 24 * 60 * 60 * 1000 * 7, // 7 days
     cacheErrors: false
   },
   readFile: {

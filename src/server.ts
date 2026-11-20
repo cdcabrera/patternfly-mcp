@@ -11,6 +11,7 @@ import {
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
+import { createDb } from './server.db';
 import { formatUnknownError, log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { composeTools, sendToolsHostShutdown } from './server.tools';
@@ -357,7 +358,7 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
   let mcpClient: ClientInstance | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let unsubscribeServerStats: (() => void) | null = null;
-  let sigintHandler: (() => void) | null = null;
+  let signalHandler: (() => void) | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
   let getStatsSetup: ServerGetStats = () => Promise.resolve({} as ServerStats);
@@ -374,9 +375,10 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         httpHandle = null;
       }
 
-      if (sigintHandler) {
-        process.off('SIGINT', sigintHandler);
-        sigintHandler = null;
+      if (signalHandler) {
+        process.off('SIGINT', signalHandler);
+        process.off('SIGTERM', signalHandler);
+        signalHandler = null;
       }
 
       if (mcpClient) {
@@ -391,6 +393,11 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
 
       await sendToolsHostShutdown();
       await sendWorkerPoolsShutdown();
+
+      if (options?.cacheDb?.enabled) {
+        log.debug('...closing persistent cache database');
+        createDb.memo.clear();
+      }
 
       log.info(`${options.name} closed!\n`);
       unsubscribeServerLogger?.();
@@ -486,8 +493,8 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
     // Apply MCP tools, if available
     await registerServerTools(updatedTools, server, options, session);
 
-    if (enableSigint && !sigintHandler) {
-      sigintHandler = async () => {
+    if (enableSigint && !signalHandler) {
+      signalHandler = async () => {
         await stopServer();
 
         if (allowProcessExit) {
@@ -495,7 +502,8 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         }
       };
 
-      process.on('SIGINT', sigintHandler);
+      process.on('SIGINT', signalHandler);
+      process.on('SIGTERM', signalHandler);
     }
 
     if (settings.mcpChannel) {

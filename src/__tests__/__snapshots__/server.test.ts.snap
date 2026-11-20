@@ -228,6 +228,10 @@ exports[`runServer should attempt to run server, create transport, connect, and 
       "SIGINT",
       [Function],
     ],
+    [
+      "SIGTERM",
+      [Function],
+    ],
   ],
   "registerTool": [],
 }
@@ -393,6 +397,10 @@ exports[`runServer should attempt to run server, enable SIGINT handler explicitl
       "SIGINT",
       [Function],
     ],
+    [
+      "SIGTERM",
+      [Function],
+    ],
   ],
   "registerTool": [],
 }
@@ -490,6 +498,10 @@ exports[`runServer should attempt to run server, log warnings for experimental o
       "SIGINT",
       [Function],
     ],
+    [
+      "SIGTERM",
+      [Function],
+    ],
   ],
   "registerTool": [
     "usePatternFlyDocs",
@@ -582,6 +594,10 @@ exports[`runServer should attempt to run server, register a tool: diagnostics 1`
   "process": [
     [
       "SIGINT",
+      [Function],
+    ],
+    [
+      "SIGTERM",
       [Function],
     ],
   ],
@@ -683,6 +699,10 @@ exports[`runServer should attempt to run server, register multiple tools: diagno
       "SIGINT",
       [Function],
     ],
+    [
+      "SIGTERM",
+      [Function],
+    ],
   ],
   "registerTool": [
     "loremIpsum",
@@ -769,6 +789,10 @@ exports[`runServer should attempt to run server, use custom options: diagnostics
   "process": [
     [
       "SIGINT",
+      [Function],
+    ],
+    [
+      "SIGTERM",
       [Function],
     ],
   ],
@@ -860,6 +884,10 @@ exports[`runServer should attempt to run server, use default tools, http: diagno
   "process": [
     [
       "SIGINT",
+      [Function],
+    ],
+    [
+      "SIGTERM",
       [Function],
     ],
   ],
@@ -954,6 +982,10 @@ exports[`runServer should attempt to run server, use default tools, stdio: diagn
   "process": [
     [
       "SIGINT",
+      [Function],
+    ],
+    [
+      "SIGTERM",
       [Function],
     ],
   ],
