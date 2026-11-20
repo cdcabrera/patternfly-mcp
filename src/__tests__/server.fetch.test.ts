@@ -332,7 +332,7 @@ describe('setFetch', () => {
     });
 
     const options = getOptions();
-    const { get } = setFetch({
+    const { get } = setFetch(undefined, {
       ...options,
       xhrFetch: {
         ...options.xhrFetch,
@@ -441,7 +441,7 @@ describe('setFetch', () => {
       xhrFetch: { allowBinary: false, maxSizeBytes: 500, timeoutMs: 1000, preflightHead: false }
     };
 
-    const { get, status } = setFetch(options as any);
+    const { get, status } = setFetch(undefined, options as any);
 
     await expect(get('https://patternfly.org')).rejects.toThrow('File blocked: exceeds 500 bytes.');
 
@@ -471,7 +471,7 @@ describe('setFetch', () => {
         urls: ['https://allowed.patternfly.org']
       }
     };
-    const { get } = setFetch(options as any);
+    const { get } = setFetch(undefined, options as any);
 
     await expect(get('https://blocked.patternfly.org/path?private_token=abc123')).rejects.toMatchObject({
       message: expect.stringContaining('private_token=%5BREDACTED%5D')
@@ -500,7 +500,7 @@ describe('setFetch', () => {
     };
 
     (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
-    const { get } = setFetch(options as any);
+    const { get } = setFetch(undefined, options as any);
 
     // Leverage an allowlist url to check post-redirect
     await expect(get('https://www.patternfly.org/start')).rejects.toMatchObject({
@@ -590,7 +590,7 @@ describe('setFetch', () => {
       xhrFetch: { allowBinary: false, maxSizeBytes: 0, timeoutMs: 100, preflightHead: false }
     };
 
-    const { get, status } = setFetch(options as any);
+    const { get, status } = setFetch(undefined, options as any);
     const promise = get('https://patternfly.org');
 
     jest.advanceTimersByTime(150);
@@ -610,7 +610,7 @@ describe('setFetch', () => {
       modeOptions: {}
     };
 
-    const { get, status } = setFetch(options as any);
+    const { get, status } = setFetch(undefined, options as any);
 
     await expect(get('https://patternfly.org')).rejects.toThrow(FetchError);
 
@@ -634,7 +634,7 @@ describe('setFetch', () => {
         sanitizeMessages: false
       }
     };
-    const { get } = setFetch(fetchOptions as any);
+    const { get } = setFetch(undefined, fetchOptions as any);
 
     await expect(get(url)).rejects.toThrow(FetchError);
     expect(warnSpy).toHaveBeenCalledWith(
@@ -675,7 +675,7 @@ describe('setFetch', () => {
       }
     };
 
-    const { get, status } = setFetch(options as any);
+    const { get, status } = setFetch(undefined, options as any);
 
     const result = await get('http://localhost:1234/data.json');
 
@@ -718,7 +718,7 @@ describe('setFetch', () => {
           sanitizeMessages
         }
       };
-    const { get } = setFetch(fetchOptions);
+    const { get } = setFetch(undefined, fetchOptions);
 
     await expect(get('https://patternfly.org/data')).rejects.toMatchObject({
       message: expect.stringContaining(expectedMessage)
@@ -744,7 +744,7 @@ describe('setFetch', () => {
       })
     });
 
-    const { get } = setFetch(options);
+    const { get } = setFetch(undefined, options);
 
     expect(memoSpy).toHaveBeenCalledWith(
       expect.any(Function),
@@ -776,5 +776,40 @@ describe('setFetch', () => {
     }));
 
     memoSpy.mockRestore();
+  });
+
+  it('should use createDb.memo and memoSettledAdapter when cacheDb is enabled', async () => {
+    const options = {
+      ...getOptions(),
+      cacheDb: {
+        ...getOptions().cacheDb,
+        enabled: true,
+        dbPath: ':memory:'
+      }
+    };
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        get: (name: string) => (name === 'content-type' ? 'text/plain' : null)
+      },
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('persisted fetch response'));
+          controller.close();
+        }
+      })
+    });
+
+    const { get } = setFetch(undefined, options as any);
+    const result = await get.memo('https://patternfly.org/persisted.txt');
+
+    expect(result).toEqual(expect.objectContaining({
+      type: 'text',
+      status: 200,
+      data: 'persisted fetch response'
+    }));
   });
 });

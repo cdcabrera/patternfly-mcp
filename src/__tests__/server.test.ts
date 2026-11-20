@@ -266,10 +266,26 @@ describe('runServer', () => {
     await serverInstance.stop();
 
     expect(processOffSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+    expect(processOffSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
     expect(serverInstance.isRunning()).toBe(false);
     expect({
       events: MockLog.info.mock.calls
     }).toMatchSnapshot('diagnostics');
+  });
+
+  it('should close tracked persistent cache database on stopServer', async () => {
+    const options = {
+      ...DEFAULT_OPTIONS,
+      cacheDb: {
+        enabled: true,
+        dbPath: ':memory:'
+      }
+    };
+    const serverInstance = await runServer(options as any, { enableSigint: false });
+
+    expect(serverInstance.isRunning()).toBe(true);
+    await serverInstance.stop();
+    expect(serverInstance.isRunning()).toBe(false);
   });
 
   it('should handle errors during server creation', async () => {

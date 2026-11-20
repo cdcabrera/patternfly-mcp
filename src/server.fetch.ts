@@ -3,10 +3,12 @@ import { type ReadableStream } from 'node:stream/web';
 import { getOptions } from './options.context';
 import { formatUnknownError, log } from './logger';
 import { sanitizeMessage } from './logger.helpers';
-import { memo, type MemoReturn } from './server.caching';
+import { memo, type MemoOptions, type MemoReturn } from './server.caching';
 import { assertInputUrlWhiteListed } from './server.assertions';
 import { isUrl } from './server.helpers';
 import { type WhitelistUrl } from './options.defaults';
+import { memoSettledAdapter } from './server.cachingAdapter';
+import { createDb } from './server.db';
 
 /**
  * Decoded payload. Can either be textual or binary data.
@@ -89,13 +91,26 @@ interface FetchResponse {
 }
 
 /**
+ * Settings for the fetch operation instance.
+ *
+ * @interface SetFetchSettings
+ *
+ * @property {MemoOptions} [memoOptions] - Options for memoization of fetch requests.
+ */
+interface SetFetchSettings {
+  memoOptions?: MemoOptions;
+}
+
+/**
  * Set a fetch request.
+ *
+ * @interface SetFetchInstance
  *
  * @property get - Function to perform a GET request.
  * @property cancel - Function to cancel the fetch request.
  * @property status - Function to get the status of the fetch request.
  */
-interface SetFetch {
+interface SetFetchInstance {
   get: ((url: string, settings?: RequestInit) => Promise<FetchResponse>) & {
     memo: MemoReturn<[url: string, settings?: RequestInit], Promise<FetchResponse>>;
   };
@@ -465,14 +480,15 @@ const preflight = async (
  * This policy keeps tests deterministic and prevents accidental calls to external networks during
  * testing.
  *
- * @param {GlobalOptions} [options=getOptions()] - Configuration options for the fetch operation.
- * @returns {SetFetch} Fetch operations:
+ * @param {SetFetchSettings} [settings] - Settings for the fetch operation instance.
+ * @param {GlobalOptions} [options] - Configuration options for the fetch operation.
+ * @returns {SetFetchInstance} Fetch operations:
  *   - `get`: GET request callback to the specified URL.
  *   - `cancel`: Cancel callback for the fetch operation.
  *   - `status`: Callback for returning state or registering a state listener.
  */
-const setFetch = (options = getOptions()): SetFetch => {
-  const { mode, modeOptions, whitelist, xhrFetch } = options;
+const setFetch = ({ memoOptions }: SetFetchSettings = {}, options = getOptions()): SetFetchInstance => {
+  const { mode, modeOptions, resourceMemoOptions, whitelist, xhrFetch, cacheDb } = options;
   const fixtureUrl = mode === 'test' ? modeOptions?.test?.baseUrl : undefined;
 
   const state: FetchState = { phase: 'idle', progress: 0, bytesReceived: 0 };
@@ -705,9 +721,45 @@ const setFetch = (options = getOptions()): SetFetch => {
     return checkInflight(key, () => executeFetch(url, updatedSettings));
   };
 
+  let fetchMemoOptions: any = resourceMemoOptions.fetchUrl;
+
+  if (cacheDb.enabled) {
+    fetchMemoOptions = {
+      cache: memoSettledAdapter<unknown, Promise<FetchResponse>>(
+        createDb.memo(cacheDb.dbPath, options).memoStore('fetch_get', {
+          expire: resourceMemoOptions.fetchUrl?.persistExpire
+        }),
+        {
+          ...resourceMemoOptions.fetchUrl,
+          expire: resourceMemoOptions.fetchUrl?.persistExpire
+        }
+      )
+    };
+  } else if (memoOptions?.expire) {
+    fetchMemoOptions = memoOptions;
+  }
+
+  /*
+  const fetchMemoOptions = {
+    ...options.resourceMemoOptions.fetchUrl,
+    ...(cacheDb.enabled
+      ? {
+        cache: memoSettledAdapter<unknown, Promise<FetchResponse>>(
+          createDb(options.cacheDb.dbPath, options).memoStore('fetch_get', cacheDb),
+          cacheDb
+          {
+            cacheErrors: options.resourceMemoOptions.fetchUrl.cacheErrors,
+            expire: options.resourceMemoOptions.fetchUrl.expire
+          }
+        )
+      }
+      : {})
+  };
+  */
+
   getFetch.memo = memo(
     async (url: string, settings?: RequestInit) => await getFetch(url, settings),
-    options.resourceMemoOptions.fetchUrl
+    fetchMemoOptions
   );
 
   return {
@@ -752,5 +804,6 @@ export {
   type DecodedStreamResult,
   type FetchState,
   type FetchResponse,
-  type SetFetch
+  type SetFetchInstance,
+  type SetFetchSettings
 };

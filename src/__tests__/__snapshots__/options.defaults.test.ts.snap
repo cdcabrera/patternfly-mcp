@@ -121,6 +121,7 @@ exports[`options defaults should return specific properties: defaults 1`] = `
       "cacheErrors": false,
       "cacheLimit": 100,
       "expire": 180000,
+      "persistExpire": 604800000,
     },
     "high": {
       "cacheLimit": 50,

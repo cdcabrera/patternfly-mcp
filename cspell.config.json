@@ -11,6 +11,7 @@
     "jaccard",
     "kubepods",
     "libpod",
+    "lifecycles",
     "llms",
     "localappdata",
     "midrun",

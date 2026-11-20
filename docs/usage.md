@@ -344,8 +344,22 @@ Notes:
 - `8080` inside the container matches the port the UBI Node.js base already advertises via `EXPOSE`, and a non-root user can bind it without extra capabilities.
 - `-i` (interactive stdin) is **not** required in HTTP mode and is omitted here.
 - `--allowed-origins` and `--allowed-hosts` are required guardrails when the server is reachable beyond stdio; set them explicitly.
-- `--read-only` is safe today because the server writes nothing to the rootfs (only `/tmp`, which is a tmpfs). When the persistent SQLite cache lands, you will need to either drop `--read-only` or mount a writable volume for the cache directory.
+- `--read-only` is safe today because the server writes nothing to the rootfs (only `/tmp`, which is a tmpfs). When enabling persistent cache with `--experimental-cache-db`, mount a writable volume to preserve cached data across container lifecycles (see example below).
 - TLS is out of scope for the image itself. For anything beyond `localhost`, terminate TLS at a reverse proxy (Caddy, nginx, an OpenShift route, etc.).
+
+##### Persistent Cache Volume Mount (Containers)
+
+When running containerized under Podman or Docker, mount a volume for the cache directory so cached documentation persists across container restarts:
+
+```bash
+podman run --rm -i \
+  --userns=keep-id \
+  --security-opt=no-new-privileges \
+  --cap-drop=ALL \
+  -v pfmcp-cache:/cache:Z \
+  ghcr.io/patternfly/patternfly-mcp:latest \
+  --experimental-cache-db /cache/
+```
 
 ##### MCP client configuration (HTTP)
 

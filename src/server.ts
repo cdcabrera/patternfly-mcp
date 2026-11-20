@@ -11,6 +11,7 @@ import {
 import { setMetaResources } from './server.resourceMeta';
 import { startHttpTransport, type HttpServerHandle } from './server.http';
 import { memo } from './server.caching';
+import { createDb, type DbInstance } from './server.db';
 import { formatUnknownError, log, type LogEvent } from './logger';
 import { createServerLogger } from './server.logger';
 import { composeTools, sendToolsHostShutdown } from './server.tools';
@@ -357,7 +358,8 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
   let mcpClient: ClientInstance | null = null;
   let unsubscribeServerLogger: (() => void) | null = null;
   let unsubscribeServerStats: (() => void) | null = null;
-  let sigintHandler: (() => void) | null = null;
+  let signalHandler: (() => void) | null = null;
+  let dbInstance: DbInstance | null = null;
   let running = false;
   let onLogSetup: ServerOnLog = () => () => {};
   let getStatsSetup: ServerGetStats = () => Promise.resolve({} as ServerStats);
@@ -374,15 +376,32 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         httpHandle = null;
       }
 
-      if (sigintHandler) {
-        process.off('SIGINT', sigintHandler);
-        sigintHandler = null;
+      if (signalHandler) {
+        process.off('SIGINT', signalHandler);
+        process.off('SIGTERM', signalHandler);
+        signalHandler = null;
       }
 
       if (mcpClient) {
         log.debug('...closing in-process client');
         await mcpClient.close().catch(() => {});
         mcpClient = null;
+      }
+
+      if (dbInstance) {
+        log.debug('...closing persistent cache database');
+
+        try {
+          dbInstance.close();
+        } catch (error) {
+          log.debug(`Error closing database instance: ${error}`);
+        }
+
+        dbInstance = null;
+      }
+
+      if (options?.cacheDb?.enabled) {
+        createDb?.memo?.clear?.();
       }
 
       log.debug('...closing Server');
@@ -447,6 +466,12 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
       options.experimental.forEach(option => log.warn(`Enabled experimental option: ${option}`));
     }
 
+    if (options?.cacheDb?.enabled) {
+      log.info(`Persistent cache enabled (${options.cacheDb.dbPath})`);
+      // Initialize connection handle and verify schema/integrity early on startup
+      dbInstance = createDb?.memo?.(options.cacheDb.dbPath, options);
+    }
+
     // Compose collections after logging is set up.
     const updatedCollections = await composeCollections(collections);
 
@@ -486,8 +511,8 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
     // Apply MCP tools, if available
     await registerServerTools(updatedTools, server, options, session);
 
-    if (enableSigint && !sigintHandler) {
-      sigintHandler = async () => {
+    if (enableSigint && !signalHandler) {
+      signalHandler = async () => {
         await stopServer();
 
         if (allowProcessExit) {
@@ -495,7 +520,8 @@ const runServer = async (options: ServerOptions = getOptions(), settings: Server
         }
       };
 
-      process.on('SIGINT', sigintHandler);
+      process.on('SIGINT', signalHandler);
+      process.on('SIGTERM', signalHandler);
     }
 
     if (settings.mcpChannel) {
