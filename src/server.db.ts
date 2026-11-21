@@ -6,7 +6,6 @@ import { createDbMemoStore, type DbMemoStoreOptions } from './server.dbMemoStore
 import { memo, type MemoMapLike } from './server.caching';
 import { type MemoSettled } from './server.cachingAdapter';
 import { getOptions } from './options.context';
-import { DEFAULT_OPTIONS } from './options.defaults';
 import { type GlobalOptions } from './options';
 
 /**
@@ -29,22 +28,22 @@ interface DbInstance {
 }
 
 /**
- * Default in-memory db.
+ * In-memory default db.
  */
-const DEFAULT_DB = DEFAULT_OPTIONS.cacheDb.dbPath;
+const IN_MEMORY_DB = ':memory:';
 
 /**
  * Resolve database path, create a parent directory, and appending a default filename if needed.
  *
- * @param inputPath - Raw database path or {@link DEFAULT_DB}.
+ * @param inputPath - Raw database path or {@link IN_MEMORY_DB}.
  * @param {GlobalOptions} options - Optional configuration.
- * @returns Resolved filesystem path or {@link DEFAULT_DB}.
+ * @returns Resolved filesystem path or {@link IN_MEMORY_DB}.
  */
-const resolveCacheDbPath = (inputPath: string = DEFAULT_DB, options = getOptions()): string => {
+const resolveCacheDbPath = (inputPath: string = IN_MEMORY_DB, options = getOptions()): string => {
   const { dbDefaultFilename } = options.cacheDb;
 
-  if (!inputPath || inputPath === DEFAULT_DB) {
-    return DEFAULT_DB;
+  if (!inputPath || inputPath === IN_MEMORY_DB) {
+    return IN_MEMORY_DB;
   }
 
   let resolvedPath = resolve(inputPath);
@@ -112,7 +111,7 @@ const quarantineCorruptDb = (filePath: string): string => {
 /**
  * Open and configure a DatabaseSync instance with standard PRAGMAs.
  *
- * @param resolvedPath - Filesystem path or {@link DEFAULT_DB}.
+ * @param resolvedPath - Filesystem path or {@link IN_MEMORY_DB}.
  * @param busyTimeout - Milliseconds to wait before throwing SQLITE_BUSY.
  * @returns Open DatabaseSync instance.
  */
@@ -135,20 +134,20 @@ const openDatabase = (resolvedPath: string, busyTimeout: number): DatabaseSync =
 /**
  * Create and configure an SQLite database instance.
  *
- * @param database - File path or {@link DEFAULT_DB}.
+ * @param database - File path or {@link IN_MEMORY_DB}.
  * @param {GlobalOptions}[options] - Optional configuration options for the DB instance.
  * @returns Configured DbInstance.
  */
-const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()): DbInstance => {
-  const { dbPath, busyTimeoutMs } = options.cacheDb;
-  const resolvedPath = resolveCacheDbPath(database, options);
+const createDb = (database: string = IN_MEMORY_DB, options: GlobalOptions = getOptions()): DbInstance => {
+  const { busyTimeoutMs } = options.cacheDb;
+  const resolvedPath = resolveCacheDbPath(database);
   let db: DatabaseSync;
 
   try {
     db = openDatabase(resolvedPath, busyTimeoutMs);
     verifyDbIntegrity(db);
   } catch (error) {
-    if (resolvedPath !== dbPath && existsSync(resolvedPath)) {
+    if (resolvedPath !== IN_MEMORY_DB && existsSync(resolvedPath)) {
       quarantineCorruptDb(resolvedPath);
       db = openDatabase(resolvedPath, busyTimeoutMs);
       verifyDbIntegrity(db);
@@ -189,7 +188,7 @@ const createDb = (database: string = DEFAULT_DB, options: GlobalOptions = getOpt
  *   - Limited to a single active database connection instance
  */
 createDb.memo = memo(
-  (database: string = DEFAULT_DB, options: GlobalOptions = getOptions()) => createDb(database, options),
+  (database: string = IN_MEMORY_DB, options: GlobalOptions = getOptions()) => createDb(database, options),
   {
     cacheLimit: 1,
     onCacheRollout: async ({ removed }) => {
