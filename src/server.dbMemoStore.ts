@@ -7,9 +7,11 @@ import type { MemoSettled } from './server.cachingAdapter';
  * Options for configuring a specific memo namespace storage partition.
  *
  * @property [expire] - Time-to-live in milliseconds for entries in this namespace.
+ * @property [pruneIntervalMs] - Milliseconds between opportunistic background prune sweeps on set (default: 1 hour).
  */
 interface DbMemoStoreOptions {
   expire?: number | undefined;
+  pruneIntervalMs?: number | undefined;
 }
 
 /**
@@ -48,12 +50,23 @@ const MEMO_CACHE_SCHEMA_SQL = `
 `;
 
 /**
+ * Default interval between opportunistic write-time expiration sweeps (1 hour).
+ */
+const DEFAULT_PRUNE_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
  * Initialize the memo_cache table schema within the given database instance.
+ * Automatically executes a startup sweep to purge any entries that expired while the server was offline.
  *
  * @param db - The SQLite DatabaseSync instance.
  */
 const initMemoCacheTable = (db: DatabaseSync): void => {
   db.exec(MEMO_CACHE_SCHEMA_SQL);
+
+  db.prepare(`
+    DELETE FROM memo_cache
+    WHERE expires_at IS NOT NULL AND expires_at <= ?;
+  `).run(Date.now());
 };
 
 /**
@@ -71,7 +84,8 @@ const createDbMemoStore = <V = unknown>(
 ): MemoMapLike<unknown, MemoSettled<V>> => {
   initMemoCacheTable(db);
 
-  const { expire } = options;
+  const { expire, pruneIntervalMs = DEFAULT_PRUNE_INTERVAL_MS } = options;
+  let lastPrunedAt = Date.now();
 
   const stmtHas: StatementSync = db.prepare(`
     SELECT 1 FROM memo_cache
@@ -112,6 +126,11 @@ const createDbMemoStore = <V = unknown>(
     DELETE FROM memo_cache WHERE namespace = ?;
   `);
 
+  const stmtPruneExpiredNamespace: StatementSync = db.prepare(`
+    DELETE FROM memo_cache
+    WHERE namespace = ? AND expires_at IS NOT NULL AND expires_at <= ?;
+  `);
+
   const stmtSize: StatementSync = db.prepare(`
     SELECT COUNT(*) as count FROM memo_cache
     WHERE namespace = ? AND (expires_at IS NULL OR expires_at > ?);
@@ -130,6 +149,13 @@ const createDbMemoStore = <V = unknown>(
   `);
 
   const toKeyHash = (key: unknown): string => (typeof key === 'string' ? key : generateHash(key));
+
+  const maybePruneExpired = (now: number): void => {
+    if (now - lastPrunedAt >= pruneIntervalMs) {
+      lastPrunedAt = now;
+      stmtPruneExpiredNamespace.run(namespace, now);
+    }
+  };
 
   return {
     has(key: unknown): boolean {
@@ -161,6 +187,8 @@ const createDbMemoStore = <V = unknown>(
 
     set(key: unknown, value: MemoSettled<V>): void {
       const now = Date.now();
+
+      maybePruneExpired(now);
       const keyHash = toKeyHash(key);
       const expiresAt = expire ? now + expire : null;
       const status = value?.status === 'rejected' ? 'rejected' : 'fulfilled';
@@ -177,8 +205,19 @@ const createDbMemoStore = <V = unknown>(
       return Number(result.changes) > 0;
     },
 
-    clear(): void {
-      stmtClear.run(namespace);
+    /**
+     * Clear cache entries.
+     * By default, performs TTL garbage collection by pruning expired entries in this namespace.
+     * Pass `true` to forcefully remove all entries (expired and active) in this namespace.
+     *
+     * @param [all=false] - Whether to remove all entries or only expired entries.
+     */
+    clear(all = false): void {
+      if (all) {
+        stmtClear.run(namespace);
+      } else {
+        stmtPruneExpiredNamespace.run(namespace, Date.now());
+      }
     },
 
     get size(): number {

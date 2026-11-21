@@ -24,6 +24,7 @@ interface DbInstance {
   readonly db: DatabaseSync;
   close(): void;
   checkpoint(): void;
+  pruneExpired(namespace?: string): number;
   memoStore<V = unknown>(namespace: string, options?: DbMemoStoreOptions): MemoMapLike<unknown, MemoSettled<V>>;
 }
 
@@ -166,9 +167,25 @@ const createDb = (database: string = IN_MEMORY_DB, options: GlobalOptions = getO
     }
   };
 
+  const pruneExpired = (targetNamespace?: string): number => {
+    const now = Date.now();
+
+    if (targetNamespace) {
+      const result = db.prepare(`
+        DELETE FROM memo_cache WHERE namespace = ? AND expires_at IS NOT NULL AND expires_at <= ?;
+      `).run(targetNamespace, now);
+
+      return Number(result.changes);
+    }
+    const result = db.prepare('DELETE FROM memo_cache WHERE expires_at IS NOT NULL AND expires_at <= ?;').run(now);
+
+    return Number(result.changes);
+  };
+
   return {
     db,
     checkpoint,
+    pruneExpired,
     close(): void {
       if (db.isOpen) {
         checkpoint();

@@ -54,6 +54,36 @@ describe('createDb', () => {
     expect(store.size).toBe(1);
   });
 
+  it('should prune expired entries globally and by namespace', () => {
+    jest.useFakeTimers();
+    const now = 500000;
+
+    jest.setSystemTime(now);
+
+    const storeA = dbInstance.memoStore<string>('ns_a', { expire: 5000 });
+    const storeB = dbInstance.memoStore<string>('ns_b', { expire: 10000 });
+
+    storeA.set('k_a', { status: 'fulfilled', value: 'a' });
+    storeB.set('k_b', { status: 'fulfilled', value: 'b' });
+
+    jest.setSystemTime(now + 6000);
+
+    const changesB = dbInstance.pruneExpired('ns_b');
+
+    expect(changesB).toBe(0);
+
+    const changesA = dbInstance.pruneExpired('ns_a');
+
+    expect(changesA).toBe(1);
+
+    jest.setSystemTime(now + 12000);
+    const totalChanges = dbInstance.pruneExpired();
+
+    expect(totalChanges).toBe(1);
+
+    jest.useRealTimers();
+  });
+
   it('should close the underlying database connection cleanly', () => {
     dbInstance.close();
 
@@ -275,7 +305,7 @@ describe('createDb memoSettledAdapter integration & cold hydration', () => {
 
   it('should forward clear housekeeping to SQLite partition through settled adapter', async () => {
     dbInstance = createDb(':memory:');
-    const store = dbInstance.memoStore<string>('isolated_ns');
+    const store = dbInstance.memoStore<string>('isolated_ns', { expire: 50 });
     const memoized = memo(async (id: string) => `data-${id}`, {
       cache: memoSettledAdapter<unknown, Promise<string>>(store)
     });
@@ -285,6 +315,13 @@ describe('createDb memoSettledAdapter integration & cold hydration', () => {
     await new Promise(resolve => setTimeout(resolve, 20));
     expect(store.size).toBe(2);
 
+    // Unexpired entries should be preserved on clear
+    memoized.clear();
+    await new Promise(resolve => setTimeout(resolve, 20));
+    expect(store.size).toBe(2);
+
+    // Wait until entries expire, then clear should prune them
+    await new Promise(resolve => setTimeout(resolve, 60));
     memoized.clear();
     await new Promise(resolve => setTimeout(resolve, 20));
     expect(store.size).toBe(0);

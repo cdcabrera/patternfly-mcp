@@ -16,6 +16,25 @@ describe('initMemoCacheTable', () => {
     expect(tableInfo?.name).toBe('memo_cache');
     rawDb.close();
   });
+
+  it('should purge entries that expired while the server was offline on initialization', () => {
+    const rawDb = new DatabaseSync(':memory:');
+
+    initMemoCacheTable(rawDb);
+
+    // Manually insert an expired row simulating a previous session
+    rawDb.prepare(`
+      INSERT INTO memo_cache (namespace, key_hash, value, status, created_at, expires_at, last_accessed_at)
+      VALUES ('ns_offline', 'k_old', '{"status":"fulfilled","value":"stale"}', 'fulfilled', 1000, 2000, 1000)
+    `).run();
+
+    initMemoCacheTable(rawDb);
+
+    const row = rawDb.prepare('SELECT 1 FROM memo_cache WHERE namespace = ? AND key_hash = ?').get('ns_offline', 'k_old');
+
+    expect(row).toBeUndefined();
+    rawDb.close();
+  });
 });
 
 describe('createDbMemoStore', () => {
@@ -101,7 +120,7 @@ describe('createDbMemoStore', () => {
     expect(storeA.size).toBe(1);
     expect(storeB.size).toBe(1);
 
-    storeA.clear?.();
+    (storeA.clear as (all?: boolean) => void)?.(true);
 
     expect(storeA.has('shared_key')).toBe(false);
     expect(storeA.get('shared_key')).toBeUndefined();
@@ -131,6 +150,55 @@ describe('createDbMemoStore', () => {
     expect(store.has('temp')).toBe(false);
     expect(store.get('temp')).toBeUndefined();
     expect(store.size).toBe(0);
+
+    jest.useRealTimers();
+  });
+
+  it('should interpret clear() as TTL garbage collection of expired entries while preserving active ones', () => {
+    jest.useFakeTimers();
+    const now = 200000;
+
+    jest.setSystemTime(now);
+
+    const store = createDbMemoStore<string>(db, 'ns_gc', { expire: 5000 });
+
+    store.set('expired_key', { status: 'fulfilled', value: 'old_value' });
+
+    jest.setSystemTime(now + 6000);
+    store.set('fresh_key', { status: 'fulfilled', value: 'fresh_value' });
+
+    // Default clear() performs TTL garbage collection
+    store.clear?.();
+
+    // Fresh key must still be present and valid
+    expect(store.has('fresh_key')).toBe(true);
+    expect(store.get('fresh_key')).toEqual({ status: 'fulfilled', value: 'fresh_value' });
+
+    // Expired row has been physically deleted from the table
+    const expiredRow = db.prepare('SELECT 1 FROM memo_cache WHERE namespace = ? AND key_hash = ?').get('ns_gc', 'expired_key');
+
+    expect(expiredRow).toBeUndefined();
+
+    jest.useRealTimers();
+  });
+
+  it('should perform opportunistic TTL pruning on set when prune interval has elapsed', () => {
+    jest.useFakeTimers();
+    const now = 300000;
+
+    jest.setSystemTime(now);
+
+    const store = createDbMemoStore<string>(db, 'ns_opp_gc', { expire: 5000, pruneIntervalMs: 10000 });
+
+    store.set('first_key', { status: 'fulfilled', value: 'v1' });
+
+    // Advance time past expiration AND prune interval
+    jest.setSystemTime(now + 12000);
+    store.set('second_key', { status: 'fulfilled', value: 'v2' });
+
+    const staleRow = db.prepare('SELECT 1 FROM memo_cache WHERE namespace = ? AND key_hash = ?').get('ns_opp_gc', 'first_key');
+
+    expect(staleRow).toBeUndefined();
 
     jest.useRealTimers();
   });
